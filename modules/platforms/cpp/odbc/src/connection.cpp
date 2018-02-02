@@ -28,6 +28,10 @@
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/config/configuration.h"
+#include "ignite/odbc/ssl/ssl_mode.h"
+#include "ignite/odbc/ssl/ssl_gateway.h"
+#include "ignite/odbc/ssl/secure_socket_client.h"
+#include "ignite/odbc/system/tcp_socket_client.h"
 
 // Uncomment for per-byte debug.
 //#define PER_BYTE_DEBUG
@@ -49,7 +53,6 @@ namespace ignite
     {
         Connection::Connection() :
             socket(),
-            connected(false),
             timeout(0),
             parser(),
             config(),
@@ -122,20 +125,43 @@ namespace ignite
 
         SqlResult::Type Connection::InternalEstablish(const config::Configuration cfg)
         {
+            using ssl::SslMode;
+
             config = cfg;
 
-            if (connected)
+            if (socket.get() != 0)
             {
                 AddStatusRecord(SqlState::S08002_ALREADY_CONNECTED, "Already connected.");
 
                 return SqlResult::AI_ERROR;
             }
 
-            connected = socket.Connect(cfg.GetHost().c_str(), cfg.GetTcpPort(), *this);
+            SslMode::T sslMode = SslMode::FromString(cfg.GetSslMode(), SslMode::DISABLE);
+
+            if (sslMode != SslMode::DISABLE)
+            {
+                bool loaded = ssl::SslGateway::GetInstance().LoadAll();
+
+                if (!loaded)
+                {
+                    AddStatusRecord(SqlState::SHY000_GENERAL_ERROR,
+                        "Can not load OpenSSL library (did you set OPENSSL_HOME environment variable?).");
+
+                    return SqlResult::AI_ERROR;
+                }
+
+                socket.reset(new ssl::SecureSocketClient(cfg.GetSslCertFile(), cfg.GetSslKeyFile(), cfg.GetSslCaFile()));
+            }
+            else
+                socket.reset(new system::TcpSocketClient());
+
+            bool connected = socket->Connect(cfg.GetHost().c_str(), cfg.GetTcpPort(), *this);
 
             if (!connected)
             {
                 AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, "Failed to establish connection with the host.");
+
+                Close();
 
                 return SqlResult::AI_ERROR;
             }
@@ -157,7 +183,7 @@ namespace ignite
 
         SqlResult::Type Connection::InternalRelease()
         {
-            if (!connected)
+            if (socket.get() == 0)
             {
                 AddStatusRecord(SqlState::S08003_NOT_CONNECTED, "Connection is not open.");
 
@@ -171,9 +197,12 @@ namespace ignite
 
         void Connection::Close()
         {
-            socket.Close();
+            if (socket.get() != 0)
+            {
+                socket->Close();
 
-            connected = false;
+                socket.reset();
+            }
         }
 
         Statement* Connection::CreateStatement()
@@ -201,7 +230,7 @@ namespace ignite
 
         bool Connection::Send(const int8_t* data, size_t len, int32_t timeout)
         {
-            if (!connected)
+            if (socket.get() == 0)
                 throw OdbcError(SqlState::S08003_NOT_CONNECTED, "Connection is not established");
 
             int32_t newLen = static_cast<int32_t>(len + sizeof(OdbcProtocolHeader));
@@ -235,11 +264,11 @@ namespace ignite
 
             while (sent != static_cast<int64_t>(len))
             {
-                int res = socket.Send(data + sent, len - sent, timeout);
+                int res = socket->Send(data + sent, len - sent, timeout);
 
                 LOG_MSG("Sent: " << res);
 
-                if (res < 0 || res == tcp::SocketClient::WaitResult::TIMEOUT)
+                if (res < 0 || res == SocketClient::WaitResult::TIMEOUT)
                 {
                     Close();
 
@@ -256,7 +285,7 @@ namespace ignite
 
         bool Connection::Receive(std::vector<int8_t>& msg, int32_t timeout)
         {
-            if (!connected)
+            if (socket.get() == 0)
                 throw OdbcError(SqlState::S08003_NOT_CONNECTED, "Connection is not established");
 
             msg.clear();
@@ -307,10 +336,10 @@ namespace ignite
             {
                 size_t received = len - remain;
 
-                int res = socket.Receive(buffer + received, remain, timeout);
+                int res = socket->Receive(buffer + received, remain, timeout);
                 LOG_MSG("Receive res: " << res << " remain: " << remain);
 
-                if (res < 0 || res == tcp::SocketClient::WaitResult::TIMEOUT)
+                if (res < 0 || res == SocketClient::WaitResult::TIMEOUT)
                 {
                     Close();
 
@@ -382,7 +411,7 @@ namespace ignite
                 {
                     SQLUINTEGER *val = reinterpret_cast<SQLUINTEGER*>(buf);
 
-                    *val = connected ? SQL_CD_FALSE : SQL_CD_TRUE;
+                    *val = socket.get() != 0 ? SQL_CD_FALSE : SQL_CD_TRUE;
 
                     if (valueLen)
                         *valueLen = SQL_IS_INTEGER;
@@ -441,7 +470,7 @@ namespace ignite
                 {
                     SQLUINTEGER uTimeout = static_cast<SQLUINTEGER>(reinterpret_cast<ptrdiff_t>(value));
 
-                    if (uTimeout != 0 && connected && socket.IsBlocking())
+                    if (uTimeout != 0 && socket.get() != 0 && socket->IsBlocking())
                     {
                         timeout = 0;
 
@@ -524,12 +553,13 @@ namespace ignite
             try
             {
                 // Workaround for some Linux systems that report connection on non-blocking
-                // sockets as successfull but fail to establish real connection.
-                bool sent = SyncMessage(req, rsp, tcp::SocketClient::CONNECT_TIMEOUT);
+                // sockets as successful but fail to establish real connection.
+                bool sent = SyncMessage(req, rsp, SocketClient::CONNECT_TIMEOUT);
 
                 if (!sent)
                 {
-                    AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, "Failed to establish connection with the host.");
+                    AddStatusRecord(SqlState::S08001_CANNOT_CONNECT,
+                        "Failed to get handshake response (Did you forget to enable SSL?).");
 
                     return SqlResult::AI_ERROR;
                 }
@@ -549,7 +579,7 @@ namespace ignite
 
             if (!rsp.IsAccepted())
             {
-                LOG_MSG("Hanshake message has been rejected.");
+                LOG_MSG("Handshake message has been rejected.");
 
                 std::stringstream constructor;
 
