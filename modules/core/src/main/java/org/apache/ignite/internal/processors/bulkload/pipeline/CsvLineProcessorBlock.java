@@ -22,10 +22,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.regex.Pattern;
 
-/** A {@link PipelineBlock}, which splits line according to CSV format rules and unquotes fields.
- * The next block {@link PipelineBlock#accept(Object, boolean)} is called per-line. */
+/**
+ * A {@link PipelineBlock}, which splits line according to CSV format rules and unquotes fields.
+ * The next block {@link PipelineBlock#accept(Object, boolean)} is called per-line.
+ */
 public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
-
     /** Field delimiter pattern. */
     private final Pattern fieldDelimiter;
 
@@ -34,23 +35,24 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
 
     /**
      * Creates a CSV line parser.
+     *
      * @param fieldDelimiter The pattern for the field delimiter.
-     * @param quoteChars Quoting character. */
+     * @param quoteChars Quoting character.
+     */
     public CsvLineProcessorBlock(Pattern fieldDelimiter, String quoteChars) {
-        super();
-
         this.fieldDelimiter = fieldDelimiter;
         this.quoteChars = quoteChars;
     }
 
     /** {@inheritDoc} */
-    @Override public void accept(String input, boolean isEof) throws IgniteCheckedException {
-        String[] output = fieldDelimiter.split(input);
+    @Override public void accept(String input, boolean isLastPortion) throws IgniteCheckedException {
+        // Currently we don't process quoted field delimiter properly, will be fixed in IGNITE-7537.
+        String[] fields = fieldDelimiter.split(input);
 
-        for (int i = 0; i < output.length; i++)
-            output[i] = trim(output[i]);
+        for (int i = 0; i < fields.length; i++)
+            fields[i] = trim(fields[i]);
 
-        nextBlock.accept(output, isEof);
+        nextBlock.accept(fields, isLastPortion);
     }
 
     /**

@@ -139,7 +139,7 @@ public class SqlParser {
     /**
      * Processes COPY command.
      *
-     * @return The {@link org.apache.ignite.internal.sql.command.SqlBulkLoadCommand} command.
+     * @return The {@link SqlBulkLoadCommand} command.
      */
     private SqlCommand processCopy() {
         return new SqlBulkLoadCommand().parse(lex);

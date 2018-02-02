@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.charset.Charset;
@@ -24,35 +25,139 @@ import java.util.regex.Pattern;
 
 /** A placeholder for bulk load CSV format parser options. */
 public class BulkLoadCsvFormat extends BulkLoadFormat {
-
     /** Line separator pattern. */
-    public static final Pattern LINE_SEP_RE = Pattern.compile("[\r\n]+");
+    @NotNull public static final Pattern DEFAULT_LINE_SEPARATOR = Pattern.compile("[\r\n]+");
 
     /** Field separator pattern. */
-    public static final Pattern FIELD_SEP_RE = Pattern.compile(",");
+    @NotNull public static final Pattern DEFAULT_FIELD_SEPARATOR = Pattern.compile(",");
 
     /** Quote characters */
-    public static final String QUOTE_CHARS = "\"";
+    @NotNull public static final String DEFAULT_QUOTE_CHARS = "\"";
+
+    /** Default escape sequence start characters. */
+    @Nullable public static final String DEFAULT_ESCAPE_CHARS = null;
+
+    /** Line comment start pattern. */
+    @Nullable public static final Pattern DEFAULT_COMMENT_CHARS = null;
 
     /** Format name. */
     public static final String NAME = "CSV";
+
+    /** Line separator pattern. */
+    @Nullable private Pattern lineSeparator;
+
+    /** Field separator pattern. */
+    @Nullable private Pattern fieldSeparator;
+
+    /** Set of quote characters. */
+    @Nullable private String quoteChars;
+
+    /** Line comment start pattern. */
+    @Nullable private Pattern commentChars;
+
+    /** Set of escape start characters. */
+    @Nullable private String escapeChars;
 
     /** File charset. */
     @Nullable private Charset inputCharset;
 
     /**
-     * Creates CSV format with default parameters.
-     */
-    public BulkLoadCsvFormat() {
-    }
-
-    /**
-     * Returns the name of the format, null if not set.
+     * Returns the name of the format.
      *
-     * @return The name of the format, null if not set.
+     * @return The name of the format.
      */
     @Override public String name() {
         return NAME;
+    }
+
+    /**
+     * Returns the line separator pattern.
+     *
+     * @return The line separator pattern.
+     */
+    public @Nullable Pattern lineSeparator() {
+        return lineSeparator;
+    }
+
+    /**
+     * Sets the line separator pattern.
+     *
+     * @param lineSeparator The line separator pattern.
+     */
+    public void lineSeparator(@Nullable Pattern lineSeparator) {
+        this.lineSeparator = lineSeparator;
+    }
+
+    /**
+     * Returns the field separator pattern.
+     *
+     * @return The field separator pattern.
+     */
+    public @Nullable Pattern fieldSeparator() {
+        return fieldSeparator;
+    }
+
+    /**
+     * Sets the field separator pattern.
+     *
+     * @param fieldSeparator The field separator pattern.
+     */
+    public void fieldSeparator(@Nullable Pattern fieldSeparator) {
+        this.fieldSeparator = fieldSeparator;
+    }
+
+    /**
+     * Returns the quote characters.
+     *
+     * @return The quote characters.
+     */
+    public @Nullable String quoteChars() {
+        return quoteChars;
+    }
+
+    /**
+     * Sets the quote characters.
+     *
+     * @param quoteChars The quote characters.
+     */
+    public void quoteChars(@Nullable String quoteChars) {
+        this.quoteChars = quoteChars;
+    }
+
+    /**
+     * Returns the line comment start pattern.
+     *
+     * @return The line comment start pattern.
+     */
+    public @Nullable Pattern commentChars() {
+        return commentChars;
+    }
+
+    /**
+     * Sets the line comment start pattern.
+     *
+     * @param commentChars The line comment start pattern.
+     */
+    public void commentChars(@Nullable Pattern commentChars) {
+        this.commentChars = commentChars;
+    }
+
+    /**
+     * Returns the escape characters.
+     *
+     * @return The escape characters.
+     */
+    public @Nullable String escapeChars() {
+        return escapeChars;
+    }
+
+    /**
+     * Sets the escape characters.
+     *
+     * @param escapeChars The escape characters.
+     */
+    public void escapeChars(@Nullable String escapeChars) {
+        this.escapeChars = escapeChars;
     }
 
     /**

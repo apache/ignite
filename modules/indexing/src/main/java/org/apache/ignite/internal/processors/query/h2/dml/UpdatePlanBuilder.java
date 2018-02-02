@@ -65,7 +65,6 @@ import org.h2.table.Column;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
-import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 
 /**
  * Logic for building update plans performed by {@link DmlStatementsProcessor}.
@@ -417,7 +416,6 @@ public final class UpdatePlanBuilder {
      */
     @SuppressWarnings("ConstantConditions")
     public static UpdatePlan planForBulkLoad(SqlBulkLoadCommand cmd, GridH2Table tbl) throws IgniteCheckedException {
-
         GridH2RowDescriptor desc = tbl.rowDescriptor();
 
         if (desc == null)
@@ -434,15 +432,8 @@ public final class UpdatePlanBuilder {
 
         List<String> cols = cmd.columns();
 
-        if (cols == null) {
-            Column[] tableCols = tbl.getColumns();
-            cols = new ArrayList<>(tableCols.length - DEFAULT_COLUMNS_COUNT + 1);
-
-            cols.add(tableCols[KEY_COL].getName());
-
-            for (int i = DEFAULT_COLUMNS_COUNT; i < tableCols.length; i++)
-                cols.add(tableCols[i].getName());
-        }
+        if (cols == null)
+            throw new IgniteSQLException("Columns are not defined", IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR);
 
         String[] colNames = new String[cols.size()];
 
@@ -478,11 +469,13 @@ public final class UpdatePlanBuilder {
                 hasValProps = true;
         }
 
-        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
-        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
+        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps,
+            true, false);
+        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps,
+            false, false);
 
         return new UpdatePlan(
-            UpdateMode.INSERT,
+            UpdateMode.BULK_LOAD,
             tbl,
             colNames,
             colTypes,

@@ -20,8 +20,7 @@ package org.apache.ignite.internal.sql;
 /**
  * Tests for SQL parser: COPY command.
  */
-@SuppressWarnings({"UnusedReturnValue", "ThrowableNotThrown"})
-public class SqlParserCopySelfTest extends SqlParserAbstractSelfTest {
+public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
     /**
      * Tests for COPY command.
      *

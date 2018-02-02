@@ -23,25 +23,13 @@ import org.apache.ignite.internal.processors.bulkload.pipeline.CsvLineProcessorB
 import org.apache.ignite.internal.processors.bulkload.pipeline.PipelineBlock;
 import org.apache.ignite.internal.processors.bulkload.pipeline.StrListAppenderBlock;
 import org.apache.ignite.internal.processors.bulkload.pipeline.LineSplitterBlock;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadContext;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 
 import java.nio.charset.Charset;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
-import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR;
-
 /** CSV parser for COPY command. */
 public class BulkLoadCsvParser extends BulkLoadParser {
-
-    /** Next batch index (for a very simple check that all batches were delivered to us). */
-    private long nextBatchIdx;
-
     /** Processing pipeline input block: a decoder for the input stream of bytes */
     private final PipelineBlock<byte[], char[]> inputBlock;
 
@@ -50,68 +38,31 @@ public class BulkLoadCsvParser extends BulkLoadParser {
 
     /**
      * Creates bulk load CSV parser.
-
-     *  @param format Format options (parsed from COPY command on the server side).
+     *
+     *  @param format Format options (parsed from COPY command).
      */
-    public BulkLoadCsvParser(BulkLoadFormat format) {
-        super(format);
-
-        BulkLoadCsvFormat csvFormat = (BulkLoadCsvFormat)format;
-
-        nextBatchIdx = 0;
-
-        Charset charset = csvFormat.inputCharset();
+    public BulkLoadCsvParser(BulkLoadCsvFormat format) {
+        Charset charset = format.inputCharset();
 
         inputBlock = new CharsetDecoderBlock(charset != null ? charset : BulkLoadFormat.DEFAULT_INPUT_CHARSET);
 
         collectorBlock = new StrListAppenderBlock();
 
-        inputBlock.append(new LineSplitterBlock(BulkLoadCsvFormat.LINE_SEP_RE))
-               .append(new CsvLineProcessorBlock(BulkLoadCsvFormat.FIELD_SEP_RE, BulkLoadCsvFormat.QUOTE_CHARS))
+        // Handling of the other options is to be implemented in IGNITE-7537.
+        inputBlock.append(new LineSplitterBlock(format.lineSeparator()))
+               .append(new CsvLineProcessorBlock(format.fieldSeparator(), format.quoteChars()))
                .append(collectorBlock);
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<List<Object>> processBatch(JdbcBulkLoadContext ctx, JdbcBulkLoadBatchRequest req)
+    @Override protected Iterable<List<Object>> parseBatch(byte[] batchData, boolean isLastBatch)
         throws IgniteCheckedException {
+        List<List<Object>> res = new LinkedList<>();
 
-        if (nextBatchIdx != req.batchIdx())
-            throw new IgniteSQLException("Batch #" + (nextBatchIdx + 1) +
-                " is missing. Received #" + req.batchIdx() + " instead.");
+        collectorBlock.output(res);
 
-        nextBatchIdx++;
+        inputBlock.accept(batchData, isLastBatch);
 
-        switch (req.cmd()) {
-            case CMD_FINISHED_EOF:
-                return parseBatch(req, true);
-
-            case CMD_CONTINUE:
-                return parseBatch(req, false);
-
-            case CMD_FINISHED_ERROR:
-                return Collections.emptyList();
-
-            default:
-                throw new IllegalArgumentException();
-        }
-    }
-
-    /**
-     * Parses a batch of records
-     * @param req The request with all parameters.
-     * @param isLastBatch true, if it is a last batch.
-     * @return Iterable over the parsed records.
-     * @throws IgniteCheckedException if parsing has failed.
-     */
-    private Iterable<List<Object>> parseBatch(JdbcBulkLoadBatchRequest req, boolean isLastBatch)
-        throws IgniteCheckedException {
-
-        List<List<Object>> result = new LinkedList<>();
-
-        collectorBlock.output(result);
-
-        inputBlock.accept(req.data(), isLastBatch);
-
-        return result;
+        return res;
     }
 }

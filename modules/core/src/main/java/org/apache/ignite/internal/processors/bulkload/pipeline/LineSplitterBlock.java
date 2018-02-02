@@ -25,14 +25,14 @@ import java.util.regex.Pattern;
 /**
  * A {@link PipelineBlock}, which splits input stream of char[] into lines using the specified {@link Pattern}
  * as line separator. Next block {@link PipelineBlock#accept(Object, boolean)} is invoked for each line.
- * Leftover characters are remembered and used during processing the next input batch, unless EOF flag is specified.
+ * Leftover characters are remembered and used during processing the next input batch,
+ * unless isLastPortion flag is specified.
  */
 public class LineSplitterBlock extends PipelineBlock<char[], String> {
-
     /** Line separator pattern */
     private final Pattern delimiter;
 
-    /** Leftover characters from the previous. */
+    /** Leftover characters from the previous invocation of {@link #accept(char[], boolean)}. */
     private StringBuilder leftover = new StringBuilder();
 
     /**
@@ -41,13 +41,11 @@ public class LineSplitterBlock extends PipelineBlock<char[], String> {
      * @param delimiter The line separator pattern.
      */
     public LineSplitterBlock(Pattern delimiter) {
-        super();
-
         this.delimiter = delimiter;
     }
 
     /** {@inheritDoc} */
-    @Override public void accept(char[] chars, boolean isEof) throws IgniteCheckedException {
+    @Override public void accept(char[] chars, boolean isLastPortion) throws IgniteCheckedException {
         leftover.append(chars);
 
         String input = leftover.toString();
@@ -66,7 +64,7 @@ public class LineSplitterBlock extends PipelineBlock<char[], String> {
         if (lastPos != 0)
             leftover.delete(0, lastPos);
 
-        if (isEof && leftover.length() > 0) {
+        if (isLastPortion && leftover.length() > 0) {
             nextBlock.accept(leftover.toString(), true);
             leftover.setLength(0);
         }

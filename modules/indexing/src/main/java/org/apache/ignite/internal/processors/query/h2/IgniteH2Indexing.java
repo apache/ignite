@@ -100,7 +100,6 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
-import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2PlainRowFactory;
@@ -192,9 +191,8 @@ import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType
  */
 @SuppressWarnings({"UnnecessaryFullyQualifiedName", "NonFinalStaticVariableUsedInClassInitialization"})
 public class IgniteH2Indexing implements GridQueryIndexing {
-
-    public static final Pattern INTERNAL_CMD_RE = Pattern.compile("^(create|drop)\\s+index|^alter\\s+table|^copy",
-        Pattern.CASE_INSENSITIVE);
+    public static final Pattern INTERNAL_CMD_RE = Pattern.compile(
+        "^(create|drop)\\s+index|^alter\\s+table|^copy", Pattern.CASE_INSENSITIVE);
 
     /*
      * Register IO for indexes.
@@ -1481,9 +1479,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         // Execute.
-
         if (cmd instanceof SqlBulkLoadCommand) {
-            // DML
             try {
                 FieldsQueryCursor<List<?>> cursor = dmlProc.runDmlStatement(qry.getSql(), cmd);
 
@@ -1495,7 +1491,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
         else {
-            // DDL
             try {
                 FieldsQueryCursor<List<?>> cursor = ddlProc.runDdlStatement(qry.getSql(), cmd);
 

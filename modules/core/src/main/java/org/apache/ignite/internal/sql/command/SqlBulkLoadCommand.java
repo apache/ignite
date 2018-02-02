@@ -20,7 +20,7 @@ package org.apache.ignite.internal.sql.command;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadFormat;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadParameters;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
@@ -44,7 +44,6 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword
  * A parser for a COPY command (called 'bulk load' in the code, since word 'copy' is too generic).
  */
 public class SqlBulkLoadCommand implements SqlCommand {
-
     /** Local file name to send from client to server. */
     private String locFileName;
 
@@ -139,17 +138,24 @@ public class SqlBulkLoadCommand implements SqlCommand {
         String name = parseIdentifier(lex);
 
         try {
-            BulkLoadFormat fmt = BulkLoadFormat.createFormatFor(name);
+            BulkLoadCsvFormat fmt = (BulkLoadCsvFormat) BulkLoadFormat.createFormatFor(name);
 
             switch (fmt.name()) {
                 case BulkLoadCsvFormat.NAME:
-                    parseCsvOptions(lex, (BulkLoadCsvFormat) fmt);
+                    parseCsvOptions(lex, fmt);
 
                     break;
 
                 default:
                     throw new IllegalArgumentException();
             }
+
+            // IGNITE-7537 will introduce user-defined values
+            fmt.lineSeparator(BulkLoadCsvFormat.DEFAULT_LINE_SEPARATOR);
+            fmt.fieldSeparator(BulkLoadCsvFormat.DEFAULT_FIELD_SEPARATOR);
+            fmt.quoteChars(BulkLoadCsvFormat.DEFAULT_QUOTE_CHARS);
+            fmt.commentChars(BulkLoadCsvFormat.DEFAULT_COMMENT_CHARS);
+            fmt.escapeChars(BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS);
 
             inputFormat = fmt;
         }
@@ -203,8 +209,8 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
                     int sz = parseInt(lex);
 
-                    if (!BulkLoadParameters.isValidBatchSize(sz))
-                        throw error(lex, BulkLoadParameters.batchSizeErrorMsg(sz));
+                    if (!BulkLoadAckClientParameters.isValidBatchSize(sz))
+                        throw error(lex, BulkLoadAckClientParameters.batchSizeErrorMsg(sz));
 
                     batchSize = sz;
 

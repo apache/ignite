@@ -19,7 +19,6 @@ package org.apache.ignite.internal.jdbc.thin;
 
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
@@ -38,7 +37,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequestResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadAckResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteMultipleStatementsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
@@ -47,8 +46,6 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultInfo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
-
-
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -141,8 +138,8 @@ public class JdbcThinStatement implements Statement {
 
         assert res0 != null;
 
-        if (res0 instanceof JdbcBulkLoadBatchRequestResult)
-            res0 = sendFile((JdbcBulkLoadBatchRequestResult)res0);
+        if (res0 instanceof JdbcBulkLoadAckResult)
+            res0 = sendFile((JdbcBulkLoadAckResult)res0);
 
         if (res0 instanceof JdbcQueryExecuteResult) {
             JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
@@ -189,13 +186,12 @@ public class JdbcThinStatement implements Statement {
     }
 
     /**
-     * Sends a file to server in batches via multiple {@link JdbcBulkLoadBatchRequest}-s.
+     * Sends a file to server in batches via multiple {@link JdbcBulkLoadBatchRequest}s.
      *
      * @param cmdResult Result of invoking COPY command: contains server-parsed
      *    bulk load parameters, such as file name and batch size.
      */
-    private JdbcResult sendFile(JdbcBulkLoadBatchRequestResult cmdResult) throws SQLException {
-
+    private JdbcResult sendFile(JdbcBulkLoadAckResult cmdResult) throws SQLException {
         String fileName = cmdResult.params().localFileName();
         int batchSize = cmdResult.params().batchSize();
 
@@ -226,7 +222,7 @@ public class JdbcThinStatement implements Statement {
                     JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF));
             }
         }
-        catch (SQLException | IOException e) {
+        catch (Exception e) {
             try {
                 conn.sendRequest(new JdbcBulkLoadBatchRequest(
                     cmdResult.queryId(),
@@ -237,10 +233,10 @@ public class JdbcThinStatement implements Statement {
                 throw new SQLException("Cannot send finalization request: " + e1.getMessage(), e);
             }
 
-            if (e instanceof IOException)
-                throw new SQLException("Failed to read file: '" + fileName + "'", SqlStateCode.INTERNAL_ERROR, e);
-            else
+            if (e instanceof SQLException)
                 throw (SQLException) e;
+            else
+                throw new SQLException("Failed to read file: '" + fileName + "'", SqlStateCode.INTERNAL_ERROR, e);
         }
     }
 
