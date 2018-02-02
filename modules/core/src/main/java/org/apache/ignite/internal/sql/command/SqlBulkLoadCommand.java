@@ -174,7 +174,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
                     String arg = parseStrWithEscapeSeq(lex);
 
-                    format.lineSeparatorRe(F.isEmpty(arg) ? null : Pattern.compile(arg));
+                    format.lineSeparator(F.isEmpty(arg) ? null : Pattern.compile(arg));
 
                     break;
                 }
@@ -184,7 +184,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
                     String arg = parseStrWithEscapeSeq(lex);
 
-                    format.fieldSeparatorRe(F.isEmpty(arg) ? null : Pattern.compile(arg));
+                    format.fieldSeparator(F.isEmpty(arg) ? null : Pattern.compile(arg));
 
                     break;
                 }
