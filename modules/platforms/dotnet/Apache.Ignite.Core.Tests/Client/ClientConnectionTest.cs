@@ -308,10 +308,10 @@ namespace Apache.Ignite.Core.Tests.Client
             using (var client = StartClient())
             {
                 var cache = client.GetOrCreateCache<int, int>("foo");
-                for (var i = 0; i < count; i++)
+                Parallel.For(0, count, i =>
                 {
                     ops[i] = cache.PutAsync(i, i);
-                }
+                });
             }
 
             var completed = ops.Count(x => x.Status == TaskStatus.RanToCompletion);
