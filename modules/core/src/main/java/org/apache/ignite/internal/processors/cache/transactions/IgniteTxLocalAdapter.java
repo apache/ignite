@@ -39,6 +39,7 @@ import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
+import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.EntryProcessorResourceInjectorProxy;
@@ -786,7 +787,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             nearCached.innerReload();
                                     }
                                     else if (op == READ) {
-                                        if (cacheCtx.group().persistenceEnabled() && cctx.snapshot().needTxReadLogging()) {
+                                        CacheGroupContext grp = cacheCtx.group();
+
+                                        if (grp.persistenceEnabled() && grp.walEnabled() &&
+                                            cctx.snapshot().needTxReadLogging()) {
                                             ptr = cctx.wal().log(new DataRecord(new DataEntry(
                                                 cacheCtx.cacheId(),
                                                 txEntry.key(),

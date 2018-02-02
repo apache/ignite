@@ -88,8 +88,11 @@ public class DiscoCache {
     /** Alive nodes. */
     final Set<UUID> alives = new GridConcurrentHashSet<>();
 
-    /** */
+    /** Minimum {@link IgniteProductVersion} across all nodes including client nodes. */
     private final IgniteProductVersion minNodeVer;
+
+    /** Minimum {@link IgniteProductVersion} across alive server nodes. */
+    private final IgniteProductVersion minSrvNodeVer;
 
     /** */
     private final AffinityTopologyVersion topVer;
@@ -145,7 +148,8 @@ public class DiscoCache {
         Set<UUID> alives,
         @Nullable Map<UUID, Short> nodeIdToConsIdx,
         @Nullable  Map<Short, UUID> consIdxToNodeId,
-        IgniteProductVersion minNodeVer
+        IgniteProductVersion minNodeVer,
+        IgniteProductVersion minSrvNodeVer
     ) {
         this.topVer = topVer;
         this.state = state;
@@ -162,6 +166,7 @@ public class DiscoCache {
         this.nodeMap = nodeMap;
         this.alives.addAll(alives);
         this.minNodeVer = minNodeVer;
+        this.minSrvNodeVer = minSrvNodeVer;
         this.nodeIdToConsIdx = nodeIdToConsIdx;
         this.consIdxToNodeId = consIdxToNodeId;
 
@@ -202,6 +207,13 @@ public class DiscoCache {
     }
 
     /**
+     * @return Minimum server node version.
+     */
+    public IgniteProductVersion minimumServerNodeVersion() {
+        return minSrvNodeVer;
+    }
+
+    /**
      * @return Current cluster state.
      */
     public DiscoveryDataClusterState state() {
@@ -225,6 +237,14 @@ public class DiscoCache {
      */
     @Nullable public List<? extends BaselineNode> baselineNodes() {
         return baselineNodes;
+    }
+
+    /**
+     * @param nodeId Node ID to check.
+     * @return {@code True} if baseline is not set or the node is in the baseline topology.
+     */
+    public boolean baselineNode(UUID nodeId) {
+        return nodeIdToConsIdx == null || nodeIdToConsIdx.containsKey(nodeId);
     }
 
     /** @return All nodes. */
@@ -279,6 +299,14 @@ public class DiscoCache {
     @Nullable public Collection<ClusterNode> aliveBaselineNodes() {
         return baselineNodes == null ? null : F.viewReadOnly(baselineNodes, BASELINE_TO_CLUSTER, aliveBaselineNodePred);
 
+    }
+
+    /**
+     * @param node Node to check.
+     * @return {@code True} if the node is in baseline or if baseline is not set.
+     */
+    public boolean baselineNode(ClusterNode node) {
+        return nodeIdToConsIdx == null || nodeIdToConsIdx.get(node.id()) != null;
     }
 
     /**
@@ -424,7 +452,8 @@ public class DiscoCache {
             alives,
             nodeIdToConsIdx,
             consIdxToNodeId,
-            minNodeVer);
+            minNodeVer,
+            minSrvNodeVer);
     }
 
     /** {@inheritDoc} */

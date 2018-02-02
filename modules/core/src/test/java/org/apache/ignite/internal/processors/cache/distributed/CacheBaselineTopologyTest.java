@@ -30,8 +30,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
-import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -40,9 +38,10 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -85,12 +84,21 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
+        cfg.setConsistentId(igniteInstanceName);
+
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration().setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setPersistenceEnabled(true)
                     .setMaxSize(100 * 1024 * 1024)
                     .setInitialSize(100 * 1024 * 1024)
+            )
+            .setDataRegionConfigurations(
+                new DataRegionConfiguration()
+                .setName("memory")
+                .setPersistenceEnabled(false)
+                .setMaxSize(100 * 1024 * 1024)
+                .setInitialSize(100 * 1024 * 1024)
             )
             .setWalMode(WALMode.LOG_ONLY)
         );
@@ -109,7 +117,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         IgniteEx ignite = grid(0);
 
-        ignite.active(true);
+        ignite.cluster().active(true);
 
         awaitPartitionMapExchange();
 
@@ -251,6 +259,42 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    public void testClusterActiveWhileBaselineChanging() throws Exception {
+        startGrids(NODE_COUNT);
+
+        IgniteEx ig = grid(0);
+
+        ig.cluster().active(true);
+
+        assertTrue(ig.cluster().active());
+
+        startGrid(NODE_COUNT);
+
+        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+            try {
+                U.sleep(100);
+            }
+            catch (IgniteInterruptedCheckedException e) {
+                e.printStackTrace();
+            }
+            ig.cluster().setBaselineTopology(NODE_COUNT + 1);
+        });
+
+        while (!fut.isDone()) {
+            assertTrue(grid(0).cluster().active());
+            assertTrue(grid(0).context().state().publicApiActiveState(false));
+            assertTrue(grid(NODE_COUNT).cluster().active());
+            assertTrue(grid(NODE_COUNT).context().state().publicApiActiveState(false));
+        }
+
+        assertNull(String.valueOf(fut.error()), fut.error());
+
+        assertEquals(NODE_COUNT + 1, ig.cluster().currentBaselineTopology().size());
+    }
+
+    /**
      * @throws Exception If failed.
      */
     private void testBaselineTopologyChanges(boolean fromClient) throws Exception {
@@ -268,7 +312,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         else
             ignite = grid(0);
 
-        ignite.active(true);
+        ignite.cluster().active(true);
 
         awaitPartitionMapExchange();
 
@@ -280,14 +324,13 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             nodes.put(ig.cluster().localNode(), ig);
         }
 
-        IgniteCache<Integer, Integer> cache =
-            ignite.createCache(
-                new CacheConfiguration<Integer, Integer>()
-                    .setName(CACHE_NAME)
-                    .setCacheMode(PARTITIONED)
-                    .setBackups(1)
-                    .setPartitionLossPolicy(READ_ONLY_SAFE)
-            );
+        ignite.createCache(
+            new CacheConfiguration<Integer, Integer>()
+                .setName(CACHE_NAME)
+                .setCacheMode(PARTITIONED)
+                .setBackups(1)
+                .setPartitionLossPolicy(READ_ONLY_SAFE)
+        );
 
         int key = -1;
 
@@ -299,8 +342,6 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         }
 
         assert key >= 0;
-
-        int part = ignite.affinity(CACHE_NAME).partition(key);
 
         Collection<ClusterNode> initialMapping = ignite.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
 
@@ -467,7 +508,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         IgniteEx ig = grid(0);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         IgniteCache<Integer, Integer> cache =
             ig.createCache(
@@ -537,14 +578,13 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         primary = grid(primaryIdx);
         backup = grid(backupIdx);
 
-        boolean activated = GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                for (int i = 0; i < NODE_COUNT; i++)
-                  if (!grid(i).active())
-                      return false;
-
-                return true;
+        boolean activated = GridTestUtils.waitForCondition(() -> {
+            for (int i = 0; i < NODE_COUNT; i++) {
+                if (!grid(i).cluster().active())
+                    return false;
             }
+
+            return true;
         }, 10_000);
 
         assert activated;
@@ -573,7 +613,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         Ignite ignite3 = grid(3);
 
-        ignite3.active(true);
+        ignite3.cluster().active(true);
 
         CacheConfiguration<Object, Object> repCacheCfg = new CacheConfiguration<>("replicated")
             .setCacheMode(CacheMode.REPLICATED)
@@ -593,12 +633,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         startGrids(5);
 
-        GridTestUtils.waitForCondition(new PA() {
-            @Override
-            public boolean apply() {
-                return grid(0).cluster().active();
-            }
-        }, getTestTimeout());
+        GridTestUtils.waitForCondition(() -> grid(0).cluster().active(), getTestTimeout());
 
         for (int g = 0; g < 5; g++) {
             for (int i = 0; i < 100; i++)
@@ -614,7 +649,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         Ignite ignite3 = grid(3);
 
-        ignite3.active(true);
+        ignite3.cluster().active(true);
 
         stopGrid(0);
 
@@ -633,12 +668,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         startGrids(5);
 
-        GridTestUtils.waitForCondition(new PA() {
-            @Override
-            public boolean apply() {
-                return grid(0).cluster().active();
-            }
-        }, getTestTimeout());
+        GridTestUtils.waitForCondition(() -> grid(0).cluster().active(), getTestTimeout());
 
         for (int g = 0; g < 5; g++) {
             for (int i = 0; i < 2048; i++)
@@ -646,12 +676,32 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNonPersistentCachesIgnoreBaselineTopology() throws Exception {
+        Ignite ig = startGrids(4);
+
+        ig.cluster().active(true);
+
+        IgniteCache persistentCache = ig.createCache(CACHE_NAME);
+
+        IgniteCache inMemoryCache = ig.createCache(
+            new CacheConfiguration<>().setName(CACHE_NAME + 2).setDataRegionName("memory"));
+
+        Ignite newNode = startGrid(4);
+
+        awaitPartitionMapExchange();
+
+        assertEquals(0, ig.affinity(persistentCache.getName()).allPartitions(newNode.cluster().localNode()).length);
+        assertTrue(ig.affinity(inMemoryCache.getName()).allPartitions(newNode.cluster().localNode()).length > 0);
+    }
+
     /** */
     private Collection<BaselineNode> baselineNodes(Collection<ClusterNode> clNodes) {
         Collection<BaselineNode> res = new ArrayList<>(clNodes.size());
 
-        for (ClusterNode clN : clNodes)
-            res.add(clN);
+        res.addAll(clNodes);
 
         return res;
     }

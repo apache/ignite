@@ -93,6 +93,9 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
     /** Index name 2 escaped. */
     protected static final String IDX_NAME_2_ESCAPED = "idx_2";
 
+    /** Index name 2. */
+    protected static final String IDX_NAME_LOCAL = "IDX_LOC";
+
     /** Key ID field. */
     protected static final String FIELD_KEY = "id";
 
@@ -417,7 +420,7 @@ public abstract class AbstractSchemaSelfTest extends GridCommonAbstractTest {
      * @param sql Statement.
      */
     protected List<List<?>> execute(Ignite node, String sql) {
-        return queryProcessor(node).querySqlFieldsNoCache(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
+        return queryProcessor(node).querySqlFields(new SqlFieldsQuery(sql).setSchema("PUBLIC"), true).getAll();
     }
 
     /**

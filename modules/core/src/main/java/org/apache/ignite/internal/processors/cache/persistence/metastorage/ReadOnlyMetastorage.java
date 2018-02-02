@@ -17,7 +17,10 @@
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
 import java.io.Serializable;
+import java.util.Map;
+
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgnitePredicate;
 
 /**
  *
@@ -25,4 +28,13 @@ import org.apache.ignite.IgniteCheckedException;
 public interface ReadOnlyMetastorage {
     /** */
     Serializable read(String key) throws IgniteCheckedException;
+
+    /**
+     * Read all keys matching provided predicate.
+     *
+     * @param keyPred Key predicate.
+     * @return Matched key-value pairs.
+     * @throws IgniteCheckedException If failed.
+     */
+    Map<String, Serializable> readForPredicate(IgnitePredicate<String> keyPred) throws IgniteCheckedException;
 }

@@ -854,33 +854,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      */
     List<List<?>> execute(Connection conn, String sql, Object... args) {
         try {
-            try (PreparedStatement s = conn.prepareStatement(sql)) {
-                for (int i = 0; i < args.length; i++)
-                    s.setObject(i + 1, args[i]);
-
-                if (s.execute()) {
-                    List<List<?>> res = new ArrayList<>();
-
-                    try (ResultSet rs = s.getResultSet()) {
-                        ResultSetMetaData meta = rs.getMetaData();
-
-                        int cnt = meta.getColumnCount();
-
-                        while (rs.next()) {
-                            List<Object> row = new ArrayList<>(cnt);
-
-                            for (int i = 1; i <= cnt; i++)
-                                row.add(rs.getObject(i));
-
-                            res.add(row);
-                        }
-                    }
-
-                    return res;
-                }
-                else
-                    return Collections.emptyList();
-            }
+            return super.execute(conn, sql, args);
         }
         catch (SQLException e) {
             throw new IgniteException(e);
@@ -913,28 +887,9 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      * @param params Connection parameters.
      * @return Thin JDBC connection to specified node.
      */
-    private static Connection connect(IgniteEx node, String params) {
-        Collection<GridPortRecord> recs = node.context().ports().records();
-
-        GridPortRecord cliLsnrRec = null;
-
-        for (GridPortRecord rec : recs) {
-            if (rec.clazz() == ClientListenerProcessor.class) {
-                cliLsnrRec = rec;
-
-                break;
-            }
-        }
-
-        assertNotNull(cliLsnrRec);
-
+    Connection connect(IgniteEx node, String params) {
         try {
-            String connStr = "jdbc:ignite:thin://127.0.0.1:" + cliLsnrRec.port();
-
-            if (!F.isEmpty(params))
-                connStr += "/?" + params;
-
-            return DriverManager.getConnection(connStr);
+            return super.connect(node, params);
         }
         catch (SQLException e) {
             throw new AssertionError(e);

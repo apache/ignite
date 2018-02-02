@@ -35,7 +35,6 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
 import org.apache.ignite.internal.util.GridBoundedConcurrentOrderedSet;
@@ -197,6 +196,9 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
      */
     @SuppressWarnings("unchecked")
     @Override void processQueryRequest(UUID sndId, GridCacheQueryRequest req) {
+        assert req.mvccVersion() != null || !cctx.mvccEnabled() || req.cancel() ||
+            (req.type() == null && !req.fields()) : req; // Last assertion means next page request.
+
         if (req.cancel()) {
             cancelIds.add(new CancelMessageId(req.id(), sndId));
 
@@ -535,21 +537,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
             String clsName = qry.query().queryClassName();
 
-            // TODO IGNITE-6353
-            final MvccCoordinator mvccCrd;
-            final MvccVersion mvccVer;
-
-            if (cctx.mvccEnabled()) {
-                mvccCrd = cctx.affinity().mvccCoordinator(cctx.shared().exchange().readyAffinityVersion());
-
-                IgniteInternalFuture<MvccVersion> fut0 = cctx.shared().coordinators().requestQueryCounter(mvccCrd);
-
-                mvccVer = fut0.get();
-            }
-            else {
-                mvccCrd = null;
-                mvccVer = null;
-            }
+            MvccVersion mvccVer = qry.query().mvccVersion();
 
             final GridCacheQueryRequest req = new GridCacheQueryRequest(
                 cctx.cacheId(),
@@ -584,9 +572,6 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
             fut.listen(new CI1<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
                     cctx.io().removeOrderedHandler(false, topic);
-
-                    if (mvccCrd != null)
-                        cctx.shared().coordinators().ackQueryDone(mvccCrd, mvccVer);
                 }
             });
 
@@ -605,6 +590,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
         Collection<ClusterNode> nodes) throws IgniteCheckedException {
         assert !cctx.isLocal() : cctx.name();
         assert qry.type() == GridCacheQueryType.SCAN: qry;
+        assert qry.mvccVersion() != null || !cctx.mvccEnabled();
 
         GridCloseableIterator locIter0 = null;
 
@@ -630,7 +616,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
 
         final GridCacheQueryBean bean = new GridCacheQueryBean(qry, null, qry.<K, V>transform(), null);
 
-        final CacheQueryFuture fut = (CacheQueryFuture)queryDistributed(bean, nodes);
+        final CacheQueryFuture fut = queryDistributed(bean, nodes);
 
         return new GridCloseableIteratorAdapter() {
             /** */

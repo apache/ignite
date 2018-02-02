@@ -199,8 +199,8 @@ public class JdbcThinTcpIo {
 
             if (VER_2_3_0.equals(srvProtocolVer))
                 handshake(VER_2_3_0);
-            else if (VER_2_3_0.equals(srvProtocolVer) || VER_2_1_5.equals(srvProtocolVer))
-                handshake(srvProtocolVer);
+            else if (VER_2_1_5.equals(srvProtocolVer))
+                handshake(VER_2_1_5);
             else if (VER_2_1_0.equals(srvProtocolVer))
                 handshake_2_1_0();
             else {

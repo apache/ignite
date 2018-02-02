@@ -434,7 +434,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                         try {
                             switch (readMode) {
-                                case GET_ALL: {
+                                case GET: {
                                     accounts = cache.cache.getAll(keys);
 
                                     break;
@@ -452,7 +452,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                     break;
                                 }
 
-                                case SQL_ALL: {
+                                case SQL: {
                                     accounts = new HashMap<>();
 
                                     if (rnd.nextBoolean()) {
@@ -927,13 +927,13 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      */
     enum ReadMode {
         /** */
-        GET_ALL,
+        GET,
 
         /** */
         SCAN,
 
         /** */
-        SQL_ALL,
+        SQL,
 
         /** */
         SQL_SUM

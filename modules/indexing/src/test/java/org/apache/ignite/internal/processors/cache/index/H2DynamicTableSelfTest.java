@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.binary.BinaryObject;
@@ -889,11 +890,11 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
             personId2cityCode.put(i, cityCode);
 
-            queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("insert into \"Person2\"(\"id\", " +
+            queryProcessor(client()).querySqlFields(new SqlFieldsQuery("insert into \"Person2\"(\"id\", " +
                 "\"city\") values (?, ?)").setArgs(i, cityName), true).getAll();
         }
 
-        List<List<?>> res = queryProcessor(client()).querySqlFieldsNoCache(new SqlFieldsQuery("select \"id\", " +
+        List<List<?>> res = queryProcessor(client()).querySqlFields(new SqlFieldsQuery("select \"id\", " +
             "c.\"code\" from \"Person2\" p left join \"City\" c on p.\"city\" = c.\"name\" where c.\"name\" " +
             "is not null"), true).getAll();
 
@@ -1551,7 +1552,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      * @param sql Statement.
      */
     private List<List<?>> executeLocal(GridCacheContext cctx, String sql) {
-        return queryProcessor(cctx.grid()).querySqlFields(cctx, new SqlFieldsQuery(sql).setLocal(true), true).getAll();
+        return queryProcessor(cctx.grid()).querySqlFields(new SqlFieldsQuery(sql).setLocal(true), true).getAll();
     }
 
     /**

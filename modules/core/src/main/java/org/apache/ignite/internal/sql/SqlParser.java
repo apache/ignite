@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.sql.command.SqlBeginTransactionCommand;
+import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCommitTransactionCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
@@ -27,6 +28,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.BEGIN;
 import static org.apache.ignite.internal.sql.SqlKeyword.COMMIT;
+import static org.apache.ignite.internal.sql.SqlKeyword.ALTER;
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
 import static org.apache.ignite.internal.sql.SqlKeyword.HASH;
@@ -36,6 +38,7 @@ import static org.apache.ignite.internal.sql.SqlKeyword.ROLLBACK;
 import static org.apache.ignite.internal.sql.SqlKeyword.SPATIAL;
 import static org.apache.ignite.internal.sql.SqlKeyword.START;
 import static org.apache.ignite.internal.sql.SqlKeyword.TRANSACTION;
+import static org.apache.ignite.internal.sql.SqlKeyword.TABLE;
 import static org.apache.ignite.internal.sql.SqlKeyword.UNIQUE;
 import static org.apache.ignite.internal.sql.SqlKeyword.WORK;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
@@ -130,6 +133,9 @@ public class SqlParser {
                             cmd = processStart();
 
                             break;
+
+                        case ALTER:
+                            cmd = processAlter();
                     }
 
                     if (cmd != null) {
@@ -140,7 +146,7 @@ public class SqlParser {
                         return cmd;
                     }
                     else
-                        throw errorUnexpectedToken(lex, BEGIN, COMMIT, CREATE, DROP, ROLLBACK, START);
+                        throw errorUnexpectedToken(lex, BEGIN, COMMIT, CREATE, DROP, ROLLBACK, ALTER, START);
 
                 case QUOTED:
                 case MINUS:
@@ -254,5 +260,28 @@ public class SqlParser {
         skipIfMatchesKeyword(lex, TRANSACTION);
 
         return new SqlBeginTransactionCommand();
+    }
+
+    /**
+     * Process ALTER keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processAlter() {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
+            SqlCommand cmd = null;
+
+            switch (lex.token()) {
+                case TABLE:
+                    cmd = new SqlAlterTableCommand();
+
+                    break;
+            }
+
+            if (cmd != null)
+                return cmd.parse(lex);
+        }
+
+        throw errorUnexpectedToken(lex, TABLE);
     }
 }

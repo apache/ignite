@@ -23,7 +23,7 @@
 #include <vector>
 
 #include "ignite/odbc/parser.h"
-#include "ignite/odbc/system/socket_client.h"
+#include "ignite/odbc/socket_client.h"
 #include "ignite/odbc/config/connection_info.h"
 #include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
@@ -367,11 +367,8 @@ namespace ignite
              */
             Connection();
 
-            /** Socket. */
-            tcp::SocketClient socket;
-
-            /** State flag. */
-            bool connected;
+            /** Client Socket. */
+            std::auto_ptr<SocketClient> socket;
 
             /** Connection timeout in seconds. */
             int32_t timeout;

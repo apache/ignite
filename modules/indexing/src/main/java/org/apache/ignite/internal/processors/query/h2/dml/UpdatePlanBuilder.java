@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -123,27 +122,6 @@ public final class UpdatePlanBuilder {
                 else if (((GridSqlTable)o).dataTable().cache().mvccEnabled() != mvccEnabled)
                     throw new IllegalStateException("Using caches with different mvcc settings in same query is forbidden.");
             }
-        }
-
-        if (mvccEnabled && fieldsQuery != null) {
-            if (!(fieldsQuery instanceof SqlFieldsQueryEx)) {
-                SqlFieldsQueryEx tmp = new SqlFieldsQueryEx(fieldsQuery.getSql(), false);
-                tmp.setSkipReducerOnUpdate(true);
-
-                tmp.setSchema(fieldsQuery.getSchema());
-                tmp.setCollocated(fieldsQuery.isCollocated());
-                tmp.setDistributedJoins(fieldsQuery.isDistributedJoins());
-                tmp.setEnforceJoinOrder(fieldsQuery.isEnforceJoinOrder());
-                tmp.setTimeout(fieldsQuery.getTimeout(), TimeUnit.MILLISECONDS);
-                tmp.setLocal(fieldsQuery.isLocal());
-                tmp.setLazy(fieldsQuery.isLazy());
-                tmp.setPageSize(fieldsQuery.getPageSize());
-                tmp.setArgs(fieldsQuery.getArgs());
-
-                fieldsQuery = tmp;
-            }
-            else if (!((SqlFieldsQueryEx)fieldsQuery).isSkipReducerOnUpdate())
-                ((SqlFieldsQueryEx)fieldsQuery).setSkipReducerOnUpdate(true);
         }
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
@@ -700,7 +678,6 @@ public final class UpdatePlanBuilder {
     private static DmlDistributedPlanInfo checkPlanCanBeDistributed(IgniteH2Indexing idx,
         Connection conn, SqlFieldsQuery fieldsQry, boolean loc, String selectQry, String cacheName)
         throws IgniteCheckedException {
-
         if (loc || !isSkipReducerOnUpdateQuery(fieldsQry) || DmlUtils.isBatched(fieldsQry))
             return null;
 
