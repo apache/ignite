@@ -452,9 +452,8 @@ namespace Apache.Ignite.Core.Tests.Client
 
             // Connect client.
             var port = IgniteClientConfiguration.DefaultPort;
-            var cfg = new IgniteClientConfiguration()
+            var cfg = new IgniteClientConfiguration
             {
-                ReconnectDisabled = true,
                 EndPoints =
                 {
                     new IPEndPoint(IPAddress.Loopback, port),
