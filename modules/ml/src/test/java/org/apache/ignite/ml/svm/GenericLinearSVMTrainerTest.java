@@ -37,7 +37,7 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
     private static final int AMOUNT_OF_FEATURES = 2;
 
     /** */
-    private final Trainer<SVMLinearClassificationModel, LabeledDataset> trainer;
+    private final Trainer<SVMLinearBinaryClassificationModel, LabeledDataset> trainer;
 
     /** */
     private boolean isDistributed;
@@ -47,7 +47,7 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
 
     /** */
     GenericLinearSVMTrainerTest(
-        Trainer<SVMLinearClassificationModel, LabeledDataset> trainer,
+        Trainer<SVMLinearBinaryClassificationModel, LabeledDataset> trainer,
         boolean isDistributed,
         double precision) {
         super();
@@ -77,7 +77,7 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
             dataset.setLabel(i, lb);
         }
 
-        SVMLinearClassificationModel mdl = trainer.train(dataset);
+        SVMLinearBinaryClassificationModel mdl = trainer.train(dataset);
 
         TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[] {100, 10})), precision);
         TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[] {10, 100})), precision);
@@ -104,7 +104,7 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
             dataset.setLabel(i, lb);
         }
 
-        SVMLinearClassificationModel mdl = trainer.train(dataset);
+        SVMLinearBinaryClassificationModel mdl = trainer.train(dataset);
 
         TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[] {100, 10})), precision);
         TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[] {10, 100})), precision);
@@ -131,7 +131,7 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
             dataset.setLabel(i, lb);
         }
 
-        SVMLinearClassificationModel mdl = trainer.train(dataset);
+        SVMLinearBinaryClassificationModel mdl = trainer.train(dataset);
 
         TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[] {100, 10})), precision);
         TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[] {10, 100})), precision);
