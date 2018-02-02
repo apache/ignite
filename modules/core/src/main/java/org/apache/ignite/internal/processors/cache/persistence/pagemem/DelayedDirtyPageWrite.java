@@ -24,35 +24,37 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Not thread safe class for evicting one page with delay, not holding segment lock
+ * Not thread safe and stateful class for evicting one page with delay. This allows to write page content without
+ * holding segment lock. Page data is copied into temp buffer during {@link #writePage(FullPageId, ByteBuffer, int)}
+ * and then sent to real implementation by {@link #finishEviction()}.
  */
 public class DelayedDirtyPageWrite implements EvictedPageWriter {
-    /** Flush dirty page. */
+    /** Real flush dirty page implementation. */
     private final EvictedPageWriter flushDirtyPage;
 
     /** Page size. */
     private final int pageSize;
 
-    /** Byte buffer thread local. */
+    /** Thread local with byte buffers. */
     private final ThreadLocal<ByteBuffer> byteBufThreadLoc;
 
-    /** Tracker. */
+    /** Eviction pages tracker, used to register & unregister pages being written. */
     private final DelayedPageEvictionTracker tracker;
 
-    /** Full page id. */
+    /** Full page id to be written on {@link #finishEviction()} or null if nothing to write. */
     @Nullable private FullPageId fullPageId;
 
-    /** Byte buffer. */
+    /** Byte buffer with page data to be written on {@link #finishEviction()} or null if nothing to write. */
     @Nullable private ByteBuffer byteBuf;
 
-    /** Tag. */
-    private int tag;
+    /** Partition update tag to be used in{@link #finishEviction()} or null if -1 to write. */
+    private int tag = -1;
 
     /**
-     * @param flushDirtyPage
-     * @param byteBufThreadLoc
-     * @param pageSize
-     * @param tracker
+     * @param flushDirtyPage real writer to save page to store.
+     * @param byteBufThreadLoc thread local buffers to use for pages copying.
+     * @param pageSize page size.
+     * @param tracker tracker to lock/unlock page reads.
      */
     public DelayedDirtyPageWrite(EvictedPageWriter flushDirtyPage,
         ThreadLocal<ByteBuffer> byteBufThreadLoc, int pageSize,
@@ -63,15 +65,34 @@ public class DelayedDirtyPageWrite implements EvictedPageWriter {
         this.tracker = tracker;
     }
 
+    /** {@inheritDoc} */
+    @Override public void writePage(FullPageId fullPageId, ByteBuffer byteBuf, int tag) {
+        tracker.lock(fullPageId);
+
+        ByteBuffer tlb = byteBufThreadLoc.get();
+
+        tlb.rewind();
+
+        long writeAddr = GridUnsafe.bufferAddress(tlb);
+        long origBufAddr = GridUnsafe.bufferAddress(byteBuf);
+
+        GridUnsafe.copyMemory(origBufAddr, writeAddr, pageSize);
+
+        this.fullPageId = fullPageId;
+        this.byteBuf = tlb;
+        this.tag = tag;
+    }
+
     /**
-     * @throws IgniteCheckedException
+     * Runs actual write if required, no op if nothing was evicted.
+     * @throws IgniteCheckedException if write failed.
      */
     public void finishEviction() throws IgniteCheckedException {
-        if (byteBuf == null)
+        if (byteBuf == null && fullPageId == null)
             return;
 
         try {
-            flushDirtyPage.applyx(fullPageId, byteBuf, tag);
+            flushDirtyPage.writePage(fullPageId, byteBuf, tag);
         }
         finally {
             tracker.unlock(fullPageId);
@@ -80,24 +101,5 @@ public class DelayedDirtyPageWrite implements EvictedPageWriter {
             byteBuf = null;
             tag = -1;
         }
-    }
-
-
-    /** {@inheritDoc} */
-    @Override public void applyx(FullPageId fullPageId, ByteBuffer byteBuf, int tag) {
-        tracker.lock(fullPageId);
-
-        ByteBuffer tmpWriteBuf = byteBufThreadLoc.get();
-
-        tmpWriteBuf.rewind();
-
-        long writeAddr = GridUnsafe.bufferAddress(tmpWriteBuf);
-
-        long origBufAddr = GridUnsafe.bufferAddress(byteBuf);
-        GridUnsafe.copyMemory(origBufAddr, writeAddr, pageSize);
-
-        this.fullPageId = fullPageId;
-        this.byteBuf = tmpWriteBuf;
-        this.tag = tag;
     }
 }

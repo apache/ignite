@@ -266,7 +266,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         this.ctx = ctx;
         this.directMemoryProvider = directMemoryProvider;
         this.sizes = sizes;
-        delayedPageEvictionTracker = new DelayedPageEvictionTracker(pageSize, flushDirtyPage);
+        delayedPageEvictionTracker = new DelayedPageEvictionTracker(pageSize, flushDirtyPage, log);
         this.changeTracker = changeTracker;
         this.stateChecker = stateChecker;
         this.throttlingPlc = throttlingPlc != null ? throttlingPlc : ThrottlingPolicy.NONE;
@@ -1906,7 +1906,7 @@ public class PageMemoryImpl implements PageMemoryEx {
          *
          * @param fullPageId Candidate page full ID.
          * @param absPtr Absolute pointer of the page to evict.
-         * @param saveDirtyPage callable for save dirty page to persistent storage.
+         * @param saveDirtyPage implementation to save dirty page to persistent storage.
          * @return {@code True} if it is ok to evict this page, {@code false} if another page should be selected.
          * @throws IgniteCheckedException If failed to write page to the underlying store during eviction.
          */
@@ -1932,7 +1932,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     memMetrics.updatePageReplaceRate(U.currentTimeMillis() - PageHeader.readTimestamp(absPtr));
 
-                    saveDirtyPage.applyx(
+                    saveDirtyPage.writePage(
                         fullPageId,
                         wrapPointer(absPtr + PAGE_OVERHEAD, pageSize()),
                         partTag(
@@ -2001,7 +2001,7 @@ public class PageMemoryImpl implements PageMemoryEx {
          *
          * @return Relative address for evicted page.
          * @throws IgniteCheckedException If failed to evict page.
-         * @param saveDirtyPage Evicted page writer.
+         * @param saveDirtyPage Evicted page writer, implementation to save dirty page to persistent storage.
          */
         private long evictPage(EvictedPageWriter saveDirtyPage) throws IgniteCheckedException {
             assert getWriteHoldCount() > 0;

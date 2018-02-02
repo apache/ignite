@@ -21,14 +21,14 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 
 /**
- * Flush dirty page implementation. When possible, will be called by evictPage().
+ * Flush (write) dirty page implementation. When possible, will be called by evictPage().
  */
 public interface EvictedPageWriter {
     /**
-     * @param fullPageId
-     * @param byteBuf
-     * @param tag
-     * @throws IgniteCheckedException
+     * @param fullPageId Full page ID being evicted.
+     * @param byteBuf Buffer with page data.
+     * @param tag partition update tag, increasing counter.
+     * @throws IgniteCheckedException if page write failed.
      */
-    void applyx(FullPageId fullPageId, ByteBuffer byteBuf, int tag) throws IgniteCheckedException;
+    void writePage(FullPageId fullPageId, ByteBuffer byteBuf, int tag) throws IgniteCheckedException;
 }

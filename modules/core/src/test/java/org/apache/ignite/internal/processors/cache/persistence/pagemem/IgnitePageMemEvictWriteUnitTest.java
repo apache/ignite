@@ -18,6 +18,7 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -81,14 +82,17 @@ public class IgnitePageMemEvictWriteUnitTest {
 
         DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(regCfg);
         int pageSize = 4096;
-        EvictedPageWriter pageWriter = (FullPageId fullPageId, ByteBuffer byteBuf, int tag)->{
-            System.err.println("Evicting " + fullPageId);
+        AtomicInteger totalEvicted = new AtomicInteger();
+        EvictedPageWriter pageWriter = (FullPageId fullPageId, ByteBuffer byteBuf, int tag) -> {
+            log.info("Evicting " + fullPageId);
 
             Object tracker = U.field(pageMemory, "delayedPageEvictionTracker");
 
             Set<FullPageId> locked = U.field(tracker, "locked");
 
             assert locked.contains(fullPageId);
+
+            totalEvicted.incrementAndGet();
         };
 
         DirectMemoryProvider provider = new UnsafeMemoryProvider(log);
@@ -111,7 +115,7 @@ public class IgnitePageMemEvictWriteUnitTest {
 
         GridMultiCollectionWrapper<FullPageId> ids = memory.beginCheckpoint();
         int cpPages = ids.size();
-        System.err.println("Started CP with [" + cpPages + "] pages in it, created [" + markDirty + "] pages");
+        log.info("Started CP with [" + cpPages + "] pages in it, created [" + markDirty + "] pages");
 
         for (int i = 0; i < cpPages; i++) {
             long pageId = memory.allocatePage(1, 1, PageIdAllocator.FLAG_DATA);
@@ -124,8 +128,13 @@ public class IgnitePageMemEvictWriteUnitTest {
         Set<FullPageId> locked = U.field(tracker, "locked");
 
         assert locked.isEmpty();
+        assert totalEvicted.get() > 0;
     }
 
+    /**
+     * @param overallSize all regions size
+     * @return
+     */
     private long[] prepareSegmentSizes(long overallSize) {
         int segments = CPUS;
         long[] sizes = new long[segments + 1];

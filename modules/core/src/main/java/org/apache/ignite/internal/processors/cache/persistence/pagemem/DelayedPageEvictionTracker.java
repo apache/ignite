@@ -19,23 +19,37 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
 import org.apache.ignite.IgniteInterruptedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
 
 /**
- *
+ * Delayed page writes tracker. Provides delayed write implementations and allows to check if page is actually being
+ * written to page store.
  */
 public class DelayedPageEvictionTracker {
     /** Page size. */
     private final int pageSize;
 
-    /** Flush dirty page. */
+    /** Flush dirty page real implementation. */
     private final EvictedPageWriter flushDirtyPage;
 
-    /** Locked. */
-    private final Set<FullPageId> locked = new HashSet<>();
+    /** Logger. */
+    private final IgniteLogger log;
+
+    /**
+     * Page IDs which are locked for reading from store. Page content is being written right now. guarded by collection
+     * object monitor.
+     */
+    private final Collection<FullPageId> locked = new HashSet<>(Runtime.getRuntime().availableProcessors() * 2);
+
+    /**
+     * Has locked pages, flag for fast check if there are some pages, what were evicted and is being written. Write is
+     * guarded by {@link #locked} monitor.
+     */
+    private volatile boolean hasLockedPages;
 
     /** Byte buffer thread local. */
     private final ThreadLocal<ByteBuffer> byteBufThreadLoc
@@ -49,7 +63,10 @@ public class DelayedPageEvictionTracker {
         }
     };
 
-    /** Dirty page eviction thread local. */
+    /**
+     * Dirty page eviction thread local. Because page write {@link DelayedDirtyPageWrite} is stateful and not thread
+     * safe, this thread local protects from GC pressure on evict pages.
+     */
     private final ThreadLocal<DelayedDirtyPageWrite> dirtyPageEvictionThreadLoc
         = new ThreadLocal<DelayedDirtyPageWrite>() {
         @Override protected DelayedDirtyPageWrite initialValue() {
@@ -61,37 +78,52 @@ public class DelayedPageEvictionTracker {
     /**
      * @param pageSize Page size.
      * @param flushDirtyPage Flush dirty page.
+     * @param log Logger.
      */
-    public DelayedPageEvictionTracker(int pageSize, EvictedPageWriter flushDirtyPage) {
+    public DelayedPageEvictionTracker(int pageSize, EvictedPageWriter flushDirtyPage,
+        IgniteLogger log) {
         this.pageSize = pageSize;
         this.flushDirtyPage = flushDirtyPage;
+        this.log = log;
     }
 
     /**
-     * @return
+     * @return delayed page write implementation, finish method to be called to actually write page.
      */
     public DelayedDirtyPageWrite delayedPageWrite() {
         return dirtyPageEvictionThreadLoc.get();
     }
 
     /**
-     * @param id
+     * @param id full page ID to lock from read
      */
     public void lock(FullPageId id) {
         synchronized (locked) {
+            hasLockedPages = true;
+
             boolean add = locked.add(id);
+
             assert add : "Double locking of page for eviction is not possible";
         }
     }
 
     /**
-     * @param id
-     * @return
+     * Method is returned when page is available to be loaded from store.
+     *
+     * @param id full page ID to be loaded from store.
      */
     public void waitUnlock(FullPageId id) {
+        if (!hasLockedPages)
+            return;
+
         synchronized (locked) {
+            if (!hasLockedPages)
+                return;
+
             while (locked.contains(id)) {
-                System.err.println("Found evicting page [" + id + "], wait for finish eviction");
+                if (log.isDebugEnabled())
+                    log.debug("Found evicted page [" + id + "] which is being written to page store, wait for finish eviction");
+
                 try {
                     locked.wait();
                 }
@@ -103,13 +135,16 @@ public class DelayedPageEvictionTracker {
     }
 
     /**
-     * @param id
+     * @param id full page ID, which write has been finished, it is available for reading.
      */
     public void unlock(FullPageId id) {
         synchronized (locked) {
             boolean rmv = locked.remove(id);
 
             assert rmv : "Unlocking page ID never locked, id " + id;
+
+            if (locked.isEmpty())
+                hasLockedPages = false;
 
             locked.notifyAll();
         }
