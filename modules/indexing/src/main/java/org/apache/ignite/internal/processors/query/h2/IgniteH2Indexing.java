@@ -1481,7 +1481,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         // Execute.
         if (cmd instanceof SqlBulkLoadCommand) {
             try {
-                FieldsQueryCursor<List<?>> cursor = dmlProc.runDmlStatement(qry.getSql(), cmd);
+                FieldsQueryCursor<List<?>> cursor = dmlProc.runNativeDmlStatement(qry.getSql(), cmd);
 
                 return Collections.singletonList(cursor);
             }

@@ -984,13 +984,12 @@ public class DmlStatementsProcessor {
      * @param sql The SQL command text to execute.
      * @param cmd The command to execute.
      * @return The cursor returned by the statement.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteSQLException If failed.
      */
-    public FieldsQueryCursor<List<?>> runDmlStatement(String sql, SqlCommand cmd) throws IgniteCheckedException {
+    public FieldsQueryCursor<List<?>> runNativeDmlStatement(String sql, SqlCommand cmd) {
         try {
-            if (cmd instanceof SqlBulkLoadCommand) {
+            if (cmd instanceof SqlBulkLoadCommand)
                 return processBulkLoadCommand((SqlBulkLoadCommand)cmd);
-            }
             else
                 throw new IgniteSQLException("Unsupported DML operation: " + sql,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);

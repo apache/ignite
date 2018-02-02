@@ -37,9 +37,6 @@ public class BulkLoadAckClientParameters {
     /** Size of a file batch for COPY command. */
     public static final int DEFAULT_BATCH_SIZE = 4 * 1024 * 1024;
 
-    /** The default input charset. */
-    public static final Charset DEFAULT_INPUT_CHARSET = Charset.forName("UTF-8");
-
     /** Local name of the file to send to server */
     @NotNull private final String locFileName;
 
