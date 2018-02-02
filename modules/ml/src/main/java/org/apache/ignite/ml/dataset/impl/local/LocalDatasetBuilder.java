@@ -67,7 +67,7 @@ public class LocalDatasetBuilder<K, V> implements DatasetBuilder<K, V> {
 
         int ptr = 0;
         for (int part = 0; part < partitions; part++) {
-            int cnt = Math.max(partSize, upstreamMap.size() - ptr);
+            int cnt = part == partitions - 1 ? upstreamMap.size() - ptr : Math.min(partSize, upstreamMap.size() - ptr);
 
             C ctx = partCtxBuilder.build(
                 new IteratorWindow<>(firstKeysIter, k -> new UpstreamEntry<>(k, upstreamMap.get(k)), cnt),
