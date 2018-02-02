@@ -21,10 +21,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 
@@ -44,22 +42,7 @@ public class IgniteSqlMetaViewProcessor {
     public void start(GridKernalContext ctx, IgniteH2Indexing idx) {
         IgniteLogger log = ctx.log(IgniteSqlMetaViewProcessor.class);
 
-        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_SQL_DISABLE_META_VIEWS)) {
-            log.info("Meta views are disabled");
-
-            return;
-        }
-
         log.info("Starting meta views processor");
-
-        try {
-            idx.executeStatement("INFORMATION_SCHEMA", "CREATE SCHEMA IF NOT EXISTS " + SCHEMA_NAME);
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Failed to create schema: " + SCHEMA_NAME, e);
-
-            throw new IgniteException(e);
-        }
 
         Connection c = idx.connectionForSchema(SCHEMA_NAME);
 
