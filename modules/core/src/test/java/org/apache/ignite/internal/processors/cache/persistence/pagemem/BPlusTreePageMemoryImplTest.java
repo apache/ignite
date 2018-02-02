@@ -69,10 +69,8 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
             provider, sizes,
             sharedCtx,
             PAGE_SIZE,
-            new CIX3<FullPageId, ByteBuffer, Integer>() {
-                @Override public void applyx(FullPageId fullPageId, ByteBuffer byteBuf, Integer tag) {
-                    assert false : "No evictions should happen during the test";
-                }
+            (fullPageId, byteBuf, tag) -> {
+                assert false : "No evictions should happen during the test";
             },
             new CIX3<Long, FullPageId, PageMemoryEx>(){
                 @Override public void applyx(Long aLong, FullPageId fullPageId, PageMemoryEx ex) {

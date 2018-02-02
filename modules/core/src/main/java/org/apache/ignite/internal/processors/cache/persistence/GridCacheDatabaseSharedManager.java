@@ -977,23 +977,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             ),
             cctx,
             memCfg.getPageSize(),
-            new GridInClosure3X<FullPageId, ByteBuffer, Integer>() {
-                @Override public void applyx(
-                    FullPageId fullId,
-                    ByteBuffer pageBuf,
-                    Integer tag
-                ) throws IgniteCheckedException {
-                    // First of all, write page to disk.
-                    storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);
+            (fullId, pageBuf, tag) -> {
+                // First of all, write page to disk.
+                storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);
 
-                    // Only after write we can write page into snapshot.
-                    snapshotMgr.flushDirtyPageHandler(fullId, pageBuf, tag);
+                // Only after write we can write page into snapshot.
+                snapshotMgr.flushDirtyPageHandler(fullId, pageBuf, tag);
 
-                    AtomicInteger cntr = evictedPagesCntr;
+                AtomicInteger cntr = evictedPagesCntr;
 
-                    if (cntr != null)
-                        cntr.incrementAndGet();
-                }
+                if (cntr != null)
+                    cntr.incrementAndGet();
             },
             changeTracker,
             this,
