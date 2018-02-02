@@ -106,6 +106,7 @@ namespace Apache.Ignite.Core.Client
             BinaryProcessor = cfg.BinaryProcessor;
             SslStreamFactory = cfg.SslStreamFactory;
             EndPoints = cfg.EndPoints.ToList();
+            ReconnectDisabled = cfg.ReconnectDisabled;
         }
 
         /// <summary>
