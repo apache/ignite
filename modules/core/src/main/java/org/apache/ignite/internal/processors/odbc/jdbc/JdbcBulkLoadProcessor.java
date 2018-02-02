@@ -26,6 +26,51 @@ import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchR
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR;
 
+/**
+ * JDBC wrapper around {@link BulkLoadProcessor} that provides extra logic.
+ *
+ * Unlike other "single shot" request-reply commands, the
+ * COPY command the client-server interaction looks like this:
+ *
+ * <pre>
+ * Thin JDBC client                            Server
+ *        |                                       |
+ *        |------- JdbcQueryExecuteRequest ------>|
+ *        |         with SQL copy command         |
+ *        |                                       |
+ *        |<---- JdbcBulkLoadAckResult -----------|
+ *        | with BulkLoadAckClientParameters      |
+ *        | containing file name and batch size.  |
+ *        |                                       |
+ * (open the file,                                |
+ *  read portions and send them)                  |
+ *        |                                       |
+ *        |------- JdbcBulkLoadBatchRequest #1 -->|
+ *        | with a portion of input file.         |
+ *        |                                       |
+ *        |<--- JdbcQueryExecuteResult -----------|
+ *        | with current update counter.          |
+ *        |                                       |
+ *        |------- JdbcBulkLoadBatchRequest #2--->|
+ *        | with a portion of input file.         |
+ *        |                                       |
+ *        |<--- JdbcQueryExecuteResult -----------|
+ *        | with current update counter.          |
+ *        |                                       |
+ *        |------- JdbcBulkLoadBatchRequest #3--->|
+ *        | with the LAST portion of input file.  |
+ *        |                                       |
+ *        |<--- JdbcQueryExecuteResult -----------|
+ *        | with the final update counter.        |
+ *        |                                       |
+ * (close the file)                               |
+ *        |                                       |
+ * </pre>
+ *
+ * In case of input file reading error, a flag is carried to the server:
+ * {@link JdbcBulkLoadBatchRequest#CMD_FINISHED_ERROR} and the processing
+ * is aborted on the both sides.
+ */
 public class JdbcBulkLoadProcessor {
     /** A core processor that handles incoming data packets. */
     private final BulkLoadProcessor processor;
@@ -81,7 +126,7 @@ public class JdbcBulkLoadProcessor {
     /**
      * Aborts processing and closes the underlying objects.
      *
-     * @param isAbort true if the processing is aborted.
+     * @param isAbort true if the processing is aborted, false when terminated normally.
      */
     public void close(boolean isAbort) {
         processor.close(isAbort);

@@ -41,8 +41,8 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
      * or null if everything was processed. */
     private byte[] leftover;
 
-    /** True if we've met the end of input. */
-    private boolean isEof;
+    /** True once we've reached the end of input. */
+    private boolean isEndOfInput;
 
     /**
      * Creates charset decoder block.
@@ -54,27 +54,17 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
             .onMalformedInput(CodingErrorAction.REPLACE)
             .onUnmappableCharacter(CodingErrorAction.REPLACE);
 
-        isEof = false;
-
+        isEndOfInput = false;
         leftover = null;
-    }
-
-    /**
-     * Returns the eof.
-     *
-     * @return eof.
-     */
-    public boolean isEof() {
-        return isEof;
     }
 
     /** {@inheritDoc} */
     public void accept(byte[] data, boolean isLastAppend) throws IgniteCheckedException {
         assert nextBlock != null;
 
-        assert !isEof : "convertBytes() called after EOF";
+        assert !isEndOfInput : "convertBytes() called after end of input";
 
-        isEof = isLastAppend;
+        isEndOfInput = isLastAppend;
 
         if (leftover == null && data.length == 0) {
             nextBlock.accept(new char[0], isLastAppend);
@@ -103,20 +93,20 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
         CharBuffer outBuf = CharBuffer.allocate(outBufLen);
 
         for (;;) {
-            CoderResult res = charsetDecoder.decode(dataBuf, outBuf, isEof);
+            CoderResult res = charsetDecoder.decode(dataBuf, outBuf, isEndOfInput);
 
             if (res.isUnderflow()) {
                 // End of input buffer reached. Either skip the partial character at the end or wait for the next batch.
-                if (!isEof && dataBuf.remaining() > 0)
+                if (!isEndOfInput && dataBuf.remaining() > 0)
                     leftover = Arrays.copyOfRange(dataBuf.array(),
                         dataBuf.arrayOffset() + dataBuf.position(), dataBuf.limit());
 
-                if (isEof)
-                    charsetDecoder.flush(outBuf);
+                if (isEndOfInput)
+                    charsetDecoder.flush(outBuf); // See {@link CharsetDecoder} class javadoc for the protocol.
 
                 if (outBuf.position() > 0)
                     nextBlock.accept(Arrays.copyOfRange(outBuf.array(), outBuf.arrayOffset(), outBuf.position()),
-                        isEof);
+                        isEndOfInput);
 
                 break;
             }
@@ -124,7 +114,8 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
             if (res.isOverflow()) { // Not enough space in the output buffer, flush it and retry.
                 assert outBuf.position() > 0;
 
-                nextBlock.accept(Arrays.copyOfRange(outBuf.array(), outBuf.arrayOffset(), outBuf.position()), isEof);
+                nextBlock.accept(Arrays.copyOfRange(outBuf.array(), outBuf.arrayOffset(), outBuf.position()),
+                    isEndOfInput);
 
                 outBuf.flip();
 

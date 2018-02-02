@@ -42,17 +42,16 @@ import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
-/**
- * Data streaming test.
- */
+/** COPY command test for the regular JDBC driver. */
 public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
     /** JDBC URL. */
-    private static final String BASE_URL = CFG_URL_PREFIX + "cache=default@modules/clients/src/test/config/jdbc-config.xml";
+    private static final String BASE_URL = CFG_URL_PREFIX +
+        "cache=default@modules/clients/src/test/config/jdbc-config.xml";
 
     /** Connection. */
     protected Connection conn;
 
-    /** */
+    /** The logger. */
     protected transient IgniteLogger log;
 
     /** {@inheritDoc} */
@@ -105,6 +104,8 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Establishes the JDBC connection.
+     *
      * @return Connection to use for the test.
      * @throws Exception if failed.
      */
@@ -124,7 +125,7 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * This is more a placeholder for implementation of IGNITE-7553
+     * This is more a placeholder for implementation of IGNITE-7553.
      *
      * @throws Exception if failed.
      */
@@ -144,7 +145,7 @@ public class JdbcBulkLoadSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Person.
+     * A test class for creating a query entity.
      */
     @SuppressWarnings("UnusedDeclaration")
     private static class Person implements Serializable {

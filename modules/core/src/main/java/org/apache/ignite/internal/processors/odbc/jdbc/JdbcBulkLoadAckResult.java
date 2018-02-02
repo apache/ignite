@@ -20,14 +20,15 @@ package org.apache.ignite.internal.processors.odbc.jdbc;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadClientParameters;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * A request from server (in form of reply) to send files from client to server,
- * which is sent as a response to SQL COPY command (see IGNITE-6917 for details).
+ * A reply from server to SQL COPY command, which is essentially a request from server to client
+ * to send files from client to server (see IGNITE-6917 for details).
  *
+ * @see JdbcBulkLoadProcessor for the protocol.
  * @see SqlBulkLoadCommand
  */
 public class JdbcBulkLoadAckResult extends JdbcResult {
@@ -38,7 +39,7 @@ public class JdbcBulkLoadAckResult extends JdbcResult {
      * Bulk load parameters, which are parsed on the server side and sent to client to specify
      * what files to send, batch size, etc.
      */
-    private BulkLoadClientParameters params;
+    private BulkLoadAckClientParameters params;
 
     /**Creates uninitialized bulk load batch request result. */
     public JdbcBulkLoadAckResult() {
@@ -51,10 +52,10 @@ public class JdbcBulkLoadAckResult extends JdbcResult {
     /**
      * Constructs a request from server (in form of reply) to send files from client to server.
      *
-     * @param queryId Query ID to send in further {@link JdbcBulkLoadBatchRequest}-s.
+     * @param queryId Query ID to send in further {@link JdbcBulkLoadBatchRequest}s.
      * @param params Various parameters for sending batches from client side.
      */
-    public JdbcBulkLoadAckResult(long queryId, BulkLoadClientParameters params) {
+    public JdbcBulkLoadAckResult(long queryId, BulkLoadAckClientParameters params) {
         super(BULK_LOAD_ACK);
 
         this.queryId = queryId;
@@ -75,7 +76,7 @@ public class JdbcBulkLoadAckResult extends JdbcResult {
      *
      * @return The parameters for the client.
      */
-    public BulkLoadClientParameters params() {
+    public BulkLoadAckClientParameters params() {
         return params;
     }
 
@@ -97,10 +98,10 @@ public class JdbcBulkLoadAckResult extends JdbcResult {
         String locFileName = reader.readString();
         int batchSize = reader.readInt();
 
-        if (!BulkLoadClientParameters.isValidBatchSize(batchSize))
-            throw new BinaryObjectException(BulkLoadClientParameters.batchSizeErrorMsg(batchSize));
+        if (!BulkLoadAckClientParameters.isValidBatchSize(batchSize))
+            throw new BinaryObjectException(BulkLoadAckClientParameters.batchSizeErrorMsg(batchSize));
 
-        params = new BulkLoadClientParameters(locFileName, batchSize);
+        params = new BulkLoadAckClientParameters(locFileName, batchSize);
     }
 
     /** {@inheritDoc} */

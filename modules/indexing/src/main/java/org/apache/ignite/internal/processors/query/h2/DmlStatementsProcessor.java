@@ -45,7 +45,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCacheWriter;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadClientParameters;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParser;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadStreamerWriter;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
@@ -1013,7 +1013,7 @@ public class DmlStatementsProcessor {
      */
     public FieldsQueryCursor<List<?>> processBulkLoadCommand(SqlBulkLoadCommand cmd) throws IgniteCheckedException {
         if (cmd.batchSize() == null)
-            cmd.batchSize(BulkLoadClientParameters.DEFAULT_BATCH_SIZE);
+            cmd.batchSize(BulkLoadAckClientParameters.DEFAULT_BATCH_SIZE);
 
         GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
@@ -1035,7 +1035,7 @@ public class DmlStatementsProcessor {
 
         BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter);
 
-        BulkLoadClientParameters params = new BulkLoadClientParameters(cmd.localFileName(), cmd.batchSize());
+        BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.batchSize());
 
         return new BulkLoadContextCursor(processor, params);
     }

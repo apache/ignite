@@ -17,6 +17,20 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.sql.BatchUpdateException;
+import java.sql.ParameterMetaData;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
@@ -24,7 +38,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadClientParameters;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -45,21 +59,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-
-import java.sql.BatchUpdateException;
-import java.sql.ParameterMetaData;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
@@ -101,7 +100,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Current queries cursors. */
     private final ConcurrentHashMap<Long, JdbcQueryCursor> qryCursors = new ConcurrentHashMap<>();
 
-    /** Current queries cursors. */
+    /** Current bulk load processors. */
     private final ConcurrentHashMap<Long, JdbcBulkLoadProcessor> bulkLoadRequests = new ConcurrentHashMap<>();
 
     /** Distributed joins flag. */
@@ -231,8 +230,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         JdbcBulkLoadProcessor processor = bulkLoadRequests.get(req.queryId());
 
         if (ctx == null)
-            return new JdbcResponse(IgniteQueryErrorCode.UNEXPECTED_OPERATION, "Unknown query ID: " + req.queryId()
-                    + ". Bulk load session may have been reclaimed due to timeout.");
+            return new JdbcResponse(IgniteQueryErrorCode.UNEXPECTED_OPERATION, "Unknown query ID: "
+                + req.queryId() + ". Bulk load session may have been reclaimed due to timeout.");
 
         try {
             processor.processBatch(req);
@@ -377,7 +376,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 BulkLoadContextCursor blCur = (BulkLoadContextCursor) fieldsCur;
 
                 BulkLoadProcessor blProcessor = blCur.bulkLoadProcessor();
-                BulkLoadClientParameters clientParams = blCur.clientParams();
+                BulkLoadAckClientParameters clientParams = blCur.clientParams();
 
                 bulkLoadRequests.put(qryId, new JdbcBulkLoadProcessor(blProcessor));
 

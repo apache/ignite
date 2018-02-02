@@ -20,7 +20,7 @@ package org.apache.ignite.internal.sql.command;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadFormat;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadClientParameters;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
@@ -137,6 +137,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
         try {
             BulkLoadCsvFormat fmt = (BulkLoadCsvFormat) BulkLoadFormat.createFormatFor(name);
 
+            // IGNITE-7537 will introduce user-defined values
             fmt.lineSeparator(BulkLoadCsvFormat.DEFAULT_LINE_SEPARATOR);
             fmt.fieldSeparator(BulkLoadCsvFormat.DEFAULT_FIELD_SEPARATOR);
             fmt.quoteChars(BulkLoadCsvFormat.DEFAULT_QUOTE_CHARS);
@@ -164,8 +165,8 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
                     int sz = parseInt(lex);
 
-                    if (!BulkLoadClientParameters.isValidBatchSize(sz))
-                        throw error(lex, BulkLoadClientParameters.batchSizeErrorMsg(sz));
+                    if (!BulkLoadAckClientParameters.isValidBatchSize(sz))
+                        throw error(lex, BulkLoadAckClientParameters.batchSizeErrorMsg(sz));
 
                     batchSize = sz;
 

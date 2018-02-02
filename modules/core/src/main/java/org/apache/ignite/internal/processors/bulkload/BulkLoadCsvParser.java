@@ -38,7 +38,7 @@ public class BulkLoadCsvParser extends BulkLoadParser {
     /**
      * Creates bulk load CSV parser.
      *
-     *  @param format Format options (parsed from COPY command on the server side).
+     *  @param format Format options (parsed from COPY command).
      */
     public BulkLoadCsvParser(BulkLoadCsvFormat format) {
         inputBlock = new CharsetDecoderBlock(BulkLoadFormat.DEFAULT_INPUT_CHARSET);

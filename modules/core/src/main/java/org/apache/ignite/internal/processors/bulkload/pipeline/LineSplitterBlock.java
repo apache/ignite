@@ -25,7 +25,8 @@ import java.util.regex.Pattern;
 /**
  * A {@link PipelineBlock}, which splits input stream of char[] into lines using the specified {@link Pattern}
  * as line separator. Next block {@link PipelineBlock#accept(Object, boolean)} is invoked for each line.
- * Leftover characters are remembered and used during processing the next input batch, unless EOF flag is specified.
+ * Leftover characters are remembered and used during processing the next input batch,
+ * unless isLastPortion flag is specified.
  */
 public class LineSplitterBlock extends PipelineBlock<char[], String> {
     /** Line separator pattern */

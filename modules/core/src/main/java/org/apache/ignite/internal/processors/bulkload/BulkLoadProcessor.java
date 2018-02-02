@@ -93,9 +93,13 @@ public class BulkLoadProcessor {
     /**
      * Aborts processing and closes the underlying objects ({@link IgniteDataStreamer}).
      *
-     * @param isAbort true if the processing did not terminate normally.
+     * @param isAbort true if the processing is aborted, false when terminated normally.
+     *     The parameter is reserved for aborting transactions once they are available.
      */
     public void close(boolean isAbort) {
+        if (isClosed)
+            return;
+
         isClosed = true;
 
         outputStreamer.close();

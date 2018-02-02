@@ -44,6 +44,7 @@ import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
  * COPY statement tests.
  */
 public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
+    /** Default table name. */
     private static final String TBL_NAME = "Person";
 
     /** JDBC statement. */
@@ -51,22 +52,25 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
     /** A CSV file with zero records */
     private static final String BULKLOAD_EMPTY_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload0.csv")).getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload0.csv"))
+            .getAbsolutePath();
 
     /** A CSV file with one record. */
     private static final String BULKLOAD_ONE_LINE_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload1.csv")).getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload1.csv"))
+            .getAbsolutePath();
 
     /** A CSV file with two records. */
     private static final String BULKLOAD_TWO_LINES_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2.csv")).getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2.csv"))
+            .getAbsolutePath();
 
     /** A file with UTF records. */
     private static final String BULKLOAD_UTF_CSV_FILE =
         Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2_utf.csv"))
             .getAbsolutePath();
 
-    /** Basic COPY statement used in many tests. */
+    /** Basic COPY statement used in majority of the tests. */
     public static final String BASIC_SQL_COPY_STMT =
         "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\"" +
             " into " + TBL_NAME +
@@ -341,9 +345,10 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Checks that bulk load works when we create table using 'CREATE TABLE' command
-     * (the other tests use {@link CacheConfiguration#setIndexedTypes(Class[])} to create a
-     * table).
+     * Checks that bulk load works when we create table using 'CREATE TABLE' command.
+     *
+     * The majority of the tests in this class use {@link CacheConfiguration#setIndexedTypes(Class[])}
+     * to create the table.
      *
      * @throws SQLException If failed.
      */
@@ -364,9 +369,10 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Checks that bulk load works when we create table with {@link CacheConfiguration#setQueryEntities(Collection)}
-     * (the other tests use {@link CacheConfiguration#setIndexedTypes(Class[])} to create a
-     * table).
+     * Checks that bulk load works when we create table with {@link CacheConfiguration#setQueryEntities(Collection)}.
+     *
+     * The majority of the tests in this class use {@link CacheConfiguration#setIndexedTypes(Class[])}
+     * to create a table.
      *
      * @throws SQLException If failed.
      */
@@ -464,7 +470,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Verifies that COPY command reports error when used with PreparedStatement parameter.
+     * Verifies that COPY command reports an error when used with PreparedStatement parameter.
      *
      * @throws SQLException If failed.
      */
@@ -502,10 +508,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
     /**
      * Verifies that COPY command is rejected by PreparedStatement.executeQuery().
-     *
-     * @throws SQLException If failed.
      */
-    public void testPreparedStatementWithExecuteQuery() throws SQLException {
+    public void testPreparedStatementWithExecuteQuery() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 PreparedStatement pstmt = conn.prepareStatement(BASIC_SQL_COPY_STMT);

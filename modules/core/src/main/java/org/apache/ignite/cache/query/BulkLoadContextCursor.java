@@ -17,7 +17,7 @@
 
 package org.apache.ignite.cache.query;
 
-import org.apache.ignite.internal.processors.bulkload.BulkLoadClientParameters;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.jetbrains.annotations.NotNull;
 
@@ -27,22 +27,24 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * A special FieldsQueryCursor subclass that is used as a sentinel to hold from bulk load (COPY) command: the bulk load
- * batch processor and parameters to send to the client.
+ * A special FieldsQueryCursor subclass that is used as a sentinel to transfer data from bulk load
+ * (COPY) command to the JDBC or other client-facing driver: the bulk load batch processor
+ * and parameters to send to the client.
  * */
 public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
     /** Bulk load context from SQL command. */
     private final BulkLoadProcessor processor;
 
     /** Bulk load parameters to send to the client. */
-    private final BulkLoadClientParameters clientParams;
+    private final BulkLoadAckClientParameters clientParams;
 
     /**
      * Creates a cursor.
      *
      * @param processor Bulk load context object to store.
+     * @param clientParams Parameters to send to client.
      */
-    public BulkLoadContextCursor(BulkLoadProcessor processor, BulkLoadClientParameters clientParams) {
+    public BulkLoadContextCursor(BulkLoadProcessor processor, BulkLoadAckClientParameters clientParams) {
         this.processor = processor;
         this.clientParams = clientParams;
     }
@@ -61,7 +63,7 @@ public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
      *
      * @return The bulk load parameters to send to the client.
      */
-    public BulkLoadClientParameters clientParams() {
+    public BulkLoadAckClientParameters clientParams() {
         return clientParams;
     }
 
@@ -85,11 +87,11 @@ public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
         if (idx < 0 || idx > 1)
             throw new IndexOutOfBoundsException();
 
-        return idx == 0 ? "processor" : "clientParams"; // dummy stub
+        return idx == 0 ? "processor" : "clientParams";
     }
 
     /** {@inheritDoc} */
     @Override public int getColumnsCount() {
-        return 2; // dummy stub
+        return 2;
     }
 }

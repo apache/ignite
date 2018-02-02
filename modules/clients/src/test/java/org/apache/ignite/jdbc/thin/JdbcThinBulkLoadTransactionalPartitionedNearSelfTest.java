@@ -20,7 +20,7 @@ package org.apache.ignite.jdbc.thin;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 
-/** */
+/** A {@link JdbcThinBulkLoadAbstractSelfTest} for partitioned transactional near-cache mode. */
 public class JdbcThinBulkLoadTransactionalPartitionedNearSelfTest extends JdbcThinBulkLoadAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {

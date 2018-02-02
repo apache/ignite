@@ -46,6 +46,7 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
 
     /** {@inheritDoc} */
     @Override public void accept(String input, boolean isLastPortion) throws IgniteCheckedException {
+        // Currently we don't process quoted field delimiter properly, will be fixed in IGNITE-7537.
         String[] fields = fieldDelimiter.split(input);
 
         for (int i = 0; i < fields.length; i++)

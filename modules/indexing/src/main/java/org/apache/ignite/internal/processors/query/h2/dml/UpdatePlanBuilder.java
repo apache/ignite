@@ -469,8 +469,10 @@ public final class UpdatePlanBuilder {
                 hasValProps = true;
         }
 
-        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps, true, false);
-        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps, false, false);
+        KeyValueSupplier keySupplier = createSupplier(cctx, desc.type(), keyColIdx, hasKeyProps,
+            true, false);
+        KeyValueSupplier valSupplier = createSupplier(cctx, desc.type(), valColIdx, hasValProps,
+            false, false);
 
         return new UpdatePlan(
             UpdateMode.BULK_LOAD,

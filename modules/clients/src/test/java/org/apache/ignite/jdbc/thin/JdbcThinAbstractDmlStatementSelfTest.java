@@ -21,7 +21,6 @@ import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Collections;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
