@@ -375,7 +375,7 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 // Connect to Ignite REST endpoint.
                 var cfg = new IgniteClientConfiguration {Host = "127.0.0.1", Port = 11211};
-                var ex = Assert.Throws<SocketException>(() => Ignition.StartClient(cfg));
+                var ex = GetSocketException(Assert.Catch(() => Ignition.StartClient(cfg)));
                 Assert.AreEqual(SocketError.ConnectionAborted, ex.SocketErrorCode);
             }
         }
