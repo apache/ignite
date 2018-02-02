@@ -650,6 +650,9 @@ public abstract class PagesList extends DataStructure {
 
                         return;
                     }
+
+                    if (bag != null)
+                        return;
                 }
                 finally {
                     writeUnlock(tailId, tailPage, tailAddr, ok);
