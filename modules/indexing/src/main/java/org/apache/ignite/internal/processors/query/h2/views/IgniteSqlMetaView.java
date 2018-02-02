@@ -207,9 +207,11 @@ public abstract class IgniteSqlMetaView {
      */
     public String getCreateSQL() {
         StringBuilder sql = new StringBuilder();
+
         sql.append("CREATE TABLE " + getTableName() + '(');
 
         boolean isFirst = true;
+
         for (Column col : getColumns()) {
             if (isFirst)
                 isFirst = false;

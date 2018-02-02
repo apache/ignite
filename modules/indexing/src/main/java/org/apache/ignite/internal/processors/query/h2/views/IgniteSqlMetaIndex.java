@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query.h2.views;
 import java.util.Arrays;
 import java.util.HashSet;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Cursor;
+import org.h2.engine.Constants;
 import org.h2.engine.Session;
 import org.h2.index.BaseIndex;
 import org.h2.index.Cursor;
@@ -36,9 +37,6 @@ import org.h2.table.TableFilter;
  * Meta view H2 index.
  */
 public class IgniteSqlMetaIndex extends BaseIndex {
-    /** Default full scan cost. */
-    private static final double DEFAULT_FULL_SCAN_COST = 100d;
-
     /**
      * @param tbl Table.
      * @param col Column.
@@ -83,7 +81,7 @@ public class IgniteSqlMetaIndex extends BaseIndex {
     /** {@inheritDoc} */
     @Override public double getCost(Session ses, int[] masks, TableFilter[] filters, int filter, SortOrder sortOrder,
         HashSet<Column> allColsSet) {
-        return DEFAULT_FULL_SCAN_COST + getRowCountApproximation();
+        return Constants.COST_ROW_OFFSET + getRowCountApproximation();
     }
 
     /** {@inheritDoc} */
