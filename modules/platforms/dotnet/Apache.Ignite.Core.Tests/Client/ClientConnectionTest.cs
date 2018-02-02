@@ -445,7 +445,51 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestFailover()
         {
-            // TODO
+            // Start 3 nodes.
+            Ignition.Start(TestUtils.GetTestConfiguration(name: "0"));
+            Ignition.Start(TestUtils.GetTestConfiguration(name: "1"));
+            Ignition.Start(TestUtils.GetTestConfiguration(name: "2"));
+
+            // Connect client.
+            var port = IgniteClientConfiguration.DefaultPort;
+            var cfg = new IgniteClientConfiguration()
+            {
+                ReconnectDisabled = true,
+                EndPoints =
+                {
+                    new IPEndPoint(IPAddress.Loopback, port),
+                    new IPEndPoint(IPAddress.Loopback, port + 1),
+                    new IPEndPoint(IPAddress.Loopback, port + 2)
+                }
+            };
+
+            var client = Ignition.StartClient(cfg);
+            Assert.AreEqual(0, client.GetCacheNames().Count);
+
+            // Stop target node.
+            var nodeId = ((IPEndPoint) client.CurrentEndPoint).Port - port;
+            Ignition.Stop(nodeId.ToString(), true);
+
+            // Check failure.
+            Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
+
+            // Check reconnect.
+            Assert.AreEqual(0, client.GetCacheNames().Count);
+
+            // Stop target node.
+            nodeId = ((IPEndPoint)client.CurrentEndPoint).Port - port;
+            Ignition.Stop(nodeId.ToString(), true);
+
+            // Check failure.
+            Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
+
+            // Check reconnect.
+            Assert.AreEqual(0, client.GetCacheNames().Count);
+
+            // Stop all nodes.
+            Ignition.StopAll(true);
+            Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
+            Assert.IsNotNull(GetSocketException(Assert.Catch(() => client.GetCacheNames())));
         }
 
         /// <summary>
