@@ -71,6 +71,7 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -1132,17 +1133,32 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (cctx.kernalContext().query().moduleEnabled()) {
             ExchangeActions acts = fut.exchangeActions();
 
-            if (acts != null && !F.isEmpty(acts.cacheStartRequests())) {
-                for (ExchangeActions.CacheActionData actionData : acts.cacheStartRequests()) {
-                    int cacheId = CU.cacheId(actionData.request().cacheName());
-
-                    GridFutureAdapter<Void> old = idxRebuildFuts.put(cacheId, new GridFutureAdapter<>());
-
-                    if (old != null)
-                        old.onDone();
+            if (acts != null) {
+                if (!F.isEmpty(acts.cacheStartRequests())) {
+                    for (ExchangeActions.CacheActionData actionData : acts.cacheStartRequests())
+                        prepareIndexRebuildFuture(CU.cacheId(actionData.request().cacheName()));
+                }
+                else if (acts.localJoinContext() != null && !F.isEmpty(acts.localJoinContext().caches())) {
+                    for (T2<DynamicCacheDescriptor, NearCacheConfiguration> tup : acts.localJoinContext().caches())
+                        prepareIndexRebuildFuture(tup.get1().cacheId());
                 }
             }
         }
+    }
+
+    /**
+     * Creates a new index rebuild future that should be completed later after exchange is done. The future
+     * has to be created before exchange is initialized to guarantee that we will capture a correct future
+     * after activation or restore completes.
+     * If there was an old future for the given ID, it will be completed.
+     *
+     * @param cacheId Cache ID.
+     */
+    private void prepareIndexRebuildFuture(int cacheId) {
+        GridFutureAdapter<Void> old = idxRebuildFuts.put(cacheId, new GridFutureAdapter<>());
+
+        if (old != null)
+            old.onDone();
     }
 
     /** {@inheritDoc} */
