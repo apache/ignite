@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.Client
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
@@ -303,16 +302,16 @@ namespace Apache.Ignite.Core.Tests.Client
         {
             Ignition.Start(TestUtils.GetTestConfiguration());
 
-            var ops = new List<Task>();
+            const int count = 100000;
+            var ops = new Task[count];
 
             using (var client = StartClient())
             {
                 var cache = client.GetOrCreateCache<int, int>("foo");
-                for (var i = 0; i < 100000; i++)
+                for (var i = 0; i < count; i++)
                 {
-                    ops.Add(cache.PutAsync(i, i));
+                    ops[i] = cache.PutAsync(i, i);
                 }
-                ops.First().Wait();
             }
 
             var completed = ops.Count(x => x.Status == TaskStatus.RanToCompletion);
