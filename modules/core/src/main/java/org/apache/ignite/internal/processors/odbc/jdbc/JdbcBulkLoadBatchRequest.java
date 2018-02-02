@@ -63,7 +63,12 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
      * Creates the request with uninitialized parameters.
      */
     public JdbcBulkLoadBatchRequest() {
-        this(-1, -1, CMD_UNKNOWN, null);
+        super(BULK_LOAD_BATCH);
+
+        this.queryId = -1;
+        this.batchIdx = -1;
+        this.cmd = CMD_UNKNOWN;
+        this.data = null;
     }
 
     /**
