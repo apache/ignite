@@ -23,7 +23,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import javax.cache.configuration.Factory;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -43,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -114,51 +114,13 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 if (portTo <= 0) // Handle int overflow.
                     portTo = Integer.MAX_VALUE;
 
+                GridNioFilter[] filters = makeFilters(cliConnCfg);
+
+                int maxOpenCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
+                long idleTimeout = cliConnCfg.getIdleTimeout();
+
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
-                        GridNioFilter openSesFilter = new GridNioAsyncNotifyFilter(ctx.igniteInstanceName(), execSvc, log) {
-                            @Override public void onSessionOpened(GridNioSession ses)
-                                throws IgniteCheckedException {
-                                proceedSessionOpened(ses);
-                            }
-                        };
-
-                        GridNioFilter codecFilter = new GridNioCodecFilter(new ClientListenerBufferedParser(), log, false);
-
-                        GridNioFilter[] filters;
-
-                        if (cliConnCfg.isSslEnabled()) {
-                            try {
-                                Factory<SSLContext> sslCtxFactory = cliConnCfg.isUseIgniteSslContextFactory() ?
-                                    cfg.getSslContextFactory() : cliConnCfg.getSslContextFactory();
-
-                                if (sslCtxFactory == null)
-                                    throw new IgniteCheckedException("Failed to create client listener " +
-                                        "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
-
-                                GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtxFactory.create(),
-                                    true, ByteOrder.nativeOrder(), log);
-
-                                sslFilter.directMode(false);
-
-                                boolean auth = cliConnCfg.isSslClientAuth();
-
-                                sslFilter.wantClientAuth(auth);
-                                sslFilter.needClientAuth(auth);
-
-                                filters = new GridNioFilter[] {openSesFilter, codecFilter, sslFilter};
-                            } catch (Exception e) {
-                                throw new IgniteCheckedException("Failed to create client listener " +
-                                    "(unable to create SSL context, check ssl context factory configuration): "
-                                    + e.getMessage(), e);
-                            }
-
-                        }
-                        else
-                            filters = new GridNioFilter[] {openSesFilter, codecFilter};
-
-                        long idleTimeout = cliConnCfg.getIdleTimeout();
-
                         GridNioServer<byte[]> srv0 = GridNioServer.<byte[]>builder()
                             .address(hostAddr)
                             .port(port)
@@ -208,6 +170,54 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         }
     }
 
+     /**
+      * Make NIO server filters.
+      * @param cliConnCfg Client configuration.
+      * @return Array of filters, suitable for the configuration.
+      * @throws IgniteCheckedException if provided SslContextFactory is null.
+      */
+    @NotNull private GridNioFilter[] makeFilters(@NotNull ClientConnectorConfiguration cliConnCfg)
+        throws IgniteCheckedException {
+        GridNioFilter openSesFilter = new GridNioAsyncNotifyFilter(ctx.igniteInstanceName(), execSvc, log) {
+            @Override public void onSessionOpened(GridNioSession ses)
+                throws IgniteCheckedException {
+                proceedSessionOpened(ses);
+            }
+        };
+
+        GridNioFilter codecFilter = new GridNioCodecFilter(new ClientListenerBufferedParser(), log, false);
+
+        if (cliConnCfg.isSslEnabled()) {
+            Factory<SSLContext> sslCtxFactory = cliConnCfg.isUseIgniteSslContextFactory() ?
+                ctx.config().getSslContextFactory() : cliConnCfg.getSslContextFactory();
+
+            if (sslCtxFactory == null)
+                throw new IgniteCheckedException("Failed to create client listener " +
+                    "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
+
+            GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtxFactory.create(),
+                    true, ByteOrder.nativeOrder(), log);
+
+            sslFilter.directMode(false);
+
+            boolean auth = cliConnCfg.isSslClientAuth();
+
+            sslFilter.wantClientAuth(auth);
+            sslFilter.needClientAuth(auth);
+
+            return new GridNioFilter[] {
+                openSesFilter,
+                codecFilter,
+                sslFilter
+            };
+        } else {
+            return new GridNioFilter[] {
+                openSesFilter,
+                codecFilter
+            };
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         if (srv != null) {
@@ -229,9 +239,16 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return Server port.
+     */
+    public int port() {
+        return srv.port();
+    }
+
+    /**
      * Prepare connector configuration.
      *
-     * @param cfg Ignote configuration.
+     * @param cfg Ignite configuration.
      * @return Connector configuration.
      * @throws IgniteCheckedException If failed.
      */

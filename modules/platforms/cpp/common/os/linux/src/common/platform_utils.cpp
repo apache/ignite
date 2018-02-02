@@ -89,5 +89,20 @@ namespace ignite
 
             return stat(path.c_str(), &pathStat) != -1 && S_ISDIR(pathStat.st_mode);
         }
+
+        StdCharOutStream& Fs(StdCharOutStream& ostr)
+        {
+            ostr.put('/');
+            return ostr;
+        }
+
+        StdCharOutStream& Dle(StdCharOutStream& ostr)
+        {
+            static const char expansion[] = ".so";
+
+            ostr.write(expansion, sizeof(expansion) - 1);
+
+            return ostr;
+        }
     }
 }

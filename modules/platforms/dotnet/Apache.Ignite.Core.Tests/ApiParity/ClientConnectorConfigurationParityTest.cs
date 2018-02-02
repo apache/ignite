@@ -29,9 +29,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         private static readonly string[] MissingMembers =
         {
             // IGNITE-7228
-            "isSslEnabled",
-            "isSslClientAuth",
-            "SslContextFactory"
+            "isSslEnabled", "isUseIgniteSslContextFactory", "isSslClientAuth", "SslContextFactory"
         };
 
         /// <summary>

@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.ignite.Ignite;
@@ -137,7 +138,7 @@ public class ResultAndUpdates<R> {
             }
         }
 
-        List<R> results = resultsAndUpdates.stream().map(ResultAndUpdates::result).collect(Collectors.toList());
+        List<R> results = resultsAndUpdates.stream().map(ResultAndUpdates::result).filter(Objects::nonNull).collect(Collectors.toList());
 
         return new ResultAndUpdates<>(reducer.apply(results), allUpdates);
     }

@@ -30,6 +30,9 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     private long totalAllocatedPages;
 
     /** */
+    private long totalAllocatedSize;
+
+    /** */
     private float allocationRate;
 
     /** */
@@ -53,12 +56,25 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     /** */
     private long physicalMemoryPages;
 
+    /** */
+    private long physicalMemorySize;
+
+    /** */
+    private long checkpointBufferPages;
+
+    /** */
+    private long checkpointBufferSize;
+
+    /** */
+    private int pageSize;
+
     /**
      * @param metrics Metrics instance to take a copy.
      */
     public DataRegionMetricsSnapshot(DataRegionMetrics metrics) {
         name = metrics.getName();
         totalAllocatedPages = metrics.getTotalAllocatedPages();
+        totalAllocatedSize = metrics.getTotalAllocatedSize();
         allocationRate = metrics.getAllocationRate();
         evictionRate = metrics.getEvictionRate();
         largeEntriesPagesPercentage = metrics.getLargeEntriesPagesPercentage();
@@ -67,6 +83,10 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
         pageReplaceRate = metrics.getPagesReplaceRate();
         pageReplaceAge = metrics.getPagesReplaceAge();
         physicalMemoryPages = metrics.getPhysicalMemoryPages();
+        physicalMemorySize = metrics.getPhysicalMemorySize();
+        checkpointBufferPages = metrics.getCheckpointBufferPages();
+        checkpointBufferSize = metrics.getCheckpointBufferSize();
+        pageSize = metrics.getPageSize();
     }
 
     /** {@inheritDoc} */
@@ -77,6 +97,11 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
         return totalAllocatedPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalAllocatedSize() {
+        return totalAllocatedSize;
     }
 
     /** {@inheritDoc} */
@@ -117,5 +142,25 @@ public class DataRegionMetricsSnapshot implements DataRegionMetrics {
     /** {@inheritDoc} */
     @Override public long getPhysicalMemoryPages() {
         return physicalMemoryPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPhysicalMemorySize() {
+        return physicalMemorySize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointBufferPages() {
+        return checkpointBufferPages;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointBufferSize() {
+        return checkpointBufferSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getPageSize() {
+        return pageSize;
     }
 }
