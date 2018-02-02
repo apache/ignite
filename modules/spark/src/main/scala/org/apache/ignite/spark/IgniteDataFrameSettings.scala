@@ -61,7 +61,7 @@ object IgniteDataFrameSettings {
       * @example {{{
       * val igniteDF = spark.write.format(IGNITE)
       *     // other options ...
-      *     .option(OPTION_CREATE_TABLE_OPTIONS, "backups=1, template=replicated")
+      *     .option( OPTION_CREATE_TABLE_PARAMETERS, "backups=1, template=replicated")
       *     .save()
       * }}}
       *
@@ -75,7 +75,7 @@ object IgniteDataFrameSettings {
       * @example {{{
       * val igniteDF = spark.write.format(IGNITE)
       *     // other options ...
-      *     .option(OPTION_PRIMARY_KEY_FIELDS, "id")
+      *     .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
       *     .save()
       * }}}
       */
