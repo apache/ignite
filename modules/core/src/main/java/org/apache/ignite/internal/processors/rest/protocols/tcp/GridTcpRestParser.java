@@ -72,7 +72,7 @@ public class GridTcpRestParser implements GridNioParser {
     private static final Charset UTF_8 = Charset.forName("UTF-8");
 
     /** JDK marshaller. */
-    private final Marshaller jdkMarshaller = new JdkMarshaller();
+    private final Marshaller marsh;
 
     /** Router client flag. */
     private final boolean routerClient;
@@ -81,7 +81,16 @@ public class GridTcpRestParser implements GridNioParser {
      * @param routerClient Router client flag.
      */
     public GridTcpRestParser(boolean routerClient) {
+        this(routerClient, new JdkMarshaller());
+    }
+
+    /**
+     * @param routerClient Router client flag.
+     * @param marsh Marshaller.
+     */
+    public GridTcpRestParser(boolean routerClient, Marshaller marsh) {
         this.routerClient = routerClient;
+        this.marsh = marsh;
     }
 
     /** {@inheritDoc} */
@@ -735,7 +744,7 @@ public class GridTcpRestParser implements GridNioParser {
         assert bytes != null;
 
         if ((flags & SERIALIZED_FLAG) != 0)
-            return U.unmarshal(jdkMarshaller, bytes, null);
+            return U.unmarshal(marsh, bytes, null);
 
         int masked = flags & 0xff00;
 
@@ -817,7 +826,7 @@ public class GridTcpRestParser implements GridNioParser {
             flags |= BYTE_ARR_FLAG;
         }
         else {
-            U.marshal(jdkMarshaller, obj, out);
+            U.marshal(marsh, obj, out);
 
             flags |= SERIALIZED_FLAG;
         }

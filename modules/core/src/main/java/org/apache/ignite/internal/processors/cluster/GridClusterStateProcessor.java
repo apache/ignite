@@ -69,6 +69,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
@@ -128,6 +129,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** */
     private final JdkMarshaller marsh = new JdkMarshaller();
 
+    /** Minimal IgniteProductVersion supporting BaselineTopology */
+    private static final IgniteProductVersion MIN_BLT_SUPPORTING_VER = IgniteProductVersion.fromString("2.4.0");
+
     /** Listener. */
     private final GridLocalEventListener lsr = new GridLocalEventListener() {
         @Override public void onEvent(Event evt) {
@@ -175,7 +179,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         assert globalState != null;
 
-        if (globalState.transition()) {
+        if (globalState.transition() && globalState.activeStateChanging()) {
             Boolean transitionRes = globalState.transitionResult();
 
             if (transitionRes != null)
@@ -417,6 +421,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 (msg.baselineTopology() == null ? ": null"
                     : "[id=" + msg.baselineTopology().id() + "]"));
 
+        if (msg.baselineTopology() != null)
+            compatibilityMode = false;
+
         if (state.transition()) {
             if (isApplicable(msg, state)) {
                 GridChangeGlobalStateFuture fut = changeStateFuture(msg);
@@ -635,7 +642,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             BaselineTopologyHistory historyToSend = null;
 
             if (joiningNodeData != null) {
-                if (!joiningNodeData.hasJoiningNodeData()) {
+                if (!joiningNodeData.hasJoiningNodeData() || compatibilityMode) {
                     //compatibility mode: old nodes don't send any data on join, so coordinator of new version
                     //doesn't send BaselineTopology history, only its current globalState
                     dataBag.addGridCommonData(STATE_PROC.ordinal(), globalState);
@@ -713,7 +720,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (inMemoryMode)
             return changeGlobalState0(activate, null, false);
 
-        BaselineTopology newBlt = compatibilityMode ? null :
+        BaselineTopology newBlt = (compatibilityMode && !forceChangeBaselineTopology) ? null :
             calculateNewBaselineTopology(activate, baselineNodes, forceChangeBaselineTopology);
 
         return changeGlobalState0(activate, newBlt, forceChangeBaselineTopology);
