@@ -253,17 +253,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     return;
                 }
-                if (evt.type() == EVT_DISCOVERY_CUSTOM_EVT &&
-                    (((DiscoveryCustomEvent)evt).customMessage() instanceof CacheAffinityChangeMessage) &&
-                    ((CacheAffinityChangeMessage)((DiscoveryCustomEvent)evt).customMessage()).exchangeId() != null) {
-                    if (cache.state().transition() && !cache.state().active()) {
-                        assert false : "??? This should never happen " + cache.state();
-                    }
-
-                    onDiscoveryEvent(evt, cache);
-
-                    return;
-                }
 
                 if (cache.state().transition()) {
                     if (log.isDebugEnabled())
