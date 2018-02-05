@@ -148,7 +148,7 @@ public class SqlUserCommandSelf extends GridCommonAbstractTest {
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    userSql(idx, "CRETE USER test WITH PASSWORD 'test'");
+                    userSql(idx, "ALTER USER test WITH PASSWORD 'test'");
 
                     return null;
                 }
