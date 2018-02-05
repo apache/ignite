@@ -588,7 +588,6 @@ namespace Apache.Ignite.Core.Impl.Common
             try
             {
                 return p.GetIndexParameters().Length == 0 && // Skip indexed properties.
-                       p.CanWrite && // Skip read-only properties.
                        !Equals(p.GetValue(obj, null), GetDefaultValue(p));
             }
             catch (Exception)
