@@ -657,9 +657,6 @@ public abstract class PagesList extends DataStructure {
 
                         return;
                     }
-
-                    if (bag != null && bag.isEmpty())
-                        return;
                 }
                 finally {
                     writeUnlock(tailId, tailPage, tailAddr, ok);
@@ -838,6 +835,9 @@ public abstract class PagesList extends DataStructure {
         ReuseBag bag,
         int bucket
     ) throws IgniteCheckedException {
+        assert bag != null : "bag is null";
+        assert !bag.isEmpty() : "bag is empty";
+
         if (io.getNextId(pageAddr) != 0L)
             return false; // Splitted.
 
@@ -852,74 +852,67 @@ public abstract class PagesList extends DataStructure {
         GridLongList locked = null; // TODO may be unlock right away and do not keep all these pages locked?
 
         try {
-            boolean res;
+            while ((nextId = bag.pollFreePage()) != 0L) {
+                int idx = io.addPage(prevAddr, nextId, pageSize());
 
-            if (res = (nextId = bag.pollFreePage()) != 0L) {
-                do {
-                    int idx = io.addPage(prevAddr, nextId, pageSize());
+                if (idx == -1) { // Attempt to add page failed: the node page is full.
 
-                    if (idx == -1) { // Attempt to add page failed: the node page is full.
+                    final long nextPage = acquirePage(nextId);
 
-                        final long nextPage = acquirePage(nextId);
+                    try {
+                        long nextPageAddr = writeLock(nextId, nextPage); // Page from reuse bag can't be concurrently recycled.
 
-                        try {
-                            long nextPageAddr = writeLock(nextId, nextPage); // Page from reuse bag can't be concurrently recycled.
+                        assert nextPageAddr != 0L;
 
-                            assert nextPageAddr != 0L;
+                        if (locked == null)
+                            locked = new GridLongList(6);
 
-                            if (locked == null)
-                                locked = new GridLongList(6);
+                        locked.add(nextId);
+                        locked.add(nextPage);
+                        locked.add(nextPageAddr);
 
-                            locked.add(nextId);
-                            locked.add(nextPage);
-                            locked.add(nextPageAddr);
+                        setupNextPage(io, prevId, prevAddr, nextId, nextPageAddr);
 
-                            setupNextPage(io, prevId, prevAddr, nextId, nextPageAddr);
-
-                            if (needWalDeltaRecord(prevId, prevPage, walPlc))
-                                wal.log(new PagesListSetNextRecord(grpId, prevId, nextId));
-
-                            // Here we should never write full page, because it is known to be new.
-                            if (needWalDeltaRecord(nextId, nextPage, FALSE))
-                                wal.log(new PagesListInitNewPageRecord(
-                                    grpId,
-                                    nextId,
-                                    io.getType(),
-                                    io.getVersion(),
-                                    nextId,
-                                    prevId,
-                                    0L
-                                ));
-
-                            // In reuse bucket the page itself can be used as a free page.
-                            if (isReuseBucket(bucket))
-                                incrementBucketSize(bucket);
-
-                            // Switch to this new page, which is now a part of our list
-                            // to add the rest of the bag to the new page.
-                            prevAddr = nextPageAddr;
-                            prevId = nextId;
-                            prevPage = nextPage;
-                            // Starting from tis point all wal records are written for reused pages from the bag.
-                            // This mean that we use delta records only.
-                            walPlc = FALSE;
-                        }
-                        finally {
-                            releasePage(nextId, nextPage);
-                        }
-                    }
-                    else {
-                        // TODO: use single WAL record for bag?
                         if (needWalDeltaRecord(prevId, prevPage, walPlc))
-                            wal.log(new PagesListAddPageRecord(grpId, prevId, nextId));
+                            wal.log(new PagesListSetNextRecord(grpId, prevId, nextId));
 
-                        incrementBucketSize(bucket);
+                        // Here we should never write full page, because it is known to be new.
+                        if (needWalDeltaRecord(nextId, nextPage, FALSE))
+                            wal.log(new PagesListInitNewPageRecord(
+                                grpId,
+                                nextId,
+                                io.getType(),
+                                io.getVersion(),
+                                nextId,
+                                prevId,
+                                0L
+                            ));
+
+                        // In reuse bucket the page itself can be used as a free page.
+                        if (isReuseBucket(bucket))
+                            incrementBucketSize(bucket);
+
+                        // Switch to this new page, which is now a part of our list
+                        // to add the rest of the bag to the new page.
+                        prevAddr = nextPageAddr;
+                        prevId = nextId;
+                        prevPage = nextPage;
+                        // Starting from tis point all wal records are written for reused pages from the bag.
+                        // This mean that we use delta records only.
+                        walPlc = FALSE;
+                    }
+                    finally {
+                        releasePage(nextId, nextPage);
                     }
                 }
-                while ((nextId = bag.pollFreePage()) != 0L);
-            }
+                else {
+                    // TODO: use single WAL record for bag?
+                    if (needWalDeltaRecord(prevId, prevPage, walPlc))
+                        wal.log(new PagesListAddPageRecord(grpId, prevId, nextId));
 
-            return res;
+                    incrementBucketSize(bucket);
+                }
+            }
         }
         finally {
             if (locked != null) {
@@ -931,6 +924,8 @@ public abstract class PagesList extends DataStructure {
                     writeUnlock(locked.get(i), locked.get(i + 1), locked.get(i + 2), FALSE, true);
             }
         }
+
+        return true;
     }
 
     /**
