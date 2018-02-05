@@ -120,7 +120,7 @@ public class DataStorageConfiguration implements Serializable {
     public static final int DFLT_WAL_SEGMENT_SIZE = 64 * 1024 * 1024;
 
     /** Default wal mode. */
-    public static final WALMode DFLT_WAL_MODE = WALMode.DEFAULT;
+    public static final WALMode DFLT_WAL_MODE = WALMode.FSYNC;
 
     /** Default thread local buffer size. */
     public static final int DFLT_TLB_SIZE = 128 * 1024;
@@ -686,6 +686,9 @@ public class DataStorageConfiguration implements Serializable {
      * @param walMode Wal mode.
      */
     public DataStorageConfiguration setWalMode(WALMode walMode) {
+        if (walMode == WALMode.DEFAULT)
+            walMode = WALMode.FSYNC;
+
         this.walMode = walMode;
 
         return this;

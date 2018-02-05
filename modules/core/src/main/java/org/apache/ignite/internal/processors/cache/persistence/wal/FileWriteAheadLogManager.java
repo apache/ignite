@@ -346,6 +346,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         ioFactory = new RandomAccessFileIOFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         evt = ctx.event();
+
+        assert mode != WALMode.DEFAULT : dsCfg;
     }
 
     /** For test purposes only. */
@@ -543,7 +545,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /** {@inheritDoc} */
     @Override public boolean isFullSync() {
-        return mode == WALMode.DEFAULT;
+        return mode == WALMode.FSYNC ;
     }
 
     /** {@inheritDoc} */
@@ -1264,7 +1266,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         try (FileIO fileIO = ioFactory.create(file, CREATE, READ, WRITE)) {
             int left = dsCfg.getWalSegmentSize();
 
-            if (mode == WALMode.DEFAULT) {
+            if (mode == WALMode.FSYNC) {
                 while (left > 0) {
                     int toWrite = Math.min(FILL_BUF.length, left);
 
@@ -1708,7 +1710,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
-                if (mode == WALMode.DEFAULT) {
+                if (mode == WALMode.FSYNC) {
                     try (FileIO f0 = ioFactory.create(dstFile, CREATE, READ, WRITE)) {
                         f0.force();
                     }
@@ -1884,7 +1886,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     Files.move(tmpZip.toPath(), zip.toPath());
 
-                    if (mode == WALMode.DEFAULT) {
+                    if (mode == WALMode.FSYNC) {
                         try (FileIO f0 = ioFactory.create(zip, CREATE, READ, WRITE)) {
                             f0.force();
                         }
@@ -2112,7 +2114,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 if (checkFile.isDirectory())
                     throw new IgniteCheckedException("Failed to initialize WAL log segment (a directory with " +
                         "the same name already exists): " + checkFile.getAbsolutePath());
-                else if (checkFile.length() != dsCfg.getWalSegmentSize() && mode == WALMode.DEFAULT)
+                else if (checkFile.length() != dsCfg.getWalSegmentSize() && mode == WALMode.FSYNC)
                     throw new IgniteCheckedException("Failed to initialize WAL log segment " +
                         "(WAL segment size change is not supported in 'DEFAULT' WAL mode) " +
                         "[filePath=" + checkFile.getAbsolutePath() +
@@ -2744,7 +2746,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         }
 
                         // Do the final fsync.
-                        if (mode == WALMode.DEFAULT) {
+                        if (mode == DEFAULT) {
                             if (mmap)
                                 ((MappedByteBuffer)buf.buf).force();
                             else
@@ -2795,7 +2797,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             lock.lock();
 
             try {
-                assert cctx.kernalContext().invalidated() || written == lastFsyncPos || mode != WALMode.DEFAULT :
+                assert cctx.kernalContext().invalidated() || written == lastFsyncPos || mode != DEFAULT :
                     "fsync [written=" + written + ", lastFsync=" + lastFsyncPos + ", idx=" + idx + ']';
 
                 fileIO = null;
