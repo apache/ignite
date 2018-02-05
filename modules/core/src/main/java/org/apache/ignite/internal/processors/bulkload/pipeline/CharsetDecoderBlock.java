@@ -50,7 +50,7 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
      * @param charset The charset encoding to decode bytes from.
      */
     public CharsetDecoderBlock(Charset charset) {
-        this.charsetDecoder = charset.newDecoder()
+        charsetDecoder = charset.newDecoder()
             .onMalformedInput(CodingErrorAction.REPLACE)
             .onUnmappableCharacter(CodingErrorAction.REPLACE);
 
@@ -59,7 +59,7 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
     }
 
     /** {@inheritDoc} */
-    public void accept(byte[] data, boolean isLastAppend) throws IgniteCheckedException {
+    @Override public void accept(byte[] data, boolean isLastAppend) throws IgniteCheckedException {
         assert nextBlock != null;
 
         assert !isEndOfInput : "convertBytes() called after end of input";

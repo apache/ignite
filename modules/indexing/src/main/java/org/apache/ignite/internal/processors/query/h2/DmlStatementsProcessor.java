@@ -1165,7 +1165,7 @@ public class DmlStatementsProcessor {
          *
          * @param plan The update plan to use.
          */
-        public BulkLoadDataConverter(UpdatePlan plan) {
+        private BulkLoadDataConverter(UpdatePlan plan) {
             this.plan = plan;
         }
 

@@ -293,10 +293,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 ConcurrentHashMap<Long, JdbcBulkLoadProcessor> requests = bulkLoadRequests;
 
-                bulkLoadRequests.clear();
-
                 for (JdbcBulkLoadProcessor processor : requests.values())
                     processor.close(true);
+
+                requests.clear();
             }
             finally {
                 busyLock.leaveBusy();

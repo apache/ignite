@@ -183,13 +183,13 @@ public class SqlBulkLoadCommand implements SqlCommand {
      *
      * @return schemaName.
      */
-    public String schemaName() {
+    @Override public String schemaName() {
         return tblQName.schemaName();
     }
 
     /** {@inheritDoc} */
     @Override public void schemaName(String schemaName) {
-        this.tblQName.schemaName(schemaName);
+        tblQName.schemaName(schemaName);
     }
 
     /**
@@ -207,7 +207,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @param tblName The table name.
      */
     public void tableName(String tblName) {
-        this.tblQName.name(tblName);
+        tblQName.name(tblName);
     }
 
     /**

@@ -20,8 +20,7 @@ package org.apache.ignite.internal.processors.bulkload;
 import org.apache.ignite.IgniteCheckedException;
 
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /** A superclass and a factory for bulk load format options. */
 public abstract class BulkLoadFormat {
@@ -58,6 +57,6 @@ public abstract class BulkLoadFormat {
      * @return The list of all supported format names.
      */
     public static List<String> formatNames() {
-        return Arrays.asList(BulkLoadCsvFormat.NAME);
+        return Collections.singletonList(BulkLoadCsvFormat.NAME);
     }
 }
