@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using System;
     using System.Configuration;
     using System.IO;
+    using System.Net;
     using System.Security.Authentication;
     using System.Text;
     using System.Xml;
@@ -84,6 +85,11 @@ namespace Apache.Ignite.Core.Tests.Client
                     CheckCertificateRevocation = true,
                     SkipServerCertificateValidation = true,
                     SslProtocols = SslProtocols.None
+                },
+                EndPoints =
+                {
+                    new IPEndPoint(1, 2),
+                    new DnsEndPoint("foo", 3)
                 }
             };
 
@@ -210,7 +216,8 @@ namespace Apache.Ignite.Core.Tests.Client
         public void TestAllPropertiesArePresentInSchema()
         {
             IgniteConfigurationSerializerTest.CheckAllPropertiesArePresentInSchema(
-                "IgniteClientConfigurationSection.xsd", "igniteClientConfiguration", typeof(IgniteClientConfiguration));
+                "IgniteClientConfigurationSection.xsd", "igniteClientConfiguration",
+                typeof(IgniteClientConfiguration));
         }
 #endif
     }
