@@ -89,13 +89,11 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
             new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
                 @Override public void applyx(Long page, FullPageId fullId, PageMemoryEx pageMem) {
                 }
-            }, new CheckpointLockStateChecker() {
-                @Override public boolean checkpointLockIsHeldByThread() {
-                    return true;
-                }
             },
+            () -> true,
             new DataRegionMetricsImpl(new DataRegionConfiguration()),
-            PageMemoryImpl.ThrottlingPolicy.NONE
+            PageMemoryImpl.ThrottlingPolicy.NONE,
+            null
         );
     }
 }

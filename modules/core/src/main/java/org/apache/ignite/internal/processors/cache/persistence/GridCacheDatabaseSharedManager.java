@@ -992,7 +992,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             changeTracker,
             this,
             memMetrics,
-            plc
+            plc,
+            this
         );
 
         memMetrics.pageMemory(pageMem);

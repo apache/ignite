@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.logger.NullLogger;
 import org.junit.Test;
 
@@ -238,11 +238,10 @@ public class IgniteThrottlingUnitTest {
         }).when(log).info(anyString());
 
         AtomicInteger written = new AtomicInteger();
-        GridCacheDatabaseSharedManager db = mock(GridCacheDatabaseSharedManager.class);
-        when(db.checkpointLockIsHeldByThread()).thenReturn(true);
-        when(db.writtenPagesCounter()).thenReturn(written);
+        CheckpointWriteProgressSupplier cpProgress = mock(CheckpointWriteProgressSupplier.class);
+        when(cpProgress.writtenPagesCounter()).thenReturn(written);
 
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, db, stateChecker, log) {
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, cpProgress, stateChecker, log) {
             @Override protected void doPark(long throttleParkTimeNs) {
                 //do nothing
             }

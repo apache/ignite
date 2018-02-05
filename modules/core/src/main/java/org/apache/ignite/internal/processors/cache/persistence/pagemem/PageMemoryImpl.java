@@ -240,6 +240,9 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Write throttle type. */
     private ThrottlingPolicy throttlingPlc;
 
+    /** Checkpoint progress provider. Null disables throttling. */
+    @Nullable private final CheckpointWriteProgressSupplier cpProgressProvider;
+
     /** Flag indicating page replacement started (rotation with disk), allocating new page requires freeing old one. */
     private volatile boolean pageReplacementWarned;
 
@@ -259,6 +262,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param stateChecker Checkpoint lock state provider. Used to ensure lock is held by thread, which modify pages.
      * @param memMetrics Memory metrics to track dirty pages count and page replace rate.
      * @param throttlingPlc Write throttle enabled and its type. Null equal to none.
+     * @param cpProgressProvider checkpoint progress, base for throttling. Null disables throttling.
      */
     public PageMemoryImpl(
         DirectMemoryProvider directMemoryProvider,
@@ -269,7 +273,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         @Nullable GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker,
         CheckpointLockStateChecker stateChecker,
         DataRegionMetricsImpl memMetrics,
-        @Nullable ThrottlingPolicy throttlingPlc
+        @Nullable ThrottlingPolicy throttlingPlc,
+        @Nullable CheckpointWriteProgressSupplier cpProgressProvider
     ) {
         assert ctx != null;
         assert pageSize > 0;
@@ -287,6 +292,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         this.changeTracker = changeTracker;
         this.stateChecker = stateChecker;
         this.throttlingPlc = throttlingPlc != null ? throttlingPlc : ThrottlingPolicy.NONE;
+        this.cpProgressProvider = cpProgressProvider;
 
         storeMgr = ctx.pageStore();
         walMgr = ctx.wal();
@@ -360,19 +366,16 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (!isThrottlingEnabled())
             return;
 
-        if (!(ctx.database() instanceof CheckpointWriteProgressSupplier)) {
-            log.error("Write throttle can't start. Unexpected class of database manager: " +
-                ctx.database().getClass());
+        if (cpProgressProvider == null) {
+            log.error("Write throttle can't start. CP progress provider not presented");
 
             throttlingPlc = ThrottlingPolicy.NONE;
         }
 
-        CheckpointWriteProgressSupplier db = (CheckpointWriteProgressSupplier)ctx.database();
-
         if (throttlingPlc == ThrottlingPolicy.SPEED_BASED)
-            writeThrottle = new PagesWriteSpeedBasedThrottle(this, db, stateChecker, log);
+            writeThrottle = new PagesWriteSpeedBasedThrottle(this, cpProgressProvider, stateChecker, log);
         else if(throttlingPlc == ThrottlingPolicy.TARGET_RATIO_BASED)
-            writeThrottle = new PagesWriteThrottle(this, db, stateChecker);
+            writeThrottle = new PagesWriteThrottle(this, cpProgressProvider, stateChecker);
     }
 
     /** {@inheritDoc} */

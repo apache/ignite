@@ -17,16 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
 import org.apache.ignite.internal.util.typedef.CIX3;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -76,13 +74,10 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
                 @Override public void applyx(Long aLong, FullPageId fullPageId, PageMemoryEx ex) {
                 }
             },
-            new CheckpointLockStateChecker() {
-                @Override public boolean checkpointLockIsHeldByThread() {
-                    return true;
-                }
-            },
+            () -> true,
             new DataRegionMetricsImpl(new DataRegionConfiguration()),
-            PageMemoryImpl.ThrottlingPolicy.NONE
+            PageMemoryImpl.ThrottlingPolicy.NONE,
+            null
         );
 
         mem.start();

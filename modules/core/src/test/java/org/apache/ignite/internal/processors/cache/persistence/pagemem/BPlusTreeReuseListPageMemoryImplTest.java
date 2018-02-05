@@ -74,13 +74,11 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
             new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
                 @Override public void applyx(Long page, FullPageId fullPageId, PageMemoryEx pageMem) {
                 }
-            }, new CheckpointLockStateChecker() {
-                @Override public boolean checkpointLockIsHeldByThread() {
-                    return true;
-                }
             },
+            () -> true,
             new DataRegionMetricsImpl(new DataRegionConfiguration()),
-            PageMemoryImpl.ThrottlingPolicy.NONE
+            PageMemoryImpl.ThrottlingPolicy.NONE,
+            null
         );
 
         mem.start();
