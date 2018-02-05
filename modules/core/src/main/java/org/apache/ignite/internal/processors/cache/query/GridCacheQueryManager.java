@@ -2941,7 +2941,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             statsEnabled = cctx.statisticsEnabled();
 
-            readEvt = cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+            readEvt = cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ) &&
+                cctx.gridEvents().hasListener(EVT_CACHE_QUERY_OBJECT_READ);
 
             if(readEvt){
                 taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
@@ -3088,7 +3089,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     }
 
                     if (scanFilter == null || scanFilter.apply(key0, val0)) {
-                        if (readEvt && cctx.gridEvents().hasListener(EVT_CACHE_QUERY_OBJECT_READ)) {
+                        if (readEvt) {
                             cctx.gridEvents().record(new CacheQueryReadEvent<>(
                                 cctx.localNode(),
                                 "Scan query entry read.",
