@@ -391,7 +391,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var client = Ignition.StartClient(new IgniteClientConfiguration("127.0.0.1"));
             Assert.AreEqual(0, client.GetCacheNames().Count);
 
-            var ep = client.CurrentEndPoint as IPEndPoint;
+            var ep = client.RemoteEndPoint as IPEndPoint;
             Assert.IsNotNull(ep);
             Assert.AreEqual(IgniteClientConfiguration.DefaultPort, ep.Port);
             Assert.AreEqual("127.0.0.1", ep.Address.ToString());
@@ -470,7 +470,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.AreEqual(0, client.GetCacheNames().Count);
 
                 // Stop target node.
-                var nodeId = ((IPEndPoint) client.CurrentEndPoint).Port - port;
+                var nodeId = ((IPEndPoint) client.RemoteEndPoint).Port - port;
                 Ignition.Stop(nodeId.ToString(), true);
 
                 // Check failure.
@@ -480,7 +480,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 Assert.AreEqual(0, client.GetCacheNames().Count);
 
                 // Stop target node.
-                nodeId = ((IPEndPoint) client.CurrentEndPoint).Port - port;
+                nodeId = ((IPEndPoint) client.RemoteEndPoint).Port - port;
                 Ignition.Stop(nodeId.ToString(), true);
 
                 // Check failure.
