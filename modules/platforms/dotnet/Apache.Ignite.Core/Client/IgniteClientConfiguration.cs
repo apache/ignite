@@ -67,7 +67,6 @@ namespace Apache.Ignite.Core.Client
             SocketReceiveBufferSize = DefaultSocketBufferSize;
             TcpNoDelay = DefaultTcpNoDelay;
             SocketTimeout = DefaultSocketTimeout;
-            EndPoints = new List<EndPoint>();
         }
 
         /// <summary>
@@ -106,7 +105,7 @@ namespace Apache.Ignite.Core.Client
 
             BinaryProcessor = cfg.BinaryProcessor;
             SslStreamFactory = cfg.SslStreamFactory;
-            EndPoints = cfg.EndPoints.ToList();
+            EndPoints = cfg.EndPoints == null ? null : cfg.EndPoints.ToList();
             ReconnectDisabled = cfg.ReconnectDisabled;
         }
 
@@ -132,7 +131,8 @@ namespace Apache.Ignite.Core.Client
         /// </summary>
         [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
             Justification = "Consistency with EndPoint class name.")]
-        public ICollection<EndPoint> EndPoints { get; private set; }
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<EndPoint> EndPoints { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether automatic reconnect is disabled.

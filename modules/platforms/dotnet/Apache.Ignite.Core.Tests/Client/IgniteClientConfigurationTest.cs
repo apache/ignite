@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Tests.Client
                     SkipServerCertificateValidation = true,
                     SslProtocols = SslProtocols.None
                 },
-                EndPoints =
+                EndPoints = new EndPoint[]
                 {
                     new IPEndPoint(1, 2),
                     new DnsEndPoint("foo", 3)

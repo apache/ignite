@@ -202,13 +202,13 @@ namespace Apache.Ignite.Core.Impl.Client
         {
             var host = cfg.Host;
 
-            if (host == null && cfg.EndPoints.Count == 0)
+            if (host == null && (cfg.EndPoints == null || cfg.EndPoints.Count == 0))
             {
                 throw new IgniteException("IgniteClientConfiguration does not contain any endpoints: " +
-                                          "Host is null, EndPoints is empty.");
+                                          "Host is null, EndPoints is null or empty.");
             }
 
-            var res = new List<EndPoint>(cfg.EndPoints.Count + (host == null ? 0 : 4));
+            var res = new List<EndPoint>((cfg.EndPoints == null ? 0 : cfg.EndPoints.Count) + (host == null ? 0 : 4));
 
             if (host != null)
             {
@@ -228,7 +228,10 @@ namespace Apache.Ignite.Core.Impl.Client
                 }
             }
 
-            res.AddRange(cfg.EndPoints);
+            if (cfg.EndPoints != null)
+            {
+                res.AddRange(cfg.EndPoints);
+            }
 
             if (res.Count == 0)
             {
