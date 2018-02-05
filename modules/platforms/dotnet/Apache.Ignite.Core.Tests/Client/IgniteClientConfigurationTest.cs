@@ -87,10 +87,10 @@ namespace Apache.Ignite.Core.Tests.Client
                     SkipServerCertificateValidation = true,
                     SslProtocols = SslProtocols.None
                 },
-                Endpoints = new EndPoint[]
+                Endpoints = new []
                 {
-                    new IPEndPoint(1, 2),
-                    new DnsEndPoint("foo", 3, AddressFamily.InterNetwork)
+                    new Endpoint("foo"),
+                    new Endpoint("bar", 123)
                 }
             };
 

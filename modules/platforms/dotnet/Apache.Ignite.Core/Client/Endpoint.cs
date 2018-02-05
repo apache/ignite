@@ -33,6 +33,24 @@ namespace Apache.Ignite.Core.Client
         }
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="Endpoint"/> class with specified host and default port
+        /// (see <see cref="IgniteClientConfiguration.DefaultPort"/>).
+        /// </summary>
+        public Endpoint(string host)
+        {
+            Host = host;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="Endpoint"/> class.
+        /// </summary>
+        public Endpoint(string host, int port)
+        {
+            Host = host;
+            Port = port;
+        }
+
+        /// <summary>
         /// Gets or sets the host.
         /// </summary>
         public string Host { get; set; }

@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 {
                     Endpoints = new[]
                     {
-                        new DnsEndPoint("localhost", port, AddressFamily.InterNetwork)
+                        new Endpoint("localhost")
                     }
                 };
 
@@ -136,7 +136,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 {
                     Endpoints = new[]
                     {
-                        new IPEndPoint(new IPAddress(new byte[] {127, 0, 0, 1}), port)
+                        new Endpoint("127.0.0.1", port)
                     }
                 };
 
@@ -464,9 +464,9 @@ namespace Apache.Ignite.Core.Tests.Client
             {
                 Endpoints = new[]
                 {
-                    new IPEndPoint(IPAddress.Loopback, port),
-                    new IPEndPoint(IPAddress.Loopback, port + 1),
-                    new IPEndPoint(IPAddress.Loopback, port + 2)
+                    new Endpoint("localhost"),
+                    new Endpoint("127.0.0.1", port + 1),
+                    new Endpoint {Host = "127.0.0.2", Port = port + 2}
                 }
             };
 
