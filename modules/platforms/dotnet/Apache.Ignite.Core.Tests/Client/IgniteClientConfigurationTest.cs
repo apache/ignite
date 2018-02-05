@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Configuration;
     using System.IO;
     using System.Net;
+    using System.Net.Sockets;
     using System.Security.Authentication;
     using System.Text;
     using System.Xml;
@@ -89,7 +90,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 EndPoints = new EndPoint[]
                 {
                     new IPEndPoint(1, 2),
-                    new DnsEndPoint("foo", 3)
+                    new DnsEndPoint("foo", 3, AddressFamily.InterNetwork)
                 }
             };
 
