@@ -623,6 +623,13 @@ public abstract class PagesList extends DataStructure {
             try {
                 long tailAddr = writeLockPage(tailId, tailPage, bucket, lockAttempt++, bag); // Explicit check.
 
+                if (bag != null && bag.isEmpty()) {
+                    if (tailAddr != 0L)
+                        writeUnlock(tailId, tailPage, tailAddr, false);
+
+                    return;
+                }
+
                 if (tailAddr == 0L)
                     continue;
 
@@ -651,7 +658,7 @@ public abstract class PagesList extends DataStructure {
                         return;
                     }
 
-                    if (bag != null)
+                    if (bag != null && bag.isEmpty())
                         return;
                 }
                 finally {
@@ -1479,6 +1486,11 @@ public abstract class PagesList extends DataStructure {
             pageId = 0L;
 
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isEmpty() {
+            return pageId == 0L;
         }
 
         /** {@inheritDoc} */
