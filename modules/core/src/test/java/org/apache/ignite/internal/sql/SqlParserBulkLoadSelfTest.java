@@ -21,6 +21,7 @@ package org.apache.ignite.internal.sql;
  * Tests for SQL parser: COPY command.
  */
 public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
+
     /**
      * Tests for COPY command.
      *

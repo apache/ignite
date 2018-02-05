@@ -234,6 +234,67 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
+     * Verifies that no error is reported and characters are converted improperly when we import
+     * UTF-8 as windows-1251.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testWrongCharset_Utf8AsWin1251() throws SQLException {
+        checkWrongCharset(BULKLOAD_UTF8_CSV_FILE, "UTF-8", "windows-1251");
+    }
+
+    /**
+     * Verifies that no error is reported and characters are converted improperly when we import
+     * windows-1251 as UTF-8.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testWrongCharset_Win1251AsUtf8() throws SQLException {
+        checkWrongCharset(BULKLOAD_CP1251_CSV_FILE, "windows-1251", "UTF-8");
+    }
+
+    /**
+     * Verifies that no error is reported and characters are converted improperly when we import
+     * UTF-8 as ASCII.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testWrongCharset_Utf8AsAscii() throws SQLException {
+        checkWrongCharset(BULKLOAD_UTF8_CSV_FILE, "UTF-8", "ascii");
+    }
+
+    /**
+     * Verifies that no error is reported and characters are converted improperly when we import
+     * windows-1251 as ASCII.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testWrongCharset_Win1251AsAscii() throws SQLException {
+        checkWrongCharset(BULKLOAD_CP1251_CSV_FILE, "windows-1251", "ascii");
+    }
+
+    /**
+     * Checks that no error is reported and characters are converted improperly when we import
+     * file having a different charset than the one specified in the SQL statement.
+     *
+     * @param csvFileName Imported file name.
+     * @param csvCharsetName Imported file charset.
+     * @param stmtCharsetName Charset to specify in the SQL statement.
+     * @throws SQLException If failed.
+     */
+    private void checkWrongCharset(String csvFileName, String csvCharsetName, String stmtCharsetName)
+        throws SQLException {
+        int updatesCnt = stmt.executeUpdate(
+            "copy from \"" + csvFileName + "\" into " + TBL_NAME +
+                " (_key, age, firstName, lastName)" +
+                " format csv charset \"" + stmtCharsetName + '"');
+
+        assertEquals(2, updatesCnt);
+
+        checkRecodedNationalCacheContents(TBL_NAME, true, 2, csvCharsetName, stmtCharsetName);
+    }
+
+    /**
      * Imports two-entry CSV file with UTF-8 characters into a table and checks
      * the created entries using SELECT statement.
      *
@@ -580,7 +641,9 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Checks cache contents for a typical test using SQL SELECT command.
+     * Checks cache contents after bulk loading data in the above tests: ASCII version.
+     *
+     * <p>Uses SQL SELECT command for querying entries.
      *
      * @param tblName Table name to query.
      * @param checkLastName Check 'lastName' column (not imported in some tests).
@@ -619,7 +682,9 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Checks cache contents for a UTF-8 bulk load tests using SQL SELECT command.
+     * Checks cache contents after bulk loading data in the above tests: national charset version.
+     *
+     * <p>Uses SQL SELECT command for querying entries.
      *
      * @param tblName Table name to query.
      * @param checkLastName Check 'lastName' column (not imported in some tests).
@@ -655,5 +720,22 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
         }
 
         assertEquals(recCnt, cnt);
+    }
+
+    /**
+     * FIXME SHQ
+     * Checks cache contents after bulk loading data in the above tests: erroneously recoded national charset version.
+     *
+     * <p>Uses SQL SELECT command for querying entries.
+     *
+     * @param tblName
+     * @param checkLastName
+     * @param recNum
+     * @param csvFileCharsetName
+     * @param stmtCharsetName
+     */
+    private void checkRecodedNationalCacheContents(String tblName, boolean checkLastName, int recNum,
+        String csvFileCharsetName, String stmtCharsetName) {
+
     }
 }

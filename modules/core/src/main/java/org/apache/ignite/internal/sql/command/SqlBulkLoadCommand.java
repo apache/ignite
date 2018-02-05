@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.sql.command;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadFormat;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
@@ -137,31 +136,26 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
         String name = parseIdentifier(lex);
 
-        try {
-            BulkLoadCsvFormat fmt = (BulkLoadCsvFormat) BulkLoadFormat.createFormatFor(name);
+        switch (name.toUpperCase()) {
+            case BulkLoadCsvFormat.NAME:
+                BulkLoadCsvFormat fmt = new BulkLoadCsvFormat();
 
-            switch (fmt.name()) {
-                case BulkLoadCsvFormat.NAME:
-                    parseCsvOptions(lex, fmt);
+                // IGNITE-7537 will introduce user-defined values
+                fmt.lineSeparator(BulkLoadCsvFormat.DEFAULT_LINE_SEPARATOR);
+                fmt.fieldSeparator(BulkLoadCsvFormat.DEFAULT_FIELD_SEPARATOR);
+                fmt.quoteChars(BulkLoadCsvFormat.DEFAULT_QUOTE_CHARS);
+                fmt.commentChars(BulkLoadCsvFormat.DEFAULT_COMMENT_CHARS);
+                fmt.escapeChars(BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS);
 
-                    break;
+                parseCsvOptions(lex, fmt);
 
-                default:
-                    throw new IllegalArgumentException();
-            }
+                inputFormat = fmt;
 
-            // IGNITE-7537 will introduce user-defined values
-            fmt.lineSeparator(BulkLoadCsvFormat.DEFAULT_LINE_SEPARATOR);
-            fmt.fieldSeparator(BulkLoadCsvFormat.DEFAULT_FIELD_SEPARATOR);
-            fmt.quoteChars(BulkLoadCsvFormat.DEFAULT_QUOTE_CHARS);
-            fmt.commentChars(BulkLoadCsvFormat.DEFAULT_COMMENT_CHARS);
-            fmt.escapeChars(BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS);
+                break;
 
-            inputFormat = fmt;
-        }
-        catch (IgniteCheckedException e) {
-            throw error(lex, "Unknown format name: " + name + ". Currently supported formats are: "
-                + BulkLoadFormat.formatNames());
+            default:
+                throw error(lex, "Unknown format name: " + name +
+                    ". Currently supported formats are: " + BulkLoadFormat.formatNames());
         }
     }
 
@@ -183,11 +177,13 @@ public class SqlBulkLoadCommand implements SqlCommand {
                         format.inputCharset(Charset.forName(charsetName));
                     }
                     catch (IllegalCharsetNameException e) {
-                        throw error(lex, "Unknown charset name: '" + charsetName + "'");
+                        throw error(lex, "Unknown charset name: '" + charsetName + "': " + e.getMessage());
                     }
                     catch (UnsupportedCharsetException e) {
-                        throw error(lex, "Charset is not supported: '" + charsetName + "'");
+                        throw error(lex, "Charset is not supported: '" + charsetName + "': " + e.getMessage());
                     }
+
+                    break;
                 }
 
                 default:
@@ -227,13 +223,13 @@ public class SqlBulkLoadCommand implements SqlCommand {
      *
      * @return schemaName.
      */
-    public String schemaName() {
+    @Override public String schemaName() {
         return tblQName.schemaName();
     }
 
     /** {@inheritDoc} */
     @Override public void schemaName(String schemaName) {
-        this.tblQName.schemaName(schemaName);
+        tblQName.schemaName(schemaName);
     }
 
     /**
@@ -251,7 +247,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @param tblName The table name.
      */
     public void tableName(String tblName) {
-        this.tblQName.name(tblName);
+        tblQName.name(tblName);
     }
 
     /**
