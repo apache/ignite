@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Client
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Net;
     using System.Xml;
@@ -129,6 +130,8 @@ namespace Apache.Ignite.Core.Client
         /// * Ignite picks random endpoint and connects to it.
         /// * On disconnect, next endpoint is picked from the list.
         /// </summary>
+        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
+            Justification = "Consistency with EndPoint class name.")]
         public ICollection<EndPoint> EndPoints { get; private set; }
 
         /// <summary>

@@ -176,9 +176,15 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritDoc /> */
-        public EndPoint CurrentEndPoint
+        public EndPoint RemoteEndPoint
         {
-            get { return _socket.CurrentEndPoint; }
+            get { return _socket.RemoteEndPoint; }
+        }
+
+        /** <inheritDoc /> */
+        public EndPoint LocalEndPoint
+        {
+            get { return _socket.LocalEndPoint; }
         }
 
         /** <inheritDoc /> */

@@ -111,8 +111,17 @@ namespace Apache.Ignite.Core.Client
         IgniteClientConfiguration GetConfiguration();
 
         /// <summary>
-        /// Gets the currently used EndPoint.
+        /// Gets the current remote EndPoint.
         /// </summary>
-        EndPoint CurrentEndPoint { get; }
+        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
+            Justification = "Consistency with EndPoint class name.")]
+        EndPoint RemoteEndPoint { get; }
+
+        /// <summary>
+        /// Gets the current local EndPoint.
+        /// </summary>
+        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
+            Justification = "Consistency with EndPoint class name.")]
+        EndPoint LocalEndPoint { get; }
     }
 }

@@ -81,7 +81,28 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /** <inheritdoc /> */
-        public EndPoint CurrentEndPoint { get { return _socket.CurrentEndPoint; } }
+        public EndPoint RemoteEndPoint
+        {
+            get
+            {
+                lock (_syncRoot)
+                {
+                    return _socket != null ? _socket.RemoteEndPoint : null;
+                }
+            }
+        }
+
+        /** <inheritdoc /> */
+        public EndPoint LocalEndPoint
+        {
+            get
+            {
+                lock (_syncRoot)
+                {
+                    return _socket != null ? _socket.LocalEndPoint : null;
+                }
+            }
+        }
 
         /// <summary>
         /// Checks the disposed state.

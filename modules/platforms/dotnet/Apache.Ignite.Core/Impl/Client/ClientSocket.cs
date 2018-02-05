@@ -85,9 +85,6 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Error callback. */
         private readonly Action _onError;
 
-        /** EndPoint. */
-        private readonly EndPoint _endPoint;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientSocket" /> class.
         /// </summary>
@@ -101,8 +98,6 @@ namespace Apache.Ignite.Core.Impl.Client
             Debug.Assert(clientConfiguration != null);
 
             _onError = onError;
-            _endPoint = endPoint;
-
             _timeout = clientConfiguration.SocketTimeout;
 
             _socket = Connect(clientConfiguration, endPoint);
@@ -154,9 +149,14 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
-        /// Gets the currently used EndPoint.
+        /// Gets the current remote EndPoint.
         /// </summary>
-        public EndPoint CurrentEndPoint { get { return _endPoint; } }
+        public EndPoint RemoteEndPoint { get { return _socket.RemoteEndPoint; } }
+
+        /// <summary>
+        /// Gets the current local EndPoint.
+        /// </summary>
+        public EndPoint LocalEndPoint { get { return _socket.LocalEndPoint; } }
 
         /// <summary>
         /// Starts waiting for the new message.

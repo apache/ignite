@@ -41,8 +41,13 @@ namespace Apache.Ignite.Core.Impl.Client
             Func<IBinaryStream, T> readFunc, Func<ClientStatusCode, string, T> errorFunc = null);
 
         /// <summary>
-        /// Gets the currently used EndPoint.
+        /// Gets the current remote EndPoint.
         /// </summary>
-        EndPoint CurrentEndPoint { get; }
+        EndPoint RemoteEndPoint { get; }
+
+        /// <summary>
+        /// Gets the current local EndPoint.
+        /// </summary>
+        EndPoint LocalEndPoint { get; }
     }
 }
