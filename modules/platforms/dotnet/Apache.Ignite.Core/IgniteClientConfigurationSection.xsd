@@ -263,6 +263,11 @@
                     <xs:documentation>Socket operation timeout. Zero or negative for infinite timeout.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
+            <xs:attribute name="reconnectDisabled" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Disables automatic reconnect on network or server failure.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
         </xs:complexType>
     </xs:element>
 </xs:schema>
