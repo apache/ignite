@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 // DnsEndPoint.
                 var cfg = new IgniteClientConfiguration
                 {
-                    EndPoints = new[]
+                    Endpoints = new[]
                     {
                         new DnsEndPoint("localhost", port, AddressFamily.InterNetwork)
                     }
@@ -134,7 +134,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 // IPEndPoint.
                 cfg = new IgniteClientConfiguration
                 {
-                    EndPoints = new[]
+                    Endpoints = new[]
                     {
                         new IPEndPoint(new IPAddress(new byte[] {127, 0, 0, 1}), port)
                     }
@@ -462,7 +462,7 @@ namespace Apache.Ignite.Core.Tests.Client
             var port = IgniteClientConfiguration.DefaultPort;
             var cfg = new IgniteClientConfiguration
             {
-                EndPoints = new[]
+                Endpoints = new[]
                 {
                     new IPEndPoint(IPAddress.Loopback, port),
                     new IPEndPoint(IPAddress.Loopback, port + 1),

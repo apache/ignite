@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Client
     using System.ComponentModel;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using System.Net;
     using System.Xml;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary;
@@ -105,7 +104,7 @@ namespace Apache.Ignite.Core.Client
 
             BinaryProcessor = cfg.BinaryProcessor;
             SslStreamFactory = cfg.SslStreamFactory;
-            EndPoints = cfg.EndPoints == null ? null : cfg.EndPoints.ToList();
+            Endpoints = cfg.Endpoints == null ? null : cfg.Endpoints.ToList();
             ReconnectDisabled = cfg.ReconnectDisabled;
         }
 
@@ -129,10 +128,8 @@ namespace Apache.Ignite.Core.Client
         /// * Ignite picks random endpoint and connects to it.
         /// * On disconnect, next endpoint is picked from the list.
         /// </summary>
-        [SuppressMessage("Microsoft.Naming", "CA1702:CompoundWordsShouldBeCasedCorrectly",
-            Justification = "Consistency with EndPoint class name.")]
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
-        public ICollection<EndPoint> EndPoints { get; set; }
+        public ICollection<Endpoint> Endpoints { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether automatic reconnect is disabled.

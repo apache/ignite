@@ -21,11 +21,11 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using System.Net;
     using System.Net.Sockets;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
-    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private readonly IgniteClientConfiguration _config;
 
         /** Endpoints. */
-        private readonly List<EndPoint> _endPoints;
+        private readonly List<IPEndPoint> _endPoints;
 
         /** Locker. */
         private readonly object _syncRoot = new object();
@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Client
             Debug.Assert(config != null);
             
             _config = config;
-            _endPoints = GetEndPoints(config);
+            _endPoints = GetIpEndPoints(config).ToList();
 
             // Choose random endpoint for load balancing.
             _endPointIndex = new Random().Next(_endPoints.Count - 1);
@@ -198,47 +198,52 @@ namespace Apache.Ignite.Core.Impl.Client
         /// <summary>
         /// Gets the endpoints: all combinations of IP addresses and ports according to configuration.
         /// </summary>
-        private static List<EndPoint> GetEndPoints(IgniteClientConfiguration cfg)
+        private static IEnumerable<IPEndPoint> GetIpEndPoints(IgniteClientConfiguration cfg)
         {
-            var host = cfg.Host;
-
-            if (host == null && (cfg.EndPoints == null || cfg.EndPoints.Count == 0))
+            foreach (var e in GetEndpoints(cfg))
             {
-                throw new IgniteException("IgniteClientConfiguration does not contain any endpoints: " +
-                                          "Host is null, EndPoints is null or empty.");
-            }
+                Debug.Assert(e.Host != null);  // Checked by GetEndpoints.
 
-            var res = new List<EndPoint>((cfg.EndPoints == null ? 0 : cfg.EndPoints.Count) + (host == null ? 0 : 4));
-
-            if (host != null)
-            {
                 // GetHostEntry accepts IPs, but TryParse is a more efficient shortcut.
                 IPAddress ip;
 
-                if (IPAddress.TryParse(host, out ip))
+                if (IPAddress.TryParse(e.Host, out ip))
                 {
-                    res.Add(new IPEndPoint(ip, cfg.Port));
+                    yield return new IPEndPoint(ip, e.Port);
                 }
                 else
                 {
-                    foreach (var x in Dns.GetHostEntry(host).AddressList)
+                    foreach (var x in Dns.GetHostEntry(e.Host).AddressList)
                     {
-                        res.Add(new IPEndPoint(x, cfg.Port));
+                        yield return new IPEndPoint(x, e.Port);
                     }
                 }
             }
+        }
 
-            if (cfg.EndPoints != null)
+        /// <summary>
+        /// Gets the client endpoints.
+        /// </summary>
+        private static IEnumerable<Endpoint> GetEndpoints(IgniteClientConfiguration cfg)
+        {
+            if (cfg.Host != null)
             {
-                res.AddRange(cfg.EndPoints);
+                yield return new Endpoint {Host = cfg.Host, Port = cfg.Port};
             }
 
-            if (res.Count == 0)
+            if (cfg.Endpoints != null)
             {
-                throw new IgniteException("Failed to resolve client host: " + host);
-            }
+                foreach (var e in cfg.Endpoints)
+                {
+                    if (e.Host == null)
+                    {
+                        throw new IgniteClientException(
+                            "IgniteClientConfiguration.Endpoints[...].Host can't be null.");
+                    }
 
-            return res;
+                    yield return e;
+                }
+            }
         }
     }
 }
