@@ -2953,7 +2953,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             // keep binary for remote scans if possible
-            keepBinary = (!locNode && scanFilter == null && transformer == null) || qry.keepBinary();
+            keepBinary = (!locNode && scanFilter == null && transformer == null && !readEvt) || qry.keepBinary();
             transform = transformer;
             dht = cctx.isLocal() ? null : (cctx.isNear() ? cctx.near().dht() : cctx.dht());
             cache = dht != null ? dht : cctx.cache();
