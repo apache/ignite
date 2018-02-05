@@ -30,7 +30,7 @@
         </xs:annotation>
         <xs:complexType>
             <xs:all>
-                <xs:element name="binaryConfiguration" minOccurs="0">
+                <xs:element name="binaryConfiguration" minOccurs="0" maxOccurs="1">
                     <xs:annotation>
                         <xs:documentation>Binary configuration.</xs:documentation>
                     </xs:annotation>
@@ -172,7 +172,7 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
-                <xs:element name="sslStreamFactory">
+                <xs:element name="sslStreamFactory" minOccurs="0" maxOccurs="1">
                     <xs:complexType>
                         <xs:attribute name="type" type="xs:string" use="required">
                             <xs:annotation>
@@ -204,6 +204,32 @@
                                 <xs:documentation>SSL protocols to use.</xs:documentation>
                             </xs:annotation>
                         </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="endpoints" minOccurs="0" maxOccurs="1">
+                    <xs:annotation>
+                        <xs:documentation>Endpoints to connect to.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="endpoint" minOccurs="1" maxOccurs="unbounded">
+                                <xs:annotation>
+                                    <xs:documentation>Ignite thin client connection endpoint.</xs:documentation>
+                                </xs:annotation>
+                                <xs:complexType>
+                                    <xs:attribute name="host" type="xs:string" use="required">
+                                        <xs:annotation>
+                                            <xs:documentation>Host to connect to, required property.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                    <xs:attribute name="port" type="xs:int">
+                                        <xs:annotation>
+                                            <xs:documentation>Target port.</xs:documentation>
+                                        </xs:annotation>
+                                    </xs:attribute>
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
                     </xs:complexType>
                 </xs:element>
             </xs:all>
