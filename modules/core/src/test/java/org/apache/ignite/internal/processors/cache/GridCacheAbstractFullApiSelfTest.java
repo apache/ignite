@@ -463,14 +463,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++)
             assertEquals(globalPrimarySize, jcache(i).size(PRIMARY));
 
-        int times = 1;
+        // Check how many instances of any given key there is in the cluster.
+        int globalSize = 0;
 
-        if (cacheMode() == REPLICATED)
-            times = gridCount();
-        else if (cacheMode() == PARTITIONED)
-            times = Math.min(gridCount(), jcache().getConfiguration(CacheConfiguration.class).getBackups() + 1);
-
-        int globalSize = globalPrimarySize * times;
+        for (String key : map.keySet())
+            globalSize += affinity(jcache()).mapKeyToPrimaryAndBackups(key).size();
 
         for (int i = 0; i < gridCount(); i++)
             assertEquals(globalSize, jcache(i).size(ALL));

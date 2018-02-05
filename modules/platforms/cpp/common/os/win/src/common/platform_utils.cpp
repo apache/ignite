@@ -91,5 +91,20 @@ namespace ignite
 
             return attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY) != 0;
         }
+
+        StdCharOutStream& Fs(StdCharOutStream& ostr)
+        {
+            ostr.put('\\');
+            return ostr;
+        }
+
+        StdCharOutStream& Dle(StdCharOutStream& ostr)
+        {
+            static const char expansion[] = ".dll";
+
+            ostr.write(expansion, sizeof(expansion) - 1);
+
+            return ostr;
+        }
     }
 }

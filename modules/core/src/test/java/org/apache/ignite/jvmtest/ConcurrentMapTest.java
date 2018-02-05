@@ -24,6 +24,7 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -31,7 +32,6 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ThreadLocalRandom8;
 
 /**
  *
@@ -155,7 +155,7 @@ public class ConcurrentMapTest {
 
         GridTestUtils.runMultiThreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                 for (int i = 0; i < iterCnt; i++) {
                     // Put random.

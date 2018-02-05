@@ -103,6 +103,7 @@
     <Compile Include="Impl\IPlatformTargetInternal.cs" />
     <Compile Include="Impl\DataRegionMetrics.cs" />
     <Compile Include="Impl\PersistentStore\PersistentStoreMetrics.cs" />
+    <Compile Include="Impl\Services\DynamicServiceProxy.cs" />
     <Compile Include="Impl\Services\ServiceMethodHelper.cs" />
     <Compile Include="Impl\Services\ServiceProxyFactory.cs" />
     <Compile Include="Impl\Services\ServiceProxyTypeGenerator.cs" />
