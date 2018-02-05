@@ -466,7 +466,7 @@ namespace Apache.Ignite.Core.Tests.Client
                 {
                     new Endpoint("localhost"),
                     new Endpoint("127.0.0.1", port + 1),
-                    new Endpoint {Host = "127.0.0.2", Port = port + 2}
+                    new Endpoint {Host = "127.0.0.1", Port = port + 2}
                 }
             };
 
