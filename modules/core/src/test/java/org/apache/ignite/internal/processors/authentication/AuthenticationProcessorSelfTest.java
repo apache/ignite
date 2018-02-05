@@ -37,7 +37,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Test for {@link IgniteAuthenticationProcessor}.
  */
-public class AuthenticationSelfTest extends GridCommonAbstractTest {
+public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -94,6 +94,8 @@ public class AuthenticationSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
+
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
 
         startGrids(NODES_COUNT);
 
@@ -461,7 +463,7 @@ public class AuthenticationSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentAuthorizeNodeRestartCoordinator() throws Exception {
-        final int testUsersCnt = 10;
+        final int testUsersCnt = 1;
 
         AuthorizationContext.context(actxDflt);
 
@@ -522,6 +524,8 @@ public class AuthenticationSelfTest extends GridCommonAbstractTest {
                     U.error(log, "Unexpected exception on coordinator restart", e);
                     fail();
                 }
+
+                System.out.println("+++ END RESTART");
             }
         });
     }
@@ -534,10 +538,13 @@ public class AuthenticationSelfTest extends GridCommonAbstractTest {
             @Override public void run() {
                 try {
                     for (int i = 0; i < RESTARTS; ++i) {
+
+                        System.out.println("+++ STOP");
                         stopGrid(1);
 
                         U.sleep(1000);
 
+                        System.out.println("+++ START");
                         startGrid(1);
 
                         U.sleep(1000);
@@ -547,6 +554,8 @@ public class AuthenticationSelfTest extends GridCommonAbstractTest {
                     e.printStackTrace(System.err);
                     fail("Unexpected exception on server restart: " + e.getMessage());
                 }
+
+                System.out.println("+++ END RESTART");
             }
         });
 
@@ -557,15 +566,20 @@ public class AuthenticationSelfTest extends GridCommonAbstractTest {
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
                 AuthorizationContext.context(actxDflt);
+
                 String user = "test" + usrCnt.getAndIncrement();
 
                 try {
                     while (!restartFut.isDone()) {
+                        System.out.println("+++ ADD " + user);
                         grid(CLI_NODE).context().authentication().addUser(user, "init");
 
+                        System.out.println("+++ UPDATE " + user);
                         grid(CLI_NODE).context().authentication().updateUser(user, "passwd_" + user);
 
+                        System.out.println("+++ REMOVE " + user);
                         grid(CLI_NODE).context().authentication().removeUser(user);
+                        System.out.println("+++ REMOVE OK" + user);
                     }
                 }
                 catch (Exception e) {
@@ -573,7 +587,7 @@ public class AuthenticationSelfTest extends GridCommonAbstractTest {
                     fail("Unexpected exception on add / remove");
                 }
             }
-        }, 10, "user-op");
+        }, 1, "user-op");
 
         restartFut.get();
     }

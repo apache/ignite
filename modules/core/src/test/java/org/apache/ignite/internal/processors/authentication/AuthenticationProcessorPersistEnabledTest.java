@@ -24,7 +24,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 /**
  * Test for {@link IgniteAuthenticationProcessor}.
  */
-public class AuthenticationPersistEnabledTest extends AuthenticationSelfTest {
+public class AuthenticationProcessorPersistEnabledTest extends AuthenticationProcessorSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
