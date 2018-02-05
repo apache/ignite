@@ -52,7 +52,7 @@ mixin lbl-not-required(txt)
                         +lbl('Country:')
                         .col-xs-5.col-sm-4
                             button#profile-country.select-toggle.form-control(bs-select bs-options='item.name as item.name for item in $ctrl.ui.countries' type='text' ng-model='$ctrl.ui.user.country' placeholder='Choose your country' ng-required='true')
-                    .details-row
+                    .details-row#security-token-section
                         .advanced-options
                             i.fa(
                             ng-click='$ctrl.toggleToken()'
@@ -64,7 +64,7 @@ mixin lbl-not-required(txt)
                             i.tipLabel.fa.fa-refresh(ng-click='$ctrl.generateToken()' bs-tooltip='' data-title='Generate random security token')
                             i.tipLabel.fa.fa-clipboard(ignite-copy-to-clipboard='{{$ctrl.ui.user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
                             i.tipLabel.icon-help(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
-                    .details-row
+                    .details-row#change-password-section
                         .advanced-options
                             i.fa(
                             ng-click='$ctrl.togglePassword()'

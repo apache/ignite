@@ -75,10 +75,12 @@ Ignite is an elastic, horizontally scalable distributed system that supports add
 ## Ignite and Ignite.NET
 
 * Ignite.NET is built on top of Ignite.
-* .NET starts the JVM in the same process and communicates with it via JNI & C++.
+* .NET starts the JVM in the same process and communicates with it via JNI.
 * .NET, C++ and Java nodes can join the same cluster, use the same caches, and interoperate using common binary protocol.
 * Java compute jobs can execute on any node (Java, .NET, C++).
 * .NET compute jobs can only execute on .NET nodes.
+
+Ignite.NET also has Thin Client mode (see `Ignition.StartClient()`), which does not start JVM and does not require Java on machine.
 
 ## Ignite Components
 

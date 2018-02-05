@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
-
 export default class PageProfileController {
     static $inject = [
         '$rootScope', '$scope', '$http', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteCountries', 'User'
@@ -58,20 +56,6 @@ export default class PageProfileController {
             delete this.ui.user.password;
             delete this.ui.user.confirm;
         }
-    }
-
-    profileNotChanged() {
-        const old = this.$root.user;
-        const cur = this.ui.user;
-
-        return _.isEqual(old, cur);
-    }
-
-    saveBtnTipText() {
-        if (this.ui.expandedPassword && this.ui.user.password !== this.ui.user.confirm)
-            return 'Invalid password';
-
-        return _.get(this.form, '$valid') ? 'Save profile' : 'Invalid profile settings';
     }
 
     saveUser() {
