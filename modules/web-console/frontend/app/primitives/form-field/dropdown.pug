@@ -38,7 +38,7 @@ mixin form-field__dropdown({ label, model, name, disabled, required, multiple, p
 
     .form-field
         +form-field__label({ label, name, required })
-            +form-field__tooltip({ title: tip, options: tipOpts })
+            +form-field__tooltip(tip, tipOpts)
 
         .form-field__control
             +__form-field__input(attributes=attributes)

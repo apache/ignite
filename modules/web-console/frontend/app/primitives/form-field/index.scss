@@ -23,7 +23,6 @@
     font-family: Roboto;
 
     &__label {
-        display: flex;
         float: left;
         width: 100%;
         margin: 0 0 4px;
@@ -31,10 +30,6 @@
         color: #424242;
         font-size: 14px;
         line-height: 14px;
-
-        .icon-help {
-            line-height: 14px;
-        }
 
         &.required:after {
             content: '';
@@ -47,7 +42,7 @@
         width: 100%;
 
         & > input,
-        & > button:not(.btn-ignite) {
+        & > button {
             outline: none;
             overflow: visible;
 
@@ -55,7 +50,7 @@
             width: 100%;
             max-width: initial;
             height: 36px;
-            padding: 11px 10px;
+            padding: 0 10px;
             margin-right: 0;
 
             border: solid 1px #c5c5c5;
@@ -65,7 +60,7 @@
 
             color: $text-color;
             text-align: left;
-            line-height: 14px;
+            line-height: 36px;
 
             &.ng-invalid:not(.ng-pristine),
             &.ng-invalid.ng-touched {
