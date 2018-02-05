@@ -21,15 +21,16 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Generates random fixed width ranges from  [1..tableSize] interval.
- * It's guaranteed that threads get disjoint ranges.
- * It is used to get disjoint ranges of ids for a table with incremental ids.
+ * Generates random fixed width ranges from [1..tableSize] interval.
+ * It is guaranteed that different threads get disjoint ranges.
  */
 public class DisjointRangeGenerator {
     /** Max number of threads that can use this generator. */
     private final int maxThreadsCnt;
-    /** With of generated range. */
+
+    /** Width of generated range. */
     private final long rangeWidth;
+
     /** Size of test data table. */
     private final long tableSize;
 
@@ -64,15 +65,15 @@ public class DisjointRangeGenerator {
         this.tableSize = tableSize;
     }
 
-    /** {@inheritDoc} */
+    /** Width of generated range. */
     public long rangeWidth() {
         return rangeWidth;
     }
 
     /**
-     * Get new random range from [1..tableSize]
+     * Get new random range from [1..tableSize] interval.
      *
-     * @return start id of range
+     * @return start id of range.
      */
     public long nextRangeStartId() {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -89,10 +90,10 @@ public class DisjointRangeGenerator {
     }
 
     /**
-     * Get the end of the range that starts with given id
+     * Get the end of the range that starts with given id.
      *
-     * @param startId start id of the range
-     * @return id of the range (inclusive)
+     * @param startId start id of the range.
+     * @return id of the range (inclusive).
      */
     public long endRangeId(long startId) {
         return startId + rangeWidth - 1;
