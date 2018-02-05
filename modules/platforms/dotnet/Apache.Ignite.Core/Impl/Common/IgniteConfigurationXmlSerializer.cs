@@ -577,24 +577,8 @@ namespace Apache.Ignite.Core.Impl.Common
             Debug.Assert(obj != null);
 
             return obj.GetType().GetProperties()
-                .Where(p => IsNonDefault(obj, p));
-        }
-
-        /// <summary>
-        /// Determines whether specified property has non-default value in the provided object..
-        /// </summary>
-        private static bool IsNonDefault(object obj, PropertyInfo p)
-        {
-            try
-            {
-                return p.GetIndexParameters().Length == 0 && // Skip indexed properties.
-                       !Equals(p.GetValue(obj, null), GetDefaultValue(p));
-            }
-            catch (Exception)
-            {
-                // Unsupported property, like EndPoint.ScopeId
-                return false;
-            }
+                .Where(p => p.GetIndexParameters().Length == 0 &&  // Skip indexed properties.
+                            !Equals(p.GetValue(obj, null), GetDefaultValue(p)));
         }
 
         /// <summary>
