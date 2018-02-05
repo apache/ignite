@@ -206,7 +206,7 @@ public class Log4JLogger implements IgniteLogger, LoggerNodeIdAware, Log4jFileAw
      * @param watchDelay delay in milliseconds used to check configuration file for changes.
      * @throws IgniteCheckedException Thrown in case logger can't be created.
      */
-    public Log4JLogger(final String path, long watchDelay) throws IgniteCheckedException {
+    public Log4JLogger(final String path, final long watchDelay) throws IgniteCheckedException {
         if (path == null)
             throw new IgniteCheckedException("Configuration XML file for Log4j must be specified.");
 
