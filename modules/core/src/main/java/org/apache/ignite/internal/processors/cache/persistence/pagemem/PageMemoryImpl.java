@@ -85,7 +85,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_DELAYED_EVICTED_PAGE_WRITE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DELAYED_REPLACED_PAGE_WRITE;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
 
@@ -240,8 +240,8 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Write throttle type. */
     private ThrottlingPolicy throttlingPlc;
 
-    /**  */
-    private boolean pageEvictWarned;
+    /** Flag indicating page replacement started (rotation with disk), allocating new page requires freeing old one. */
+    private volatile boolean pageReplacementWarned;
 
     /** */
     private long[] sizes;
@@ -253,7 +253,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param directMemoryProvider Memory allocator to use.
      * @param ctx Cache shared context.
      * @param pageSize Page size.
-     * @param flushDirtyPage Callback invoked when a dirty page is evicted.
+     * @param flushDirtyPage write callback invoked when a dirty page is removed for replacement.
      * @param changeTracker Callback invoked to track changes in pages.
      * @param throttlingPlc Write throttle enabled and its type. Null equal to none.
      */
@@ -269,6 +269,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         @Nullable ThrottlingPolicy throttlingPlc
     ) {
         assert ctx != null;
+        assert pageSize > 0;
 
         log = ctx.logger(PageMemoryImpl.class);
 
@@ -277,7 +278,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         this.sizes = sizes;
         this.flushDirtyPage = flushDirtyPage;
         delayedPageReplacementTracker =
-            getBoolean(IGNITE_DELAYED_EVICTED_PAGE_WRITE, true)
+            getBoolean(IGNITE_DELAYED_REPLACED_PAGE_WRITE, true)
                 ? new DelayedPageReplacementTracker(pageSize, flushDirtyPage, log):
                 null;
         this.changeTracker = changeTracker;
@@ -2023,8 +2024,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         private long removePageForReplacement(ReplacedPageWriter saveDirtyPage) throws IgniteCheckedException {
             assert getWriteHoldCount() > 0;
 
-            if (!pageEvictWarned) {
-                pageEvictWarned = true;
+            if (!pageReplacementWarned) {
+                pageReplacementWarned = true;
 
                 U.warn(log, "Page evictions started, this will affect storage performance (consider increasing " +
                     "DataRegionConfiguration#setMaxSize).");

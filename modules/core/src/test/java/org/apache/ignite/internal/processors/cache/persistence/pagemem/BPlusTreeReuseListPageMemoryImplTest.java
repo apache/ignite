@@ -69,7 +69,7 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
             sharedCtx,
             PAGE_SIZE,
             (fullPageId, byteBuf, tag) -> {
-                assert false : "No evictions should happen during the test";
+                assert false : "No page replacement (rotation with disk) should happen during the test";
             },
             new GridInClosure3X<Long, FullPageId, PageMemoryEx>() {
                 @Override public void applyx(Long page, FullPageId fullPageId, PageMemoryEx pageMem) {

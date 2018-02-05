@@ -232,7 +232,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             // System.setProperty(IgniteSystemProperties.IGNITE_DIRTY_PAGES_SORTED_STORAGE, "true");
             System.setProperty(IgniteSystemProperties.IGNITE_USE_ASYNC_FILE_IO_FACTORY, "false");
             System.setProperty(IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED, "speed");
-            System.setProperty(IgniteSystemProperties.IGNITE_DELAYED_EVICTED_PAGE_WRITE, "true");
+            System.setProperty(IgniteSystemProperties.IGNITE_DELAYED_REPLACED_PAGE_WRITE, "true");
 
 
             setWalArchAndWorkToSameVal = true;

@@ -46,8 +46,8 @@ public class DelayedPageReplacementTracker {
     private final Collection<FullPageId> locked = new HashSet<>(Runtime.getRuntime().availableProcessors() * 2);
 
     /**
-     * Has locked pages, flag for fast check if there are some pages, what were evicted and is being written. Write is
-     * guarded by {@link #locked} monitor.
+     * Has locked pages, flag for fast check if there are some pages, what were replaced and is being written.
+     * Write to field is guarded by {@link #locked} monitor.
      */
     private volatile boolean hasLockedPages;
 
@@ -64,10 +64,10 @@ public class DelayedPageReplacementTracker {
     };
 
     /**
-     * Dirty page eviction thread local. Because page write {@link DelayedDirtyPageWrite} is stateful and not thread
-     * safe, this thread local protects from GC pressure on evict pages.
+     * Dirty page write for replacement operations thread local. Because page write {@link DelayedDirtyPageWrite} is
+     * stateful and not thread safe, this thread local protects from GC pressure on pages replacement.
      */
-    private final ThreadLocal<DelayedDirtyPageWrite> dirtyPageEvictionThreadLoc
+    private final ThreadLocal<DelayedDirtyPageWrite> delayedPageWriteThreadLoc
         = new ThreadLocal<DelayedDirtyPageWrite>() {
         @Override protected DelayedDirtyPageWrite initialValue() {
             return new DelayedDirtyPageWrite(flushDirtyPage, byteBufThreadLoc, pageSize,
@@ -91,7 +91,7 @@ public class DelayedPageReplacementTracker {
      * @return delayed page write implementation, finish method to be called to actually write page.
      */
     public DelayedDirtyPageWrite delayedPageWrite() {
-        return dirtyPageEvictionThreadLoc.get();
+        return delayedPageWriteThreadLoc.get();
     }
 
     /**
@@ -103,12 +103,12 @@ public class DelayedPageReplacementTracker {
 
             boolean add = locked.add(id);
 
-            assert add : "Double locking of page for eviction is not possible";
+            assert add : "Double locking of page for replacement is not possible";
         }
     }
 
     /**
-     * Method is returned when page is available to be loaded from store.
+     * Method is returned when page is available to be loaded from store, or waits for replacement finish.
      *
      * @param id full page ID to be loaded from store.
      */
@@ -122,7 +122,7 @@ public class DelayedPageReplacementTracker {
 
             while (locked.contains(id)) {
                 if (log.isDebugEnabled())
-                    log.debug("Found evicted page [" + id + "] which is being written to page store, wait for finish eviction");
+                    log.debug("Found replaced page [" + id + "] which is being written to page store, wait for finish replacement");
 
                 try {
                     locked.wait();

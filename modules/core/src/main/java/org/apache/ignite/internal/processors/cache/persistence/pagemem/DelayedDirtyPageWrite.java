@@ -24,9 +24,9 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Not thread safe and stateful class for evicting one page with delay. This allows to write page content without
- * holding segment lock. Page data is copied into temp buffer during {@link #writePage(FullPageId, ByteBuffer, int)}
- * and then sent to real implementation by {@link #finishReplacement()}.
+ * Not thread safe and stateful class for replacement of one page with write() delay. This allows to write page content
+ * without holding segment lock. Page data is copied into temp buffer during {@link #writePage(FullPageId, ByteBuffer,
+ * int)} and then sent to real implementation by {@link #finishReplacement()}.
  */
 public class DelayedDirtyPageWrite implements ReplacedPageWriter {
     /** Real flush dirty page implementation. */
@@ -38,7 +38,7 @@ public class DelayedDirtyPageWrite implements ReplacedPageWriter {
     /** Thread local with byte buffers. */
     private final ThreadLocal<ByteBuffer> byteBufThreadLoc;
 
-    /** Eviction pages tracker, used to register & unregister pages being written. */
+    /** Replacing pages tracker, used to register & unregister pages being written. */
     private final DelayedPageReplacementTracker tracker;
 
     /** Full page id to be written on {@link #finishReplacement()} or null if nothing to write. */
@@ -84,7 +84,7 @@ public class DelayedDirtyPageWrite implements ReplacedPageWriter {
     }
 
     /**
-     * Runs actual write if required, no op if nothing was evicted.
+     * Runs actual write if required. Method is 'no op' if there was no page selected for replacement.
      * @throws IgniteCheckedException if write failed.
      */
     public void finishReplacement() throws IgniteCheckedException {

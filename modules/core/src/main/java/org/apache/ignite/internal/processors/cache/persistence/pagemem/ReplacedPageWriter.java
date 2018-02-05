@@ -21,7 +21,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 
 /**
- * Flush (write) dirty page implementation for freed page during page replacement. When possible, will be called by evictPage().
+ * Flush (write) dirty page implementation for freed page during page replacement. When possible, will be called by
+ * removePageForReplacement().
  */
 public interface ReplacedPageWriter {
     /**

@@ -814,7 +814,7 @@ public final class IgniteSystemProperties {
      * When set to {@code true} (default), pages are written to page store without holding segment lock (with delay).
      * Because other thread may require exactly the same page to be loaded from store, reads are protected by locking.
      */
-    public static final String IGNITE_DELAYED_EVICTED_PAGE_WRITE = "IGNITE_DELAYED_EVICTED_PAGE_WRITE";
+    public static final String IGNITE_DELAYED_REPLACED_PAGE_WRITE = "IGNITE_DELAYED_REPLACED_PAGE_WRITE";
 
     /**
      * Enforces singleton.
