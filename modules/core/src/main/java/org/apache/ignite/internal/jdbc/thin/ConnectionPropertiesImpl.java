@@ -577,8 +577,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
                         return;
                 }
 
-                throw new SQLException("Invalid property value. [name=" + name + ", + val=" + strVal
-                    + ", choices=" + Arrays.toString(choices), SqlStateCode.CLIENT_CONNECTION_FAILED);
+                throw new SQLException("Invalid property value. [name=" + name + ", val=" + strVal
+                    + ", choices=" + Arrays.toString(choices) + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
             }
         }
 
