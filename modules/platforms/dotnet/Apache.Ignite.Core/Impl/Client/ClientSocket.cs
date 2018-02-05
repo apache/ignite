@@ -316,6 +316,10 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     // Disconnected.
                     _exception = _exception ?? new SocketException((int) SocketError.ConnectionAborted);
+                    if (_onError != null)
+                    {
+                        _onError();
+                    }
                     Dispose();
                     CheckException();
                 }
