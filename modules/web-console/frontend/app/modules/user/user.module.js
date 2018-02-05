@@ -27,8 +27,10 @@ angular.module('ignite-console.user', [
     'ignite-console.core'
 ])
 .factory('sessionRecoverer', ['$injector', '$q', ($injector, $q) => {
+    const ignoredStates = ['', 'signin', 'terms', '403', '404'];
+
     return {
-        ignoredStates: ['', 'signin'],
+        ignoredStates,
         responseError: (response) => {
             // Session has expired
             if (response.status === 401) {
@@ -36,7 +38,7 @@ angular.module('ignite-console.user', [
 
                 const stateName = $injector.get('$uiRouterGlobals').current.name;
 
-                if (!_.includes(this.ignoredStates, stateName))
+                if (!_.includes(ignoredStates, stateName))
                     $injector.get('$state').go('signin');
             }
 
@@ -70,22 +72,25 @@ angular.module('ignite-console.user', [
         AclService.attachRole(role);
     });
 
-    $transitions.onBefore({}, (trans) => {
+    $transitions.onFinish({}, (trans) => {
         const $state = trans.router.stateService;
         const {name, permission} = trans.to();
+
+        if (AclService.can(permission))
+            Activities.post({action: $state.href(name, trans.params('to'))});
+    });
+
+    $transitions.onBefore({}, (trans) => {
+        const $state = trans.router.stateService;
+        const {permission} = trans.to();
 
         if (_.isEmpty(permission))
             return;
 
         return trans.injector().get('User').read()
             .then(() => {
-                if (AclService.can(permission)) {
-                    Activities.post({action: $state.href(name, trans.params('to'))});
-
-                    return;
-                }
-
-                return $state.target(trans.to().failState || '403');
+                if (!AclService.can(permission))
+                    throw new Error('Illegal access error');
             })
             .catch(() => {
                 return $state.target(trans.to().failState || '403');

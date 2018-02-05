@@ -10325,6 +10325,34 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param ctx Context.
+     *
+     * @return instance of current baseline topology if it exists
+     */
+    public static BaselineTopology getBaselineTopology(@NotNull GridKernalContext ctx) {
+        return ctx.state().clusterState().baselineTopology();
+    }
+
+
+    /**
+     * @param cctx Context.
+     *
+     * @return instance of current baseline topology if it exists
+     */
+    public static BaselineTopology getBaselineTopology(@NotNull GridCacheSharedContext cctx) {
+        return getBaselineTopology(cctx.kernalContext());
+    }
+
+    /**
+     * @param cctx Context.
+     *
+     * @return instance of current baseline topology if it exists
+     */
+    public static BaselineTopology getBaselineTopology(@NotNull GridCacheContext cctx) {
+        return getBaselineTopology(cctx.kernalContext());
+    }
+
+    /**
      * @param addr pointer in memory
      * @param len how much byte to read (should divide 8)
      *

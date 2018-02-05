@@ -45,7 +45,7 @@ export class Confirm {
                     $scope.yesNo = yesNo;
                     $scope.content = content;
                     $scope.confirmCancel = $scope.confirmNo = () => {
-                        reject({error: REJECTED_BY_USER});
+                        reject(new CancellationError());
                         $scope.$hide();
                     };
                     $scope.confirmYes = () => {

@@ -19,14 +19,10 @@ include /app/helpers/jade/mixins
 mixin lbl(txt)
     label.col-sm-2.required.labelFormField #{txt}
 
-mixin lbl-not-required(txt)
-    label.col-sm-2.labelFormField #{txt}
-
 .row.page-profile
     header.header-with-selector
         div
             h1 User profile
-
         div
             button.btn-ignite.btn-ignite--primary(ng-click='$ctrl.saveUser()' ng-disabled='$ctrl.form.$invalid') Save
 

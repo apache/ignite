@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -52,17 +53,18 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
         return super.getConfiguration(igniteInstanceName)
                 .setConsistentId(igniteInstanceName)
                 .setDataStorageConfiguration(
-                        new DataStorageConfiguration()
-                                .setCheckpointFrequency(3_000)
-                                .setDefaultDataRegionConfiguration(
-                                        new DataRegionConfiguration()
-                                                .setPersistenceEnabled(true)
-                                                .setMaxSize(100L * 1024 * 1024)))
+                    new DataStorageConfiguration()
+                        .setCheckpointFrequency(3_000)
+                        .setDefaultDataRegionConfiguration(
+                            new DataRegionConfiguration()
+                                .setPersistenceEnabled(true)
+                                .setMaxSize(100L * 1024 * 1024))
+                        .setWalMode(WALMode.LOG_ONLY))
                 .setCacheConfiguration(new CacheConfiguration(CACHE_NAME)
-                        .setBackups(2)
-                        .setRebalanceBatchSize(4096) // Force to create several supply messages during rebalancing.
-                        .setAffinity(
-                                new RendezvousAffinityFunction(false, PARTITIONS_CNT)));
+                    .setBackups(2)
+                    .setRebalanceBatchSize(4096) // Force to create several supply messages during rebalancing.
+                    .setAffinity(
+                        new RendezvousAffinityFunction(false, PARTITIONS_CNT)));
     }
 
     /** {@inheritDoc} */
@@ -94,9 +96,9 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
     public void test() throws Exception {
         IgniteEx ignite = (IgniteEx)startGrids(3);
 
-        ignite.active(true);
+        ignite.cluster().active(true);
 
-        IgniteCache cache = ignite.cache(CACHE_NAME);
+        IgniteCache<Integer, Integer> cache = ignite.cache(CACHE_NAME);
 
         for (int i = 0; i < 256; i++)
             cache.put(i, i);
@@ -106,7 +108,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
         IgniteEx node = (IgniteEx) ignite(problemNode);
         int[] primaryPartitions = node.affinity(CACHE_NAME).primaryPartitions(node.cluster().localNode());
 
-        ignite.active(false);
+        ignite.cluster().active(false);
 
         boolean primaryRemoved = false;
         for (int i = 0; i < PARTITIONS_CNT; i++) {
@@ -128,7 +130,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
                         f.delete();
                     }
                 }
-                else if (f.getName().equals("index.bin")) {
+                else if ("index.bin".equals(f.getName())) {
                     info("Removing: " + f.getName());
 
                     f.delete();
@@ -138,7 +140,7 @@ public class GridCacheRebalancingPartitionCountersTest extends GridCommonAbstrac
 
         assertTrue(primaryRemoved);
 
-        ignite.active(true);
+        ignite.cluster().active(true);
         waitForRebalancing();
 
         List<String> issues = new ArrayList<>();

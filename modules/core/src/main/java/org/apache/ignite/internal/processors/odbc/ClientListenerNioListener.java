@@ -48,6 +48,12 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
     /** Thin client handshake code. */
     public static final byte THIN_CLIENT = 2;
 
+    /** Connection handshake passed. */
+    public static final int CONN_CTX_HANDSHAKE_PASSED = GridNioSessionMetaKey.nextUniqueKey();
+
+    /** Maximum size of the handshake message. */
+    public static final int MAX_HANDSHAKE_MSG_SIZE = 128;
+
     /** Connection-related metadata key. */
     private static final int CONN_CTX_META_KEY = GridNioSessionMetaKey.nextUniqueKey();
 
@@ -113,6 +119,8 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
         if (connCtx == null) {
             onHandshake(ses, msg);
+
+            ses.addMeta(CONN_CTX_HANDSHAKE_PASSED, true);
 
             return;
         }
