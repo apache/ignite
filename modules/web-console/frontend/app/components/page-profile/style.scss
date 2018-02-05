@@ -15,17 +15,22 @@
  * limitations under the License.
  */
 
-import COUNTRIES from 'app/data/countries.json';
+.page-profile {
+    .docs-header {
+        display: flex;
+        flex-direction: row;
+        align-items: baseline;
 
-export default ['IgniteCountries', function() {
-    const indexByName = _.keyBy(COUNTRIES, 'name');
-    const UNDEFINED_COUNTRY = {name: '', value: '', code: ''};
+        margin: 40px 0 20px 0;
 
-    const getByName = (name) => (indexByName[name] || UNDEFINED_COUNTRY);
-    const getAll = () => (COUNTRIES);
+        h1 {
+            font-size: 24px;
+            margin: 0 10px 0 0;
+        }
+    }
 
-    return {
-        getByName,
-        getAll
-    };
-}];
+    .panel--ignite {
+    	padding: 10px 30px;
+    }
+}
+    

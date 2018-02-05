@@ -38,13 +38,5 @@ angular
         tfMetaTags: {
             title: 'Reset password'
         }
-    })
-    .state('password.send', {
-        url: '/send',
-        templateUrl,
-        unsaved: true,
-        tfMetaTags: {
-            title: 'Password Send'
-        }
     });
 }]);

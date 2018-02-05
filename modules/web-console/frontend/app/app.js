@@ -138,6 +138,7 @@ import connectedClusters from './components/connected-clusters';
 import igniteFormField from './components/ignite-form-field';
 
 import pageProfile from './components/page-profile';
+import pagePasswordChanged from './components/page-password-changed';
 
 import igniteServices from './services';
 
@@ -225,6 +226,7 @@ angular.module('ignite-console', [
     pageProfile.name,
     breadcrumbs.name,
     igniteFormField.name,
+    pagePasswordChanged.name,
     // Ignite modules.
     IgniteModules.name
 ])

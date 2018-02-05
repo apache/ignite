@@ -64,7 +64,7 @@ web-console-header
                             .settings-row(ng-show='action == "password/forgot"')
                                 +lblRequired('Email:')
                                 .col-xs-9.col-md-8
-                                    input#forgot_email.form-control(ignite-on-enter='form.$valid && forgotPassword(ui)' type='email' ng-model='ui.email' placeholder='Input email' required)
+                                    input#forgot_email.form-control(ignite-on-enter='form.$valid && $ctrl.forgotPassword(ui)' type='email' ng-model='ui.email' placeholder='Input email' required)
                             .settings-row(ng-show='action == "signup"')
                                 +lblRequired('Company:')
                                 .col-xs-9.col-md-8
@@ -72,7 +72,7 @@ web-console-header
                             .settings-row(ng-show='action == "signup"')
                                 +lblRequired('Country:')
                                 .col-xs-9.col-md-8
-                                    button#country.select-toggle.form-control(ignite-on-enter-focus-move='signup' bs-select bs-options='item.name as item.name for item in countries' type='text' ng-model='ui.country' placeholder='Choose your country' ng-required='action=="signup"')
+                                    button#country.select-toggle.form-control(ignite-on-enter-focus-move='signup' bs-select bs-options='item.value as item.label for item in countries' type='text' ng-model='ui.country' placeholder='Choose your country' ng-required='action=="signup"')
                             .settings-row(ignite-terms)
                                 .col-md-offset-3(ng-if='action == "signup" && terms.termsState')
                                     label
@@ -86,7 +86,7 @@ web-console-header
                         .col-xs-12.col-md-11
                             .login-footer(ng-show='action == "password/forgot"')
                                 a.labelField(ng-click='action = "signin"' ignite-on-click-focus='signin_email') Sign In
-                                button#forgot.btn.btn-primary(ng-click='forgotPassword(ui)' ng-disabled='form.$invalid') Send it to me
+                                button#forgot.btn.btn-primary(ng-click='$ctrl.forgotPassword(ui)' ng-disabled='form.$invalid') Send it to me
                         .col-xs-12.col-md-11
                             .login-footer(ng-show='action == "signin"')
                                 a#password-forgot-signin.labelField(ng-click='action = "password/forgot"' ignite-on-click-focus='signin_email') Forgot password?
