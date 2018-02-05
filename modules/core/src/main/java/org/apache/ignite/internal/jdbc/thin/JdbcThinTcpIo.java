@@ -113,7 +113,7 @@ public class JdbcThinTcpIo {
     public void start() throws SQLException, IOException {
         Socket sock;
 
-        if (ConnectionProperties.SSL_MODE_REQUIRED.equalsIgnoreCase(connProps.getSslMode()))
+        if (ConnectionProperties.SSL_MODE_REQUIRE.equalsIgnoreCase(connProps.getSslMode()))
             sock = JdbcThinSSLUtil.createSSLSocket(connProps);
         else if (ConnectionProperties.SSL_MODE_DISABLE.equalsIgnoreCase(connProps.getSslMode())) {
             sock = new Socket();

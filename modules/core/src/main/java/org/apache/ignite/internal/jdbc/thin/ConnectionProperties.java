@@ -27,7 +27,7 @@ public interface ConnectionProperties {
     public static final String SSL_MODE_DISABLE = "disable";
 
     /** SSL mode: REQUIRE. */
-    public static final String SSL_MODE_REQUIRED = "require";
+    public static final String SSL_MODE_REQUIRE = "require";
 
     /**
      * @return Host name or host's IP to connect.
@@ -37,7 +37,7 @@ public interface ConnectionProperties {
     /**
      * @param host Host name or host's IP to connect.
      */
-    public void setHost(String host) throws SQLException;
+    public void setHost(String host);
 
     /**
      * @return Port to connect.
@@ -166,8 +166,8 @@ public interface ConnectionProperties {
      * or JSSE properties must be set up (see {@code javax.net.ssl.keyStore} and other {@code javax.net.ssl.*}
      * properties)
      *
-     * In case set to {@code "disabled"} plain connection is used.
-     * Available modes: {@code disable, require}. Default value is {@code disable}
+     * In case set to {@code "disable"} plain connection is used.
+     * Available modes: {@code "disable", "require"}. Default value is {@code "disable"}
      *
      * @param mode SSL mode.
      */

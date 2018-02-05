@@ -94,7 +94,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** SSL: Use SSL connection to Ignite node. */
     private StringProperty sslMode = new StringProperty("sslMode",
         "The SSL mode of the connection", SSL_MODE_DISABLE,
-        new String[] {SSL_MODE_DISABLE, SSL_MODE_REQUIRED}, false, null);
+        new String[] {SSL_MODE_DISABLE, SSL_MODE_REQUIRE}, false, null);
 
     /** SSL: Client certificate key store url. */
     private StringProperty sslProtocol = new StringProperty("sslProtocol",
@@ -163,7 +163,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public void setHost(String host) throws SQLException {
+    @Override public void setHost(String host) {
         this.host.setValue(host);
     }
 
