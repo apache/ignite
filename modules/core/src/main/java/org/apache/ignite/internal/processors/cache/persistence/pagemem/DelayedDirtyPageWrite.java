@@ -26,11 +26,11 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Not thread safe and stateful class for evicting one page with delay. This allows to write page content without
  * holding segment lock. Page data is copied into temp buffer during {@link #writePage(FullPageId, ByteBuffer, int)}
- * and then sent to real implementation by {@link #finishEviction()}.
+ * and then sent to real implementation by {@link #finishReplacement()}.
  */
-public class DelayedDirtyPageWrite implements EvictedPageWriter {
+public class DelayedDirtyPageWrite implements ReplacedPageWriter {
     /** Real flush dirty page implementation. */
-    private final EvictedPageWriter flushDirtyPage;
+    private final ReplacedPageWriter flushDirtyPage;
 
     /** Page size. */
     private final int pageSize;
@@ -39,15 +39,15 @@ public class DelayedDirtyPageWrite implements EvictedPageWriter {
     private final ThreadLocal<ByteBuffer> byteBufThreadLoc;
 
     /** Eviction pages tracker, used to register & unregister pages being written. */
-    private final DelayedPageEvictionTracker tracker;
+    private final DelayedPageReplacementTracker tracker;
 
-    /** Full page id to be written on {@link #finishEviction()} or null if nothing to write. */
+    /** Full page id to be written on {@link #finishReplacement()} or null if nothing to write. */
     @Nullable private FullPageId fullPageId;
 
-    /** Byte buffer with page data to be written on {@link #finishEviction()} or null if nothing to write. */
+    /** Byte buffer with page data to be written on {@link #finishReplacement()} or null if nothing to write. */
     @Nullable private ByteBuffer byteBuf;
 
-    /** Partition update tag to be used in{@link #finishEviction()} or null if -1 to write. */
+    /** Partition update tag to be used in{@link #finishReplacement()} or null if -1 to write. */
     private int tag = -1;
 
     /**
@@ -56,9 +56,9 @@ public class DelayedDirtyPageWrite implements EvictedPageWriter {
      * @param pageSize page size.
      * @param tracker tracker to lock/unlock page reads.
      */
-    public DelayedDirtyPageWrite(EvictedPageWriter flushDirtyPage,
+    public DelayedDirtyPageWrite(ReplacedPageWriter flushDirtyPage,
         ThreadLocal<ByteBuffer> byteBufThreadLoc, int pageSize,
-        DelayedPageEvictionTracker tracker) {
+        DelayedPageReplacementTracker tracker) {
         this.flushDirtyPage = flushDirtyPage;
         this.pageSize = pageSize;
         this.byteBufThreadLoc = byteBufThreadLoc;
@@ -87,7 +87,7 @@ public class DelayedDirtyPageWrite implements EvictedPageWriter {
      * Runs actual write if required, no op if nothing was evicted.
      * @throws IgniteCheckedException if write failed.
      */
-    public void finishEviction() throws IgniteCheckedException {
+    public void finishReplacement() throws IgniteCheckedException {
         if (byteBuf == null && fullPageId == null)
             return;
 

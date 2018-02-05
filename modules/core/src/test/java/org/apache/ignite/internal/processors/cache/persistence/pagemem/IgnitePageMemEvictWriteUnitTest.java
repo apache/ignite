@@ -83,7 +83,7 @@ public class IgnitePageMemEvictWriteUnitTest {
         DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(regCfg);
         int pageSize = 4096;
         AtomicInteger totalEvicted = new AtomicInteger();
-        EvictedPageWriter pageWriter = (FullPageId fullPageId, ByteBuffer byteBuf, int tag) -> {
+        ReplacedPageWriter pageWriter = (FullPageId fullPageId, ByteBuffer byteBuf, int tag) -> {
             log.info("Evicting " + fullPageId);
 
             Object tracker = U.field(pageMemory, "delayedPageEvictionTracker");

@@ -29,12 +29,12 @@ import org.apache.ignite.internal.pagemem.FullPageId;
  * Delayed page writes tracker. Provides delayed write implementations and allows to check if page is actually being
  * written to page store.
  */
-public class DelayedPageEvictionTracker {
+public class DelayedPageReplacementTracker {
     /** Page size. */
     private final int pageSize;
 
     /** Flush dirty page real implementation. */
-    private final EvictedPageWriter flushDirtyPage;
+    private final ReplacedPageWriter flushDirtyPage;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -71,7 +71,7 @@ public class DelayedPageEvictionTracker {
         = new ThreadLocal<DelayedDirtyPageWrite>() {
         @Override protected DelayedDirtyPageWrite initialValue() {
             return new DelayedDirtyPageWrite(flushDirtyPage, byteBufThreadLoc, pageSize,
-                DelayedPageEvictionTracker.this);
+                DelayedPageReplacementTracker.this);
         }
     };
 
@@ -80,7 +80,7 @@ public class DelayedPageEvictionTracker {
      * @param flushDirtyPage Flush dirty page.
      * @param log Logger.
      */
-    public DelayedPageEvictionTracker(int pageSize, EvictedPageWriter flushDirtyPage,
+    public DelayedPageReplacementTracker(int pageSize, ReplacedPageWriter flushDirtyPage,
         IgniteLogger log) {
         this.pageSize = pageSize;
         this.flushDirtyPage = flushDirtyPage;
