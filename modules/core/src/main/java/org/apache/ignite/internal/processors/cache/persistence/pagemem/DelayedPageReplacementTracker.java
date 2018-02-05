@@ -39,17 +39,8 @@ public class DelayedPageReplacementTracker {
     /** Logger. */
     private final IgniteLogger log;
 
-    /**
-     * Page IDs which are locked for reading from store. Page content is being written right now. guarded by collection
-     * object monitor.
-     */
-    private final Collection<FullPageId> locked = new HashSet<>(Runtime.getRuntime().availableProcessors() * 2);
-
-    /**
-     * Has locked pages, flag for fast check if there are some pages, what were replaced and is being written.
-     * Write to field is guarded by {@link #locked} monitor.
-     */
-    private volatile boolean hasLockedPages;
+    /** Lock stripes for pages read protection. */
+    private final Stripe[] stripes;
 
     /** Byte buffer thread local. */
     private final ThreadLocal<ByteBuffer> byteBufThreadLoc
@@ -79,12 +70,17 @@ public class DelayedPageReplacementTracker {
      * @param pageSize Page size.
      * @param flushDirtyPage Flush dirty page.
      * @param log Logger.
+     * @param segmentCnt Segments count.
      */
     public DelayedPageReplacementTracker(int pageSize, ReplacedPageWriter flushDirtyPage,
-        IgniteLogger log) {
+        IgniteLogger log, int segmentCnt) {
         this.pageSize = pageSize;
         this.flushDirtyPage = flushDirtyPage;
         this.log = log;
+        stripes = new Stripe[segmentCnt];
+
+        for (int i = 0; i < stripes.length; i++)
+            stripes[i] = new Stripe();
     }
 
     /**
@@ -95,16 +91,20 @@ public class DelayedPageReplacementTracker {
     }
 
     /**
+     * @param id Full page ID
+     * @return stripe related to current page identifier.
+     */
+    private Stripe stripe(FullPageId id) {
+        int segmentIdx = PageMemoryImpl.segmentIndex(id.groupId(), id.pageId(), stripes.length);
+
+        return stripes[segmentIdx];
+    }
+
+    /**
      * @param id full page ID to lock from read
      */
     public void lock(FullPageId id) {
-        synchronized (locked) {
-            hasLockedPages = true;
-
-            boolean add = locked.add(id);
-
-            assert add : "Double locking of page for replacement is not possible";
-        }
+        stripe(id).lock(id);
     }
 
     /**
@@ -113,40 +113,86 @@ public class DelayedPageReplacementTracker {
      * @param id full page ID to be loaded from store.
      */
     public void waitUnlock(FullPageId id) {
-        if (!hasLockedPages)
-            return;
-
-        synchronized (locked) {
-            if (!hasLockedPages)
-                return;
-
-            while (locked.contains(id)) {
-                if (log.isDebugEnabled())
-                    log.debug("Found replaced page [" + id + "] which is being written to page store, wait for finish replacement");
-
-                try {
-                    locked.wait();
-                }
-                catch (InterruptedException e) {
-                    throw new IgniteInterruptedException(e);
-                }
-            }
-        }
+        stripe(id).waitUnlock(id);
     }
 
     /**
      * @param id full page ID, which write has been finished, it is available for reading.
      */
     public void unlock(FullPageId id) {
-        synchronized (locked) {
-            boolean rmv = locked.remove(id);
+        stripe(id).unlock(id);
+    }
 
-            assert rmv : "Unlocking page ID never locked, id " + id;
+    /**
+     * Stripe for locking pages from reading from store in parallel with not finished write.
+     */
+    private class Stripe {
+        /**
+         * Page IDs which are locked for reading from store. Page content is being written right now. guarded by
+         * collection object monitor.
+         */
+        private final Collection<FullPageId> locked = new HashSet<>(Runtime.getRuntime().availableProcessors() * 2);
 
-            if (locked.isEmpty())
-                hasLockedPages = false;
+        /**
+         * Has locked pages, flag for fast check if there are some pages, what were replaced and is being written. Write
+         * to field is guarded by {@link #locked} monitor.
+         */
+        private volatile boolean hasLockedPages;
 
-            locked.notifyAll();
+        /**
+         * @param id full page ID to lock from read
+         */
+        public void lock(FullPageId id) {
+            synchronized (locked) {
+                hasLockedPages = true;
+
+                boolean add = locked.add(id);
+
+                assert add : "Double locking of page for replacement is not possible";
+            }
+        }
+
+        /**
+         * Method is returned when page is available to be loaded from store, or waits for replacement finish.
+         *
+         * @param id full page ID to be loaded from store.
+         */
+        public void waitUnlock(FullPageId id) {
+            if (!hasLockedPages)
+                return;
+
+            synchronized (locked) {
+                if (!hasLockedPages)
+                    return;
+
+                while (locked.contains(id)) {
+                    if (log.isDebugEnabled())
+                        log.debug("Found replaced page [" + id + "] which is being written to page store, wait for finish replacement");
+
+                    try {
+                        locked.wait();
+                    }
+                    catch (InterruptedException e) {
+                        throw new IgniteInterruptedException(e);
+                    }
+                }
+            }
+        }
+
+        /**
+         * @param id full page ID, which write has been finished, it is available for reading.
+         */
+        public void unlock(FullPageId id) {
+            synchronized (locked) {
+                boolean rmv = locked.remove(id);
+
+                assert rmv : "Unlocking page ID never locked, id " + id;
+
+                if (locked.isEmpty())
+                    hasLockedPages = false;
+
+                locked.notifyAll();
+            }
         }
     }
 }

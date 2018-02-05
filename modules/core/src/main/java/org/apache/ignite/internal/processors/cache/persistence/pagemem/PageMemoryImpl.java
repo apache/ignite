@@ -59,8 +59,8 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -183,7 +183,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Shared context. */
     private final GridCacheSharedContext<?, ?> ctx;
 
-    /** State checker. */
+    /** Checkpoint lock state provider. */
     private final CheckpointLockStateChecker stateChecker;
 
     /** Number of used pages in checkpoint buffer. */
@@ -246,15 +246,18 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** */
     private long[] sizes;
 
-    /** */
+    /** Memory metrics to track dirty pages count and page replace rate. */
     private DataRegionMetricsImpl memMetrics;
 
     /**
      * @param directMemoryProvider Memory allocator to use.
+     * @param sizes segments sizes, last is checkpoint pool size.
      * @param ctx Cache shared context.
      * @param pageSize Page size.
      * @param flushDirtyPage write callback invoked when a dirty page is removed for replacement.
      * @param changeTracker Callback invoked to track changes in pages.
+     * @param stateChecker Checkpoint lock state provider. Used to ensure lock is held by thread, which modify pages.
+     * @param memMetrics Memory metrics to track dirty pages count and page replace rate.
      * @param throttlingPlc Write throttle enabled and its type. Null equal to none.
      */
     public PageMemoryImpl(
@@ -279,7 +282,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         this.flushDirtyPage = flushDirtyPage;
         delayedPageReplacementTracker =
             getBoolean(IGNITE_DELAYED_REPLACED_PAGE_WRITE, true)
-                ? new DelayedPageReplacementTracker(pageSize, flushDirtyPage, log):
+                ? new DelayedPageReplacementTracker(pageSize, flushDirtyPage, log, sizes.length - 1) :
                 null;
         this.changeTracker = changeTracker;
         this.stateChecker = stateChecker;
@@ -357,19 +360,19 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (!isThrottlingEnabled())
             return;
 
-        if (!(ctx.database() instanceof GridCacheDatabaseSharedManager)) {
+        if (!(ctx.database() instanceof CheckpointWriteProgressSupplier)) {
             log.error("Write throttle can't start. Unexpected class of database manager: " +
                 ctx.database().getClass());
 
             throttlingPlc = ThrottlingPolicy.NONE;
         }
 
-        GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ctx.database();
+        CheckpointWriteProgressSupplier db = (CheckpointWriteProgressSupplier)ctx.database();
 
         if (throttlingPlc == ThrottlingPolicy.SPEED_BASED)
-            writeThrottle = new PagesWriteSpeedBasedThrottle(this, db, log);
+            writeThrottle = new PagesWriteSpeedBasedThrottle(this, db, stateChecker, log);
         else if(throttlingPlc == ThrottlingPolicy.TARGET_RATIO_BASED)
-            writeThrottle = new PagesWriteThrottle(this, db);
+            writeThrottle = new PagesWriteThrottle(this, db, stateChecker);
     }
 
     /** {@inheritDoc} */
@@ -450,7 +453,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             flags == PageIdAllocator.FLAG_IDX && partId == PageIdAllocator.INDEX_PARTITION :
             "flags = " + flags + ", partId = " + partId;
 
-        assert ctx.database().checkpointLockIsHeldByThread();
+        assert stateChecker.checkpointLockIsHeldByThread();
 
         if (isThrottlingEnabled())
             writeThrottle.onMarkDirty(false);
@@ -1538,7 +1541,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         boolean wasDirty = PageHeader.dirty(absPtr, dirty);
 
         if (dirty) {
-            assert ctx.database().checkpointLockIsHeldByThread();
+            assert stateChecker.checkpointLockIsHeldByThread();
 
             if (!wasDirty || forceAdd) {
                 boolean added = segment(pageId.groupId(), pageId.pageId()).dirtyPages.add(pageId);

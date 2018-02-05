@@ -167,7 +167,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  *
  */
 @SuppressWarnings({"unchecked", "NonPrivateFieldAccessedInSynchronizedContext"})
-public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager {
+public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager implements CheckpointWriteProgressSupplier {
     /** */
     public static final String IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC = "IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC";
 
@@ -358,7 +358,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Counter for fsynced checkpoint pages. Not null only if checkpoint is running. */
     private volatile AtomicInteger syncedPagesCntr = null;
 
-    /** Counter for evictted checkpoint pages. Not null only if checkpoint is running. */
+    /** Counter for evicted checkpoint pages. Not null only if checkpoint is running. */
     private volatile AtomicInteger evictedPagesCntr = null;
 
     /** Number of pages in current checkpoint at the beginning of checkpoint. */
@@ -2600,31 +2600,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    /**
-     * Counter for written checkpoint pages. Not null only if checkpoint is running.
-     */
-    public AtomicInteger writtenPagesCounter() {
+    /** {@inheritDoc} */
+    @Override public AtomicInteger writtenPagesCounter() {
         return writtenPagesCntr;
     }
 
-    /**
-     * @return Counter for fsynced checkpoint pages. Not null only if checkpoint is running.
-     */
-    public AtomicInteger syncedPagesCounter() {
+    /** {@inheritDoc} */
+    @Override public AtomicInteger syncedPagesCounter() {
         return syncedPagesCntr;
     }
 
-    /**
-     * @return Counter for evicted pages during current checkpoint. Not null only if checkpoint is running.
-     */
-    public AtomicInteger evictedPagesCntr() {
+    /** {@inheritDoc} */
+    @Override public AtomicInteger evictedPagesCntr() {
         return evictedPagesCntr;
     }
 
-    /**
-     * @return Number of pages in current checkpoint. If checkpoint is not running, returns 0.
-     */
-    public int currentCheckpointPagesCount() {
+    /** {@inheritDoc} */
+    @Override public int currentCheckpointPagesCount() {
         return currCheckpointPagesCnt;
     }
 

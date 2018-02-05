@@ -17,10 +17,13 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Set;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -76,7 +79,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
         ReplacedPageWriter pageWriter = (FullPageId fullPageId, ByteBuffer byteBuf, int tag) -> {
             log.info("Evicting " + fullPageId);
 
-            assert getLockedPages().contains(fullPageId);
+            assert getLockedPages(fullPageId).contains(fullPageId);
 
             assert !getSegment(fullPageId).writeLock().isHeldByCurrentThread();
 
@@ -107,7 +110,14 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
             memory.releasePage(1, pageId, ptr);
         }
 
-        assert getLockedPages().isEmpty();
+        List<Collection<FullPageId>> stripes = getAllLockedPages();
+
+        assert !stripes.isEmpty();
+
+        for (Collection<FullPageId> pageIds : stripes) {
+            assert pageIds.isEmpty();
+        }
+
         assert totalEvicted.get() > 0;
 
         memory.stop();
@@ -215,7 +225,7 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         PageMemoryImpl memory
             = new PageMemoryImpl(provider, sizes, sctx, pageSize,
-            pageWriter, null, null, memMetrics, null);
+            pageWriter, null, () -> true, memMetrics, null);
 
         memory.start();
         return memory;
@@ -240,14 +250,43 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
     /**
      * @return collection with pages locked
+     * @param fullPageId page id to check lock.
      */
-    private Collection<FullPageId> getLockedPages() {
+    private Collection<FullPageId> getLockedPages(FullPageId fullPageId) {
+        Object tracker = delayedReplacementTracker();
+
+        Object[] stripes = U.field(tracker, "stripes");
+
+        int idx = PageMemoryImpl.segmentIndex(fullPageId.groupId(), fullPageId.pageId(),
+            stripes.length);
+
+        return U.field(stripes[idx], "locked");
+    }
+
+    /**
+     * @return delayed write tracked from page memory.
+     */
+    @NotNull private Object delayedReplacementTracker() {
         Object tracker = U.field(pageMemory, "delayedPageReplacementTracker");
 
         if (tracker == null)
             throw new IllegalStateException("Delayed replacement is not configured");
 
-        return U.field(tracker, "locked");
+        return tracker;
+    }
+
+    /**
+     * @return all locked pages stripes underlying collectinos
+     */
+    private List<Collection<FullPageId>> getAllLockedPages() {
+        Object tracker = delayedReplacementTracker();
+
+        Object[] stripes = U.field(tracker, "stripes");
+
+        Stream<Collection<FullPageId>> locked = Arrays.asList(stripes).stream().map(stripe ->
+            (Collection<FullPageId>)U.field(stripe, "locked"));
+
+        return locked.collect(Collectors.toList());
     }
 
     /**
