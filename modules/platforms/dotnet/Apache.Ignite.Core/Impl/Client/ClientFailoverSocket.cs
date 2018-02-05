@@ -60,7 +60,19 @@ namespace Apache.Ignite.Core.Impl.Client
             Debug.Assert(config != null);
             
             _config = config;
+
+            if (config.Host == null && (config.Endpoints == null || config.Endpoints.Count == 0))
+            {
+                throw new IgniteClientException("Invalid IgniteClientConfiguration: Host is null, " +
+                                                "Endpoints is null or empty. Nowhere to connect.");
+            }
+
             _endPoints = GetIpEndPoints(config).ToList();
+
+            if (_endPoints.Count == 0)
+            {
+                throw new IgniteClientException("Failed to resolve all specified hosts.");
+            }
 
             // Choose random endpoint for load balancing.
             _endPointIndex = new Random().Next(_endPoints.Count - 1);

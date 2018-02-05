@@ -153,7 +153,7 @@ namespace Apache.Ignite.Core.Tests.Client
         [Test]
         public void TestDefaultConfigThrows()
         {
-            Assert.Throws<IgniteException>(() => Ignition.StartClient(new IgniteClientConfiguration()));
+            Assert.Throws<IgniteClientException>(() => Ignition.StartClient(new IgniteClientConfiguration()));
         }
 
         /// <summary>
