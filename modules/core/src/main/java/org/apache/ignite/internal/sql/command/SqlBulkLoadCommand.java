@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.sql.command;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadFormat;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
@@ -134,21 +133,24 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
         String name = parseIdentifier(lex);
 
-        try {
-            BulkLoadCsvFormat fmt = (BulkLoadCsvFormat) BulkLoadFormat.createFormatFor(name);
+        switch (name.toUpperCase()) {
+            case BulkLoadCsvFormat.NAME:
+                BulkLoadCsvFormat fmt = new BulkLoadCsvFormat();
 
-            // IGNITE-7537 will introduce user-defined values
-            fmt.lineSeparator(BulkLoadCsvFormat.DEFAULT_LINE_SEPARATOR);
-            fmt.fieldSeparator(BulkLoadCsvFormat.DEFAULT_FIELD_SEPARATOR);
-            fmt.quoteChars(BulkLoadCsvFormat.DEFAULT_QUOTE_CHARS);
-            fmt.commentChars(BulkLoadCsvFormat.DEFAULT_COMMENT_CHARS);
-            fmt.escapeChars(BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS);
+                // IGNITE-7537 will introduce user-defined values
+                fmt.lineSeparator(BulkLoadCsvFormat.DEFAULT_LINE_SEPARATOR);
+                fmt.fieldSeparator(BulkLoadCsvFormat.DEFAULT_FIELD_SEPARATOR);
+                fmt.quoteChars(BulkLoadCsvFormat.DEFAULT_QUOTE_CHARS);
+                fmt.commentChars(BulkLoadCsvFormat.DEFAULT_COMMENT_CHARS);
+                fmt.escapeChars(BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS);
 
-            inputFormat = fmt;
-        }
-        catch (IgniteCheckedException e) {
-            throw error(lex, "Unknown format name: " + name + ". Currently supported formats are: "
-                + BulkLoadFormat.formatNames());
+                inputFormat = fmt;
+
+                break;
+
+            default:
+                throw error(lex, "Unknown format name: " + name +
+                    ". Currently supported format is " + BulkLoadCsvFormat.NAME);
         }
     }
 
