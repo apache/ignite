@@ -35,39 +35,3 @@
         width: 38px;
     }
 }
-
-.form-field-feedback-2 {
-    position: relative;
-    width: 0;
-    height: 28px;
-    float: right;
-    z-index: 2;
-
-    color: $brand-primary;
-    line-height: $input-height;
-    pointer-events: initial;
-    text-align: center;
-
-    &:before {
-        position: absolute;
-        right: 0;
-        width: 38px;
-    }
-
-    div {
-        position: absolute;
-        top: 10px;
-        right: 0;
-        width: 36px;
-        height: 26px;
-        z-index: 1;
-    }
-
-    svg {
-        position: absolute;
-        top: 10px;
-        right: 0;
-        width: 38px;
-    }
-}
-

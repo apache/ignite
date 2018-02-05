@@ -37,35 +37,70 @@ mixin lbl-not-required(txt)
             form.form-horizontal(name='$ctrl.form' novalidate)
                 .row
                     .col-50
-                        +ignite-form-field-text-2('First name:', '$ctrl.ui.user.firstName', '"firstName"', false, true, 'Input first name')(
+                        +form-field__text({
+                            label: 'First name:',
+                            model: '$ctrl.ui.user.firstName',
+                            name: '"firstName"',
+                            required: true,
+                            placeholder: 'Input first name' 
+                        })(
                             ignite-auto-focus
                             ignite-on-enter-focus-move='lastNameInput' 
                         )
                 .row
                     .col-50
-                        +ignite-form-field-text-2('Last name:', '$ctrl.ui.user.lastName', '"lastName"', false, true, 'Input last name')(
+                        +form-field__text({
+                            label: 'Last name:',
+                            model: '$ctrl.ui.user.lastName',
+                            name: '"lastName"',
+                            required: true,
+                            placeholder: 'Input last name'
+                        })(
                             ignite-on-enter-focus-move='emailInput'
                         )
                 .row
                     .col-50
-                        +ignite-form-field-text-2('Email:', '$ctrl.ui.user.email', '"email"', false, true, 'Input email')(
+                        +form-field__email({
+                            label: 'Email:',
+                            model: '$ctrl.ui.user.email',
+                            name: '"email"',
+                            required: true,
+                            placeholder: 'Input email'
+                        })(
                             ignite-on-enter-focus-move='phoneInput'
-                            type='email'
                         )
                 .row
                     .col-50
-                        +ignite-form-field-text-2('Phone:', '$ctrl.ui.user.phone', '"phone"', false, true, 'Input phone')(
+                        +form-field__phone({
+                            label: 'Phone (opt):',
+                            model: '$ctrl.ui.user.phone',
+                            name: '"phone"',
+                            required: false,
+                            placeholder: 'Input phone'
+                        })(
                             ignite-on-enter-focus-move='companyInput'
-                            type='tel'
                         )
                 .row
                     .col-50
-                        +ignite-form-field-text-2('Company:', '$ctrl.ui.user.company', '"company"', false, true, 'Input company name')(
+                        +form-field__text({
+                            label: 'Company:',
+                            model: '$ctrl.ui.user.company',
+                            name: '"company"',
+                            required: true,
+                            placeholder: 'Input company name'
+                        })(
                             ignite-on-enter-focus-move='countryInput' 
                         )
                 .row
                     .col-50
-                        +ignite-form-field-dropdown('Company:', '$ctrl.ui.user.country', '"country"', false, true, false, 'Choose your country', '', '$ctrl.ui.countries')
+                        +form-field__dropdown({
+                            label: 'Country:',
+                            model: '$ctrl.ui.user.country',
+                            name: '"country"', 
+                            required: true, 
+                            placeholder: 'Choose your country', 
+                            options: '$ctrl.ui.countries'
+                        })
                 
                 .advanced-options
                     i.fa(
@@ -88,14 +123,26 @@ mixin lbl-not-required(txt)
                 
                 .row(ng-if='$ctrl.ui.expandedPassword')
                     .col-50
-                        +ignite-form-field-password-2('New password:', '$ctrl.ui.user.password', '"password"', false, true, 'New password')(
+                        +form-field__password({
+                            label: 'New password:',
+                            model: '$ctrl.ui.user.password',
+                            name: '"password"',
+                            require: true,
+                            placeholder: 'New password'
+                        })(
                             ignite-auto-focus
                             ignite-on-enter-focus-move='passwordConfirmInput' 
                         )
 
                 .row(ng-if='$ctrl.ui.expandedPassword')
                     .col-50
-                        +ignite-form-field-password-2('New password:', 'user.confirm', '"passwordConfirm"', false, true, 'Confirm new password')(
+                        +form-field__password({
+                            label: 'Confirm password:',
+                            model: 'user.confirm',
+                            name: '"passwordConfirm"',
+                            require: true,
+                            placeholder: 'Confirm new password'
+                        })(
                             ignite-on-enter-focus-move='passwordConfirmInput'
                             ignite-match='$ctrl.ui.user.password'
                         )

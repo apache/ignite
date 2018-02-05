@@ -72,7 +72,7 @@ web-console-header
                             .settings-row(ng-show='action == "signup"')
                                 +lblRequired('Country:')
                                 .col-xs-9.col-md-8
-                                    button#country.select-toggle.form-control(ignite-on-enter-focus-move='signup' bs-select bs-options='item.name as item.name for item in countries' type='text' ng-model='ui.country' placeholder='Choose your country' ng-required='action=="signup"')
+                                    button#country.select-toggle.form-control(ignite-on-enter-focus-move='signup' bs-select bs-options='item.value as item.label for item in countries' type='text' ng-model='ui.country' placeholder='Choose your country' ng-required='action=="signup"')
                             .settings-row(ignite-terms)
                                 .col-md-offset-3(ng-if='action == "signup" && terms.termsState')
                                     label

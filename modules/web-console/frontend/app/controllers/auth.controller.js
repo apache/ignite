@@ -16,14 +16,22 @@
  */
 
 // Sign in controller.
-export default [
-    '$scope', '$uiRouterGlobals', 'IgniteFocus', 'IgniteCountries', 'Auth',
-    ($scope, $uiRouterGlobals, Focus, Countries, Auth) => {
+export default class {
+    static $inject = ['$scope', '$uiRouterGlobals', 'IgniteFocus', 'IgniteCountries', 'Auth'];
+
+    constructor($scope, $uiRouterGlobals, Focus, Countries, Auth) {
+        this.$scope = $scope;
+
         $scope.auth = Auth.auth;
         $scope.forgotPassword = Auth.forgotPassword;
         $scope.action = 'signin';
-        $scope.countries = Countries.getAll();
+        $scope.countries = Countries.getAll().map(({ name, code }) => {
+            return {
+                value: name,
+                label: name
+            };
+        });
 
         Focus.move('user_email');
     }
-];
+}
