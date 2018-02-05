@@ -18,13 +18,17 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.sql.SQLException;
-import javax.net.ssl.TrustManager;
-import org.apache.ignite.internal.util.typedef.internal.A;
 
 /**
  * Provide access and manipulations with connection JDBC properties.
  */
 public interface ConnectionProperties {
+    /** SSL mode: DISABLE. */
+    public static final String SSL_MODE_DISABLE = "disable";
+
+    /** SSL mode: REQUIRE. */
+    public static final String SSL_MODE_REQUIRED = "require";
+
     /**
      * @return Host name or host's IP to connect.
      */
@@ -33,7 +37,7 @@ public interface ConnectionProperties {
     /**
      * @param host Host name or host's IP to connect.
      */
-    public void setHost(String host);
+    public void setHost(String host) throws SQLException;
 
     /**
      * @return Port to connect.
@@ -149,23 +153,25 @@ public interface ConnectionProperties {
     public void setSkipReducerOnUpdate(boolean skipReducerOnUpdate);
 
     /**
-     * Gets SSL connection flag.
+     * Gets SSL connection mode.
      *
      * @return Use SSL flag.
+     * @see #setSslMode(String).
      */
-    public boolean isUseSSL();
+    public String getSslMode();
 
     /**
-     * Use SSL connection to Ignite node. In case set to {@code true} SSL context must be configured.
+     * Use SSL connection to Ignite node. In case set to {@code "require"} SSL context must be configured.
      * {@link #setSslClientCertificateKeyStoreUrl} property and related properties must be set up
      * or JSSE properties must be set up (see {@code javax.net.ssl.keyStore} and other {@code javax.net.ssl.*}
      * properties)
      *
-     * In case set to {@code false} plain connection is used. Default value is {@code false}
+     * In case set to {@code "disabled"} plain connection is used.
+     * Available modes: {@code disable, require}. Default value is {@code disable}
      *
-     * @param useSSL Use SSL flag.
+     * @param mode SSL mode.
      */
-    public void setUseSSL(boolean useSSL);
+    public void setSslMode(String mode);
 
     /**
      * Gets protocol for secure transport.
@@ -213,8 +219,8 @@ public interface ConnectionProperties {
      * Sets path to the key store file. This is a mandatory parameter since
      * ssl context could not be initialized without key manager.
      *
-     * In case {@link #isUseSSL()} is enabled and key store URL isn't specified by Ignite properties (e.g. at JDBC URL)
-     * the JSSE property {@code javax.net.ssl.keyStore} will be used.
+     * In case {@link #getSslMode()} is {@code required} and key store URL isn't specified by Ignite properties
+     * (e.g. at JDBC URL) the JSSE property {@code javax.net.ssl.keyStore} will be used.
      *
      * @param url Client certificate KeyStore URL.
      */
@@ -230,7 +236,7 @@ public interface ConnectionProperties {
     /**
      * Sets key store password.
      *
-     * In case {@link #isUseSSL()} is enabled and key store password isn't specified by Ignite properties
+     * In case {@link #getSslMode()} is {@code required}  and key store password isn't specified by Ignite properties
      * (e.g. at JDBC URL) the JSSE property {@code javax.net.ssl.keyStorePassword} will be used.
      *
      * @param passwd Client certificate KeyStore password.
@@ -247,8 +253,8 @@ public interface ConnectionProperties {
     /**
      * Sets key store type used in context initialization.
      *
-     * In case {@link #isUseSSL()} is enabled and key store type isn't specified by Ignite properties (e.g. at JDBC URL)
-     * the JSSE property {@code javax.net.ssl.keyStoreType} will be used.
+     * In case {@link #getSslMode()} is {@code required} and key store type isn't specified by Ignite properties
+     *  (e.g. at JDBC URL)the JSSE property {@code javax.net.ssl.keyStoreType} will be used.
      * In case both Ignite properties and JSSE properties are not set the default 'JKS' type is used.
      *
      * <p>See more at JSSE Reference Guide.
@@ -269,7 +275,7 @@ public interface ConnectionProperties {
      * however one of the {@code setSslTrustCertificateKeyStoreUrl(String)}, {@link #setSslTrustAll(boolean)}
      * properties must be set.
      *
-     * In case {@link #isUseSSL()} is enabled and trust store URL isn't specified by Ignite properties
+     * In case {@link #getSslMode()} is {@code required} and trust store URL isn't specified by Ignite properties
      * (e.g. at JDBC URL) the JSSE property {@code javax.net.ssl.trustStore} will be used.
      *
      * @param url Trusted certificate KeyStore URL.
@@ -286,7 +292,7 @@ public interface ConnectionProperties {
     /**
      * Sets trust store password.
      *
-     * In case {@link #isUseSSL()} is enabled and trust store password isn't specified by Ignite properties
+     * In case {@link #getSslMode()} is {@code required} and trust store password isn't specified by Ignite properties
      * (e.g. at JDBC URL) the JSSE property {@code javax.net.ssl.trustStorePassword} will be used.
      *
      * @param passwd Trusted certificate KeyStore password.
@@ -303,7 +309,7 @@ public interface ConnectionProperties {
     /**
      * Sets trust store type.
      *
-     * In case {@link #isUseSSL()} is enabled and trust store type isn't specified by Ignite properties
+     * In case {@link #getSslMode()} is {@code required} and trust store type isn't specified by Ignite properties
      * (e.g. at JDBC URL) the JSSE property {@code javax.net.ssl.trustStoreType} will be used.
      * In case both Ignite properties and JSSE properties are not set the default 'JKS' type is used.
      *
@@ -339,7 +345,7 @@ public interface ConnectionProperties {
 
     /**
      * Sets the class name of the custom implementation of the Factory&lt;SSLSocketFactory&gt;.
-     * If {@link #isUseSSL()} property is enabled and factory is specified the custom factory will be used
+     * If {@link #getSslMode()} is {@code required} and factory is specified the custom factory will be used
      * instead of JSSE socket factory. So, other SSL properties will be ignored.
      *
      * @param sslFactory Custom class name that implements Factory&lt;SSLSocketFactory&gt;.

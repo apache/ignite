@@ -38,7 +38,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -312,7 +311,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testAutoCloseServerCursorProperty() throws Exception {
         String url = "jdbc:ignite:thin://127.0.0.1?autoCloseServerCursor";
 
-        String err = "Failed to parse boolean property [name=autoCloseServerCursor";
+        String err = "Invalid property value. [name=autoCloseServerCursor";
 
         assertInvalid(url + "=0", err);
         assertInvalid(url + "=1", err);
@@ -1770,7 +1769,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testSslClientAndPlainServer()  {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
-                DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?useSSL=true" +
+                DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
                     "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
                     "&sslClientCertificateKeyStorePassword=123456" +
                     "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +

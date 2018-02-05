@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.io.Serializable;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Properties;
 import javax.naming.RefAddr;
 import javax.naming.Reference;
@@ -91,8 +92,9 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "skipReducerOnUpdate", "Enable execution update queries on ignite server nodes", false, false);
 
     /** SSL: Use SSL connection to Ignite node. */
-    private BooleanProperty useSSL = new BooleanProperty("useSSL",
-        "Use SSL connection", false, false);
+    private StringProperty sslMode = new StringProperty("sslMode",
+        "The SSL mode of the connection", SSL_MODE_DISABLE,
+        new String[] {SSL_MODE_DISABLE, SSL_MODE_REQUIRED}, false, null);
 
     /** SSL: Client certificate key store url. */
     private StringProperty sslProtocol = new StringProperty("sslProtocol",
@@ -149,7 +151,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         host, port,
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
         tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
-        useSSL, sslProtocol, sslKeyAlgorithm,
+        sslMode, sslProtocol, sslKeyAlgorithm,
         sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
         sslTrustAll, sslFactory
@@ -161,7 +163,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public void setHost(String host) {
+    @Override public void setHost(String host) throws SQLException {
         this.host.setValue(host);
     }
 
@@ -276,13 +278,13 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isUseSSL() {
-        return useSSL.value();
+    @Override public String getSslMode() {
+        return sslMode.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setUseSSL(boolean useSSL) {
-        this.useSSL.setValue(useSSL);
+    @Override public void setSslMode(String mode) {
+        sslMode.setValue(mode);
     }
 
     /** {@inheritDoc} */
@@ -551,12 +553,33 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
                     SqlStateCode.CLIENT_CONNECTION_FAILED);
             }
 
+            checkChoices(strVal);
+
             if (validator != null)
                 validator.validate(strVal);
 
             props.remove(name);
 
             init(strVal);
+        }
+
+        /**
+         * @param strVal Checked value.
+         * @throws SQLException On check error.
+         */
+        protected void checkChoices(String strVal) throws SQLException {
+            if (strVal == null)
+                return;
+
+            if (choices != null) {
+                for (String ch : choices) {
+                    if (ch.equalsIgnoreCase(strVal))
+                        return;
+                }
+
+                throw new SQLException("Invalid property value. [name=" + name + ", + val=" + strVal
+                    + ", choices=" + Arrays.toString(choices), SqlStateCode.CLIENT_CONNECTION_FAILED);
+            }
         }
 
         /**
