@@ -85,6 +85,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DELAYED_EVICTED_PAGE_WRITE;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
 
 /**
@@ -216,11 +218,18 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** */
     private OffheapReadWriteLock rwLock;
 
-    /** Delayed page eviction tracker. */
-    private final DelayedPageEvictionTracker delayedPageEvictionTracker;
+    /** Flush dirty page closure. When possible, will be called by evictPage(). */
+    private final EvictedPageWriter flushDirtyPage;
 
     /**
-     * Flush dirty page closure. When possible, will be called by evictPage().
+     * Delayed page eviction tracker. Because other thread may require exactly the same page to be loaded from store,
+     * reads are protected by locking.
+     * {@code Null} if delayed write functionality is disabled.
+     */
+    @Nullable private final DelayedPageEvictionTracker delayedPageEvictionTracker;
+
+    /**
+     * Callback invoked to track changes in pages.
      * {@code Null} if page tracking functionality is disabled
      * */
     @Nullable private final GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
@@ -266,7 +275,11 @@ public class PageMemoryImpl implements PageMemoryEx {
         this.ctx = ctx;
         this.directMemoryProvider = directMemoryProvider;
         this.sizes = sizes;
-        delayedPageEvictionTracker = new DelayedPageEvictionTracker(pageSize, flushDirtyPage, log);
+        this.flushDirtyPage = flushDirtyPage;
+        delayedPageEvictionTracker =
+            getBoolean(IGNITE_DELAYED_EVICTED_PAGE_WRITE, true)
+                ? new DelayedPageEvictionTracker(pageSize, flushDirtyPage, log):
+                null;
         this.changeTracker = changeTracker;
         this.stateChecker = stateChecker;
         this.throttlingPlc = throttlingPlc != null ? throttlingPlc : ThrottlingPolicy.NONE;
@@ -450,7 +463,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         // because there is no crc inside them.
         Segment seg = segment(cacheId, pageId);
 
-        DelayedDirtyPageWrite delayedWriter = delayedPageEvictionTracker.delayedPageWrite();
+        DelayedDirtyPageWrite delayedWriter = delayedPageEvictionTracker != null
+            ? delayedPageEvictionTracker.delayedPageWrite() : null;
 
         FullPageId fullId = new FullPageId(pageId, cacheId);
 
@@ -474,7 +488,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 relPtr = seg.borrowOrAllocateFreePage(pageId);
 
             if (relPtr == INVALID_REL_PTR)
-                relPtr = seg.evictPage(delayedWriter);
+                relPtr = seg.evictPage(delayedWriter == null ? flushDirtyPage : delayedWriter);
 
             long absPtr = seg.absolute(relPtr);
 
@@ -533,7 +547,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         finally {
             seg.writeLock().unlock();
 
-            delayedWriter.finishEviction();
+            if (delayedWriter != null)
+                delayedWriter.finishEviction();
         }
 
         //we have allocated 'tracking' page, we need to allocate regular one
@@ -624,8 +639,8 @@ public class PageMemoryImpl implements PageMemoryEx {
             seg.readLock().unlock();
         }
 
-
-        DelayedDirtyPageWrite delayedWriter = delayedPageEvictionTracker.delayedPageWrite();
+        DelayedDirtyPageWrite delayedWriter = delayedPageEvictionTracker != null
+            ? delayedPageEvictionTracker.delayedPageWrite() : null;
 
         seg.writeLock().lock();
 
@@ -645,7 +660,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 relPtr = seg.borrowOrAllocateFreePage(pageId);
 
                 if (relPtr == INVALID_REL_PTR)
-                    relPtr = seg.evictPage(delayedWriter);
+                    relPtr = seg.evictPage(delayedWriter == null ? flushDirtyPage : delayedWriter);
 
                 absPtr = seg.absolute(relPtr);
 
@@ -672,7 +687,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                     try {
                         ByteBuffer buf = wrapPointer(pageAddr, pageSize());
 
-                        delayedPageEvictionTracker.waitUnlock(fullId);
+                        if (delayedPageEvictionTracker != null)
+                            delayedPageEvictionTracker.waitUnlock(fullId);
 
                         storeMgr.read(cacheId, pageId, buf);
                     }
@@ -727,7 +743,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         finally {
             seg.writeLock().unlock();
 
-            delayedWriter.finishEviction();
+            if (delayedWriter != null)
+                delayedWriter.finishEviction();
         }
     }
 
