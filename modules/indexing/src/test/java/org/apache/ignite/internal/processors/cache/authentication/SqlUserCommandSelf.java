@@ -17,16 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.authentication;
 
-import java.util.Base64;
-import java.util.Random;
+import java.util.List;
+import java.util.concurrent.Callable;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.AuthenticationConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.authentication.User;
+import org.apache.ignite.internal.processors.authentication.UserAuthenticationException;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -42,23 +47,8 @@ public class SqlUserCommandSelf extends GridCommonAbstractTest {
     /** Client node. */
     private static final int CLI_NODE = NODES_COUNT - 1;
 
-    /** Random. */
-    private static final Random RND = new Random(System.currentTimeMillis());
-
     /** Authorization context for default user. */
     private AuthorizationContext actxDflt;
-
-    /**
-     * @param len String length.
-     * @return Random string (Base64 on random bytes).
-     */
-    private static String randomString(int len) {
-        byte[] rndBytes = new byte[len / 2];
-
-        RND.nextBytes(rndBytes);
-
-        return Base64.getEncoder().encodeToString(rndBytes);
-    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -103,12 +93,181 @@ public class SqlUserCommandSelf extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testDefaultUser() throws Exception {
+    public void testCreateUpdateDropUser() throws Exception {
+        AuthorizationContext.context(actxDflt);
+
         for (int i = 0; i < NODES_COUNT; ++i) {
-            AuthorizationContext actx = grid(0).context().authentication().authenticate("ignite", "ignite");
+            userSql(i, "CREATE USER test WITH PASSWORD 'test'");
+
+            AuthorizationContext actx = grid(i).context().authentication()
+                .authenticate("TEST", "test");
 
             assertNotNull(actx);
-            assertEquals("ignite", actx.userName());
+            assertEquals("TEST", actx.userName());
+
+            userSql(i, "ALTER USER test WITH PASSWORD 'newpasswd'");
+
+            actx = grid(i).context().authentication()
+                .authenticate("TEST", "newpasswd");
+
+            assertNotNull(actx);
+            assertEquals("TEST", actx.userName());
+
+            userSql(i, "DROP USER test");
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCreateWithAlreadyExistUser() throws Exception {
+        AuthorizationContext.context(actxDflt);
+        userSql(0, "CREATE USER test WITH PASSWORD 'test'");
+
+        for (int i = 0; i < NODES_COUNT; ++i) {
+            final int idx = i;
+
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    userSql(idx, "CREATE USER test WITH PASSWORD 'test'");
+
+                    return null;
+                }
+            }, UserAuthenticationException.class, "User already exists. [login=TEST]");
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAlterDropNotExistUser() throws Exception {
+        AuthorizationContext.context(actxDflt);
+
+        for (int i = 0; i < NODES_COUNT; ++i) {
+            final int idx = i;
+
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    userSql(idx, "CRETE USER test WITH PASSWORD 'test'");
+
+                    return null;
+                }
+            }, UserAuthenticationException.class, "User doesn't exist. [userName=TEST]");
+
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    userSql(idx, "DROP USER test");
+
+                    return null;
+                }
+            }, UserAuthenticationException.class, "User doesn't exist. [userName=TEST]");
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNotAuthenticateOperation() throws Exception {
+        for (int i = 0; i < NODES_COUNT; ++i) {
+            final int idx = i;
+
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    userSql(idx, "CREATE USER test WITH PASSWORD 'test'");
+
+                    return null;
+                }
+            }, IgniteAccessControlException.class, "Operation not allowed: authorized context is empty");
+
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    userSql(idx, "ALTER USER test WITH PASSWORD 'test'");
+
+                    return null;
+                }
+            }, IgniteAccessControlException.class, "Operation not allowed: authorized context is empty");
+
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    userSql(idx, "DROP USER test");
+
+                    return null;
+                }
+            }, IgniteAccessControlException.class, "Operation not allowed: authorized context is empty");
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNotAuthorizedOperation() throws Exception {
+        AuthorizationContext.context(actxDflt);
+
+        userSql(0, "CREATE USER user0 WITH PASSWORD 'user0'");
+
+        AuthorizationContext actx = grid(0).context().authentication()
+            .authenticate("USER0", "user0");
+
+        AuthorizationContext.context(actx);
+
+        for (int i = 0; i < NODES_COUNT; ++i) {
+            final int idx = i;
+
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    userSql(idx, "CREATE USER test WITH PASSWORD 'test'");
+
+                    return null;
+                }
+            }, IgniteAccessControlException.class, "User management operations are not allowed for user");
+
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    userSql(idx, "ALTER USER test WITH PASSWORD 'test'");
+
+                    return null;
+                }
+            }, IgniteAccessControlException.class, "User management operations are not allowed for user");
+
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    userSql(idx, "DROP USER test");
+
+                    return null;
+                }
+            }, IgniteAccessControlException.class, "User management operations are not allowed for user");
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDropDefaultUser() throws Exception {
+        AuthorizationContext.context(actxDflt);
+
+        for (int i = 0; i < NODES_COUNT; ++i) {
+            final int idx = i;
+
+            GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    userSql(idx, "DROP USER \"ignite\"");
+
+                    return null;
+                }
+            }, IgniteAccessControlException.class, "Default user cannot be removed");
+        }
+    }
+
+    /**
+     * @param nodeIdx Node index.
+     * @param sql Sql query.
+     */
+    private void userSql(int nodeIdx, String sql) {
+        List<List<?>> res = grid(nodeIdx).context().query().querySqlFields(
+            new SqlFieldsQuery(sql), false).getAll();
+
+        assertEquals(1, res.size());
+        assertEquals(1, res.get(0).size());
+        assertEquals(0L, res.get(0).get(0));
     }
 }

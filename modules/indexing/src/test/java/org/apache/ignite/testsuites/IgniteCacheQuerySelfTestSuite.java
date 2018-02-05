@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCrossCachesJoinsQueryTe
 import org.apache.ignite.internal.processors.cache.IncorrectQueryEntityTest;
 import org.apache.ignite.internal.processors.cache.QueryEntityCaseMismatchTest;
 import org.apache.ignite.internal.processors.cache.SqlFieldsQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.authentication.SqlUserCommandSelf;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicNearEnabledFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicNearEnabledQuerySelfTest;
@@ -391,6 +392,8 @@ public class IgniteCacheQuerySelfTestSuite extends TestSuite {
         // H2 Rows on-heap cache
         suite.addTestSuite(H2RowCacheSelfTest.class);
         suite.addTestSuite(H2RowCachePageEvictionTest.class);
+
+        suite.addTestSuite(SqlUserCommandSelf.class);
 
         return suite;
     }

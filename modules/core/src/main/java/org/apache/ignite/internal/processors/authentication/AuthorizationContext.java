@@ -33,6 +33,8 @@ public class AuthorizationContext {
      * @param user Authorized user.
      */
     public AuthorizationContext(User user) {
+        assert user != null;
+
         this.user = user;
     }
 
@@ -51,8 +53,13 @@ public class AuthorizationContext {
     public void checkUserOperation(UserManagementOperation op) throws IgniteAccessControlException {
         assert op != null;
 
-        if (UserManagementOperation.OperationType.UPDATE != op.type() && !User.DFAULT_USER_NAME.equals(user.name()))
-            throw new IgniteAccessControlException("Add / remove user is not allowed for user. [curUser= " + user.name() + ']');
+        if (user == null)
+            throw new IgniteAccessControlException("Operation not allowed: authorized context is empty.");
+
+        if (!User.DFAULT_USER_NAME.equals(user.name())
+            && !(UserManagementOperation.OperationType.UPDATE == op.type() && user.name().equals(op.user().name())))
+            throw new IgniteAccessControlException("User management operations are not allowed for user. " +
+                "[curUser=" + user.name() + ']');
 
         if (op.type() == UserManagementOperation.OperationType.REMOVE
             && User.DFAULT_USER_NAME.equals(op.user().name()))

@@ -126,6 +126,7 @@ import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -1441,7 +1442,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         // Heuristic check for fast return.
         String sqlUpper = qry.getSql().toUpperCase();
 
-        if (!(sqlUpper.contains("INDEX") || sqlUpper.contains("ALTER")))
+        if (!(sqlUpper.contains("INDEX") || sqlUpper.contains("ALTER") || sqlUpper.contains("USER")))
             return null;
 
         // Parse.
@@ -1460,7 +1461,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (!(cmd instanceof SqlCreateIndexCommand || cmd instanceof SqlDropIndexCommand
                 || cmd instanceof SqlAlterTableCommand
                 || cmd instanceof SqlCreateUserCommand || cmd instanceof SqlAlterUserCommand
-                || cmd instanceof SqlDropIndexCommand))
+                || cmd instanceof SqlDropUserCommand))
                 return null;
         }
         catch (Exception e) {
