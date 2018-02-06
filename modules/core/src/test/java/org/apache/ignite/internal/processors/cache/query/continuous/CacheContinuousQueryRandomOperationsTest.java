@@ -56,7 +56,7 @@ import org.apache.ignite.cache.query.AbstractContinuousQuery;
 import org.apache.ignite.cache.query.CacheQueryEntryEvent;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
-import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.TransformedEventListener;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
@@ -1661,7 +1661,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
         qry0.setRemoteTransformerFactory(FactoryBuilder.factoryOf(transformer));
 
-        qry0.setLocalListener(new TransformedEventListener<CacheEntryEvent>() {
+        qry0.setLocalListener(new EventListener<CacheEntryEvent>() {
             @Override public void onUpdated(Iterable<? extends CacheEntryEvent> events) {
                 for (CacheEntryEvent e : events)
                     acc.add(e);

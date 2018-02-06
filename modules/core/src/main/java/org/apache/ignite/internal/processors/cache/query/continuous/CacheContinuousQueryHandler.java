@@ -40,7 +40,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
-import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.TransformedEventListener;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
@@ -608,7 +608,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
     /**
      * @return Local listener of transformed events.
      */
-    @Nullable protected TransformedEventListener<?> localTransformedEventListener() {
+    @Nullable protected EventListener<?> localTransformedEventListener() {
         return null;
     }
 
@@ -929,7 +929,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
      */
     private void notifyLocalListener(Collection<CacheEntryEvent<? extends K, ? extends V>> evts,
         @Nullable IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> trans) {
-        TransformedEventListener locTransLsnr = localTransformedEventListener();
+        EventListener locTransLsnr = localTransformedEventListener();
 
         assert (locLsnr != null && locTransLsnr == null) || (locLsnr == null && locTransLsnr != null);
 

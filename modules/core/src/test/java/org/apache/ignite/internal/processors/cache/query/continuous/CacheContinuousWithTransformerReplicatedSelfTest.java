@@ -35,7 +35,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
-import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.TransformedEventListener;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -258,7 +258,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
 
         final AtomicInteger cnt = new AtomicInteger(0);
 
-        qry.setLocalListener(new TransformedEventListener() {
+        qry.setLocalListener(new EventListener() {
             @Override public void onUpdated(Iterable events) throws CacheEntryListenerException {
                 for (Object e : events) {
                     assertNull(e);
@@ -329,7 +329,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
                 }
             }));
 
-        qry.setLocalListener(new TransformedEventListener<Integer>() {
+        qry.setLocalListener(new EventListener<Integer>() {
             @Override public void onUpdated(Iterable<? extends Integer> evts) {
                 for (Integer key : evts) {
                     keys.add(key);
@@ -376,7 +376,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
 
         AtomicInteger transCnt = new AtomicInteger(0);
 
-        TransformedEventListener<String> transLsnr = async ?
+        EventListener<String> transLsnr = async ?
             new LocalEventListenerAsync(transCnt, transUpdCntLatch) :
             new LocalEventListener(transCnt, transUpdCntLatch);
 
@@ -469,7 +469,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
 
     /**
      */
-    private static class LocalEventListener implements TransformedEventListener<String> {
+    private static class LocalEventListener implements EventListener<String> {
         /** */
         private final AtomicInteger cnt;
 

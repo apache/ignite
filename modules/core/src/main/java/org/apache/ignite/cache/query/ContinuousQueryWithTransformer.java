@@ -54,7 +54,7 @@ import org.apache.ignite.lang.IgniteClosure;
  * {@link IgniteAsyncCallback} annotation is supported for {@link CacheEntryEventFilter}
  * (see {@link #setRemoteFilterFactory(Factory)}) and {@link CacheEntryUpdatedListener}
  * (see {@link #setRemoteTransformerFactory(Factory)}) and {@link CacheEntryUpdatedListener}
- * (see {@link #setLocalListener(TransformedEventListener)} and {@link TransformedEventListener}).
+ * (see {@link #setLocalListener(EventListener)} and {@link EventListener}).
  * If filter and/or listener are annotated with {@link IgniteAsyncCallback} then annotated callback
  * is executed in async callback pool (see {@link IgniteConfiguration#getAsyncCallbackPoolSize()})
  * and notification order is kept the same as update order for given cache key.
@@ -71,7 +71,7 @@ public final class ContinuousQueryWithTransformer<K, V, T> extends AbstractConti
     private Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, T>> rmtTransFactory;
 
     /** Local listener of transformed event */
-    private TransformedEventListener<T> locLsnr;
+    private EventListener<T> locLsnr;
 
     /**
      * Creates new continuous query with transformer.
@@ -137,7 +137,7 @@ public final class ContinuousQueryWithTransformer<K, V, T> extends AbstractConti
      * @see IgniteConfiguration#getAsyncCallbackPoolSize()
      * @see ContinuousQuery#setLocalListener(CacheEntryUpdatedListener)
      */
-    public ContinuousQueryWithTransformer<K, V, T> setLocalListener(TransformedEventListener<T> locLsnr) {
+    public ContinuousQueryWithTransformer<K, V, T> setLocalListener(EventListener<T> locLsnr) {
         this.locLsnr = locLsnr;
 
         return this;
@@ -148,7 +148,7 @@ public final class ContinuousQueryWithTransformer<K, V, T> extends AbstractConti
      *
      * @return local transformed event listener
      */
-    public TransformedEventListener<T> getLocalListener() {
+    public EventListener<T> getLocalListener() {
         return locLsnr;
     }
 
@@ -179,9 +179,9 @@ public final class ContinuousQueryWithTransformer<K, V, T> extends AbstractConti
      *
      * @param <T> type of data produced by transformer {@link ContinuousQueryWithTransformer#getRemoteTransformerFactory()}.
      * @see ContinuousQueryWithTransformer
-     * @see ContinuousQueryWithTransformer#setLocalListener(TransformedEventListener)
+     * @see ContinuousQueryWithTransformer#setLocalListener(EventListener)
      */
-    public interface TransformedEventListener<T> {
+    public interface EventListener<T> {
         /**
          * Called after one or more entries have been updated.
          *

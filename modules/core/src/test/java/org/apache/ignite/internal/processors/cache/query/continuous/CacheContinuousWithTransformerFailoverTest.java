@@ -29,7 +29,7 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
-import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.TransformedEventListener;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -162,7 +162,7 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
 
             ContinuousQueryWithTransformer<Integer, Integer, Integer> qry = new ContinuousQueryWithTransformer<>();
 
-            qry.setLocalListener(new TransformedEventListener<Integer>() {
+            qry.setLocalListener(new EventListener<Integer>() {
                 /** */
                 @LoggerResource
                 private IgniteLogger log;
@@ -228,7 +228,7 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
 
             qry1.setRemoteTransformerFactory(factory);
 
-            qry1.setLocalListener(new TransformedEventListener<Integer>() {
+            qry1.setLocalListener(new EventListener<Integer>() {
                 @Override public void onUpdated(Iterable<? extends Integer> evts) {
                     for (int evt : evts) {
                         log.info("Update in cache 1: " + evt);
@@ -243,7 +243,7 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
 
             qry2.setRemoteTransformerFactory(factory);
 
-            qry2.setLocalListener(new TransformedEventListener<Integer>() {
+            qry2.setLocalListener(new EventListener<Integer>() {
                 @Override public void onUpdated(Iterable<? extends Integer> evts) {
                     for (int evt : evts) {
                         log.info("Update in cache 2: " + evt);
@@ -289,7 +289,7 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
 
     /**
      */
-    private static class CacheEventListener implements TransformedEventListener<String> {
+    private static class CacheEventListener implements EventListener<String> {
         /** */
         public volatile CountDownLatch latch = new CountDownLatch(1);
 

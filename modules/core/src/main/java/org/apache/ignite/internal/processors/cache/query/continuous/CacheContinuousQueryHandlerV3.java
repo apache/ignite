@@ -26,7 +26,7 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
-import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.TransformedEventListener;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Continuous query handler V3 version.
- * Contains {@link Factory} for remote transformer and {@link TransformedEventListener}.
+ * Contains {@link Factory} for remote transformer and {@link EventListener}.
  *
  * @see ContinuousQueryWithTransformer
  */
@@ -53,7 +53,7 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
     private transient IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?> rmtTrans;
 
     /** Local listener for transformed events. */
-    private transient TransformedEventListener<?> locTransLsnr;
+    private transient EventListener<?> locTransLsnr;
 
     /**
      * Empty constructor.
@@ -76,7 +76,7 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
     public CacheContinuousQueryHandlerV3(
         String cacheName,
         Object topic,
-        TransformedEventListener<?> locTransLsnr,
+        EventListener<?> locTransLsnr,
         @Nullable Factory<? extends CacheEntryEventFilter<K, V>> rmtFilterFactory,
         Factory<? extends IgniteClosure<CacheEntryEvent<? extends K, ? extends V>, ?>> rmtTransFactory,
         boolean oldValRequired,
@@ -110,7 +110,7 @@ public class CacheContinuousQueryHandlerV3<K, V> extends CacheContinuousQueryHan
     }
 
     /** {@inheritDoc} */
-    @Override protected TransformedEventListener<?> localTransformedEventListener() {
+    @Override protected EventListener<?> localTransformedEventListener() {
         return locTransLsnr;
     }
 

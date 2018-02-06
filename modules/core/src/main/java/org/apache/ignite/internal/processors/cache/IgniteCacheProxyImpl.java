@@ -56,7 +56,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.AbstractContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
-import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.TransformedEventListener;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -523,7 +523,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
         CacheEntryUpdatedListener locLsnr = null;
 
-        TransformedEventListener locTransLsnr = null;
+        EventListener locTransLsnr = null;
 
         CacheEntryEventSerializableFilter rmtFilter = null;
 

@@ -23,7 +23,7 @@ import javax.cache.event.CacheEntryEventFilter;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
-import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.TransformedEventListener;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 
@@ -148,7 +148,7 @@ public final class ContinuousQuery<K, V> extends AbstractContinuousQuery<K, V> {
      * @return {@code this} for chaining.
      * @see IgniteAsyncCallback
      * @see IgniteConfiguration#getAsyncCallbackPoolSize()
-     * @see ContinuousQueryWithTransformer#setLocalListener(TransformedEventListener)
+     * @see ContinuousQueryWithTransformer#setLocalListener(EventListener)
      */
     public ContinuousQuery<K, V> setLocalListener(CacheEntryUpdatedListener<K, V> locLsnr) {
         this.locLsnr = locLsnr;
