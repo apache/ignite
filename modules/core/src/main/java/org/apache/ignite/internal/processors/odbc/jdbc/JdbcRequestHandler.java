@@ -291,8 +291,14 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 for (JdbcQueryCursor cursor : qryCursors.values())
                     cursor.close();
 
-                for (JdbcBulkLoadProcessor processor : bulkLoadRequests.values())
-                    processor.close();
+                for (JdbcBulkLoadProcessor processor : bulkLoadRequests.values()) {
+                    try {
+                        processor.close();
+                    }
+                    catch (Exception e) {
+                        U.error(null, "Error closing JDBC bulk load processor.", e);
+                    }
+                }
 
                 bulkLoadRequests.clear();
             }

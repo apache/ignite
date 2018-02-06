@@ -47,12 +47,10 @@ public class BulkLoadStreamerWriter extends BulkLoadCacheWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public Void applyx(IgniteBiTuple<?, ?> entry) {
+    @Override public void apply(IgniteBiTuple<?, ?> entry) {
         streamer.addData(entry.getKey(), entry.getValue());
 
         updateCnt++;
-
-        return null;
     }
 
     /** {@inheritDoc} */

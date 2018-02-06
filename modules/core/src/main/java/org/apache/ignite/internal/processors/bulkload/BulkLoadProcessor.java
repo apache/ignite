@@ -93,7 +93,7 @@ public class BulkLoadProcessor implements AutoCloseable {
     /**
      * Aborts processing and closes the underlying objects ({@link IgniteDataStreamer}).
      */
-    @Override public void close() {
+    @Override public void close() throws Exception {
         if (isClosed)
             return;
 
