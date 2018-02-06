@@ -35,7 +35,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
-import org.apache.ignite.cache.query.TransformedEventListener;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.TransformedEventListener;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;

@@ -172,4 +172,21 @@ public final class ContinuousQueryWithTransformer<K, V, T> extends AbstractConti
         return (ContinuousQueryWithTransformer<K, V, T>)super.setLocal(loc);
     }
 
+    /**
+     * Interface for local listener of {@link ContinuousQueryWithTransformer} to implement.
+     * Invoked if an cache entry is updated, created or if a batch call is made,
+     * after the entries are updated and transformed.
+     *
+     * @param <T> type of data produced by transformer {@link ContinuousQueryWithTransformer#getRemoteTransformerFactory()}.
+     * @see ContinuousQueryWithTransformer
+     * @see ContinuousQueryWithTransformer#setLocalListener(TransformedEventListener)
+     */
+    public interface TransformedEventListener<T> {
+        /**
+         * Called after one or more entries have been updated.
+         *
+         * @param events The entries just updated that transformed with remote transformer of {@link ContinuousQueryWithTransformer}.
+         */
+        void onUpdated(Iterable<? extends T> events);
+    }
 }

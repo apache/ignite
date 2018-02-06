@@ -26,7 +26,7 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryEventFilter;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
-import org.apache.ignite.cache.query.TransformedEventListener;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.TransformedEventListener;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteAsyncCallback;
