@@ -84,7 +84,7 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
                 }
             },
             new DataRegionMetricsImpl(new DataRegionConfiguration()),
-            false
+            PageMemoryImpl.ThrottlingPolicy.NONE
         );
 
         mem.start();
