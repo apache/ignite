@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -77,6 +79,11 @@ public class FullPageIdTable {
     /** Pointer to the values array. */
     protected long valPtr;
 
+    //todo
+    IntervalBasedMeasurement avgGetSteps = new IntervalBasedMeasurement(250, 4);
+    IntervalBasedMeasurement avgPutSteps = new IntervalBasedMeasurement(250, 4);
+    AtomicLong lastDump = new AtomicLong();
+
     /**
      * @return Estimated memory size required for this map to store the given number of elements.
      */
@@ -121,6 +128,9 @@ public class FullPageIdTable {
      *
      * @param cacheId Cache ID.
      * @param pageId Page ID.
+     * @param tag
+     * @param absent
+     * @param outdated
      * @return A value associated with the given key.
      */
     public long get(int cacheId, long pageId, int tag, long absent, long outdated) {
@@ -289,6 +299,9 @@ public class FullPageIdTable {
         }
         while (++step <= maxSteps);
 
+        avgPutSteps.addMeasurementForAverageCalculation(step);
+        dumpIfNeed();
+
         if (foundIndex != -1) {
             setKeyAt(foundIndex, cacheId, pageId);
             setTagAt(foundIndex, tag);
@@ -312,7 +325,7 @@ public class FullPageIdTable {
 
         int index = U.safeAbs(FullPageId.hashCode(cacheId, pageId)) % capacity;
 
-        do {
+        try { do {
             long res = testKeyAt(index, cacheId, pageId, tag);
 
             if (res == EQUAL)
@@ -331,7 +344,27 @@ public class FullPageIdTable {
         }
         while (++step <= maxSteps);
 
+        } finally {
+            avgGetSteps.addMeasurementForAverageCalculation(step);
+
+            dumpIfNeed();
+
+        }
         return -1;
+    }
+
+    private void dumpIfNeed() {
+        long ns = System.nanoTime();
+        long lastNs = lastDump.get();
+        if (ns - lastNs <= TimeUnit.SECONDS.toNanos(1))
+            return;
+
+        if (lastDump.compareAndSet(lastNs, ns)) {
+            System.err.println("Avg steps in loaded pages table," +
+                " get: " + avgGetSteps.getAverage() + " steps, " + avgGetSteps.getSpeedOpsPerSecReadOnly() + " ops/sec, " +
+                " put: " + avgPutSteps.getAverage() + " steps, " + avgPutSteps.getSpeedOpsPerSecReadOnly() + " ops/sec, " +
+                " capacity: " + capacity + " size: " + size());
+        }
     }
 
     /**

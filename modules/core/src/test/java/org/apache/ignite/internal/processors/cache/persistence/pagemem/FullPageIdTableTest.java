@@ -20,32 +20,47 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.FullPageIdTable;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLogger;
-import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
  */
-public class FullPageIdTableTest extends GridCommonAbstractTest {
+public class FullPageIdTableTest  {
     /** */
-    private static final int CACHE_ID_RANGE = 10;
+    private static final int CACHE_ID_RANGE = 1;
 
     /** */
-    private static final int PAGE_ID_RANGE = 1000;
+    private static final int PAGE_ID_RANGE = 3000;
+
+    /** */
+    private static final int CACHE_ID_RANGE2 = 1;
+
+    /** */
+    private static final int PAGE_ID_RANGE2 = 3000;
+
+    /** Logger. */
+    private JavaLogger log = new JavaLogger();
 
     /**
      * @throws Exception if failed.
      */
+    @Test
     public void testRandomOperations() throws Exception {
-        long mem = FullPageIdTable.requiredMemory(CACHE_ID_RANGE * PAGE_ID_RANGE);
+        int cnt = CACHE_ID_RANGE * PAGE_ID_RANGE;
 
-        UnsafeMemoryProvider prov = new UnsafeMemoryProvider(new JavaLogger());
+        long mem = FullPageIdTable.requiredMemory(cnt);
+
+        UnsafeMemoryProvider prov = new UnsafeMemoryProvider(log);
 
         prov.initialize(new long[] {mem});
 
@@ -93,6 +108,96 @@ public class FullPageIdTableTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void putRemoveScenario() throws Exception {
+        int cnt = CACHE_ID_RANGE2 * PAGE_ID_RANGE2;
+
+        long mem = FullPageIdTable.requiredMemory(cnt);
+
+        DirectMemoryProvider prov = new UnsafeMemoryProvider(log);
+
+        prov.initialize(new long[] {mem});
+
+        DirectMemoryRegion region = prov.nextRegion();
+
+        try {
+            long seed = U.currentTimeMillis();
+
+            info("Seed: " + seed + "L; //");
+
+            Random rnd = new Random(seed);
+
+            FullPageIdTable tbl = new FullPageIdTable(region.address(), region.size(), true);
+
+            Map<FullPageId, Long> check = new HashMap<>();
+
+            int tag = 0;
+            for (int i = 0; i < 10_000_000 ; i++) {
+                int op = rnd.nextInt(3);
+
+                int cacheId = rnd.nextInt(CACHE_ID_RANGE2) + 1;
+                int pageId = rnd.nextInt(PAGE_ID_RANGE2 * 9);
+
+                FullPageId fullId = new FullPageId(pageId, cacheId);
+
+                if (op == 0) {
+                    long val = tbl.get(cacheId, pageId, tag, -1, -2);
+                    if (val == -2)
+                        tbl.refresh(cacheId, pageId, tag);
+                    else if (check.containsKey(fullId))
+                        assertTrue("Ret " + val, val > 0);
+
+                }
+                else if ((op == 1 ) && (check.size() + 1 < tbl.capacity())) {
+                    long val = U.safeAbs(rnd.nextLong());
+
+                    tbl.put(cacheId, pageId, val, tag);
+                    check.put(fullId, val);
+                }
+                else if (check.size() >= tbl.capacity() * 2/3) {
+                    tbl.remove(cacheId, pageId, tag);
+                    check.remove(fullId);
+                }
+
+                IntervalBasedMeasurement avgPutSteps = U.field(tbl, "avgPutSteps");
+                if (i > 0 && i % 100_000 == 0) {
+                    info("Done: " + i
+                        + " Size: " + check.size()
+                        + " Capacity: " + tbl.capacity()
+                        + " avg steps " + avgPutSteps.getAverage());
+
+                    tag++;
+                }
+                i++;
+
+
+               // if(avgPutSteps.getAverage()>2000)
+                //    break;
+            }
+
+            verifyLinear(tbl, check);
+            IntervalBasedMeasurement avgPutSteps = U.field(tbl, "avgPutSteps");
+            System.out.println("Average put required: " + avgPutSteps.getAverage());
+        }
+        finally {
+            prov.shutdown();
+        }
+    }
+
+    /**
+     * @param msg Message to print.
+     */
+    protected void info(String msg) {
+        if (log.isInfoEnabled())
+            log.info(msg);
+
+        System.out.println(msg);
+    }
+
+
+    /**
      * @param tbl Table to check.
      * @param check Expected mapping.
      */
@@ -108,8 +213,13 @@ public class FullPageIdTableTest extends GridCommonAbstractTest {
 
         assertEquals("Size check failed", check.size(), collector.size());
 
-        for (Map.Entry<FullPageId, Long> entry : check.entrySet())
-            assertEquals("Mapping comparison failed for key: " + entry.getKey(),
-                entry.getValue(), collector.get(entry.getKey()));
+        for (Map.Entry<FullPageId, Long> entry : check.entrySet()) {
+            Long valCheck = entry.getValue();
+            Long actual = collector.get(entry.getKey());
+
+            if (!valCheck.equals(actual))
+                assertEquals("Mapping comparison failed for key: " + entry.getKey(),
+                    valCheck, actual);
+        }
     }
 }
