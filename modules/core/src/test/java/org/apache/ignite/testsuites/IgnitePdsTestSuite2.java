@@ -76,7 +76,12 @@ public class IgnitePdsTestSuite2 extends TestSuite {
      * @param suite suite to add tests into.
      */
     public static void addRealPageStoreTestsLongRunning(TestSuite suite) {
+        suite.addTestSuite(IgnitePdsTransactionsHangTest.class);
+
+        suite.addTestSuite(IgnitePdsPageEvictionDuringPartitionClearTest.class);
+
         // Rebalancing test
+        suite.addTestSuite(IgnitePdsContinuousRestartTest.class);
         suite.addTestSuite(IgnitePdsContinuousRestartTest2.class);
 
         suite.addTestSuite(IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes.class);
@@ -95,18 +100,13 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         // Metrics test.
         suite.addTestSuite(IgniteDataStorageMetricsSelfTest.class);
 
-        suite.addTestSuite(IgnitePdsTransactionsHangTest.class);
-
         suite.addTestSuite(IgnitePdsRebalancingOnNotStableTopologyTest.class);
 
         suite.addTestSuite(IgnitePdsWholeClusterRestartTest.class);
 
-        suite.addTestSuite(IgnitePdsPageEvictionDuringPartitionClearTest.class);
 
         // Rebalancing test
         suite.addTestSuite(IgniteWalHistoryReservationsTest.class);
-
-        suite.addTestSuite(IgnitePdsContinuousRestartTest.class);
 
         suite.addTestSuite(IgnitePersistentStoreDataStructuresTest.class);
 
