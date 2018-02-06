@@ -24,6 +24,9 @@ import org.apache.ignite.lang.IgniteBiTuple;
  * A bulk load cache writer object that adds entries using {@link IgniteDataStreamer}.
  */
 public class BulkLoadStreamerWriter extends BulkLoadCacheWriter {
+    /** Serialization version UID. */
+    private static final long serialVersionUID = 0L;
+
     /** The streamer. */
     private final IgniteDataStreamer<Object, Object> streamer;
 
