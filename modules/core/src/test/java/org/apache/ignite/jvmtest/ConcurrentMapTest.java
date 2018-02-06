@@ -31,7 +31,6 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  *
@@ -63,7 +62,7 @@ public class ConcurrentMapTest {
 
             int cap = 256 / lvl < 16 ? 16 * lvl : 256;
 
-            int writes = testMap(100000, new ConcurrentHashMap8<String, Integer>(cap, 0.75f, lvl));
+            int writes = testMap(100000, new ConcurrentHashMap<>(cap, 0.75f, lvl));
 
             ress.add(new IgnitePair<>(lvl, writes));
         }
@@ -72,8 +71,6 @@ public class ConcurrentMapTest {
 
         for (IgnitePair<Integer> p : ress)
             X.println("Performance [lvl=" + p.get1() + ", writes=" + p.get2() + ']');
-
-        testPut();
 
         testOpsSpeed();
 
@@ -92,15 +89,13 @@ public class ConcurrentMapTest {
         final AtomicInteger writes = new AtomicInteger();
 
         IgniteInternalFuture fut1 = GridTestUtils.runMultiThreadedAsync(
-                new Runnable() {
-                    @Override public void run() {
-                        while (!done.get()) {
-                            map.put(rnd.nextInt(keyRange) + "very.long.string.for.key", 1);
+            () -> {
+                while (!done.get()) {
+                    map.put(rnd.nextInt(keyRange) + "very.long.string.for.key", 1);
 
-                            writes.incrementAndGet();
-                        }
-                    }
-                },
+                    writes.incrementAndGet();
+                }
+            },
                 40,
                 "thread"
         );
@@ -127,22 +122,9 @@ public class ConcurrentMapTest {
     /**
      * @throws Exception If failed.
      */
-    public static void testPut() throws Exception {
-        Map<Integer, Integer> map = new ConcurrentHashMap8<>();
-
-        map.put(0, 0);
-        map.put(0, 0);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public static void testOpsSpeed() throws Exception {
-        for (int i = 0; i < 4; i++) {
-            X.println("New map ops time: " + runOps(new ConcurrentHashMap8<Integer, Integer>(), 1000000, 100));
-
-            X.println("Jdk6 map ops time: " + runOps(new ConcurrentHashMap<Integer, Integer>(), 1000000, 100));
-        }
+    private static void testOpsSpeed() throws Exception {
+        for (int i = 0; i < 4; i++)
+            X.println("Map ops time: " + runOps(new ConcurrentHashMap<>(), 1000000, 100));
     }
 
     /**
@@ -150,6 +132,7 @@ public class ConcurrentMapTest {
      * @param threadCnt Threads count.
      * @return Time taken.
      */
+    @SuppressWarnings("SameParameterValue")
     private static long runOps(final Map<Integer,Integer> map, final int iterCnt, int threadCnt) throws Exception {
         long start = System.currentTimeMillis();
 
@@ -175,25 +158,16 @@ public class ConcurrentMapTest {
         return System.currentTimeMillis() - start;
     }
 
-    /**
-     * @throws Exception If failed.
-     */
+    /** */
     @SuppressWarnings("ResultOfObjectAllocationIgnored")
-    public static void testCreationTime() throws Exception {
+    private static void testCreationTime() {
         for (int i = 0; i < 5; i++) {
             long now = System.currentTimeMillis();
 
             for (int j = 0; j < 1000000; j++)
-                new ConcurrentHashMap8<Integer, Integer>();
-
-            X.println("New map creation time: " + (System.currentTimeMillis() - now));
-
-            now = System.currentTimeMillis();
-
-            for (int j = 0; j < 1000000; j++)
                 new ConcurrentHashMap<Integer, Integer>();
 
-            X.println("Jdk6 map creation time: " + (System.currentTimeMillis() - now));
+            X.println("Map creation time: " + (System.currentTimeMillis() - now));
         }
     }
 

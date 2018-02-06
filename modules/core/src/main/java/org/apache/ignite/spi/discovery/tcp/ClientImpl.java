@@ -101,7 +101,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryPingResponse;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCO_FAILED_CLIENT_RECONNECT_DELAY;
@@ -136,7 +136,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     private static final Object SPI_RECONNECT = "SPI_RECONNECT";
 
     /** Remote nodes. */
-    private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap<>();
 
     /** */
     private final List<DiscoveryDataPacket> delayDiscoData = new ArrayList<>();
@@ -145,7 +145,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     private final NavigableMap<Long, Collection<ClusterNode>> topHist = new TreeMap<>();
 
     /** Remote nodes. */
-    private final ConcurrentMap<UUID, GridFutureAdapter<Boolean>> pingFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, GridFutureAdapter<Boolean>> pingFuts = new ConcurrentHashMap<>();
 
     /** Socket writer. */
     private SocketWriter sockWriter;
