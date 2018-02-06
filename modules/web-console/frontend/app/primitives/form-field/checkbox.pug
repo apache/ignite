@@ -17,7 +17,7 @@
 mixin form-field__checkbox({ label, model, name, disabled, required, tip })
     .form-field.form-field__checkbox
         +form-field__label({ label, name, required })
-            +form-field__tooltip(tip, tipOpts)
+            +form-field__tooltip({ title: tip, options: tipOpts })
 
         .form-field__control
             - attributes.type='checkbox'

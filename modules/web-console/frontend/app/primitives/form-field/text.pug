@@ -19,7 +19,7 @@ mixin form-field__text({ label, model, name, disabled, required, placeholder, ti
 
     .form-field
         +form-field__label({ label, name, required })
-            +form-field__tooltip(tip, tipOpts)
+            +form-field__tooltip({ title: tip, options: tipOpts })
 
         .form-field__control
             - attributes.type='text'

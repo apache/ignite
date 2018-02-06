@@ -23,6 +23,7 @@
     font-family: Roboto;
 
     &__label {
+        display: flex;
         float: left;
         width: 100%;
         margin: 0 0 4px;
@@ -30,6 +31,10 @@
         color: #424242;
         font-size: 14px;
         line-height: 14px;
+
+        .icon-help {
+            line-height: 14px;
+        }
 
         &.required:after {
             content: '';
@@ -42,7 +47,7 @@
         width: 100%;
 
         & > input,
-        & > button {
+        & > button:not(.btn-ignite) {
             outline: none;
             overflow: visible;
 
