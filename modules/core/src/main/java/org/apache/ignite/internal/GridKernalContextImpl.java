@@ -625,8 +625,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** */
-    private ClusterNode localNode() {
-        if (locNode == null)
+    @Nullable private ClusterNode localNode() {
+        if (locNode == null && discoMgr !=null)
             locNode = discoMgr.localNode();
 
         return locNode;
