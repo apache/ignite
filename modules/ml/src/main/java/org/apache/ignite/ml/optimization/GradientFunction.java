@@ -27,5 +27,5 @@ import org.apache.ignite.ml.math.Vector;
 @FunctionalInterface
 public interface GradientFunction extends Serializable {
     /** */
-    Vector compute(Matrix inputs, Vector groundTruth, Vector point);
+    Vector compute(Matrix inputs, Vector groundTruth, Vector pnt);
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.ml.nn.trainers.distributed;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.trainers.group.Metaoptimizer;
@@ -26,7 +27,7 @@ import org.apache.ignite.ml.trainers.group.Metaoptimizer;
 /** Meta-optimizer for multilayer perceptron. */
 public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerLocalContext,
     MLPGroupUpdateTrainingLoopData<P>, P, P, P, ArrayList<P>> {
-    /** */
+    /** Function used for reducing updates produced by parallel trainings. */
     private final IgniteFunction<List<P>, P> allUpdatesReducer;
 
     /** Construct metaoptimizer. */
@@ -65,7 +66,7 @@ public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerL
     @Override public P localProcessor(ArrayList<P> input, MLPGroupUpdateTrainerLocalContext locCtx) {
         locCtx.incrementCurrentStep();
 
-        return allUpdatesReducer.apply(input);
+        return allUpdatesReducer.apply(input.stream().filter(Objects::nonNull).collect(Collectors.toList()));
     }
 
     /** {@inheritDoc} */

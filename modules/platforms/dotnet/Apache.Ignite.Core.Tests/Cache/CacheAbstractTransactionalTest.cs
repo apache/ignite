@@ -532,6 +532,11 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestTxDeadlockDetection()
         {
+            if (LocalCache())
+            {
+                return;
+            }
+
             var cache = Cache();
 
             var keys0 = Enumerable.Range(1, 100).ToArray();
@@ -556,8 +561,12 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             // Increment keys within tx in different order to cause a deadlock.
             var aex = Assert.Throws<AggregateException>(() =>
-                Task.WaitAll(Task.Factory.StartNew(() => increment(keys0)),
-                             Task.Factory.StartNew(() => increment(keys0.Reverse().ToArray()))));
+                Task.WaitAll(new[]
+                    {
+                        Task.Factory.StartNew(() => increment(keys0)),
+                        Task.Factory.StartNew(() => increment(keys0.Reverse().ToArray()))
+                    },
+                    TimeSpan.FromSeconds(40)));
 
             Assert.AreEqual(2, aex.InnerExceptions.Count);
 

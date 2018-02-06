@@ -248,7 +248,7 @@ public class JdbcConnection implements Connection {
         catch (Exception e) {
             close();
 
-            throw convertToSqlException(e, "Failed to start Ignite node.", SqlStateCode.CLIENT_CONNECTION_FAILED);
+            throw convertToSqlException(e, "Failed to start Ignite node. " + e.getMessage(), SqlStateCode.CLIENT_CONNECTION_FAILED);
         }
     }
 

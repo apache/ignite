@@ -26,6 +26,7 @@ export search from './search.svg';
 export refresh from './refresh.svg';
 export sort from './sort.svg';
 export info from './info.svg';
+export check from './check.svg';
 export checkmark from './checkmark.svg';
 export alert from './alert.svg';
 export attention from './attention.svg';

@@ -22,47 +22,47 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.nio.GridNioMetricsListener;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.jsr166.LongAdder8;
 
 /**
  * Statistics for {@link org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi}.
  */
 public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
     /** Received messages count. */
-    private final LongAdder8 rcvdMsgsCnt = new LongAdder8();
+    private final LongAdder rcvdMsgsCnt = new LongAdder();
 
     /** Sent messages count.*/
-    private final LongAdder8 sentMsgsCnt = new LongAdder8();
+    private final LongAdder sentMsgsCnt = new LongAdder();
 
     /** Received bytes count. */
-    private final LongAdder8 rcvdBytesCnt = new LongAdder8();
+    private final LongAdder rcvdBytesCnt = new LongAdder();
 
     /** Sent bytes count.*/
-    private final LongAdder8 sentBytesCnt = new LongAdder8();
+    private final LongAdder sentBytesCnt = new LongAdder();
 
     /** Counter factory. */
-    private static final Callable<LongAdder8> LONG_ADDER_FACTORY = new Callable<LongAdder8>() {
-        @Override public LongAdder8 call() {
-            return new LongAdder8();
+    private static final Callable<LongAdder> LONG_ADDER_FACTORY = new Callable<LongAdder>() {
+        @Override public LongAdder call() {
+            return new LongAdder();
         }
     };
 
     /** Received messages count grouped by message type. */
-    private final ConcurrentMap<String, LongAdder8> rcvdMsgsCntByType = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, LongAdder> rcvdMsgsCntByType = new ConcurrentHashMap<>();
 
     /** Received messages count grouped by sender. */
-    private final ConcurrentMap<UUID, LongAdder8> rcvdMsgsCntByNode = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, LongAdder> rcvdMsgsCntByNode = new ConcurrentHashMap<>();
 
     /** Sent messages count grouped by message type. */
-    private final ConcurrentMap<String, LongAdder8> sentMsgsCntByType = new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, LongAdder> sentMsgsCntByType = new ConcurrentHashMap<>();
 
     /** Sent messages count grouped by receiver. */
-    private final ConcurrentMap<UUID, LongAdder8> sentMsgsCntByNode = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, LongAdder> sentMsgsCntByNode = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public void onBytesSent(int bytesCnt) {
@@ -89,8 +89,8 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
         if (msg instanceof GridIoMessage)
             msg = ((GridIoMessage)msg).message();
 
-        LongAdder8 cntByType = F.addIfAbsent(sentMsgsCntByType, msg.getClass().getSimpleName(), LONG_ADDER_FACTORY);
-        LongAdder8 cntByNode = F.addIfAbsent(sentMsgsCntByNode, nodeId, LONG_ADDER_FACTORY);
+        LongAdder cntByType = F.addIfAbsent(sentMsgsCntByType, msg.getClass().getSimpleName(), LONG_ADDER_FACTORY);
+        LongAdder cntByNode = F.addIfAbsent(sentMsgsCntByNode, nodeId, LONG_ADDER_FACTORY);
 
         cntByType.increment();
         cntByNode.increment();
@@ -111,8 +111,8 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
         if (msg instanceof GridIoMessage)
             msg = ((GridIoMessage)msg).message();
 
-        LongAdder8 cntByType = F.addIfAbsent(rcvdMsgsCntByType, msg.getClass().getSimpleName(), LONG_ADDER_FACTORY);
-        LongAdder8 cntByNode = F.addIfAbsent(rcvdMsgsCntByNode, nodeId, LONG_ADDER_FACTORY);
+        LongAdder cntByType = F.addIfAbsent(rcvdMsgsCntByType, msg.getClass().getSimpleName(), LONG_ADDER_FACTORY);
+        LongAdder cntByNode = F.addIfAbsent(rcvdMsgsCntByNode, nodeId, LONG_ADDER_FACTORY);
 
         cntByType.increment();
         cntByNode.increment();
@@ -160,10 +160,10 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
      * @param srcStat Internal statistics representation.
      * @return Result map.
      */
-    private <T> Map<T, Long> convertStatistics(Map<T, LongAdder8> srcStat) {
+    private <T> Map<T, Long> convertStatistics(Map<T, LongAdder> srcStat) {
         Map<T, Long> destStat = U.newHashMap(srcStat.size());
 
-        for (Map.Entry<T, LongAdder8> entry : srcStat.entrySet())
+        for (Map.Entry<T, LongAdder> entry : srcStat.entrySet())
             destStat.put(entry.getKey(), entry.getValue().longValue());
 
         return destStat;

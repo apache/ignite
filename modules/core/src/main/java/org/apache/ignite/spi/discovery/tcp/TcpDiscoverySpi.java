@@ -55,6 +55,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -333,7 +334,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     protected volatile long gridStartTime;
 
     /** Marshaller. */
-    private final Marshaller marsh = new JdkMarshaller();
+    private Marshaller marsh;
 
     /** Statistics. */
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
@@ -551,6 +552,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         if (ignite != null) {
             setLocalAddress(ignite.configuration().getLocalHost());
             setAddressResolver(ignite.configuration().getAddressResolver());
+
+            if (ignite instanceof IgniteKernal) // IgniteMock instance can be injected from tests.
+                marsh = ((IgniteKernal)ignite).context().marshallerContext().jdkMarshaller();
+            else
+                marsh = new JdkMarshaller();
         }
     }
 
@@ -972,17 +978,23 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
 
             initAddresses();
 
-            final Serializable cfgId = ignite.configuration().getConsistentId();
+            IgniteConfiguration cfg = ignite.configuration();
+
+            final Serializable cfgId = cfg.getConsistentId();
 
             if (cfgId == null) {
-                final List<String> sortedAddrs = new ArrayList<>(addrs.get1());
+                if (cfg.isClientMode() == Boolean.TRUE)
+                    consistentId = cfg.getNodeId();
+                else {
+                    List<String> sortedAddrs = new ArrayList<>(addrs.get1());
 
-                Collections.sort(sortedAddrs);
+                    Collections.sort(sortedAddrs);
 
-                if (getBoolean(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT))
-                    consistentId = U.consistentId(sortedAddrs);
-                else
-                    consistentId = U.consistentId(sortedAddrs, impl.boundPort());
+                    if (getBoolean(IGNITE_CONSISTENT_ID_BY_HOST_WITHOUT_PORT))
+                        consistentId = U.consistentId(sortedAddrs);
+                    else
+                        consistentId = U.consistentId(sortedAddrs, impl.boundPort());
+                }
             }
             else
                 consistentId = cfgId;

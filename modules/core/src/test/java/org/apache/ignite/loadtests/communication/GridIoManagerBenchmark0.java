@@ -26,6 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -46,7 +47,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
@@ -123,7 +123,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         info("Messages: " + CONCUR_MSGS);
 
         final Semaphore sem = new Semaphore(CONCUR_MSGS);
-        final LongAdder8 msgCntr = new LongAdder8();
+        final LongAdder msgCntr = new LongAdder();
 
         final String topic = "test-topic";
 
@@ -215,7 +215,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         final GridIoManager snd = sndKernal.context().io();
         final GridIoManager rcv = rcvKernal.context().io();
 
-        final LongAdder8 msgCntr = new LongAdder8();
+        final LongAdder msgCntr = new LongAdder();
 
         final Integer topic = 1;
 
@@ -315,7 +315,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
         info("Messages: " + CONCUR_MSGS);
 
         final Semaphore sem = new Semaphore(CONCUR_MSGS);
-        final LongAdder8 msgCntr = new LongAdder8();
+        final LongAdder msgCntr = new LongAdder();
 
         final String topic = "test-topic";
 
