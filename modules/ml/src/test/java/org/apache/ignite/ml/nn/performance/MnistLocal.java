@@ -28,12 +28,12 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.Activators;
-import org.apache.ignite.ml.nn.LossFunctions;
+import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.SimpleMLPLocalBatchTrainerInput;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
-import org.apache.ignite.ml.nn.updaters.RPropUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.junit.Test;
 
 import static org.apache.ignite.ml.nn.performance.MnistMLPTestUtil.createDataset;
@@ -74,7 +74,7 @@ public class MnistLocal {
             2000);
 
         MultilayerPerceptron mdl = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
-            () -> new RPropUpdateCalculator<>(0.1, 1.2, 0.5),
+            () -> new RPropUpdateCalculator(0.1, 1.2, 0.5),
             1E-7,
             200).
             train(input);
@@ -89,5 +89,7 @@ public class MnistLocal {
 
         Tracer.showAscii(truth);
         Tracer.showAscii(predicted);
+
+        X.println("Accuracy: " + VectorUtils.zipWith(predicted, truth, (x, y) -> x.equals(y) ? 1.0 : 0.0).sum() / truth.size() * 100 + "%.");
     }
 }

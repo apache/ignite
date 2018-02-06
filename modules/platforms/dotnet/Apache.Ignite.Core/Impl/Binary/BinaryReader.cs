@@ -656,8 +656,10 @@ namespace Apache.Ignite.Core.Impl.Binary
 
                 var hdr = BinaryObjectHeader.Read(Stream, pos);
 
-                if (!doDetach)
+                if (!doDetach && Stream.CanGetArray)
+                {
                     return new BinaryObject(_marsh, Stream.GetArray(), pos, hdr);
+                }
 
                 Stream.Seek(pos, SeekOrigin.Begin);
 
@@ -698,14 +700,16 @@ namespace Apache.Ignite.Core.Impl.Binary
                 {
                     BinaryObject portObj;
 
-                    if (_detach)
+                    if (_detach || !Stream.CanGetArray)
                     {
                         Stream.Seek(pos, SeekOrigin.Begin);
 
                         portObj = new BinaryObject(_marsh, Stream.ReadByteArray(hdr.Length), 0, hdr);
                     }
                     else
+                    {
                         portObj = new BinaryObject(_marsh, Stream.GetArray(), pos, hdr);
+                    }
 
                     T obj = _builder == null ? TypeCaster<T>.Cast(portObj) : TypeCaster<T>.Cast(_builder.Child(portObj));
 

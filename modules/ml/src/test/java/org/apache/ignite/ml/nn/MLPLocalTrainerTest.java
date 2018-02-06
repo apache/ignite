@@ -27,10 +27,11 @@ import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
-import org.apache.ignite.ml.nn.updaters.NesterovUpdateCalculator;
-import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
-import org.apache.ignite.ml.nn.updaters.RPropUpdateCalculator;
-import org.apache.ignite.ml.nn.updaters.SimpleGDUpdateCalculator;
+import org.apache.ignite.ml.optimization.LossFunctions;
+import org.apache.ignite.ml.optimization.updatecalculators.NesterovUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.junit.Test;
 
 /**
@@ -42,7 +43,7 @@ public class MLPLocalTrainerTest {
      */
     @Test
     public void testXORSimpleGD() {
-        xorTest(() -> new SimpleGDUpdateCalculator<>(0.3));
+        xorTest(() -> new SimpleGDUpdateCalculator(0.3));
     }
 
     /**
@@ -50,7 +51,7 @@ public class MLPLocalTrainerTest {
      */
     @Test
     public void testXORRProp() {
-        xorTest(() -> new RPropUpdateCalculator<>());
+        xorTest(RPropUpdateCalculator::new);
     }
 
     /**
@@ -66,7 +67,7 @@ public class MLPLocalTrainerTest {
      * @param updaterSupplier Updater supplier.
      * @param <P> Updater parameters type.
      */
-    private <P> void xorTest(IgniteSupplier<ParameterUpdateCalculator<MultilayerPerceptron, P>> updaterSupplier) {
+    private <P> void xorTest(IgniteSupplier<ParameterUpdateCalculator<? super MultilayerPerceptron, P>> updaterSupplier) {
         Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}},
             StorageConstants.ROW_STORAGE_MODE).transpose();
 
@@ -78,7 +79,7 @@ public class MLPLocalTrainerTest {
             withAddedLayer(1, false, Activators.SIGMOID);
 
         SimpleMLPLocalBatchTrainerInput trainerInput = new SimpleMLPLocalBatchTrainerInput(conf,
-            new Random(1234L), xorInputs, xorOutputs, 4);
+            new Random(123L), xorInputs, xorOutputs, 4);
 
         MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
             updaterSupplier,

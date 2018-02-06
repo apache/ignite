@@ -875,13 +875,13 @@ object VisorCacheCommand {
         cacheT += ("Rebalance Cache Order", rebalanceCfg.getRebalanceOrder)
 
         cacheT += ("Eviction Policy Enabled", bool2Str(evictCfg.getPolicy != null))
-        cacheT += ("Eviction Policy", safe(evictCfg.getPolicy))
+        cacheT += ("Eviction Policy Factory", safe(evictCfg.getPolicy))
         cacheT += ("Eviction Policy Max Size", safe(evictCfg.getPolicyMaxSize))
         cacheT += ("Eviction Filter", safe(evictCfg.getFilter))
 
         cacheT += ("Near Cache Enabled", bool2Str(nearCfg.isNearEnabled))
         cacheT += ("Near Start Size", nearCfg.getNearStartSize)
-        cacheT += ("Near Eviction Policy", safe(nearCfg.getNearEvictPolicy))
+        cacheT += ("Near Eviction Policy Factory", safe(nearCfg.getNearEvictPolicy))
         cacheT += ("Near Eviction Policy Max Size", safe(nearCfg.getNearEvictMaxSize))
 
         cacheT += ("Default Lock Timeout", cfg.getDefaultLockTimeout)

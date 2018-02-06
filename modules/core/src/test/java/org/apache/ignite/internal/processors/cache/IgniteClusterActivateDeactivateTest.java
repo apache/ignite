@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -34,6 +35,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
@@ -121,13 +123,13 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         }
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration();
-        memCfg.setPageSize(1024);
+        memCfg.setPageSize(4 * 1024);
         memCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-            .setMaxSize(10 * 1024 * 1024)
+            .setMaxSize(300 * 1024 * 1024)
             .setPersistenceEnabled(persistenceEnabled()));
 
         memCfg.setDataRegionConfigurations(new DataRegionConfiguration()
-            .setMaxSize(10 * 1024 * 1024)
+            .setMaxSize(300 * 1024 * 1024)
             .setName(NO_PERSISTENCE_REGION)
             .setPersistenceEnabled(false));
 
@@ -785,7 +787,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         startWithCaches1(SRVS, CLIENTS);
 
         final Ignite srv = ignite(0);
-        Ignite client = ignite(SRVS);
+        IgniteEx client = grid(SRVS);
 
         if (persistenceEnabled())
             ignite(0).active(true);
@@ -823,12 +825,11 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             }
         });
 
-        checkCache(client, CACHE_NAME_PREFIX + 0, false);
-
         if (transition) {
             assertFalse(stateFut.get().isDone());
 
-            assertFalse(client.active());
+            // Public API method would block forever because we blocked the exchange message.
+            assertFalse(client.context().state().publicApiActiveState(false));
 
             spi1.waitForBlocked();
 
@@ -890,7 +891,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
         startWithCaches1(SRVS, CLIENTS);
 
         final Ignite srv = ignite(0);
-        Ignite client = ignite(SRVS);
+        IgniteEx client = grid(SRVS);
 
         checkNoCaches(SRVS + CLIENTS);
 
@@ -923,12 +924,10 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             }
         });
 
-        checkCache(client, CACHE_NAME_PREFIX + 0, !transition);
-
         if (transition) {
             assertFalse(stateFut.get().isDone());
 
-            assertFalse(client.active());
+            assertTrue(client.context().state().clusterState().transition());
 
             spi1.waitForBlocked();
 
@@ -1275,7 +1274,11 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @param node Node.
      * @param exp {@code True} if expect that cache is started on node.
      */
-    void checkCache(Ignite node, String cacheName, boolean exp) {
+    void checkCache(Ignite node, String cacheName, boolean exp) throws IgniteCheckedException {
+        ((IgniteEx)node).context().cache().context().exchange().lastTopologyFuture().get();
+
+        ((IgniteEx)node).context().state().publicApiActiveState(true);
+
         GridCacheAdapter cache = ((IgniteKernal)node).context().cache().internalCache(cacheName);
 
         if (exp)
@@ -1289,6 +1292,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      */
     final void checkNoCaches(int nodes) {
         for (int i = 0; i < nodes; i++) {
+            grid(i).context().state().publicApiActiveState(true);
+
             GridCacheProcessor cache = ((IgniteKernal)ignite(i)).context().cache();
 
             assertTrue(cache.caches().isEmpty());

@@ -33,14 +33,16 @@ import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFun
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.util.MatrixUtil;
-import org.apache.ignite.ml.nn.LossFunctions;
+import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
-import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
-import org.apache.ignite.ml.nn.updaters.RPropParameterUpdate;
-import org.apache.ignite.ml.nn.updaters.RPropUpdateCalculator;
+import org.apache.ignite.ml.optimization.SmoothParametrized;
+import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 import org.apache.ignite.ml.trainers.group.MetaoptimizerGroupTrainer;
 import org.apache.ignite.ml.trainers.group.ResultAndUpdates;
+import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
 import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.util.Utils;
 
@@ -78,9 +80,9 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     private final int maxGlobalSteps;
 
     /**
-     * Synchronize updates between networks every syncRate steps.
+     * Synchronize updates between networks every syncPeriod steps.
      */
-    private final int syncRate;
+    private final int syncPeriod;
 
     /**
      * Function used to reduce updates from different networks (for example, averaging of gradients of all networks).
@@ -96,7 +98,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     /**
      * Updates calculator.
      */
-    private final ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator;
+    private final ParameterUpdateCalculator<? super MultilayerPerceptron, U> updateCalculator;
 
     /**
      * Default maximal count of global steps.
@@ -123,8 +125,8 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
     /**
      * Default update calculator.
      */
-    private static final ParameterUpdateCalculator<MultilayerPerceptron, RPropParameterUpdate>
-        DEFAULT_UPDATE_CALCULATOR = new RPropUpdateCalculator<>();
+    private static final ParameterUpdateCalculator<SmoothParametrized, RPropParameterUpdate>
+        DEFAULT_UPDATE_CALCULATOR = new RPropUpdateCalculator();
 
     /**
      * Default loss function.
@@ -140,16 +142,16 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
      * @param tolerance Error tolerance.
      */
     public MLPGroupUpdateTrainer(int maxGlobalSteps,
-        int syncRate,
+        int syncPeriod,
         IgniteFunction<List<U>, U> allUpdatesReducer,
         IgniteFunction<List<U>, U> locStepUpdatesReducer,
-        ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator,
+        ParameterUpdateCalculator<? super MultilayerPerceptron, U> updateCalculator,
         IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
         Ignite ignite, double tolerance) {
         super(new MLPMetaoptimizer<>(allUpdatesReducer), MLPCache.getOrCreate(ignite), ignite);
 
         this.maxGlobalSteps = maxGlobalSteps;
-        this.syncRate = syncRate;
+        this.syncPeriod = syncPeriod;
         this.allUpdatesReducer = allUpdatesReducer;
         this.locStepUpdatesReducer = locStepUpdatesReducer;
         this.updateCalculator = updateCalculator;
@@ -174,7 +176,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
 
         MLPGroupUpdateTrainerDataCache.getOrCreate(ignite).put(trainingUUID, new MLPGroupUpdateTrainingData<>(
             updateCalculator,
-            syncRate,
+            syncPeriod,
             locStepUpdatesReducer,
             data.batchSupplier(),
             loss,
@@ -227,8 +229,7 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
         UUID uuid = ctx.trainingUUID();
 
         return () -> {
-            MLPGroupUpdateTrainingData<U> data = MLPGroupUpdateTrainerDataCache
-                .getOrCreate(Ignition.localIgnite()).get(uuid);
+            MLPGroupUpdateTrainingData<U> data = MLPGroupUpdateTrainerDataCache.getOrCreate(Ignition.localIgnite()).get(uuid);
             return new MLPGroupUpdateTrainingContext<>(data, prevUpdate);
         };
     }
@@ -238,25 +239,31 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
         return data -> {
             MultilayerPerceptron mlp = data.mlp();
 
-            MultilayerPerceptron mlpCp = Utils.copy(mlp);
-            ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator = data.updateCalculator();
+            // Apply previous update.
+            MultilayerPerceptron newMlp = updateCalculator.update(mlp, data.previousUpdate());
+
+            MultilayerPerceptron mlpCp = Utils.copy(newMlp);
+            ParameterUpdateCalculator<? super MultilayerPerceptron, U> updateCalculator = data.updateCalculator();
             IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss = data.loss();
 
             // ParameterUpdateCalculator API to have proper way to setting loss.
             updateCalculator.init(mlpCp, loss);
 
-            U curUpdate = data.previousUpdate();
-
+            // Generate new update.
             int steps = data.stepsCnt();
             List<U> updates = new ArrayList<>(steps);
-
-            IgniteBiTuple<Matrix, Matrix> batch = data.batchSupplier().get();
+            U curUpdate = data.previousUpdate();
 
             for (int i = 0; i < steps; i++) {
+                IgniteBiTuple<Matrix, Matrix> batch = data.batchSupplier().get();
                 Matrix input = batch.get1();
                 Matrix truth = batch.get2();
 
                 int batchSize = truth.columnSize();
+
+                curUpdate = updateCalculator.calculateNewUpdate(mlpCp, curUpdate, i, input, truth);
+                mlpCp = updateCalculator.update(mlpCp, curUpdate);
+                updates.add(curUpdate);
 
                 Matrix predicted = mlpCp.apply(input);
 
@@ -265,18 +272,11 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
 
                 if (err < data.tolerance())
                     break;
-
-                mlpCp = updateCalculator.update(mlpCp, curUpdate);
-                updates.add(curUpdate);
-
-                curUpdate = updateCalculator.calculateNewUpdate(mlpCp, curUpdate, i, input, truth);
             }
 
-            U update = data.getUpdateReducer().apply(updates);
+            U accumulatedUpdate = data.getUpdateReducer().apply(updates);
 
-            MultilayerPerceptron newMlp = updateCalculator.update(mlp, data.previousUpdate());
-
-            return new ResultAndUpdates<>(update).
+            return new ResultAndUpdates<>(accumulatedUpdate).
                 updateCache(MLPCache.getOrCreate(Ignition.localIgnite()), data.key(),
                     new MLPGroupTrainingCacheValue(newMlp));
         };
@@ -334,18 +334,18 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
      * @return New {@link MLPGroupUpdateTrainer} with new maxGlobalSteps value.
      */
     public MLPGroupUpdateTrainer<U> withMaxGlobalSteps(int maxGlobalSteps) {
-        return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncRate, allUpdatesReducer, locStepUpdatesReducer,
+        return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncPeriod, allUpdatesReducer, locStepUpdatesReducer,
             updateCalculator, loss, ignite, tolerance);
     }
 
     /**
-     * Create new {@link MLPGroupUpdateTrainer} with new syncRate value.
+     * Create new {@link MLPGroupUpdateTrainer} with new syncPeriod value.
      *
-     * @param syncRate New syncRate value.
-     * @return New {@link MLPGroupUpdateTrainer} with new syncRate value.
+     * @param syncPeriod New syncPeriod value.
+     * @return New {@link MLPGroupUpdateTrainer} with new syncPeriod value.
      */
-    public MLPGroupUpdateTrainer<U> withSyncRate(int syncRate) {
-        return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncRate
+    public MLPGroupUpdateTrainer<U> withSyncPeriod(int syncPeriod) {
+        return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncPeriod
             , allUpdatesReducer, locStepUpdatesReducer, updateCalculator, loss, ignite, tolerance);
     }
 
@@ -356,7 +356,18 @@ public class MLPGroupUpdateTrainer<U extends Serializable> extends
      * @return New {@link MLPGroupUpdateTrainer} with new tolerance value.
      */
     public MLPGroupUpdateTrainer<U> withTolerance(double tolerance) {
-        return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncRate, allUpdatesReducer, locStepUpdatesReducer,
+        return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncPeriod, allUpdatesReducer, locStepUpdatesReducer,
             updateCalculator, loss, ignite, tolerance);
+    }
+
+    /**
+     * Create new {@link MLPGroupUpdateTrainer} with new update strategy.
+     *
+     * @param stgy New update strategy.
+     * @return New {@link MLPGroupUpdateTrainer} with new tolerance value.
+     */
+    public <U1 extends Serializable> MLPGroupUpdateTrainer<U1> withUpdateStrategy(UpdatesStrategy<? super MultilayerPerceptron, U1> stgy) {
+        return new MLPGroupUpdateTrainer<>(maxGlobalSteps, syncPeriod, stgy.allUpdatesReducer(), stgy.locStepUpdatesReducer(),
+            stgy.getUpdatesCalculator(), loss, ignite, tolerance);
     }
 }

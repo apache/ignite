@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -23,25 +24,24 @@ import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
 
 /**
  *
  */
-public class DataRegionMetricsImpl implements DataRegionMetrics {
+public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTracker {
     /** */
     private final IgniteOutClosure<Float> fillFactorProvider;
 
     /** */
-    private final LongAdder8 totalAllocatedPages = new LongAdder8();
+    private final LongAdder totalAllocatedPages = new LongAdder();
 
     /**
      * Counter for number of pages occupied by large entries (one entry is larger than one page).
      */
-    private final LongAdder8 largeEntriesPages = new LongAdder8();
+    private final LongAdder largeEntriesPages = new LongAdder();
 
     /** Counter for number of dirty pages. */
-    private LongAdder8 dirtyPages = new LongAdder8();
+    private LongAdder dirtyPages = new LongAdder();
 
     /** */
     private volatile boolean metricsEnabled;
@@ -72,7 +72,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /**
      * @param memPlcCfg DataRegionConfiguration.
-    */
+     */
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg) {
         this(memPlcCfg, null);
     }
@@ -98,7 +98,17 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
-        return metricsEnabled ? totalAllocatedPages.longValue() : 0;
+        if (!metricsEnabled)
+            return 0;
+
+        return totalAllocatedPages.longValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalAllocatedSize() {
+        assert pageMem != null;
+
+        return getTotalAllocatedPages() * pageMem.pageSize();
     }
 
     /** {@inheritDoc} */
@@ -171,6 +181,36 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         return pageMem.loadedPages();
     }
 
+    /** {@inheritDoc} */
+    @Override public long getPhysicalMemorySize() {
+        return getPhysicalMemoryPages() * pageMem.pageSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointBufferPages() {
+        if (!metricsEnabled)
+            return 0;
+
+        assert pageMem != null;
+
+        return pageMem.checkpointBufferPagesCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointBufferSize() {
+        return getCheckpointBufferPages() * pageMem.pageSize();
+    }
+
+    /** {@inheritDoc} */
+    public int getPageSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        assert pageMem != null;
+
+        return pageMem.pageSize();
+    }
+
     /**
      * Updates pageReplaceRate metric.
      */
@@ -210,8 +250,13 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      * Increments totalAllocatedPages counter.
      */
     public void incrementTotalAllocatedPages() {
+        updateTotalAllocatedPages(1);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateTotalAllocatedPages(long delta) {
         if (metricsEnabled) {
-            totalAllocatedPages.increment();
+            totalAllocatedPages.add(delta);
 
             updateAllocationRateMetrics();
         }

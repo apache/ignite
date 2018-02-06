@@ -20,9 +20,9 @@ package org.apache.ignite.lang.utils;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ThreadLocalRandom8;
 
 /**
  * Tests for {@link org.jsr166.ConcurrentHashMap8}.
@@ -66,7 +66,7 @@ public class GridConcurrentHashMapSelfTest extends GridCommonAbstractTest {
 
         multithreaded(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
+                ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
                 for (int i = 0; i < iterCnt; i++) {
                     // Put random.

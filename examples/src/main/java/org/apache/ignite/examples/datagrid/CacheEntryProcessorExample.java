@@ -21,8 +21,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -30,15 +28,15 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ExampleNodeStartup;
 
 /**
- * This example demonstrates the simplest code that populates the distributed cache
- * and co-locates simple closure execution with each key. The goal of this particular
- * example is to provide the simplest code example of this logic using EntryProcessor.
+ * This example demonstrates the simplest code that populates the distributed cache and co-locates simple closure
+ * execution with each key. The goal of this particular example is to provide the simplest code example of this logic
+ * using EntryProcessor.
  * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
+ * Remote nodes should always be started with special configuration file which enables P2P
+ * class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
  * <p>
- * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will
- * start node with {@code examples/config/example-ignite.xml} configuration.
+ * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node with
+ * {@code examples/config/example-ignite.xml} configuration.
  */
 public class CacheEntryProcessorExample {
     /** Cache name. */
@@ -47,7 +45,7 @@ public class CacheEntryProcessorExample {
     /** Number of keys. */
     private static final int KEY_CNT = 20;
 
-    /** Keys predefined set. */
+    /** Set of predefined keys. */
     private static final Set<Integer> KEYS_SET;
 
     /**
@@ -100,15 +98,11 @@ public class CacheEntryProcessorExample {
 
         // Invokes EntryProcessor for every key sequentially.
         for (int i = 0; i < KEY_CNT; i++) {
-            cache.invoke(i, new EntryProcessor<Integer, Integer, Object>() {
-                @Override public Object process(MutableEntry<Integer, Integer> entry,
-                    Object... objects) throws EntryProcessorException {
-                    // Initializes entry's value if it's not set.
-                    if (entry.getValue() == null)
-                        entry.setValue((entry.getKey() + 1) * 10);
-
-                    return null;
-                }
+            cache.invoke(i, (entry, object) -> {
+                // Initializes entry's value if it's not set.
+                if (entry.getValue() == null)
+                    entry.setValue((entry.getKey() + 1) * 10);
+                return null;
             });
         }
 
@@ -117,8 +111,8 @@ public class CacheEntryProcessorExample {
     }
 
     /**
-     * Increments values of entries stored in the cache using
-     * {@link IgniteCache#invokeAll(Set, EntryProcessor, Object...)} method.
+     * Increments values of entries stored in the cache using {@link IgniteCache#invokeAll(Set, EntryProcessor,
+     * Object...)} method.
      *
      * @param cache Cache instance.
      */
@@ -127,14 +121,10 @@ public class CacheEntryProcessorExample {
         System.out.println(">> Incrementing values in the cache using EntryProcessor.");
 
         // Using EntryProcessor.invokeAll to increment every value in place.
-        cache.invokeAll(KEYS_SET, new EntryProcessor<Integer, Integer, Object>() {
-            @Override public Object process(MutableEntry<Integer, Integer> entry,
-                Object... arguments) throws EntryProcessorException {
+        cache.invokeAll(KEYS_SET, (entry, object) -> {
+            entry.setValue(entry.getValue() + 5);
 
-                entry.setValue(entry.getValue() + 5);
-
-                return null;
-            }
+            return null;
         });
 
         // Print outs entries that are incremented using the EntryProcessor above.
