@@ -130,11 +130,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
+     * @param stream Streaming flag.
+     * @param streamAllowOverwrites Streaming overwrites flag.
+     * @param streamParOps Number of parallel ops per cluster node during streaming.
+     * @param streamBufSize Buffer size per cluster node during streaming.
+     * @param streamFlushFreq Data streamers' flush timeout.
      * @param protocolVer Protocol version.
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
         boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate,
+        boolean stream, boolean streamAllowOverwrites, int streamParOps, int streamBufSize, long streamFlushFreq,
         ClientListenerProtocolVersion protocolVer) {
         this.ctx = ctx;
         this.busyLock = busyLock;

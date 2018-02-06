@@ -145,4 +145,57 @@ public interface ConnectionProperties {
      * @param skipReducerOnUpdate Skip reducer on update flag.
      */
     public void setSkipReducerOnUpdate(boolean skipReducerOnUpdate);
+
+    /**
+     * @return Streamed connection flag.
+     */
+    public boolean isStream();
+
+    /**
+     * @param stream Streamed connection flag.
+     */
+    public void setStream(boolean stream);
+
+    /**
+     * @return Allow overwrites during streaming connection flag.
+     */
+    public boolean isStreamAllowOverwrite();
+
+    /**
+     * @param streamAllowOverwrite Allow overwrites during streaming connection flag.
+     */
+    public void setStreamAllowOverwrite(boolean streamAllowOverwrite);
+
+    /**
+     * @return Number of parallel operations per node during streaming connection param.
+     */
+    public int streamParallelOperations();
+
+    /**
+     * @param streamParallelOperations Number of parallel operations per node during streaming connection param.
+     * @throws SQLException if value check failed.
+     */
+    public void streamParallelOperations(int streamParallelOperations) throws SQLException;
+
+    /**
+     * @return Buffer size during streaming connection param.
+     */
+    public int streamBufferSize();
+
+    /**
+     * @param streamBufSize Buffer size during streaming connection param.
+     * @throws SQLException if value check failed.
+     */
+    public void streamBufferSize(int streamBufSize) throws SQLException;
+
+    /**
+     * @return Flush timeout during streaming connection param.
+     */
+    public long streamFlushFrequency();
+
+    /**
+     * @param streamFlushFrequency Flush timeout during streaming connection param.
+     * @throws SQLException if value check failed.
+     */
+    public void streamFlushFrequency(long streamFlushFrequency) throws SQLException;
 }

@@ -96,11 +96,35 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private BooleanProperty skipReducerOnUpdate = new BooleanProperty(
         "skipReducerOnUpdate", "Enable execution update queries on ignite server nodes", false, false);
 
+    /** Turn on streaming mode on this connection. */
+    private BooleanProperty stream = new BooleanProperty(
+        "streaming", "Turn on streaming mode on this connection", false, false);
+
+    /** Turn on overwrite during streaming on this connection. */
+    private BooleanProperty streamAllowOverwrite = new BooleanProperty(
+        "streamingAllowOverwrite", "Turn on overwrite during streaming on this connection", false, false);
+
+    /** Number of parallel operations per cluster node during streaming. */
+    private IntegerProperty streamParOps = new IntegerProperty(
+        "streamingPerNodeParallelOperations", "Number of parallel operations per cluster node during streaming",
+        0, false, 0, Integer.MAX_VALUE);
+
+    /** Buffer size per cluster node during streaming. */
+    private IntegerProperty streamBufferSize = new IntegerProperty(
+        "streamingPerNodeBufferSize", "Buffer size per cluster node during streaming",
+        0, false, 0, Integer.MAX_VALUE);
+
+    /** Buffer size per cluster node during streaming. */
+    private LongProperty streamFlushFreq = new LongProperty(
+        "streamingFlushFrequency", "Buffer size per cluster node during streaming",
+        0, false, 0, Long.MAX_VALUE);
+
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {
         host, port,
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
-        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate
+        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate, stream,
+        streamAllowOverwrite, streamParOps
     };
 
     /** {@inheritDoc} */
@@ -221,6 +245,56 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setSkipReducerOnUpdate(boolean val) {
         skipReducerOnUpdate.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isStream() {
+        return stream.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setStream(boolean val) {
+        stream.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isStreamAllowOverwrite() {
+        return streamAllowOverwrite.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setStreamAllowOverwrite(boolean val) {
+        streamAllowOverwrite.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int streamParallelOperations() {
+        return streamParOps.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void streamParallelOperations(int val) throws SQLException {
+        streamParOps.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int streamBufferSize() {
+        return streamBufferSize.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void streamBufferSize(int val) throws SQLException {
+        streamBufferSize.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long streamFlushFrequency() {
+        return streamFlushFreq.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void streamFlushFrequency(long val) throws SQLException {
+        streamFlushFreq.setValue(val);
     }
 
     /**
@@ -513,7 +587,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
             else {
                 try {
                     setValue(parse(str));
-                } catch (NumberFormatException e) {
+                }
+                catch (NumberFormatException e) {
                     throw new SQLException("Failed to parse int property [name=" + name +
                         ", value=" + str + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
                 }
@@ -582,6 +657,38 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          */
         int value() {
             return val.intValue();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class LongProperty extends NumberProperty {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * @param name Name.
+         * @param desc Description.
+         * @param dfltVal Default value.
+         * @param required {@code true} if the property is required.
+         * @param min Lower bound of allowed range.
+         * @param max Upper bound of allowed range.
+         */
+        LongProperty(String name, String desc, Number dfltVal, boolean required, long min, long max) {
+            super(name, desc, dfltVal, required, min, max);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Number parse(String str) throws NumberFormatException {
+            return Long.parseLong(str);
+        }
+
+        /**
+         * @return Property value.
+         */
+        long value() {
+            return val.longValue();
         }
     }
 
