@@ -50,7 +50,7 @@
             width: 100%;
             max-width: initial;
             height: 36px;
-            padding: 0 10px;
+            padding: 11px 10px;
             margin-right: 0;
 
             border: solid 1px #c5c5c5;
@@ -60,7 +60,7 @@
 
             color: $text-color;
             text-align: left;
-            line-height: 36px;
+            line-height: 14px;
 
             &.ng-invalid:not(.ng-pristine),
             &.ng-invalid.ng-touched {

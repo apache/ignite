@@ -14,6 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include /app/helpers/jade/mixins
+
 web-console-header
     web-console-header-left
         ignite-header-title
@@ -28,17 +30,35 @@ web-console-header
             div(ng-if='token && !error')
                 form.form-horizontal(name='resetForm' ng-init='reset_info.token = token')
                     .settings-row
-                        label.col-sm-1 E-mail:
-                        label {{::email}}
+                        label E-mail: {{::email}}
+
                     .settings-row
-                        label.col-sm-1.required Password:
-                        .col-sm-3
-                            input#user_password.form-control(ignite-on-enter-focus-move='user_confirm' type='password' ng-model='reset_info.password' placeholder='New password' required)
+                        .col-sm-4
+                            +form-field__password({
+                                label: 'New password:',
+                                model: 'reset_info.password',
+                                name: '"password"',
+                                require: true,
+                                placeholder: 'New password'
+                            })(
+                                ignite-auto-focus
+                                ignite-on-enter-focus-move='passwordConfirmInput'
+                            )
+
                     .settings-row
-                        label.col-sm-1.required Confirm:
-                        .col-sm-3
-                            input#user_confirm.form-control(type='password' ng-model='reset_info.confirm' ignite-match='reset_info.password' placeholder='Confirm new password' required ignite-on-enter='resetForm.$valid && resetPassword(user_info)')
+                        .col-sm-4
+                            +form-field__password({
+                                label: 'Confirm password:',
+                                model: 'reset_info.confirm',
+                                name: '"passwordConfirm"',
+                                require: true,
+                                placeholder: 'Confirm new password'
+                            })(
+                                ignite-on-enter-focus-move='resetForm.$valid && resetPassword(user_info)'
+                                ignite-match='reset_info.password'
+                            )
+
                     .settings-row
-                        button.btn.btn-primary(ng-disabled='resetForm.$invalid' ng-click='resetPassword(reset_info)') Reset Password
+                        button.btn-ignite.btn-ignite--primary(ng-disabled='resetForm.$invalid' ng-click='resetPassword(reset_info)') Reset Password
 
 web-console-footer
