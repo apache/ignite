@@ -27,8 +27,10 @@ import org.apache.ignite.ml.Trainer;
 import org.apache.ignite.ml.structures.LabeledDataset;
 
 /**
- * TODO: Base class for a soft-margin SVM linear classification trainer based on the communication-efficient distributed dual
+ * Base class for a soft-margin SVM linear multiclass-classification trainer based on the communication-efficient distributed dual
  * coordinate ascent algorithm (CoCoA) with hinge-loss function.
+ *
+ * All common parameters are shared with bunch of binary classification trainers.
  */
 public class SVMLinearMultiClassClassificationTrainer implements Trainer<SVMLinearMultiClassClassificationModel, LabeledDataset> {
     /** Amount of outer SDCA algorithm iterations. */
@@ -40,18 +42,13 @@ public class SVMLinearMultiClassClassificationTrainer implements Trainer<SVMLine
     /** Regularization parameter. */
     private double lambda = 0.2;
 
-    /** This flag enables distributed mode for this algorithm. */
-    private boolean isDistributed;
-
     /**
-     * Returns model based on data
+     * Returns model based on data.
      *
-     * @param data data to build model
-     * @return model
+     * @param data data to build model.
+     * @return model.
      */
     @Override public SVMLinearMultiClassClassificationModel train(LabeledDataset data) {
-        isDistributed = data.isDistributed();
-
         List<Double> classes = getClassLabels(data);
 
         SVMLinearMultiClassClassificationModel multiClsMdl = new SVMLinearMultiClassClassificationModel();
@@ -73,9 +70,9 @@ public class SVMLinearMultiClassClassificationTrainer implements Trainer<SVMLine
     /**
      * Copies the given data and changes class labels in +1 for chosen class and in -1 for the rest classes.
      *
-     * @param data data to transform
-     * @param clsLb chosen class in schema One-vs-Rest
-     * @return Copy of dataset with new labels
+     * @param data Data to transform.
+     * @param clsLb Chosen class in schema One-vs-Rest.
+     * @return Copy of dataset with new labels.
      */
     private LabeledDataset binarizeLabels(LabeledDataset data, double clsLb) {
         final LabeledDataset ds = data.copy();

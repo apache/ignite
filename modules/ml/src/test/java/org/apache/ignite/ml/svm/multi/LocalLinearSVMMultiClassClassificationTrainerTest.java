@@ -15,20 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm;
+package org.apache.ignite.ml.svm.multi;
 
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
+import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
+import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationTrainer;
 
 /**
  * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
  */
-public class DistributedLinearSVMClassificationSCDATrainerTest extends GenericLinearSVMTrainerTest {
+public class LocalLinearSVMMultiClassClassificationTrainerTest extends GenericLinearSVMMultiClassClassificationTrainerTest {
     /** */
-    public DistributedLinearSVMClassificationSCDATrainerTest() {
+    public LocalLinearSVMMultiClassClassificationTrainerTest() {
         super(
-            new SVMLinearBinaryClassificationTrainer(),
-            true,
+            new SVMLinearMultiClassClassificationTrainer()
+                .withLambda(0.2)
+                .withAmountOfIterations(10)
+                .withAmountOfLocIterations(20),
+            false,
             1e-2);
     }
 }

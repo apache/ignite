@@ -15,22 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm;
+package org.apache.ignite.ml.svm.multi;
 
-import org.apache.ignite.ml.svm.binary.DistributedLinearSVMBinaryClassificationTrainerTest;
-import org.apache.ignite.ml.svm.binary.LocalLinearSVMBinaryClassificationTrainerTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
+import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
+import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationTrainer;
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.regressions.* package.
+ * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    LocalLinearSVMBinaryClassificationTrainerTest.class,
-    DistributedLinearSVMBinaryClassificationTrainerTest.class,
-    SVMModelTest.class
-})
-public class SVMTestSuite {
-    // No-op.
+public class DistributedLinearSVMMultiClassClassificationTrainerTest extends GenericLinearSVMMultiClassClassificationTrainerTest {
+    /** */
+    public DistributedLinearSVMMultiClassClassificationTrainerTest() {
+        super(
+            new SVMLinearMultiClassClassificationTrainer(),
+            true,
+            1e-2);
+    }
 }

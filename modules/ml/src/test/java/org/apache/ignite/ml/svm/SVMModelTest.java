@@ -56,6 +56,25 @@ public class SVMModelTest {
         Assert.assertEquals(true, mdl.isKeepingRawLabels());
     }
 
+
+    /** */
+    @Test
+    public void testPredictWithMultiClasses() {
+        Vector weights1 = new DenseLocalOnHeapVector(new double[]{10.0, 0.0});
+        Vector weights2 = new DenseLocalOnHeapVector(new double[]{0.0, 10.0});
+        Vector weights3 = new DenseLocalOnHeapVector(new double[]{-1.0, -1.0});
+        SVMLinearMultiClassClassificationModel mdl = new SVMLinearMultiClassClassificationModel();
+        mdl.add(1, new SVMLinearBinaryClassificationModel(weights1, 0.0).withRawLabels(true));
+        mdl.add(2, new SVMLinearBinaryClassificationModel(weights2, 0.0).withRawLabels(true));
+        mdl.add(2, new SVMLinearBinaryClassificationModel(weights3, 0.0).withRawLabels(true));
+
+        Vector observation = new DenseLocalOnHeapVector(new double[]{1.0, 1.0});
+        final double margin1 = 0.0 + 10.0 * 1.0 + 0.0 * 1.0;
+        final double margin2 = 0.0 + 0.0 * 1.0 + 10.0 * 1.0;
+        final double margin3 = 0.0 + (-1.0) * 1.0 + (-1.0) * 1.0;
+        TestUtils.assertEquals(Math.min(margin1, Math.min(margin2, margin3)), mdl.apply(observation), PRECISION);
+    }
+
     /** */
     @Test
     public void testPredictWithErasedLabels() {

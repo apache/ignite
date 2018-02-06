@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm;
+package org.apache.ignite.ml.svm.binary;
 
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -24,12 +24,14 @@ import org.apache.ignite.ml.Trainer;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.svm.BaseSVMTest;
+import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
 import org.junit.Test;
 
 /**
  * Base class for all linear regression trainers.
  */
-public class GenericLinearSVMTrainerTest extends BaseSVMTest {
+public class GenericLinearSVMBinaryClassificationTrainerTest extends BaseSVMTest {
     /** Fixed size of Dataset. */
     private static final int AMOUNT_OF_OBSERVATIONS = 100;
 
@@ -46,7 +48,7 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
     private final double precision;
 
     /** */
-    GenericLinearSVMTrainerTest(
+    GenericLinearSVMBinaryClassificationTrainerTest(
         Trainer<SVMLinearBinaryClassificationModel, LabeledDataset> trainer,
         boolean isDistributed,
         double precision) {

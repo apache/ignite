@@ -19,10 +19,7 @@ package org.apache.ignite.examples.ml.svm;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ExampleNodeStartup;
@@ -33,13 +30,13 @@ import org.apache.ignite.ml.structures.LabeledDatasetTestTrainPair;
 import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
 import org.apache.ignite.ml.structures.preprocessing.LabellingMachine;
 import org.apache.ignite.ml.structures.preprocessing.Normalizer;
+import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
-import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
  * <p>
- * Example of using {@link org.apache.ignite.ml.svm.SVMLinearClassificationModel} with Titanic dataset.</p>
+ * Example of using {@link org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel} with Titanic dataset.</p>
  * <p>
  * Note that in this example we cannot guarantee order in which nodes return results of intermediate
  * computations and therefore algorithm can return different results.</p>
@@ -95,10 +92,10 @@ public class SVMBinaryClassificationExample {
                     LabeledDataset train = split.train();
 
                     System.out.println("\n>>> Create new linear binary SVM trainer object.");
-                    Trainer<SVMLinearClassificationModel, LabeledDataset> trainer = new SVMLinearBinaryClassificationTrainer();
+                    Trainer<SVMLinearBinaryClassificationModel, LabeledDataset> trainer = new SVMLinearBinaryClassificationTrainer();
 
                     System.out.println("\n>>> Perform the training to get the model.");
-                    SVMLinearClassificationModel mdl = trainer.train(train);
+                    SVMLinearBinaryClassificationModel mdl = trainer.train(train);
 
                     System.out.println("\n>>> SVM classification model: " + mdl);
 
