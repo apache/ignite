@@ -1076,10 +1076,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public boolean clientDisconnected() {
-        if (locNode == null)
-            locNode = discoMgr != null ? discoMgr.localNode() : null;
+        ClusterNode locNode0 = localNode();
 
-        return locNode != null ? (locNode.isClient() && disconnected) : false;
+        return locNode0 != null ? (locNode0.isClient() && disconnected) : false;
     }
 
     /** {@inheritDoc} */
