@@ -32,11 +32,4 @@ public class NodeStoppingException extends IgniteCheckedException {
     public NodeStoppingException(String msg) {
         super(msg);
     }
-
-    /**
-     * @param cause Non-null throwable cause.
-     */
-    public NodeStoppingException(Throwable cause) {
-        super(cause);
-    }
 }

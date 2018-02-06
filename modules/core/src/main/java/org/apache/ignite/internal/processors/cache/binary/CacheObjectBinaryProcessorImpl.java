@@ -42,6 +42,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryFieldMetadata;
@@ -451,7 +452,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 throw res.error();
         }
         catch (IgniteCheckedException e) {
-            throw new BinaryObjectException("Failed to update meta data for type: " + newMeta.typeName(), e);
+            IgniteCheckedException ex = e;
+
+            if (ctx.isStopping()) {
+                ex = new NodeStoppingException("Node is stopping.");
+                ex.addSuppressed(e);
+            }
+
+            throw new BinaryObjectException("Failed to update meta data for type: " + newMeta.typeName(), ex);
         }
     }
 

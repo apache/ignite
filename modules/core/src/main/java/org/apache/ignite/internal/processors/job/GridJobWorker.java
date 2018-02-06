@@ -997,15 +997,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      */
     private void logError(String msg, @Nullable Throwable e) {
         if (e != null) {
-            boolean isStoppingEx = X.hasCause(e, NodeStoppingException.class);
-
-            if (isStoppingEx || ctx.isStopping()) {
-                if (log.isDebugEnabled()) {
-                    if (isStoppingEx)
-                        U.error(log, msg, e);
-                    else
-                        U.error(log, msg, new NodeStoppingException(e));
-                }
+            if (X.hasCause(e, NodeStoppingException.class)) {
+                if (log.isDebugEnabled())
+                    U.error(log, msg, e);
             } else
                 U.error(log, msg, e);
         }
