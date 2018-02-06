@@ -74,6 +74,13 @@ public class AuthorizationContext {
     }
 
     /**
+     * Clear authentication context.
+     */
+    public static void clear() {
+        actx.set(null);
+    }
+
+    /**
      * @return Current authorization context.
      */
     public static AuthorizationContext context() {

@@ -183,6 +183,11 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isLazy());
         writer.writeBoolean(connProps.isSkipReducerOnUpdate());
 
+        if (F.isEmpty(connProps.getUsername())) {
+            writer.writeString(connProps.getUsername());
+            writer.writeString(connProps.getPassword());
+        }
+
         send(writer.array());
 
         BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),

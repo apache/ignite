@@ -145,4 +145,24 @@ public interface ConnectionProperties {
      * @param skipReducerOnUpdate Skip reducer on update flag.
      */
     public void setSkipReducerOnUpdate(boolean skipReducerOnUpdate);
+
+    /**
+     * @param name User name to authentication.
+     */
+    public void setUsername(String name);
+
+    /**
+     * @return User name to authentication.
+     */
+    public String getUsername();
+
+    /**
+     * @param passwd User's password.
+     */
+    public void setPassword(String passwd);
+
+    /**
+     * @return User's password.
+     */
+    public String getPassword();
 }

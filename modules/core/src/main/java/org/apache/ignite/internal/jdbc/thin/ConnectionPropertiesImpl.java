@@ -96,11 +96,20 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private BooleanProperty skipReducerOnUpdate = new BooleanProperty(
         "skipReducerOnUpdate", "Enable execution update queries on ignite server nodes", false, false);
 
+    /** User name to authenticate the client on the server side. */
+    private StringProperty user = new StringProperty(
+        "user", "User name to authenticate the client on the server side", null, null, false, null);
+
+    /** User's password. */
+    private StringProperty passwd = new StringProperty(
+        "user", "User's password", null, null, false, null);
+
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {
         host, port,
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
-        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate
+        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
+        user, passwd
     };
 
     /** {@inheritDoc} */
@@ -221,6 +230,26 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setSkipReducerOnUpdate(boolean val) {
         skipReducerOnUpdate.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setUsername(String name) {
+        user.setValue(name);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getUsername() {
+        return user.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setPassword(String passwd) {
+        this.passwd.setValue(passwd);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getPassword() {
+        return passwd.value();
     }
 
     /**

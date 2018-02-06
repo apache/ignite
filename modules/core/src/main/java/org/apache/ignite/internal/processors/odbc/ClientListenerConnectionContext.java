@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import java.io.IOException;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 
 /**
@@ -39,8 +41,10 @@ public interface ClientListenerConnectionContext {
      *
      * @param ver Protocol version.
      * @param reader Reader set to the configuration part of the handshake message.
+     * @throws IgniteCheckedException On error.
      */
-    void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader);
+    void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+        throws IgniteCheckedException;
 
     /**
      * Handler getter.

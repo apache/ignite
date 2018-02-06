@@ -171,7 +171,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
                         return null;
                     }
-                }, IgniteAccessControlException.class, "Add / remove user is not allowed for user");
+                }, IgniteAccessControlException.class, "User management operations are not allowed for user");
 
                 GridTestUtils.assertThrows(log, new Callable<Object>() {
                     @Override public Object call() throws Exception {
@@ -179,7 +179,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
                         return null;
                     }
-                }, IgniteAccessControlException.class, "Add / remove user is not allowed for user");
+                }, IgniteAccessControlException.class, "User management operations are not allowed for user");
 
                 grid(nodeIdx).context().authentication().updateUser("test", "new_password");
 
@@ -268,9 +268,10 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         AuthorizationContext.context(actxDflt);
 
         try {
-            for (int i = 0; i < NODES_COUNT; ++i)
+            for (int i = 0; i < NODES_COUNT; ++i) {
                 for (int j = 0; j < NODES_COUNT; ++j)
                     checkAddUpdateRemoveUser(grid(i), grid(j));
+            }
         }
         finally {
             AuthorizationContext.context(null);
@@ -288,9 +289,10 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
             AuthorizationContext actx = grid(0).context().authentication().authenticate("test", "test");
 
-            for (int i = 0; i < NODES_COUNT; ++i)
+            for (int i = 0; i < NODES_COUNT; ++i) {
                 for (int j = 0; j < NODES_COUNT; ++j)
                     checkUpdateUser(actx, grid(i), grid(j));
+            }
         }
         finally {
             AuthorizationContext.context(null);
@@ -454,7 +456,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                     fail();
                 }
             }
-        }, 1, "user-op");
+        }, 10, "user-op");
 
         restartFut.get();
     }
@@ -524,8 +526,6 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                     U.error(log, "Unexpected exception on coordinator restart", e);
                     fail();
                 }
-
-                System.out.println("+++ END RESTART");
             }
         });
     }
@@ -538,13 +538,10 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
             @Override public void run() {
                 try {
                     for (int i = 0; i < RESTARTS; ++i) {
-
-                        System.out.println("+++ STOP");
                         stopGrid(1);
 
                         U.sleep(1000);
 
-                        System.out.println("+++ START");
                         startGrid(1);
 
                         U.sleep(1000);
@@ -554,8 +551,6 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                     e.printStackTrace(System.err);
                     fail("Unexpected exception on server restart: " + e.getMessage());
                 }
-
-                System.out.println("+++ END RESTART");
             }
         });
 
@@ -571,15 +566,11 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
                 try {
                     while (!restartFut.isDone()) {
-                        System.out.println("+++ ADD " + user);
                         grid(CLI_NODE).context().authentication().addUser(user, "init");
 
-                        System.out.println("+++ UPDATE " + user);
                         grid(CLI_NODE).context().authentication().updateUser(user, "passwd_" + user);
 
-                        System.out.println("+++ REMOVE " + user);
                         grid(CLI_NODE).context().authentication().removeUser(user);
-                        System.out.println("+++ REMOVE OK" + user);
                     }
                 }
                 catch (Exception e) {
@@ -587,7 +578,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                     fail("Unexpected exception on add / remove");
                 }
             }
-        }, 1, "user-op");
+        }, 10, "user-op");
 
         restartFut.get();
     }

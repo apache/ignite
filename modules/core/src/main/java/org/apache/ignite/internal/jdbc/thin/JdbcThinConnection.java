@@ -111,6 +111,9 @@ public class JdbcThinConnection implements Connection {
 
         ((ConnectionPropertiesImpl)connProps).init(props);
 
+        connProps.setUsername(props.getProperty("user"));
+        connProps.setPassword(props.getProperty("password"));
+
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
