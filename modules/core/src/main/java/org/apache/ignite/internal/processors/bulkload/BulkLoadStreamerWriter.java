@@ -23,7 +23,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 /**
  * A bulk load cache writer object that adds entries using {@link IgniteDataStreamer}.
  */
-public class BulkLoadStreamerWriter implements BulkLoadCacheWriter {
+public class BulkLoadStreamerWriter extends BulkLoadCacheWriter {
     /** The streamer. */
     private final IgniteDataStreamer<Object, Object> streamer;
 
@@ -44,10 +44,12 @@ public class BulkLoadStreamerWriter implements BulkLoadCacheWriter {
     }
 
     /** {@inheritDoc} */
-    @Override public void accept(IgniteBiTuple<?, ?> entry) {
+    @Override public Void applyx(IgniteBiTuple<?, ?> entry) {
         streamer.addData(entry.getKey(), entry.getValue());
 
         updateCnt++;
+
+        return null;
     }
 
     /** {@inheritDoc} */

@@ -86,7 +86,7 @@ public class BulkLoadProcessor implements AutoCloseable {
         for (List<Object> record : inputRecords) {
             IgniteBiTuple<?, ?> kv = dataConverter.apply(record);
 
-            outputStreamer.accept(kv);
+            outputStreamer.apply(kv);
         }
     }
 
