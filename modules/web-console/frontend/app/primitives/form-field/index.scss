@@ -46,6 +46,10 @@
         display: flex;
         width: 100%;
 
+        & > input::placeholder {
+            color: rgba(66, 66, 66, 0.5);
+        }
+
         & > input,
         & > button:not(.btn-ignite) {
             outline: none;
