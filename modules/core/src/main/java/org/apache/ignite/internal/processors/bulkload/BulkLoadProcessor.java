@@ -29,7 +29,7 @@ import java.util.List;
  * Bulk load (COPY) command processor used on server to keep various context data and process portions of input
  * received from the client side.
  */
-public class BulkLoadProcessor {
+public class BulkLoadProcessor implements AutoCloseable {
     /** Parser of the input bytes. */
     private final BulkLoadParser inputParser;
 
@@ -42,7 +42,7 @@ public class BulkLoadProcessor {
     /** Streamer that puts actual key/value into the cache. */
     private final BulkLoadCacheWriter outputStreamer;
 
-    /** Becomes true after {@link #close(boolean)} method is called. */
+    /** Becomes true after {@link #close()} method is called. */
     private boolean isClosed;
 
     /**
@@ -75,7 +75,7 @@ public class BulkLoadProcessor {
      *
      * @param batchData Data from the current batch.
      * @param isLastBatch true if this is the last batch.
-     * @throws IgniteIllegalStateException when called after {@link #close(boolean)}.
+     * @throws IgniteIllegalStateException when called after {@link #close()}.
      */
     public void processBatch(byte[] batchData, boolean isLastBatch) throws IgniteCheckedException {
         if (isClosed)
@@ -92,11 +92,8 @@ public class BulkLoadProcessor {
 
     /**
      * Aborts processing and closes the underlying objects ({@link IgniteDataStreamer}).
-     *
-     * @param isAbort true if the processing is aborted, false when terminated normally.
-     *     The parameter is reserved for aborting transactions once they are available.
      */
-    public void close(boolean isAbort) {
+    @Override public void close() {
         if (isClosed)
             return;
 
