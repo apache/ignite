@@ -115,6 +115,8 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
+        // IP finder should be re-created before each test,
+        // since predecessor grid shutdown does not guarantee finder's state cleanup.
         singleTestIpFinder = new TcpDiscoveryVmIpFinder(true);
     }
 
