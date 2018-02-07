@@ -15,25 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.dml;
+package org.apache.ignite.internal.processors.bulkload;
 
-/**
- * DML statement execution plan type - MERGE/INSERT from rows or subquery,
- * or UPDATE/DELETE from subquery or literals/params based.
- */
-public enum UpdateMode {
-    /** MERGE command. */
-    MERGE,
+import java.nio.charset.Charset;
 
-    /** INSERT command. */
-    INSERT,
+/** A superclass and a factory for bulk load format options. */
+public abstract class BulkLoadFormat {
+    /** The default input charset. */
+    public static final Charset DEFAULT_INPUT_CHARSET = Charset.forName("UTF-8");
 
-    /** UPDATE command. */
-    UPDATE,
-
-    /** DELETE command. */
-    DELETE,
-
-    /** COPY command. */
-    BULK_LOAD
+    /**
+     * Returns the format name.
+     *
+     * @return The format name.
+     */
+    public abstract String name();
 }
