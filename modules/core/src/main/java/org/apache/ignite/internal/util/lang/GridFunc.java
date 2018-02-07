@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
@@ -104,7 +105,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedDeque8;
-import org.jsr166.ThreadLocalRandom8;
 
 /**
  * Contains factory and utility methods for {@code closures}, {@code predicates}, and {@code tuples}.
@@ -358,7 +358,7 @@ public class GridFunc {
     public static <T> T rand(Collection<? extends T> c) {
         A.notNull(c, "c");
 
-        int n = ThreadLocalRandom8.current().nextInt(c.size());
+        int n = ThreadLocalRandom.current().nextInt(c.size());
 
         int i = 0;
 
@@ -382,7 +382,7 @@ public class GridFunc {
     public static <T> T rand(List<T> l) {
         A.notNull(l, "l");
 
-        return l.get(ThreadLocalRandom8.current().nextInt(l.size()));
+        return l.get(ThreadLocalRandom.current().nextInt(l.size()));
     }
 
     /**
@@ -397,7 +397,7 @@ public class GridFunc {
     public static <T> T rand(T... c) {
         A.notNull(c, "c");
 
-        return c[ThreadLocalRandom8.current().nextInt(c.length)];
+        return c[ThreadLocalRandom.current().nextInt(c.length)];
     }
 
     /**

@@ -51,13 +51,13 @@ namespace ignite
                 ThrowLastSetupError();
         }
 
-        std::string ReadDsnString(const char* dsn, const std::string& key, const char* dflt)
+        std::string ReadDsnString(const char* dsn, const std::string& key, const std::string& dflt)
         {
             char buf[BUFFER_SIZE];
 
             memset(buf, 0, sizeof(buf));
 
-            SQLGetPrivateProfileString(dsn, key.c_str(), dflt, buf, sizeof(buf), CONFIG_FILE);
+            SQLGetPrivateProfileString(dsn, key.c_str(), dflt.c_str(), buf, sizeof(buf), CONFIG_FILE);
 
             return std::string(buf);
         }
@@ -90,13 +90,13 @@ namespace ignite
 
         void ReadDsnConfiguration(const char* dsn, Configuration& config)
         {
-            std::string address = ReadDsnString(dsn, Configuration::Key::address, config.GetAddress().c_str());
+            std::string address = ReadDsnString(dsn, Configuration::Key::address, config.GetAddress());
 
-            std::string server = ReadDsnString(dsn, Configuration::Key::server, config.GetHost().c_str());
+            std::string server = ReadDsnString(dsn, Configuration::Key::server, config.GetHost());
 
             uint16_t port = ReadDsnInt(dsn, Configuration::Key::port, config.GetTcpPort());
 
-            std::string schema = ReadDsnString(dsn, Configuration::Key::schema, config.GetSchema().c_str());
+            std::string schema = ReadDsnString(dsn, Configuration::Key::schema, config.GetSchema());
 
             bool distributedJoins = ReadDsnBool(dsn, Configuration::Key::distributedJoins, config.IsDistributedJoins());
 
@@ -112,12 +112,20 @@ namespace ignite
                 ReadDsnBool(dsn, Configuration::Key::skipReducerOnUpdate, config.IsSkipReducerOnUpdate());
 
             std::string version = ReadDsnString(dsn, Configuration::Key::protocolVersion,
-                config.GetProtocolVersion().ToString().c_str());
+                config.GetProtocolVersion().ToString());
 
             int32_t pageSize = ReadDsnInt(dsn, Configuration::Key::pageSize, config.GetPageSize());
 
             if (pageSize <= 0)
                 pageSize = config.GetPageSize();
+
+            std::string sslMode = ReadDsnString(dsn, Configuration::Key::sslMode, config.GetSslMode());
+
+            std::string sslKeyFile = ReadDsnString(dsn, Configuration::Key::sslKeyFile, config.GetSslKeyFile());
+
+            std::string sslCertFile = ReadDsnString(dsn, Configuration::Key::sslCertFile, config.GetSslCertFile());
+
+            std::string sslCaFile = ReadDsnString(dsn, Configuration::Key::sslCaFile, config.GetSslCaFile());
 
             config.SetAddress(address);
             config.SetHost(server);
@@ -131,6 +139,10 @@ namespace ignite
             config.SetSkipReducerOnUpdate(skipReducerOnUpdate);
             config.SetProtocolVersion(version);
             config.SetPageSize(pageSize);
+            config.SetSslMode(sslMode);
+            config.SetSslKeyFile(sslKeyFile);
+            config.SetSslCertFile(sslCertFile);
+            config.SetSslCaFile(sslCaFile);
         }
     }
 }

@@ -114,6 +114,7 @@
         <spring.data.version>1.13.1.RELEASE</spring.data.version> <!-- don't forget to update spring version -->
         <spring.version>4.3.7.RELEASE</spring.version> <!-- don't forget to update spring-data version -->
         <spring41.osgi.feature.version>4.1.7.RELEASE_1</spring41.osgi.feature.version>
+        <storm.version>1.1.1</storm.version>
         <tomcat.version>8.0.23</tomcat.version>
         <twitter.hbc.version>2.2.0</twitter.hbc.version>
         <yammer.metrics.annotation.version>2.2.0</yammer.metrics.annotation.version>
@@ -310,7 +311,6 @@
                         <version>false</version>
                         <additionalparam>${javadoc.opts}</additionalparam>
                         <links>
-                            <link>http://docs.oracle.com/javase/7/docs/api/</link>
                             <link>http://hadoop.apache.org/docs/current/api/</link>
                         </links>
                         <groups>
@@ -464,7 +464,11 @@
                             </group>
                             <group>
                                 <title>RocketMQ integration</title>
-                                <packages>org.apache.ignite.rocketmq*</packages>
+                                <packages>org.apache.ignite.stream.rocketmq*</packages>
+                            </group>
+                            <group>
+                                <title>Storm integration</title>
+                                <packages>org.apache.ignite.stream.storm*</packages>
                             </group>
                             <group>
                                 <title>Ignite Development Utils</title>
@@ -839,9 +843,7 @@
                                         <exclude>src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/resources/person.csv</exclude><!--CacheLoadOnlyStoreExample csv-->
-                                        <exclude>**/resources/datasets/knn/*</exclude><!--Dataset examples in ml module-->
-                                        <exclude>**/resources/datasets/regression/*</exclude><!--Dataset examples in ml module-->
-                                        <exclude>**/ml/knn/datasets/*</exclude><!--Datasets for ML KNN in examples module-->
+                                        <exclude>**/resources/datasets/**/*</exclude><!--KNN Datasets in ml module-->
                                         <exclude>examples/src/main/resources/person.csv</exclude><!--CacheLoadOnlyStoreExample csv-->
                                         <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
                                         <exclude>dev-tools/IGNITE-*.patch</exclude>
