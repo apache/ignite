@@ -17,10 +17,14 @@
 
 package org.apache.ignite.ml.math.impls.matrix;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
+import it.unimi.dsi.fastutil.ints.IntIterator;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.functions.IgniteTriFunction;
 import org.apache.ignite.ml.math.impls.storage.matrix.SparseLocalOnHeapMatrixStorage;
 import org.apache.ignite.ml.math.impls.vector.SparseLocalVector;
 
@@ -62,11 +66,34 @@ public class SparseLocalOnHeapMatrix extends AbstractMatrix implements StorageCo
     }
 
     /** {@inheritDoc} */
+    @Override public int nonZeroElements() {
+        int res = 0;
+        IntIterator rowIter = indexesMap().keySet().iterator();
+
+        while (rowIter.hasNext()) {
+            int row = rowIter.nextInt();
+            res += indexesMap().get(row).size();
+        }
+
+        return res;
+    }
+
+    /** */
+    public Int2ObjectArrayMap<IntSet> indexesMap() {
+        return ((SparseLocalOnHeapMatrixStorage)getStorage()).indexesMap();
+    }
+
+    /** {@inheritDoc} */
     @Override public Matrix copy() {
         Matrix cp = like(rowSize(), columnSize());
 
         cp.assign(this);
 
         return cp;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void compute(int row, int col, IgniteTriFunction<Integer, Integer, Double, Double> f) {
+        ((SparseLocalOnHeapMatrixStorage)getStorage()).compute(row, col, f);
     }
 }

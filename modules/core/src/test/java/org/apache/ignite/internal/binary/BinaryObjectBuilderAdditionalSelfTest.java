@@ -56,6 +56,8 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.MarshallerPlatformIds;
 import org.apache.ignite.internal.binary.builder.BinaryBuilderEnum;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryMarshalerAwareTestClass;
@@ -64,6 +66,7 @@ import org.apache.ignite.internal.binary.test.GridBinaryTestClass2;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.IgniteBinaryImpl;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
+import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -1511,7 +1514,7 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         assert MAP.equals(binaryObj.type().fieldTypeName("singletonMap"));
 
-        assert OBJ.equals(binaryObj.type().fieldTypeName("asList"));
+        assert COL.equals(binaryObj.type().fieldTypeName("asList"));
         assert OBJ.equals(binaryObj.type().fieldTypeName("asSet"));
         assert OBJ.equals(binaryObj.type().fieldTypeName("asMap"));
         assert OBJ.equals(binaryObj.type().fieldTypeName("asListHint"));
@@ -1580,6 +1583,25 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     }
 
     /**
+     * Test {@link BinaryObjectBuilder#build()} adds type mapping to the binary marshaller's cache.
+     */
+    public void testMarshallerMappings() throws IgniteCheckedException, ClassNotFoundException {
+        String typeName = "TestType";
+
+        int typeId = BinaryContext.defaultIdMapper().typeId(typeName);
+
+        BinaryObjectBuilder builder = newWrapper(typeName);
+
+        builder.build();
+
+        MarshallerContext marshCtx = grid(0).context().marshallerContext();
+
+        String actualTypeName = marshCtx.getClassName(MarshallerPlatformIds.JAVA_ID, typeId);
+
+        assertEquals(typeName, actualTypeName);
+    }
+
+    /**
      * @param obj BinaryObject array.
      * @return Deserialized enums.
      */
@@ -1592,6 +1614,32 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
             res[i] = ((BinaryObject)arr[i]).deserialize();
 
         return res;
+    }
+
+    /**
+     * @throws Exception If fails
+     */
+    public void testBuilderReusage() throws Exception {
+        // Check: rewrite null field value.
+        BinaryObjectBuilder builder = newWrapper("SimpleCls1");
+
+        builder.setField("f1", null, Object.class);
+        assertNull(builder.build().field("f1"));
+
+        builder.setField("f1", "val1");
+        assertEquals("val1", builder.build().field("f1"));
+
+        // Check: rewrite non-null field value to null and back.
+        builder = newWrapper("SimpleCls2");
+
+        builder.setField("f1", "val1", String.class);
+        assertEquals("val1", builder.build().field("f1"));
+
+        builder.setField("f1", null);
+        assertNull(builder.build().field("f1"));
+
+        builder.setField("f1", "val2");
+        assertEquals("val2", builder.build().field("f1"));
     }
 
     /**

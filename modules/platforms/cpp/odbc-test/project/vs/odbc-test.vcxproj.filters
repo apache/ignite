@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+﻿﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Code">
@@ -124,6 +124,24 @@
     <ClCompile Include="..\..\src\meta_queries_test.cpp">
       <Filter>Code</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\attributes_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\errors_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\sql_get_info_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\types_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\odbc_test_suite.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\queries_ssl_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\test_type.h">
@@ -141,6 +159,9 @@
     <ClInclude Include="..\..\include\complex_type.h">
       <Filter>Code\CacheTypes</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\odbc_test_suite.h">
+      <Filter>Code</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\config\queries-test-32.xml">
@@ -149,16 +170,13 @@
     <None Include="..\..\config\queries-test.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\queries-test-noodbc-32.xml">
-      <Filter>Configs</Filter>
-    </None>
-    <None Include="..\..\config\queries-test-noodbc.xml">
-      <Filter>Configs</Filter>
-    </None>
     <None Include="..\..\config\queries-default.xml">
       <Filter>Configs</Filter>
     </None>
-    <None Include="..\..\config\queries-test-default.xml">
+    <None Include="..\..\config\queries-ssl.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-ssl-32.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>

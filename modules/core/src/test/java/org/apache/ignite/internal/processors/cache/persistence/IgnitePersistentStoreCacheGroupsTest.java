@@ -33,9 +33,9 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.platform.cache.expiry.PlatformExpiryPolicy;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -85,13 +85,13 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         cfg.setConsistentId(gridName);
 
-        MemoryConfiguration memCfg = new MemoryConfiguration();
-        memCfg.setPageSize(1024);
-        memCfg.setDefaultMemoryPolicySize(10 * 1024 * 1024);
+        DataStorageConfiguration memCfg = new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(
+                new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024).setPersistenceEnabled(true))
+            .setPageSize(1024)
+            .setWalMode(WALMode.LOG_ONLY);
 
-        cfg.setMemoryConfiguration(memCfg);
-
-        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration().setWalMode(WALMode.LOG_ONLY));
+        cfg.setDataStorageConfiguration(memCfg);
 
         cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(false));
 
@@ -113,6 +113,11 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         GridTestUtils.deleteDbFiles();
 
         super.afterTest();
+    }
+
+    /** Entries count. */
+    protected int entriesCount() {
+        return 10;
     }
 
     /**
@@ -181,11 +186,11 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
         startGrids(3);
 
-        awaitPartitionMapExchange();
-
         node = ignite(0);
 
         node.active(true);
+
+        awaitPartitionMapExchange();
 
         checkPersons(caches, node);
         checkPersonsQuery(caches, node);
@@ -236,7 +241,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         for (String cacheName : caches) {
             IgniteCache<Object, Object> cache = node.cache(cacheName).withExpiryPolicy(plc);
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < entriesCount(); i++)
                 cache.put(i, cacheName + i);
         }
 
@@ -253,10 +258,10 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         for (String cacheName : caches) {
             IgniteCache<Object, Object> cache = node.cache(cacheName);
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < entriesCount(); i++)
                 assertEquals(cacheName + i, cache.get(i));
 
-            assertEquals(10, cache.size());
+            assertEquals(entriesCount(), cache.size());
         }
 
         // Wait for expiration.
@@ -340,7 +345,7 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         for (String cacheName : caches) {
             IgniteCache<Object, Object> cache = node.cache(cacheName);
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < entriesCount(); i++)
                 cache.put(i, new Person("" + i, cacheName));
         }
     }
@@ -353,10 +358,10 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         for (String cacheName : caches) {
             IgniteCache<Object, Object> cache = node.cache(cacheName);
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < entriesCount(); i++)
                 assertEquals(new Person("" + i, cacheName), cache.get(i));
 
-            assertEquals(10, cache.size());
+            assertEquals(entriesCount(), cache.size());
         }
     }
 
@@ -373,10 +378,10 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
 
             List<Cache.Entry<Integer, Person>> persons = cache.query(qry.setArgs(cacheName)).getAll();
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < entriesCount(); i++)
                 assertEquals(new Person("" + i, cacheName), persons.get(i).getValue());
 
-            assertEquals(10, persons.size());
+            assertEquals(entriesCount(), persons.size());
         }
     }
 
@@ -413,13 +418,13 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         for (String cacheName : caches) {
             IgniteCache<Object, Object> cache = node.cache(cacheName);
 
-            for (int i = 0; i < 10; i++)  {
+            for (int i = 0; i < entriesCount(); i++)  {
                 cache.put(i, cacheName + i);
 
                 assertEquals(cacheName + i, cache.get(i));
             }
 
-            assertEquals(10, cache.size());
+            assertEquals(entriesCount(), cache.size());
         }
 
         stopAllGrids();
@@ -433,10 +438,10 @@ public class IgnitePersistentStoreCacheGroupsTest extends GridCommonAbstractTest
         for (String cacheName : caches) {
             IgniteCache<Object, Object> cache = node.cache(cacheName);
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < entriesCount(); i++)
                 assertEquals(cacheName + i, cache.get(i));
 
-            assertEquals(10, cache.size());
+            assertEquals(entriesCount(), cache.size());
         }
     }
 

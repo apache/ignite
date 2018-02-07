@@ -235,7 +235,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                 meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
             }
 
-            ses = (GridNioSession)srv.createSession(ch, meta).get();
+            ses = (GridNioSession)srv.createSession(ch, meta, false, null).get();
 
             if (sslHandshakeFut != null)
                 sslHandshakeFut.get();
@@ -574,6 +574,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                         fut.onDone(new GridClientAuthenticationException("Authentication failed on server " +
                             "(client has no credentials) [clientId=" + clientId +
                             ", srvAddr=" + serverAddress() + ", errMsg=" + resp.errorMessage() +']'));
+
+                        removePending(resp.requestId());
 
                         return;
                     }

@@ -23,6 +23,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 
 /**
  * Data store for H2 rows.
@@ -40,7 +41,11 @@ public class RowStore {
     /** */
     protected final CacheObjectContext coctx;
 
+    /** */
+    private final boolean persistenceEnabled;
 
+    /** Row cache cleaner. */
+    private GridQueryRowCacheCleaner rowCacheCleaner;
 
     /**
      * @param grp Cache group.
@@ -54,7 +59,9 @@ public class RowStore {
 
         ctx = grp.shared();
         coctx = grp.cacheObjectContext();
-        pageMem = grp.memoryPolicy().pageMemory();
+        pageMem = grp.dataRegion().pageMemory();
+
+        persistenceEnabled = grp.dataRegion().config().isPersistenceEnabled();
     }
 
     /**
@@ -63,13 +70,21 @@ public class RowStore {
      */
     public void removeRow(long link) throws IgniteCheckedException {
         assert link != 0;
-        ctx.database().checkpointReadLock();
 
-        try {
+        if (rowCacheCleaner != null)
+            rowCacheCleaner.remove(link);
+
+        if (!persistenceEnabled)
             freeList.removeDataRowByLink(link);
-        }
-        finally {
-            ctx.database().checkpointReadUnlock();
+        else {
+            ctx.database().checkpointReadLock();
+
+            try {
+                freeList.removeDataRowByLink(link);
+            }
+            finally {
+                ctx.database().checkpointReadUnlock();
+            }
         }
     }
 
@@ -78,13 +93,17 @@ public class RowStore {
      * @throws IgniteCheckedException If failed.
      */
     public void addRow(CacheDataRow row) throws IgniteCheckedException {
-        ctx.database().checkpointReadLock();
-
-        try {
+        if (!persistenceEnabled)
             freeList.insertDataRow(row);
-        }
-        finally {
-            ctx.database().checkpointReadUnlock();
+        else {
+            ctx.database().checkpointReadLock();
+
+            try {
+                freeList.insertDataRow(row);
+            }
+            finally {
+                ctx.database().checkpointReadUnlock();
+            }
         }
     }
 
@@ -95,6 +114,11 @@ public class RowStore {
      * @return {@code True} if was able to update row.
      */
     public boolean updateRow(long link, CacheDataRow row) throws IgniteCheckedException {
+        assert !persistenceEnabled || ctx.database().checkpointLockIsHeldByThread();
+
+        if (rowCacheCleaner != null)
+            rowCacheCleaner.remove(link);
+
         return freeList.updateDataRow(link, row);
     }
 
@@ -103,5 +127,14 @@ public class RowStore {
      */
     public FreeList freeList() {
         return freeList;
+    }
+
+    /**
+     * Inject rows cache cleaner.
+     *
+     * @param rowCacheCleaner Rows cache cleaner.
+     */
+    public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner) {
+        this.rowCacheCleaner = rowCacheCleaner;
     }
 }

@@ -18,7 +18,7 @@
 web-console-header {
     @import "./../../../public/stylesheets/variables.scss";
 
-    $nav-item-margin: 40px;
+    $nav-item-margin: 30px;
     $bottom-border-width: 4px;
 
     display: block;
@@ -131,12 +131,12 @@ web-console-header {
     }
 
     .wch-notification {
-        font-size: $font-size-base;
         line-height: 16px;
-        padding: 4px;
+        padding: 7px;
         background: $brand-warning;
+        font-size: 16px;
         text-align: center;
-        
+
         a {
             color: $brand-info;
         }
@@ -146,20 +146,39 @@ web-console-header {
         }
     }
 
-    .wch-web-agent-download {
-        border-bottom-right-radius: $ignite-button-border-radius;
-        border-bottom-left-radius: $ignite-button-border-radius;
-        position: absolute;
-        top: 100%;
-        right: 0;
-        margin-top: $bottom-border-width;
-        // If defined on button, shadow would conflict with already present
-        // shadows of .btn-ignite, so we shadow wrapper instead.
-        box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.3);
+    .wch-notification.wch-notification--demo {
+        z-index: 10000000;
+        position: fixed;
+        top: 0;
+        width: 100%;
 
-        .btn-ignite--primary {
-            border-top-right-radius: 0;
-            border-top-left-radius: 0;
+        color: white;
+        background: $ignite-brand-success;
+        border: none;
+
+        box-shadow: 0 0 15px #008eff;
+        animation: pulse 2s infinite;
+
+        a {
+            color: white;
+            text-decoration: underline;
+
+            &:hover {
+                color: #ffab40;
+                text-decoration: none;
+            }
         }
+    }
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 1px 2px #008eff;
+    }
+    50% {
+        box-shadow: 0 1px 15px #008eff;
+    }
+    100% {
+        box-shadow: 0 1px 2px #008eff;
     }
 }

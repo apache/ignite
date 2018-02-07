@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.rest.protocols.tcp.redis;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import org.junit.Assert;
@@ -428,18 +427,44 @@ public class RedisProtocolStringSelfTest extends RedisCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testDbSize() throws Exception {
+    public void testExpire() throws Exception {
+        testExpire(new Expiration() {
+            @Override public long expire(Jedis jedis, String key) {
+                return jedis.expire("k1", 2);
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testExpireMs() throws Exception {
+        testExpire(new Expiration() {
+            @Override public long expire(Jedis jedis, String key) {
+                return jedis.pexpire("k1", 2000);
+            }
+        });
+    }
+
+    private void testExpire(Expiration exp) throws Exception {
         try (Jedis jedis = pool.getResource()) {
-            Assert.assertEquals(0, (long)jedis.dbSize());
+            jedis.set("k1", "v1");
 
-            jcache().putAll(new HashMap<Integer, Integer>() {
-                {
-                    for (int i = 0; i < 100; i++)
-                        put(i, i);
-                }
-            });
+            Assert.assertTrue(jedis.exists("k1"));
 
-            Assert.assertEquals(100, (long)jedis.dbSize());
+            Assert.assertEquals(1L, exp.expire(jedis, "k1"));
+
+            Assert.assertEquals("v1", jedis.get("k1"));
+
+            Thread.sleep(2100);
+
+            Assert.assertFalse(jedis.exists("k1"));
+
+            Assert.assertEquals(0L, (long)jedis.expire("k1", 2));
         }
+    }
+
+    private interface Expiration {
+        long expire(Jedis jedis, String key);
     }
 }

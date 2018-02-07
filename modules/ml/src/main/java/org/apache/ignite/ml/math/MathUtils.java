@@ -23,6 +23,7 @@ import org.apache.ignite.ml.math.exceptions.NullArgumentException;
  * Miscellaneous utility functions.
  */
 public final class MathUtils {
+    /** */
     public static void checkNotNull(Object o)
         throws NullArgumentException {
         if (o == null)

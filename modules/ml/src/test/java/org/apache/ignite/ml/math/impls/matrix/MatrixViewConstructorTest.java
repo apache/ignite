@@ -108,7 +108,7 @@ public class MatrixViewConstructorTest {
             assertEquals(m.isDense(), delegateStorage.isDense());
             assertEquals(m.isArrayBased(), delegateStorage.isArrayBased());
 
-            assertArrayEquals(m.getStorage().data(), delegateStorage.data());
+            assertArrayEquals(m.getStorage().data(), delegateStorage.data(), 0.0);
         }
     }
 }

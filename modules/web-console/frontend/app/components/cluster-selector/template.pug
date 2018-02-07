@@ -1,0 +1,75 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+
+button.btn-ignite.btn-ignite--success(
+    data-ng-if='$ctrl.isDemo'
+)
+    | Demo cluster
+
+button.btn-ignite.btn-ignite--primary(
+    data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length == 0'
+)
+    | No clusters available
+
+button.btn-ignite.btn-ignite--primary(
+    data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length == 1'
+)
+    | {{ $ctrl.cluster.name }}
+
+div.btn-ignite.btn-ignite--primary(
+    data-ng-if='!$ctrl.isDemo && $ctrl.clusters.length > 1'
+
+    data-ng-model='$ctrl.cluster'
+
+    bs-select=''
+    bs-options='item as item.name for item in $ctrl.clusters'
+    data-trigger='hover focus'
+    data-container='self'
+
+    data-ng-change='$ctrl.change()'
+
+    protect-from-bs-select-render
+)
+    span(ng-if='!$ctrl.cluster') No clusters available
+    span(ng-if='$ctrl.cluster') {{ $ctrl.cluster.name }}
+        span.icon-right.fa.fa-caret-down
+
+svg(
+    ng-if='!$ctrl.isDemo'
+    ignite-icon='info'
+    bs-tooltip=''
+    data-title='Multi-Cluster Support<br/>\
+            <a href="https://apacheignite-tools.readme.io/docs/multi-cluster-support" target="_blank">More info</a>'
+    data-placement='bottom'
+)
+
+.cluster-selector--state(ng-if='!$ctrl.isDemo && $ctrl.cluster')
+    | Cluster {{ $ctrl.cluster.active ? 'active' : 'inactive' }}
+
++switcher()(
+    ng-if='!$ctrl.isDemo && $ctrl.cluster'
+    ng-click='$ctrl.toggle($event)'
+    ng-checked='$ctrl.cluster.active'
+    ng-disabled='$ctrl.inProgress'
+
+    tip='Toggle cluster active state'
+    is-in-progress='{{ $ctrl.inProgress }}'
+)
+
+div(ng-if='$ctrl.inProgress')
+    | {{ !$ctrl.cluster.active ? 'Activating...' : 'Deactivating...' }}

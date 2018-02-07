@@ -21,8 +21,13 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * SQL connector configuration.
+ * SQL connection configuration.
+ * <p>
+ * Deprecated as of Apache Ignite 2.3. Please use {@link ClientConnectorConfiguration} and
+ * {@link IgniteConfiguration#setClientConnectorConfiguration(ClientConnectorConfiguration)} instead.
  */
+@SuppressWarnings("deprecation")
+@Deprecated
 public class SqlConnectorConfiguration {
     /** Default port. */
     public static final int DFLT_PORT = 10800;

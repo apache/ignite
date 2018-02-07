@@ -197,7 +197,7 @@ public final class X {
     }
 
     /**
-     * Creates string presentation of given time {@code span} in hh:mm:ss:msec {@code HMSM} format.
+     * Creates string presentation of given time {@code span} in hh:mm:ss.msec {@code HMSM} format.
      *
      * @param span Time span.
      * @return String presentation.
@@ -212,7 +212,7 @@ public final class X {
 
         return (t[3] < 10 ? "0" + t[3] : Long.toString(t[3])) + ':' +
             (t[2] < 10 ? "0" + t[2] : Long.toString(t[2])) + ':' +
-            (t[1] < 10 ? "0" + t[1] : Long.toString(t[1])) + ':' +
+            (t[1] < 10 ? "0" + t[1] : Long.toString(t[1])) + '.' +
             (t[0] < 10 ? "00" + t[0] : ( t[0] < 100 ? "0" + t[0] : Long.toString(t[0])));
     }
 

@@ -191,6 +191,14 @@ public final class PageIdUtils {
     }
 
     /**
+     * Masks partition ID from full page ID.
+     * @param pageId Page ID to mask partition ID from.
+     */
+    public static long maskPartitionId(long pageId) {
+        return pageId & ~((-1L << PAGE_IDX_SIZE) & (~(-1L << PAGE_IDX_SIZE + PART_ID_SIZE)));
+    }
+
+    /**
      * Change page type.
      *
      * @param pageId Old page ID.
@@ -199,5 +207,29 @@ public final class PageIdUtils {
      */
     public static long changeType(long pageId, byte type) {
         return pageId(partId(pageId), type, pageIndex(pageId));
+    }
+
+    /**
+     * @param pageId Page id.
+     */
+    public static String toDetailString(long pageId) {
+        return "pageId=" + pageId +
+            "(offset=" + itemId(pageId) +
+            ", flags=" + Integer.toBinaryString(flag(pageId)) +
+            ", partId=" + partId(pageId) +
+            ", index=" + pageIndex(pageId) +
+            ")"
+            ;
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @param partId Partition ID.
+     */
+    public static long changePartitionId(long pageId, int partId) {
+        byte flag = flag(pageId);
+        int pageIdx = pageIndex(pageId);
+
+        return pageId(partId, flag, pageIdx);
     }
 }

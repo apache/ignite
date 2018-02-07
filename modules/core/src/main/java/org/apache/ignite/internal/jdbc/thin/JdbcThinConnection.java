@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
-import org.apache.ignite.internal.util.typedef.F;
-
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.CallableStatement;
@@ -39,21 +37,20 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.logging.Logger;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteProductVersion;
 
+import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_AUTO_CLOSE_SERVER_CURSORS;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_HOST;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_PORT;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_DISTRIBUTED_JOINS;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_ENFORCE_JOIN_ORDER;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_COLLOCATED;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_REPLICATED_ONLY;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_SND_BUF;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_SOCK_RCV_BUF;
-import static org.apache.ignite.internal.jdbc.thin.JdbcThinUtils.PROP_TCP_NO_DELAY;
 
 /**
  * JDBC connection implementation.
@@ -64,8 +61,11 @@ public class JdbcThinConnection implements Connection {
     /** Logger. */
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
+    /** Connection URL. */
+    private String url;
+
     /** Schema name. */
-    private String schemaName;
+    private String schema;
 
     /** Closed flag. */
     private boolean closed;
@@ -73,7 +73,7 @@ public class JdbcThinConnection implements Connection {
     /** Current transaction isolation. */
     private int txIsolation;
 
-    /** Auto commit flag. */
+    /** Auto-commit flag. */
     private boolean autoCommit;
 
     /** Read-only flag. */
@@ -88,45 +88,45 @@ public class JdbcThinConnection implements Connection {
     /** Ignite endpoint. */
     private JdbcThinTcpIo cliIo;
 
+    /** Jdbc metadata. Cache the JDBC object on the first access */
+    private JdbcThinDatabaseMetadata metadata;
+
+    /** Connection properties. */
+    private ConnectionProperties connProps;
+
     /**
      * Creates new connection.
      *
      * @param url Connection URL.
-     * @param props Additional properties.
+     * @param schema Schema name.
+     * @param props Connection properties.
      * @throws SQLException In case Ignite client failed to start.
      */
-    public JdbcThinConnection(String url, Properties props) throws SQLException {
+    public JdbcThinConnection(String url, String schema, Properties props) throws SQLException {
         assert url != null;
-        assert props != null;
+
+        this.url = url;
+
+        connProps = new ConnectionPropertiesImpl();
+
+        ((ConnectionPropertiesImpl)connProps).init(props);
 
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
 
-        String host = extractHost(props);
-        int port = extractPort(props);
-
-        boolean distributedJoins = extractBoolean(props, PROP_DISTRIBUTED_JOINS, false);
-        boolean enforceJoinOrder = extractBoolean(props, PROP_ENFORCE_JOIN_ORDER, false);
-        boolean collocated = extractBoolean(props, PROP_COLLOCATED, false);
-        boolean replicatedOnly = extractBoolean(props, PROP_REPLICATED_ONLY, false);
-        boolean autoCloseServerCursor = extractBoolean(props, PROP_AUTO_CLOSE_SERVER_CURSORS, false);
-
-        int sockSndBuf = extractIntNonNegative(props, PROP_SOCK_SND_BUF, 0);
-        int sockRcvBuf = extractIntNonNegative(props, PROP_SOCK_RCV_BUF, 0);
-
-        boolean tcpNoDelay  = extractBoolean(props, PROP_TCP_NO_DELAY, true);
+        this.schema = normalizeSchema(schema);
 
         try {
-            cliIo = new JdbcThinTcpIo(host, port, distributedJoins, enforceJoinOrder, collocated, replicatedOnly,
-                autoCloseServerCursor, sockSndBuf, sockRcvBuf, tcpNoDelay);
+            cliIo = new JdbcThinTcpIo(connProps);
 
             cliIo.start();
         }
         catch (Exception e) {
             cliIo.close();
 
-            throw new SQLException("Failed to connect to Ignite node [host=" + host + ", port=" + port + ']', e);
+            throw new SQLException("Failed to connect to Ignite cluster [host=" + connProps.getHost() +
+                ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
     }
 
@@ -147,7 +147,7 @@ public class JdbcThinConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
-        JdbcThinStatement stmt  = new JdbcThinStatement(this);
+        JdbcThinStatement stmt  = new JdbcThinStatement(this, resSetHoldability, schema);
 
         if (timeout > 0)
             stmt.timeout(timeout);
@@ -173,7 +173,10 @@ public class JdbcThinConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
-        JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql);
+        if (sql == null)
+            throw new SQLException("SQL string cannot be null.");
+
+        JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql, resSetHoldability, schema);
 
         if (timeout > 0)
             stmt.timeout(timeout);
@@ -190,7 +193,7 @@ public class JdbcThinConnection implements Connection {
     private void checkCursorOptions(int resSetType, int resSetConcurrency,
         int resSetHoldability) throws SQLException {
         if (resSetType != TYPE_FORWARD_ONLY)
-            throw new SQLFeatureNotSupportedException("Invalid result set type (only forward is supported.)");
+            throw new SQLFeatureNotSupportedException("Invalid result set type (only forward is supported).");
 
         if (resSetConcurrency != CONCUR_READ_ONLY)
             throw new SQLFeatureNotSupportedException("Invalid concurrency (updates are not supported).");
@@ -217,6 +220,9 @@ public class JdbcThinConnection implements Connection {
     /** {@inheritDoc} */
     @Override public String nativeSQL(String sql) throws SQLException {
         ensureNotClosed();
+
+        if (sql == null)
+            throw new SQLException("SQL string cannot be null.");
 
         return sql;
     }
@@ -245,12 +251,18 @@ public class JdbcThinConnection implements Connection {
     @Override public void commit() throws SQLException {
         ensureNotClosed();
 
+        if (autoCommit)
+            throw new SQLException("Transaction cannot be committed explicitly in auto-commit mode.");
+
         LOG.warning("Transactions are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void rollback() throws SQLException {
         ensureNotClosed();
+
+        if (autoCommit)
+            throw new SQLException("Transaction cannot rollback in auto-commit mode.");
 
         LOG.warning("Transactions are not supported.");
     }
@@ -274,7 +286,10 @@ public class JdbcThinConnection implements Connection {
     @Override public DatabaseMetaData getMetaData() throws SQLException {
         ensureNotClosed();
 
-        return null;
+        if (metadata == null)
+            metadata = new JdbcThinDatabaseMetadata(this);
+
+        return metadata;
     }
 
     /** {@inheritDoc} */
@@ -307,7 +322,21 @@ public class JdbcThinConnection implements Connection {
     @Override public void setTransactionIsolation(int level) throws SQLException {
         ensureNotClosed();
 
-        LOG.warning("Transactions are not supported.");
+        switch (level) {
+            case Connection.TRANSACTION_READ_UNCOMMITTED:
+            case Connection.TRANSACTION_READ_COMMITTED:
+            case Connection.TRANSACTION_REPEATABLE_READ:
+            case Connection.TRANSACTION_SERIALIZABLE:
+                LOG.warning("Transactions are not supported.");
+
+                break;
+
+            case Connection.TRANSACTION_NONE:
+                break;
+
+            default:
+                throw new SQLException("Invalid transaction isolation level.", SqlStateCode.INVALID_TRANSACTION_LEVEL);
+        }
 
         txIsolation = level;
     }
@@ -335,6 +364,8 @@ public class JdbcThinConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public Map<String, Class<?>> getTypeMap() throws SQLException {
+        ensureNotClosed();
+
         throw new SQLFeatureNotSupportedException("Types mapping is not supported.");
     }
 
@@ -352,6 +383,9 @@ public class JdbcThinConnection implements Connection {
         if (holdability != HOLD_CURSORS_OVER_COMMIT)
             LOG.warning("Transactions are not supported.");
 
+        if (holdability != HOLD_CURSORS_OVER_COMMIT && holdability != CLOSE_CURSORS_AT_COMMIT)
+            throw new SQLException("Invalid result set holdability value.");
+
         this.holdability = holdability;
     }
 
@@ -366,12 +400,21 @@ public class JdbcThinConnection implements Connection {
     @Override public Savepoint setSavepoint() throws SQLException {
         ensureNotClosed();
 
+        if (autoCommit)
+            throw new SQLException("Savepoint cannot be set in auto-commit mode.");
+
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Savepoint setSavepoint(String name) throws SQLException {
         ensureNotClosed();
+
+        if (name == null)
+            throw new SQLException("Savepoint name cannot be null.");
+
+        if (autoCommit)
+            throw new SQLException("Savepoint cannot be set in auto-commit mode.");
 
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
@@ -380,12 +423,21 @@ public class JdbcThinConnection implements Connection {
     @Override public void rollback(Savepoint savepoint) throws SQLException {
         ensureNotClosed();
 
+        if (savepoint == null)
+            throw new SQLException("Invalid savepoint.");
+
+        if (autoCommit)
+            throw new SQLException("Auto-commit mode.");
+
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public void releaseSavepoint(Savepoint savepoint) throws SQLException {
         ensureNotClosed();
+
+        if (savepoint == null)
+            throw new SQLException("Savepoint cannot be null.");
 
         throw new SQLFeatureNotSupportedException("Savepoints are not supported.");
     }
@@ -457,12 +509,14 @@ public class JdbcThinConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public void setClientInfo(String name, String val) throws SQLClientInfoException {
-        throw new UnsupportedOperationException("Client info is not supported.");
+        if (closed)
+            throw new SQLClientInfoException("Connection is closed.", null);
     }
 
     /** {@inheritDoc} */
     @Override public void setClientInfo(Properties props) throws SQLClientInfoException {
-        throw new UnsupportedOperationException("Client info is not supported.");
+        if (closed)
+            throw new SQLClientInfoException("Connection is closed.", null);
     }
 
     /** {@inheritDoc} */
@@ -483,12 +537,18 @@ public class JdbcThinConnection implements Connection {
     @Override public Array createArrayOf(String typeName, Object[] elements) throws SQLException {
         ensureNotClosed();
 
+        if (typeName == null)
+            throw new SQLException("Type name cannot be null.");
+
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public Struct createStruct(String typeName, Object[] attrs) throws SQLException {
         ensureNotClosed();
+
+        if (typeName == null)
+            throw new SQLException("Type name cannot be null.");
 
         throw new SQLFeatureNotSupportedException("SQL-specific types are not supported.");
     }
@@ -509,29 +569,43 @@ public class JdbcThinConnection implements Connection {
 
     /** {@inheritDoc} */
     @Override public void setSchema(String schema) throws SQLException {
-        schemaName = schema;
+        ensureNotClosed();
+
+        this.schema = normalizeSchema(schema);
     }
 
     /** {@inheritDoc} */
     @Override public String getSchema() throws SQLException {
-        return schemaName;
+        ensureNotClosed();
+
+        return schema;
     }
 
     /** {@inheritDoc} */
     @Override public void abort(Executor executor) throws SQLException {
+        if (executor == null)
+            throw new SQLException("Executor cannot be null.");
+
         close();
     }
 
     /** {@inheritDoc} */
     @Override public void setNetworkTimeout(Executor executor, int ms) throws SQLException {
+        ensureNotClosed();
+
+        if (executor == null)
+            throw new SQLException("Executor cannot be null.");
+
         if (ms < 0)
-            throw new IllegalArgumentException("Timeout is below zero: " + ms);
+            throw new SQLException("Network timeout cannot be negative.");
 
         timeout = ms;
     }
 
     /** {@inheritDoc} */
     @Override public int getNetworkTimeout() throws SQLException {
+        ensureNotClosed();
+
         return timeout;
     }
 
@@ -540,129 +614,75 @@ public class JdbcThinConnection implements Connection {
      *
      * @throws SQLException If connection is closed.
      */
-    private void ensureNotClosed() throws SQLException {
+    public void ensureNotClosed() throws SQLException {
         if (closed)
-            throw new SQLException("Connection is closed.");
+            throw new SQLException("Connection is closed.", SqlStateCode.CONNECTION_CLOSED);
     }
 
     /**
-     * @return Ignite endpoint and I/O protocol.
+     * @return Ignite server version.
      */
-    public JdbcThinTcpIo io() {
-        return cliIo;
+    IgniteProductVersion igniteVersion() {
+        return cliIo.igniteVersion();
     }
 
     /**
-     * Extract host.
-     *
-     * @param props Properties.
-     * @return Host.
-     * @throws SQLException If failed.
+     * @return Auto close server cursors flag.
      */
-    private static String extractHost(Properties props) throws SQLException {
-        String host = props.getProperty(PROP_HOST);
-
-        if (host != null)
-            host = host.trim();
-
-        if (F.isEmpty(host))
-            throw new SQLException("Host name is empty.");
-
-        return host;
+    boolean autoCloseServerCursor() {
+        return connProps.isAutoCloseServerCursor();
     }
 
     /**
-     * Extract port.
-     *
-     * @param props Properties.
-     * @return Port.
-     * @throws SQLException If failed.
+     * Send request for execution via {@link #cliIo}.
+     * @param req Request.
+     * @return Server response.
+     * @throws SQLException On any error.
      */
-    private static int extractPort(Properties props) throws SQLException {
-        String portStr = props.getProperty(PROP_PORT);
-
-        if (portStr == null)
-            return JdbcThinUtils.DFLT_PORT;
-
-        int port;
-
+    @SuppressWarnings("unchecked")
+    <R extends JdbcResult> R sendRequest(JdbcRequest req) throws SQLException {
         try {
-            port = Integer.parseInt(portStr);
+            JdbcResponse res = cliIo.sendRequest(req);
 
-            if (port <= 0 || port > 0xFFFF)
-                throw new SQLException("Invalid port: " + portStr);
-        }
-        catch (NumberFormatException e) {
-            throw new SQLException("Invalid port: " + portStr, e);
-        }
+            if (res.status() != ClientListenerResponse.STATUS_SUCCESS)
+                throw new SQLException(res.error(), IgniteQueryErrorCode.codeToSqlState(res.status()));
 
-        return port;
+            return (R)res.response();
+        }
+        catch (SQLException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            close();
+
+            throw new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);
+        }
     }
 
     /**
-     * Extract boolean property.
-     *
-     * @param props Properties.
-     * @param propName Property name.
-     * @param dfltVal Default value.
-     * @return Value.
-     * @throws SQLException If failed.
+     * @return Connection URL.
      */
-    private static boolean extractBoolean(Properties props, String propName, boolean dfltVal) throws SQLException {
-        String strVal = props.getProperty(propName);
+    public String url() {
+        return url;
+    }
 
-        if (strVal == null)
-            return dfltVal;
+    /**
+     * Normalize schema name. If it is quoted - unquote and leave as is, otherwise - convert to upper case.
+     *
+     * @param schemaName Schema name.
+     * @return Normalized schema name.
+     */
+    private static String normalizeSchema(String schemaName) {
+        if (F.isEmpty(schemaName))
+            return QueryUtils.DFLT_SCHEMA;
 
-        if (Boolean.TRUE.toString().equalsIgnoreCase(strVal))
-            return true;
-        else if (Boolean.FALSE.toString().equalsIgnoreCase(strVal))
-            return false;
+        String res;
+
+        if (schemaName.startsWith("\"") && schemaName.endsWith("\""))
+            res = schemaName.substring(1, schemaName.length() - 1);
         else
-            throw new SQLException("Failed to parse boolean property [name=" + JdbcThinUtils.trimPrefix(propName) +
-                    ", value=" + strVal + ']');
-    }
-
-    /**
-     * Extract non-negative int property.
-     *
-     * @param props Properties.
-     * @param propName Property name.
-     * @param dfltVal Default value.
-     * @return Value.
-     * @throws SQLException If failed.
-     */
-    private static int extractIntNonNegative(Properties props, String propName, int dfltVal) throws SQLException {
-        int res = extractInt(props, propName, dfltVal);
-
-        if (res < 0)
-            throw new SQLException("Property cannot be negative [name=" + JdbcThinUtils.trimPrefix(propName) +
-                ", value=" + res + ']');
+            res = schemaName.toUpperCase();
 
         return res;
-    }
-
-    /**
-     * Extract int property.
-     *
-     * @param props Properties.
-     * @param propName Property name.
-     * @param dfltVal Default value.
-     * @return Value.
-     * @throws SQLException If failed.
-     */
-    private static int extractInt(Properties props, String propName, int dfltVal) throws SQLException {
-        String strVal = props.getProperty(propName);
-
-        if (strVal == null)
-            return dfltVal;
-
-        try {
-            return Integer.parseInt(strVal);
-        }
-        catch (NumberFormatException e) {
-            throw new SQLException("Failed to parse int property [name=" + JdbcThinUtils.trimPrefix(propName) +
-                ", value=" + strVal + ']');
-        }
     }
 }

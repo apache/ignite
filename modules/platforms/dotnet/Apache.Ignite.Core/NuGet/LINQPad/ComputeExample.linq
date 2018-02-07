@@ -5,6 +5,7 @@
   <Namespace>Apache.Ignite.Core.Cache.Configuration</Namespace>
   <Namespace>Apache.Ignite.Core.Cache.Query</Namespace>
   <Namespace>Apache.Ignite.Core.Compute</Namespace>
+  <Namespace>Apache.Ignite.Core.Deployment</Namespace>
 </Query>
 
 /*
@@ -29,7 +30,6 @@
 /// 
 /// Requirements:
 /// * Java Runtime Environment (JRE): http://www.oracle.com/technetwork/java/javase/downloads/index.html (x86 for regular LINQPad, x64 for AnyCPU LINQPad)
-/// * Microsoft Visual C++ 2010 Redistributable Package: http://www.microsoft.com/en-us/download/details.aspx?id=14632 (x86 for regular LINQPad, x64 for AnyCPU LINQPad)
 /// </summary>
 
 void Main()

@@ -30,7 +30,7 @@ import static org.junit.Assert.assertNotNull;
 
 /** */
 public class VectorBenchmarkTest {
-    // todo add benchmarks for other methods in Vector and for other types of Vector and Matrix
+    //TODO: IGNITE-5827, add benchmarks for other methods in Vector and for other types of Vector and Matrix
 
     /** */
     @Test

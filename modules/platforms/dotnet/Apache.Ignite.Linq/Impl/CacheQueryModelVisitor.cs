@@ -394,11 +394,13 @@ namespace Apache.Ignite.Linq.Impl
             ValidateFromClause(fromClause);
             _aliases.AppendAsClause(_builder, fromClause).Append(" ");
 
+            var i = 0;
             foreach (var additionalFrom in queryModel.BodyClauses.OfType<AdditionalFromClause>())
             {
                 _builder.AppendFormat(", ");
                 ValidateFromClause(additionalFrom);
-                _aliases.AppendAsClause(_builder, additionalFrom).Append(" ");
+
+                VisitAdditionalFromClause(additionalFrom, queryModel, i++);
             }
         }
 
@@ -505,6 +507,30 @@ namespace Apache.Ignite.Linq.Impl
 
             _builder.Append(") ");
         }
+
+        /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        public override void VisitAdditionalFromClause(AdditionalFromClause fromClause, QueryModel queryModel,
+            int index)
+        {
+            base.VisitAdditionalFromClause(fromClause, queryModel, index);
+
+            var subQuery = fromClause.FromExpression as SubQueryExpression;
+            if (subQuery != null)
+            {
+                _builder.Append("(");
+
+                VisitQueryModel(subQuery.QueryModel, true);
+
+                var alias = _aliases.GetTableAlias(subQuery.QueryModel.MainFromClause);
+                _builder.AppendFormat(") as {0} ", alias);
+            }
+            else
+            {
+                _aliases.AppendAsClause(_builder, fromClause).Append(" ");
+            }
+        }
+
 
         /// <summary>
         /// Visists Join clause in case of join with local collection

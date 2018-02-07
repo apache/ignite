@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.ml.math.MatrixStorage;
+import org.apache.ignite.ml.math.StorageConstants;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 
@@ -78,8 +79,29 @@ public class DiagonalMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public int storageMode() {
+        return StorageConstants.UNKNOWN_STORAGE_MODE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int accessMode() {
+        return StorageConstants.RANDOM_ACCESS_MODE;
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(diagonal);
+    }
+
+    /** {@inheritDoc} */
+    @Override public double[] data() {
+        int size = diagonal.size();
+        double[] res = new double[size * size];
+
+        for (int i = 0; i < size; i++)
+            res[i * size + i % size] = diagonal.getX(i);
+
+        return res;
     }
 
     /** {@inheritDoc} */

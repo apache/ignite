@@ -22,11 +22,14 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Insert fragment to data page record.
+ * Insert fragment (part of big object which is bigger than page size) to data page record.
  */
 public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WALReferenceAwareRecord {
     /** Link to the last entry fragment. */
@@ -42,6 +45,7 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
     private WALPointer reference;
 
     /** Actual fragment data. */
+    @GridToStringExclude
     private byte[] payload;
 
     /**
@@ -90,7 +94,7 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        DataPageIO io = DataPageIO.VERSIONS.forPage(pageAddr);
+        AbstractDataPageIO io = PageIO.getPageIO(pageAddr);
 
         io.addRowFragment(pageAddr, payload, lastLink, pageMem.pageSize());
     }

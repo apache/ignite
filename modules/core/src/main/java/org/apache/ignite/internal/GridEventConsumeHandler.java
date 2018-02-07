@@ -321,8 +321,13 @@ class GridEventConsumeHandler implements GridContinuousHandler {
                     GridDeploymentInfo depInfo = wrapper.depInfo;
 
                     if (depInfo != null) {
-                        depMgr.p2pContext(nodeId, depInfo.classLoaderId(), depInfo.userVersion(), depInfo.deployMode(),
-                            depInfo.participants(), depInfo.localDeploymentOwner());
+                        depMgr.p2pContext(
+                            nodeId,
+                            depInfo.classLoaderId(),
+                            depInfo.userVersion(),
+                            depInfo.deployMode(),
+                            depInfo.participants()
+                        );
                     }
 
                     ldr = depMgr.globalLoader();

@@ -33,7 +33,7 @@ public class DenseLocalOffHeapVectorStorage implements VectorStorage {
 
     /** */
     private transient long ptr;
-    //TODO: temp solution.
+    //TODO: IGNITE-5535, temp solution.
     /** */
     private int ptrInitHash;
 

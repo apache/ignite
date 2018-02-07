@@ -27,7 +27,7 @@ include /app/helpers/jade/mixins
         ignite-form-field-tooltip.tipLabel
             | Domain model properties common for Query and Store#[br]
             | #[a(href="https://apacheignite.readme.io/docs/cache-queries" target="_blank") More info about query configuration]#[br]
-            | #[a(href="https://apacheignite.readme.io/docs/persistent-store" target="_blank") More info about store]
+            | #[a(href="https://apacheignite.readme.io/docs/3rd-party-store" target="_blank") More info about store]
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
         .panel-body
@@ -44,7 +44,7 @@ include /app/helpers/jade/mixins
                             <li>Configuration via QueryEntity class</li>\
                         </ul>')
                 .settings-row
-                    +java-class-typeahead('Key type:', `${model}.keyType`, '"keyType"', 'javaBuiltInClasses', 'true', 'true', '{{ ' + generatePojo + ' ? "Full class name for Key" : "Key type name" }}', 'Key class used to store key in cache', generatePojo)
+                    +java-class-typeahead('Key type:', `${model}.keyType`, '"keyType"', 'javaBuiltInClassesBase', 'true', 'true', '{{ ' + generatePojo + ' ? "Full class name for Key" : "Key type name" }}', 'Key class used to store key in cache', generatePojo)
                 .settings-row
                     +java-class-autofocus-placholder('Value type:', `${model}.valueType`, '"valueType"', 'true', 'true', 'false', '{{ ' + generatePojo +' ? "Enter fully qualified class name" : "Value type name" }}', 'Value class used to store value in cache', generatePojo)
 

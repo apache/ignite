@@ -19,14 +19,14 @@ package org.apache.ignite.ml.math.impls.vector;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.ValueMapper;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.VectorKeyMapper;
+import org.apache.ignite.ml.math.distributed.CacheUtils;
+import org.apache.ignite.ml.math.distributed.ValueMapper;
+import org.apache.ignite.ml.math.distributed.VectorKeyMapper;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.impls.CacheUtils;
 import org.apache.ignite.ml.math.impls.storage.vector.CacheVectorStorage;
 
 /**
@@ -88,8 +88,8 @@ public class CacheVector<K, V> extends AbstractVector {
 
     /** {@inheritDoc} */
     @Override public Vector map(IgniteBiFunction<Double, Double, Double> fun, double y) {
-        // TODO: provide cache-optimized implementation.
-        return super.map(fun, y); // TODO
+        // TODO: IGNITE-5723, provide cache-optimized implementation.
+        return super.map(fun, y);
     }
 
     /** {@inheritDoc} */

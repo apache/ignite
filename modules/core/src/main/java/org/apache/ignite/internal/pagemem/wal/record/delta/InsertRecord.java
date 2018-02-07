@@ -105,6 +105,6 @@ public class InsertRecord<L> extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(InsertRecord.class, this, "rightId", U.hexLong(rightId), "parent", super.toString());
+        return S.toString(InsertRecord.class, this, "rightId", U.hexLong(rightId), "super", super.toString());
     }
 }

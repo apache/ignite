@@ -184,7 +184,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         assert cacheName != null;
 
         if (aff == null) {
-            aff = affinityCache(cacheName, ctx.discovery().topologyVersionEx());
+            aff = affinityCache(cacheName, ctx.cache().context().exchange().readyAffinityVersion());
 
             if (aff == null)
                 throw new IgniteCheckedException("Failed to get cache affinity (cache was not started " +
@@ -303,7 +303,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         if (key == null)
             return null;
 
-        AffinityInfo affInfo = affinityCache(cacheName, ctx.discovery().topologyVersionEx());
+        AffinityInfo affInfo = affinityCache(cacheName, ctx.cache().context().exchange().readyAffinityVersion());
 
         if (affInfo == null)
             return null;
@@ -329,7 +329,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     private <K> Map<ClusterNode, Collection<K>> keysToNodes(@Nullable final String cacheName,
         Collection<? extends K> keys) throws IgniteCheckedException {
-        return keysToNodes(cacheName, keys, ctx.discovery().topologyVersionEx());
+        return keysToNodes(cacheName, keys, ctx.cache().context().exchange().readyAffinityVersion());
     }
 
     /**
@@ -471,7 +471,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
                     continue;
                 }
 
-                affMap.remove(cacheName, fut0);
+                affMap.remove(key, fut0);
 
                 fut0.onDone(new IgniteCheckedException("Failed to get affinity mapping from node: " + n, e));
 
@@ -974,7 +974,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
          * @throws IgniteCheckedException If failed.
          */
         private AffinityInfo cache() throws IgniteCheckedException {
-            AffinityInfo aff = affinityCache(cacheName, ctx.discovery().topologyVersionEx());
+            AffinityInfo aff = affinityCache(cacheName, ctx.cache().context().exchange().readyAffinityVersion());
 
             if (aff == null)
                 throw new IgniteException("Failed to find cache (cache was not started " +

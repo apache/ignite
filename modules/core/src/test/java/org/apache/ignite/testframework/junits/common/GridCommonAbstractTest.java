@@ -60,8 +60,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
@@ -85,6 +85,9 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
+import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
+import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
+import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTask;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
@@ -106,7 +109,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
-import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -524,7 +526,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param waitEvicts If {@code true} will wait for evictions finished.
      * @param waitNode2PartUpdate If {@code true} will wait for nodes node2part info update finished.
-     * @param nodes Optional nodes.
+     * @param nodes Optional nodes. If {@code null} method will wait for all nodes, for non null collection nodes will
+     *      be filtered
      * @throws InterruptedException If interrupted.
      */
     @SuppressWarnings("BusyWait")
@@ -546,7 +549,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param waitEvicts If {@code true} will wait for evictions finished.
      * @param waitNode2PartUpdate If {@code true} will wait for nodes node2part info update finished.
-     * @param nodes Optional nodes.
+     * @param nodes Optional nodes. If {@code null} method will wait for all nodes, for non null collection nodes will
+     *      be filtered
      * @param printPartState If {@code true} will print partition state if evictions not happened.
      * @throws InterruptedException If interrupted.
      */
@@ -661,7 +665,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                         "igniteInstanceName=" + g.name() +
                                         ", cache=" + cfg.getName() +
                                         ", cacheId=" + dht.context().cacheId() +
-                                        ", topVer=" + top.topologyVersion() +
+                                        ", topVer=" + top.readyTopologyVersion() +
                                         ", p=" + p +
                                         ", affNodesCnt=" + affNodesCnt +
                                         ", ownersCnt=" + ownerNodesCnt +
@@ -678,7 +682,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                     "igniteInstanceName=" + g.name() +
                                     ", cache=" + cfg.getName() +
                                     ", cacheId=" + dht.context().cacheId() +
-                                    ", topVer=" + top.topologyVersion() +
+                                    ", topVer=" + top.readyTopologyVersion() +
                                     ", started=" + dht.context().started() +
                                     ", p=" + p +
                                     ", readVer=" + readyVer +
@@ -699,7 +703,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                         "igniteInstanceName=" + g.name() +
                                         ", cache=" + cfg.getName() +
                                         ", cacheId=" + dht.context().cacheId() +
-                                        ", topVer=" + top.topologyVersion() +
+                                        ", topVer=" + top.readyTopologyVersion() +
                                         ", p=" + p +
                                         ", readVer=" + readyVer +
                                         ", locNode=" + g.cluster().localNode() + ']');
@@ -739,7 +743,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                             "igniteInstanceName=" + g.name() +
                                             ", cache=" + cfg.getName() +
                                             ", cacheId=" + dht.context().cacheId() +
-                                            ", topVer=" + top.topologyVersion() +
+                                            ", topVer=" + top.readyTopologyVersion() +
                                             ", locNode=" + g.cluster().localNode() + ']');
                                     }
 
@@ -764,6 +768,39 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         log.info("awaitPartitionMapExchange finished");
+    }
+
+    /**
+     * Compares checksums between primary and backup partitions of specified caches.
+     * Works properly only on idle cluster - there may be false positive conflict reports if data in cluster is being
+     * concurrently updated.
+     *
+     * @param ig Ignite instance.
+     * @param cacheNames Cache names (if null, all user caches will be verified).
+     * @throws IgniteCheckedException If checksum conflict has been found.
+     */
+    protected void verifyBackupPartitions(Ignite ig, Set<String> cacheNames) throws IgniteCheckedException {
+        Map<PartitionKey, List<PartitionHashRecord>> conflicts = ig.compute().execute(
+            new VerifyBackupPartitionsTask(), cacheNames);
+
+        if (!conflicts.isEmpty()) {
+            throw new IgniteCheckedException("Partition checksums are different for backups " +
+                "of the following partitions: " + conflicts.keySet());
+        }
+    }
+
+    /**
+     * @param top Topology.
+     * @param topVer Version to wait for.
+     * @throws Exception If failed.
+     */
+    protected final void waitForReadyTopology(final GridDhtPartitionTopology top, final AffinityTopologyVersion topVer)
+        throws Exception {
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return topVer.compareTo(top.readyTopologyVersion()) <= 0;
+            }
+        }, 5000);
     }
 
     /**
@@ -1736,6 +1773,15 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                     "[node=" + node.name() + "]", o instanceof Boolean);
             }
         }
+    }
+
+    /**
+     * Sets baseline topology.
+     */
+    public void resetBaselineTopology() {
+        Ignite node = G.allGrids().get(0);
+
+        node.cluster().setBaselineTopology(node.cluster().topologyVersion());
     }
 
     /**

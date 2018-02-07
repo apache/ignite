@@ -26,7 +26,6 @@ import org.apache.ignite.ml.math.impls.storage.matrix.MapWrapperStorage;
  * Vector wrapping a given map.
  */
 public class MapWrapperVector extends AbstractVector {
-
     /**
      * Construct a vector wrapping given map.
      *
@@ -34,6 +33,13 @@ public class MapWrapperVector extends AbstractVector {
      */
     public MapWrapperVector(Map<Integer, Double> map) {
         setStorage(new MapWrapperStorage(map));
+    }
+
+    /**
+     * No-op constructor for serialization.
+     */
+    public MapWrapperVector() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

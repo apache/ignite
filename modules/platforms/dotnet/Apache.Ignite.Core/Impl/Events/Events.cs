@@ -30,13 +30,11 @@ namespace Apache.Ignite.Core.Impl.Events
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Handle;
-    using Apache.Ignite.Core.Impl.Unmanaged;
-    using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
     /// <summary>
     /// Ignite events.
     /// </summary>
-    internal sealed class Events : PlatformTarget, IEvents
+    internal sealed class Events : PlatformTargetAdapter, IEvents
     {
         /// <summary>
         /// Opcodes.
@@ -66,15 +64,14 @@ namespace Apache.Ignite.Core.Impl.Events
 
         /** Cluster group. */
         private readonly IClusterGroup _clusterGroup;
-        
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Events" /> class.
         /// </summary>
         /// <param name="target">Target.</param>
-        /// <param name="marsh">Marshaller.</param>
         /// <param name="clusterGroup">Cluster group.</param>
-        public Events(IUnmanagedTarget target, Marshaller marsh, IClusterGroup clusterGroup) 
-            : base(target, marsh)
+        public Events(IPlatformTargetInternal target, IClusterGroup clusterGroup) 
+            : base(target)
         {
             Debug.Assert(clusterGroup != null);
 
@@ -287,7 +284,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /** <inheritDoc /> */
         public void RecordLocal(IEvent evt)
         {
-            throw new NotImplementedException("IGNITE-1410");
+            throw new NotSupportedException("IGNITE-1410");
         }
 
         /** <inheritDoc /> */
@@ -313,18 +310,33 @@ namespace Apache.Ignite.Core.Impl.Events
             {
                 Dictionary<int, LocalHandledEventFilter> filters;
 
-                if (!_localFilters.TryGetValue(listener, out filters))
-                    return false;
+                if (_localFilters.TryGetValue(listener, out filters))
+                {
+                    var success = false;
 
-                var success = false;
+                    // Should do this inside lock to avoid race with subscription
+                    // ToArray is required because we are going to modify underlying dictionary during enumeration
+                    foreach (var filter in GetLocalFilters(listener, types).ToArray())
+                        success |= (DoOutInOp((int) Op.StopLocalListen, filter.Handle) == True);
 
-                // Should do this inside lock to avoid race with subscription
-                // ToArray is required because we are going to modify underlying dictionary during enumeration
-                foreach (var filter in GetLocalFilters(listener, types).ToArray())
-                    success |= (DoOutInOp((int) Op.StopLocalListen, filter.Handle) == True);
-
-                return success;
+                    return success;
+                }
             }
+
+            // Looks for a predefined filter (IgniteConfiguration.LocalEventListeners).
+            var ids = Ignite.Configuration.LocalEventListenerIds;
+
+            int predefinedListenerId;
+            if (ids != null && ids.TryGetValue(listener, out predefinedListenerId))
+            {
+                return DoOutInOp((int) Op.StopLocalListen, w =>
+                {
+                    w.WriteInt(predefinedListenerId);
+                    w.WriteIntArray(types);
+                }, s => s.ReadBool());
+            }
+
+            return false;
         }
 
         /** <inheritDoc /> */

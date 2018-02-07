@@ -506,6 +506,36 @@ public interface CacheMetrics {
     public long getRebalancingBytesRate();
 
     /**
+     * This method is deprecated and will be deleted in future major release.
+     *
+     * Use {@link #getEstimatedRebalancingFinishTime()} instead.
+     *
+     * @return Estimated rebalancing finished time.
+     */
+    @Deprecated
+    public long estimateRebalancingFinishTime();
+
+    /**
+     * This method is deprecated and will be deleted in future major release.
+     *
+     * Use {@link #getRebalancingStartTime()} instead.
+     *
+     * @return Rebalancing start time.
+     */
+    @Deprecated
+    public long rebalancingStartTime();
+
+    /**
+     * @return Estimated rebalancing finish time.
+     */
+    public long getEstimatedRebalancingFinishTime();
+
+    /**
+     * @return Rebalancing start time.
+     */
+    public long getRebalancingStartTime();
+
+    /**
      * Checks whether statistics collection is enabled in this cache.
      * <p>
      * The default value is {@code false}.
@@ -546,4 +576,18 @@ public interface CacheMetrics {
      * @see CacheWriter
      */
     public boolean isWriteThrough();
+
+    /**
+     * Checks whether cache topology is valid for read operations.
+     *
+     * @return {@code true} when cache topology is valid for reading.
+     */
+    public boolean isValidForReading();
+
+    /**
+     * Checks whether cache topology is valid for write operations.
+     *
+     * @return {@code true} when cache topology is valid for writing.
+     */
+    public boolean isValidForWriting();
 }

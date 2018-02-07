@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Impl.Cache
 {
+    using System;
     using System.Collections.Generic;
     using System.Globalization;
     using Apache.Ignite.Core.Cache;
@@ -24,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Cache
     /// <summary>
     /// Represents a cache entry.
     /// </summary>
-    public struct CacheEntry<TK, TV> : ICacheEntry<TK, TV>
+    public struct CacheEntry<TK, TV> : ICacheEntry<TK, TV>, IEquatable<CacheEntry<TK, TV>>
     {
         /** Key. */
         private readonly TK _key;
@@ -72,8 +73,15 @@ namespace Apache.Ignite.Core.Impl.Cache
             return EqualityComparer<TK>.Default.Equals(_key, other._key) &&
                 EqualityComparer<TV>.Default.Equals(_val, other._val);
         }
-        
-        /** <inheritDoc /> */
+
+        /// <summary>
+        /// Determines whether the specified <see cref="object" /> is equal to this instance.
+        /// </summary>
+        /// <param name="obj">The <see cref="object" /> to compare with this instance.</param>
+        /// <returns>
+        ///   <c>true</c> if the specified <see cref="object" /> is equal to this instance;
+        /// otherwise, <c>false</c>.
+        /// </returns>
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) 
@@ -81,8 +89,14 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return obj is CacheEntry<TK, TV> && Equals((CacheEntry<TK, TV>) obj);
         }
-        
-        /** <inheritDoc /> */
+
+        /// <summary>
+        /// Returns a hash code for this instance.
+        /// </summary>
+        /// <returns>
+        /// A hash code for this instance, suitable for use in hashing algorithms
+        /// and data structures like a hash table. 
+        /// </returns>
         public override int GetHashCode()
         {
             unchecked
@@ -92,7 +106,12 @@ namespace Apache.Ignite.Core.Impl.Cache
             }
         }
 
-        /** <inheritDoc /> */
+        /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="string" /> that represents this instance.
+        /// </returns>
         public override string ToString()
         {
             return string.Format(CultureInfo.CurrentCulture, "CacheEntry [Key={0}, Value={1}]", _key, _val);

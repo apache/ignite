@@ -42,6 +42,8 @@ namespace
     const bool testEnforceJoinOrder = true;
     const bool testReplicatedOnly = true;
     const bool testCollocated = true;
+    const bool testLazy = true;
+    const bool testSkipReducerOnUpdate = true;
 
     const std::string testAddress = testServerHost + ':' + ignite::common::LexicalCast<std::string>(testServerPort);
 }
@@ -130,6 +132,8 @@ void CheckConnectionConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.IsEnforceJoinOrder(), testEnforceJoinOrder);
     BOOST_CHECK_EQUAL(cfg.IsReplicatedOnly(), testReplicatedOnly);
     BOOST_CHECK_EQUAL(cfg.IsCollocated(), testCollocated);
+    BOOST_CHECK_EQUAL(cfg.IsLazy(), testLazy);
+    BOOST_CHECK_EQUAL(cfg.IsSkipReducerOnUpdate(), testSkipReducerOnUpdate);
 
     std::stringstream constructor;
 
@@ -138,9 +142,11 @@ void CheckConnectionConfig(const Configuration& cfg)
                 << "distributed_joins=" << BoolToStr(testDistributedJoins) << ';'
                 << "driver={" << testDriverName << "};"
                 << "enforce_join_order=" << BoolToStr(testEnforceJoinOrder) << ';'
+                << "lazy=" << BoolToStr(testLazy) << ';'
                 << "page_size=" << testPageSize << ';'
                 << "replicated_only=" << BoolToStr(testReplicatedOnly) << ';'
-                << "schema=" << testSchemaName << ';';
+                << "schema=" << testSchemaName << ';'
+                << "skip_reducer_on_update=" << BoolToStr(testReplicatedOnly) << ';';
 
     const std::string& expectedStr = constructor.str();
 
@@ -160,6 +166,8 @@ void CheckDsnConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.IsEnforceJoinOrder(), false);
     BOOST_CHECK_EQUAL(cfg.IsReplicatedOnly(), false);
     BOOST_CHECK_EQUAL(cfg.IsCollocated(), false);
+    BOOST_CHECK_EQUAL(cfg.IsLazy(), false);
+    BOOST_CHECK_EQUAL(cfg.IsSkipReducerOnUpdate(), false);
 }
 
 BOOST_AUTO_TEST_SUITE(ConfigurationTestSuite)
@@ -176,6 +184,8 @@ BOOST_AUTO_TEST_CASE(CheckTestValuesNotEquealDefault)
     BOOST_CHECK_NE(testEnforceJoinOrder, Configuration::DefaultValue::enforceJoinOrder);
     BOOST_CHECK_NE(testReplicatedOnly, Configuration::DefaultValue::replicatedOnly);
     BOOST_CHECK_NE(testCollocated, Configuration::DefaultValue::collocated);
+    BOOST_CHECK_NE(testLazy, Configuration::DefaultValue::lazy);
+    BOOST_CHECK_NE(testSkipReducerOnUpdate, Configuration::DefaultValue::skipReducerOnUpdate);
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)
@@ -185,13 +195,15 @@ BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)
     std::stringstream constructor;
 
     constructor << "DRIVER={" << testDriverName << "};"
+                << "LAZY=" << BoolToStr(testLazy, false) << ';'
                 << "ADDRESS=" << testAddress << ';'
                 << "DISTRIBUTED_JOINS=" << BoolToStr(testDistributedJoins, false) << ';'
                 << "ENFORCE_JOIN_ORDER=" << BoolToStr(testEnforceJoinOrder, false) << ';'
                 << "COLLOCATED=" << BoolToStr(testCollocated, false) << ';'
                 << "REPLICATED_ONLY=" << BoolToStr(testReplicatedOnly, false) << ';'
                 << "PAGE_SIZE=" << testPageSize << ';'
-                << "SCHEMA=" << testSchemaName;
+                << "SCHEMA=" << testSchemaName << ';'
+                << "SKIP_REDUCER_ON_UPDATE=" << BoolToStr(testSkipReducerOnUpdate, false);
 
     const std::string& connectStr = constructor.str();
 
@@ -207,13 +219,15 @@ BOOST_AUTO_TEST_CASE(TestConnectStringLowercase)
     std::stringstream constructor;
 
     constructor << "driver={" << testDriverName << "};"
+                << "lazy=" << BoolToStr(testLazy) << ';'
                 << "address=" << testAddress << ';'
                 << "page_size=" << testPageSize << ';'
                 << "distributed_joins=" << BoolToStr(testDistributedJoins) << ';'
                 << "enforce_join_order=" << BoolToStr(testEnforceJoinOrder) << ';'
                 << "replicated_only=" << BoolToStr(testReplicatedOnly) << ';'
                 << "collocated=" << BoolToStr(testCollocated) << ';'
-                << "schema=" << testSchemaName;
+                << "schema=" << testSchemaName << ';'
+                << "skip_reducer_on_update=" << BoolToStr(testSkipReducerOnUpdate);
 
     const std::string& connectStr = constructor.str();
 
@@ -230,12 +244,14 @@ BOOST_AUTO_TEST_CASE(TestConnectStringZeroTerminated)
 
     constructor << "driver={" << testDriverName << "};"
                 << "address=" << testAddress << ';'
+                << "lazy=" << BoolToStr(testLazy) << ';'
                 << "page_size=" << testPageSize << ';'
                 << "replicated_only=" << BoolToStr(testReplicatedOnly) << ';'
                 << "collocated=" << BoolToStr(testCollocated) << ';'
                 << "distributed_joins=" << BoolToStr(testDistributedJoins) << ';'
                 << "enforce_join_order=" << BoolToStr(testEnforceJoinOrder) << ';'
-                << "schema=" << testSchemaName;
+                << "schema=" << testSchemaName << ';'
+                << "skip_reducer_on_update=" << BoolToStr(testSkipReducerOnUpdate);
 
     const std::string& connectStr = constructor.str();
 
@@ -251,13 +267,15 @@ BOOST_AUTO_TEST_CASE(TestConnectStringMixed)
     std::stringstream constructor;
 
     constructor << "Driver={" << testDriverName << "};"
+                << "Lazy=" << BoolToStr(testLazy) << ';'
                 << "Address=" << testAddress << ';'
                 << "Page_Size=" << testPageSize << ';'
                 << "Distributed_Joins=" << BoolToStr(testDistributedJoins, false) << ';'
                 << "Enforce_Join_Order=" << BoolToStr(testEnforceJoinOrder) << ';'
                 << "Replicated_Only=" << BoolToStr(testReplicatedOnly, false) << ';'
                 << "Collocated=" << BoolToStr(testCollocated) << ';'
-                << "Schema=" << testSchemaName;
+                << "Schema=" << testSchemaName << ';'
+                << "Skip_Reducer_On_Update=" << BoolToStr(testSkipReducerOnUpdate);
 
     const std::string& connectStr = constructor.str();
 
@@ -276,10 +294,12 @@ BOOST_AUTO_TEST_CASE(TestConnectStringWhitepaces)
                 << " ADDRESS =" << testAddress << "; "
                 << "   PAGE_SIZE= " << testPageSize << ';'
                 << "   DISTRIBUTED_JOINS=" << BoolToStr(testDistributedJoins, false) << ';'
+                << "LAZY=" << BoolToStr(testLazy, false) << ';'
                 << "COLLOCATED    =" << BoolToStr(testCollocated, false) << "  ;"
                 << "  REPLICATED_ONLY=   " << BoolToStr(testReplicatedOnly, false) << ';'
                 << "ENFORCE_JOIN_ORDER=   " << BoolToStr(testEnforceJoinOrder, false) << "  ;"
-                << "SCHEMA = \n\r" << testSchemaName;
+                << "SCHEMA = \n\r" << testSchemaName << ';'
+                << " skip_reducer_on_update=" << BoolToStr(testSkipReducerOnUpdate, false);
 
     const std::string& connectStr = constructor.str();
 
@@ -348,6 +368,8 @@ BOOST_AUTO_TEST_CASE(TestConnectStringInvalidBoolKeys)
     keys.insert("enforce_join_order");
     keys.insert("replicated_only");
     keys.insert("collocated");
+    keys.insert("lazy");
+    keys.insert("skip_reducer_on_update");
 
     for (Set::const_iterator it = keys.begin(); it != keys.end(); ++it)
     {
@@ -374,6 +396,8 @@ BOOST_AUTO_TEST_CASE(TestConnectStringValidBoolKeys)
     keys.insert("enforce_join_order");
     keys.insert("replicated_only");
     keys.insert("collocated");
+    keys.insert("lazy");
+    keys.insert("skip_reducer_on_update");
 
     for (Set::const_iterator it = keys.begin(); it != keys.end(); ++it)
     {

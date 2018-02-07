@@ -20,12 +20,12 @@ package org.apache.ignite.internal.pagemem.wal.record.delta;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
 public class MetaPageInitRootInlineRecord extends MetaPageInitRootRecord {
-
     /** */
     private final int inlineSize;
 
@@ -58,5 +58,10 @@ public class MetaPageInitRootInlineRecord extends MetaPageInitRootRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.BTREE_META_PAGE_INIT_ROOT2;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(MetaPageInitRootInlineRecord.class, this, "super", super.toString());
     }
 }

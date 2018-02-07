@@ -23,10 +23,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import org.apache.ignite.internal.util.GridArgumentCheck;
-import org.apache.ignite.ml.math.DistanceMeasure;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
+import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.exceptions.ConvergenceException;
 import org.apache.ignite.ml.math.exceptions.MathIllegalArgumentException;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
@@ -92,7 +92,7 @@ public class KMeansLocalClusterer extends BaseKMeansClusterer<DenseLocalOnHeapMa
             }
 
             if (j == 0)
-                // TODO: Process this case more carefully
+                // TODO: IGNITE-5825, Process this case more carefully
                 centers[i] = localCopyOf(points.viewRow(0));
             else
                 centers[i] = localCopyOf(points.viewRow(j - 1));

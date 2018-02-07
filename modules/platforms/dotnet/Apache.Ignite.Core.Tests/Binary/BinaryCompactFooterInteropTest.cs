@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
-    using System;
     using System.Collections;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
@@ -64,32 +63,14 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestFromJava([Values(true, false)] bool client)
         {
-            // Retry multiple times: IGNITE-4377
-            for (int i = 0; i < 10; i++)
-            {
-                var grid = client ? _clientGrid : _grid;
+            var grid = client ? _clientGrid : _grid;
 
-                try
-                {
-                    grid.GetOrCreateCache<int, int>("default").Put(ComputeApiTest.EchoTypeBinarizable, i * 99);
+            grid.GetOrCreateCache<int, int>("default").Put(ComputeApiTest.EchoTypeBinarizable, 99);
 
-                    var fromJava = grid.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(
-                        ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeBinarizable);
+            var fromJava = grid.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(
+                ComputeApiTest.EchoTask, ComputeApiTest.EchoTypeBinarizable);
 
-                    Assert.AreEqual(i * 99, fromJava.Field);
-
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine("TestFromJava failed on try {0}: \n {1}", i, ex);
-
-                    if (i < 9)
-                        continue;
-                    
-                    throw;
-                }
-            }
+            Assert.AreEqual(99, fromJava.Field);
         }
 
         /// <summary>

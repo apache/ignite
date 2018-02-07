@@ -23,14 +23,19 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.ComponentModel;
     using System.Configuration;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Text;
     using System.Xml;
+    using System.Xml.Serialization;
+    using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Events;
 
     /// <summary>
-    /// Serializes <see cref="IgniteConfiguration"/> to XML.
+    /// Serializes and deserializes Ignite configurations to and from XML.
     /// </summary>
     internal static class IgniteConfigurationXmlSerializer
     {
@@ -44,18 +49,39 @@ namespace Apache.Ignite.Core.Impl.Common
         private const string KeyValPairElement = "pair";
 
         /** Schema. */
-        private const string Schema = "http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection";
+        private const string Schema = "http://ignite.apache.org/schema/dotnet/{0}Section";
 
         /// <summary>
-        /// Deserializes <see cref="IgniteConfiguration"/> from specified <see cref="XmlReader"/>.
+        /// Deserializes configuration of specified type from XML string.
+        /// </summary>
+        /// <param name="xml">Xml string.</param>
+        /// <returns>Resulting configuration.</returns>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
+        [SuppressMessage("Microsoft.Usage", "CA2202: Do not call Dispose more than one time on an object")]
+        public static T Deserialize<T>(string xml) where T : new()
+        {
+            IgniteArgumentCheck.NotNullOrEmpty(xml, "xml");
+
+            using (var stringReader = new StringReader(xml))
+            using (var xmlReader = XmlReader.Create(stringReader))
+            {
+                // Skip XML header.
+                xmlReader.MoveToContent();
+
+                return Deserialize<T>(xmlReader);
+            }
+        }
+
+        /// <summary>
+        /// Deserializes configuration of specified type from specified <see cref="XmlReader"/>.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        /// <returns>Resulting <see cref="IgniteConfiguration"/>.</returns>
-        public static IgniteConfiguration Deserialize(XmlReader reader)
+        /// <returns>Resulting configuration.</returns>
+        public static T Deserialize<T>(XmlReader reader) where T : new()
         {
             IgniteArgumentCheck.NotNull(reader, "reader");
 
-            var cfg = new IgniteConfiguration();
+            var cfg = new T();
 
             if (reader.NodeType == XmlNodeType.Element || reader.Read())
                 ReadElement(reader, cfg, new TypeResolver());
@@ -64,39 +90,67 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Serializes specified <see cref="IgniteConfiguration" /> to <see cref="XmlWriter" />.
+        /// Serializes specified configuration to <see cref="XmlWriter" />.
         /// </summary>
         /// <param name="configuration">The configuration.</param>
         /// <param name="writer">The writer.</param>
         /// <param name="rootElementName">Name of the root element.</param>
-        public static void Serialize(IgniteConfiguration configuration, XmlWriter writer, string rootElementName)
+        public static void Serialize(object configuration, XmlWriter writer, string rootElementName)
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
             IgniteArgumentCheck.NotNull(writer, "writer");
             IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
 
-            WriteElement(configuration, writer, rootElementName, typeof(IgniteConfiguration));
+            WriteElement(configuration, writer, rootElementName, configuration.GetType(), writeSchema: true);
+        }
+
+        /// <summary>
+        /// Serializes specified configuration to <see cref="XmlWriter" />.
+        /// </summary>
+        /// <param name="configuration">The configuration.</param>
+        /// <param name="rootElementName">Name of the root element.</param>
+        /// <returns>XML string.</returns>
+        public static string Serialize(object configuration, string rootElementName)
+        {
+            var sb = new StringBuilder();
+
+            var settings = new XmlWriterSettings
+            {
+                Indent = true
+            };
+
+            using (var xmlWriter = XmlWriter.Create(sb, settings))
+            {
+                Serialize(configuration, xmlWriter, rootElementName);
+            }
+
+            return sb.ToString();
         }
 
         /// <summary>
         /// Writes new element.
         /// </summary>
         private static void WriteElement(object obj, XmlWriter writer, string rootElementName, Type valueType, 
-            PropertyInfo property = null)
+            PropertyInfo property = null, bool writeSchema = false)
         {
             if (property != null)
             {
                 if (!property.CanWrite && !IsKeyValuePair(property.DeclaringType))
                     return;
 
-                if (IsObsolete(property))
+                if (IsIgnored(property))
                     return;
             }
 
-            if (valueType == typeof(IgniteConfiguration))
-                writer.WriteStartElement(rootElementName, Schema);  // write xmlns for the root element
+            if (writeSchema)
+            {
+                // Write xmlns for the root element.
+                writer.WriteStartElement(rootElementName, string.Format(Schema, valueType.Name));
+            }
             else
+            {
                 writer.WriteStartElement(rootElementName);
+            }
 
             if (IsBasicType(valueType))
                 WriteBasicProperty(obj, writer, valueType, property);
@@ -168,7 +222,7 @@ namespace Apache.Ignite.Core.Impl.Common
             }
 
             // Write attributes
-            foreach (var prop in props.Where(p => IsBasicType(p.PropertyType) && !IsObsolete(p)))
+            foreach (var prop in props.Where(p => IsBasicType(p.PropertyType) && !IsIgnored(p)))
             {
                 var converter = GetConverter(prop, prop.PropertyType);
                 var stringValue = converter.ConvertToInvariantString(prop.GetValue(obj, null));
@@ -401,7 +455,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         private static List<Type> GetConcreteDerivedTypes(Type type)
         {
-            return typeof(IIgnite).Assembly.GetTypes()
+            return TypeResolver.GetAssemblyTypesSafe(typeof(IIgnite).Assembly)
                 .Where(t => t.IsClass && !t.IsAbstract && type.IsAssignableFrom(t)).ToList();
         }
 
@@ -499,6 +553,10 @@ namespace Apache.Ignite.Core.Impl.Common
                 property.DeclaringType == typeof (IgniteConfiguration) && property.Name == "IncludedEventTypes")
                 return EventTypeConverter.Instance;
 
+            if (property != null &&
+                property.DeclaringType == typeof (LocalEventListener) && property.Name == "EventTypes")
+                return EventTypeConverter.Instance;
+
             if (propertyType == typeof (object))
                 return ObjectStringConverter.Instance;
 
@@ -518,7 +576,9 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             Debug.Assert(obj != null);
 
-            return obj.GetType().GetProperties().Where(p => !Equals(p.GetValue(obj, null), GetDefaultValue(p)));
+            return obj.GetType().GetProperties()
+                .Where(p => p.GetIndexParameters().Length == 0 &&  // Skip indexed properties.
+                            !Equals(p.GetValue(obj, null), GetDefaultValue(p)));
         }
 
         /// <summary>
@@ -550,13 +610,13 @@ namespace Apache.Ignite.Core.Impl.Common
         }
 
         /// <summary>
-        /// Determines whether the specified property is obsolete.
+        /// Determines whether the specified property is marked with XmlIgnore.
         /// </summary>
-        private static bool IsObsolete(PropertyInfo property)
+        private static bool IsIgnored(PropertyInfo property)
         {
             Debug.Assert(property != null);
 
-            return property.GetCustomAttributes(typeof(ObsoleteAttribute), true).Any();
+            return property.GetCustomAttributes(typeof(XmlIgnoreAttribute), true).Any();
         }
 
         /// <summary>

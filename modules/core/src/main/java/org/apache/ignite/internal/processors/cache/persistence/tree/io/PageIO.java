@@ -21,15 +21,25 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
-import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManagerImpl;
-import org.apache.ignite.internal.processors.cache.persistence.MetadataStorage;
+import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
+import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.DataInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.DataLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.PendingEntryInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.PendingEntryLeafIO;
+import org.apache.ignite.internal.util.GridStringBuilder;
 
 /**
  * Base format for all the page types.
@@ -171,6 +181,16 @@ public abstract class PageIO {
 
     /** */
     public static final short T_PART_CNTRS = 20;
+
+    /** */
+    public static final short T_DATA_METASTORAGE = 21;
+
+    /** */
+    public static final short T_DATA_REF_METASTORAGE_INNER = 22;
+
+    /** */
+    public static final short T_DATA_REF_METASTORAGE_LEAF = 23;
+
 
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10000;
@@ -451,6 +471,9 @@ public abstract class PageIO {
             case T_PAGE_UPDATE_TRACKING:
                 return (Q)TrackingPageIO.VERSIONS.forVersion(ver);
 
+            case T_DATA_METASTORAGE:
+                return (Q)SimpleDataPageIO.VERSIONS.forVersion(ver);
+
             default:
                 return (Q)getBPlusIO(type, ver);
         }
@@ -497,34 +520,40 @@ public abstract class PageIO {
                 return (Q)h2LeafIOs.forVersion(ver);
 
             case T_DATA_REF_INNER:
-                return (Q)IgniteCacheOffheapManagerImpl.DataInnerIO.VERSIONS.forVersion(ver);
+                return (Q)DataInnerIO.VERSIONS.forVersion(ver);
 
             case T_DATA_REF_LEAF:
-                return (Q)IgniteCacheOffheapManagerImpl.DataLeafIO.VERSIONS.forVersion(ver);
+                return (Q)DataLeafIO.VERSIONS.forVersion(ver);
 
             case T_CACHE_ID_AWARE_DATA_REF_INNER:
-                return (Q)IgniteCacheOffheapManagerImpl.CacheIdAwareDataInnerIO.VERSIONS.forVersion(ver);
+                return (Q)CacheIdAwareDataInnerIO.VERSIONS.forVersion(ver);
 
             case T_CACHE_ID_AWARE_DATA_REF_LEAF:
-                return (Q)IgniteCacheOffheapManagerImpl.CacheIdAwareDataLeafIO.VERSIONS.forVersion(ver);
+                return (Q)CacheIdAwareDataLeafIO.VERSIONS.forVersion(ver);
 
             case T_METASTORE_INNER:
-                return (Q)MetadataStorage.MetaStoreInnerIO.VERSIONS.forVersion(ver);
+                return (Q)IndexStorageImpl.MetaStoreInnerIO.VERSIONS.forVersion(ver);
 
             case T_METASTORE_LEAF:
-                return (Q)MetadataStorage.MetaStoreLeafIO.VERSIONS.forVersion(ver);
+                return (Q)IndexStorageImpl.MetaStoreLeafIO.VERSIONS.forVersion(ver);
 
             case T_PENDING_REF_INNER:
-                return (Q) IgniteCacheOffheapManagerImpl.PendingEntryInnerIO.VERSIONS.forVersion(ver);
+                return (Q)PendingEntryInnerIO.VERSIONS.forVersion(ver);
 
             case T_PENDING_REF_LEAF:
-                return (Q)IgniteCacheOffheapManagerImpl.PendingEntryLeafIO.VERSIONS.forVersion(ver);
+                return (Q)PendingEntryLeafIO.VERSIONS.forVersion(ver);
 
             case T_CACHE_ID_AWARE_PENDING_REF_INNER:
-                return (Q) IgniteCacheOffheapManagerImpl.CacheIdAwarePendingEntryInnerIO.VERSIONS.forVersion(ver);
+                return (Q)CacheIdAwarePendingEntryInnerIO.VERSIONS.forVersion(ver);
 
             case T_CACHE_ID_AWARE_PENDING_REF_LEAF:
-                return (Q)IgniteCacheOffheapManagerImpl.CacheIdAwarePendingEntryLeafIO.VERSIONS.forVersion(ver);
+                return (Q)CacheIdAwarePendingEntryLeafIO.VERSIONS.forVersion(ver);
+
+            case T_DATA_REF_METASTORAGE_INNER:
+                return (Q)MetastorageTree.MetastorageInnerIO.VERSIONS.forVersion(ver);
+
+            case T_DATA_REF_METASTORAGE_LEAF:
+                return (Q)MetastorageTree.MetastoreLeafIO.VERSIONS.forVersion(ver);
 
             default:
                 // For tests.
@@ -544,5 +573,30 @@ public abstract class PageIO {
      */
     public static boolean isDataPageType(int type) {
         return type == T_DATA;
+    }
+
+    /**
+     * @param addr Address.
+     * @param pageSize Page size.
+     * @param sb Sb.
+     */
+    protected abstract void printPage(long addr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException ;
+
+    /**
+     * @param addr Address.
+     */
+    public static String printPage(long addr, int pageSize) throws IgniteCheckedException {
+        PageIO io = getPageIO(addr);
+
+        GridStringBuilder sb = new GridStringBuilder("Header [\n\ttype=");
+
+        sb.a(getType(addr)).a(" (").a(io.getClass().getSimpleName())
+            .a("),\n\tver=").a(getVersion(addr)).a(",\n\tcrc=").a(getCrc(addr))
+            .a(",\n\t").a(PageIdUtils.toDetailString(getPageId(addr)))
+            .a("\n],\n");
+
+        io.printPage(addr, pageSize, sb);
+
+        return sb.toString();
     }
 }

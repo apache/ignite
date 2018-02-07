@@ -26,10 +26,11 @@ import org.apache.ignite.resources.SpringResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.context.support.AbstractApplicationContext;
 import org.springframework.context.support.FileSystemXmlApplicationContext;
 
-import javax.annotation.PostConstruct;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -234,12 +235,11 @@ public class GridServiceInjectionSpringResourceTest extends GridCommonAbstractTe
         /**
          * @throws Exception If failed.
          */
-        @PostConstruct
-        public void init() throws Exception {
+        @EventListener
+        public void init(ContextRefreshedEvent evt) throws Exception {
             DummyService srv = ignite.services().serviceProxy(SERVICE_NAME, DummyService.class, false);
 
             assertNotNull(srv);
         }
     }
-
 }

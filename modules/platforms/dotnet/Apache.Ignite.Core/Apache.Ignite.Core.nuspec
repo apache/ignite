@@ -41,11 +41,12 @@ Creating NuGet package:
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
         <description>
 Apache Ignite In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with traditional disk-based or flash technologies.
+Supports .NET 4+ and .NET Core 2.0+.
             
 More info: https://apacheignite-net.readme.io/
         </description>
         <releaseNotes></releaseNotes>
-        <copyright>Copyright 2017</copyright>
+        <copyright>Copyright 2018</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache linqpad-samples</tags>
     </metadata>
     <files>
@@ -54,6 +55,10 @@ More info: https://apacheignite-net.readme.io/
         <file src="NuGet\Uninstall.ps1" target="tools" />
         <file src="NuGet\PostBuild.ps1" target="tools" />
 
+		<!-- Binaries -->
+        <file src="bin\$configuration$\Apache.Ignite.Core.dll" target="lib\net40" />
+		<file src="bin\$configuration$\Apache.Ignite.Core.xml" target="lib\net40" />
+		
         <!-- Include Apache.Ignite.exe -->
         <file src="..\Apache.Ignite\bin\$configuration$\Apache.Ignite.exe" target="lib\net40" />
         <file src="..\Apache.Ignite\bin\$configuration$\Apache.Ignite.exe.config" target="lib\net40" />
@@ -62,7 +67,7 @@ More info: https://apacheignite-net.readme.io/
             Library files (jars) should not be included in project, so that NuGet package restore works properly.
             We keep jars in NuGet dir and copy them over in PostBuild event.
         -->
-        <file src="..\bin\Libs\*.jar" target="Libs" />
+        <file src="..\bin\libs\*.jar" target="libs" />
     
         <!-- LINQPad samples -->
         <file src="NuGet\LINQPad\*.*" target="linqpad-samples" />

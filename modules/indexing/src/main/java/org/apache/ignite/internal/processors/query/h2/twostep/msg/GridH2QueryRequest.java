@@ -78,6 +78,11 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
      */
     public static final int FLAG_REPLICATED = 1 << 4;
 
+    /**
+     * If lazy execution is enabled.
+     */
+    public static final int FLAG_LAZY = 1 << 5;
+
     /** */
     private long reqId;
 
@@ -185,6 +190,10 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     }
 
     /**
+     * Get tables.
+     * <p>
+     * N.B.: Was used in AI 1.9 for snapshots. Unused at the moment, but should be kept for compatibility reasons.
+     *
      * @return Tables.
      */
     public Collection<QueryTable> tables() {

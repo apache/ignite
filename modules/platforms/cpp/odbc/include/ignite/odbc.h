@@ -251,6 +251,13 @@ namespace ignite
 
     SQLRETURN SQLPutData(SQLHSTMT stmt, SQLPOINTER data, SQLLEN strLengthOrIndicator);
 
+    SQLRETURN SQLDescribeParam(SQLHSTMT     stmt,
+                               SQLUSMALLINT paramNum,
+                               SQLSMALLINT* dataType,
+                               SQLULEN*     paramSize,
+                               SQLSMALLINT* decimalDigits,
+                               SQLSMALLINT* nullable);
+
     SQLRETURN SQLError(SQLHENV      env,
                        SQLHDBC      conn,
                        SQLHSTMT     stmt,
@@ -260,13 +267,16 @@ namespace ignite
                        SQLSMALLINT  msgBufLen,
                        SQLSMALLINT* msgResLen);
 
-    SQLRETURN SQLDescribeParam(SQLHSTMT     stmt,
-                               SQLUSMALLINT paramNum,
-                               SQLSMALLINT* dataType,
-                               SQLULEN*     paramSize,
-                               SQLSMALLINT* decimalDigits,
-                               SQLSMALLINT* nullable);
+    SQLRETURN SQL_API SQLGetConnectAttr(SQLHDBC    conn,
+                                        SQLINTEGER attr,
+                                        SQLPOINTER valueBuf,
+                                        SQLINTEGER valueBufLen,
+                                        SQLINTEGER* valueResLen);
 
+    SQLRETURN SQL_API SQLSetConnectAttr(SQLHDBC    conn,
+                                        SQLINTEGER attr,
+                                        SQLPOINTER value,
+                                        SQLINTEGER valueLen);
 } // namespace ignite
 
 #endif //_IGNITE_ODBC

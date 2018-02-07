@@ -69,13 +69,9 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1069,16 +1065,15 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         Collection<Cache.Entry<Integer, ObjectValue>> res = qry.getAll();
 
-        assert res != null;
-
-        assert res.size() == 2;
+        assertNotNull(res);
+        assertEquals(2, res.size());
 
         qry = cache.query(new TextQuery<Integer, ObjectValue>(ObjectValue.class, "full"));
 
         res = qry.getAll();
 
-        assert res != null;
-        assert res.size() == 2;
+        assertNotNull(res);
+        assertEquals(2, res.size());
     }
 
     /**

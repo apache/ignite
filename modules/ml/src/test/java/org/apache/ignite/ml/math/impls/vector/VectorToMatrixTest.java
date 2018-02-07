@@ -268,7 +268,7 @@ public class VectorToMatrixTest {
             put(DenseLocalOffHeapVector.class, DenseLocalOffHeapMatrix.class);
             put(RandomVector.class, RandomMatrix.class);
             put(SparseLocalVector.class, SparseLocalOnHeapMatrix.class);
-            put(SingleElementVector.class, null); // todo find out if we need SingleElementMatrix to match, or skip it
+            put(SingleElementVector.class, null); // TODO: IGNTIE-5723, find out if we need SingleElementMatrix to match, or skip it.
             put(ConstantVector.class, null);
             put(FunctionVector.class, null);
             put(PivotedVectorView.class, DenseLocalOnHeapMatrix.class); // IMPL NOTE per fixture
@@ -280,7 +280,7 @@ public class VectorToMatrixTest {
     }
 
     /** */
-    private static class Metric { // todo consider if softer tolerance (like say 0.1 or 0.01) would make sense here
+    private static class Metric { //TODO: IGNITE-5824, consider if softer tolerance (like say 0.1 or 0.01) would make sense here.
         /** */
         private final double exp;
 

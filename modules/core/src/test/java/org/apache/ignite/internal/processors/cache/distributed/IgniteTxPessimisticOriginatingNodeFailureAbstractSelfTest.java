@@ -349,7 +349,7 @@ public abstract class IgniteTxPessimisticOriginatingNodeFailureAbstractSelfTest 
             assertTrue(txEx.pessimistic());
 
             if (commmit) {
-                txEx.prepare();
+                txEx.prepare(true);
 
                 // Fail the node in the middle of transaction.
                 info(">>> Stopping primary node " + primaryNode);

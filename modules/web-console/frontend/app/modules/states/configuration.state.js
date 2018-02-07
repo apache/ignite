@@ -77,6 +77,7 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
             })
             .state('base.configuration.tabs.basic', {
                 url: '/basic',
+                permission: 'configuration',
                 template: '<page-configure-basic></page-configure-basic>',
                 tfMetaTags: {
                     title: 'Basic Configuration'

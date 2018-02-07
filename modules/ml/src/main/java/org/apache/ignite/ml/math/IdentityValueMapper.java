@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.math;
 
+import org.apache.ignite.ml.math.distributed.ValueMapper;
+
 /**
  * Identity value mapper.
  */

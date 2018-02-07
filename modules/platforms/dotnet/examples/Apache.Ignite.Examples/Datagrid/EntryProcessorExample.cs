@@ -73,6 +73,10 @@ namespace Apache.Ignite.Examples.Datagrid
 
                 PrintCacheEntries(cache);
             }
+
+            Console.WriteLine();
+            Console.WriteLine(">>> Example finished, press any key to exit ...");
+            Console.ReadKey();
         }
 
         /// <summary>
