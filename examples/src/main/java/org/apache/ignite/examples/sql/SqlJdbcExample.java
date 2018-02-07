@@ -23,6 +23,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.internal.util.IgniteUtils;
 
 /**
  * This example demonstrates usage of Ignite JDBC driver.
@@ -98,7 +99,27 @@ public class SqlJdbcExample {
                 stmt.executeUpdate();
             }
 
-            print("Populated data.");
+            print("Populated data via INSERT.");
+
+            // Get data.
+            try (Statement stmt = conn.createStatement()) {
+                try (ResultSet rs =
+                    stmt.executeQuery("SELECT p.name, c.name FROM Person p INNER JOIN City c on c.id = p.city_id")) {
+                    print("Query results:");
+
+                    while (rs.next())
+                        System.out.println(">>>    " + rs.getString(1) + ", " + rs.getString(2));
+                }
+            }
+
+            // Populate Person with records imported from personBulkLoad.csv via COPY command
+            try (Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate("COPY FROM \"" +
+                    IgniteUtils.resolveIgnitePath("examples/src/main/resources/personBulkLoad.csv") + "\" " +
+                    "INTO Person (id, name, city_id) FORMAT CSV");
+            }
+
+            print("Populated data via COPY command.");
 
             // Get data.
             try (Statement stmt = conn.createStatement()) {
