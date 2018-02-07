@@ -100,6 +100,7 @@ import org.apache.ignite.internal.processors.query.h2.database.io.H2InnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2LeafIO;
 import org.apache.ignite.internal.processors.query.h2.ddl.DdlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
+import org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2DefaultTableEngine;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2PlainRowFactory;
@@ -1480,15 +1481,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         // Execute.
         if (cmd instanceof SqlBulkLoadCommand) {
-            try {
-                FieldsQueryCursor<List<?>> cursor = dmlProc.runDmlStatement(qry.getSql(), cmd);
+            FieldsQueryCursor<List<?>> cursor = dmlProc.runNativeDmlStatement(qry.getSql(), cmd);
 
-                return Collections.singletonList(cursor);
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteSQLException("Failed to execute DML statement [stmt=" + qry.getSql() + "]: "
-                    + e.getMessage(), e);
-            }
+            return Collections.singletonList(cursor);
         }
         else {
             try {

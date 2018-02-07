@@ -155,7 +155,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
             default:
                 throw error(lex, "Unknown format name: " + name +
-                    ". Currently supported formats are: " + BulkLoadFormat.formatNames());
+                    ". Currently supported format is " + BulkLoadCsvFormat.NAME);
         }
     }
 

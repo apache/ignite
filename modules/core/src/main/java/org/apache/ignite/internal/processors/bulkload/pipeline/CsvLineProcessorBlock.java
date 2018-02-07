@@ -28,26 +28,26 @@ import java.util.regex.Pattern;
  */
 public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
     /** Field delimiter pattern. */
-    private final Pattern fieldDelimiter;
+    private final Pattern fldDelim;
 
-    /* Quote character. */
+    /** Quote character. */
     private final String quoteChars;
 
     /**
      * Creates a CSV line parser.
      *
-     * @param fieldDelimiter The pattern for the field delimiter.
+     * @param fldDelim The pattern for the field delimiter.
      * @param quoteChars Quoting character.
      */
-    public CsvLineProcessorBlock(Pattern fieldDelimiter, String quoteChars) {
-        this.fieldDelimiter = fieldDelimiter;
+    public CsvLineProcessorBlock(Pattern fldDelim, String quoteChars) {
+        this.fldDelim = fldDelim;
         this.quoteChars = quoteChars;
     }
 
     /** {@inheritDoc} */
     @Override public void accept(String input, boolean isLastPortion) throws IgniteCheckedException {
         // Currently we don't process quoted field delimiter properly, will be fixed in IGNITE-7537.
-        String[] fields = fieldDelimiter.split(input);
+        String[] fields = fldDelim.split(input);
 
         for (int i = 0; i < fields.length; i++)
             fields[i] = trim(fields[i]);

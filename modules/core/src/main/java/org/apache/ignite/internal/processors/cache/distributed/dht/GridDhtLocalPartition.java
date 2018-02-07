@@ -213,9 +213,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             // TODO ignite-db
             throw new IgniteException(e);
         }
-
-        // Todo log moving state
-        casState(state.get(), MOVING);
     }
 
     /**

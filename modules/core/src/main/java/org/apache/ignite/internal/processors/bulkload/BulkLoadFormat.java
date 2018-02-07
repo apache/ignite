@@ -17,11 +17,7 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
-import org.apache.ignite.IgniteCheckedException;
-
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.List;
 
 /** A superclass and a factory for bulk load format options. */
 public abstract class BulkLoadFormat {
@@ -34,30 +30,4 @@ public abstract class BulkLoadFormat {
      * @return The format name.
      */
     public abstract String name();
-
-    /**
-     * Creates a format options object for a given format name.
-     *
-     * @param name The name of the format
-     * @return The format options object.
-     * @throws IgniteCheckedException if the name is not recognized.
-     */
-    public static BulkLoadFormat createFormatFor(String name) throws IgniteCheckedException {
-        switch (name.trim().toUpperCase()) {
-            case BulkLoadCsvFormat.NAME:
-                return new BulkLoadCsvFormat();
-
-            default:
-                throw new IgniteCheckedException("Unknown format name: " + name);
-        }
-    }
-
-    /**
-     * Returns a list of all supported format names.
-     *
-     * @return The list of all supported format names.
-     */
-    public static List<String> formatNames() {
-        return Arrays.asList(BulkLoadCsvFormat.NAME);
-    }
 }
