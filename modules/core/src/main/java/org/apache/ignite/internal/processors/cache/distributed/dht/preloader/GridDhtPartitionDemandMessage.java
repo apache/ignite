@@ -19,12 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheGroupIdMessage;
@@ -33,8 +28,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.NotNull;
@@ -49,11 +42,12 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     /** */
     public static final IgniteProductVersion VERSION_SINCE = IgniteProductVersion.fromString("2.3.0");
 
-    /** Update sequence. */
-    private long updateSeq;
+    /** Rebalance id. */
+    private long rebalanceId;
 
     /** Partitions map. */
-    @GridDirectTransient private IgniteDhtDemandedPartitionsMap parts;
+    @GridDirectTransient
+    private IgniteDhtDemandedPartitionsMap parts;
 
     /** Serialized partitions map. */
     private byte[] partsBytes;
@@ -75,13 +69,13 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     private AffinityTopologyVersion topVer;
 
     /**
-     * @param updateSeq Update sequence for this node.
+     * @param rebalanceId Rebalance id for this node.
      * @param topVer Topology version.
      * @param grpId Cache group ID.
      */
-    GridDhtPartitionDemandMessage(long updateSeq, @NotNull AffinityTopologyVersion topVer, int grpId) {
+    GridDhtPartitionDemandMessage(long rebalanceId, @NotNull AffinityTopologyVersion topVer, int grpId) {
         this.grpId = grpId;
-        this.updateSeq = updateSeq;
+        this.rebalanceId = rebalanceId;
         this.topVer = topVer;
 
         parts = new IgniteDhtDemandedPartitionsMap();
@@ -89,27 +83,10 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
 
     /**
      * @param cp Message to copy from.
-     * @param parts Partitions.
-     */
-    GridDhtPartitionDemandMessage(GridDhtPartitionDemandMessage cp, IgniteDhtDemandedPartitionsMap parts) {
-        grpId = cp.grpId;
-        updateSeq = cp.updateSeq;
-        topic = cp.topic;
-        timeout = cp.timeout;
-        workerId = cp.workerId;
-        topVer = cp.topVer;
-
-        assert parts != null;
-
-        this.parts = parts;
-    }
-
-    /**
-     * @param cp Message to copy from.
      */
     public GridDhtPartitionDemandMessage(GridDhtPartitionDemandLegacyMessage cp) {
         grpId = cp.groupId();
-        updateSeq = cp.updateSequence();
+        rebalanceId = cp.updateSequence();
         topic = cp.topic();
         timeout = cp.timeout();
         workerId = cp.workerId();
@@ -125,6 +102,8 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
         }
 
         partMap.historicalMap().trim();
+
+        parts = partMap;
     }
 
     /**
@@ -132,6 +111,24 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
      */
     public GridDhtPartitionDemandMessage() {
         // No-op.
+    }
+
+    /**
+     * Creates copy of this message with new partitions map.
+     *
+     * @param parts New partitions map.
+     * @return Copy of message with new partitions map.
+     */
+    public GridDhtPartitionDemandMessage withNewPartitionsMap(@NotNull IgniteDhtDemandedPartitionsMap parts) {
+        GridDhtPartitionDemandMessage cp = new GridDhtPartitionDemandMessage();
+        cp.grpId = grpId;
+        cp.rebalanceId = rebalanceId;
+        cp.topic = topic;
+        cp.timeout = timeout;
+        cp.workerId = workerId;
+        cp.topVer = topVer;
+        cp.parts = parts;
+        return cp;
     }
 
     /**
@@ -144,15 +141,15 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     /**
      * @param updateSeq Update sequence.
      */
-    void updateSequence(long updateSeq) {
-        this.updateSeq = updateSeq;
+    void rebalanceId(long updateSeq) {
+        this.rebalanceId = updateSeq;
     }
 
     /**
-     * @return Update sequence.
+     * @return Unique rebalance session id.
      */
-    long updateSequence() {
-        return updateSeq;
+    long rebalanceId() {
+        return rebalanceId;
     }
 
     /**
@@ -285,7 +282,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeLong("updateSeq", updateSeq))
+                if (!writer.writeLong("rebalanceId", rebalanceId))
                     return false;
 
                 writer.incrementState();
@@ -345,7 +342,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
                 reader.incrementState();
 
             case 7:
-                updateSeq = reader.readLong("updateSeq");
+                rebalanceId = reader.readLong("rebalanceId");
 
                 if (!reader.isLastRead())
                     return false;

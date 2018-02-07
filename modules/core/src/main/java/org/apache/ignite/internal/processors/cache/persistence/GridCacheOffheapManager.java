@@ -573,6 +573,40 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
     }
 
+    /**
+     * Destroys given {@code store} and creates new with the same update counters as in given.
+     *
+     * @param store Store to destroy.
+     * @return New cache data store.
+     * @throws IgniteCheckedException If failed.
+     */
+    public CacheDataStore recreateCacheDataStore(CacheDataStore store) throws IgniteCheckedException {
+        int p = store.partId();
+
+        PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
+
+        int tag = pageMemory.invalidate(grp.groupId(), p);
+
+        ctx.pageStore().onPartitionDestroyed(grp.groupId(), p, tag);
+
+        CacheDataStore store0;
+
+        partStoreLock.lock(p);
+
+        try {
+            store0 = createCacheDataStore0(p);
+            store0.updateCounter(store.updateCounter());
+            store0.updateInitialCounter(store.initialUpdateCounter());
+
+            partDataStores.put(p, store0);
+        }
+        finally {
+            partStoreLock.unlock(p);
+        }
+
+        return store0;
+    }
+
     /** {@inheritDoc} */
     @Override public void onPartitionCounterUpdated(int part, long cntr) {
         CacheDataStore store = partDataStores.get(part);

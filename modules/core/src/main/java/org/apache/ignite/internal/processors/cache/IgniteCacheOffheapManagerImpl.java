@@ -116,7 +116,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     private int updateValSizeThreshold;
 
     /** */
-    private GridStripedLock partStoreLock = new GridStripedLock(Runtime.getRuntime().availableProcessors());
+    protected GridStripedLock partStoreLock = new GridStripedLock(Runtime.getRuntime().availableProcessors());
 
     /** {@inheritDoc} */
     @Override public GridAtomicLong globalRemoveId() {

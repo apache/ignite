@@ -113,8 +113,7 @@ public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractT
 
         startGrid(1);
 
-        //This timeout value was chosen experimentally. Grid rebalancing should already be finished before time is out.
-        Thread.sleep(5000);
+        cache.rebalance().get();
 
         while (it.hasNext()) {
             it.next();
@@ -160,7 +159,7 @@ public class GridCacheLazyQueryPartitionsReleaseTest extends GridCommonAbstractT
         qryCursor.close();
 
         //This timeout value was chosen experimentally. Grid rebalancing should already be finished before time is out.
-        Thread.sleep(5000);
+        cache.rebalance().get();
 
         assertEquals("Wrong result set size", partsFilled, cache.query(qry).getAll().size());
     }

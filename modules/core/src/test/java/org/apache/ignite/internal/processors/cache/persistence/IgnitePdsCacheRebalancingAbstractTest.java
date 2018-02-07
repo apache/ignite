@@ -31,10 +31,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -75,8 +78,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         CacheConfiguration ccfg1 = cacheConfiguration(cacheName);
-        ccfg1.setPartitionLossPolicy(PartitionLossPolicy.READ_ONLY_SAFE);
-        ccfg1.setBackups(1);
+        ccfg1.setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE);
+        ccfg1.setBackups(2);
+        ccfg1.setRebalanceMode(CacheRebalanceMode.ASYNC);
+        ccfg1.setRebalanceBatchSize(16384 * 64);
+        ccfg1.setIndexedTypes(Integer.class, Integer.class);
+        ccfg1.setAffinity(new RendezvousAffinityFunction(false, 32));
         ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         CacheConfiguration ccfg2 = cacheConfiguration("indexed");
@@ -166,6 +173,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         stopAllGrids();
 
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+
+        System.clearProperty(IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE);
     }
 
     /**
@@ -562,10 +571,24 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         }
     }
 
+    private void forceCheckpoint() throws Exception {
+        for (Ignite ignite : G.allGrids()) {
+            if (ignite.cluster().localNode().isClient())
+                continue;
+
+            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
+                    .cache().context().database();
+
+            dbMgr.waitForCheckpoint("test");
+        }
+    }
+
     /**
      * @throws Exception If failed
      */
     public void testPartitionCounterConsistencyOnUnstableTopology() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, "1");
+
         final Ignite ig = startGrids(4);
 
         ig.active(true);
@@ -575,25 +598,44 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         try (IgniteDataStreamer ds = ig.dataStreamer(cacheName)) {
             ds.allowOverwrite(true);
 
-            for (int k0 = k; k < k0 + 10_000; k++)
+            for (int k0 = k; k < k0 + 50_000; k++)
                 ds.addData(k, k);
         }
 
-        for (int t = 0; t < 10; t++) {
-            IgniteInternalFuture fut = GridTestUtils.runAsync(new Runnable() {
-                @Override public void run() {
-                    try {
-                        stopGrid(3);
+        for (int t = 0; t < 5; t++) {
+            int t0 = t;
+            IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
+                try {
+                    stopGrid(3);
 
-                        IgniteEx ig0 = startGrid(3);
+                    // Clear checkpoint history to avoid rebalance from WAL.
+                    forceCheckpoint();
+                    forceCheckpoint();
+                    U.sleep(500); // Wait for data load
+
+                    IgniteEx ig0 = startGrid(3);
+
+                    U.sleep(2000); // Wait for node join
+
+                    if (t0 % 2 == 1) {
+                        stopGrid(2);
 
                         awaitPartitionMapExchange();
 
-                        ig0.cache(cacheName).rebalance().get();
+                        // Clear checkpoint history to avoid rebalance from WAL.
+                        forceCheckpoint();
+                        forceCheckpoint();
+
+                        startGrid(2);
+
+                        awaitPartitionMapExchange();
                     }
-                    catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+
+                    ig0.cache(cacheName).rebalance().get();
+                }
+                catch (Exception e) {
+                    error("Unable to start/stop grid", e);
+                    throw new RuntimeException(e);
                 }
             });
 
@@ -601,15 +643,21 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                 ds.allowOverwrite(true);
 
                 while (!fut.isDone()) {
-                    ds.addData(k, k);
+                    int k0 = k;
 
-                    k++;
+                    for (;k < k0 + 3; k++)
+                        ds.addData(k, k);
 
                     U.sleep(1);
                 }
             }
+            catch (Exception e) {
+                log.error("Unable to write data", e);
+            }
 
             fut.get();
+
+            log.info("Checking data...");
 
             Map<Integer, Long> cntrs = new HashMap<>();
 
@@ -624,7 +672,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                 }
 
                 for (int k0 = 0; k0 < k; k0++)
-                    assertEquals(String.valueOf(k0), k0, ig0.cache(cacheName).get(k0));
+                    assertEquals(String.valueOf(k0) + " " + g, k0, ig0.cache(cacheName).get(k0));
             }
 
             assertEquals(ig.affinity(cacheName).partitions(), cntrs.size());

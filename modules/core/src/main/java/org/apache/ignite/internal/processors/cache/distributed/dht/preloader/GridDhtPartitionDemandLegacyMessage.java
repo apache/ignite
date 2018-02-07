@@ -108,7 +108,7 @@ public class GridDhtPartitionDemandLegacyMessage extends GridCacheGroupIdMessage
 
     GridDhtPartitionDemandLegacyMessage(GridDhtPartitionDemandMessage cp) {
         grpId = cp.groupId();
-        updateSeq = cp.updateSequence();
+        updateSeq = cp.rebalanceId() < 0 ? -1 : cp.rebalanceId();
         topic = cp.topic();
         timeout = cp.timeout();
         workerId = cp.workerId();
