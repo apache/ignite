@@ -135,7 +135,7 @@ public class FullPageIdTableTest  {
             Map<FullPageId, Long> check = new HashMap<>();
 
             int tag = 0;
-            for (int i = 0; i < cnt * 10 ; i++) {
+            for (int i = 0; i < 30_000_000 ; i++) {
                 int op = rnd.nextInt(5);
 
                 int cacheId = rnd.nextInt(CACHE_ID_RANGE2) + 1;
@@ -222,20 +222,31 @@ public class FullPageIdTableTest  {
      * @param check Expected mapping.
      */
     private void verifyLinear(FullPageIdTable tbl, Map<FullPageId, Long> check) {
-        final Map<FullPageId, Long> collector = new HashMap<>();
+        final Map<FullPageId, Long> tblSnapshot = new HashMap<>();
 
         tbl.visitAll(new CI2<FullPageId, Long>() {
             @Override public void apply(FullPageId fullId, Long val) {
-                if (collector.put(fullId, val) != null)
+                if (tblSnapshot.put(fullId, val) != null)
                     throw new AssertionError("Duplicate full page ID mapping: " + fullId);
             }
         });
 
-        assertEquals("Size check failed", check.size(), collector.size());
+        int chkSize = check.size();
+        int foundTblSize = tblSnapshot.size();
+
+        HashMap<FullPageId, Long> cp = new HashMap<>(tblSnapshot);
+        check.keySet().forEach(cp::remove);
+
+        if(chkSize!=foundTblSize) {
+            tbl.lastDump.set(0);
+            tbl.dumpIfNeed();
+        }
+        assertEquals("Size check failed, check map size "
+            + chkSize + " but found in table " + foundTblSize + " Difference: " + cp, chkSize, foundTblSize);
 
         for (Map.Entry<FullPageId, Long> entry : check.entrySet()) {
             Long valCheck = entry.getValue();
-            Long actual = collector.get(entry.getKey());
+            Long actual = tblSnapshot.get(entry.getKey());
 
             if (!valCheck.equals(actual))
                 assertEquals("Mapping comparison failed for key: " + entry.getKey(),

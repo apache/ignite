@@ -90,6 +90,8 @@ public class FullPageIdTable {
     /** Pointer to the values array. */
     protected long valPtr;
 
+    private boolean optimize = false;
+    private boolean optimize2 = false;
     //todo
     /** Avg get steps. */
     IntervalBasedMeasurement avgGetSteps = new IntervalBasedMeasurement(250, 4);
@@ -287,13 +289,18 @@ public class FullPageIdTable {
         int foundIdx = -1;
         int res;
 
-        do {
+        try { do {
             res = testKeyAt(idx, cacheId, pageId, tag);
+
+            if (res != REMOVED || res != EMPTY) {
+                // Drop all removed elements accumulated,
+                // because some present value does not allow to reset removed chain to empty cells
+
+                canConvertRmvToEmpty.clear();
+            }
 
             if (res == OUTDATED) {
                 foundIdx = idx;
-
-                canConvertRmvToEmpty.clear();
 
                 break;
             }
@@ -310,18 +317,10 @@ public class FullPageIdTable {
                 else
                     canConvertRmvToEmpty.add(idx);
             }
-            else if (res == EQUAL) {
-                canConvertRmvToEmpty.clear();
-
+            else if (res == EQUAL)
                 return idx;
-            }
-            else {
-                //drop all removed elements accumulated,
-                // because some present value does not allow to reset removed chain to empty cells
-                canConvertRmvToEmpty.clear();
-
+            else
                 assert res == NOT_EQUAL;
-            }
 
             idx++;
 
@@ -330,13 +329,17 @@ public class FullPageIdTable {
         }
         while (++step <= maxSteps);
 
-        avgPutSteps.addMeasurementForAverageCalculation(step);
+        } finally {
+            avgPutSteps.addMeasurementForAverageCalculation(step);
+        }
         dumpIfNeed();
 
         if (foundIdx != -1) {
-            if (!canConvertRmvToEmpty.isEmpty()) {
+            if (optimize && !canConvertRmvToEmpty.isEmpty()) {
                 for (GridIntIterator iter = canConvertRmvToEmpty.iterator(); iter.hasNext(); ) {
                     int nextIdx = iter.next();
+
+                    assert isRemoved(nextIdx);
 
                     setEmpty(nextIdx);
                 }
@@ -399,7 +402,7 @@ public class FullPageIdTable {
     /**
      * prints segment statistics
      */
-    private void dumpIfNeed() {
+    void dumpIfNeed() {
         long ns = System.nanoTime();
         long lastNs = lastDump.get();
         if (ns - lastNs <= TimeUnit.SECONDS.toNanos(1))
@@ -442,13 +445,26 @@ public class FullPageIdTable {
     }
 
     /**
+     * @param idx cell index, normalized.
+     * @return {@code true} if cell with index idx has state 'Empty'.
+     */
+    private boolean isRemoved(int idx) {
+        long base = entryBase(idx);
+
+        int grpId = GridUnsafe.getInt(base);
+        long pageId = GridUnsafe.getLong(base + PAGE_ID_OFFSET);
+
+        return isRemoved(grpId, pageId);
+    }
+
+    /**
      * Sets cell state to 'Removed' or to 'Empty' if next cell is already 'Empty'.
      * @param idx cell index, normalized.
      */
     private void setRemoved(int idx) {
         boolean nextCellIsEmpty = isEmpty(normalizeIndex(idx + 1));
 
-        if (nextCellIsEmpty)
+        if (optimize2 && nextCellIsEmpty)
             setEmpty(idx);
         else {
             setKeyAt(idx, REMOVED_CACHE_GRP_ID, REMOVED_PAGE_ID);
