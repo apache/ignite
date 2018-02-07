@@ -492,7 +492,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         opFinishFuts.putIfAbsent(op.id(), fut);
 
-        UserProposedMessage msg = new UserProposedMessage(op, ctx.localNodeId());
+        UserProposedMessage msg = new UserProposedMessage(op);
 
         ctx.discovery().sendCustomEvent(msg);
 
