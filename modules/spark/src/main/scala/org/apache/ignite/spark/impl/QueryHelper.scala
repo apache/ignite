@@ -113,6 +113,8 @@ private[apache] object QueryHelper {
         val streamer = ctx.ignite().dataStreamer(tblInfo._1.getName)
 
         try {
+            val qryProcessor = ctx.ignite().asInstanceOf[IgniteEx].context().query()
+
             iterator.foreach { row ⇒
                 val schema = row.schema
 
@@ -120,7 +122,7 @@ private[apache] object QueryHelper {
                     row.get(row.fieldIndex(f.name)).asInstanceOf[Object]
                 }
 
-                ctx.ignite().asInstanceOf[IgniteEx].context().query().streamUpdateQuery(tblInfo._1.getName,
+                qryProcessor.streamUpdateQuery(tblInfo._1.getName,
                     tblInfo._1.getSqlSchema, streamer, insertQry, args.toArray)
             }
         }
