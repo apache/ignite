@@ -38,6 +38,30 @@ namespace ignite
         namespace app
         {
             /**
+             * Conversion result
+             */
+            struct ConversionResult
+            {
+                enum T
+                {
+                    /** Conversion successfull. No data lost. */
+                    SUCCESS,
+
+                    /** Conversion successfull, but fractional truncation occurred. */
+                    FRACTIONAL_TRUNCATED,
+
+                    /** Conversion successfull, but right-side variable length data truncation occurred. */
+                    VARLEN_DATA_TRUNCATED,
+
+                    /** Conversation is not supported. */
+                    UNSUPPORTED_CONVERSATION,
+
+                    /** Indicator buffer needed to complete the operation but it is NULL. */
+                    INDICATOR_NEEDED
+                };
+            };
+
+            /**
              * User application data buffer.
              */
             class ApplicationDataBuffer
@@ -103,100 +127,112 @@ namespace ignite
                  * Put in buffer value of type int8_t.
                  *
                  * @param value Value.
+                 * @return Conversion result.
                  */
-                void PutInt8(int8_t value);
+                ConversionResult::T PutInt8(int8_t value);
 
                 /**
                  * Put in buffer value of type int16_t.
                  *
                  * @param value Value.
+                 * @return Conversion result.
                  */
-                void PutInt16(int16_t value);
+                ConversionResult::T PutInt16(int16_t value);
 
                 /**
                  * Put in buffer value of type int32_t.
                  *
                  * @param value Value.
+                 * @return Conversion result.
                  */
-                void PutInt32(int32_t value);
+                ConversionResult::T PutInt32(int32_t value);
 
                 /**
                  * Put in buffer value of type int64_t.
                  *
                  * @param value Value.
+                 * @return Conversion result.
                  */
-                void PutInt64(int64_t value);
+                ConversionResult::T PutInt64(int64_t value);
 
                 /**
                  * Put in buffer value of type float.
                  *
                  * @param value Value.
+                 * @return Conversion result.
                  */
-                void PutFloat(float value);
+                ConversionResult::T PutFloat(float value);
 
                 /**
                  * Put in buffer value of type double.
                  *
                  * @param value Value.
+                 * @return Conversion result.
                  */
-                void PutDouble(double value);
+                ConversionResult::T PutDouble(double value);
 
                 /**
                  * Put in buffer value of type string.
                  *
                  * @param value Value.
-                 * @return Number of bytes that have been put in buffer.
+                 * @return Conversion result.
                  */
-                int32_t PutString(const std::string& value);
+                ConversionResult::T PutString(const std::string& value);
 
                 /**
                  * Put in buffer value of type GUID.
                  *
                  * @param value Value.
+                 * @return Conversion result.
                  */
-                void PutGuid(const Guid& value);
+                ConversionResult::T PutGuid(const Guid& value);
 
                 /**
                  * Put binary data in buffer.
                  *
                  * @param data Data pointer.
                  * @param len Data length.
-                 * @return Number of bytes that have been put in buffer.
+                 * @return Conversion result.
                  */
-                int32_t PutBinaryData(void* data, size_t len);
+                ConversionResult::T PutBinaryData(void* data, size_t len);
 
                 /**
                  * Put NULL.
+                 * @return Conversion result.
                  */
-                void PutNull();
+                ConversionResult::T PutNull();
 
                 /**
                  * Put decimal value to buffer.
                  *
                  * @param value Value to put.
+                 * @return Conversion result.
                  */
-                void PutDecimal(const common::Decimal& value);
+                ConversionResult::T PutDecimal(const common::Decimal& value);
 
                 /**
                  * Put date to buffer.
                  *
                  * @param value Value to put.
+                 * @return Conversion result.
                  */
-                void PutDate(const Date& value);
+                ConversionResult::T PutDate(const Date& value);
 
                 /**
                  * Put timestamp to buffer.
                  *
                  * @param value Value to put.
+                 * @return Conversion result.
                  */
-                void PutTimestamp(const Timestamp& value);
+                ConversionResult::T PutTimestamp(const Timestamp& value);
 
                 /**
                  * Put time to buffer.
                  *
                  * @param value Value to put.
+                 * @return Conversion result.
                  */
-                void PutTime(const Time& value);
+                ConversionResult::T PutTime(const Time& value);
 
                 /**
                  * Get string.
@@ -367,49 +403,55 @@ namespace ignite
                  * Put value of numeric type in the buffer.
                  *
                  * @param value Numeric value to put.
+                 * @return Conversion result.
                  */
                 template<typename T>
-                void PutNum(T value);
+                ConversionResult::T PutNum(T value);
 
                 /**
                  * Put numeric value to numeric buffer.
                  *
                  * @param value Numeric value.
+                 * @return Conversion result.
                  */
                 template<typename Tbuf, typename Tin>
-                void PutNumToNumBuffer(Tin value);
+                ConversionResult::T PutNumToNumBuffer(Tin value);
 
                 /**
                  * Put value to string buffer.
                  *
                  * @param value Value that can be converted to string.
+                 * @return Conversion result.
                  */
                 template<typename CharT, typename Tin>
-                void PutValToStrBuffer(const Tin& value);
+                ConversionResult::T PutValToStrBuffer(const Tin& value);
 
                 /**
                  * Put value to string buffer.
                  * Specialisation for int8_t.
                  * @param value Value that can be converted to string.
+                 * @return Conversion result.
                  */
                 template<typename CharT>
-                void PutValToStrBuffer(const int8_t & value);
+                ConversionResult::T PutValToStrBuffer(const int8_t & value);
 
                 /**
                  * Put string to string buffer.
                  *
                  * @param value String value.
+                 * @return Conversion result.
                  */
                 template<typename OutCharT, typename InCharT>
-                void PutStrToStrBuffer(const std::basic_string<InCharT>& value);
+                ConversionResult::T PutStrToStrBuffer(const std::basic_string<InCharT>& value);
 
                 /**
                  * Put raw data to any buffer.
                  *
                  * @param data Data pointer.
                  * @param len Data length.
+                 * @return Conversion result.
                  */
-                void PutRawDataToBuffer(void *data, size_t len);
+                ConversionResult::T PutRawDataToBuffer(void *data, size_t len);
 
                 /**
                  * Get int of type T.

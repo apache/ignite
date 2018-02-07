@@ -22,11 +22,8 @@
 
 namespace
 {
-    /** Default display size. */
-    enum { DEFAULT_DISPLAY_SIZE = 34 };
-
     /** Default variable size data display size. */
-    enum { DEFAULT_VARDATA_DISPLAY_SIZE = 64 };
+    enum { DEFAULT_VARDATA_SIZE = 32 };
 }
 
 namespace ignite
@@ -448,8 +445,13 @@ namespace ignite
                     case SQL_VARCHAR:
                     case SQL_CHAR:
                     case SQL_WCHAR:
+                    case SQL_LONGVARBINARY:
                     case SQL_BINARY:
-                        return DEFAULT_VARDATA_DISPLAY_SIZE;
+                    case SQL_VARBINARY:
+                    case SQL_LONGVARCHAR:
+                    case SQL_DECIMAL:
+                    case SQL_NUMERIC:
+                        return DEFAULT_VARDATA_SIZE;
 
                     case SQL_BIT:
                         return 1;
@@ -485,10 +487,8 @@ namespace ignite
                     case SQL_GUID:
                         return 36;
 
-                    case SQL_DECIMAL:
-                    case SQL_NUMERIC:
                     default:
-                        return DEFAULT_DISPLAY_SIZE;
+                        return DEFAULT_VARDATA_SIZE;
                 }
             }
 
@@ -506,8 +506,13 @@ namespace ignite
                     case SQL_VARCHAR:
                     case SQL_CHAR:
                     case SQL_WCHAR:
+                    case SQL_LONGVARBINARY:
                     case SQL_BINARY:
-                        return DEFAULT_VARDATA_DISPLAY_SIZE;
+                    case SQL_VARBINARY:
+                    case SQL_LONGVARCHAR:
+                    case SQL_DECIMAL:
+                    case SQL_NUMERIC:
+                        return DEFAULT_VARDATA_SIZE;
 
                     case SQL_BIT:
                         return 1;
@@ -543,10 +548,8 @@ namespace ignite
                     case SQL_GUID:
                         return 36;
 
-                    case SQL_DECIMAL:
-                    case SQL_NUMERIC:
                     default:
-                        return DEFAULT_DISPLAY_SIZE;
+                        return DEFAULT_VARDATA_SIZE;
                 }
             }
 
@@ -564,8 +567,13 @@ namespace ignite
                     case SQL_VARCHAR:
                     case SQL_CHAR:
                     case SQL_WCHAR:
+                    case SQL_LONGVARBINARY:
                     case SQL_BINARY:
-                        return DEFAULT_VARDATA_DISPLAY_SIZE;
+                    case SQL_VARBINARY:
+                    case SQL_LONGVARCHAR:
+                    case SQL_DECIMAL:
+                    case SQL_NUMERIC:
+                        return DEFAULT_VARDATA_SIZE;
 
                     case SQL_BIT:
                     case SQL_TINYINT:
@@ -597,10 +605,8 @@ namespace ignite
                     case SQL_GUID:
                         return 16;
 
-                    case SQL_DECIMAL:
-                    case SQL_NUMERIC:
                     default:
-                        return DEFAULT_DISPLAY_SIZE;
+                        return DEFAULT_VARDATA_SIZE;
                 }
             }
 
