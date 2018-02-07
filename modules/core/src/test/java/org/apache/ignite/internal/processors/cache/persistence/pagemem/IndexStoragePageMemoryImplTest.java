@@ -99,7 +99,7 @@ public class IndexStoragePageMemoryImplTest extends IndexStorageSelfTest {
                 }
             },
             new DataRegionMetricsImpl(new DataRegionConfiguration()),
-            false
+            PageMemoryImpl.ThrottlingPolicy.NONE
         );
     }
 }

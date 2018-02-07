@@ -286,8 +286,7 @@ public class CassandraSessionImpl implements CassandraSession {
                         ResultSet resSet = futureResult.getValue().getUninterruptibly();
                         Row row = resSet != null && resSet.iterator().hasNext() ? resSet.iterator().next() : null;
 
-                        if (row != null)
-                            assistant.process(row, futureResult.getKey());
+                        assistant.process(row, futureResult.getKey());
                     }
                     catch (Throwable e) {
                         if (CassandraHelper.isTableAbsenceError(e))

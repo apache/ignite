@@ -15,22 +15,8 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-
-import templateUrl from 'views/settings/profile.tpl.pug';
-
-angular
-.module('ignite-console.states.profile', [
-    'ui.router'
-])
-.config(['$stateProvider', function($stateProvider) {
-    // set up the states
-    $stateProvider.state('base.settings.profile', {
-        url: '/profile',
-        templateUrl,
-        permission: 'profile',
-        tfMetaTags: {
-            title: 'User profile'
-        }
-    });
-}]);
+/**
+ * <!-- Package description. -->
+ * Base package for implementations of machine learning dataset.
+ */
+package org.apache.ignite.ml.dataset.impl;
