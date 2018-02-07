@@ -20,15 +20,19 @@ package org.apache.ignite.internal.processors.query;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.views.IgniteSqlMetaViewProcessor;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -45,11 +49,11 @@ public class IgniteSqlMetaViewsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Execute sql statement.
+     * Execute sql statement by JDBC connection.
      *
      * @param sql Sql.
      */
-    private void execSql(String sql) throws SQLException {
+    private void execSqlJdbc(String sql) throws SQLException {
         IgniteH2Indexing idx = (IgniteH2Indexing)grid().context().query().getIndexing();
 
         try (Connection c = idx.connectionForSchema(IgniteSqlMetaViewProcessor.SCHEMA_NAME)) {
@@ -60,20 +64,46 @@ public class IgniteSqlMetaViewsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Execute sql statement by ignite cache query processor.
+     *
      * @param sql Sql.
-     * @param errorCode Error code.
      */
-    private void assertSqlError(final String sql, int errorCode) {
-        SQLException sqlE = (SQLException)GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
+    private void execSqlIgnite(String sql) throws SQLException {
+        IgniteCache cache = grid().getOrCreateCache("cache");
+
+        cache.query(new SqlFieldsQuery(sql)).getAll();
+    }
+
+    /**
+     * @param sql Sql.
+     * @param expJdbcErrorCode Expected jdbc error code.
+     * @param expIgniteErrorCode Expected ignite error code.
+     */
+    private void assertSqlError(final String sql, int expJdbcErrorCode, int expIgniteErrorCode) {
+        SQLException jdbcE = (SQLException)GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                execSql(sql);
+                execSqlJdbc(sql);
 
                 return null;
             }
         }, SQLException.class);
 
-        if (errorCode != 0)
-            assertEquals(errorCode, sqlE.getErrorCode());
+
+        Throwable igniteT = GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                execSqlIgnite(sql);
+
+                return null;
+            }
+        }, IgniteSQLException.class);
+
+        IgniteSQLException igniteE = X.cause(igniteT, IgniteSQLException.class);
+
+        if (expJdbcErrorCode != 0)
+            assertEquals(expJdbcErrorCode, jdbcE.getErrorCode());
+
+        if (expIgniteErrorCode != 0)
+            assertEquals(expIgniteErrorCode, igniteE.statusCode());
     }
     
     /**
@@ -82,28 +112,44 @@ public class IgniteSqlMetaViewsSelfTest extends GridCommonAbstractTest {
     public void testModifications() throws Exception {
         startGrid();
 
-        assertSqlError("DROP TABLE IGNITE.LOCAL_TRANSACTIONS", ErrorCode.CANNOT_DROP_TABLE_1);
+        assertSqlError("DROP TABLE IGNITE.LOCAL_TRANSACTIONS", ErrorCode.CANNOT_DROP_TABLE_1, 0);
 
-        assertSqlError("TRUNCATE TABLE IGNITE.LOCAL_TRANSACTIONS", ErrorCode.CANNOT_TRUNCATE_1);
+        assertSqlError("TRUNCATE TABLE IGNITE.LOCAL_TRANSACTIONS", ErrorCode.CANNOT_TRUNCATE_1, 0);
 
-        assertSqlError("ALTER TABLE IGNITE.LOCAL_TRANSACTIONS RENAME TO IGNITE.TX", ErrorCode.FEATURE_NOT_SUPPORTED_1);
+        assertSqlError("ALTER TABLE IGNITE.LOCAL_TRANSACTIONS RENAME TO IGNITE.TX",
+            ErrorCode.FEATURE_NOT_SUPPORTED_1, 0);
 
-        assertSqlError("ALTER TABLE IGNITE.LOCAL_TRANSACTIONS ADD COLUMN C VARCHAR", ErrorCode.FEATURE_NOT_SUPPORTED_1);
+        assertSqlError("ALTER TABLE IGNITE.LOCAL_TRANSACTIONS ADD COLUMN C VARCHAR",
+            ErrorCode.FEATURE_NOT_SUPPORTED_1, 0);
 
-        assertSqlError("ALTER TABLE IGNITE.LOCAL_TRANSACTIONS DROP COLUMN XID", ErrorCode.FEATURE_NOT_SUPPORTED_1);
+        assertSqlError("ALTER TABLE IGNITE.LOCAL_TRANSACTIONS DROP COLUMN XID", ErrorCode.FEATURE_NOT_SUPPORTED_1, 0);
 
-        assertSqlError("ALTER TABLE IGNITE.LOCAL_TRANSACTIONS RENAME COLUMN XID TO C", ErrorCode.FEATURE_NOT_SUPPORTED_1);
+        assertSqlError("ALTER TABLE IGNITE.LOCAL_TRANSACTIONS RENAME COLUMN XID TO C",
+            ErrorCode.FEATURE_NOT_SUPPORTED_1, 0);
 
-        assertSqlError("CREATE INDEX IDX ON IGNITE.LOCAL_TRANSACTIONS(XID)", ErrorCode.FEATURE_NOT_SUPPORTED_1);
+        assertSqlError("CREATE INDEX IDX ON IGNITE.LOCAL_TRANSACTIONS(XID)", ErrorCode.FEATURE_NOT_SUPPORTED_1, 0);
 
-        assertSqlError("INSERT INTO IGNITE.LOCAL_TRANSACTIONS (XID) VALUES ('-')", ErrorCode.FEATURE_NOT_SUPPORTED_1);
+        assertSqlError("INSERT INTO IGNITE.LOCAL_TRANSACTIONS (XID) VALUES ('-')", ErrorCode.FEATURE_NOT_SUPPORTED_1,
+            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         try (Transaction tx = grid().transactions().txStart()) {
-            assertSqlError("UPDATE IGNITE.LOCAL_TRANSACTIONS SET XID = '-'", 0);
+            assertSqlError("UPDATE IGNITE.LOCAL_TRANSACTIONS SET XID = '-'", 0,
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-            assertSqlError("DELETE IGNITE.LOCAL_TRANSACTIONS", 0);
+            assertSqlError("DELETE IGNITE.LOCAL_TRANSACTIONS", 0, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
             tx.commit();
+        }
+    }
+
+    /**
+     * @param rowData Row data.
+     * @param colTypes Column types.
+     */
+    private void assertColumnTypes(List<?> rowData, Class<?> ... colTypes) {
+        for (int i = 0; i < colTypes.length; i++) {
+            if (rowData.get(i) != null)
+                assertEquals("Column " + i + " type", rowData.get(i).getClass(), colTypes[i]);
         }
     }
 
@@ -147,10 +193,23 @@ public class IgniteSqlMetaViewsSelfTest extends GridCommonAbstractTest {
         latchTxStart.await();
 
         List<List<?>> res = cache.query(
-            new SqlFieldsQuery("SELECT XID, START_NODE_ID, START_TIME, TIMEOUT, TIMEOUT_MILLIS, IS_TIMED_OUT " +
-                "FROM IGNITE.LOCAL_TRANSACTIONS")
+            new SqlFieldsQuery("SELECT XID, START_NODE_ID, START_TIME, TIMEOUT, TIMEOUT_MILLIS, IS_TIMED_OUT, " +
+                "START_THREAD_ID, ISOLATION, CONCURRENCY, IMPLICIT, IS_INVALIDATE, STATE, SIZE, " +
+                "STORE_ENABLED, STORE_WRITE_THROUGH, IO_POLICY, IMPLICIT_SINGLE, IS_EMPTY, OTHER_NODE_ID, " +
+                "EVENT_NODE_ID, ORIGINATING_NODE_ID, IS_NEAR, IS_DHT, IS_COLOCATED, IS_LOCAL, IS_SYSTEM, " +
+                "IS_USER, SUBJECT_ID, IS_DONE, IS_INTERNAL, IS_ONE_PHASE_COMMIT " +
+                "FROM IGNITE.LOCAL_TRANSACTIONS"
+            )
         ).getAll();
 
+        assertColumnTypes(res.get(0), String.class, UUID.class, Timestamp.class, Time.class, Long.class, Boolean.class,
+            Long.class, String.class, String.class, Boolean.class, Boolean.class, String.class, Integer.class,
+            Boolean.class, Boolean.class, Byte.class, Boolean.class, Boolean.class, UUID.class,
+            UUID.class, UUID.class, Boolean.class, Boolean.class, Boolean.class, Boolean.class, Boolean.class,
+            Boolean.class, UUID.class, Boolean.class, Boolean.class, Boolean.class
+        );
+
+        // Assert values.
         assertEquals(ignite.cluster().localNode().id(), res.get(0).get(1));
 
         assertTrue(U.currentTimeMillis() > ((Timestamp)res.get(0).get(2)).getTime());
@@ -161,6 +220,7 @@ public class IgniteSqlMetaViewsSelfTest extends GridCommonAbstractTest {
 
         assertEquals(false, res.get(0).get(5));
 
+        // Assert row count.
         assertEquals(txCnt, res.size());
 
         latchTxBody.countDown();
