@@ -90,36 +90,28 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** Futures prepared user map. Authentication message ID -> public future. */
     private final ConcurrentMap<IgniteUuid, GridFutureAdapter<User>> authFuts = new ConcurrentHashMap<>();
-
+    /**
+     * Mutex used to synchronize discovery thread on collect data bag
+     * and change users from the thread of 'exec' executor.
+     */
+    private final Object muxChangeUserVer = new Object();
+    /** Mutex for change coordinator node. */
+    private final Object muxCrdNode = new Object();
     /** Active operations. */
     private List<UserManagementOperation> activeOperations = Collections.synchronizedList(new ArrayList<>());
-
     /** User map. */
     private ConcurrentMap<String, User> users;
-
     /** Users info version. */
     private long usersInfoVer;
-
-    /** Mutex used to synchronize discovery thread on collect data bag
-     * and change users from the thread of 'exec' executor. */
-    private final Object muxChangeUserVer = new Object();
-
     /** Shared context. */
     @GridToStringExclude
     private GridCacheSharedContext<?, ?> sharedCtx;
-
     /** Meta storage. */
     private ReadWriteMetastorage metastorage;
-
     /** Executor. */
     private IgniteThreadPoolExecutor exec;
-
     /** Coordinator node. */
     private ClusterNode crdNode;
-
-    /** Mutex for change coordinator node. */
-    private final Object muxCrdNode = new Object();
-
     /** Is authentication enabled. */
     private boolean isEnabled;
 
@@ -391,8 +383,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             this.metastorage = null;
     }
 
-
-
     /** {@inheritDoc} */
     @Nullable @Override public DiscoveryDataExchangeType discoveryDataType() {
         return DiscoveryDataExchangeType.AUTH_PROC;
@@ -441,9 +431,18 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private void addDefaultUser() throws IgniteCheckedException {
         User u = User.defaultUser();
 
-        metastorage.write(STORE_USER_PREFIX + u.name(), u);
+        if (sharedCtx != null)
+            sharedCtx.database().checkpointReadLock();
 
-        metastorage.write(STORE_USERS_VERSION, usersInfoVer + 1);
+        try {
+            metastorage.write(STORE_USER_PREFIX + u.name(), u);
+
+            metastorage.write(STORE_USERS_VERSION, usersInfoVer + 1);
+        }
+        finally {
+            if (sharedCtx != null)
+                sharedCtx.database().checkpointReadUnlock();
+        }
 
         usersInfoVer++;
 
@@ -540,9 +539,18 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (users.containsKey(userName))
             throw new IgniteAuthenticationException("User already exists. [login=" + userName + ']');
 
-        metastorage.write(STORE_USER_PREFIX + userName, usr);
+        if (sharedCtx != null)
+            sharedCtx.database().checkpointReadLock();
 
-        metastorage.write(STORE_USERS_VERSION, usersInfoVer + 1);
+        try {
+            metastorage.write(STORE_USER_PREFIX + userName, usr);
+
+            metastorage.write(STORE_USERS_VERSION, usersInfoVer + 1);
+        }
+        finally {
+            if (sharedCtx != null)
+                sharedCtx.database().checkpointReadUnlock();
+        }
 
         synchronized (muxChangeUserVer) {
             usersInfoVer++;
@@ -565,9 +573,18 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (!users.containsKey(usr.name()))
             throw new IgniteAuthenticationException("User doesn't exist. [userName=" + usr.name() + ']');
 
-        metastorage.remove(STORE_USER_PREFIX + usr.name());
+        if (sharedCtx != null)
+            sharedCtx.database().checkpointReadLock();
 
-        metastorage.write(STORE_USERS_VERSION, usersInfoVer + 1);
+        try {
+            metastorage.remove(STORE_USER_PREFIX + usr.name());
+
+            metastorage.write(STORE_USERS_VERSION, usersInfoVer + 1);
+        }
+        finally {
+            if (sharedCtx != null)
+                sharedCtx.database().checkpointReadUnlock();
+        }
 
         synchronized (muxChangeUserVer) {
             usersInfoVer++;
@@ -590,9 +607,18 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (!users.containsKey(usr.name()))
             throw new IgniteAuthenticationException("User doesn't exist. [userName=" + usr.name() + ']');
 
-        metastorage.write(STORE_USER_PREFIX + usr.name(), usr);
+        if (sharedCtx != null)
+            sharedCtx.database().checkpointReadLock();
 
-        metastorage.write(STORE_USERS_VERSION, usersInfoVer + 1);
+        try {
+            metastorage.write(STORE_USER_PREFIX + usr.name(), usr);
+
+            metastorage.write(STORE_USERS_VERSION, usersInfoVer + 1);
+        }
+        finally {
+            if (sharedCtx != null)
+                sharedCtx.database().checkpointReadUnlock();
+        }
 
         synchronized (muxChangeUserVer) {
             usersInfoVer++;
@@ -793,6 +819,57 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      */
     public void onActivate() {
         activateFut.onDone();
+    }
+
+    /**
+     * @param msg Finish message.
+     */
+    private void sendFinish(UserManagementOperationFinishedMessage msg) {
+        try {
+//            log.info("+++ SEND FINISH " + msg);
+            ctx.io().sendToGridTopic(coordinator(), GridTopic.TOPIC_AUTH, msg, GridIoPolicy.SYSTEM_POOL);
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to send UserManagementOperationFinishedMessage. [op=" + msg.operationId() +
+                ", node=" + coordinator() + ", err=" + msg.errorMessage() + ']', e);
+        }
+    }
+
+    /**
+     * Initial data is collected on coordinator to send to join node.
+     */
+    private static final class InitialUsersData implements Serializable {
+        /** Users. */
+        private final ArrayList<User> usrs;
+
+        /** Active user operations. */
+        private final ArrayList<UserManagementOperation> activeOps;
+
+        /** Users information version. */
+        private final long usrVer;
+
+        /**
+         * @param usrs Users.
+         * @param ops Active operations on cluster.
+         * @param ver Users info version.
+         */
+        InitialUsersData(Collection<User> usrs, List<UserManagementOperation> ops, long ver) {
+            this.usrs = new ArrayList<>(usrs);
+            activeOps = new ArrayList<>(ops);
+            usrVer = ver;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(InitialUsersData.class, this);
+        }
+    }
+
+    /**
+     * Thrown by authenticate futures when coordinator node left
+     * to resend authenticate message to the new coordinator.
+     */
+    private static class RetryOnCoordinatorLeftException extends IgniteCheckedException {
     }
 
     /**
@@ -1046,20 +1123,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /**
-     * @param msg Finish message.
-     */
-    private void sendFinish(UserManagementOperationFinishedMessage msg) {
-        try {
-//            log.info("+++ SEND FINISH " + msg);
-            ctx.io().sendToGridTopic(coordinator(), GridTopic.TOPIC_AUTH, msg, GridIoPolicy.SYSTEM_POOL);
-        }
-        catch (Exception e) {
-            U.error(log, "Failed to send UserManagementOperationFinishedMessage. [op=" + msg.operationId() +
-                ", node=" + coordinator() + ", err=" + msg.errorMessage() + ']', e);
-        }
-    }
-
-    /**
      * Initial users set worker.
      */
     private class RefreshUsersStorageWorker extends GridWorker {
@@ -1120,42 +1183,5 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                     sharedCtx.database().checkpointReadUnlock();
             }
         }
-    }
-
-    /**
-     * Initial data is collected on coordinator to send to join node.
-     */
-    private static final class InitialUsersData implements Serializable {
-        /** Users. */
-        private final ArrayList<User> usrs;
-
-        /** Active user operations. */
-        private final ArrayList<UserManagementOperation> activeOps;
-
-        /** Users information version. */
-        private final long usrVer;
-
-        /**
-         * @param usrs Users.
-         * @param ops Active operations on cluster.
-         * @param ver Users info version.
-         */
-        InitialUsersData(Collection<User> usrs, List<UserManagementOperation> ops, long ver) {
-            this.usrs = new ArrayList<>(usrs);
-            activeOps = new ArrayList<>(ops);
-            usrVer = ver;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(InitialUsersData.class, this);
-        }
-    }
-
-    /**
-     * Thrown by authenticate futures when coordinator node left
-     * to resend authenticate message to the new coordinator.
-     */
-    private static class RetryOnCoordinatorLeftException extends IgniteCheckedException {
     }
 }
