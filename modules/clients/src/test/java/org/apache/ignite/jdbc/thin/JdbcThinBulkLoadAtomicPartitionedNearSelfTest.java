@@ -15,25 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.dml;
+package org.apache.ignite.jdbc.thin;
 
-/**
- * DML statement execution plan type - MERGE/INSERT from rows or subquery,
- * or UPDATE/DELETE from subquery or literals/params based.
- */
-public enum UpdateMode {
-    /** MERGE command. */
-    MERGE,
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 
-    /** INSERT command. */
-    INSERT,
+/** A {@link JdbcThinBulkLoadAbstractSelfTest} for partitioned atomic near-cache mode. */
+public class JdbcThinBulkLoadAtomicPartitionedNearSelfTest extends JdbcThinBulkLoadAbstractSelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheMode cacheMode() {
+        return CacheMode.PARTITIONED;
+    }
 
-    /** UPDATE command. */
-    UPDATE,
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return CacheAtomicityMode.ATOMIC;
+    }
 
-    /** DELETE command. */
-    DELETE,
-
-    /** COPY command. */
-    BULK_LOAD
+    /** {@inheritDoc} */
+    @Override protected boolean nearCache() {
+        return true;
+    }
 }
