@@ -15,25 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.query.h2.dml;
+package org.apache.ignite.internal.processors.bulkload;
 
-/**
- * DML statement execution plan type - MERGE/INSERT from rows or subquery,
- * or UPDATE/DELETE from subquery or literals/params based.
- */
-public enum UpdateMode {
-    /** MERGE command. */
-    MERGE,
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
 
-    /** INSERT command. */
-    INSERT,
-
-    /** UPDATE command. */
-    UPDATE,
-
-    /** DELETE command. */
-    DELETE,
-
-    /** COPY command. */
-    BULK_LOAD
+/** A proxy, which stores given key+value pair to a cache. */
+public abstract class BulkLoadCacheWriter implements IgniteInClosure<IgniteBiTuple<?, ?>>, AutoCloseable {
+    /**
+     * Returns number of entry updates made by the writer.
+     *
+     * @return The number of cache entry updates.
+     */
+    public abstract long updateCnt();
 }
