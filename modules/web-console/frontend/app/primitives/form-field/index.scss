@@ -46,7 +46,7 @@
         display: flex;
         width: 100%;
 
-        & > input::placeholder {
+        & > input::placeholder, & > button.select-toggle.placeholder {
             color: rgba(66, 66, 66, 0.5);
         }
 
