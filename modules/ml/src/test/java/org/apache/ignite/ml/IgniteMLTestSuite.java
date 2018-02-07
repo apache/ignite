@@ -18,10 +18,12 @@
 package org.apache.ignite.ml;
 
 import org.apache.ignite.ml.clustering.ClusteringTestSuite;
+import org.apache.ignite.ml.dataset.DatasetTestSuite;
 import org.apache.ignite.ml.knn.KNNTestSuite;
 import org.apache.ignite.ml.math.MathImplMainTestSuite;
 import org.apache.ignite.ml.nn.MLPTestSuite;
 import org.apache.ignite.ml.optimization.OptimizationTestSuite;
+import org.apache.ignite.ml.preprocessing.PreprocessingTestSuite;
 import org.apache.ignite.ml.regressions.RegressionsTestSuite;
 import org.apache.ignite.ml.svm.SVMTestSuite;
 import org.apache.ignite.ml.trainers.group.TrainersGroupTestSuite;
@@ -43,7 +45,9 @@ import org.junit.runners.Suite;
     LocalModelsTest.class,
     MLPTestSuite.class,
     TrainersGroupTestSuite.class,
-    OptimizationTestSuite.class
+    OptimizationTestSuite.class,
+    DatasetTestSuite.class,
+    PreprocessingTestSuite.class
 })
 public class IgniteMLTestSuite {
     // No-op.

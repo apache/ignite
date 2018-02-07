@@ -23,6 +23,7 @@ import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.logger.NullLogger;
 import org.junit.Test;
 
@@ -154,9 +155,9 @@ public class IgniteThrottlingUnitTest {
      */
     @Test
     public void beginOfCp() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, log);
 
-        assertTrue(throttle.getParkTime(0.01, 100, 400000,
+        assertTrue(throttle.getParkTime(0.01, 100,400000,
             1,
             20103,
             23103) == 0);
@@ -181,7 +182,7 @@ public class IgniteThrottlingUnitTest {
      */
     @Test
     public void enforceThrottleAtTheEndOfCp() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, log);
 
         long time1 = throttle.getParkTime(0.70, 300000, 400000,
             1, 20200, 23000);
@@ -204,12 +205,12 @@ public class IgniteThrottlingUnitTest {
      */
     @Test
     public void tooMuchPagesMarkedDirty() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, log);
 
-        // 363308	350004	348976	10604
+       // 363308	350004	348976	10604
         long time = throttle.getParkTime(0.75,
             ((350004 + 348976) / 2),
-            350004 - 10604,
+            350004-10604,
             4,
             279,
             23933);
@@ -262,7 +263,7 @@ public class IgniteThrottlingUnitTest {
 
             throttle.onMarkDirty(false);
 
-            if (warnings.get() > 0)
+            if(warnings.get()>0)
                 break;
         }
 

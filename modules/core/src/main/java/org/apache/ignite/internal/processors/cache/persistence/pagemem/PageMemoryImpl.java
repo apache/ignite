@@ -461,6 +461,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         if (isThrottlingEnabled())
             writeThrottle.onMarkDirty(false);
 
+        if (isThrottlingEnabled())
+            writeThrottle.onMarkDirty(false);
+
         long pageId = storeMgr.allocatePage(cacheId, partId, flags);
 
         assert PageIdUtils.pageIndex(pageId) > 0; //it's crucial for tracking pages (zero page is super one)
