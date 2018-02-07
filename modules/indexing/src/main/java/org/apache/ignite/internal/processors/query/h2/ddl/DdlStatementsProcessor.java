@@ -62,6 +62,7 @@ import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAlterColumn;
 import org.h2.command.ddl.CreateIndex;
@@ -188,10 +189,18 @@ public class DdlStatementsProcessor {
 
                 IgniteCluster cluster = ctx.grid().cluster();
 
-                if (logging)
-                    cluster.enableWal(tbl.cacheName());
-                else
-                    cluster.disableWal(tbl.cacheName());
+                if (logging) {
+                    boolean res = cluster.enableWal(tbl.cacheName());
+
+                    if (!res)
+                        throw new IgniteSQLException("Logging already enabled for table: " + cmd0.tableName());
+                }
+                else {
+                    boolean res = cluster.disableWal(tbl.cacheName());
+
+                    if (!res)
+                        throw new IgniteSQLException("Logging already disabled for table: " + cmd0.tableName());
+                }
 
                 fut = new GridFinishedFuture();
             }
@@ -475,6 +484,7 @@ public class DdlStatementsProcessor {
             return resCur;
         }
         catch (SchemaOperationException e) {
+            U.error(null, "DDL operation failure", e);
             throw convert(e);
         }
         catch (IgniteSQLException e) {

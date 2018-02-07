@@ -350,7 +350,6 @@ namespace ignite
 
         QueryExecuteBatchResponse::QueryExecuteBatchResponse():
             affectedRows(0),
-            errorSetIdx(-1),
             errorMessage(),
             errorCode(1)
         {
@@ -370,7 +369,8 @@ namespace ignite
 
             if (!success)
             {
-                errorSetIdx = reader.ReadInt64();
+                // Ignoring error set idx. To be deleted in next major version.
+                reader.ReadInt64();
                 errorMessage = reader.ReadObject<std::string>();
 
                 if (ver >= ProtocolVersion::VERSION_2_1_5)
