@@ -27,13 +27,13 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.parseString;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
 
 /**
- * CREATE INDEX command.
+ * ALTER USER command.
  */
 public class SqlAlterUserCommand implements SqlCommand {
-    /** Schema name. */
+    /** User name. */
     private String userName;
 
-    /** Table name. */
+    /** User's password. */
     private String passwd;
 
     /** {@inheritDoc} */
@@ -54,7 +54,7 @@ public class SqlAlterUserCommand implements SqlCommand {
     }
 
     /**
-     * @return User password.
+     * @return User's password.
      */
     public String password() {
         return passwd;

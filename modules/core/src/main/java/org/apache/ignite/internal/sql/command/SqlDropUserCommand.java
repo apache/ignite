@@ -20,17 +20,13 @@ package org.apache.ignite.internal.sql.command;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
-import static org.apache.ignite.internal.sql.SqlKeyword.PASSWORD;
-import static org.apache.ignite.internal.sql.SqlKeyword.WITH;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
-import static org.apache.ignite.internal.sql.SqlParserUtils.parseString;
-import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
 
 /**
- * CREATE INDEX command.
+ * DROP USER command.
  */
 public class SqlDropUserCommand implements SqlCommand {
-    /** Schema name. */
+    /** User name. */
     private String userName;
 
     /** {@inheritDoc} */

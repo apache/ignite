@@ -38,10 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
-import org.apache.ignite.internal.processors.authentication.User;
-import org.apache.ignite.internal.processors.authentication.UserAuthenticateRequestMessage;
-import org.apache.ignite.internal.processors.authentication.UserAuthenticateResponseMessage;
-import org.apache.ignite.internal.processors.authentication.UserManagementOperationFinishedMessage;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.GridCodegenConverter;
 import org.apache.ignite.internal.GridDirectCollection;
@@ -172,10 +168,6 @@ public class MessageCodeGenerator {
 
 //        gen.generateAll(true);
 
-        gen.generateAndWrite(UserManagementOperationFinishedMessage.class);
-        gen.generateAndWrite(UserAuthenticateRequestMessage.class);
-        gen.generateAndWrite(UserAuthenticateResponseMessage.class);
-        gen.generateAndWrite(User.class);
 //        gen.generateAndWrite(GridChangeGlobalStateMessageResponse.class);
 
 //        gen.generateAndWrite(GridNearAtomicUpdateRequest.class);

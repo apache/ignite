@@ -18,25 +18,21 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.marshaller.MappingAcceptedMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Node sends this message when it wants to propose new marshaller mapping and to ensure that there are no conflicts
- * with this mapping on other nodes in cluster.
+ * Node sends this message when it wants to propose user operation (add / update / remove).
  *
- * After sending this message to the cluster sending node gets blocked until mapping is either accepted or rejected.
+ * After sending this message to the cluster sending node gets blocked until operation acknowledgement is received.
  *
- * When it completes a pass around the cluster ring with no conflicts observed,
- * {@link MappingAcceptedMessage} is sent as an acknowledgement that everything is fine.
+ * {@link UserAcceptedMessage} is sent as an acknowledgement that operation is finished on the all nodes of the cluster.
  */
 public class UserProposedMessage implements DiscoveryCustomMessage {
     /** */
@@ -46,21 +42,16 @@ public class UserProposedMessage implements DiscoveryCustomMessage {
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
     /** */
-    private final UUID origNodeId;
-
-    /** */
     @GridToStringInclude
     private final UserManagementOperation op;
 
     /**
      * @param op User action.
-     * @param origNodeId Orig node id.
      */
-    UserProposedMessage(UserManagementOperation op, UUID origNodeId) {
-        assert origNodeId != null;
+    UserProposedMessage(UserManagementOperation op) {
+        assert op != null;
 
         this.op = op;
-        this.origNodeId = origNodeId;
     }
 
     /** {@inheritDoc} */
@@ -87,17 +78,10 @@ public class UserProposedMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return User action.
+     * @return User operation.
      */
     UserManagementOperation operation() {
         return op;
-    }
-
-    /**
-     * @return Original node ID.
-     */
-    UUID origNodeId() {
-        return origNodeId;
     }
 
     /** {@inheritDoc} */

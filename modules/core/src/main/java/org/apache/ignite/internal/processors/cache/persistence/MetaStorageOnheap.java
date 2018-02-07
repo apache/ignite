@@ -22,13 +22,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * In memory Metadata storage implementation.
+ * In memory metadata storage implementation.
  */
 public class MetaStorageOnheap implements ReadWriteMetastorage {
     /** Map. */
@@ -49,8 +48,8 @@ public class MetaStorageOnheap implements ReadWriteMetastorage {
         return map.get(key);
     }
 
-    @Override public Map<String, ? extends Serializable> readForPredicate(
-        IgnitePredicate<String> keyPred) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public Map<String, ? extends Serializable> readForPredicate(IgnitePredicate<String> keyPred) {
         Map<String, Serializable> ret = new HashMap<>();
 
         for (ConcurrentHashMap.Entry<String, Serializable> e : map.entrySet()) {

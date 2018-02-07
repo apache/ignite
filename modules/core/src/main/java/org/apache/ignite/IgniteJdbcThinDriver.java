@@ -148,7 +148,6 @@ public class IgniteJdbcThinDriver implements Driver {
         }
     }
 
-
     /** {@inheritDoc} */
     @Override public Connection connect(String url, Properties props) throws SQLException {
         if (!acceptsURL(url))

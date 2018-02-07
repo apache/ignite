@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Exception that represents authentication failure.
+ * Exception that represents failures of user management operations.
  */
 public class UserAuthenticationException extends IgniteCheckedException {
     /** */

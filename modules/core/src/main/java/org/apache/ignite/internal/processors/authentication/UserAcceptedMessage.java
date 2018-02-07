@@ -22,16 +22,14 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.marshaller.MappingProposedMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Is sent as an acknowledgement for successfully proposed new mapping (see {@link MappingProposedMessage}).
- *
- * If any nodes were waiting for this mapping to be accepted they will be unblocked on receiving this message.
+ * Is sent as an acknowledgement for end (with success or error) of user management operation
+ * (see {@link UserProposedMessage} and {@link UserManagementOperation}).
  */
 public class UserAcceptedMessage implements DiscoveryCustomMessage {
     /** */
@@ -40,7 +38,7 @@ public class UserAcceptedMessage implements DiscoveryCustomMessage {
     /** */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** Operation. */
+    /** Operation ID. */
     @GridToStringInclude
     private final IgniteUuid opId;
 
@@ -48,7 +46,7 @@ public class UserAcceptedMessage implements DiscoveryCustomMessage {
     private final IgniteCheckedException error;
 
     /**
-     * @param opId Acknowledgement operation ID.
+     * @param opId THe ID of operation.
      * @param error Error.
      */
     UserAcceptedMessage(IgniteUuid opId, IgniteCheckedException error) {
@@ -80,7 +78,7 @@ public class UserAcceptedMessage implements DiscoveryCustomMessage {
     }
 
     /**
-     * @return User ioeration ID.
+     * @return User operation ID.
      */
     IgniteUuid operationId() {
         return opId;

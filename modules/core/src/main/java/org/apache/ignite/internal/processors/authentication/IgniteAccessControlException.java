@@ -21,7 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Exception that represents authentication failure.
+ * Exception that represents authentication / authorization failure.
  */
 public class IgniteAccessControlException extends IgniteCheckedException {
     /** */
@@ -45,5 +45,4 @@ public class IgniteAccessControlException extends IgniteCheckedException {
     public IgniteAccessControlException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
-
 }

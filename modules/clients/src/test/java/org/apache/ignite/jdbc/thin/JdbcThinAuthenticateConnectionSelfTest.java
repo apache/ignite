@@ -32,7 +32,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- * Connection test.
+ * Tests for authenticated an non authenticated connection.
  */
 @SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelfTest {

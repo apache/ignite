@@ -18,15 +18,12 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import java.io.Serializable;
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- *
+ * The operation with users. Used to deliver the information about requested operation to all server nodes.
  */
 public class UserManagementOperation implements Serializable {
     /** User. */
@@ -54,7 +51,7 @@ public class UserManagementOperation implements Serializable {
     }
 
     /**
-     * @return User/
+     * @return User.
      */
     public User user() {
         return usr;

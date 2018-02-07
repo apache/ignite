@@ -106,6 +106,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** Page size from memory configuration, may be set only for fake(standalone) IgniteCacheDataBaseSharedManager */
     private int pageSize;
 
+    /** On heap meta storage. */
     private MetaStorageOnheap metaStorage;
 
     /** {@inheritDoc} */

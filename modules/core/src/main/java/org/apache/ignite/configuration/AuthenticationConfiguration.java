@@ -18,10 +18,9 @@
 package org.apache.ignite.configuration;
 
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Client connector configuration.
+ * Authentication configuration for the {@link ClientConnectorConfiguration}.
  */
 public class AuthenticationConfiguration {
     /** Enable user authentication; the user authentication is disabled by default. */
@@ -55,7 +54,7 @@ public class AuthenticationConfiguration {
     }
 
     /**
-     * Set host.
+     * Enable user authentication; the user authentication is disabled by default.
      *
      * @param enabled Enabled authentication flag.
      * @return This instance for chaining.

@@ -25,7 +25,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- * Message indicating that snapshot has been finished on a single node.
+ * Is sent from coordinator node to client to deliver the results of the user authentication.
  */
 public class UserAuthenticateResponseMessage implements Message {
     /** */
