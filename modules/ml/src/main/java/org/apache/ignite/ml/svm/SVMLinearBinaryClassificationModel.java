@@ -48,6 +48,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
 
     /**
      * Set up the output label format.
+     *
      * @param isKeepingRawLabels The parameter value.
      * @return Model with new isKeepingRawLabels parameter value.
      */
@@ -58,6 +59,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
 
     /**
      * Set up the threshold.
+     *
      * @param threshold The parameter value.
      * @return Model with new threshold parameter value.
      */
@@ -68,6 +70,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
 
     /**
      * Set up the weights.
+     *
      * @param weights The parameter value.
      * @return Model with new weights parameter value.
      */
@@ -78,6 +81,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
 
     /**
      * Set up the intercept.
+     *
      * @param intercept The parameter value.
      * @return Model with new intercept parameter value.
      */
@@ -97,6 +101,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
 
     /**
      * Gets the output label format mode.
+     *
      * @return The parameter value.
      */
     public boolean isKeepingRawLabels() {
@@ -105,6 +110,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
 
     /**
      * Gets the threshold.
+     *
      * @return The parameter value.
      */
     public double threshold() {
@@ -113,6 +119,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
 
     /**
      * Gets the weights.
+     *
      * @return The parameter value.
      */
     public Vector weights() {
@@ -121,6 +128,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
 
     /**
      * Gets the intercept.
+     *
      * @return The parameter value.
      */
     public double intercept() {

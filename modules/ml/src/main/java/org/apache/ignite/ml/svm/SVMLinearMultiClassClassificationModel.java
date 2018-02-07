@@ -72,7 +72,7 @@ public class SVMLinearMultiClassClassificationModel implements Model<Vector, Dou
         StringBuilder wholeString = new StringBuilder();
 
         models.forEach((clsLb, mdl) -> {
-            wholeString.append("The class with label " + clsLb + " has " + mdl.toString() + "\n");
+            wholeString.append("The class with label " + clsLb + " has classifier: " + mdl.toString() + System.lineSeparator());
         });
 
         return wholeString.toString();
@@ -80,6 +80,7 @@ public class SVMLinearMultiClassClassificationModel implements Model<Vector, Dou
 
     /**
      * Adds a specific SVM binary classifier to the bunch of same classifiers.
+     *
      * @param clsLb The class label for the added model.
      * @param mdl The model.
      */

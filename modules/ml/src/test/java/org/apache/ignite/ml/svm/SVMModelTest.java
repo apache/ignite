@@ -69,10 +69,7 @@ public class SVMModelTest {
         mdl.add(2, new SVMLinearBinaryClassificationModel(weights3, 0.0).withRawLabels(true));
 
         Vector observation = new DenseLocalOnHeapVector(new double[]{1.0, 1.0});
-        final double margin1 = 0.0 + 10.0 * 1.0 + 0.0 * 1.0;
-        final double margin2 = 0.0 + 0.0 * 1.0 + 10.0 * 1.0;
-        final double margin3 = 0.0 + (-1.0) * 1.0 + (-1.0) * 1.0;
-        TestUtils.assertEquals(Math.min(margin1, Math.min(margin2, margin3)), mdl.apply(observation), PRECISION);
+        TestUtils.assertEquals(-2.0, mdl.apply(observation), PRECISION);
     }
 
     /** */

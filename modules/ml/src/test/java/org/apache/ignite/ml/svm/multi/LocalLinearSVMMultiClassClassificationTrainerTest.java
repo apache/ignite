@@ -19,7 +19,6 @@ package org.apache.ignite.ml.svm.multi;
 
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
 import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationTrainer;
 
 /**

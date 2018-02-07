@@ -21,14 +21,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import org.apache.ignite.ml.Trainer;
 import org.apache.ignite.ml.structures.LabeledDataset;
 
 /**
- * Base class for a soft-margin SVM linear multiclass-classification trainer based on the communication-efficient distributed dual
- * coordinate ascent algorithm (CoCoA) with hinge-loss function.
+ * Base class for a soft-margin SVM linear multiclass-classification trainer based on the communication-efficient
+ * distributed dual coordinate ascent algorithm (CoCoA) with hinge-loss function.
  *
  * All common parameters are shared with bunch of binary classification trainers.
  */
@@ -57,9 +55,9 @@ public class SVMLinearMultiClassClassificationTrainer implements Trainer<SVMLine
             LabeledDataset binarizedDataset = binarizeLabels(data, clsLb);
 
             SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer()
-                .withAmountOfIterations(this.amountOfIterations)
-                .withAmountOfLocIterations(this.amountOfLocIterations)
-                .withLambda(this.lambda);
+                .withAmountOfIterations(this.amountOfIterations())
+                .withAmountOfLocIterations(this.amountOfLocIterations())
+                .withLambda(this.lambda());
 
             multiClsMdl.add(clsLb, trainer.train(binarizedDataset));
         });
@@ -98,6 +96,7 @@ public class SVMLinearMultiClassClassificationTrainer implements Trainer<SVMLine
 
     /**
      * Set up the regularization parameter.
+     *
      * @param lambda The regularization parameter. Should be more than 0.0.
      * @return Trainer with new lambda parameter value.
      */
@@ -109,6 +108,7 @@ public class SVMLinearMultiClassClassificationTrainer implements Trainer<SVMLine
 
     /**
      * Gets the regularization lambda.
+     *
      * @return The parameter value.
      */
     public double lambda() {
@@ -117,14 +117,16 @@ public class SVMLinearMultiClassClassificationTrainer implements Trainer<SVMLine
 
     /**
      * Gets the amount of outer iterations of SCDA algorithm.
+     *
      * @return The parameter value.
      */
-    public int getAmountOfIterations() {
+    public int amountOfIterations() {
         return amountOfIterations;
     }
 
     /**
      * Set up the amount of outer iterations of SCDA algorithm.
+     *
      * @param amountOfIterations The parameter value.
      * @return Trainer with new amountOfIterations parameter value.
      */
@@ -135,14 +137,16 @@ public class SVMLinearMultiClassClassificationTrainer implements Trainer<SVMLine
 
     /**
      * Gets the amount of local iterations of SCDA algorithm.
+     *
      * @return The parameter value.
      */
-    public int getAmountOfLocIterations() {
+    public int amountOfLocIterations() {
         return amountOfLocIterations;
     }
 
     /**
      * Set up the amount of local iterations of SCDA algorithm.
+     *
      * @param amountOfLocIterations The parameter value.
      * @return Trainer with new amountOfLocIterations parameter value.
      */
