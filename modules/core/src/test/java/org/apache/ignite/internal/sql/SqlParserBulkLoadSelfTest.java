@@ -23,8 +23,6 @@ package org.apache.ignite.internal.sql;
 public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
     /**
      * Tests for COPY command.
-     *
-     * @throws Exception If any of sub-tests was failed.
      */
     public void testCopy() {
         assertParseError(null,
@@ -66,5 +64,32 @@ public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
         assertParseError(null,
             "copy from \"any.file\" into Person (_key, age, firstName, lastName) format lsd",
             "Unknown format name: LSD");
+
+        // BATCH_SIZE
+
+        assertParseError(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv" +
+                " batch_size " + Integer.MIN_VALUE,
+            "Batch size should be within [1..");
+
+        assertParseError(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv" +
+                " batch_size 0",
+            "Batch size should be within [1..");
+
+        assertParseError(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv" +
+                " batch_size " + Integer.MAX_VALUE,
+            "Batch size should be within [1..2147483135]");
+
+        assertParseError(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv" +
+                " batch_size",
+            "Unexpected end of command (expected: \"[integer]\")");
+
+        assertParseError(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv" +
+                " batch_size postmark",
+            "Unexpected token: \"POSTMARK\" (expected: \"[integer]\")");
     }
 }
