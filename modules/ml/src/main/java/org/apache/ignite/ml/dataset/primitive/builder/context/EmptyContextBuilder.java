@@ -15,20 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm;
+package org.apache.ignite.ml.dataset.primitive.builder.context;
 
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
+import java.util.Iterator;
+import org.apache.ignite.ml.dataset.PartitionContextBuilder;
+import org.apache.ignite.ml.dataset.UpstreamEntry;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 
 /**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
+ * A partition {@code context} builder that makes {@link EmptyContext}.
+ *
+ * @param <K> Type of a key in {@code upstream} data.
+ * @param <V> Type of a value in {@code upstream} data.
  */
-public class DistributedLinearSVMClassificationSCDATrainerTest extends GenericLinearSVMTrainerTest {
+public class EmptyContextBuilder<K, V> implements PartitionContextBuilder<K, V, EmptyContext> {
     /** */
-    public DistributedLinearSVMClassificationSCDATrainerTest() {
-        super(
-            new SVMLinearBinaryClassificationTrainer(),
-            true,
-            1e-2);
+    private static final long serialVersionUID = 6620781747993467186L;
+
+    /** {@inheritDoc} */
+    @Override public EmptyContext build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize) {
+        return new EmptyContext();
     }
 }

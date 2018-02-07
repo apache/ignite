@@ -20,13 +20,15 @@ package org.apache.ignite.ml.svm;
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.math.Vector;
 
-public class SVMLinearMultiClassClassificationModel implements Model<Vector, Double>, Exportable<SVMLinearBinaryClassificationModel>, Serializable {
+/** Base class for multi-classification model for set of SVM classifiers. */
+public class SVMLinearMultiClassClassificationModel implements Model<Vector, Double>, Exportable<SVMLinearMultiClassClassificationModel>, Serializable {
     /** List of models associated with each class. */
     private Map<Double, SVMLinearBinaryClassificationModel> models;
 
@@ -44,63 +46,44 @@ public class SVMLinearMultiClassClassificationModel implements Model<Vector, Dou
         return maxMargins.lastEntry().getValue();
     }
 
-/*    *//** {@inheritDoc} *//*
-    @Override public <P> void saveModel(Exporter<SVMLinearBinaryClassificationModel, P> exporter, P path) {
+    /** {@inheritDoc} */
+    @Override public <P> void saveModel(Exporter<SVMLinearMultiClassClassificationModel, P> exporter, P path) {
         exporter.save(this, path);
-    }*/
+    }
 
-/*    *//** {@inheritDoc} *//*
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        SVMLinearBinaryClassificationModel mdl = (SVMLinearBinaryClassificationModel)o;
-        return Double.compare(mdl.intercept, intercept) == 0
-            && Double.compare(mdl.threshold, threshold) == 0
-            && Boolean.compare(mdl.isKeepingRawLabels, isKeepingRawLabels) == 0
-            && Objects.equals(weights, mdl.weights);
+        SVMLinearMultiClassClassificationModel mdl = (SVMLinearMultiClassClassificationModel)o;
+        return Objects.equals(models, mdl.models);
     }
 
-    *//** {@inheritDoc} *//*
+    /** {@inheritDoc} */
     @Override public int hashCode() {
-        return Objects.hash(weights, intercept, isKeepingRawLabels, threshold);
-    }*/
+        return Objects.hash(models);
+    }
 
-/*    *//** {@inheritDoc} *//*
+    /** {@inheritDoc} */
     @Override public String toString() {
-        if (weights.size() < 10) {
-            StringBuilder builder = new StringBuilder();
 
-            for (int i = 0; i < weights.size(); i++) {
-                double nextItem = i == weights.size() - 1 ? intercept : weights.get(i + 1);
+        StringBuilder wholeString = new StringBuilder();
 
-                builder.append(String.format("%.4f", Math.abs(weights.get(i))))
-                    .append("*x")
-                    .append(i)
-                    .append(nextItem > 0 ? " + " : " - ");
-            }
+        models.forEach((clsLb, mdl) -> {
+            wholeString.append("The class with label " + clsLb + " has " + mdl.toString() + "\n");
+        });
 
-            builder.append(String.format("%.4f", Math.abs(intercept)));
-            return builder.toString();
-        }
-
-        return "LinearRegressionModel{" +
-            "weights=" + weights +
-            ", intercept=" + intercept +
-            '}';
-    }*/
+        return wholeString.toString();
+    }
 
     /**
-     *
-     * @param clsLb
-     * @param mdl
+     * Adds a specific SVM binary classifier to the bunch of same classifiers.
+     * @param clsLb The class label for the added model.
+     * @param mdl The model.
      */
     public void add(double clsLb, SVMLinearBinaryClassificationModel mdl) {
         models.put(clsLb, mdl);
-    }
-
-    @Override public <P> void saveModel(Exporter<SVMLinearBinaryClassificationModel, P> exporter, P path) {
-
     }
 }

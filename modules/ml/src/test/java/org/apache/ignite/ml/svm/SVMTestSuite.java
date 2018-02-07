@@ -17,6 +17,8 @@
 
 package org.apache.ignite.ml.svm;
 
+import org.apache.ignite.ml.svm.binary.DistributedLinearSVMBinaryClassificationTrainerTest;
+import org.apache.ignite.ml.svm.binary.LocalLinearSVMBinaryClassificationTrainerTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -25,8 +27,8 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    LocalLinearSVMClassificationSCDATrainerTest.class,
-    DistributedLinearSVMClassificationSCDATrainerTest.class,
+    LocalLinearSVMBinaryClassificationTrainerTest.class,
+    DistributedLinearSVMBinaryClassificationTrainerTest.class,
     SVMModelTest.class
 })
 public class SVMTestSuite {

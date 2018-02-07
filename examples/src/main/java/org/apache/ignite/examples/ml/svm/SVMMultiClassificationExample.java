@@ -20,6 +20,7 @@ package org.apache.ignite.examples.ml.svm;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ExampleNodeStartup;
@@ -60,7 +61,7 @@ public class SVMMultiClassificationExample {
      * @param args Command line arguments, none required.
      */
     public static void main(String[] args) throws InterruptedException {
-        System.out.println(">>> SVM Binary classification example started.");
+        System.out.println(">>> SVM Multi-Class classification example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
@@ -91,7 +92,7 @@ public class SVMMultiClassificationExample {
                     LabeledDataset test = split.test();
                     LabeledDataset train = split.train();
 
-                    System.out.println("\n>>> Create new linear binary SVM trainer object.");
+                    System.out.println("\n>>> Create new linear multi-class SVM trainer object.");
                     Trainer<SVMLinearMultiClassClassificationModel, LabeledDataset> trainer = new SVMLinearMultiClassClassificationTrainer();
 
                     System.out.println("\n>>> Perform the training to get the model.");
