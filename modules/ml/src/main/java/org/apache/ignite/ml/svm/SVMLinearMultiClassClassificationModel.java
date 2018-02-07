@@ -41,7 +41,7 @@ public class SVMLinearMultiClassClassificationModel implements Model<Vector, Dou
 
         models.forEach((k, v) -> maxMargins.put(input.dot(v.weights()) + v.intercept(), k));
 
-        return maxMargins.firstEntry().getKey();
+        return maxMargins.lastEntry().getValue();
     }
 
 /*    *//** {@inheritDoc} *//*
