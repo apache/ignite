@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabase
  * Throttles threads that generate dirty pages during ongoing checkpoint.
  * Designed to avoid zero dropdowns that can happen if checkpoint buffer is overflowed.
  */
-public class PagesWriteThrottle {
+public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
     /** Page memory. */
     private final PageMemoryImpl pageMemory;
 
@@ -48,11 +48,8 @@ public class PagesWriteThrottle {
         this.dbSharedMgr = dbSharedMgr;
     }
 
-    /**
-     * Callback to apply throttling delay.
-     * @param isInCheckpoint flag indicating if checkpoint is running.
-     */
-    public void onMarkDirty(boolean isInCheckpoint) {
+    /** {@inheritDoc} */
+    @Override public void onMarkDirty(boolean isPageInCheckpoint) {
         assert dbSharedMgr.checkpointLockIsHeldByThread();
 
         AtomicInteger writtenPagesCntr = dbSharedMgr.writtenPagesCounter();
@@ -62,7 +59,7 @@ public class PagesWriteThrottle {
 
         boolean shouldThrottle = false;
 
-        if (isInCheckpoint) {
+        if (isPageInCheckpoint) {
             int checkpointBufLimit = pageMemory.checkpointBufferPagesSize() * 2 / 3;
 
             shouldThrottle = pageMemory.checkpointBufferPagesCount() > checkpointBufLimit;
@@ -96,10 +93,12 @@ public class PagesWriteThrottle {
             exponentialBackoffCntr.set(0);
     }
 
-    /**
-     *
-     */
-    public void onFinishCheckpoint() {
+    /** {@inheritDoc} */
+    @Override public void onBeginCheckpoint() {
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onFinishCheckpoint() {
         exponentialBackoffCntr.set(0);
     }
 }
