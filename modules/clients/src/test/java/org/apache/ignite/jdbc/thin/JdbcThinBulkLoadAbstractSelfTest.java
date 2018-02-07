@@ -20,6 +20,7 @@ package org.apache.ignite.jdbc.thin;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.UnsupportedCharsetException;
 import java.sql.BatchUpdateException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -679,7 +680,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Checks cache contents after bulk loading data in the above tests: national charset version.
+     * Checks cache contents after bulk loading data in the above tests:
+     * national charset version.
      * <p>
      * Uses SQL SELECT command for querying entries.
      *
@@ -691,8 +693,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Checks cache contents after bulk loading data in the tests
-     * including erroneously recoded national charset version.
+     * Checks cache contents after bulk loading data in the tests:
+     * normal and erroneously recoded national charset version.
      * <p>
      * Uses SQL SELECT command for querying entries.
      *
@@ -704,12 +706,11 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      */
     private void checkRecodedNationalCacheContents(String tblName,
         String csvCharsetName, String stmtCharsetName) throws SQLException {
+        assert (csvCharsetName != null) == (stmtCharsetName != null);
 
         ResultSet rs = stmt.executeQuery("select _key, age, firstName, lastName from " + tblName);
 
         assert rs != null;
-
-        assert (csvCharsetName != null) == (stmtCharsetName != null);
 
         IgniteClosure<String, String> recoder =
             (csvCharsetName != null)
@@ -765,6 +766,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
          *
          * @param actualCharset Charset in which the string we are reading is actually encoded.
          * @param appliedCharset Charset which we use to read the string.
+         * @throws UnsupportedCharsetException if the charset name is wrong.
          */
         WrongCharsetRecoder(String actualCharset, String appliedCharset) {
             this.actualCharset = Charset.forName(actualCharset);

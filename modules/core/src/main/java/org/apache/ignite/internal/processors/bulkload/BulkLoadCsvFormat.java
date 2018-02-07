@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import java.nio.charset.Charset;
 import java.util.regex.Pattern;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /** A placeholder for bulk load CSV format parser options. */
 public class BulkLoadCsvFormat extends BulkLoadFormat {
@@ -161,16 +160,16 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
     }
 
     /**
-     * Returns the input file charset, null if not set.
+     * Returns the input file charset, null if not specified.
      *
-     * @return The input file charset, null if not set.
+     * @return The input file charset, null if not specified.
      */
     @Nullable public Charset inputCharset() {
         return inputCharset;
     }
 
     /**
-     * Sets the input file charset.
+     * Sets the input file charset. The null here means "not specified".
      *
      * @param charset The input file charset.
      */

@@ -23,8 +23,6 @@ package org.apache.ignite.internal.sql;
 public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
     /**
      * Tests for COPY command.
-     *
-     * @throws Exception If any of sub-tests was failed.
      */
     public void testCopy() {
         assertParseError(null,
@@ -60,14 +58,51 @@ public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
         // FORMAT
 
         assertParseError(null,
-            "copy from \"any.file\" into Person (_key, age, firstName, lastName)",
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) ",
             "Unexpected end of command (expected: \"FORMAT\")");
+
+        assertParseError(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format ",
+            "Unexpected end of command (expected: \"[identifier]\")");
 
         assertParseError(null,
             "copy from \"any.file\" into Person (_key, age, firstName, lastName) format lsd",
             "Unknown format name: LSD");
 
         // FORMAT CSV CHARSET
+
+        new SqlParser(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv")
+            .nextCommand();
+
+        new SqlParser(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv charset" +
+            " \"utf-8\"")
+            .nextCommand();
+
+        new SqlParser(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv charset" +
+            " \"UTF-8\"")
+            .nextCommand();
+
+        new SqlParser(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv charset" +
+            " \"UtF-8\"")
+            .nextCommand();
+
+        new SqlParser(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv charset" +
+            " \"windows-1251\"")
+            .nextCommand();
+
+        new SqlParser(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv charset" +
+            " \"ISO-2022-JP\"")
+            .nextCommand();
+
+        assertParseError(null,
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv charset ",
+            "Unexpected end of command (expected: \"[identifier]\")");
 
         assertParseError(null,
             "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv charset nonexistent",
