@@ -465,7 +465,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentAuthorizeNodeRestartCoordinator() throws Exception {
-        final int testUsersCnt = 1;
+        final int testUsersCnt = 10;
 
         AuthorizationContext.context(actxDflt);
 
