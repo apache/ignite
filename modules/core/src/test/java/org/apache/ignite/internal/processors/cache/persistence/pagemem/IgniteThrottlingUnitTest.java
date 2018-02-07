@@ -155,7 +155,7 @@ public class IgniteThrottlingUnitTest {
      */
     @Test
     public void beginOfCp() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
         assertTrue(throttle.getParkTime(0.01, 100,400000,
             1,
@@ -182,7 +182,7 @@ public class IgniteThrottlingUnitTest {
      */
     @Test
     public void enforceThrottleAtTheEndOfCp() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
         long time1 = throttle.getParkTime(0.70, 300000, 400000,
             1, 20200, 23000);
@@ -205,7 +205,7 @@ public class IgniteThrottlingUnitTest {
      */
     @Test
     public void tooMuchPagesMarkedDirty() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
        // 363308	350004	348976	10604
         long time = throttle.getParkTime(0.75,
