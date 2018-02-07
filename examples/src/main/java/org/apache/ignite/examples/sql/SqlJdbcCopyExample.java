@@ -17,10 +17,13 @@
 
 package org.apache.ignite.examples.sql;
 
-import org.apache.ignite.examples.*;
-import org.apache.ignite.internal.util.*;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.internal.util.IgniteUtils;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 
 /**
  * This example demonstrates usage of COPY command via Ignite thin JDBC driver.
@@ -35,7 +38,7 @@ public class SqlJdbcCopyExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        print("JDBC example started.");
+        print("JDBC COPY example started.");
 
         // Open JDBC connection
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/")) {
@@ -50,9 +53,6 @@ public class SqlJdbcCopyExample {
                 // Create table based on PARTITIONED template with one backup.
                 stmt.executeUpdate("CREATE TABLE person (id LONG, name VARCHAR, city_id LONG, " +
                     "PRIMARY KEY (id, city_id)) WITH \"backups=1, affinity_key=city_id\"");
-
-                // Create an index.
-                stmt.executeUpdate("CREATE INDEX on Person (city_id)");
             }
 
             print("Created database objects.");
@@ -93,7 +93,7 @@ public class SqlJdbcCopyExample {
             print("Dropped database objects.");
         }
 
-        print("JDBC example finished.");
+        print("JDBC COPY example finished.");
     }
 
     /**
