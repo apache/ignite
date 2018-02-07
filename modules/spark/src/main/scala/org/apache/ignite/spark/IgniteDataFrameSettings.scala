@@ -67,7 +67,7 @@ object IgniteDataFrameSettings {
       *
       * @see [[https://apacheignite-sql.readme.io/docs/create-table]]
       */
-    val OPTION_CREATE_TABLE_PARAMETERS = "createTableOptions"
+    val OPTION_CREATE_TABLE_PARAMETERS = "createTableParameters"
 
     /**
       * Config option to specify comma separated list of primary key fields for a newly created Ignite SQL table.
