@@ -106,8 +106,6 @@ public class JdbcStatement implements Statement {
     private void executeMultipleStatement(String sql, Boolean isQuery) throws SQLException {
         ensureNotClosed();
 
-        closeResults();
-
         if (F.isEmpty(sql))
             throw new SQLException("SQL query is empty");
 
@@ -157,7 +155,8 @@ public class JdbcStatement implements Statement {
 
         if (!conn.isDmlSupported())
             if(isQuery != null && !isQuery)
-                throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 and newer");
+                throw new SQLException("Failed to query Ignite: DML operations are supported in versions 1.8.0 " +
+                    "and newer");
             else
                 isQuery = true;
 
@@ -185,14 +184,30 @@ public class JdbcStatement implements Statement {
 
     /**
      * @param sql SQL query.
-     * @param isQuery Expected type of statements are contained in the query.
+     * @param isQry Expected type of statements contained in the query.
      * @throws SQLException On error.
      */
-    protected void execute0(String sql, Boolean isQuery) throws SQLException {
-        if (conn.isMultipleStatementsAllowed())
-            executeMultipleStatement(sql, isQuery);
+    protected void execute0(String sql, Boolean isQry) throws SQLException {
+        closeResults();
+
+        if (conn.clientContext().isStream()) {
+            if (isQry != null && isQry)
+                throw new SQLException("Usage of executeQuery on streamed connections is forbidden, only INSERTs " +
+                    "are supported.", SqlStateCode.UNSUPPORTED_OPERATION);
+
+            long updCnt = conn.ignite().context().query().streamUpdateQuery(conn.schemaName(),
+                conn.clientContext(), sql, getArgs());
+
+            JdbcResultSet rs = new JdbcResultSet(this, updCnt);
+
+            results = Collections.singletonList(rs);
+
+            curRes = 0;
+        }
+        else if (conn.isMultipleStatementsAllowed())
+            executeMultipleStatement(sql, isQry);
         else
-            executeSingle(sql, isQuery);
+            executeSingle(sql, isQry);
     }
 
     /** {@inheritDoc} */
@@ -214,6 +229,8 @@ public class JdbcStatement implements Statement {
      * @throws SQLException On error.
      */
     void closeInternal() throws SQLException {
+        conn.clientContext().flushOpenStreamers();
+
         for (Iterator<JdbcResultSet> it = resSets.iterator(); it.hasNext(); ) {
             JdbcResultSet rs = it.next();
 

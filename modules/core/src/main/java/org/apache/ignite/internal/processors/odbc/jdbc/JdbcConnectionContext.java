@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 
 /**
- * ODBC Connection Context.
+ * JDBC Connection Context.
  */
 public class JdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.1.0. */

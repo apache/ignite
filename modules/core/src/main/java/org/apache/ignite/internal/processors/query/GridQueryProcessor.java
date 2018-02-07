@@ -37,7 +37,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -1974,13 +1973,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      */
     public List<FieldsQueryCursor<List<?>>> querySqlFields(final SqlFieldsQuery qry, final boolean keepBinary,
         final boolean failOnMultipleStmts) {
-        return querySqlFields(null, qry, keepBinary, failOnMultipleStmts);
-    }
-
-    @SuppressWarnings("unchecked")
-    public FieldsQueryCursor<List<?>> querySqlFields(final GridCacheContext<?,?> cctx, final SqlFieldsQuery qry,
-        final boolean keepBinary) {
-        return querySqlFields(cctx, qry, keepBinary, true).get(0);
+        return querySqlFields(null, qry, null, keepBinary, failOnMultipleStmts);
     }
 
     /**
@@ -1991,7 +1984,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @return Cursor.
      */
     public FieldsQueryCursor<List<?>> querySqlFields(final SqlFieldsQuery qry, final boolean keepBinary) {
-        return querySqlFields(null, qry, keepBinary, true).get(0);
+        return querySqlFields(null, qry, null, keepBinary, true).get(0);
     }
 
     /**
@@ -1999,14 +1992,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *
      * @param cctx Cache context.
      * @param qry Query.
+     * @param cliCtx
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
      *      more then one SQL statement.
      * @return Cursor.
      */
     @SuppressWarnings("unchecked")
-    public List<FieldsQueryCursor<List<?>>> querySqlFields(@Nullable final GridCacheContext<?,?> cctx,
-        final SqlFieldsQuery qry, final boolean keepBinary, final boolean failOnMultipleStmts) {
+    public List<FieldsQueryCursor<List<?>>> querySqlFields(@Nullable final GridCacheContext<?, ?> cctx,
+        final SqlFieldsQuery qry, final SqlClientContext cliCtx, final boolean keepBinary,
+        final boolean failOnMultipleStmts) {
         checkxEnabled();
 
         validateSqlFieldsQuery(qry);
@@ -2034,7 +2029,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     GridQueryCancel cancel = new GridQueryCancel();
 
                     List<FieldsQueryCursor<List<?>>> res =
-                        idx.querySqlFields(schemaName, qry, keepBinary, failOnMultipleStmts, cancel);
+                        idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, cancel);
 
                     if (cctx != null)
                         sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx.name());
@@ -2069,25 +2064,19 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param cacheName Cache name.
      * @param schemaName Schema name.
-     * @param streamer Data streamer.
      * @param qry Query.
      * @return Iterator.
      */
-    public long streamUpdateQuery(@Nullable final String cacheName, final String schemaName,
-        final IgniteDataStreamer<?, ?> streamer, final String qry, final Object[] args) {
-        assert streamer != null;
-
+    public long streamUpdateQuery(final String schemaName, final SqlClientContext cliCtx,
+        final String qry, final Object[] args) {
         if (!busyLock.enterBusy())
             throw new IllegalStateException("Failed to execute query (grid is stopping).");
 
         try {
-            GridCacheContext cctx = ctx.cache().cache(cacheName).context();
-
-            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry, cctx, new IgniteOutClosureX<Long>() {
+            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry, null, new IgniteOutClosureX<Long>() {
                 @Override public Long applyx() throws IgniteCheckedException {
-                    return idx.streamUpdateQuery(schemaName, qry, args, streamer);
+                    return idx.streamUpdateQuery(schemaName, qry, args, cliCtx);
                 }
             }, true);
         }
