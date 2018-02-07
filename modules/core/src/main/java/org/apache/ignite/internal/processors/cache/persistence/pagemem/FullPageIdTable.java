@@ -22,6 +22,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.util.GridIntIterator;
+import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridPredicate3;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -70,6 +72,15 @@ public class FullPageIdTable {
     /** */
     private static final int OUTDATED = -3;
 
+    /** Tag offset from entry base. */
+    private static final int TAG_OFFSET = 4;
+
+    /** Page id offset from entry base. */
+    private static final int PAGE_ID_OFFSET = 8;
+
+    /** Value offset from entry base. */
+    private static final int VALUE_OFFSET = 16;
+
     /** Max size, in elements. */
     protected int capacity;
 
@@ -80,9 +91,17 @@ public class FullPageIdTable {
     protected long valPtr;
 
     //todo
+    /** Avg get steps. */
     IntervalBasedMeasurement avgGetSteps = new IntervalBasedMeasurement(250, 4);
+
+    /** Avg put steps. */
     IntervalBasedMeasurement avgPutSteps = new IntervalBasedMeasurement(250, 4);
+
+    /** Last dump. */
     AtomicLong lastDump = new AtomicLong();
+
+    /** Converted from removed to empty. */
+    AtomicLong convertedFromRmvToEmpty = new AtomicLong();
 
     /**
      * @return Estimated memory size required for this map to store the given number of elements.
@@ -209,17 +228,17 @@ public class FullPageIdTable {
      */
     public EvictCandidate getNearestAt(final int idx, final long absent) {
         for (int i = idx; i < capacity + idx; i++) {
-            final int idx2 = i >= capacity ? i - capacity : i;
+            final int idx2 = normalizeIndex(i);
 
             if (isValuePresentAt(idx2)) {
                 long base = entryBase(idx2);
 
-                int cacheId = GridUnsafe.getInt(base);
-                int tag = GridUnsafe.getInt(base + 4);
-                long pageId = GridUnsafe.getLong(base + 8);
-                long val = GridUnsafe.getLong(base + 16);
+                int grpId = GridUnsafe.getInt(base);
+                int tag = GridUnsafe.getInt(base + TAG_OFFSET);
+                long pageId = GridUnsafe.getLong(base + PAGE_ID_OFFSET);
+                long val = GridUnsafe.getLong(base + VALUE_OFFSET);
 
-                return new EvictCandidate(tag, val, new FullPageId(pageId, cacheId));
+                return new EvictCandidate(tag, val, new FullPageId(pageId, grpId));
             }
         }
 
@@ -236,18 +255,16 @@ public class FullPageIdTable {
         long base = entryBase(idx);
 
         int grpId = GridUnsafe.getInt(base);
-        int tag = GridUnsafe.getInt(base + 4);
-        long pageId = GridUnsafe.getLong(base + 8);
+        int tag = GridUnsafe.getInt(base + TAG_OFFSET);
+        long pageId = GridUnsafe.getLong(base + PAGE_ID_OFFSET);
 
-        if ((pageId == REMOVED_PAGE_ID && grpId == REMOVED_CACHE_GRP_ID)
-            || (pageId == EMPTY_PAGE_ID && grpId == EMPTY_CACHE_GRP_ID))
+        if (isRemoved(grpId, pageId) || isEmpty(grpId, pageId))
             return absent;
 
         if (pred.apply(grpId, pageId, tag)) {
             long res = valueAt(idx);
 
-            setKeyAt(idx, REMOVED_CACHE_GRP_ID, REMOVED_PAGE_ID);
-            setValueAt(idx, 0);
+            setRemoved(idx);
 
             return res;
         }
@@ -263,53 +280,79 @@ public class FullPageIdTable {
     private int putKey(int cacheId, long pageId, int tag) {
         int step = 1;
 
-        int index = U.safeAbs(FullPageId.hashCode(cacheId, pageId)) % capacity;
+        int idx = U.safeAbs(FullPageId.hashCode(cacheId, pageId)) % capacity;
 
-        int foundIndex = -1;
+        GridIntList canConvertRmvToEmpty = new GridIntList();
+
+        int foundIdx = -1;
         int res;
 
         do {
-            res = testKeyAt(index, cacheId, pageId, tag);
+            res = testKeyAt(idx, cacheId, pageId, tag);
 
             if (res == OUTDATED) {
-                foundIndex = index;
+                foundIdx = idx;
+
+                canConvertRmvToEmpty.clear();
 
                 break;
             }
             else if (res == EMPTY) {
-                if (foundIndex == -1)
-                    foundIndex = index;
+                if (foundIdx == -1)
+                    foundIdx = idx;
 
                 break;
             }
             else if (res == REMOVED) {
                 // Must continue search to the first empty slot to ensure there are no duplicate mappings.
-                if (foundIndex == -1)
-                    foundIndex = index;
+                if (foundIdx == -1)
+                    foundIdx = idx;
+                else
+                    canConvertRmvToEmpty.add(idx);
             }
-            else if (res == EQUAL)
-                return index;
-            else
+            else if (res == EQUAL) {
+                canConvertRmvToEmpty.clear();
+
+                return idx;
+            }
+            else {
+                //drop all removed elements accumulated,
+                // because some present value does not allow to reset removed chain to empty cells
+                canConvertRmvToEmpty.clear();
+
                 assert res == NOT_EQUAL;
+            }
 
-            index++;
+            idx++;
 
-            if (index >= capacity)
-                index -= capacity;
+            if (idx >= capacity)
+                idx -= capacity;
         }
         while (++step <= maxSteps);
 
         avgPutSteps.addMeasurementForAverageCalculation(step);
         dumpIfNeed();
 
-        if (foundIndex != -1) {
-            setKeyAt(foundIndex, cacheId, pageId);
-            setTagAt(foundIndex, tag);
+        if (foundIdx != -1) {
+            if (!canConvertRmvToEmpty.isEmpty()) {
+                for (GridIntIterator iter = canConvertRmvToEmpty.iterator(); iter.hasNext(); ) {
+                    int nextIdx = iter.next();
+
+                    setEmpty(nextIdx);
+                }
+
+                int delta = canConvertRmvToEmpty.size();
+
+                convertedFromRmvToEmpty.addAndGet(delta);
+            }
+
+            setKeyAt(foundIdx, cacheId, pageId);
+            setTagAt(foundIdx, tag);
 
             if (res != OUTDATED)
                 incrementSize();
 
-            return foundIndex;
+            return foundIdx;
         }
 
         throw new IgniteOutOfMemoryException("No room for a new key");
@@ -353,18 +396,108 @@ public class FullPageIdTable {
         return -1;
     }
 
+    /**
+     * prints segment statistics
+     */
     private void dumpIfNeed() {
         long ns = System.nanoTime();
         long lastNs = lastDump.get();
         if (ns - lastNs <= TimeUnit.SECONDS.toNanos(1))
             return;
 
-        if (lastDump.compareAndSet(lastNs, ns)) {
-            System.err.println("Avg steps in loaded pages table," +
-                " get: " + avgGetSteps.getAverage() + " steps, " + avgGetSteps.getSpeedOpsPerSecReadOnly() + " ops/sec, " +
-                " put: " + avgPutSteps.getAverage() + " steps, " + avgPutSteps.getSpeedOpsPerSecReadOnly() + " ops/sec, " +
-                " capacity: " + capacity + " size: " + size());
+        if (!lastDump.compareAndSet(lastNs, ns))
+            return;
+
+        int emptyCnt = 0;
+        int rmvCnt = 0;
+        for (int i = 0; i < capacity; i++) {
+            long base = entryBase(i);
+
+            int grpId = GridUnsafe.getInt(base);
+            long pageId = GridUnsafe.getLong(base + PAGE_ID_OFFSET);
+
+            if (isRemoved(grpId, pageId))
+                rmvCnt++;
+
+            if (isEmpty(grpId, pageId))
+                emptyCnt++;
+
         }
+
+        System.err.println("Avg steps in loaded pages table," +
+            " get: " + avgGetSteps.getAverage() + " steps, " + avgGetSteps.getSpeedOpsPerSecReadOnly() + " ops/sec, " +
+            " put: " + avgPutSteps.getAverage() + " steps, " + avgPutSteps.getSpeedOpsPerSecReadOnly() + " ops/sec, " +
+            " capacity: " + capacity + " size: " + size() +
+            " removedCnt: " + rmvCnt + " emptyCnt: " + emptyCnt +
+            " rmv->empty cells: " + convertedFromRmvToEmpty.get());
+    }
+
+    /**
+     * @param grpId Cache group ID.
+     * @param pageId Page ID.
+     * @return {@code true} if group & page id indicates cell has state 'Removed'.
+     */
+    private boolean isRemoved(int grpId, long pageId) {
+        return pageId == REMOVED_PAGE_ID && grpId == REMOVED_CACHE_GRP_ID;
+    }
+
+    /**
+     * Sets cell state to 'Removed' or to 'Empty' if next cell is already 'Empty'.
+     * @param idx cell index, normalized.
+     */
+    private void setRemoved(int idx) {
+        boolean nextCellIsEmpty = isEmpty(normalizeIndex(idx + 1));
+
+        if (nextCellIsEmpty)
+            setEmpty(idx);
+        else {
+            setKeyAt(idx, REMOVED_CACHE_GRP_ID, REMOVED_PAGE_ID);
+
+            setValueAt(idx, 0);
+        }
+    }
+
+    /**
+     * @param grpId Cache group ID.
+     * @param pageId Page ID.
+     * @return {@code true} if group & page id indicates cell has state 'Empty'.
+     */
+    private boolean isEmpty(int grpId, long pageId) {
+        return pageId == EMPTY_PAGE_ID && grpId == EMPTY_CACHE_GRP_ID;
+    }
+
+    /**
+     * @param idx cell index, normalized.
+     * @return {@code true} if cell with index idx has state 'Empty'.
+     */
+    private boolean isEmpty(int idx) {
+        long base = entryBase(idx);
+
+        int grpId = GridUnsafe.getInt(base);
+        long pageId = GridUnsafe.getLong(base + PAGE_ID_OFFSET);
+
+        return isEmpty(grpId, pageId);
+    }
+
+    /**
+     * Sets cell state to 'Empty'.
+     *
+     * @param idx cell index, normalized.
+     */
+    private void setEmpty(int idx) {
+        setKeyAt(idx, EMPTY_CACHE_GRP_ID, EMPTY_PAGE_ID);
+
+        setValueAt(idx, 0);
+    }
+
+    /**
+     * @param i index probably outsize internal array of cells.
+     * @return corresponding index inside cells array.
+     */
+    private int normalizeIndex(int i) {
+        assert i < 2 * capacity;
+
+        return i < capacity ? i : i - capacity;
     }
 
     /**
@@ -375,15 +508,15 @@ public class FullPageIdTable {
     private int removeKey(int cacheId, long pageId, int tag) {
         int step = 1;
 
-        int index = U.safeAbs(FullPageId.hashCode(cacheId, pageId)) % capacity;
+        int idx = U.safeAbs(FullPageId.hashCode(cacheId, pageId)) % capacity;
 
-        int foundIndex = -1;
+        int foundIdx = -1;
 
         do {
-            long res = testKeyAt(index, cacheId, pageId, tag);
+            long res = testKeyAt(idx, cacheId, pageId, tag);
 
             if (res == EQUAL || res == OUTDATED) {
-                foundIndex = index;
+                foundIdx = idx;
 
                 break;
             }
@@ -392,20 +525,20 @@ public class FullPageIdTable {
             else
                 assert res == REMOVED || res == NOT_EQUAL;
 
-            index++;
+            idx++;
 
-            if (index >= capacity)
-                index -= capacity;
+            if (idx >= capacity)
+                idx -= capacity;
         }
         while (++step <= maxSteps);
 
-        if (foundIndex != -1) {
-            setKeyAt(foundIndex, REMOVED_CACHE_GRP_ID, REMOVED_PAGE_ID);
+        if (foundIdx != -1) {
+            setRemoved(foundIdx);
 
             decrementSize();
         }
 
-        return foundIndex;
+        return foundIdx;
     }
 
     /**
@@ -416,16 +549,16 @@ public class FullPageIdTable {
         long base = entryBase(index);
 
         int grpId = GridUnsafe.getInt(base);
-        int tag = GridUnsafe.getInt(base + 4);
-        long pageId = GridUnsafe.getLong(base + 8);
+        int tag = GridUnsafe.getInt(base + TAG_OFFSET);
+        long pageId = GridUnsafe.getLong(base + PAGE_ID_OFFSET);
 
-        if (pageId == REMOVED_PAGE_ID && grpId == REMOVED_CACHE_GRP_ID)
+        if (isRemoved(grpId, pageId))
             return REMOVED;
         else if (pageId == testPageId && grpId == testCacheId && tag >= testTag)
             return EQUAL;
         else if (pageId == testPageId && grpId == testCacheId && tag < testTag)
             return OUTDATED;
-        else if (pageId == EMPTY_PAGE_ID && grpId == EMPTY_CACHE_GRP_ID)
+        else if (isEmpty(grpId, pageId))
             return EMPTY;
         else
             return NOT_EQUAL;
@@ -439,10 +572,9 @@ public class FullPageIdTable {
         long base = entryBase(idx);
 
         int grpId = GridUnsafe.getInt(base);
-        long pageId = GridUnsafe.getLong(base + 8);
+        long pageId = GridUnsafe.getLong(base + PAGE_ID_OFFSET);
 
-        return !((pageId == REMOVED_PAGE_ID && grpId == REMOVED_CACHE_GRP_ID)
-            || (pageId == EMPTY_PAGE_ID && grpId == EMPTY_CACHE_GRP_ID));
+        return !isRemoved(grpId, pageId) && !isEmpty(grpId, pageId);
     }
 
     /**
@@ -458,15 +590,15 @@ public class FullPageIdTable {
     }
 
     /**
-     * @param index Entry index.
+     * @param idx Entry index.
      * @param grpId Cache group ID to write.
      * @param pageId Page ID to write.
      */
-    private void setKeyAt(int index, int grpId, long pageId) {
-        long base = entryBase(index);
+    private void setKeyAt(int idx, int grpId, long pageId) {
+        long base = entryBase(idx);
 
         GridUnsafe.putInt(base, grpId);
-        GridUnsafe.putLong(base + 8, pageId);
+        GridUnsafe.putLong(base + PAGE_ID_OFFSET, pageId);
     }
 
     /**
@@ -522,8 +654,8 @@ public class FullPageIdTable {
                 long base = entryBase(i);
 
                 int cacheId = GridUnsafe.getInt(base);
-                long pageId = GridUnsafe.getLong(base + 8);
-                long val = GridUnsafe.getLong(base + 16);
+                long pageId = GridUnsafe.getLong(base + PAGE_ID_OFFSET);
+                long val = GridUnsafe.getLong(base + VALUE_OFFSET);
 
                 visitor.apply(new FullPageId(pageId, cacheId), val);
             }
@@ -535,7 +667,7 @@ public class FullPageIdTable {
      * @return Value.
      */
     private long valueAt(int index) {
-        return GridUnsafe.getLong(entryBase(index) + 16);
+        return GridUnsafe.getLong(entryBase(index) + VALUE_OFFSET);
     }
 
     /**
@@ -543,7 +675,7 @@ public class FullPageIdTable {
      * @param value Value.
      */
     private void setValueAt(int index, long value) {
-        GridUnsafe.putLong(entryBase(index) + 16, value);
+        GridUnsafe.putLong(entryBase(index) + VALUE_OFFSET, value);
     }
 
     private long entryBase(int index) {
@@ -555,7 +687,7 @@ public class FullPageIdTable {
      * @return Tag at the given index.
      */
     private int tagAt(int index) {
-        return GridUnsafe.getInt(entryBase(index) + 4);
+        return GridUnsafe.getInt(entryBase(index) + TAG_OFFSET);
     }
 
     /**
@@ -563,7 +695,7 @@ public class FullPageIdTable {
      * @param tag Tag to set at the given index.
      */
     private void setTagAt(int index, int tag) {
-        GridUnsafe.putInt(entryBase(index) + 4, tag);
+        GridUnsafe.putInt(entryBase(index) + TAG_OFFSET, tag);
     }
 
     /**
