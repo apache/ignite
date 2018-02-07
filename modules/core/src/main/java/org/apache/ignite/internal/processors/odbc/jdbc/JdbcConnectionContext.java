@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * ODBC Connection Context.
@@ -123,6 +124,9 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
             if (reader.available() > 0) {
                 String user = reader.readString();
                 String passwd = reader.readString();
+
+                if (F.isEmpty(user) && ctx.authentication().enabled())
+                    throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
 
                 actx = ctx.authentication().authenticate(user, passwd);
 

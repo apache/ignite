@@ -18,45 +18,18 @@
 package org.apache.ignite.jdbc.thin;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.sql.SQLWarning;
-import java.sql.Savepoint;
-import java.sql.Statement;
-import java.util.HashMap;
-import java.util.Properties;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import org.apache.ignite.configuration.AuthenticationConfiguration;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
-import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.jetbrains.annotations.NotNull;
-
-import static java.sql.Connection.TRANSACTION_NONE;
-import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
-import static java.sql.Connection.TRANSACTION_READ_UNCOMMITTED;
-import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
-import static java.sql.Connection.TRANSACTION_SERIALIZABLE;
-import static java.sql.ResultSet.CLOSE_CURSORS_AT_COMMIT;
-import static java.sql.ResultSet.CONCUR_READ_ONLY;
-import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
-import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
-import static java.sql.Statement.NO_GENERATED_KEYS;
-import static java.sql.Statement.RETURN_GENERATED_KEYS;
 
 /**
  * Connection test.
@@ -90,28 +63,126 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
 
-        startGridsMultiThreaded(2);
+        startGrids(2);
+
+        AuthorizationContext.context(grid(0).context().authentication().authenticate("ignite", "ignite"));
+
+        grid(0).context().authentication().addUser("another_user", "passwd");
+
+        AuthorizationContext.clear();
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
+    @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
 
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"EmptyTryBlock", "unused"})
-    public void testDefaults() throws Exception {
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            // No-op.
-        }
+    public void testConnection() throws Exception {
+        checkConnection("jdbc:ignite:thin://127.0.0.1", "ignite", "ignite");
+        checkConnection("jdbc:ignite:thin://127.0.0.1", "another_user", "passwd");
+        checkConnection("jdbc:ignite:thin://127.0.0.1?user=ignite&password=ignite", null, null);
+        checkConnection("jdbc:ignite:thin://127.0.0.1?user=another_user&password=passwd", null, null);
+    }
 
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/")) {
-            // No-op.
+    /**
+     */
+    public void testInvalidUserPassword() {
+        String err = "Unauthenticated sessions are prohibited";
+        checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", null, null, err);
+
+        err = "The user name or password is incorrect";
+        checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", "ignite", null, err);
+        checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", "another_user", null, err);
+        checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", "ignite", "", err);
+        checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", "ignite", "password", err);
+        checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", "another_user", "ignite", err);
+        checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", "another_user", "password", err);
+        checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", "another_user", "password", err);
+    }
+
+    /**
+     */
+    public void testUserSqlOnAuthorized() throws SQLException {
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1", "ignite", "ignite")) {
+            conn.createStatement().execute("CREATE USER test WITH PASSWORD 'test'");
+
+            checkConnection("jdbc:ignite:thin://127.0.0.1", "TEST", "test");
+
+            conn.createStatement().execute("ALTER USER test WITH PASSWORD 'newpasswd'");
+
+            checkConnection("jdbc:ignite:thin://127.0.0.1", "TEST", "newpasswd");
+
+            conn.createStatement().execute("DROP USER test");
+
+            checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", "TEST", "newpasswd",
+                "The user name or password is incorrect");
         }
+    }
+
+    /**
+     * @throws SQLException On error.
+     */
+    public void testUserSqlWithNotIgniteUser() throws SQLException {
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1", "another_user", "passwd")) {
+            String err = "User management operations are not allowed for user";
+
+            checkUnauthorizedOperation(conn, "CREATE USER test WITH PASSWORD 'test'", err);
+            checkUnauthorizedOperation(conn, "ALTER USER test WITH PASSWORD 'newpasswd'", err);
+            checkUnauthorizedOperation(conn, "DROP USER test", err);
+            checkUnauthorizedOperation(conn, "DROP USER \"another_user\"", err);
+
+            conn.createStatement().execute("ALTER USER \"another_user\" WITH PASSWORD 'newpasswd'");
+
+            checkConnection("jdbc:ignite:thin://127.0.0.1", "another_user", "newpasswd");
+        }
+    }
+
+    /**
+     * @param url Connection URL.
+     * @param user User name.
+     * @param passwd User password.
+     * @throws SQLException On failed.
+     */
+    private void checkConnection(String url, String user, String passwd) throws SQLException {
+        try (Connection conn = DriverManager.getConnection(url, user, passwd)) {
+            conn.createStatement().execute("SELECT 1");
+        }
+    }
+
+    /**
+     * @param url Connection URL.
+     * @param user User name.
+     * @param passwd User pasword.
+     * @param err Error message pattern.
+     */
+    private void checkInvalidUserPassword(final String url, final String user, final String passwd, String err) {
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                checkConnection(url, user, passwd);
+
+                return null;
+            }
+        }, SQLException.class, err);
+    }
+
+    /**
+     * @param conn JDBC connection.
+     * @param sql SQL query.
+     * @param err Error message pattern.
+     */
+    private void checkUnauthorizedOperation(final Connection conn, final String sql, String err) {
+        GridTestUtils.assertThrows(log, new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                conn.createStatement().execute(sql);
+
+                return null;
+            }
+        }, SQLException.class, err);
     }
 }

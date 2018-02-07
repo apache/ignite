@@ -289,6 +289,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         checkActivate();
         checkEnabled();
 
+        if (F.isEmpty(login))
+            return null;
+
         if (ctx.clientNode()) {
             while (true) {
                 try {

@@ -183,7 +183,7 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isLazy());
         writer.writeBoolean(connProps.isSkipReducerOnUpdate());
 
-        if (F.isEmpty(connProps.getUsername())) {
+        if (!F.isEmpty(connProps.getUsername())) {
             writer.writeString(connProps.getUsername());
             writer.writeString(connProps.getPassword());
         }

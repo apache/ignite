@@ -111,8 +111,10 @@ public class JdbcThinConnection implements Connection {
 
         ((ConnectionPropertiesImpl)connProps).init(props);
 
-        connProps.setUsername(props.getProperty("user"));
-        connProps.setPassword(props.getProperty("password"));
+        if (!F.isEmpty(props.getProperty("user"))) {
+            connProps.setUsername(props.getProperty("user"));
+            connProps.setPassword(props.getProperty("password"));
+        }
 
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
@@ -124,6 +126,11 @@ public class JdbcThinConnection implements Connection {
             cliIo = new JdbcThinTcpIo(connProps);
 
             cliIo.start();
+        }
+        catch (SQLException e) {
+            cliIo.close();
+
+            throw e;
         }
         catch (Exception e) {
             cliIo.close();

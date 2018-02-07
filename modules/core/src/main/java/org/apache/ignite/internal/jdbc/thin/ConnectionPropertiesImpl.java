@@ -102,7 +102,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** User's password. */
     private StringProperty passwd = new StringProperty(
-        "user", "User's password", null, null, false, null);
+        "password", "User's password", null, null, false, null);
 
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {

@@ -145,6 +145,9 @@ public class User implements Serializable, Message {
      * @return {@code true} If user authorized, otherwise returns {@code false}.
      */
     public boolean authorize(String passwd) {
+        if (F.isEmpty(passwd))
+            return encPasswd == null;
+
         return encPasswd.equals(password(passwd, salt));
     }
 
