@@ -69,7 +69,7 @@ public class BulkLoadContextCursor implements FieldsQueryCursor<List<?>> {
 
     /** {@inheritDoc} */
     @Override public List<List<?>> getAll() {
-        return Collections.singletonList(Arrays.asList(processor, clientParams));
+        return (List)Collections.singletonList(Arrays.asList(processor, clientParams));
     }
 
     /** {@inheritDoc} */

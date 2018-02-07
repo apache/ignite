@@ -47,6 +47,6 @@ public class StrListAppenderBlock extends PipelineBlock<String[], Object> {
 
     /** {@inheritDoc} */
     @Override public void accept(String[] elements, boolean isLastPortion) {
-        output.add(Arrays.asList(elements));
+        output.add(Arrays.<Object>asList(elements));
     }
 }
