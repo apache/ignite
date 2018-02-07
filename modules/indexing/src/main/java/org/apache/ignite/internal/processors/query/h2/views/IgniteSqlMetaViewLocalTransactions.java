@@ -76,7 +76,8 @@ public class IgniteSqlMetaViewLocalTransactions extends IgniteSqlMetaView {
 
         Collection<IgniteInternalTx> txs = ctx.cache().context().tm().activeTransactions();
 
-        log.debug("Get transactions: full scan");
+        if (log.isDebugEnabled())
+            log.debug("Get transactions: full scan");
 
         for (IgniteInternalTx tx : txs) {
             rows.add(
