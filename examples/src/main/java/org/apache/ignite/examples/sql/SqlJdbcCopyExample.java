@@ -17,13 +17,12 @@
 
 package org.apache.ignite.examples.sql;
 
-import org.apache.ignite.examples.ExampleNodeStartup;
-import org.apache.ignite.internal.util.IgniteUtils;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.internal.util.IgniteUtils;
 
 /**
  * This example demonstrates usage of COPY command via Ignite thin JDBC driver.
