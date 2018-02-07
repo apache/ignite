@@ -123,7 +123,8 @@ private[apache] object QueryHelper {
                 ctx.ignite().asInstanceOf[IgniteEx].context().query().streamUpdateQuery(tblInfo._1.getName,
                     tblInfo._1.getSqlSchema, streamer, insertQry, args.toArray)
             }
-        } finally {
+        }
+        finally {
             streamer.close()
         }
 
