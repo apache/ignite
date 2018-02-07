@@ -110,18 +110,22 @@ private[apache] object QueryHelper {
     private def savePartition(iterator: Iterator[Row], insertQry: String, tblName: String, ctx: IgniteContext): Unit = {
         val tblInfo = sqlTableInfo[Any, Any](ctx.ignite(), tblName).get
 
-        val cache = ctx.ignite().cache(tblInfo._1.getName)
+        val streamer = ctx.ignite().dataStreamer(tblInfo._1.getName)
 
-        val qry = new SqlFieldsQuery(insertQry)
+        try {
+            iterator.foreach { row ⇒
+                val schema = row.schema
 
-        iterator.foreach { row ⇒
-            val schema = row.schema
+                val args = schema.map { f ⇒
+                    row.get(row.fieldIndex(f.name)).asInstanceOf[Object]
+                }
 
-            val args = schema.map { f ⇒
-                row.get(row.fieldIndex(f.name)).asInstanceOf[Object]
+                ctx.ignite().asInstanceOf[IgniteEx].context().query().streamUpdateQuery(tblInfo._1.getName,
+                    tblInfo._1.getSqlSchema, streamer, insertQry, args.toArray)
             }
-
-            cache.query(qry.setArgs(args: _*)).getAll
+        } finally {
+            streamer.close()
         }
+
     }
 }
