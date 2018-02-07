@@ -23,13 +23,13 @@ import org.apache.ignite.internal.util.*;
 import java.sql.*;
 
 /**
- * This example demonstrates usage of Ignite JDBC driver.
+ * This example demonstrates usage of COPY command via Ignite thin JDBC driver.
  * <p>
  * Ignite nodes must be started in separate process using {@link ExampleNodeStartup} before running this example.
  */
 public class SqlJdbcCopyExample {
     /**
-     * Executes example.
+     * Executes JDBC COPY example.
      *
      * @param args Command line arguments, none required.
      * @throws Exception If example execution failed.
@@ -71,7 +71,7 @@ public class SqlJdbcCopyExample {
                     "INTO Person (id, name, city_id) FORMAT CSV");
             }
 
-            print("Populated data.");
+            print("Populated data via COPY.");
 
             // Get data.
             try (Statement stmt = conn.createStatement()) {
