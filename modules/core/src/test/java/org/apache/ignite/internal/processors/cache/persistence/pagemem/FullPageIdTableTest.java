@@ -43,7 +43,7 @@ public class FullPageIdTableTest  {
     private static final int PAGE_ID_RANGE = 3000;
 
     /** */
-    private static final int CACHE_ID_RANGE2 = 1;
+    private static final int CACHE_ID_RANGE2 = 1024;
 
     /** */
     private static final int PAGE_ID_RANGE2 = 3000;
@@ -114,7 +114,8 @@ public class FullPageIdTableTest  {
     public void putRemoveScenario() throws Exception {
         int cnt = CACHE_ID_RANGE2 * PAGE_ID_RANGE2;
 
-        long mem = FullPageIdTable.requiredMemory(cnt);
+        int elementsCount = 7000;
+        long mem = FullPageIdTable.requiredMemory(elementsCount);
 
         DirectMemoryProvider prov = new UnsafeMemoryProvider(log);
 
@@ -134,11 +135,11 @@ public class FullPageIdTableTest  {
             Map<FullPageId, Long> check = new HashMap<>();
 
             int tag = 0;
-            for (int i = 0; i < 10_000_000 ; i++) {
-                int op = rnd.nextInt(3);
+            for (int i = 0; i < cnt * 10 ; i++) {
+                int op = rnd.nextInt(5);
 
                 int cacheId = rnd.nextInt(CACHE_ID_RANGE2) + 1;
-                int pageId = rnd.nextInt(PAGE_ID_RANGE2 * 9);
+                int pageId = rnd.nextInt(PAGE_ID_RANGE2  );
 
                 FullPageId fullId = new FullPageId(pageId, cacheId);
 
@@ -146,19 +147,36 @@ public class FullPageIdTableTest  {
                     long val = tbl.get(cacheId, pageId, tag, -1, -2);
                     if (val == -2)
                         tbl.refresh(cacheId, pageId, tag);
-                    else if (check.containsKey(fullId))
-                        assertTrue("Ret " + val, val > 0);
+                    else {
+                        Long checkVal = check.get(fullId);
+
+                        if (checkVal != null) {
+                            assertEquals("Ret " + val + "Check " + checkVal,
+                                checkVal.longValue(), val);
+                        }
+                    }
 
                 }
-                else if ((op == 1 ) && (check.size() + 1 < tbl.capacity())) {
+                else if ((op == 1 || op == 2) && (check.size() < elementsCount)) {
                     long val = U.safeAbs(rnd.nextLong());
 
                     tbl.put(cacheId, pageId, val, tag);
                     check.put(fullId, val);
                 }
-                else if (check.size() >= tbl.capacity() * 2/3) {
+                else if ((op == 3) && check.size() >= elementsCount * 2 / 3) {
                     tbl.remove(cacheId, pageId, tag);
                     check.remove(fullId);
+                }
+                else if (check.size() >= elementsCount * 2 / 3) {
+                    int idx = rnd.nextInt(tbl.capacity());
+                    EvictCandidate ec = tbl.getNearestAt(idx, -2);
+                    if (ec != null) {
+                        FullPageId fullPageId = ec.fullId();
+
+                        tbl.remove(fullPageId.groupId(), fullPageId.pageId(), ec.tag());
+
+                        check.remove(fullPageId);
+                    }
                 }
 
                 IntervalBasedMeasurement avgPutSteps = U.field(tbl, "avgPutSteps");
@@ -167,6 +185,8 @@ public class FullPageIdTableTest  {
                         + " Size: " + check.size()
                         + " Capacity: " + tbl.capacity()
                         + " avg steps " + avgPutSteps.getAverage());
+
+                    verifyLinear(tbl, check);
 
                     tag++;
                 }
