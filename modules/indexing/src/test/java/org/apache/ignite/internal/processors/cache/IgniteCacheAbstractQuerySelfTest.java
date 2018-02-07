@@ -1479,7 +1479,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                     assert evt instanceof CacheQueryExecutedEvent;
 
                     if (evtsDisabled)
-                        fail("Events are disabled");
+                        fail("Cache events are disabled");
 
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
@@ -1537,7 +1537,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                     assert evt instanceof CacheQueryReadEvent;
 
                     if (evtsDisabled)
-                        fail("Events are disabled");
+                        fail("Cache events are disabled");
 
                     CacheQueryReadEvent<Integer, Integer> qe = (CacheQueryReadEvent<Integer, Integer>)evt;
 
@@ -1566,7 +1566,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                     assert evt instanceof CacheQueryExecutedEvent;
 
                     if (evtsDisabled)
-                        fail("Events are disabled");
+                        fail("Cache events are disabled");
 
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
@@ -1641,7 +1641,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                     assert evt instanceof CacheQueryReadEvent;
 
                     if (evtsDisabled)
-                        fail("Events are disabled");
+                        fail("Cache events are disabled");
 
                     CacheQueryReadEvent<UUID, Person> qe = (CacheQueryReadEvent<UUID, Person>)evt;
 
@@ -1670,7 +1670,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                     assert evt instanceof CacheQueryExecutedEvent;
 
                     if (evtsDisabled)
-                        fail("Events are disabled");
+                        fail("Cache events are disabled");
 
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
@@ -1741,7 +1741,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                     assert evt instanceof CacheQueryExecutedEvent;
 
                     if (evtsDisabled)
-                        fail("Events are disabled");
+                        fail("Cache events are disabled");
 
                     CacheQueryExecutedEvent qe = (CacheQueryExecutedEvent)evt;
 
