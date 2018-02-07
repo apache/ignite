@@ -17,14 +17,9 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.testframework.GridTestUtils;
-
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.sql.BatchUpdateException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -34,6 +29,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -230,7 +233,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
         assertEquals(2, updatesCnt);
 
-        checkNationalCacheContents(TBL_NAME, true, 2);
+        checkNationalCacheContents(TBL_NAME);
     }
 
     /**
@@ -291,7 +294,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
         assertEquals(2, updatesCnt);
 
-        checkRecodedNationalCacheContents(TBL_NAME, true, 2, csvCharsetName, stmtCharsetName);
+        checkRecodedNationalCacheContents(TBL_NAME, csvCharsetName, stmtCharsetName);
     }
 
     /**
@@ -308,7 +311,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
         assertEquals(2, updatesCnt);
 
-        checkNationalCacheContents(TBL_NAME, true, 2);
+        checkNationalCacheContents(TBL_NAME);
     }
 
     /**
@@ -326,7 +329,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
         assertEquals(2, updatesCnt);
 
-        checkNationalCacheContents(TBL_NAME, true, 2);
+        checkNationalCacheContents(TBL_NAME);
     }
 
     /**
@@ -343,7 +346,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
         assertEquals(2, updatesCnt);
 
-        checkNationalCacheContents(TBL_NAME, true, 2);
+        checkNationalCacheContents(TBL_NAME);
     }
 
     /**
@@ -461,7 +464,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
     /**
      * Checks that bulk load works when we create table using 'CREATE TABLE' command.
-     *
+     * <p>
      * The majority of the tests in this class use {@link CacheConfiguration#setIndexedTypes(Class[])}
      * to create the table.
      *
@@ -485,7 +488,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
     /**
      * Checks that bulk load works when we create table with {@link CacheConfiguration#setQueryEntities(Collection)}.
-     *
+     * <p>
      * The majority of the tests in this class use {@link CacheConfiguration#setIndexedTypes(Class[])}
      * to create a table.
      *
@@ -518,10 +521,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
     /**
      * Verifies exception thrown if COPY is added into a batch.
-     *
-     * @throws SQLException If failed.
      */
-    public void testMultipleStatement() throws SQLException {
+    public void testMultipleStatement() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 stmt.addBatch(BASIC_SQL_COPY_STMT);
@@ -547,10 +548,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
     /**
      * Verifies that COPY command is rejected by Statement.executeQuery().
-     *
-     * @throws SQLException If failed.
      */
-    public void testExecuteQuery() throws SQLException {
+    public void testExecuteQuery() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 stmt.executeQuery(BASIC_SQL_COPY_STMT);
@@ -590,10 +589,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
     /**
      * Verifies that COPY command reports an error when used with PreparedStatement parameter.
-     *
-     * @throws SQLException If failed.
      */
-    public void testPreparedStatementWithParameter() throws SQLException {
+    public void testPreparedStatementWithParameter() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     PreparedStatement pstmt = conn.prepareStatement(
@@ -642,8 +639,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
     /**
      * Checks cache contents after bulk loading data in the above tests: ASCII version.
-     *
-     * <p>Uses SQL SELECT command for querying entries.
+     * <p>
+     * Uses SQL SELECT command for querying entries.
      *
      * @param tblName Table name to query.
      * @param checkLastName Check 'lastName' column (not imported in some tests).
@@ -683,18 +680,45 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
     /**
      * Checks cache contents after bulk loading data in the above tests: national charset version.
-     *
-     * <p>Uses SQL SELECT command for querying entries.
+     * <p>
+     * Uses SQL SELECT command for querying entries.
      *
      * @param tblName Table name to query.
-     * @param checkLastName Check 'lastName' column (not imported in some tests).
-     * @param recCnt Number of records to expect.
      * @throws SQLException When one of checks has failed.
      */
-    private void checkNationalCacheContents(String tblName, boolean checkLastName, int recCnt) throws SQLException {
+    private void checkNationalCacheContents(String tblName) throws SQLException {
+        checkRecodedNationalCacheContents(tblName, null, null);
+    }
+
+    /**
+     * Checks cache contents after bulk loading data in the tests
+     * including erroneously recoded national charset version.
+     * <p>
+     * Uses SQL SELECT command for querying entries.
+     *
+     * @param tblName Table name to query.
+     * @param csvCharsetName Either null or the charset used in CSV file
+     *      Note that the both {@code csvCharsetName} and {@code stmtCharsetName} should be either null or non-null.
+     * @param stmtCharsetName Either null or the charset specified in COPY statement.
+     * @throws SQLException When one of checks has failed.
+     */
+    private void checkRecodedNationalCacheContents(String tblName,
+        String csvCharsetName, String stmtCharsetName) throws SQLException {
+
         ResultSet rs = stmt.executeQuery("select _key, age, firstName, lastName from " + tblName);
 
         assert rs != null;
+
+        assert (csvCharsetName != null) == (stmtCharsetName != null);
+
+        IgniteClosure<String, String> recoder =
+            (csvCharsetName != null)
+                ? new WrongCharsetRecoder(csvCharsetName, stmtCharsetName)
+                : new IgniteClosure<String, String>() {
+                    @Override public String apply(String input) {
+                        return input;
+                    }
+                };
 
         int cnt = 0;
 
@@ -703,15 +727,17 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
             if (id == 123) {
                 assertEquals(12, rs.getInt("age"));
-                assertEquals("Имя123 Отчество123", rs.getString("firstName"));
-                if (checkLastName)
-                    assertEquals("Фамилия123", rs.getString("lastName"));
+
+                assertEquals(recoder.apply("Имя123 Отчество123"), rs.getString("firstName"));
+
+                assertEquals(recoder.apply("Фамилия123"), rs.getString("lastName"));
             }
             else if (id == 456) {
                 assertEquals(45, rs.getInt("age"));
-                assertEquals("Имя456", rs.getString("firstName"));
-                if (checkLastName)
-                    assertEquals("Фамилия456", rs.getString("lastName"));
+
+                assertEquals(recoder.apply("Имя456"), rs.getString("firstName"));
+
+                assertEquals(recoder.apply("Фамилия456"), rs.getString("lastName"));
             }
             else
                 fail("Wrong ID: " + id);
@@ -719,23 +745,47 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
             cnt++;
         }
 
-        assertEquals(recCnt, cnt);
+        assertEquals(2, cnt);
     }
 
     /**
-     * FIXME SHQ
-     * Checks cache contents after bulk loading data in the above tests: erroneously recoded national charset version.
-     *
-     * <p>Uses SQL SELECT command for querying entries.
-     *
-     * @param tblName
-     * @param checkLastName
-     * @param recNum
-     * @param csvFileCharsetName
-     * @param stmtCharsetName
+     * Recodes an input string as if it was encoded in one charset and was read using
+     * another charset using {@link CodingErrorAction#REPLACE} settings for
+     * unmappable and malformed characters.
      */
-    private void checkRecodedNationalCacheContents(String tblName, boolean checkLastName, int recNum,
-        String csvFileCharsetName, String stmtCharsetName) {
+    private static class WrongCharsetRecoder implements IgniteClosure<String, String> {
+         /** Charset in which the string we are reading is actually encoded. */
+        private final Charset actualCharset;
 
+        /** Charset which we use to read the string. */
+        private final Charset appliedCharset;
+
+        /**
+         * Creates the recoder.
+         *
+         * @param actualCharset Charset in which the string we are reading is actually encoded.
+         * @param appliedCharset Charset which we use to read the string.
+         */
+        WrongCharsetRecoder(String actualCharset, String appliedCharset) {
+            this.actualCharset = Charset.forName(actualCharset);
+            this.appliedCharset = Charset.forName(appliedCharset);
+        }
+
+        /**
+         * Converts string as it was read using a wrong charset.
+         * <p>
+         * First the method converts the string into {@link #actualCharset} and puts bytes into a buffer.
+         * Then it tries to read these bytes from the buffer using {@link #appliedCharset} and
+         * {@link CodingErrorAction#REPLACE} settings for unmappable and malformed characters
+         * (these defaults actually come from {@link Charset#decode(ByteBuffer)} implementation).
+         *
+         * @param input The input string (in Java encoding).
+         * @return The converted string.
+         */
+        @Override public String apply(String input) {
+            ByteBuffer encodedBuf = actualCharset.encode(input);
+
+            return appliedCharset.decode(encodedBuf).toString();
+        }
     }
 }
