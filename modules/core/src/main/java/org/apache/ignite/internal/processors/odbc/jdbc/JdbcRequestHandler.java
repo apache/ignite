@@ -30,14 +30,17 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
@@ -53,8 +56,12 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BULK_LOAD_BATCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_COLUMNS;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_INDEXES;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_PARAMS;
@@ -87,6 +94,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
     /** Current queries cursors. */
     private final ConcurrentHashMap<Long, JdbcQueryCursor> qryCursors = new ConcurrentHashMap<>();
+
+    /** Current bulk load processors. */
+    private final ConcurrentHashMap<Long, JdbcBulkLoadProcessor> bulkLoadRequests = new ConcurrentHashMap<>();
 
     /** Distributed joins flag. */
     private final boolean distributedJoins;
@@ -192,6 +202,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 case META_SCHEMAS:
                     return getSchemas((JdbcMetaSchemasRequest)req);
+
+                case BULK_LOAD_BATCH:
+                    return processBulkLoadFileBatch((JdbcBulkLoadBatchRequest)req);
             }
 
             return new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
@@ -199,6 +212,46 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
         finally {
             busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * Processes a file batch sent from client as part of bulk load COPY command.
+     *
+     * @param req Request object with a batch of a file received from client.
+     * @return Response to send to the client.
+     */
+    private ClientListenerResponse processBulkLoadFileBatch(JdbcBulkLoadBatchRequest req) {
+        JdbcBulkLoadProcessor processor = bulkLoadRequests.get(req.queryId());
+
+        if (ctx == null)
+            return new JdbcResponse(IgniteQueryErrorCode.UNEXPECTED_OPERATION, "Unknown query ID: "
+                + req.queryId() + ". Bulk load session may have been reclaimed due to timeout.");
+
+        try {
+            processor.processBatch(req);
+
+            switch (req.cmd()) {
+                case CMD_FINISHED_ERROR:
+                case CMD_FINISHED_EOF:
+                    bulkLoadRequests.remove(req.queryId());
+
+                    processor.close();
+
+                    break;
+
+                case CMD_CONTINUE:
+                    break;
+
+                default:
+                    throw new IllegalArgumentException();
+            }
+
+            return new JdbcResponse(new JdbcQueryExecuteResult(req.queryId(), processor.updateCnt()));
+        }
+        catch (Exception e) {
+            U.error(null, "Error processing file batch", e);
+            return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e);
         }
     }
 
@@ -232,6 +285,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             {
                 for (JdbcQueryCursor cursor : qryCursors.values())
                     cursor.close();
+
+                for (JdbcBulkLoadProcessor processor : bulkLoadRequests.values()) {
+                    try {
+                        processor.close();
+                    }
+                    catch (Exception e) {
+                        U.error(null, "Error closing JDBC bulk load processor.", e);
+                    }
+                }
+
+                bulkLoadRequests.clear();
             }
             finally {
                 busyLock.leaveBusy();
@@ -305,10 +369,22 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache(qry, true,
                 protocolVer.compareTo(VER_2_3_0) < 0);
 
-            if (results.size() == 1) {
-                FieldsQueryCursor<List<?>> qryCur = results.get(0);
+            FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
 
-                JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
+            if (fieldsCur instanceof BulkLoadContextCursor) {
+                BulkLoadContextCursor blCur = (BulkLoadContextCursor) fieldsCur;
+
+                BulkLoadProcessor blProcessor = blCur.bulkLoadProcessor();
+                BulkLoadAckClientParameters clientParams = blCur.clientParams();
+
+                bulkLoadRequests.put(qryId, new JdbcBulkLoadProcessor(blProcessor));
+
+                return new JdbcResponse(new JdbcBulkLoadAckResult(qryId, clientParams));
+            }
+
+            if (results.size() == 1) {
+                JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(),
+                    (QueryCursorImpl)fieldsCur);
 
                 JdbcQueryExecuteResult res;
 
@@ -497,10 +573,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 qry.setSchema(schemaName);
 
-                QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query()
-                    .querySqlFieldsNoCache(qry, true, true).get(0);
+                FieldsQueryCursor<List<?>> qryCur = F.first(ctx.query()
+                    .querySqlFieldsNoCache(qry, true, true));
 
-                assert !qryCur.isQuery();
+                if (qryCur instanceof BulkLoadContextCursor)
+                    throw new IgniteSQLException("COPY command cannot be executed in batch mode.");
+
+                assert !((QueryCursorImpl)qryCur).isQuery();
 
                 List<List<?>> items = qryCur.getAll();
 

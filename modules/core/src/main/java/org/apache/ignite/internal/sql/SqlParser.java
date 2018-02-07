@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.sql.SqlKeyword.COPY;
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
 import static org.apache.ignite.internal.sql.SqlKeyword.HASH;
@@ -99,6 +101,11 @@ public class SqlParser {
                             cmd = processDrop();
 
                             break;
+
+                        case COPY:
+                            cmd = processCopy();
+
+                            break;
                     }
 
                     if (cmd != null) {
@@ -109,7 +116,7 @@ public class SqlParser {
                         return cmd;
                     }
                     else
-                        throw errorUnexpectedToken(lex, CREATE, DROP);
+                        throw errorUnexpectedToken(lex, CREATE, DROP, COPY);
 
                 case QUOTED:
                 case MINUS:
@@ -121,6 +128,15 @@ public class SqlParser {
                     throw errorUnexpectedToken(lex);
             }
         }
+    }
+
+    /**
+     * Processes COPY command.
+     *
+     * @return The {@link SqlBulkLoadCommand} command.
+     */
+    private SqlCommand processCopy() {
+        return new SqlBulkLoadCommand().parse(lex);
     }
 
     /**
