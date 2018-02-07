@@ -374,6 +374,7 @@ public class DmlStatementsProcessor {
     /**
      * Perform given statement against given data streamer. Only rows based INSERT is supported.
      *
+     * @param schemaName Schema name.
      * @param streamer Streamer to feed data to.
      * @param stmt Statement.
      * @param args Statement arguments.
@@ -381,19 +382,15 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    long streamUpdateQuery(IgniteDataStreamer streamer, PreparedStatement stmt, final Object[] args)
+    long streamUpdateQuery(String schemaName, IgniteDataStreamer streamer, PreparedStatement stmt, final Object[] args)
         throws IgniteCheckedException {
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
         assert p != null;
 
-        final UpdatePlan plan = UpdatePlanBuilder.planForStatement(p, true, idx, null, null, null);
+        final UpdatePlan plan = getPlanForStatement(schemaName, null, p, null, true, null);
 
-        if (!F.eq(streamer.cacheName(), plan.cacheContext().name()))
-            throw new IgniteSQLException("Cross cache streaming is not supported, please specify cache explicitly" +
-                " in connection options", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-        if (plan.mode() == UpdateMode.INSERT && plan.rowCount() > 0) {
+        if (plan.isStreamable()) {
             assert plan.isLocalSubquery();
 
             final GridCacheContext cctx = plan.cacheContext();
@@ -508,7 +505,7 @@ public class DmlStatementsProcessor {
                 .setPageSize(fieldsQry.getPageSize())
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schemaName, newFieldsQry, true, true,
+            cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schemaName, newFieldsQry, null, true, true,
                 cancel).get(0);
         }
         else if (plan.hasRows())
@@ -599,7 +596,7 @@ public class DmlStatementsProcessor {
      * @return Update plan.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private UpdatePlan getPlanForStatement(String schema, Connection conn, Prepared p, SqlFieldsQuery fieldsQry,
+    UpdatePlan getPlanForStatement(String schema, Connection conn, Prepared p, SqlFieldsQuery fieldsQry,
         boolean loc, @Nullable Integer errKeysPos) throws IgniteCheckedException {
         H2CachedStatementKey planKey = H2CachedStatementKey.forDmlStatement(schema, p.getSQL(), fieldsQry, loc);
 

@@ -497,7 +497,14 @@ public final class UpdatePlan {
     /**
      * @return Local subquery flag.
      */
-    @Nullable public boolean isLocalSubquery() {
+    public boolean isLocalSubquery() {
         return isLocSubqry;
+    }
+
+    /**
+     * @return Whether this statement may be executed in streaming mode.
+     */
+    public boolean isStreamable() {
+        return mode == UpdateMode.INSERT && rowsNum > 0;
     }
 }

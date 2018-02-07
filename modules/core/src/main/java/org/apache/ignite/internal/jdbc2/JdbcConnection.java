@@ -61,6 +61,7 @@ import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -112,6 +113,8 @@ public class JdbcConnection implements Connection {
     /** Ignite ignite. */
     private final Ignite ignite;
 
+    private final SqlClientContext cliCtx;
+
     /** Node key. */
     private final String cfg;
 
@@ -133,44 +136,14 @@ public class JdbcConnection implements Connection {
     /** Local query flag. */
     private boolean locQry;
 
-    /** Collocated query flag. */
-    private boolean collocatedQry;
-
-    /** Distributed joins flag. */
-    private boolean distributedJoins;
-
-    /** Enforced join order flag. */
-    private boolean enforceJoinOrder;
-
-    /** Lazy query execution flag. */
-    private boolean lazy;
-
     /** Transactions allowed flag. */
     private boolean txAllowed;
 
     /** Current transaction isolation. */
     private int txIsolation;
 
-    /** Make this connection streaming oriented, and prepared statements - data streamer aware. */
-    private final boolean stream;
-
-    /** Auto flush frequency for streaming. */
-    private final long streamFlushTimeout;
-
-    /** Node buffer size for data streamer. */
-    private final int streamNodeBufSize;
-
-    /** Parallel ops count per node for data streamer. */
-    private final int streamNodeParOps;
-
-    /** Allow overwrites for duplicate keys on streamed {@code INSERT}s. */
-    private final boolean streamAllowOverwrite;
-
     /** Allow queries with multiple statements. */
     private final boolean multipleStmts;
-
-    /** Skip reducer on update flag. */
-    private final boolean skipReducerOnUpdate;
 
     /** Statements. */
     final Set<JdbcStatement> statements = new HashSet<>();
@@ -191,34 +164,39 @@ public class JdbcConnection implements Connection {
 
         cacheName = props.getProperty(PROP_CACHE);
         locQry = Boolean.parseBoolean(props.getProperty(PROP_LOCAL));
-        collocatedQry = Boolean.parseBoolean(props.getProperty(PROP_COLLOCATED));
-        distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
-        enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER));
-        lazy = Boolean.parseBoolean(props.getProperty(PROP_LAZY));
+        boolean collocatedQry = Boolean.parseBoolean(props.getProperty(PROP_COLLOCATED));
+        boolean distributedJoins = Boolean.parseBoolean(props.getProperty(PROP_DISTRIBUTED_JOINS));
+        boolean enforceJoinOrder = Boolean.parseBoolean(props.getProperty(PROP_ENFORCE_JOIN_ORDER));
+        boolean lazy = Boolean.parseBoolean(props.getProperty(PROP_LAZY));
         txAllowed = Boolean.parseBoolean(props.getProperty(PROP_TX_ALLOWED));
 
-        stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
+        boolean stream = Boolean.parseBoolean(props.getProperty(PROP_STREAMING));
 
-        if (stream && cacheName == null) {
-            throw new SQLException("Cache name cannot be null when streaming is enabled.",
-                SqlStateCode.CLIENT_CONNECTION_FAILED);
-        }
-
-        streamAllowOverwrite = Boolean.parseBoolean(props.getProperty(PROP_STREAMING_ALLOW_OVERWRITE));
-        streamFlushTimeout = Long.parseLong(props.getProperty(PROP_STREAMING_FLUSH_FREQ, "0"));
-        streamNodeBufSize = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_BUF_SIZE,
+        boolean streamAllowOverwrite = Boolean.parseBoolean(props.getProperty(PROP_STREAMING_ALLOW_OVERWRITE));
+        long streamFlushTimeout = Long.parseLong(props.getProperty(PROP_STREAMING_FLUSH_FREQ, "0"));
+        int streamNodeBufSize = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_BUF_SIZE,
             String.valueOf(IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE)));
         // If value is zero, server data-streamer pool size multiplied
         // by IgniteDataStreamer.DFLT_PARALLEL_OPS_MULTIPLIER will be used
-        streamNodeParOps = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_PAR_OPS, "0"));
+        int streamNodeParOps = Integer.parseInt(props.getProperty(PROP_STREAMING_PER_NODE_PAR_OPS, "0"));
 
         multipleStmts = Boolean.parseBoolean(props.getProperty(PROP_MULTIPLE_STMTS));
-        skipReducerOnUpdate = Boolean.parseBoolean(props.getProperty(PROP_SKIP_REDUCER_ON_UPDATE));
+
+        if (stream && multipleStmts)
+            throw new SQLException("Multiple statements are not supported for streamed connections in thick client.",
+                SqlStateCode.UNSUPPORTED_OPERATION);
+
+        boolean skipReducerOnUpdate = Boolean.parseBoolean(props.getProperty(PROP_SKIP_REDUCER_ON_UPDATE));
 
         String nodeIdProp = props.getProperty(PROP_NODE_ID);
 
-        if (nodeIdProp != null)
+        if (nodeIdProp != null) {
+            if (stream)
+                throw new SQLException("Node id is not supported for streamed connections in thick client.",
+                    SqlStateCode.UNSUPPORTED_OPERATION);
+
             nodeId = UUID.fromString(nodeIdProp);
+        }
 
         try {
             String cfgUrl = props.getProperty(PROP_CFG);
@@ -248,8 +226,23 @@ public class JdbcConnection implements Connection {
         catch (Exception e) {
             close();
 
-            throw convertToSqlException(e, "Failed to start Ignite node. " + e.getMessage(), SqlStateCode.CLIENT_CONNECTION_FAILED);
+            throw convertToSqlException(e, "Failed to start Ignite node. " + e.getMessage(),
+                SqlStateCode.CLIENT_CONNECTION_FAILED);
         }
+
+        cliCtx = new SqlClientContext(
+            ignite().context(),
+            distributedJoins,
+            enforceJoinOrder,
+            collocatedQry,
+            lazy,
+            skipReducerOnUpdate,
+            stream,
+            streamAllowOverwrite,
+            streamNodeParOps,
+            streamNodeBufSize,
+            streamFlushTimeout
+        );
     }
 
     /**
@@ -408,6 +401,11 @@ public class JdbcConnection implements Connection {
 
             it.remove();
         }
+
+        // May be null if 'close' is called when connection is open via try-with-resource and
+        // exception is thrown from ctor.
+        if (cliCtx != null)
+            cliCtx.close();
 
         IgniteNodeFuture fut = NODES.get(cfg);
 
@@ -603,34 +601,7 @@ public class JdbcConnection implements Connection {
         if (!txAllowed && resSetHoldability != HOLD_CURSORS_OVER_COMMIT)
             throw new SQLFeatureNotSupportedException("Invalid holdability (transactions are not supported).");
 
-        JdbcPreparedStatement stmt;
-
-        if (!stream)
-            stmt = new JdbcPreparedStatement(this, sql);
-        else {
-            GridQueryIndexing idx = ignite().context().query().getIndexing();
-
-            PreparedStatement nativeStmt = prepareNativeStatement(sql);
-
-            if (!idx.isInsertStatement(nativeStmt)) {
-                throw new SQLException("Only INSERT operations are supported in streaming mode",
-                    SqlStateCode.INTERNAL_ERROR,
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-            }
-
-            IgniteDataStreamer streamer = ignite().dataStreamer(cacheName);
-
-            streamer.autoFlushFrequency(streamFlushTimeout);
-            streamer.allowOverwrite(streamAllowOverwrite);
-
-            if (streamNodeBufSize > 0)
-                streamer.perNodeBufferSize(streamNodeBufSize);
-
-            if (streamNodeParOps > 0)
-                streamer.perNodeParallelOperations(streamNodeParOps);
-
-            stmt = new JdbcStreamedPreparedStatement(this, sql, streamer, nativeStmt);
-        }
+        JdbcPreparedStatement stmt = new JdbcPreparedStatement(this, sql);
 
         statements.add(stmt);
 
@@ -862,7 +833,7 @@ public class JdbcConnection implements Connection {
      * @return {@code true} if update on server is enabled, {@code false} otherwise.
      */
     boolean skipReducerOnUpdate() {
-        return skipReducerOnUpdate;
+        return cliCtx.isSkipReducerOnUpdate();
     }
 
     /**
@@ -876,28 +847,35 @@ public class JdbcConnection implements Connection {
      * @return Collocated query flag.
      */
     boolean isCollocatedQuery() {
-        return collocatedQry;
+        return cliCtx.isCollocated();
     }
 
     /**
      * @return Distributed joins flag.
      */
     boolean isDistributedJoins() {
-        return distributedJoins;
+        return cliCtx.isDistributedJoins();
     }
 
     /**
      * @return Enforce join order flag.
      */
     boolean isEnforceJoinOrder() {
-        return enforceJoinOrder;
+        return cliCtx.isEnforceJoinOrder();
     }
 
     /**
      * @return Lazy query execution flag.
      */
     boolean isLazy() {
-        return lazy;
+        return cliCtx.isLazy();
+    }
+
+    /**
+     * @return Client context.
+     */
+    SqlClientContext clientContext() {
+        return cliCtx;
     }
 
     /**
