@@ -108,9 +108,6 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /** */
     private static boolean cutromEvt = false;
 
-    /** Default cache name with events disabled. */
-    private final static String DEFAULT_CACHE_NAME_EVTS_DISABLED = DEFAULT_CACHE_NAME + "EvtsDisabled";
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -128,14 +125,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        CacheConfiguration ccfg = cacheConfiguration(igniteInstanceName);
-
-        CacheConfiguration ccfgEvtsDisabled = new CacheConfiguration(ccfg);
-
-        ccfgEvtsDisabled.setName(DEFAULT_CACHE_NAME_EVTS_DISABLED);
-        ccfgEvtsDisabled.setEventsDisabled(true);
-
-        cfg.setCacheConfiguration(ccfg, ccfgEvtsDisabled);
+        cfg.setCacheConfiguration(cacheConfiguration(igniteInstanceName));
 
         cfg.setDeploymentMode(CONTINUOUS);
 
@@ -251,6 +241,13 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
             Ignite g1 = startGrid(1);
 
             GridCacheAdapter<Integer, String> cache1 = ((IgniteKernal)g1).internalCache(DEFAULT_CACHE_NAME);
+
+            // Cache rebalancing events should not be fired for this cache.
+            CacheConfiguration ccfg = cacheConfiguration(((IgniteKernal)g1).getInstanceName())
+                .setName(DEFAULT_CACHE_NAME + "_evts_disabled")
+                .setEventsDisabled(true);
+
+            g1.getOrCreateCache(ccfg);
 
             cache1.getAndPut(1, "val1");
             cache1.getAndPut(2, "val2");

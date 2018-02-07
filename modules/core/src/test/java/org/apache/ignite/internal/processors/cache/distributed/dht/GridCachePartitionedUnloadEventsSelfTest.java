@@ -50,7 +50,7 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
     /** */
     private static final int EVENTS_COUNT = 40;
 
-    /** Default cache name with events disabled. */
+    /** Default cache name with cache events disabled. */
     private static final String DEFAULT_CACHE_NAME_EVTS_DISABLED = DEFAULT_CACHE_NAME + "EvtsDisabled";
 
     /** {@inheritDoc} */
@@ -98,13 +98,16 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
 
         for (int i = 0; i < EVENTS_COUNT; i++) {
             cache1.put(i, "val");
+
+            // Events should not be fired by this put.
             cache2.put(i, "val");
+
             allKeys.add(i);
         }
 
         Ignite g2 = startGrid("g2");
 
-        awaitPartitionMapExchange();
+        awaitPartitionMapExchange(true, true, null);
 
         Map<ClusterNode, Collection<Object>> keysMap = g1.affinity(DEFAULT_CACHE_NAME).mapKeysToNodes(allKeys);
         Collection<Object> g2Keys = keysMap.get(g2.cluster().localNode());

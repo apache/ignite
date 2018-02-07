@@ -744,6 +744,7 @@ public class IgniteDynamicCacheStartSelfTest extends GridCommonAbstractTest {
         cfg.setName(DYNAMIC_CACHE_NAME);
         cfg.setCacheMode(CacheMode.REPLICATED);
 
+        // This cache will not fire any cache events.
         CacheConfiguration cfgEvtsDisabled = new CacheConfiguration(cfg);
 
         cfgEvtsDisabled.setName("DynamicCacheEvtsDisabled");

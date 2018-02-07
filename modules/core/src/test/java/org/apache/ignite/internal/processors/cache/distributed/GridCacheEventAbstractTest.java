@@ -695,7 +695,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     /**
      * Local event listener.
      */
-    private static class TestEventListener implements  EventListener {
+    private static class TestEventListener implements EventListener {
         /** Events count map. */
         private ConcurrentMap<Integer, AtomicInteger> cntrs = new ConcurrentHashMap<>();
 
