@@ -17,19 +17,17 @@
 
 package org.apache.ignite.examples.sql;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
-import org.apache.ignite.examples.ExampleNodeStartup;
+import org.apache.ignite.examples.*;
+import org.apache.ignite.internal.util.*;
+
+import java.sql.*;
 
 /**
  * This example demonstrates usage of Ignite JDBC driver.
  * <p>
  * Ignite nodes must be started in separate process using {@link ExampleNodeStartup} before running this example.
  */
-public class SqlJdbcExample {
+public class SqlJdbcCopyExample {
     /**
      * Executes example.
      *
@@ -59,43 +57,18 @@ public class SqlJdbcExample {
 
             print("Created database objects.");
 
-            // Populate City table with PreparedStatement.
-            try (PreparedStatement stmt = conn.prepareStatement("INSERT INTO city (id, name) VALUES (?, ?)")) {
-                stmt.setLong(1, 1L);
-                stmt.setString(2, "Forest Hill");
-                stmt.executeUpdate();
-
-                stmt.setLong(1, 2L);
-                stmt.setString(2, "Denver");
-                stmt.executeUpdate();
-
-                stmt.setLong(1, 3L);
-                stmt.setString(2, "St. Petersburg");
-                stmt.executeUpdate();
+            // Populate City via COPY command with records from cityBulkLoad.csv
+            try (Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate("COPY FROM \"" +
+                    IgniteUtils.resolveIgnitePath("examples/src/main/resources/cityBulkLoad.csv") + "\" " +
+                    "INTO City (id, name) FORMAT CSV");
             }
 
-            // Populate Person table with PreparedStatement.
-            try (PreparedStatement stmt =
-                conn.prepareStatement("INSERT INTO person (id, name, city_id) values (?, ?, ?)")) {
-                stmt.setLong(1, 1L);
-                stmt.setString(2, "John Doe");
-                stmt.setLong(3, 3L);
-                stmt.executeUpdate();
-
-                stmt.setLong(1, 2L);
-                stmt.setString(2, "Jane Roe");
-                stmt.setLong(3, 2L);
-                stmt.executeUpdate();
-
-                stmt.setLong(1, 3L);
-                stmt.setString(2, "Mary Major");
-                stmt.setLong(3, 1L);
-                stmt.executeUpdate();
-
-                stmt.setLong(1, 4L);
-                stmt.setString(2, "Richard Miles");
-                stmt.setLong(3, 2L);
-                stmt.executeUpdate();
+            // Populate Person via COPY command with records from personBulkLoad.csv
+            try (Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate("COPY FROM \"" +
+                    IgniteUtils.resolveIgnitePath("examples/src/main/resources/personBulkLoad.csv") + "\" " +
+                    "INTO Person (id, name, city_id) FORMAT CSV");
             }
 
             print("Populated data.");
