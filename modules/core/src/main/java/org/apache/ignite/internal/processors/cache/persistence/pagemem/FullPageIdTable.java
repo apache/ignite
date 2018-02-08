@@ -470,8 +470,11 @@ public class FullPageIdTable {
     private void setRemoved(int idx) {
         boolean nextCellIsEmpty = isEmpty(normalizeIndex(idx + 1));
 
-        if (optimize2 && nextCellIsEmpty)
+        if (optimize2 && nextCellIsEmpty) {
             setEmpty(idx);
+
+            convertedFromRmvToEmpty.incrementAndGet();
+        }
         else {
             setKeyAt(idx, REMOVED_CACHE_GRP_ID, REMOVED_PAGE_ID);
 
