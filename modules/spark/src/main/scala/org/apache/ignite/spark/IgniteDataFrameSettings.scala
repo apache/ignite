@@ -85,7 +85,27 @@ object IgniteDataFrameSettings {
 
     /**
       * Config option for saving data frame.
-      * Internally all inserts are done through IgniteDataStreamer.
+      * Internally all SQL inserts are done through `IgniteDataStreamer`.
+      * This options sets `allowOverwrite` property of streamer.
+      * If `true` then row with same primary key value will be written to the table.
+      * If `false` then row with same primary key value will be skipped. Existing row will be left in the table.
+      * Default value if `false`.
+      *
+      * @example {{{
+      * val igniteDF = spark.write.format(IGNITE)
+      *     // other options ...
+      *     .option(OPTION_STREAMER_ALLOW_OVERWRITE, true)
+      *     .save()
+      * }}}
+      *
+      * @see [[org.apache.ignite.IgniteDataStreamer]]
+      * @see [[org.apache.ignite.IgniteDataStreamer#allowOverwrite(boolean)]]
+      */
+    val OPTION_STREAMER_ALLOW_OVERWRITE = "streamerAllowOverwrite"
+
+    /**
+      * Config option for saving data frame.
+      * Internally all SQL inserts are done through `IgniteDataStreamer`.
       * This options sets `autoFlushFrequency` property of streamer.
       *
       * @example {{{
@@ -98,12 +118,12 @@ object IgniteDataFrameSettings {
       * @see [[org.apache.ignite.IgniteDataStreamer]]
       * @see [[org.apache.ignite.IgniteDataStreamer#autoFlushFrequency(long)]]
       */
-    val OPTION_STREAMING_FLUSH_FREQUENCY = "streamingFlushFrequency"
+    val OPTION_STREAMER_FLUSH_FREQUENCY = "streamerFlushFrequency"
 
     /**
       * Config option for saving data frame.
-      * Internally all inserts are done through IgniteDataStreamer.
-      * This options sets `perNodeBufferSize` property of streamer.
+      * Internally all SQL inserts are done through `IgniteDataStreamer`.
+      * This options sets perNodeBufferSize` property of streamer.
       *
       * @example {{{
       * val igniteDF = spark.write.format(IGNITE)
@@ -115,11 +135,11 @@ object IgniteDataFrameSettings {
       * @see [[org.apache.ignite.IgniteDataStreamer]]
       * @see [[org.apache.ignite.IgniteDataStreamer#perNodeBufferSize(int)]]
       */
-    val OPTION_STREAMING_PER_NODE_BUFFER_SIZE = "streamingPerNodeBufferSize"
+    val OPTION_STREAMER_PER_NODE_BUFFER_SIZE = "streamerPerNodeBufferSize"
 
     /**
       * Config option for saving data frame.
-      * Internally all inserts are done through IgniteDataStreamer.
+      * Internally all SQL inserts are done through `IgniteDataStreamer`.
       * This options sets `perNodeParallelOperations` property of streamer.
       *
       * @example {{{
@@ -132,5 +152,5 @@ object IgniteDataFrameSettings {
       * @see [[org.apache.ignite.IgniteDataStreamer]]
       * @see [[org.apache.ignite.IgniteDataStreamer#perNodeParallelOperations(int)]]
       */
-    val OPTION_STREAMING_PER_NODE_PARALLEL_OPERATIONS = "streamingPerNodeParallelOperations"
+    val OPTION_STREAMER_PER_NODE_PARALLEL_OPERATIONS = "streamerPerNodeParallelOperations"
 }

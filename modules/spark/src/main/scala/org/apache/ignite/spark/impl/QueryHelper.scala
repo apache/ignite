@@ -92,11 +92,37 @@ private[apache] object QueryHelper {
       * @param data Data.
       * @param tblName Table name.
       * @param ctx Ignite context.
+      * @param streamerAllowOverwrite Flag enabling overwriting existing values in cache.
+      * @param streamerFlushFrequency Insert query streamer automatic flush frequency.
+      * @param streamerPerNodeBufferSize Insert query streamer size of per node query buffer.
+      * @param streamerPerNodeParallelOperations Insert query streamer maximum number of parallel operations for a single node.
+      *
+      * @see [[org.apache.ignite.IgniteDataStreamer]]
+      * @see [[org.apache.ignite.IgniteDataStreamer#allowOverwrite(boolean)]]
+      * @see [[org.apache.ignite.IgniteDataStreamer#autoFlushFrequency(long)]]
+      * @see [[org.apache.ignite.IgniteDataStreamer#perNodeBufferSize(int)]]
+      * @see [[org.apache.ignite.IgniteDataStreamer#perNodeParallelOperations(int)]]
       */
-    def saveTable(data: DataFrame, tblName: String, ctx: IgniteContext): Unit = {
+    def saveTable(data: DataFrame,
+        tblName: String,
+        ctx: IgniteContext,
+        streamerAllowOverwrite: Option[Boolean],
+        streamerFlushFrequency: Option[Long],
+        streamerPerNodeBufferSize: Option[Int],
+        streamerPerNodeParallelOperations: Option[Int]
+    ): Unit = {
         val insertQry = compileInsert(tblName, data.schema)
 
-        data.rdd.foreachPartition(iterator => savePartition(iterator, insertQry, tblName, ctx))
+        data.rdd.foreachPartition(iterator =>
+            savePartition(iterator,
+                insertQry,
+                tblName,
+                ctx,
+                streamerAllowOverwrite,
+                streamerFlushFrequency,
+                streamerPerNodeBufferSize,
+                streamerPerNodeParallelOperations
+            ))
     }
 
     /**
@@ -106,11 +132,37 @@ private[apache] object QueryHelper {
       * @param insertQry Insert query.
       * @param tblName Table name.
       * @param ctx Ignite context.
+      * @param streamerAllowOverwrite Flag enabling overwriting existing values in cache.
+      * @param streamerFlushFrequency Insert query streamer automatic flush frequency.
+      * @param streamerPerNodeBufferSize Insert query streamer size of per node query buffer.
+      * @param streamerPerNodeParallelOperations Insert query streamer maximum number of parallel operations for a single node.
+      *
+      * @see [[org.apache.ignite.IgniteDataStreamer]]
+      * @see [[org.apache.ignite.IgniteDataStreamer#allowOverwrite(boolean)]]
+      * @see [[org.apache.ignite.IgniteDataStreamer#autoFlushFrequency(long)]]
+      * @see [[org.apache.ignite.IgniteDataStreamer#perNodeBufferSize(int)]]
+      * @see [[org.apache.ignite.IgniteDataStreamer#perNodeParallelOperations(int)]]
       */
-    private def savePartition(iterator: Iterator[Row], insertQry: String, tblName: String, ctx: IgniteContext): Unit = {
+    private def savePartition(iterator: Iterator[Row],
+        insertQry: String,
+        tblName: String,
+        ctx: IgniteContext,
+        streamerAllowOverwrite: Option[Boolean],
+        streamerFlushFrequency: Option[Long],
+        streamerPerNodeBufferSize: Option[Int],
+        streamerPerNodeParallelOperations: Option[Int]
+    ): Unit = {
         val tblInfo = sqlTableInfo[Any, Any](ctx.ignite(), tblName).get
 
         val streamer = ctx.ignite().dataStreamer(tblInfo._1.getName)
+
+        streamerAllowOverwrite.foreach(v ⇒ streamer.allowOverwrite(v))
+
+        streamerFlushFrequency.foreach(v ⇒ streamer.autoFlushFrequency(v))
+
+        streamerPerNodeBufferSize.foreach(v ⇒ streamer.perNodeBufferSize(v))
+
+        streamerPerNodeParallelOperations.foreach(v ⇒ streamer.perNodeParallelOperations(v))
 
         try {
             val qryProcessor = ctx.ignite().asInstanceOf[IgniteEx].context().query()

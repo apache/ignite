@@ -63,6 +63,24 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
             assert(rowsCnt == rowsCount(PERSON_TBL_NAME_2), s"Data should be saved into $PERSON_TBL_NAME_2 table")
         }
 
+        it("Save data frame to existing table with streamer options") {
+            val rowsCnt = personDataFrame.count()
+
+            personDataFrame.write
+                .format(FORMAT_IGNITE)
+                .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+                .option(OPTION_TABLE, PERSON_TBL_NAME_2)
+                .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id, city_id")
+                .option(OPTION_CREATE_TABLE_PARAMETERS, "backups=1, affinityKey=city_id")
+                .option(OPTION_STREAMER_PER_NODE_PARALLEL_OPERATIONS, 3)
+                .option(OPTION_STREAMER_PER_NODE_BUFFER_SIZE, 1)
+                .option(OPTION_STREAMER_FLUSH_FREQUENCY, 10000)
+                .mode(Overwrite)
+                .save()
+
+            assert(rowsCnt == rowsCount(PERSON_TBL_NAME_2), s"Data should be saved into $PERSON_TBL_NAME_2 table")
+        }
+
         it("Ignore save operation if table exists") {
             //Count of records before saving
             val person2RowsCntBeforeSave = rowsCount(PERSON_TBL_NAME_2)
@@ -126,6 +144,46 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                 .save("saved_persons")
 
             assert(rowsCnt == rowsCount("saved_persons"), "Data should be saved into 'saved_persons' table")
+        }
+
+        it("Should keep first row if allowOverwrite is false") {
+            val nonUniqueCitiesDataFrame = spark.read.json(
+                resolveIgnitePath("modules/spark/src/test/resources/cities_non_unique.json").getAbsolutePath)
+
+            nonUniqueCitiesDataFrame.write
+                .format(FORMAT_IGNITE)
+                .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+                .option(OPTION_TABLE, "first_row_json_city")
+                .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
+                .option(OPTION_CREATE_TABLE_PARAMETERS, "template=replicated")
+                .option(OPTION_STREAMER_ALLOW_OVERWRITE, false)
+                .save()
+
+            val cities = readTable("first_row_json_city").collect().sortBy(_.getAs[Long]("ID"))
+
+            assert(cities(0).getAs[String]("NAME") == "Forest Hill")
+            assert(cities(1).getAs[String]("NAME") == "Denver")
+            assert(cities(2).getAs[String]("NAME") == "St. Petersburg")
+        }
+
+        it("Should keep last row if allowOverwrite is true") {
+            val nonUniqueCitiesDataFrame = spark.read.json(
+                resolveIgnitePath("modules/spark/src/test/resources/cities_non_unique.json").getAbsolutePath)
+
+            nonUniqueCitiesDataFrame.write
+                .format(FORMAT_IGNITE)
+                .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+                .option(OPTION_TABLE, "last_row_json_city")
+                .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
+                .option(OPTION_CREATE_TABLE_PARAMETERS, "template=replicated")
+                .option(OPTION_STREAMER_ALLOW_OVERWRITE, true)
+                .save()
+
+            val cities = readTable("last_row_json_city").collect().sortBy(_.getAs[Long]("ID"))
+
+            assert(cities(0).getAs[String]("NAME") == "Paris")
+            assert(cities(1).getAs[String]("NAME") == "New York")
+            assert(cities(2).getAs[String]("NAME") == "Moscow")
         }
     }
 
@@ -222,6 +280,58 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
                     .save()
             }
         }
+
+        it("Should throw exception if streamingFlushFrequency is not a number") {
+            intercept[NumberFormatException] {
+                personDataFrame.write
+                    .format(FORMAT_IGNITE)
+                    .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+                    .option(OPTION_TABLE, PERSON_TBL_NAME)
+                    .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
+                    .option(OPTION_STREAMER_FLUSH_FREQUENCY, "not_a_number")
+                    .mode(Overwrite)
+                    .save()
+            }
+        }
+
+        it("Should throw exception if streamingPerNodeBufferSize is not a number") {
+            intercept[NumberFormatException] {
+                personDataFrame.write
+                    .format(FORMAT_IGNITE)
+                    .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+                    .option(OPTION_TABLE, PERSON_TBL_NAME)
+                    .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
+                    .option(OPTION_STREAMER_PER_NODE_BUFFER_SIZE, "not_a_number")
+                    .mode(Overwrite)
+                    .save()
+            }
+        }
+
+        it("Should throw exception if streamingPerNodeParallelOperations is not a number") {
+            intercept[NumberFormatException] {
+                personDataFrame.write
+                    .format(FORMAT_IGNITE)
+                    .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+                    .option(OPTION_TABLE, PERSON_TBL_NAME)
+                    .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
+                    .option(OPTION_STREAMER_PER_NODE_PARALLEL_OPERATIONS, "not_a_number")
+                    .mode(Overwrite)
+                    .save()
+            }
+        }
+
+        it("Should throw exception if streamerAllowOverwrite is not a boolean") {
+            intercept[IllegalArgumentException] {
+                personDataFrame.write
+                    .format(FORMAT_IGNITE)
+                    .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
+                    .option(OPTION_TABLE, PERSON_TBL_NAME)
+                    .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
+                    .option(OPTION_STREAMER_ALLOW_OVERWRITE, "not_a_boolean")
+                    .mode(Overwrite)
+                    .save()
+            }
+        }
     }
 
     override protected def beforeAll(): Unit = {
@@ -243,14 +353,19 @@ class IgniteSQLDataFrameWriteSpec extends AbstractDataFrameSpec {
     }
 
     /**
-      * @param tbl Table name
+      * @param tbl Table name.
       * @return Count of rows in table.
       */
-    protected def rowsCount(tbl: String): Long =
+    protected def rowsCount(tbl: String): Long = readTable(tbl).count()
+
+    /**
+      * @param tbl Table name.
+      * @return Ignite Table DataFrame.
+      */
+    protected def readTable(tbl: String): DataFrame =
         spark.read
             .format(FORMAT_IGNITE)
             .option(OPTION_CONFIG_FILE, TEST_CONFIG_FILE)
             .option(OPTION_TABLE, tbl)
             .load()
-            .count()
 }
