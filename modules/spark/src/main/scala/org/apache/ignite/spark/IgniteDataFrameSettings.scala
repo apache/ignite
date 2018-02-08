@@ -78,6 +78,59 @@ object IgniteDataFrameSettings {
       *     .option(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS, "id")
       *     .save()
       * }}}
+      *
+      * @see [[https://apacheignite-sql.readme.io/docs/create-table]]
       */
     val OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS = "primaryKeyFields"
+
+    /**
+      * Config option for saving data frame.
+      * Internally all inserts are done through IgniteDataStreamer.
+      * This options sets `autoFlushFrequency` property of streamer.
+      *
+      * @example {{{
+      * val igniteDF = spark.write.format(IGNITE)
+      *     // other options ...
+      *     .option(OPTION_STREAMING_FLUSH_FREQUENCY, )
+      *     .save()
+      * }}}
+      *
+      * @see [[org.apache.ignite.IgniteDataStreamer]]
+      * @see [[org.apache.ignite.IgniteDataStreamer#autoFlushFrequency(long)]]
+      */
+    val OPTION_STREAMING_FLUSH_FREQUENCY = "streamingFlushFrequency"
+
+    /**
+      * Config option for saving data frame.
+      * Internally all inserts are done through IgniteDataStreamer.
+      * This options sets `perNodeBufferSize` property of streamer.
+      *
+      * @example {{{
+      * val igniteDF = spark.write.format(IGNITE)
+      *     // other options ...
+      *     .option(OPTION_STREAMING_PER_NODE_BUFFER_SIZE, 1024)
+      *     .save()
+      * }}}
+      *
+      * @see [[org.apache.ignite.IgniteDataStreamer]]
+      * @see [[org.apache.ignite.IgniteDataStreamer#perNodeBufferSize(int)]]
+      */
+    val OPTION_STREAMING_PER_NODE_BUFFER_SIZE = "streamingPerNodeBufferSize"
+
+    /**
+      * Config option for saving data frame.
+      * Internally all inserts are done through IgniteDataStreamer.
+      * This options sets `perNodeParallelOperations` property of streamer.
+      *
+      * @example {{{
+      * val igniteDF = spark.write.format(IGNITE)
+      *     // other options ...
+      *     .option(OPTION_STREAMING_PER_NODE_PARALLEL_OPERATIONS, 42)
+      *     .save()
+      * }}}
+      *
+      * @see [[org.apache.ignite.IgniteDataStreamer]]
+      * @see [[org.apache.ignite.IgniteDataStreamer#perNodeParallelOperations(int)]]
+      */
+    val OPTION_STREAMING_PER_NODE_PARALLEL_OPERATIONS = "streamingPerNodeParallelOperations"
 }
