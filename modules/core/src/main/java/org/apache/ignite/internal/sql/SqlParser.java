@@ -155,7 +155,7 @@ public class SqlParser {
         if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
             switch (lex.token()) {
                 case STREAMING:
-                    return new SqlSetStreamingCommand();
+                    return new SqlSetStreamingCommand().parse(lex);
             }
         }
 
