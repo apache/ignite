@@ -54,6 +54,7 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
             null,
             new NoOpPageStoreManager(),
             new NoOpWALManager(),
+            null,
             new IgniteCacheDatabaseSharedManager(),
             null,
             null,
@@ -83,7 +84,7 @@ public class BPlusTreeReuseListPageMemoryImplTest extends BPlusTreeReuseSelfTest
                 }
             },
             new DataRegionMetricsImpl(new DataRegionConfiguration()),
-            false
+            PageMemoryImpl.ThrottlingPolicy.NONE
         );
 
         mem.start();

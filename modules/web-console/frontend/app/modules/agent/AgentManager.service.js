@@ -52,6 +52,9 @@ class ConnectionState {
 
         this.clusters = clusters;
 
+        if (_.isEmpty(this.clusters))
+            this.cluster = null;
+
         if (_.isNil(this.cluster))
             this.cluster = _.head(clusters);
 
@@ -111,6 +114,12 @@ export default class IgniteAgentManager {
         }
 
         this.connectionSbj = new BehaviorSubject(new ConnectionState(cluster));
+
+        let prevCluster;
+
+        this.currentCluster$ = this.connectionSbj
+            .distinctUntilChanged(({ cluster }) => prevCluster === cluster)
+            .do(({ cluster }) => prevCluster = cluster);
 
         this.clusterVersion = '2.1.0';
 

@@ -53,7 +53,7 @@ include /app/helpers/jade/mixins
                             <li>Each entry in partition group - lock transaction belongs to the same partition as was specified on partition transaction start</li>\
                             </ul>')
 
-                .settings-row
+                .settings-row(ng-if='$ctrl.available(["1.0.0", "2.1.0"])')
                     +checkbox('Late affinity assignment', model + '.lateAffinityAssignment', '"lateAffinityAssignment"',
                         'With late affinity assignment mode if primary node was changed for some partition this nodes becomes primary only when rebalancing for all assigned primary partitions is finished')
 

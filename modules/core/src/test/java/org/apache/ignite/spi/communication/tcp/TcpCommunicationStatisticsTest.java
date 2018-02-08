@@ -128,16 +128,6 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Compares two maps for equality.
-     */
-    private static <K, V> boolean mapsEquals(Map<K, V> map1, Map<K, V> map2) {
-        assert map1 != null;
-        assert map2 != null;
-
-        return map1.size() == map2.size() && map1.entrySet().containsAll(map2.entrySet());
-    }
-
-    /**
      * @throws Exception If failed.
      */
     public void testStatistics() throws Exception {
@@ -163,13 +153,13 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
                 TcpCommunicationSpiMBean mbean0 = mbean(0);
                 TcpCommunicationSpiMBean mbean1 = mbean(1);
 
-                Map<String, Long> msgsSentByNode0 = mbean0.getSentMessagesByNode();
-                Map<String, Long> msgsSentByNode1 = mbean1.getSentMessagesByNode();
-                Map<String, Long> msgsReceivedByNode0 = mbean0.getReceivedMessagesByNode();
-                Map<String, Long> msgsReceivedByNode1 = mbean1.getReceivedMessagesByNode();
+                Map<UUID, Long> msgsSentByNode0 = mbean0.getSentMessagesByNode();
+                Map<UUID, Long> msgsSentByNode1 = mbean1.getSentMessagesByNode();
+                Map<UUID, Long> msgsReceivedByNode0 = mbean0.getReceivedMessagesByNode();
+                Map<UUID, Long> msgsReceivedByNode1 = mbean1.getReceivedMessagesByNode();
 
-                String nodeId0 = grid(0).localNode().id().toString();
-                String nodeId1 = grid(1).localNode().id().toString();
+                UUID nodeId0 = grid(0).localNode().id();
+                UUID nodeId1 = grid(1).localNode().id();
 
                 assertEquals(msgsReceivedByNode0.get(nodeId1).longValue(), mbean0.getReceivedMessagesCount());
                 assertEquals(msgsReceivedByNode1.get(nodeId0).longValue(), mbean1.getReceivedMessagesCount());
@@ -185,10 +175,10 @@ public class TcpCommunicationStatisticsTest extends GridCommonAbstractTest {
                 Map<String, Long> msgsReceivedByType1 = mbean1.getReceivedMessagesByType();
 
                 // Node0 sent exactly the same types and count of messages as node1 received.
-                assertTrue(mapsEquals(msgsSentByType0, msgsReceivedByType1));
+                assertEquals(msgsSentByType0, msgsReceivedByType1);
 
                 // Node1 sent exactly the same types and count of messages as node0 received.
-                assertTrue(mapsEquals(msgsSentByType1, msgsReceivedByType0));
+                assertEquals(msgsSentByType1, msgsReceivedByType0);
 
                 assertEquals(1, msgsSentByType0.get(GridTestMessage.class.getSimpleName()).longValue());
                 assertEquals(1, msgsReceivedByType1.get(GridTestMessage.class.getSimpleName()).longValue());

@@ -58,6 +58,7 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
             null,
             new NoOpPageStoreManager(),
             new NoOpWALManager(),
+            null,
             new IgniteCacheDatabaseSharedManager(),
             null,
             null,
@@ -89,7 +90,7 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
                 }
             },
             new DataRegionMetricsImpl(new DataRegionConfiguration()),
-            false
+            PageMemoryImpl.ThrottlingPolicy.NONE
         );
     }
 

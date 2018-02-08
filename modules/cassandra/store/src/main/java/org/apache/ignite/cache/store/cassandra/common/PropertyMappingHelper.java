@@ -40,6 +40,7 @@ public class PropertyMappingHelper {
     /** Bytes array Class type. */
     private static final Class BYTES_ARRAY_CLASS = (new byte[] {}).getClass();
 
+
     /** Mapping from Java to type handlers. */
     private static final Map<Class, TypeHandler> JAVA_TO_CASSANDRA_MAPPING = new HashMap<Class, TypeHandler>() {{
         put(String.class, TypeHandlerHelper.getInstanceFromClass(StringTypeHandler.class));

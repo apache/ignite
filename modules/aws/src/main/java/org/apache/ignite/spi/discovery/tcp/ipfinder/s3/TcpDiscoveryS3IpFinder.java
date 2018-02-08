@@ -62,6 +62,7 @@ import org.jetbrains.annotations.Nullable;
  *      <li>Client configuration (see {@link #setClientConfiguration(ClientConfiguration)})</li>
  *      <li>Shared flag (see {@link #setShared(boolean)})</li>
  *      <li>Bucket endpoint (see {@link #setBucketEndpoint(String)})</li>
+ *      <li>Server side encryption algorithm (see {@link #setSSEAlgorithm(String)})</li>
  * </ul>
  * <p>
  * The finder will create S3 bucket with configured name. The bucket will contain entries named
@@ -80,14 +81,9 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Entry content. */
     private static final byte[] ENTRY_CONTENT = new byte[] {1};
 
-    /** Entry metadata with content length set. */
-    private static final ObjectMetadata ENTRY_METADATA;
-
-    static {
-        ENTRY_METADATA = new ObjectMetadata();
-
-        ENTRY_METADATA.setContentLength(ENTRY_CONTENT.length);
-    }
+    /** Entry metadata. */
+    @GridToStringExclude
+    private final ObjectMetadata objMetadata = new ObjectMetadata();
 
     /** Grid logger. */
     @LoggerResource
@@ -102,6 +98,9 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
 
     /** Bucket endpoint */
     private @Nullable String bucketEndpoint;
+
+    /** Server side encryption algorithm */
+    private @Nullable String sseAlg;
 
     /** Init guard. */
     @GridToStringExclude
@@ -192,7 +191,7 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
             String key = key(addr);
 
             try {
-                s3.putObject(bucketName, key, new ByteArrayInputStream(ENTRY_CONTENT), ENTRY_METADATA);
+                s3.putObject(bucketName, key, new ByteArrayInputStream(ENTRY_CONTENT), objMetadata);
             }
             catch (AmazonClientException e) {
                 throw new IgniteSpiException("Failed to put entry [bucketName=" + bucketName +
@@ -255,6 +254,11 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
 
                 if (F.isEmpty(bucketName))
                     throw new IgniteSpiException("Bucket name is null or empty (provide bucket name and restart).");
+
+                objMetadata.setContentLength(ENTRY_CONTENT.length);
+
+                if (!F.isEmpty(sseAlg))
+                    objMetadata.setSSEAlgorithm(sseAlg);
 
                 s3 = createAmazonS3Client();
 
@@ -331,7 +335,7 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
      * Sets bucket endpoint for IP finder.
      * If the endpoint is not set then IP finder will go to each region to find a corresponding bucket.
      * For information about possible endpoint names visit
-     * <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>
+     * <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>.
      *
      * @param bucketEndpoint Bucket endpoint, for example, s3.us-east-2.amazonaws.com.
      * @return {@code this} for chaining.
@@ -339,6 +343,21 @@ public class TcpDiscoveryS3IpFinder extends TcpDiscoveryIpFinderAdapter {
     @IgniteSpiConfiguration(optional = true)
     public TcpDiscoveryS3IpFinder setBucketEndpoint(String bucketEndpoint) {
         this.bucketEndpoint = bucketEndpoint;
+
+        return this;
+    }
+
+    /**
+     * Sets server-side encryption algorithm for Amazon S3-managed encryption keys.
+     * For information about possible S3-managed encryption keys visit
+     * <a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html">docs.aws.amazon.com</a>.
+     *
+     * @param sseAlg Server-side encryption algorithm, for example, AES256 or SSES3.
+     * @return {@code this} for chaining.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public TcpDiscoveryS3IpFinder setSSEAlgorithm(String sseAlg) {
+        this.sseAlg = sseAlg;
 
         return this;
     }

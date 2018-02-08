@@ -73,6 +73,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -1375,6 +1376,15 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param node Node.
+     * @param discoveryDataClusterState Discovery data cluster state.
+     * @return {@code True} if node is included in BaselineTopology.
+     */
+    public static boolean baselineNode(ClusterNode node, DiscoveryDataClusterState discoveryDataClusterState) {
+        return discoveryDataClusterState.baselineTopology().consistentIds().contains(node.consistentId());
+    }
+
+    /**
      * Creates and starts store session listeners.
      *
      * @param ctx Kernal context.
@@ -1699,6 +1709,7 @@ public class GridCacheUtils {
      * @param log Logger.
      * @param cctx Cache context.
      * @param key Key.
+     * @param expiryPlc Expiry policy.
      * @param readThrough Read through.
      * @param skipVals Skip values.
      */
@@ -1706,7 +1717,8 @@ public class GridCacheUtils {
         final AffinityTopologyVersion topVer,
         final IgniteLogger log,
         final GridCacheContext cctx,
-        final @Nullable KeyCacheObject key,
+        @Nullable final KeyCacheObject key,
+        @Nullable final IgniteCacheExpiryPolicy expiryPlc,
         boolean readThrough,
         boolean skipVals
     ) {
@@ -1719,14 +1731,16 @@ public class GridCacheUtils {
                 while (true) {
                     GridCacheEntryEx entry = null;
 
+                    cctx.shared().database().checkpointReadLock();
+
                     try {
                         entry = colocated.entryEx(key, topVer);
 
                         entry.initialValue(
                             val,
                             ver,
-                            0,
-                            0,
+                            expiryPlc == null ? 0 : expiryPlc.forCreate(),
+                            expiryPlc == null ? 0 : toExpireTime(expiryPlc.forCreate()),
                             false,
                             topVer,
                             GridDrType.DR_BACKUP,
@@ -1748,6 +1762,8 @@ public class GridCacheUtils {
                     finally {
                         if (entry != null)
                             cctx.evicts().touch(entry, topVer);
+
+                        cctx.shared().database().checkpointReadUnlock();
                     }
                 }
             }

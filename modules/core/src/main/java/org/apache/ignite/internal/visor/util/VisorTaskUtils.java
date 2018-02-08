@@ -50,13 +50,12 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.eviction.EvictionPolicy;
-import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyMBean;
-import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyMBean;
+import org.apache.ignite.cache.eviction.AbstractEvictionPolicyFactory;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
@@ -759,12 +758,9 @@ public class VisorTaskUtils {
      * @param plc Eviction policy.
      * @return Extracted max size.
      */
-    public static Integer evictionPolicyMaxSize(@Nullable EvictionPolicy plc) {
-        if (plc instanceof LruEvictionPolicyMBean)
-            return ((LruEvictionPolicyMBean)plc).getMaxSize();
-
-        if (plc instanceof FifoEvictionPolicyMBean)
-            return ((FifoEvictionPolicyMBean)plc).getMaxSize();
+    public static Integer evictionPolicyMaxSize(@Nullable Factory plc) {
+        if (plc instanceof AbstractEvictionPolicyFactory)
+            return ((AbstractEvictionPolicyFactory) plc).getMaxSize();
 
         return null;
     }

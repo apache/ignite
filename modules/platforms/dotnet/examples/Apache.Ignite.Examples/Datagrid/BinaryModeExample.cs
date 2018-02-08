@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Examples.Datagrid
 {
     using System;
-    using System.Collections;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -196,12 +195,12 @@ namespace Apache.Ignite.Examples.Datagrid
         /// <param name="cache">Cache.</param>
         private static void SqlFieldsQueryExample(ICache<int, IBinaryObject> cache)
         {
-            var qry = cache.QueryFields(new SqlFieldsQuery("select name from Person order by name"));
+            var qry = cache.Query(new SqlFieldsQuery("select name from Person order by name"));
 
             Console.WriteLine();
             Console.WriteLine(">>> All person names:");
 
-            foreach (IList row in qry)
+            foreach (var row in qry)
                 Console.WriteLine(">>>     " + row[0]);
         }
 

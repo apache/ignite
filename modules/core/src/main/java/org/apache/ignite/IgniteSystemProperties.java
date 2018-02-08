@@ -23,10 +23,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
+import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
-import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -158,6 +160,14 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_TO_STRING_INCLUDE_SENSITIVE = "IGNITE_TO_STRING_INCLUDE_SENSITIVE";
 
+    /** Maximum length for {@code toString()} result. */
+    public static final String IGNITE_TO_STRING_MAX_LENGTH = "IGNITE_TO_STRING_MAX_LENGTH";
+
+    /**
+     * Limit collection (map, array) elements number to output.
+     */
+    public static final String IGNITE_TO_STRING_COLLECTION_LIMIT = "IGNITE_TO_STRING_COLLECTION_LIMIT";
+
     /**
      * If this property is set to {@code true} (default) and Ignite is launched
      * in verbose mode (see {@link #IGNITE_QUIET}) and no console appenders can be found
@@ -209,11 +219,6 @@ public final class IgniteSystemProperties {
      * most cases this value is large enough and does not need to be changed.
      */
     public static final String IGNITE_MAX_COMPLETED_TX_COUNT = "IGNITE_MAX_COMPLETED_TX_COUNT";
-
-    /**
-     * Concurrency level for all concurrent hash maps created by Ignite.
-     */
-    public static final String IGNITE_MAP_CONCURRENCY_LEVEL = "IGNITE_MAP_CONCURRENCY_LEVEL";
 
     /**
      * Transactions that take more time, than value of this property, will be output to log
@@ -308,13 +313,6 @@ public final class IgniteSystemProperties {
 
     /** Ttl of removed cache entries (ms). */
     public static final String IGNITE_CACHE_REMOVED_ENTRIES_TTL = "IGNITE_CACHE_REMOVED_ENTRIES_TTL";
-
-    /** Maximum amount of concurrent updates per system thread in atomic caches in case of PRIMARY_SYNC or FULL_ASYNC
-     * write synchronization mode. If this limit is exceeded then update will be performed with FULL_SYNC
-     * synchronization mode. If value is {@code 0} then limit is unbounded.
-     */
-    public static final String IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES =
-        "IGNITE_ATOMIC_CACHE_MAX_CONCURRENT_DHT_UPDATES";
 
     /**
      * Comma separated list of addresses in format "10.100.22.100:45000,10.100.22.101:45000".
@@ -468,9 +466,6 @@ public final class IgniteSystemProperties {
     /** Number of cache operation retries in case of topology exceptions. */
     public static final String IGNITE_CACHE_RETRIES_COUNT = "IGNITE_CACHE_RETRIES_COUNT";
 
-    /** Number of times pending cache objects will be dumped to the log in case of partition exchange timeout. */
-    public static final String IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD = "IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD";
-
     /** If this property is set to {@code true} then Ignite will log thread dump in case of partition exchange timeout. */
     public static final String IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT = "IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT";
 
@@ -512,6 +507,12 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2 =
         "IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2";
+
+    /** Defines path to the file that contains list of classes allowed to safe deserialization.*/
+    public static final String IGNITE_MARSHALLER_WHITELIST = "IGNITE_MARSHALLER_WHITELIST";
+
+    /** Defines path to the file that contains list of classes disallowed to safe deserialization.*/
+    public static final String IGNITE_MARSHALLER_BLACKLIST = "IGNITE_MARSHALLER_BLACKLIST";
 
     /**
      * If set to {@code true}, then default selected keys set is used inside
@@ -556,6 +557,19 @@ public final class IgniteSystemProperties {
      * should be used.
      */
     public static final String IGNITE_SERVICES_COMPATIBILITY_MODE = "IGNITE_SERVICES_COMPATIBILITY_MODE";
+
+    /**
+     * Manages backward compatibility of {@link StreamTransformer#from(CacheEntryProcessor)} method.
+     * <p>
+     * If the property is {@code true}, then the wrapped {@link CacheEntryProcessor} won't be able to be loaded over
+     * P2P class loading.
+     * <p>
+     * If the property is {@code false}, then another implementation of {@link StreamTransformer} will be returned,
+     * that fixes P2P class loading for {@link CacheEntryProcessor}, but it will be incompatible with old versions
+     * of Ignite.
+     */
+    public static final String IGNITE_STREAM_TRANSFORMER_COMPATIBILITY_MODE =
+        "IGNITE_STREAM_TRANSFORMER_COMPATIBILITY_MODE";
 
     /**
      * When set to {@code true} tree-based data structures - {@code TreeMap} and {@code TreeSet} - will not be
@@ -665,16 +679,7 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_FORCE_START_JAVA7 = "IGNITE_FORCE_START_JAVA7";
 
-    /** Returns true for system properties only avoiding sending sensitive information. */
-    private static final IgnitePredicate<Map.Entry<String, String>> PROPS_FILTER = new IgnitePredicate<Map.Entry<String, String>>() {
-        @Override public boolean apply(final Map.Entry<String, String> entry) {
-            final String key = entry.getKey();
-
-            return key.startsWith("java.") || key.startsWith("os.") || key.startsWith("user.");
-        }
-    };
-
-     /**
+    /**
      * When set to {@code true}, Ignite switches to compatibility mode with versions that don't
      * support service security permissions. In this case security permissions will be ignored
      * (if they set).
@@ -716,11 +721,6 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_ENABLE_FORCIBLE_NODE_KILL = "IGNITE_ENABLE_FORCIBLE_NODE_KILL";
 
     /**
-     *
-     */
-    public static final String IGNITE_WAL_ARCHIVE_COMPACT_SKIP_DELTA_RECORD = "IGNITE_WAL_ARCHIVE_COMPACT_SKIP_DELTA_RECORD";
-
-    /**
      * Tasks stealing will be started if tasks queue size per data-streamer thread exceeds this threshold.
      * <p>
      * Default value is {@code 4}.
@@ -751,11 +751,64 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_WAL_SERIALIZER_VERSION = "IGNITE_WAL_SERIALIZER_VERSION";
 
     /**
+     * If the property is set Ignite will use legacy node comparator (based on node order) inste
+     *
+     * Default value is {@code false}.
+     */
+    public static final String IGNITE_USE_LEGACY_NODE_COMPARATOR = "IGNITE_USE_LEGACY_NODE_COMPARATOR";
+
+    /**
+     * Property that indicates should be mapped byte buffer used or not.
+     * Possible values: {@code true} and {@code false}.
+     */
+    public static final String IGNITE_WAL_MMAP = "IGNITE_WAL_MMAP";
+
+    /**
      * When set to {@code true}, Data store folders are generated only by consistent id, and no consistent ID will be
      * set based on existing data store folders. This option also enables compatible folder generation mode as it was
      * before 2.3.
      */
     public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID = "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
+
+    /** Ignite JVM pause detector disabled. */
+    public static final String IGNITE_JVM_PAUSE_DETECTOR_DISABLED = "IGNITE_JVM_PAUSE_DETECTOR_DISABLED";
+
+    /** Ignite JVM pause detector precision. */
+    public static final String IGNITE_JVM_PAUSE_DETECTOR_PRECISION = "IGNITE_JVM_PAUSE_DETECTOR_PRECISION";
+
+    /** Ignite JVM pause detector threshold. */
+    public static final String IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD = "IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD";
+
+    /** Ignite JVM pause detector last events count. */
+    public static final String IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT = "IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT";
+
+    /**
+     * Default value is {@code false}.
+     */
+    public static final String IGNITE_WAL_DEBUG_LOG_ON_RECOVERY = "IGNITE_WAL_DEBUG_LOG_ON_RECOVERY";
+
+    /**
+     * Number of checkpoint history entries held in memory.
+     */
+    public static final String IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE = "IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE";
+
+    /**
+     * If this property is set to {@code true} enable logging in {@link GridClient}.
+     */
+    public static final String IGNITE_GRID_CLIENT_LOG_ENABLED = "IGNITE_GRID_CLIENT_LOG_ENABLED";
+
+    /**
+     * When set to {@code true}, direct IO may be enabled. Direct IO enabled only if JAR file with corresponding
+     * feature is available in classpath and OS and filesystem settings allows to enable this mode.
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_DIRECT_IO_ENABLED = "IGNITE_DIRECT_IO_ENABLED";
+
+    /**
+     * When set to {@code true}, warnings that are intended for development environments and not for production
+     * (such as coding mistakes in code using Ignite) will not be logged.
+     */
+    public static final String IGNITE_DEV_ONLY_LOGGING_DISABLED = "IGNITE_DEV_ONLY_LOGGING_DISABLED";
 
     /**
      * Enforces singleton.
@@ -957,27 +1010,5 @@ public final class IgniteSystemProperties {
         }
 
         return sysProps;
-    }
-
-    /**
-     * Does the same as {@link #snapshot()} but filters out
-     * possible sensitive user data.
-     *
-     * @return Snapshot of system properties.
-     */
-    @SuppressWarnings("unchecked")
-    public static Properties safeSnapshot() {
-        final Properties props = snapshot();
-
-        final Iterator<Map.Entry<Object, Object>> iter = props.entrySet().iterator();
-
-        while (iter.hasNext()) {
-            final Map.Entry entry = iter.next();
-
-            if (!PROPS_FILTER.apply(entry))
-                iter.remove();
-        }
-
-        return props;
     }
 }

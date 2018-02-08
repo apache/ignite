@@ -22,11 +22,13 @@ import org.apache.ignite.spi.checkpoint.s3.S3CheckpointManagerSelfTest;
 import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiConfigSelfTest;
 import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiSelfTest;
 import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiStartStopBucketEndpointSelfTest;
+import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiStartStopSSEAlgorithmSelfTest;
 import org.apache.ignite.spi.checkpoint.s3.S3CheckpointSpiStartStopSelfTest;
 import org.apache.ignite.spi.checkpoint.s3.S3SessionCheckpointSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderAwsCredentialsProviderSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderAwsCredentialsSelfTest;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderBucketEndpointSelfTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.s3.TcpDiscoveryS3IpFinderSSEAlgorithmSelfTest;
 import org.apache.ignite.testframework.IgniteTestSuite;
 
 /**
@@ -47,11 +49,13 @@ public class IgniteS3TestSuite extends TestSuite {
         suite.addTestSuite(S3CheckpointManagerSelfTest.class);
         suite.addTestSuite(S3SessionCheckpointSelfTest.class);
         suite.addTestSuite(S3CheckpointSpiStartStopBucketEndpointSelfTest.class);
+        suite.addTestSuite(S3CheckpointSpiStartStopSSEAlgorithmSelfTest.class);
 
         // S3 IP finder.
         suite.addTestSuite(TcpDiscoveryS3IpFinderAwsCredentialsSelfTest.class);
         suite.addTestSuite(TcpDiscoveryS3IpFinderAwsCredentialsProviderSelfTest.class);
         suite.addTestSuite(TcpDiscoveryS3IpFinderBucketEndpointSelfTest.class);
+        suite.addTestSuite(TcpDiscoveryS3IpFinderSSEAlgorithmSelfTest.class);
 
         return suite;
     }

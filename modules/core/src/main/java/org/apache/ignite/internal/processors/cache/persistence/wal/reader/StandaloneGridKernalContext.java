@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.security.GridSecurityProcessor;
 import org.apache.ignite.internal.processors.segmentation.GridSegmentationProcessor;
 import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.processors.session.GridTaskSessionProcessor;
+import org.apache.ignite.internal.processors.subscription.GridInternalSubscriptionProcessor;
 import org.apache.ignite.internal.processors.task.GridTaskProcessor;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.suggestions.GridPerformanceSuggestions;
@@ -136,7 +137,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
             throw new IllegalStateException("Must not fail on empty providers list.", e);
         }
 
-        this.marshallerCtx = new MarshallerContextImpl(null);
+        this.marshallerCtx = new MarshallerContextImpl(null, null);
         this.cfg = prepareIgniteConfiguration();
 
         // Fake folder provided to perform processor startup on empty folder.
@@ -609,6 +610,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public GridInternalSubscriptionProcessor internalSubscriptionProcessor() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public PdsFoldersResolver pdsFolderResolver() {
         return new PdsFoldersResolver() {
             /** {@inheritDoc} */
@@ -616,6 +622,16 @@ public class StandaloneGridKernalContext implements GridKernalContext {
                 return new PdsFolderSettings(new File("."), U.maskForFileName(""));
             }
         };
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean invalidated() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void invalidate() {
+
     }
 
     /** {@inheritDoc} */

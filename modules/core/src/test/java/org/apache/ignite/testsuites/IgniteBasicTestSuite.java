@@ -20,11 +20,13 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
+import org.apache.ignite.internal.ClassSetTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
+import org.apache.ignite.internal.GridMBeansTest;
 import org.apache.ignite.internal.GridNodeMetricsLogSelfTest;
 import org.apache.ignite.internal.GridProjectionForCachesSelfTest;
 import org.apache.ignite.internal.GridReduceSelfTest;
@@ -53,14 +55,15 @@ import org.apache.ignite.internal.processors.continuous.GridMessageListenSelfTes
 import org.apache.ignite.internal.processors.database.BPlusTreeFakeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeReuseSelfTest;
 import org.apache.ignite.internal.processors.database.BPlusTreeSelfTest;
-import org.apache.ignite.internal.processors.database.FreeListImplSelfTest;
+import org.apache.ignite.internal.processors.database.CacheFreeListImplSelfTest;
+import org.apache.ignite.internal.processors.database.IndexStorageSelfTest;
 import org.apache.ignite.internal.processors.database.DataRegionMetricsSelfTest;
-import org.apache.ignite.internal.processors.database.MetadataStorageSelfTest;
 import org.apache.ignite.internal.processors.database.SwapPathConstructionSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcConfigurationValidationSelfTest;
 import org.apache.ignite.internal.processors.odbc.OdbcEscapeSequenceSelfTest;
 import org.apache.ignite.internal.processors.service.ClosureServiceClientsNodesTest;
 import org.apache.ignite.internal.product.GridProductVersionSelfTest;
+import org.apache.ignite.internal.util.GridCleanerTest;
 import org.apache.ignite.internal.util.nio.IgniteExceptionInNioWorkerSelfTest;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.DynamicProxySerializationMultiJvmSelfTest;
@@ -148,6 +151,7 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(IgniteMarshallerCacheConcurrentReadWriteTest.class);
         suite.addTestSuite(GridNodeMetricsLogSelfTest.class);
         suite.addTestSuite(GridLocalIgniteSerializationTest.class);
+        suite.addTestSuite(GridMBeansTest.class);
 
         suite.addTestSuite(IgniteExceptionInNioWorkerSelfTest.class);
         suite.addTestSuite(IgniteLocalNodeMapBeforeStartTest.class);
@@ -173,8 +177,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(BPlusTreeSelfTest.class);
         suite.addTestSuite(BPlusTreeFakeReuseSelfTest.class);
         suite.addTestSuite(BPlusTreeReuseSelfTest.class);
-        suite.addTestSuite(MetadataStorageSelfTest.class);
-        suite.addTestSuite(FreeListImplSelfTest.class);
+        suite.addTestSuite(IndexStorageSelfTest.class);
+        suite.addTestSuite(CacheFreeListImplSelfTest.class);
         suite.addTestSuite(DataRegionMetricsSelfTest.class);
         suite.addTestSuite(SwapPathConstructionSelfTest.class);
 
@@ -185,6 +189,10 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(IgniteDiagnosticMessagesTest.class);
 
         suite.addTestSuite(IgniteRejectConnectOnNodeStopTest.class);
+
+        suite.addTestSuite(GridCleanerTest.class);
+
+        suite.addTestSuite(ClassSetTest.class);
 
         return suite;
     }

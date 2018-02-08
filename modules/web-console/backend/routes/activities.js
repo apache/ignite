@@ -17,29 +17,30 @@
 
 'use strict';
 
+const express = require('express');
+
 // Fire me up!
 
 module.exports = {
     implements: 'routes/activities',
-    inject: ['require(express)', 'services/activities']
-};
+    inject: ['services/activities'],
+    /**
+     * @param express
+     * @param {ActivitiesService} activitiesService
+     * @returns {Promise}
+     */
+    factory: (activitiesService) => {
+        return new Promise((factoryResolve) => {
+            const router = new express.Router();
 
-/**
- * @param express
- * @param {ActivitiesService} activitiesService
- * @returns {Promise}
- */
-module.exports.factory = function(express, activitiesService) {
-    return new Promise((factoryResolve) => {
-        const router = new express.Router();
+            // Post user activities to page.
+            router.post('/page', (req, res) => {
+                activitiesService.merge(req.user._id, req.body)
+                    .then(res.api.ok)
+                    .catch(res.api.error);
+            });
 
-        // Post user activities to page.
-        router.post('/page', (req, res) => {
-            activitiesService.merge(req.user._id, req.body)
-                .then(res.api.ok)
-                .catch(res.api.error);
+            factoryResolve(router);
         });
-
-        factoryResolve(router);
-    });
+    }
 };

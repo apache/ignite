@@ -57,7 +57,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         private static readonly string[] MissingProperties =
         {
             "NodeFilter",  // IGNITE-2890
-            "EvictionPolicyFactory"  // IGNITE-6649
+            "EvictionPolicyFactory",  // IGNITE-6649,
+            "isSqlOnheapCacheEnabled"  // IGNITE-7379
         };
 
         /// <summary>

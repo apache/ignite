@@ -194,7 +194,9 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
@@ -240,8 +242,6 @@ import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-import sun.misc.SharedSecrets;
-import sun.misc.URLClassPath;
 import sun.misc.Unsafe;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_HOSTNAME_VERIFIER;
@@ -259,6 +259,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_DATE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CACHE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_REGIONS_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.util.GridUnsafe.objectFieldOffset;
@@ -526,6 +527,25 @@ public abstract class IgniteUtils {
 
     /** */
     private static final boolean assertionsEnabled;
+
+    /** Empty URL array. */
+    private static final URL[] EMPTY_URL_ARR = new URL[0];
+
+    /** Builtin class loader class.
+     *
+     * Note: needs for compatibility with Java 9.
+     */
+    private static final Class bltClsLdrCls = defaultClassLoaderClass();
+
+    /** Url class loader field.
+     *
+     * Note: needs for compatibility with Java 9.
+     */
+    private static final Field urlClsLdrField = urlClassLoaderField();
+
+    /** Dev only logging disabled. */
+    private static boolean devOnlyLogDisabled =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DEV_ONLY_LOGGING_DISABLED);
 
     /*
      * Initializes enterprise check.
@@ -1219,6 +1239,27 @@ public abstract class IgniteUtils {
         }
 
         return roundedHeapSize(heap, precision);
+    }
+
+    /**
+     * Gets total offheap size in GB rounded to specified precision.
+     *
+     * @param nodes Nodes.
+     * @param precision Precision.
+     * @return Total offheap size in GB.
+     */
+    public static double offheapSize(Iterable<ClusterNode> nodes, int precision) {
+        // In bytes.
+        double totalOffheap = 0.0;
+
+        for (ClusterNode n : nodesPerJvm(nodes)) {
+            Long val = n.<Long>attribute(ATTR_DATA_REGIONS_OFFHEAP_SIZE);
+
+            if (val != null)
+                totalOffheap += val;
+        }
+
+        return roundedHeapSize(totalOffheap, precision);
     }
 
     /**
@@ -4068,41 +4109,19 @@ public abstract class IgniteUtils {
 
     /**
      * Closes class loader logging possible checked exception.
-     * Note: this issue for problem <a href="http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5041014">
-     * http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=5041014</a>.
      *
      * @param clsLdr Class loader. If it's {@code null} - it's no-op.
      * @param log Logger to log possible checked exception with (optional).
      */
     public static void close(@Nullable URLClassLoader clsLdr, @Nullable IgniteLogger log) {
-        if (clsLdr != null)
+        if (clsLdr != null) {
             try {
-                URLClassPath path = SharedSecrets.getJavaNetAccess().getURLClassPath(clsLdr);
-
-                Field ldrFld = path.getClass().getDeclaredField("loaders");
-
-                ldrFld.setAccessible(true);
-
-                Iterable ldrs = (Iterable)ldrFld.get(path);
-
-                for (Object ldr : ldrs)
-                    if (ldr.getClass().getName().endsWith("JarLoader"))
-                        try {
-                            Field jarFld = ldr.getClass().getDeclaredField("jar");
-
-                            jarFld.setAccessible(true);
-
-                            ZipFile jar = (ZipFile)jarFld.get(ldr);
-
-                            jar.close();
-                        }
-                        catch (Exception e) {
-                            warn(log, "Failed to close resource: " + e.getMessage());
-                        }
+                clsLdr.close();
             }
             catch (Exception e) {
                 warn(log, "Failed to close resource: " + e.getMessage());
             }
+        }
     }
 
     /**
@@ -4255,6 +4274,30 @@ public abstract class IgniteUtils {
         else
             X.println("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (wrn) " +
                 compact(shortMsg.toString()));
+    }
+
+    /**
+     * Depending on whether or not log is provided and quiet mode is enabled logs given
+     * messages as quiet message or normal log WARN message with {@link IgniteLogger#DEV_ONLY DEV_ONLY} marker.
+     * If {@code log} is {@code null} or in QUIET mode it will add {@code (wrn)} prefix to the message.
+     * If property {@link IgniteSystemProperties#IGNITE_DEV_ONLY_LOGGING_DISABLED IGNITE_DEV_ONLY_LOGGING_DISABLED}
+     * is set to true, the message will not be logged.
+     *
+     * @param log Optional logger to use when QUIET mode is not enabled.
+     * @param msg Message to log.
+     */
+    public static void warnDevOnly(@Nullable IgniteLogger log, Object msg) {
+        assert msg != null;
+
+        // don't log message if DEV_ONLY messages are disabled
+        if (devOnlyLogDisabled)
+            return;
+
+        if (log != null)
+            log.warning(IgniteLogger.DEV_ONLY, compact(msg.toString()), null);
+        else
+            X.println("[" + SHORT_DATE_FMT.format(new java.util.Date()) + "] (wrn) " +
+                compact(msg.toString()));
     }
 
     /**
@@ -4421,9 +4464,9 @@ public abstract class IgniteUtils {
             sb.a("igniteInstanceName=").a(igniteInstanceName).a(',');
 
         if (grp != null)
-            sb.a("group=").a(grp).a(',');
+            sb.a("group=").a(escapeObjectNameValue(grp)).a(',');
 
-        sb.a("name=").a(name);
+        sb.a("name=").a(escapeObjectNameValue(name));
 
         return new ObjectName(sb.toString());
     }
@@ -4461,37 +4504,16 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Constructs JMX object name with given properties.
-     * Map with ordered {@code groups} used for proper object name construction.
+     * Escapes the given string to be used as a value in the ObjectName syntax.
      *
-     * @param igniteInstanceName Ignite instance name.
-     * @param cacheName Name of the cache.
-     * @param name Name of mbean.
-     * @return JMX object name.
-     * @throws MalformedObjectNameException Thrown in case of any errors.
+     * @param s A string to be escape.
+     * @return An escaped string.
      */
-    public static ObjectName makeCacheMBeanName(
-        @Nullable String igniteInstanceName, @Nullable String cacheName, String name
-    ) throws MalformedObjectNameException {
-        SB sb = new SB(JMX_DOMAIN + ':');
+    private static String escapeObjectNameValue(String s) {
+        if (MBEAN_CACHE_NAME_PATTERN.matcher(s).matches())
+            return s;
 
-        appendClassLoaderHash(sb);
-
-        appendJvmId(sb);
-
-        if (igniteInstanceName != null && !igniteInstanceName.isEmpty())
-            sb.a("igniteInstanceName=").a(igniteInstanceName).a(',');
-
-        cacheName = maskName(cacheName);
-
-        if (!MBEAN_CACHE_NAME_PATTERN.matcher(cacheName).matches())
-            sb.a("group=").a('\"').a(cacheName).a('\"').a(',');
-        else
-            sb.a("group=").a(cacheName).a(',');
-
-        sb.a("name=").a(name);
-
-        return new ObjectName(sb.toString());
+        return '\"' + s.replaceAll("[\\\\\"?*]", "\\\\$0") + '\"';
     }
 
     /**
@@ -4508,18 +4530,14 @@ public abstract class IgniteUtils {
      * @throws MBeanRegistrationException if MBeans are disabled.
      * @throws JMException If MBean creation failed.
      */
-    public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, @Nullable String igniteInstanceName, @Nullable String grp,
-        String name, T impl, @Nullable Class<T> itf) throws JMException {if(IGNITE_MBEANS_DISABLED)
-            throw new MBeanRegistrationException(new IgniteIllegalStateException("No MBeans are allowed."));
-        assert mbeanSrv != null;
-        assert name != null;
-        assert itf != null;
-
-        DynamicMBean mbean = new IgniteStandardMXBean(impl, itf);
-
-        mbean.getMBeanInfo();
-
-        return mbeanSrv.registerMBean(mbean, makeMBeanName(igniteInstanceName, grp, name)).getObjectName();
+    public static <T> ObjectName registerMBean(
+        MBeanServer mbeanSrv,
+        @Nullable String igniteInstanceName,
+        @Nullable String grp,
+        String name, T impl,
+        @Nullable Class<T> itf
+    ) throws JMException {
+        return registerMBean(mbeanSrv, makeMBeanName(igniteInstanceName, grp, name), impl, itf);
     }
 
     /**
@@ -4549,37 +4567,6 @@ public abstract class IgniteUtils {
         mbean.getMBeanInfo();
 
         return mbeanSrv.registerMBean(mbean, name).getObjectName();
-    }
-
-    /**
-     * Registers MBean with the server.
-     *
-     * @param <T> Type of mbean.
-     * @param mbeanSrv MBean server.
-     * @param igniteInstanceName Ignite instance name.
-     * @param cacheName Name of the cache.
-     * @param name Name of mbean.
-     * @param impl MBean implementation.
-     * @param itf MBean interface.
-     * @return JMX object name.
-     * @throws MBeanRegistrationException if MBeans are disabled.
-     * @throws JMException If MBean creation failed.
-     * @throws IgniteException If MBean creation are not allowed.
-     */
-    public static <T> ObjectName registerCacheMBean(MBeanServer mbeanSrv, @Nullable String igniteInstanceName,
-        @Nullable String cacheName, String name, T impl, Class<T> itf) throws JMException {
-        if(IGNITE_MBEANS_DISABLED)
-            throw new MBeanRegistrationException(new IgniteIllegalStateException("MBeans are disabled."));
-
-        assert mbeanSrv != null;
-        assert name != null;
-        assert itf != null;
-
-        DynamicMBean mbean = new IgniteStandardMXBean(impl, itf);
-
-        mbean.getMBeanInfo();
-
-        return mbeanSrv.registerMBean(mbean, makeCacheMBeanName(igniteInstanceName, cacheName, name)).getObjectName();
     }
 
     /**
@@ -6608,6 +6595,33 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Get major Java version from string.
+     *
+     * @param verStr Version string.
+     * @return Major version or zero if failed to resolve.
+     */
+    public static int majorJavaVersion(String verStr) {
+        if (F.isEmpty(verStr))
+            return 0;
+
+        try {
+            String[] parts = verStr.split("\\.");
+
+            int major = Integer.parseInt(parts[0]);
+
+            if (parts.length == 1)
+                return major;
+
+            int minor = Integer.parseInt(parts[1]);
+
+            return major == 1 ? minor : major;
+        }
+        catch (Exception e) {
+            return 0;
+        }
+    }
+
+    /**
      * Indicates whether HotSpot VM is used.
      *
      * @return {@code true} if current JVM implementation is a Sun HotSpot VM, {@code false} otherwise.
@@ -7528,6 +7542,50 @@ public abstract class IgniteUtils {
 
         if (interrupted)
             Thread.currentThread().interrupt();
+    }
+
+    /**
+     * Returns URLs of class loader
+     *
+     * @param clsLdr Class loader.
+     */
+    public static URL[] classLoaderUrls(ClassLoader clsLdr) {
+        if (clsLdr == null)
+            return EMPTY_URL_ARR;
+        else if (clsLdr instanceof URLClassLoader)
+            return ((URLClassLoader)clsLdr).getURLs();
+        else if (bltClsLdrCls != null && urlClsLdrField != null && bltClsLdrCls.isAssignableFrom(clsLdr.getClass())) {
+            try {
+                return ((URLClassLoader)urlClsLdrField.get(clsLdr)).getURLs();
+            }
+            catch (IllegalAccessException e) {
+                return EMPTY_URL_ARR;
+            }
+        }
+        else
+            return EMPTY_URL_ARR;
+    }
+
+    /** */
+    @Nullable private static Class defaultClassLoaderClass() {
+        try {
+            return Class.forName("jdk.internal.loader.BuiltinClassLoader");
+        }
+        catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    /** */
+    @Nullable private static Field urlClassLoaderField() {
+        try {
+            Class cls = defaultClassLoaderClass();
+
+            return cls == null ? null : cls.getDeclaredField("ucp");
+        }
+        catch (NoSuchFieldException e) {
+            return null;
+        }
     }
 
     /**
@@ -8476,6 +8534,18 @@ public abstract class IgniteUtils {
      * @throws ClassNotFoundException If class not found.
      */
     public static Class<?> forName(String clsName, @Nullable ClassLoader ldr) throws ClassNotFoundException {
+        return U.forName(clsName, ldr, null);
+    }
+
+    /**
+     * Gets class for provided name. Accepts primitive types names.
+     *
+     * @param clsName Class name.
+     * @param ldr Class loader.
+     * @return Class.
+     * @throws ClassNotFoundException If class not found.
+     */
+    public static Class<?> forName(String clsName, @Nullable ClassLoader ldr, IgnitePredicate<String> clsFilter) throws ClassNotFoundException {
         assert clsName != null;
 
         Class<?> cls = primitiveMap.get(clsName);
@@ -8502,6 +8572,9 @@ public abstract class IgniteUtils {
         cls = ldrMap.get(clsName);
 
         if (cls == null) {
+            if (clsFilter != null && !clsFilter.apply(clsName))
+                throw new RuntimeException("Deserialization of class " + clsName + " is disallowed.");
+
             Class old = ldrMap.putIfAbsent(clsName, cls = Class.forName(clsName, true, ldr));
 
             if (old != null)
@@ -9444,11 +9517,9 @@ public abstract class IgniteUtils {
         try {
             Method mtd = cls.getDeclaredMethod(name, paramTypes);
 
-            if (mtd.getReturnType() != void.class) {
-                mtd.setAccessible(true);
+            mtd.setAccessible(true);
 
-                return mtd;
-            }
+            return mtd;
         }
         catch (NoSuchMethodException ignored) {
             // No-op.
@@ -10251,6 +10322,67 @@ public abstract class IgniteUtils {
      */
     public static LockTracer lockTracer(Lock lock) {
         return new LockTracer(lock);
+    }
+
+    /**
+     * @param ctx Context.
+     *
+     * @return instance of current baseline topology if it exists
+     */
+    public static BaselineTopology getBaselineTopology(@NotNull GridKernalContext ctx) {
+        return ctx.state().clusterState().baselineTopology();
+    }
+
+
+    /**
+     * @param cctx Context.
+     *
+     * @return instance of current baseline topology if it exists
+     */
+    public static BaselineTopology getBaselineTopology(@NotNull GridCacheSharedContext cctx) {
+        return getBaselineTopology(cctx.kernalContext());
+    }
+
+    /**
+     * @param cctx Context.
+     *
+     * @return instance of current baseline topology if it exists
+     */
+    public static BaselineTopology getBaselineTopology(@NotNull GridCacheContext cctx) {
+        return getBaselineTopology(cctx.kernalContext());
+    }
+
+    /**
+     * @param addr pointer in memory
+     * @param len how much byte to read (should divide 8)
+     *
+     * @return hex representation of memory region
+     */
+    public static String toHexString(long addr, int len) {
+        assert (len & 0b111) == 0 && len > 0;
+
+        StringBuilder sb = new StringBuilder(len * 2);
+
+        for (int i = 0; i < len; i += 8)
+            sb.append(U.hexLong(GridUnsafe.getLong(addr + i)));
+
+        return sb.toString();
+    }
+
+    /**
+     * @param buf which content should be converted to string
+     *
+     * @return hex representation of memory region
+     */
+    public static String toHexString(ByteBuffer buf) {
+        assert (buf.capacity() & 0b111) == 0;
+
+        StringBuilder sb = new StringBuilder(buf.capacity() * 2);
+
+        for (int i = 0; i < buf.capacity(); i += 8)
+            sb.append(U.hexLong(buf.getLong(i)));
+
+        return sb.toString();
     }
 
     /**

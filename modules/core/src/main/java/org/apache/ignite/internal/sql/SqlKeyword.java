@@ -27,6 +27,9 @@ import java.util.HashSet;
  * SQL keyword constants.
  */
 public class SqlKeyword {
+    /** Keyword: ALTER. */
+    public static final String ALTER = "ALTER";
+
     /** Keyword: ASC. */
     public static final String ASC = "ASC";
 
@@ -39,6 +42,9 @@ public class SqlKeyword {
     /** Keyword: BOOL. */
     public static final String BOOL = "BOOL";
 
+    /** Keyword: BATCH_SIZE. */
+    public static final String BATCH_SIZE = "BATCH_SIZE";
+
     /** Keyword: BOOLEAN. */
     public static final String BOOLEAN = "BOOLEAN";
 
@@ -50,6 +56,9 @@ public class SqlKeyword {
 
     /** Keyword: CHARACTER. */
     public static final String CHARACTER = "CHARACTER";
+
+    /** Keyword: COPY. */
+    public static final String COPY = "COPY";
 
     /** Keyword: CREATE. */
     public static final String CREATE = "CREATE";
@@ -87,6 +96,12 @@ public class SqlKeyword {
     /** Keyword: FLOAT8. */
     public static final String FLOAT8 = "FLOAT8";
 
+    /** Keyword: FORMAT. */
+    public static final String FORMAT = "FORMAT";
+
+    /** Keyword: FROM. */
+    public static final String FROM = "FROM";
+
     /** Keyword: FULLTEXT. */
     public static final String FULLTEXT = "FULLTEXT";
 
@@ -117,8 +132,14 @@ public class SqlKeyword {
     /** Keyword: INTEGER. */
     public static final String INTEGER = "INTEGER";
 
+    /** Keyword: INTO. */
+    public static final String INTO = "INTO";
+
     /** Keyword: KEY. */
     public static final String KEY = "KEY";
+
+    /** Keyword: LOGGING. */
+    public static final String LOGGING = "LOGGING";
 
     /** Keyword: LONGVARCHAR. */
     public static final String LONGVARCHAR = "LONGVARCHAR";
@@ -128,6 +149,9 @@ public class SqlKeyword {
 
     /** Keyword: NCHAR. */
     public static final String NCHAR = "NCHAR";
+
+    /** Keyword: NOLOGGING. */
+    public static final String NOLOGGING = "NOLOGGING";
 
     /** Keyword: NOT. */
     public static final String NOT = "NOT";
