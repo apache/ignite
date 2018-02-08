@@ -28,7 +28,6 @@ import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -282,9 +281,8 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @throws IgniteCheckedException In case of error.
      */
     void prepareMarshal(GridCacheContext cctx) throws IgniteCheckedException {
-        assert key != null;
-
-        key.prepareMarshal(cctx.cacheObjectContext());
+        if (key != null)
+            key.prepareMarshal(cctx.cacheObjectContext());
 
         if (newVal != null)
             newVal.prepareMarshal(cctx.cacheObjectContext());
@@ -300,7 +298,8 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      */
     void unmarshal(GridCacheContext cctx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         if (!isFiltered()) {
-            key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
+            if (key != null)
+                key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
 
             if (newVal != null)
                 newVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
