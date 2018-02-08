@@ -14,20 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.IgnitePageMemReplaceDelayedWriteUnitTest;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.IgniteThrottlingUnitTest;
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.FullPageId;
 
 /**
- *
+ * Flush (write) dirty page implementation for freed page during page replacement. When possible, will be called by
+ * removePageForReplacement().
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    IgniteThrottlingUnitTest.class,
-    IgnitePageMemReplaceDelayedWriteUnitTest.class
-})
-public class IgnitePdsUnitTestSuite {
+public interface ReplacedPageWriter {
+    /**
+     * @param fullPageId Full page ID being evicted.
+     * @param byteBuf Buffer with page data.
+     * @param tag partition update tag, increasing counter.
+     * @throws IgniteCheckedException if page write failed.
+     */
+    void writePage(FullPageId fullPageId, ByteBuffer byteBuf, int tag) throws IgniteCheckedException;
 }
