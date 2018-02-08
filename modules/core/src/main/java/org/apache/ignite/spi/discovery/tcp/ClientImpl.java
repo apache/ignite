@@ -487,7 +487,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         long startTime = U.currentTimeMillis();
 
         while (true) {
-            log.info(">>>>>>> Trying to connect");
             if (Thread.currentThread().isInterrupted())
                 throw new InterruptedException();
 
@@ -1054,6 +1053,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 catch (IOException e) {
                     msgWorker.addMessage(new SocketClosedMessage(sockStream));
 
+                    if (log.isDebugEnabled())
                         U.error(log, "Connection failed [sock=" + sock + ", locNodeId=" + getLocalNodeId() + ']', e);
                 }
                 finally {
@@ -1651,7 +1651,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                                     queue.addFirst(SPI_RECONNECT_FAILED);
                                 }
                                 else {
-                                        log.error("Connection closed, will try to restore connection.");
+                                    if (log.isDebugEnabled())
+                                        log.debug("Connection closed, will try to restore connection.");
 
                                     assert reconnector == null;
 
@@ -1829,7 +1830,6 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             try {
                 joinRes = joinTopology(null, spi.joinTimeout);
-                log.info(">>>>>>> Joined topology");
             }
             catch (IgniteSpiException e) {
                 joinError(e);
