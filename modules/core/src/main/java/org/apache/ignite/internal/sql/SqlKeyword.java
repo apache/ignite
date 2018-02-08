@@ -90,6 +90,9 @@ public class SqlKeyword {
     /** Keyword: FLOAT8. */
     public static final String FLOAT8 = "FLOAT8";
 
+    /** Keyword: FLUSH. */
+    public static final String FLUSH = "FLUSH";
+
     /** Keyword: FULLTEXT. */
     public static final String FULLTEXT = "FULLTEXT";
 
@@ -153,6 +156,9 @@ public class SqlKeyword {
     /** Keyword: NVARCHAR2. */
     public static final String NVARCHAR2 = "NVARCHAR2";
 
+    /** Keyword: OFF. */
+    public static final String OFF = "OFF";
+
     /** Keyword: ON. */
     public static final String ON = "ON";
 
@@ -168,6 +174,9 @@ public class SqlKeyword {
     /** Keyword: RESTRICT. */
     public static final String RESTRICT = "RESTRICT";
 
+    /** Keyword: SET. */
+    public static final String SET = "SET";
+
     /** Keyword: SIGNED. */
     public static final String SIGNED = "SIGNED";
 
@@ -179,6 +188,12 @@ public class SqlKeyword {
 
     /** Keyword: SPATIAL. */
     public static final String SPATIAL = "SPATIAL";
+
+    /** Keyword: STREAMER. */
+    public static final String STREAMER = "STREAMER";
+
+    /** Keyword: STREAMING. */
+    public static final String STREAMING = "STREAMING";
 
     /** Keyword: TABLE. */
     public static final String TABLE = "TABLE";

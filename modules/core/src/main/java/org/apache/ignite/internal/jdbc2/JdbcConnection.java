@@ -402,10 +402,7 @@ public class JdbcConnection implements Connection {
             it.remove();
         }
 
-        // May be null if 'close' is called when connection is open via try-with-resource and
-        // exception is thrown from ctor.
-        if (cliCtx != null)
-            cliCtx.close();
+        U.closeQuiet(cliCtx);
 
         IgniteNodeFuture fut = NODES.get(cfg);
 

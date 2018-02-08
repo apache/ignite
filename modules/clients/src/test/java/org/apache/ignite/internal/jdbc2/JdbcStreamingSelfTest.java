@@ -104,7 +104,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
      * @return Connection to use for the test.
      * @throws Exception if failed.
      */
-    private Connection createConnection(boolean allowOverwrite) throws Exception {
+    protected Connection createConnection(boolean allowOverwrite) throws Exception {
         Properties props = new Properties();
 
         props.setProperty(IgniteJdbcDriver.PROP_STREAMING, "true");
@@ -129,23 +129,21 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testStreamedInsert() throws Exception {
-        conn = createConnection(false);
-
         for (int i = 10; i <= 100; i += 10)
             ignite(0).cache(DEFAULT_CACHE_NAME).put(i, i * 100);
 
-        PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)");
+        try (Connection conn = createConnection(false)) {
+            try (PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)")) {
+                for (int i = 1; i <= 100; i++) {
+                    stmt.setInt(1, i);
+                    stmt.setInt(2, i);
 
-        for (int i = 1; i <= 100; i++) {
-            stmt.setInt(1, i);
-            stmt.setInt(2, i);
-
-            stmt.executeUpdate();
+                    stmt.executeUpdate();
+                }
+            }
         }
 
-        // Closing connection makes it wait for streamer close
-        // and thus for data load completion as well
-        conn.close();
+        U.sleep(500);
 
         // Now let's check it's all there.
         for (int i = 1; i <= 100; i++) {
@@ -160,23 +158,21 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testStreamedInsertWithOverwritesAllowed() throws Exception {
-        conn = createConnection(true);
-
         for (int i = 10; i <= 100; i += 10)
             ignite(0).cache(DEFAULT_CACHE_NAME).put(i, i * 100);
 
-        PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)");
+        try (Connection conn = createConnection(true)) {
+            try (PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)")) {
+                for (int i = 1; i <= 100; i++) {
+                    stmt.setInt(1, i);
+                    stmt.setInt(2, i);
 
-        for (int i = 1; i <= 100; i++) {
-            stmt.setInt(1, i);
-            stmt.setInt(2, i);
-
-            stmt.executeUpdate();
+                    stmt.executeUpdate();
+                }
+            }
         }
 
-        // Closing connection makes it wait for streamer close
-        // and thus for data load completion as well
-        conn.close();
+        U.sleep(500);
 
         // Now let's check it's all there.
         // i should point to i at all times as we've turned overwrites on above.

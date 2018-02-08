@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -48,9 +50,6 @@ public class SqlClientContext implements AutoCloseable {
     /** Skip reducer on update flag. */
     private final boolean skipReducerOnUpdate;
 
-    /** Streaming state flag. */
-    private final boolean stream;
-
     /** Allow overwrites for duplicate keys on streamed {@code INSERT}s. */
     private final boolean streamAllowOverwrite;
 
@@ -64,7 +63,7 @@ public class SqlClientContext implements AutoCloseable {
     private final long streamFlushTimeout;
 
     /** Streamers for various caches. */
-    private final ConcurrentHashMap<String, IgniteDataStreamer<?, ?>> streamers;
+    private AtomicReference<ConcurrentHashMap<String, IgniteDataStreamer<?, ?>>> streamers;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -91,55 +90,95 @@ public class SqlClientContext implements AutoCloseable {
         this.collocated = collocated;
         this.lazy = lazy;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
-        this.stream = stream;
         this.streamAllowOverwrite = streamAllowOverwrite;
         this.streamNodeParOps = streamNodeParOps;
         this.streamNodeBufSize = streamNodeBufSize;
         this.streamFlushTimeout = streamFlushTimeout;
 
-        streamers = stream ? new ConcurrentHashMap<>() : null;
+        streamers = new AtomicReference<>(stream ? new ConcurrentHashMap<>() : null);
 
         log = ctx.log(SqlClientContext.class.getName());
+
+        ctx.query().registerClientContext(this);
     }
 
+    /**
+     * Turn on streaming on this client context.
+     */
+    public void enableStreaming() {
+        ConcurrentHashMap<String, IgniteDataStreamer<?, ?>> curStreamers = streamers.get();
+
+        if (curStreamers != null)
+            return;
+
+        streamers.compareAndSet(null, new ConcurrentHashMap<>());
+    }
+
+    /**
+     * Turn off streaming on this client context - with closing all open streamers, if any.
+     */
+    public void disableStreaming() {
+        ConcurrentHashMap<String, IgniteDataStreamer<?, ?>> curStreamers = streamers.get();
+
+        if (curStreamers == null)
+            return;
+
+        if (!streamers.compareAndSet(curStreamers, null)) {
+            // Only one of simultaneous commands to disable streaming gets to process the map.
+            return;
+        }
+
+        Iterator<IgniteDataStreamer<?, ?>> it = curStreamers.values().iterator();
+
+        while (it.hasNext()) {
+            IgniteDataStreamer<?, ?> streamer = it.next();
+
+            U.close(streamer, log);
+
+            it.remove();
+        }
+    }
+
+    /**
+     * @return Collocated flag.
+     */
     public boolean isCollocated() {
         return collocated;
     }
 
+    /**
+     * @return Distributed joins flag.
+     */
     public boolean isDistributedJoins() {
         return distributedJoins;
     }
 
+    /**
+     * @return Enforce join order flag.
+     */
     public boolean isEnforceJoinOrder() {
         return enforceJoinOrder;
     }
 
+    /**
+     * @return Lazy query execution flag.
+     */
     public boolean isLazy() {
         return lazy;
     }
 
+    /**
+     * @return Skip reducer on update flag,
+     */
     public boolean isSkipReducerOnUpdate() {
         return skipReducerOnUpdate;
     }
 
+    /**
+     * @return Streaming state flag (on or off).
+     */
     public boolean isStream() {
-        return stream;
-    }
-
-    public boolean isStreamAllowOverwrite() {
-        return streamAllowOverwrite;
-    }
-
-    public long streamFlushTimeout() {
-        return streamFlushTimeout;
-    }
-
-    public int streamNodeBufferSize() {
-        return streamNodeBufSize;
-    }
-
-    public int streamNodeParOps() {
-        return streamNodeParOps;
+        return streamers.get() != null;
     }
 
     /**
@@ -147,27 +186,30 @@ public class SqlClientContext implements AutoCloseable {
      * @return Streamer for given cache.
      */
     public IgniteDataStreamer<?, ?> streamerForCache(String cacheName) {
-        assert stream;
+        ConcurrentHashMap<String, IgniteDataStreamer<?, ?>> curStreamers = streamers.get();
 
-        IgniteDataStreamer<?, ?> res = streamers.get(cacheName);
+        if (curStreamers == null)
+            return null;
+
+        IgniteDataStreamer<?, ?> res = curStreamers.get(cacheName);
 
         if (res != null)
             return res;
 
         res = ctx.grid().dataStreamer(cacheName);
 
-        IgniteDataStreamer<?, ?> exStreamer = streamers.putIfAbsent(cacheName, res);
+        IgniteDataStreamer<?, ?> exStreamer = curStreamers.putIfAbsent(cacheName, res);
 
         if (exStreamer == null) {
-            res.autoFlushFrequency(streamFlushTimeout());
+            res.autoFlushFrequency(streamFlushTimeout);
 
-            res.allowOverwrite(isStreamAllowOverwrite());
+            res.allowOverwrite(streamAllowOverwrite);
 
-            if (streamNodeBufferSize() > 0)
-                res.perNodeBufferSize(streamNodeBufferSize());
+            if (streamNodeBufSize > 0)
+                res.perNodeBufferSize(streamNodeBufSize);
 
-            if (streamNodeParOps() > 0)
-                res.perNodeParallelOperations(streamNodeParOps());
+            if (streamNodeParOps > 0)
+                res.perNodeParallelOperations(streamNodeParOps);
 
             return res;
         }
@@ -179,28 +221,28 @@ public class SqlClientContext implements AutoCloseable {
     }
 
     /** {@inheritDoc} */
-    @Override public void close() {
-        if (!stream)
+    @Override public void close() throws Exception {
+        ctx.query().unregisterClientContext(this);
+
+        ConcurrentHashMap<String, IgniteDataStreamer<?, ?>> curStreamers = streamers.get();
+
+        if (curStreamers == null)
             return;
 
-        for (IgniteDataStreamer<?, ?> s : streamers.values()) {
-            try {
-                s.close();
-            }
-            catch (Exception e) {
-                log.warning("Data streamer close error", e);
-            }
-        }
+        for (IgniteDataStreamer<?, ?> s : curStreamers.values())
+            U.close(s, log);
     }
 
     /**
      * Flush all open {@link IgniteDataStreamer}s.
      */
     public void flushOpenStreamers() {
-        if (!stream)
+        ConcurrentHashMap<String, IgniteDataStreamer<?, ?>> curStreamers = streamers.get();
+
+        if (curStreamers == null)
             return;
 
-        for (IgniteDataStreamer<?, ?> s : streamers.values())
+        for (IgniteDataStreamer<?, ?> s : curStreamers.values())
             s.flush();
     }
 }

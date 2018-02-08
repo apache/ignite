@@ -243,12 +243,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 for (JdbcQueryCursor cursor : qryCursors.values())
                     cursor.close();
 
-                try {
-                    cliCtx.close();
-                }
-                catch (Exception e) {
-                    log.warning("Client context close error.", e);
-                }
+                U.close(cliCtx, log);
             }
             finally {
                 busyLock.leaveBusy();

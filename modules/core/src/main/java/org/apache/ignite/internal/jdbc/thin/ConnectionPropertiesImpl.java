@@ -110,7 +110,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         0, false, 0, Integer.MAX_VALUE);
 
     /** Buffer size per cluster node during streaming. */
-    private IntegerProperty streamBufferSize = new IntegerProperty(
+    private IntegerProperty streamBufSize = new IntegerProperty(
         "streamingPerNodeBufferSize", "Buffer size per cluster node during streaming",
         0, false, 0, Integer.MAX_VALUE);
 
@@ -120,11 +120,11 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         0, false, 0, Long.MAX_VALUE);
 
     /** Properties array. */
-    private final ConnectionProperty [] propsArray = {
+    private final ConnectionProperty [] props = {
         host, port,
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
         tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate, stream,
-        streamAllowOverwrite, streamParOps
+        streamAllowOverwrite, streamParOps, streamBufSize, streamFlushFreq
     };
 
     /** {@inheritDoc} */
@@ -279,12 +279,12 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** {@inheritDoc} */
     @Override public int streamBufferSize() {
-        return streamBufferSize.value();
+        return streamBufSize.value();
     }
 
     /** {@inheritDoc} */
     @Override public void streamBufferSize(int val) throws SQLException {
-        streamBufferSize.setValue(val);
+        streamBufSize.setValue(val);
     }
 
     /** {@inheritDoc} */
@@ -304,7 +304,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     void init(Properties props) throws SQLException {
         Properties props0 = (Properties)props.clone();
 
-        for (ConnectionProperty aPropsArray : propsArray)
+        for (ConnectionProperty aPropsArray : this.props)
             aPropsArray.init(props0);
     }
 
@@ -312,10 +312,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
      * @return Driver's properties info array.
      */
     private DriverPropertyInfo[] getDriverPropertyInfo() {
-        DriverPropertyInfo[] dpis = new DriverPropertyInfo[propsArray.length];
+        DriverPropertyInfo[] dpis = new DriverPropertyInfo[props.length];
 
-        for (int i = 0; i < propsArray.length; ++i)
-            dpis[i] = propsArray[i].getDriverPropertyInfo();
+        for (int i = 0; i < props.length; ++i)
+            dpis[i] = props[i].getDriverPropertyInfo();
 
         return dpis;
     }

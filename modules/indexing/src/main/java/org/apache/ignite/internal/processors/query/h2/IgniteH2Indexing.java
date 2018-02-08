@@ -46,6 +46,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -124,6 +125,8 @@ import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlFlushStreamerCommand;
+import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -1022,7 +1025,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteSQLException("Only tuple based INSERT statements are supported in streaming mode",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        return dmlProc.streamUpdateQuery(schemaName, cliCtx.streamerForCache(plan.cacheContext().name()), stmt, params);
+        IgniteDataStreamer<?, ?> streamer = cliCtx.streamerForCache(plan.cacheContext().name());
+
+        if (streamer != null)
+            return dmlProc.streamUpdateQuery(schemaName, streamer, stmt, params);
+        else {
+            U.warn(log, "Streaming has been turned off by concurrent command.");
+
+            return 0L;
+        }
     }
 
     /**
@@ -1468,9 +1479,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (parser.nextCommand() != null)
                 return null;
 
-            // Only CREATE/DROP INDEX and ALTER TABLE commands are supported for now.
+            // Only CREATE/DROP INDEX, ALTER TABLE, and SET STREAMING commands are supported for now.
             if (!(cmd instanceof SqlCreateIndexCommand || cmd instanceof SqlDropIndexCommand ||
-                cmd instanceof SqlAlterTableCommand))
+                cmd instanceof SqlAlterTableCommand || cmd instanceof SqlSetStreamingCommand ||
+                cmd instanceof SqlFlushStreamerCommand))
                 return null;
         }
         catch (Exception e) {
@@ -1489,8 +1501,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteSQLException("Failed to parse DDL statement: " + qry.getSql(), code, e);
         }
 
-        if (cliCtx != null)
-            cliCtx.flushOpenStreamers();
+        if (cliCtx != null) {
+            if (cmd instanceof SqlSetStreamingCommand) {
+                if (((SqlSetStreamingCommand)cmd).isTurnOn())
+                    cliCtx.enableStreaming();
+                else
+                    cliCtx.disableStreaming();
+            }
+            else if (cmd instanceof SqlFlushStreamerCommand)
+                cliCtx.flushOpenStreamers();
+        }
 
         // Execute.
         try {

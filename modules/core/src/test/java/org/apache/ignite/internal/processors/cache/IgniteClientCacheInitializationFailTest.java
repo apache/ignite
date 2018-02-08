@@ -251,12 +251,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public long streamUpdateQuery(String spaceName, String qry, @Nullable Object[] params,
-            IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long streamUpdateQuery(String spaceName, String qry, @Nullable Object[] params,
             SqlClientContext cliCtx) throws IgniteCheckedException {
             return 0;
         }
