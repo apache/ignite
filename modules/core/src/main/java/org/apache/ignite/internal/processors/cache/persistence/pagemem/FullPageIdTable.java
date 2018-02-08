@@ -90,8 +90,8 @@ public class FullPageIdTable {
     /** Pointer to the values array. */
     protected long valPtr;
 
-    private boolean optimize = false;
-    private boolean optimize2 = false;
+    private boolean optimize = true;
+    private boolean optimize2 = true;
     //todo
     /** Avg get steps. */
     IntervalBasedMeasurement avgGetSteps = new IntervalBasedMeasurement(250, 4);
@@ -284,8 +284,8 @@ public class FullPageIdTable {
 
         int idx = U.safeAbs(FullPageId.hashCode(cacheId, pageId)) % capacity;
 
-        GridIntList canConvertRmvToEmpty = new GridIntList();
-
+        GridIntList curRmvSequence = new GridIntList();
+        GridIntList canConvertRmvToEmpty = null;
         int foundIdx = -1;
         int res;
 
@@ -296,7 +296,7 @@ public class FullPageIdTable {
                 // Drop all removed elements accumulated,
                 // because some present value does not allow to reset removed chain to empty cells
 
-                canConvertRmvToEmpty.clear();
+                curRmvSequence.clear();
             }
 
             if (res == OUTDATED) {
@@ -308,6 +308,8 @@ public class FullPageIdTable {
                 if (foundIdx == -1)
                     foundIdx = idx;
 
+                canConvertRmvToEmpty = curRmvSequence;
+
                 break;
             }
             else if (res == REMOVED) {
@@ -315,7 +317,7 @@ public class FullPageIdTable {
                 if (foundIdx == -1)
                     foundIdx = idx;
                 else
-                    canConvertRmvToEmpty.add(idx);
+                    curRmvSequence.add(idx);
             }
             else if (res == EQUAL)
                 return idx;
@@ -335,16 +337,20 @@ public class FullPageIdTable {
         dumpIfNeed();
 
         if (foundIdx != -1) {
-            if (optimize && !canConvertRmvToEmpty.isEmpty()) {
+            if (optimize && canConvertRmvToEmpty!=null && !canConvertRmvToEmpty.isEmpty()) {
+                int lastConverted = -1;
                 for (GridIntIterator iter = canConvertRmvToEmpty.iterator(); iter.hasNext(); ) {
                     int nextIdx = iter.next();
 
                     assert isRemoved(nextIdx);
 
                     setEmpty(nextIdx);
+                    lastConverted = nextIdx;
                 }
+                assert lastConverted > 0;
+                assert isEmpty(normalizeIndex(lastConverted + 1)): "Steps " + step;
 
-                int delta = canConvertRmvToEmpty.size();
+                int delta = curRmvSequence.size();
 
                 convertedFromRmvToEmpty.addAndGet(delta);
             }

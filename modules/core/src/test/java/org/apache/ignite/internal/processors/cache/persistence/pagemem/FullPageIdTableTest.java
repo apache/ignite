@@ -112,10 +112,19 @@ public class FullPageIdTableTest  {
      */
     @Test
     public void putRemoveScenario() throws Exception {
-        int cnt = CACHE_ID_RANGE2 * PAGE_ID_RANGE2;
+        long seed   = U.currentTimeMillis();
+        doPutRemoveTest(seed);
+    }
 
-        int elementsCount = 7000;
-        long mem = FullPageIdTable.requiredMemory(elementsCount);
+    @Test
+    public void putRemoveScenario1() throws Exception {
+        long seed   = 1518082843319L;
+        doPutRemoveTest(seed);
+    }
+
+    private void doPutRemoveTest(long seed) {
+        int elementsCnt = 7000;
+        long mem = FullPageIdTable.requiredMemory(elementsCnt);
 
         DirectMemoryProvider prov = new UnsafeMemoryProvider(log);
 
@@ -124,8 +133,6 @@ public class FullPageIdTableTest  {
         DirectMemoryRegion region = prov.nextRegion();
 
         try {
-            long seed = U.currentTimeMillis();
-
             info("Seed: " + seed + "L; //");
 
             Random rnd = new Random(seed);
@@ -157,17 +164,17 @@ public class FullPageIdTableTest  {
                     }
 
                 }
-                else if ((op == 1 || op == 2) && (check.size() < elementsCount)) {
+                else if ((op == 1 || op == 2) && (check.size() < elementsCnt)) {
                     long val = U.safeAbs(rnd.nextLong());
 
                     tbl.put(cacheId, pageId, val, tag);
                     check.put(fullId, val);
                 }
-                else if ((op == 3) && check.size() >= elementsCount * 2 / 3) {
+                else if ((op == 3) && check.size() >= elementsCnt * 2 / 3) {
                     tbl.remove(cacheId, pageId, tag);
                     check.remove(fullId);
                 }
-                else if (check.size() >= elementsCount * 2 / 3) {
+                else if (check.size() >= elementsCnt * 2 / 3) {
                     int idx = rnd.nextInt(tbl.capacity());
                     EvictCandidate ec = tbl.getNearestAt(idx, -2);
                     if (ec != null) {
@@ -202,6 +209,8 @@ public class FullPageIdTableTest  {
             System.out.println("Average put required: " + avgPutSteps.getAverage());
         }
         finally {
+            long msPassed = U.currentTimeMillis() - seed;
+            System.err.println("Seed used [" + seed + "] duration ["+ msPassed+ "] ms");
             prov.shutdown();
         }
     }
@@ -237,12 +246,14 @@ public class FullPageIdTableTest  {
         HashMap<FullPageId, Long> cp = new HashMap<>(tblSnapshot);
         check.keySet().forEach(cp::remove);
 
-        if(chkSize!=foundTblSize) {
+        if (chkSize != foundTblSize) {
             tbl.lastDump.set(0);
             tbl.dumpIfNeed();
         }
-        assertEquals("Size check failed, check map size "
-            + chkSize + " but found in table " + foundTblSize + " Difference: " + cp, chkSize, foundTblSize);
+        assertEquals("Size check failed, check map size " +
+            chkSize + " but found in table " + foundTblSize + " elements," +
+            " table size " + tbl.size() +
+            "\n Difference: " + cp, chkSize, foundTblSize);
 
         for (Map.Entry<FullPageId, Long> entry : check.entrySet()) {
             Long valCheck = entry.getValue();
