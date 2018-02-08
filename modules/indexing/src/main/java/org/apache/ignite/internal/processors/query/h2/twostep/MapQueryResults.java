@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
+import java.sql.ResultSet;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReferenceArray;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.jetbrains.annotations.Nullable;
-
-import java.sql.ResultSet;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReferenceArray;
 
 /**
  * Mapper query results.
@@ -43,7 +43,7 @@ class MapQueryResults {
     private final GridQueryCancel[] cancels;
 
     /** */
-    private final String cacheName;
+    private final GridCacheContext<?, ?> cctx;
 
     /** Lazy worker. */
     private final MapQueryLazyWorker lazyWorker;
@@ -56,15 +56,15 @@ class MapQueryResults {
      *
      * @param qryReqId Query request ID.
      * @param qrys Number of queries.
-     * @param cacheName Cache name.
+     * @param cctx Cache context.
      * @param lazyWorker Lazy worker (if any).
      */
     @SuppressWarnings("unchecked")
-    MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable String cacheName,
+    MapQueryResults(IgniteH2Indexing h2, long qryReqId, int qrys, @Nullable GridCacheContext<?, ?> cctx,
         @Nullable MapQueryLazyWorker lazyWorker) {
         this.h2 = h2;
         this.qryReqId = qryReqId;
-        this.cacheName = cacheName;
+        this.cctx = cctx;
         this.lazyWorker = lazyWorker;
 
         results = new AtomicReferenceArray<>(qrys);
@@ -108,7 +108,7 @@ class MapQueryResults {
      * @param rs Result set.
      */
     void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs, Object[] params) {
-        MapQueryResult res = new MapQueryResult(h2, rs, cacheName, qrySrcNodeId, q, params, lazyWorker);
+        MapQueryResult res = new MapQueryResult(h2, rs, cctx, qrySrcNodeId, q, params, lazyWorker);
 
         if (lazyWorker != null)
             lazyWorker.result(res);
