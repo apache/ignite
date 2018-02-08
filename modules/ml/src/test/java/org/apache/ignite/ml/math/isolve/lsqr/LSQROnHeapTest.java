@@ -76,6 +76,31 @@ public class LSQROnHeapTest {
         assertArrayEquals(new double[]{1, -2, -2}, res.getX(), 1e-6);
     }
 
+    /** Tests solving simple linear system with specified x0. */
+    @Test
+    public void testSolveLinearSystemWithX0() {
+        Map<Integer, double[]> data = new HashMap<>();
+        data.put(0, new double[]{3, 2, -1, 1});
+        data.put(1, new double[]{2, -2, 4, -2});
+        data.put(2, new double[]{-1, 0.5, -1, 0});
+
+        DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, parts);
+
+        LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
+            datasetBuilder,
+            new LinSysPartitionDataBuilderOnHeap<>(
+                (k, v) -> Arrays.copyOf(v, v.length - 1),
+                (k, v) -> v[3],
+                3
+            )
+        );
+
+        LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false,
+            new double[] {999, 999, 999});
+
+        assertArrayEquals(new double[]{1, -2, -2}, res.getX(), 1e-6);
+    }
+
     /** Tests solving least squares problem. */
     @Test
     public void testSolveLeastSquares() throws Exception {
