@@ -903,7 +903,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                             if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
                                 removeEntry(cached);
 
-                                if (rec) {
+                                if (rec && !hld.cctx.config().isEventsDisabled()) {
                                     hld.cctx.events().addEvent(cached.partition(),
                                         cached.key(),
                                         ctx.localNodeId(),
