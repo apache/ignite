@@ -870,6 +870,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * Initial data is collected on coordinator to send to join node.
      */
     private static final class InitialUsersData implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Users. */
         private final ArrayList<User> usrs;
 
@@ -901,6 +904,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * to resend authenticate message to the new coordinator.
      */
     private static class RetryOnCoordinatorLeftException extends IgniteCheckedException {
+        /** */
+        private static final long serialVersionUID = 0L;
     }
 
     /**
