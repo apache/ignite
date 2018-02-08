@@ -77,9 +77,14 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
 
         println("Using jdbc url:" + url);
 
-        fillData(cfg, (IgniteEx)ignite(), args.range());
+        setupData();
 
         ignite().close();
+    }
+
+    /** Sets up test data */
+    protected void setupData(){
+        fillData(cfg, (IgniteEx)ignite(), args.range());
     }
 
     /**
