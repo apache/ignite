@@ -29,8 +29,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.junit.Test;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -117,13 +117,17 @@ public class FullPageIdTableTest  {
     }
 
     @Test
-    public void putRemoveScenario1() throws Exception {
-        long seed   = 1518082843319L;
+    public void putRemoveScenarioFixedSeed() throws Exception {
+        long seed = 1518082843319L;
+
         doPutRemoveTest(seed);
     }
 
     private void doPutRemoveTest(long seed) {
         int elementsCnt = 7000;
+
+        System.setProperty(IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR, "11");
+
         long mem = FullPageIdTable.requiredMemory(elementsCnt);
 
         DirectMemoryProvider prov = new UnsafeMemoryProvider(log);
