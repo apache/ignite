@@ -17,13 +17,13 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
-import com.sun.org.apache.xml.internal.security.utils.Base64;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.Objects;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -134,7 +134,7 @@ public class User implements Serializable, Message {
                 md.update(salt);
             }
 
-            return Base64.encode(md.digest(salt));
+            return Base64.getEncoder().encodeToString(md.digest(salt));
         } catch (NoSuchAlgorithmException e) {
             throw new IgniteException("Authentication error", e);
         }
