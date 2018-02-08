@@ -505,7 +505,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                             "Please check IP finder configuration" +
                             (spi.ipFinder instanceof TcpDiscoveryMulticastIpFinder ?
                                 " and make sure multicast works on your network. " : ". ") +
-                            "Will retry every " + spi.getReconnectDelay() + " ms.", true);
+                            "Will retry every " + spi.getReconnectDelay() + " ms. " +
+                            "Change 'reconnectDelay' to configure the frequency of retries.", true);
 
                     Thread.sleep(spi.getReconnectDelay());
                 }
@@ -572,12 +573,16 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (wait) {
                 if (log.isDebugEnabled())
                     log.debug("Will wait before retry join.");
-            }
-            else if (addrs.isEmpty())
-                LT.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
-                    "every " + spi.getReconnectDelay() + " ms): " + toOrderedList(addrs0), true);
 
-            Thread.sleep(spi.getReconnectDelay());
+                Thread.sleep(spi.getReconnectDelay());
+            }
+            else if (addrs.isEmpty()) {
+                LT.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
+                    "every " + spi.getReconnectDelay() + " ms; change 'reconnectDelay' to configure the frequency " +
+                    "of retries): " + toOrderedList(addrs0), true);
+
+                Thread.sleep(spi.getReconnectDelay());
+            }
         }
     }
 

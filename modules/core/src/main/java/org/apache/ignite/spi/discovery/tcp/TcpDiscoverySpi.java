@@ -1761,7 +1761,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
             }
             catch (IgniteSpiException e) {
                 LT.error(log, e, "Failed to get registered addresses from IP finder on start " +
-                    "(retrying every " + getReconnectDelay() + "ms).");
+                    "(retrying every " + getReconnectDelay() + "ms; change 'reconnectDelay' to configure " +
+                    "the frequency of retries).");
             }
 
             try {
