@@ -617,6 +617,7 @@ public abstract class PagesList extends DataStructure {
         for (int lockAttempt = 0; ;) {
             Stripe stripe = getPageForPut(bucket, bag);
 
+            // No need to continue if bag has been utilized at getPageForPut.
             if (bag != null && bag.isEmpty())
                 return;
 
@@ -627,6 +628,7 @@ public abstract class PagesList extends DataStructure {
                 long tailAddr = writeLockPage(tailId, tailPage, bucket, lockAttempt++, bag); // Explicit check.
 
                 if (tailAddr == 0L) {
+                    // No need to continue if bag has been utilized at writeLockPage.
                     if (bag != null && bag.isEmpty())
                         return;
                     else
