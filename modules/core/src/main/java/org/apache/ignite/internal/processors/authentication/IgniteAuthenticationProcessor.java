@@ -84,7 +84,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /** Discovery event types. */
     private static final int[] DISCO_EVT_TYPES = new int[] {EVT_NODE_LEFT, EVT_NODE_FAILED, EVT_NODE_JOINED};
 
-    /** User operation finish futures (Operatio ID -> fututre). */
+    /** User operation finish futures (Operation ID -> future). */
     private final ConcurrentMap<IgniteUuid, UserOperationFinishFuture> opFinishFuts
         = new ConcurrentHashMap<>();
 
@@ -95,23 +95,35 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * and change users from the thread of 'exec' executor.
      */
     private final Object muxChangeUserVer = new Object();
+
     /** Mutex for change coordinator node. */
     private final Object muxCrdNode = new Object();
+
+    /** Task to put on auth executor queue to complete readyFut. */
+    private final Runnable readyFutCompletor;
+
     /** Active operations. */
     private List<UserManagementOperation> activeOperations = Collections.synchronizedList(new ArrayList<>());
+
     /** User map. */
     private ConcurrentMap<String, User> users;
+
     /** Users info version. */
     private long usersInfoVer;
+
     /** Shared context. */
     @GridToStringExclude
     private GridCacheSharedContext<?, ?> sharedCtx;
+
     /** Meta storage. */
     private ReadWriteMetastorage metastorage;
+
     /** Executor. */
     private IgniteThreadPoolExecutor exec;
+
     /** Coordinator node. */
     private ClusterNode crdNode;
+
     /** Is authentication enabled. */
     private boolean isEnabled;
 
@@ -133,7 +145,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /** Node activate future. */
     private GridFutureAdapter<Void> activateFut = new GridFutureAdapter<>();
 
-    /** Node activate future. */
+    /** Authentication process is ready (initial users exchange is finished after cluster activate). */
     private GridFutureAdapter<Void> readyFut = new GridFutureAdapter<>();
 
     /**
@@ -147,10 +159,25 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         isEnabled = authCfg != null && authCfg.isEnabled();
 
+        readyFutCompletor = new Runnable() {
+            @Override public void run() {
+                log.info("+++ READY");
+                readyFut.onDone();
+            }
+        };
+
         if (!isEnabled)
             return;
 
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
+    }
+
+    /**
+     * @param n Node.
+     * @return {@code true} if node holds user information. Otherwise returns {@code false}.
+     */
+    private static boolean isNodeHoldsUsers(ClusterNode n) {
+        return !n.isClient() && !n.isDaemon();
     }
 
     /** {@inheritDoc} */
@@ -180,7 +207,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                         break;
 
                     case EVT_NODE_JOINED:
-                        onNodeJoin(evt.eventNode().id());
+                        onNodeJoin(evt.eventNode());
                         break;
                 }
             }
@@ -353,6 +380,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     @SuppressWarnings("unchecked")
     @Override public void onReadyForRead(ReadOnlyMetastorage metastorage) throws IgniteCheckedException {
         if (!ctx.clientNode()) {
+            if (usersInfoVer != 0)
+                return;
+
             Long ver = (Long)metastorage.read(STORE_USERS_VERSION);
             usersInfoVer = ver == null ? 0 : ver;
 
@@ -364,8 +394,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 }
             });
 
-            for (User u : readUsers.values())
+            for (User u : readUsers.values()) {
                 users.put(u.name(), u);
+                log.info("+++ READ " + u);
+            }
         }
         else
             users = null;
@@ -373,12 +405,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onReadyForReadWrite(ReadWriteMetastorage metastorage) throws IgniteCheckedException {
-        if (!ctx.clientNode()) {
+        if (!ctx.clientNode())
             this.metastorage = metastorage;
-
-            if (usersInfoVer == 0)
-                addDefaultUser();
-        }
         else
             this.metastorage = null;
     }
@@ -426,27 +454,21 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /**
-     * @throws IgniteCheckedException On error.
      */
-    private void addDefaultUser() throws IgniteCheckedException {
-        User u = User.defaultUser();
+    private void addDefaultUser() {
+        assert usersInfoVer == 0;
+        assert users != null && users.isEmpty();
 
-        if (sharedCtx != null)
-            sharedCtx.database().checkpointReadLock();
+        UserManagementOperation op = new UserManagementOperation(User.defaultUser(), UserManagementOperation.OperationType.ADD);
 
-        try {
-            metastorage.write(STORE_USER_PREFIX + u.name(), u);
+        activeOperations.add(op);
 
-            metastorage.write(STORE_USERS_VERSION, usersInfoVer + 1);
-        }
-        finally {
-            if (sharedCtx != null)
-                sharedCtx.database().checkpointReadUnlock();
-        }
+        UserOperationFinishFuture fut = new UserOperationFinishFuture(op, false);
 
-        usersInfoVer++;
+        opFinishFuts.put(op.id(), fut);
 
-        users.put(u.name(), u);
+//        log.info("+++ ADD DFLT OP");
+        exec.execute(new UserOperationWorker(op, fut));
     }
 
     /**
@@ -460,7 +482,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private User authenticateOnServer(String login, String passwd) throws IgniteCheckedException {
         assert !ctx.clientNode() : "Must be used on server node";
 
-        readyFut.get();
+        waitReady();
 
         User usr;
 
@@ -505,7 +527,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private void processOperationLocal(UserManagementOperation op) throws IgniteCheckedException {
         assert op != null && op.user() != null : "Invalid operation: " + op;
 
-//        log.info("+++ DO " + op);
+        log.info("+++ DO " + op);
 
         switch (op.type()) {
             case ADD:
@@ -539,18 +561,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (users.containsKey(userName))
             throw new IgniteAuthenticationException("User already exists. [login=" + userName + ']');
 
-        if (sharedCtx != null)
-            sharedCtx.database().checkpointReadLock();
+        metastorage.write(STORE_USER_PREFIX + userName, usr);
 
-        try {
-            metastorage.write(STORE_USER_PREFIX + userName, usr);
-
-            metastorage.write(STORE_USERS_VERSION, usersInfoVer + 1);
-        }
-        finally {
-            if (sharedCtx != null)
-                sharedCtx.database().checkpointReadUnlock();
-        }
+        metastorage.write(STORE_USERS_VERSION, usersInfoVer + 1);
 
         synchronized (muxChangeUserVer) {
             usersInfoVer++;
@@ -573,18 +586,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (!users.containsKey(usr.name()))
             throw new IgniteAuthenticationException("User doesn't exist. [userName=" + usr.name() + ']');
 
-        if (sharedCtx != null)
-            sharedCtx.database().checkpointReadLock();
+        metastorage.remove(STORE_USER_PREFIX + usr.name());
 
-        try {
-            metastorage.remove(STORE_USER_PREFIX + usr.name());
-
-            metastorage.write(STORE_USERS_VERSION, usersInfoVer + 1);
-        }
-        finally {
-            if (sharedCtx != null)
-                sharedCtx.database().checkpointReadUnlock();
-        }
+        metastorage.write(STORE_USERS_VERSION, usersInfoVer + 1);
 
         synchronized (muxChangeUserVer) {
             usersInfoVer++;
@@ -607,18 +611,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (!users.containsKey(usr.name()))
             throw new IgniteAuthenticationException("User doesn't exist. [userName=" + usr.name() + ']');
 
-        if (sharedCtx != null)
-            sharedCtx.database().checkpointReadLock();
+        metastorage.write(STORE_USER_PREFIX + usr.name(), usr);
 
-        try {
-            metastorage.write(STORE_USER_PREFIX + usr.name(), usr);
-
-            metastorage.write(STORE_USERS_VERSION, usersInfoVer + 1);
-        }
-        finally {
-            if (sharedCtx != null)
-                sharedCtx.database().checkpointReadUnlock();
-        }
+        metastorage.write(STORE_USERS_VERSION, usersInfoVer + 1);
 
         synchronized (muxChangeUserVer) {
             usersInfoVer++;
@@ -677,12 +672,12 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /**
-     * @param nodeId Joined node ID.
+     * @param node Joined node ID.
      */
-    private void onNodeJoin(UUID nodeId) {
-        if (!ctx.clientNode()) {
+    private void onNodeJoin(ClusterNode node) {
+        if (isNodeHoldsUsers(ctx.discovery().localNode()) && isNodeHoldsUsers(node)) {
             for (UserOperationFinishFuture f : opFinishFuts.values())
-                f.onNodeJoin(nodeId);
+                f.onNodeJoin(node.id());
         }
     }
 
@@ -792,26 +787,41 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @param cache Disco cache.
      */
     public void onLocalJoin(DiscoveryEvent evt, DiscoCache cache) {
-        if (!isEnabled)
-            return;
-
-        if (ctx.clientNode() || initUsrs == null || initUsrs.usrs.isEmpty())
+        if (!isEnabled || ctx.clientNode()) {
             readyFut.onDone();
 
-        if (initUsrs != null) {
-            exec.execute(new RefreshUsersStorageWorker(initUsrs.usrs));
+            return;
+        }
+
+        if (coordinator().id().equals(ctx.localNodeId())) {
+            assert initUsrs == null;
+
+            // Creates default user on coordinator if it is the first start of PDS cluster
+            // or start of in-memory cluster.
+            if (usersInfoVer == 0)
+                addDefaultUser();
+            else
+                readyFut.onDone();
+        }
+        else {
+            assert initUsrs != null;
+
+            // Can be empty on initial start of PDS cluster (default user will be created and stored after activate)
+            if (!F.isEmpty(initUsrs.usrs))
+                exec.execute(new RefreshUsersStorageWorker(initUsrs.usrs));
 
             for (UserManagementOperation op : initUsrs.activeOps) {
                 UserOperationFinishFuture fut = new UserOperationFinishFuture(op, true);
 
                 opFinishFuts.put(op.id(), fut);
 
-//                    log.info("+++ LOCAL JOIN SUBMIT " + op);
                 exec.execute(new UserOperationWorker(op, fut));
             }
 
             usersInfoVer = initUsrs.usrVer;
         }
+
+        exec.execute(readyFutCompletor);
     }
 
     /**
@@ -822,11 +832,35 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /**
+     *
+     */
+    private void waitActivate() {
+        try {
+            activateFut.get();
+        }
+        catch (IgniteCheckedException e) {
+            // No-op.
+        }
+    }
+
+    /**
+     *
+     */
+    private void waitReady() {
+        try {
+            readyFut.get();
+        }
+        catch (IgniteCheckedException e) {
+            // No-op.
+        }
+    }
+
+    /**
      * @param msg Finish message.
      */
     private void sendFinish(UserManagementOperationFinishedMessage msg) {
         try {
-//            log.info("+++ SEND FINISH " + msg);
+            log.info("+++ SEND FINISH " + msg);
             ctx.io().sendToGridTopic(coordinator(), GridTopic.TOPIC_AUTH, msg, GridIoPolicy.SYSTEM_POOL);
         }
         catch (Exception e) {
@@ -882,7 +916,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             if (ctx.isStopping() || ctx.clientNode())
                 return;
 
-//          log.info("+++ PROPOSE " + msg.operation());
+          log.info("+++ PROPOSE " + msg.operation());
             if (log.isDebugEnabled())
                 log.debug(msg.toString());
 
@@ -913,7 +947,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             if (log.isDebugEnabled())
                 log.debug(msg.toString());
 
-//            log.info("+++ ACK " + msg.operationId());
+            log.info("+++ ACK " + msg.operationId());
             UserOperationFinishFuture f = opFinishFuts.get(msg.operationId());
 
             if (f != null) {
@@ -957,7 +991,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 receivedFinish = new HashSet<>();
 
                 for (ClusterNode node : ctx.discovery().nodes(ctx.discovery().topologyVersionEx())) {
-                    if (!node.isClient() && !node.isDaemon())
+                    if (isNodeHoldsUsers(node))
                         requiredFinish.add(node.id());
                 }
             }
@@ -1035,6 +1069,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
          *
          */
         private void checkOperationFinished() {
+            log.info("+++ CHECK F req="  + requiredFinish.size() + ", revc=" + receivedFinish.size());
             if (receivedFinish.containsAll(requiredFinish))
                 onFinishOperation(op.id(), err);
         }
@@ -1075,15 +1110,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             if (ctx.isStopping())
                 return;
 
-//            log.info("+++ WAIT ACTIVATE");
-
-            try {
-                activateFut.get();
-            }
-            catch (IgniteCheckedException e) {
-                // No-op.
-            }
-//            log.info("+++ ACTIVATED");
+            waitActivate();
 
             UserManagementOperationFinishedMessage msg0 = null;
 
@@ -1134,6 +1161,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         private RefreshUsersStorageWorker(ArrayList<User> usrs) {
             super(ctx.igniteInstanceName(), "refresh-store", IgniteAuthenticationProcessor.this.log);
 
+            assert !F.isEmpty(usrs);
+
             newUsrs = usrs;
         }
 
@@ -1142,15 +1171,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             if (ctx.clientNode())
                 return;
 
-//            log.info("+++ WAIT ACTIVATE REFRESH " + newUsrs.size());
-
-            try {
-                activateFut.get();
-            }
-            catch (IgniteCheckedException e) {
-                // No-op.
-            }
-//            log.info("+++ ACTIVATED REFRESH ");
+            waitActivate();
 
             if (sharedCtx != null)
                 sharedCtx.database().checkpointReadLock();
@@ -1172,8 +1193,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
                     users.put(u.name(), u);
                 }
-
-                readyFut.onDone();
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Cannot cleanup old users information at metastorage", e);

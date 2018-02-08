@@ -42,7 +42,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Nodes count. */
-    private static final int NODES_COUNT = 4;
+    protected static final int NODES_COUNT = 4;
 
     /** Nodes restarts count. */
     private static final int RESTARTS = 10;
@@ -51,13 +51,13 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     private static final int ITERATIONS = 10;
 
     /** Client node. */
-    private static final int CLI_NODE = NODES_COUNT - 1;
+    protected static final int CLI_NODE = NODES_COUNT - 1;
 
     /** Random. */
     private static final Random RND = new Random(System.currentTimeMillis());
 
     /** Authorization context for default user. */
-    private AuthorizationContext actxDflt;
+    protected AuthorizationContext actxDflt;
 
     /**
      * @param len String length.
@@ -118,10 +118,35 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      */
     public void testDefaultUser() throws Exception {
         for (int i = 0; i < NODES_COUNT; ++i) {
-            AuthorizationContext actx = grid(0).context().authentication().authenticate("ignite", "ignite");
+            AuthorizationContext actx = grid(i).context().authentication().authenticate("ignite", "ignite");
 
             assertNotNull(actx);
             assertEquals("ignite", actx.userName());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDefaultUserUpdate() throws Exception {
+        AuthorizationContext.context(actxDflt);
+
+        try {
+            // Change from all nodes
+            for (int nodeIdx = 0; nodeIdx < NODES_COUNT; ++nodeIdx) {
+                grid(nodeIdx).context().authentication().updateUser("ignite", "ignite" + nodeIdx);
+
+                // Check each change from all nodes
+                for (int i = 0; i < NODES_COUNT; ++i) {
+                    AuthorizationContext actx = grid(i).context().authentication().authenticate("ignite", "ignite" + nodeIdx);
+
+                    assertNotNull(actx);
+                    assertEquals("ignite", actx.userName());
+                }
+            }
+        }
+        finally {
+            AuthorizationContext.clear();
         }
     }
 
@@ -501,7 +526,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     /**
      * @return Future.
      */
-    public IgniteInternalFuture restartCoordinator() {
+    protected IgniteInternalFuture restartCoordinator() {
         return GridTestUtils.runAsync(new Runnable() {
             @Override public void run() {
                 try {
@@ -512,10 +537,12 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                             if (restarts >= RESTARTS)
                                 break;
 
+                            System.out.println("+++ STOP " + i);
                             stopGrid(i);
 
                             U.sleep(1000);
 
+                            System.out.println("+++ START " + i);
                             startGrid(i);
 
                             U.sleep(1000);

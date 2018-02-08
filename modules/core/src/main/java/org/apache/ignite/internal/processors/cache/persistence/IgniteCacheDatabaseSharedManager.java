@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
@@ -126,11 +127,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         initDataRegions(memCfg);
 
-        metaStorage = new MetaStorageOnheap();
+        if (!GridCacheUtils.isPersistenceEnabled(ctx.config())) {
+            metaStorage = new MetaStorageOnheap();
 
-        for (MetastorageLifecycleListener lsnr : ctx.internalSubscriptionProcessor().getMetastorageSubscribers()) {
-            lsnr.onReadyForRead(metaStorage);
-            lsnr.onReadyForReadWrite(metaStorage);
+            for (MetastorageLifecycleListener lsnr : ctx.internalSubscriptionProcessor().getMetastorageSubscribers()) {
+                lsnr.onReadyForRead(metaStorage);
+                lsnr.onReadyForReadWrite(metaStorage);
+            }
         }
     }
 
