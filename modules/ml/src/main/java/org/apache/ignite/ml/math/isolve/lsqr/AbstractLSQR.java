@@ -25,34 +25,28 @@ import java.util.Arrays;
  * device.
  */
 public abstract class AbstractLSQR {
-    /**
-     * The smallest representable positive number such that 1.0 + eps != 1.0.
-     */
+    /** The smallest representable positive number such that 1.0 + eps != 1.0. */
     private static final double eps = Double.longBitsToDouble(Double.doubleToLongBits(1.0) | 1) - 1.0;
 
-    /** */
+    /** BLAS (Basic Linear Algebra Subprograms) instance. */
     private static BLAS blas = BLAS.getInstance();
 
     /**
      * Solves given Sparse Linear Systems.
      *
-     * @param damp damping coefficient
-     * @param atol stopping tolerances, if both (atol and btol) are 1.0e-9 (say), the final residual norm should be
-     * accurate to about 9 digits. (The final x will usually have fewer correct digits, depending on cond(A) and the
-     * size of damp.)
-     * @param btol stopping tolerances, if both (atol and btol) are 1.0e-9 (say), the final residual norm should be
-     * accurate to about 9 digits. (The final x will usually have fewer correct digits, depending on cond(A) and the
-     * size of damp.)
-     * @param conlim another stopping tolerance, lsqr terminates if an estimate of cond(A) exceeds conlim. For
-     * compatible systems Ax = b, conlim could be as large as 1.0e+12 (say). For least-squares problems, conlim should
-     * be less than 1.0e+8. Maximum precision can be obtained by setting atol = btol = conlim = zero, but the number of
-     * iterations may then be excessive.
-     * @param iterLim explicit limitation on number of iterations (for safety)
-     * @param calcVar whether to estimate diagonals of (A'A + damp^2*I)^{-1}
-     * @param x0 initial value of x
-     * @return solver result
+     * @param damp Damping coefficient.
+     * @param atol Stopping tolerances, if both (atol and btol) are 1.0e-9 (say), the final residual norm should be
+     * accurate to about 9 digits.
+     * @param btol Stopping tolerances, if both (atol and btol) are 1.0e-9 (say), the final residual norm should be
+     * accurate to about 9 digits.
+     * @param conlim Another stopping tolerance, LSQR terminates if an estimate of cond(A) exceeds conlim.
+     * @param iterLim Explicit limitation on number of iterations (for safety).
+     * @param calcVar Whether to estimate diagonals of (A'A + damp^2*I)^{-1}.
+     * @param x0 Initial value of x.
+     * @return Solver result.
      */
-    public LSQRResult solve(double damp, double atol, double btol, double conlim, double iterLim, boolean calcVar, double[] x0) {
+    public LSQRResult solve(double damp, double atol, double btol, double conlim, double iterLim, boolean calcVar,
+        double[] x0) {
         int n = getColumns();
         if (iterLim < 0)
             iterLim = 2 * n;
@@ -164,7 +158,7 @@ public abstract class AbstractLSQR {
             ddnorm = ddnorm + Math.pow(blas.dnrm2(dk.length, dk, 1), 2);
 
             if (calcVar)
-                blas.daxpy(var.length, 1.0, pow(dk, 2), 1, var, 1);
+                blas.daxpy(var.length, 1.0, pow2(dk), 1, var, 1);
 
             // Use a plane rotation on the right to eliminate the
             // super-diagonal element (theta) of the upper-bidiagonal matrix.
@@ -238,13 +232,30 @@ public abstract class AbstractLSQR {
         return new LSQRResult(x, itn, istop, r1norm, r2norm, anorm, acond, arnorm, xnorm, var);
     }
 
-    /** */
+    /**
+     * Calculates bnorm.
+     *
+     * @return bnorm
+     */
     protected abstract double bnorm();
 
-    /** */
+    /**
+     * Calculates beta.
+     *
+     * @param x X value.
+     * @param alfa Alfa value.
+     * @param beta Beta value.
+     * @return Beta.
+     */
     protected abstract double beta(double[] x, double alfa, double beta);
 
-    /** */
+    /**
+     * Perform LSQR iteration.
+     *
+     * @param bnorm Bnorm value.
+     * @param target Target value.
+     * @return Iteration result.
+     */
     protected abstract double[] iter(double bnorm, double[] target);
 
     /** */
@@ -253,9 +264,9 @@ public abstract class AbstractLSQR {
     /** */
     private static double[] symOrtho(double a, double b) {
         if (b == 0)
-            return new double[]{ Math.signum(a), 0, Math.abs(a) };
+            return new double[] {Math.signum(a), 0, Math.abs(a)};
         else if (a == 0)
-            return new double[]{ 0, Math.signum(b), Math.abs(b) };
+            return new double[] {0, Math.signum(b), Math.abs(b)};
         else {
             double c, s, r;
             if (Math.abs(b) > Math.abs(a)) {
@@ -270,7 +281,7 @@ public abstract class AbstractLSQR {
                 s = c * tau;
                 r = a / c;
             }
-            return new double[]{ c, s, r };
+            return new double[] {c, s, r};
         }
     }
 
@@ -279,13 +290,12 @@ public abstract class AbstractLSQR {
      * it's "in place" operation.
      *
      * @param a Vector or matrix of doubles.
-     * @param pow Power.
      * @return Matrix with elements raised to the specified power.
      */
-    private static double[] pow(double[] a, double pow) {
+    private static double[] pow2(double[] a) {
         double[] res = new double[a.length];
         for (int i = 0; i < res.length; i++)
-            res[i] = Math.pow(a[i], pow);
+            res[i] = Math.pow(a[i], 2);
         return res;
     }
 

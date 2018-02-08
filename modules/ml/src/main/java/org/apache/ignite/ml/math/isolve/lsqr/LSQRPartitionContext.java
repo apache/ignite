@@ -26,7 +26,7 @@ public class LSQRPartitionContext implements Serializable {
     /** */
     private static final long serialVersionUID = -8159608186899430315L;
 
-    /** Part of V vector. */
+    /** Part of U vector. */
     private double[] u;
 
     /** */

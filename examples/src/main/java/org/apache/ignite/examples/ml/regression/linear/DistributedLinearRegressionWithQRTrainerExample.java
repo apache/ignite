@@ -28,7 +28,6 @@ import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionQRTrainer;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
@@ -36,7 +35,7 @@ import org.apache.ignite.thread.IgniteThread;
  *
  * @see LinearRegressionQRTrainer
  */
-public class DistributedLinearRegressionExampleWithSGDTrainer {
+public class DistributedLinearRegressionWithQRTrainerExample {
     /** */
     private static final double[][] data = {
         {8, 78, 284, 9.100000381, 109},
@@ -111,7 +110,7 @@ public class DistributedLinearRegressionExampleWithSGDTrainer {
                 SparseDistributedMatrix distributedMatrix = new SparseDistributedMatrix(data);
 
                 System.out.println(">>> Create new linear regression trainer object.");
-                Trainer<LinearRegressionModel, Matrix> trainer = new LinearRegressionSGDTrainer(100_000, 1e-12);
+                Trainer<LinearRegressionModel, Matrix> trainer = new LinearRegressionQRTrainer();
 
                 System.out.println(">>> Perform the training to get the model.");
                 LinearRegressionModel model = trainer.train(distributedMatrix);

@@ -65,12 +65,24 @@ public class LSQRResult extends IterativeSolverResult {
 
     /**
      * If calc_var is True, estimates all diagonals of (A'A)^{-1} (if damp == 0) or more generally
-     * (A'A + damp^2*I)^{-1}. This is well defined if A has full column rank or damp > 0. (Not sure what var means if
-     * rank(A) < n and damp = 0.)
+     * (A'A + damp^2*I)^{-1}. This is well defined if A has full column rank or damp > 0.
      */
     private final double[] var;
 
-    /** */
+    /**
+     * Constructs a new instance of LSQR result.
+     *
+     * @param x X value.
+     * @param iterations Number of performed iterations.
+     * @param isstop Stop reason.
+     * @param r1norn R1 norm value.
+     * @param r2norm R2 norm value.
+     * @param anorm A norm value.
+     * @param acond A cond value.
+     * @param arnorm AR norm value.
+     * @param xnorm X norm value.
+     * @param var Var value.
+     */
     public LSQRResult(double[] x, int iterations, int isstop, double r1norn, double r2norm, double anorm, double acond,
         double arnorm, double xnorm, double[] var) {
         super(x, iterations);

@@ -28,7 +28,7 @@ import org.apache.ignite.ml.math.isolve.LinSysPartitionDataOnHeap;
  * Distributed implementation of LSQR algorithm based on.
  */
 public class LSQROnHeap<K, V> extends AbstractLSQR implements AutoCloseable {
-
+    /** Dataset. */
     private final Dataset<LSQRPartitionContext, LinSysPartitionDataOnHeap> dataset;
 
     /**
@@ -47,20 +47,21 @@ public class LSQROnHeap<K, V> extends AbstractLSQR implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override protected double bnorm() {
-        double res = dataset.computeWithCtx((ctx, data) -> {
+        return dataset.computeWithCtx((ctx, data) -> {
             ctx.setU(Arrays.copyOf(data.getY(), data.getY().length));
+
             return BLAS.getInstance().dnrm2(data.getY().length, data.getY(), 1);
         }, (a, b) -> a == null ? b : Math.sqrt(a * a + b * b));
-        return res;
     }
 
     /** {@inheritDoc} */
     @Override protected double beta(double[] x, double alfa, double beta) {
-        double bb = dataset.computeWithCtx((ctx, data) -> {
-            BLAS.getInstance().dgemv("N", data.getRows(), data.getCols(), alfa, data.getX(), data.getRows(), x, 1, beta, ctx.getU(), 1);
+        return dataset.computeWithCtx((ctx, data) -> {
+            BLAS.getInstance().dgemv("N", data.getRows(), data.getCols(), alfa, data.getX(),
+                Math.max(1, data.getRows()), x, 1, beta, ctx.getU(), 1);
+
             return BLAS.getInstance().dnrm2(ctx.getU().length, ctx.getU(), 1);
         }, (a, b) -> a == null ? b : Math.sqrt(a * a + b * b));
-        return bb;
     }
 
     /** {@inheritDoc} */
@@ -68,13 +69,16 @@ public class LSQROnHeap<K, V> extends AbstractLSQR implements AutoCloseable {
         double[] res = dataset.computeWithCtx((ctx, data) -> {
             BLAS.getInstance().dscal(ctx.getU().length, 1 / bnorm, ctx.getU(), 1);
             double[] v = new double[data.getCols()];
-            BLAS.getInstance().dgemv("T", data.getRows(), data.getCols(), 1.0, data.getX(), data.getRows(), ctx.getU(), 1, 0, v, 1);
+            BLAS.getInstance().dgemv("T", data.getRows(), data.getCols(), 1.0, data.getX(),
+                Math.max(1, data.getRows()), ctx.getU(), 1, 0, v, 1);
+
             return v;
         }, (a, b) -> {
             if (a == null)
                 return b;
             else {
                 BLAS.getInstance().daxpy(a.length, 1.0, a, 1, b, 1);
+
                 return b;
             }
         });
