@@ -35,6 +35,8 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvParser;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -48,43 +50,41 @@ import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
  * COPY statement tests.
  */
 public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
-    /** Default table name. */
-    private static final String TBL_NAME = "Person";
-
-    /** JDBC statement. */
-    private Statement stmt;
+    /** Subdirectory with CSV files */
+    private static final String CSV_FILE_SUBDIR = "/modules/clients/src/test/resources/";
 
     /** A CSV file with zero records */
     private static final String BULKLOAD_EMPTY_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload0.csv"))
-            .getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload0.csv")).getAbsolutePath();
 
     /** A CSV file with one record. */
     private static final String BULKLOAD_ONE_LINE_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload1.csv"))
-            .getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload1.csv")).getAbsolutePath();
 
     /** A CSV file with two records. */
     private static final String BULKLOAD_TWO_LINES_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2.csv"))
-            .getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload2.csv")).getAbsolutePath();
 
     /** A CSV file in UTF-8. */
     private static final String BULKLOAD_UTF8_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2_utf8.csv"))
-            .getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload2_utf8.csv")).getAbsolutePath();
 
     /** A CSV file in windows-1251. */
     private static final String BULKLOAD_CP1251_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2_windows1251.csv"))
-            .getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload2_windows1251.csv")).getAbsolutePath();
+
+    /** Default table name. */
+    private static final String TBL_NAME = "Person";
 
     /** Basic COPY statement used in majority of the tests. */
     public static final String BASIC_SQL_COPY_STMT =
         "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\"" +
-            " into " + TBL_NAME +
-            " (_key, age, firstName, lastName)" +
-            " format csv";
+        " into " + TBL_NAME +
+        " (_key, age, firstName, lastName)" +
+        " format csv";
+
+    /** JDBC statement. */
+    private Statement stmt;
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfig() {
@@ -119,27 +119,6 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Returns true if we are testing near cache.
-     *
-     * @return true if we are testing near cache.
-     */
-    protected abstract boolean nearCache();
-
-    /**
-     * Returns cache atomicity mode we are testing.
-     *
-     * @return The cache atomicity mode we are testing.
-     */
-    protected abstract CacheAtomicityMode atomicityMode();
-
-    /**
-     * Returns cache mode we are testing.
-     *
-     * @return The cache mode we are testing.
-     */
-    protected abstract CacheMode cacheMode();
-
-    /**
      * Creates cache configuration with {@link QueryEntity} created
      * using {@link CacheConfiguration#setQueryEntities(Collection)} call.
      *
@@ -166,6 +145,27 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
         return cache;
     }
+
+    /**
+     * Returns true if we are testing near cache.
+     *
+     * @return true if we are testing near cache.
+     */
+    protected abstract boolean nearCache();
+
+    /**
+     * Returns the cache atomicity mode we are testing.
+     *
+     * @return The cache atomicity mode we are testing.
+     */
+    protected abstract CacheAtomicityMode atomicityMode();
+
+    /**
+     * Returns the cache mode we are testing.
+     *
+     * @return The cache mode we are testing.
+     */
+    protected abstract CacheMode cacheMode();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -206,19 +206,46 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
+     * Imports one-entry CSV file into a table and checks the entry created using SELECT statement.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testOneLineFile() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(
+            "copy from \"" + BULKLOAD_ONE_LINE_CSV_FILE + "\" into " + TBL_NAME +
+            " (_key, age, firstName, lastName)" +
+            " format csv");
+
+        assertEquals(1, updatesCnt);
+
+        checkCacheContents(TBL_NAME, true, 1);
+    }
+
+    /**
      * Verifies that ASCII encoding is recognized and imported.
      *
      * @throws SQLException If failed.
      */
     public void testAsciiCharset() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName, lastName)" +
-                " format csv charset ascii");
+            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\"" +
+            " into " + TBL_NAME +
+            " (_key, age, firstName, lastName)" +
+            " format csv charset ascii");
 
         assertEquals(2, updatesCnt);
 
         checkCacheContents(TBL_NAME, true, 2);
+    }
+
+    /**
+     * Imports two-entry CSV file with UTF-8 characters into a table and checks
+     * the created entries using SELECT statement.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testUtf8Charset() throws SQLException {
+        checkBulkLoadWithCharset(BULKLOAD_UTF8_CSV_FILE, "utf-8");
     }
 
     /**
@@ -227,10 +254,22 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      * @throws SQLException If failed.
      */
     public void testWin1251Charset() throws SQLException {
+        checkBulkLoadWithCharset(BULKLOAD_CP1251_CSV_FILE, "windows-1251");
+    }
+
+    /**
+     * Bulk-loads specified file specifying charset in the command
+     * and verifies the entries imported.
+     *
+     * @param fileName CSV file to load.
+     * @param charsetName Charset name to specify in the command.
+     * @throws SQLException If failed.
+     */
+    private void checkBulkLoadWithCharset(String fileName, String charsetName) throws SQLException {
         int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + BULKLOAD_CP1251_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName, lastName)" +
-                " format csv charset \"windows-1251\"");
+            "copy from \"" + fileName + "\" into " + TBL_NAME +
+            " (_key, age, firstName, lastName)" +
+            " format csv charset \"" + charsetName + "\"");
 
         assertEquals(2, updatesCnt);
 
@@ -244,7 +283,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      * @throws SQLException If failed.
      */
     public void testWrongCharset_Utf8AsWin1251() throws SQLException {
-        checkWrongCharset(BULKLOAD_UTF8_CSV_FILE, "UTF-8", "windows-1251");
+        checkBulkLoadWithWrongCharset(BULKLOAD_UTF8_CSV_FILE, "UTF-8", "windows-1251");
     }
 
     /**
@@ -254,7 +293,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      * @throws SQLException If failed.
      */
     public void testWrongCharset_Win1251AsUtf8() throws SQLException {
-        checkWrongCharset(BULKLOAD_CP1251_CSV_FILE, "windows-1251", "UTF-8");
+        checkBulkLoadWithWrongCharset(BULKLOAD_CP1251_CSV_FILE, "windows-1251", "UTF-8");
     }
 
     /**
@@ -264,7 +303,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      * @throws SQLException If failed.
      */
     public void testWrongCharset_Utf8AsAscii() throws SQLException {
-        checkWrongCharset(BULKLOAD_UTF8_CSV_FILE, "UTF-8", "ascii");
+        checkBulkLoadWithWrongCharset(BULKLOAD_UTF8_CSV_FILE, "UTF-8", "ascii");
     }
 
     /**
@@ -274,7 +313,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      * @throws SQLException If failed.
      */
     public void testWrongCharset_Win1251AsAscii() throws SQLException {
-        checkWrongCharset(BULKLOAD_CP1251_CSV_FILE, "windows-1251", "ascii");
+        checkBulkLoadWithWrongCharset(BULKLOAD_CP1251_CSV_FILE, "windows-1251", "ascii");
     }
 
     /**
@@ -286,10 +325,10 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      * @param stmtCharsetName Charset to specify in the SQL statement.
      * @throws SQLException If failed.
      */
-    private void checkWrongCharset(String csvFileName, String csvCharsetName, String stmtCharsetName)
+    private void checkBulkLoadWithWrongCharset(String csvFileName, String csvCharsetName, String stmtCharsetName)
         throws SQLException {
         int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + csvFileName + "\" into " + TBL_NAME +
+                "copy from \"" + csvFileName + "\" into " + TBL_NAME +
                 " (_key, age, firstName, lastName)" +
                 " format csv charset \"" + stmtCharsetName + '"');
 
@@ -307,12 +346,30 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     public void testDefaultCharset() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
             "copy from \"" + BULKLOAD_UTF8_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName, lastName)" +
-                " format csv");
+            " (_key, age, firstName, lastName)" +
+            " format csv");
 
         assertEquals(2, updatesCnt);
 
         checkNationalCacheContents(TBL_NAME);
+    }
+
+    /**
+     * Checks that bulk load works when we use batch size of 1 byte and thus
+     * create multiple batches per COPY.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testBatchSize_1() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(
+            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\"" +
+            " into " + TBL_NAME +
+            " (_key, age, firstName, lastName)" +
+            " format csv batch_size 1");
+
+        assertEquals(2, updatesCnt);
+
+        checkCacheContents(TBL_NAME, true, 2);
     }
 
     /**
@@ -325,45 +382,12 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     public void testDefaultCharsetBatchSize1() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
             "copy from \"" + BULKLOAD_UTF8_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName, lastName)" +
-                " format csv batch_size 1");
+            " (_key, age, firstName, lastName)" +
+            " format csv batch_size 1");
 
         assertEquals(2, updatesCnt);
 
         checkNationalCacheContents(TBL_NAME);
-    }
-
-    /**
-     * Imports two-entry CSV file with UTF-8 characters into a table and checks
-     * the created entries using SELECT statement.
-     *
-     * @throws SQLException If failed.
-     */
-    public void testUtf8Charset() throws SQLException {
-        int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + BULKLOAD_UTF8_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName, lastName)" +
-                " format csv charset \"utf-8\"");
-
-        assertEquals(2, updatesCnt);
-
-        checkNationalCacheContents(TBL_NAME);
-    }
-
-    /**
-     * Imports one-entry CSV file into a table and checks the entry created using SELECT statement.
-     *
-     * @throws SQLException If failed.
-     */
-    public void testOneLineFile() throws SQLException {
-        int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + BULKLOAD_ONE_LINE_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName, lastName)" +
-                " format csv");
-
-        assertEquals(1, updatesCnt);
-
-        checkCacheContents(TBL_NAME, true, 1);
     }
 
     /**
@@ -375,8 +399,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     public void testEmptyFile() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
             "copy from \"" + BULKLOAD_EMPTY_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName, lastName)" +
-                " format csv");
+            " (_key, age, firstName, lastName)" +
+            " format csv");
 
         assertEquals(0, updatesCnt);
 
@@ -391,8 +415,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
             @Override public Object call() throws Exception {
                 stmt.executeUpdate(
                     "copy from \"nonexistent\" into Person" +
-                        " (_key, age, firstName, lastName)" +
-                        " format csv");
+                    " (_key, age, firstName, lastName)" +
+                    " format csv");
 
                 return null;
             }
@@ -407,8 +431,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
             @Override public Object call() throws Exception {
                 stmt.executeUpdate(
                     "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into Peterson" +
-                        " (_key, age, firstName, lastName)" +
-                        " format csv");
+                    " (_key, age, firstName, lastName)" +
+                    " format csv");
 
                 return null;
             }
@@ -423,8 +447,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
             @Override public Object call() throws Exception {
                 stmt.executeUpdate(
                     "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into Person" +
-                        " (_key, age, firstName, lostName)" +
-                        " format csv");
+                    " (_key, age, firstName, lostName)" +
+                    " format csv");
 
                 return null;
             }
@@ -439,8 +463,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
             @Override public Object call() throws Exception {
                 stmt.executeUpdate(
                     "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into Person" +
-                        " (_key, firstName, age, lastName)" +
-                        " format csv");
+                    " (_key, firstName, age, lastName)" +
+                    " format csv");
 
                 return null;
             }
@@ -455,8 +479,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     public void testFieldsSubset() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
             "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName)" +
-                " format csv");
+            " (_key, age, firstName)" +
+            " format csv");
 
         assertEquals(2, updatesCnt);
 
@@ -479,8 +503,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
         int updatesCnt = stmt.executeUpdate(
             "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + tblName +
-                "(_key, age, firstName, lastName)" +
-                " format csv");
+            "(_key, age, firstName, lastName)" +
+            " format csv");
 
         assertEquals(2, updatesCnt);
 
@@ -500,20 +524,6 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
         ignite(0).getOrCreateCache(cacheConfigWithQueryEntity());
 
         int updatesCnt = stmt.executeUpdate(BASIC_SQL_COPY_STMT);
-
-        assertEquals(2, updatesCnt);
-
-        checkCacheContents(TBL_NAME, true, 2);
-    }
-
-    /**
-     * Checks that bulk load works when we use batch size of 1 byte and thus
-     * create multiple batches per COPY.
-     *
-     * @throws SQLException If failed.
-     */
-    public void testBatchSize_1() throws SQLException {
-        int updatesCnt = stmt.executeUpdate(BASIC_SQL_COPY_STMT + " batch_size 1");
 
         assertEquals(2, updatesCnt);
 
@@ -595,9 +605,10 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
         GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     PreparedStatement pstmt = conn.prepareStatement(
-                        "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
-                            " (_key, age, firstName, lastName)" +
-                            " format ?");
+                    "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\"" +
+                        " into " + TBL_NAME +
+                        " (_key, age, firstName, lastName)" +
+                        " format ?");
 
                     pstmt.setString(1, "csv");
 
@@ -779,7 +790,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
          * First the method converts the string into {@link #actualCharset} and puts bytes into a buffer.
          * Then it tries to read these bytes from the buffer using {@link #appliedCharset} and
          * {@link CodingErrorAction#REPLACE} settings for unmappable and malformed characters
-         * (these defaults actually come from {@link Charset#decode(ByteBuffer)} implementation).
+         * (NB: these settings implicitly come from {@link Charset#decode(ByteBuffer)} implementation, while
+         * being explicitly set in {@link BulkLoadCsvParser#BulkLoadCsvParser(BulkLoadCsvFormat)}).
          *
          * @param input The input string (in Java encoding).
          * @return The converted string.
