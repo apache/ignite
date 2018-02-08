@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
-import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;

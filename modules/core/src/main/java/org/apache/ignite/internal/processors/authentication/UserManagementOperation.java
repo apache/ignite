@@ -26,6 +26,9 @@ import org.apache.ignite.lang.IgniteUuid;
  * The operation with users. Used to deliver the information about requested operation to all server nodes.
  */
 public class UserManagementOperation implements Serializable {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** User. */
     private User usr;
 
