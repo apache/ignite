@@ -104,6 +104,7 @@ public class DistributedLinearRegressionWithLSQRTrainerExample {
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
+
             // Create IgniteThread, we must work with SparseDistributedMatrix inside IgniteThread
             // because we create ignite cache internally.
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
@@ -160,8 +161,10 @@ public class DistributedLinearRegressionWithLSQRTrainerExample {
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
 
         IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
+
         for (int i = 0; i < data.length; i++)
             cache.put(i, data[i]);
+
         return cache;
     }
 }

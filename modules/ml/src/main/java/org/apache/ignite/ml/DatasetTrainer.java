@@ -21,7 +21,7 @@ import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
- * Interface for Trainers. Trainer is just a function which produces model from the data.
+ * Interface for trainers. Trainer is just a function which produces model from the data.
  *
  * @param <K> Type of a key in {@code upstream} data.
  * @param <V> Type of a value in {@code upstream} data.

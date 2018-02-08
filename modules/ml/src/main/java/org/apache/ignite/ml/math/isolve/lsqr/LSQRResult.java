@@ -33,34 +33,22 @@ public class LSQRResult extends IterativeSolverResult {
      */
     private final int isstop;
 
-    /**
-     * Represents norm(r), where r = b - Ax.
-     */
+    /** Represents norm(r), where r = b - Ax. */
     private final double r1norn;
 
-    /**
-     * Represents sqrt( norm(r)^2  +  damp^2 * norm(x)^2 ). Equal to r1norm if damp == 0.
-     */
+    /**Represents sqrt( norm(r)^2  +  damp^2 * norm(x)^2 ). Equal to r1norm if damp == 0. */
     private final double r2norm;
 
-    /**
-     * Estimate of Frobenius norm of Abar = [[A]; [damp*I]].
-     */
+    /** Estimate of Frobenius norm of Abar = [[A]; [damp*I]]. */
     private final double anorm;
 
-    /**
-     * Estimate of cond(Abar).
-     */
+    /** Estimate of cond(Abar). */
     private final double acond;
 
-    /**
-     * Estimate of norm(A'*r - damp^2*x).
-     */
+    /** Estimate of norm(A'*r - damp^2*x). */
     private final double arnorm;
 
-    /**
-     * Represents norm(x).
-     */
+    /** Represents norm(x). */
     private final double xnorm;
 
     /**
