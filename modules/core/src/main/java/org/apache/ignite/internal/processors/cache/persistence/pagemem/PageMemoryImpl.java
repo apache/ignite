@@ -59,10 +59,13 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.InitNewPageRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageDeltaRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
@@ -82,6 +85,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DELAYED_REPLACED_PAGE_WRITE;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.internal.util.GridUnsafe.wrapPointer;
 
 /**
@@ -178,7 +183,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Shared context. */
     private final GridCacheSharedContext<?, ?> ctx;
 
-    /** State checker. */
+    /** Checkpoint lock state provider. */
     private final CheckpointLockStateChecker stateChecker;
 
     /** Number of used pages in checkpoint buffer. */
@@ -214,10 +219,17 @@ public class PageMemoryImpl implements PageMemoryEx {
     private OffheapReadWriteLock rwLock;
 
     /** Flush dirty page closure. When possible, will be called by evictPage(). */
-    private final GridInClosure3X<FullPageId, ByteBuffer, Integer> flushDirtyPage;
+    private final ReplacedPageWriter flushDirtyPage;
 
     /**
-     * Flush dirty page closure. When possible, will be called by evictPage().
+     * Delayed page replacement (rotation with disk) tracker. Because other thread may require exactly the same page to be loaded from store,
+     * reads are protected by locking.
+     * {@code Null} if delayed write functionality is disabled.
+     */
+    @Nullable private final DelayedPageReplacementTracker delayedPageReplacementTracker;
+
+    /**
+     * Callback invoked to track changes in pages.
      * {@code Null} if page tracking functionality is disabled
      * */
     @Nullable private final GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
@@ -228,35 +240,44 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Write throttle type. */
     private ThrottlingPolicy throttlingPlc;
 
-    /**  */
-    private boolean pageEvictWarned;
+    /** Checkpoint progress provider. Null disables throttling. */
+    @Nullable private final CheckpointWriteProgressSupplier cpProgressProvider;
+
+    /** Flag indicating page replacement started (rotation with disk), allocating new page requires freeing old one. */
+    private volatile boolean pageReplacementWarned;
 
     /** */
     private long[] sizes;
 
-    /** */
+    /** Memory metrics to track dirty pages count and page replace rate. */
     private DataRegionMetricsImpl memMetrics;
 
     /**
      * @param directMemoryProvider Memory allocator to use.
+     * @param sizes segments sizes, last is checkpoint pool size.
      * @param ctx Cache shared context.
      * @param pageSize Page size.
-     * @param flushDirtyPage Callback invoked when a dirty page is evicted.
+     * @param flushDirtyPage write callback invoked when a dirty page is removed for replacement.
      * @param changeTracker Callback invoked to track changes in pages.
-     * @param throttlingPlc Write throttle enabled and type.
+     * @param stateChecker Checkpoint lock state provider. Used to ensure lock is held by thread, which modify pages.
+     * @param memMetrics Memory metrics to track dirty pages count and page replace rate.
+     * @param throttlingPlc Write throttle enabled and its type. Null equal to none.
+     * @param cpProgressProvider checkpoint progress, base for throttling. Null disables throttling.
      */
     public PageMemoryImpl(
         DirectMemoryProvider directMemoryProvider,
         long[] sizes,
         GridCacheSharedContext<?, ?> ctx,
         int pageSize,
-        GridInClosure3X<FullPageId, ByteBuffer, Integer> flushDirtyPage,
+        ReplacedPageWriter flushDirtyPage,
         @Nullable GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker,
         CheckpointLockStateChecker stateChecker,
         DataRegionMetricsImpl memMetrics,
-        ThrottlingPolicy throttlingPlc
+        @Nullable ThrottlingPolicy throttlingPlc,
+        @Nullable CheckpointWriteProgressSupplier cpProgressProvider
     ) {
         assert ctx != null;
+        assert pageSize > 0;
 
         log = ctx.logger(PageMemoryImpl.class);
 
@@ -264,9 +285,14 @@ public class PageMemoryImpl implements PageMemoryEx {
         this.directMemoryProvider = directMemoryProvider;
         this.sizes = sizes;
         this.flushDirtyPage = flushDirtyPage;
+        delayedPageReplacementTracker =
+            getBoolean(IGNITE_DELAYED_REPLACED_PAGE_WRITE, true)
+                ? new DelayedPageReplacementTracker(pageSize, flushDirtyPage, log, sizes.length - 1) :
+                null;
         this.changeTracker = changeTracker;
         this.stateChecker = stateChecker;
-        this.throttlingPlc = throttlingPlc;
+        this.throttlingPlc = throttlingPlc != null ? throttlingPlc : ThrottlingPolicy.NONE;
+        this.cpProgressProvider = cpProgressProvider;
 
         storeMgr = ctx.pageStore();
         walMgr = ctx.wal();
@@ -337,21 +363,19 @@ public class PageMemoryImpl implements PageMemoryEx {
      *
      */
     private void initWriteThrottle() {
-        if (!(ctx.database() instanceof GridCacheDatabaseSharedManager)) {
-            log.error("Write throttle can't start. Unexpected class of database manager: " +
-                ctx.database().getClass());
+        if (!isThrottlingEnabled())
+            return;
+
+        if (cpProgressProvider == null) {
+            log.error("Write throttle can't start. CP progress provider not presented");
 
             throttlingPlc = ThrottlingPolicy.NONE;
         }
 
-        if (isThrottlingEnabled()) {
-            GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ctx.database();
-
-            if (throttlingPlc == ThrottlingPolicy.SPEED_BASED)
-                writeThrottle = new PagesWriteSpeedBasedThrottle(this, db, log);
-            else if(throttlingPlc == ThrottlingPolicy.TARGET_RATIO_BASED)
-                writeThrottle = new PagesWriteThrottle(this, db);
-        }
+        if (throttlingPlc == ThrottlingPolicy.SPEED_BASED)
+            writeThrottle = new PagesWriteSpeedBasedThrottle(this, cpProgressProvider, stateChecker, log);
+        else if(throttlingPlc == ThrottlingPolicy.TARGET_RATIO_BASED)
+            writeThrottle = new PagesWriteThrottle(this, cpProgressProvider, stateChecker);
     }
 
     /** {@inheritDoc} */
@@ -432,7 +456,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             flags == PageIdAllocator.FLAG_IDX && partId == PageIdAllocator.INDEX_PARTITION :
             "flags = " + flags + ", partId = " + partId;
 
-        assert ctx.database().checkpointLockIsHeldByThread();
+        assert stateChecker.checkpointLockIsHeldByThread();
 
         if (isThrottlingEnabled())
             writeThrottle.onMarkDirty(false);
@@ -445,6 +469,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         // Otherwise it is possible that on file will be empty page which will be saved at snapshot and read with error
         // because there is no crc inside them.
         Segment seg = segment(cacheId, pageId);
+
+        DelayedDirtyPageWrite delayedWriter = delayedPageReplacementTracker != null
+            ? delayedPageReplacementTracker.delayedPageWrite() : null;
 
         FullPageId fullId = new FullPageId(pageId, cacheId);
 
@@ -468,7 +495,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 relPtr = seg.borrowOrAllocateFreePage(pageId);
 
             if (relPtr == INVALID_REL_PTR)
-                relPtr = seg.evictPage();
+                relPtr = seg.removePageForReplacement(delayedWriter == null ? flushDirtyPage : delayedWriter);
 
             long absPtr = seg.absolute(relPtr);
 
@@ -526,6 +553,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
         finally {
             seg.writeLock().unlock();
+
+            if (delayedWriter != null)
+                delayedWriter.finishReplacement();
         }
 
         //we have allocated 'tracking' page, we need to allocate regular one
@@ -616,6 +646,9 @@ public class PageMemoryImpl implements PageMemoryEx {
             seg.readLock().unlock();
         }
 
+        DelayedDirtyPageWrite delayedWriter = delayedPageReplacementTracker != null
+            ? delayedPageReplacementTracker.delayedPageWrite() : null;
+
         seg.writeLock().lock();
 
         try {
@@ -634,7 +667,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 relPtr = seg.borrowOrAllocateFreePage(pageId);
 
                 if (relPtr == INVALID_REL_PTR)
-                    relPtr = seg.evictPage();
+                    relPtr = seg.removePageForReplacement(delayedWriter == null ? flushDirtyPage : delayedWriter);
 
                 absPtr = seg.absolute(relPtr);
 
@@ -660,6 +693,9 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (!restore) {
                     try {
                         ByteBuffer buf = wrapPointer(pageAddr, pageSize());
+
+                        if (delayedPageReplacementTracker != null)
+                            delayedPageReplacementTracker.waitUnlock(fullId);
 
                         storeMgr.read(cacheId, pageId, buf);
                     }
@@ -713,6 +749,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
         finally {
             seg.writeLock().unlock();
+
+            if (delayedWriter != null)
+                delayedWriter.finishReplacement();
         }
     }
 
@@ -1510,7 +1549,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         boolean wasDirty = PageHeader.dirty(absPtr, dirty);
 
         if (dirty) {
-            assert ctx.database().checkpointLockIsHeldByThread();
+            assert stateChecker.checkpointLockIsHeldByThread();
 
             if (!wasDirty || forceAdd) {
                 boolean added = segment(pageId.groupId(), pageId.pageId()).dirtyPages.add(pageId);
@@ -1892,14 +1931,15 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         /**
-         * Prepares a page for eviction, if needed.
+         * Prepares a page removal for page replacement, if needed.
          *
          * @param fullPageId Candidate page full ID.
          * @param absPtr Absolute pointer of the page to evict.
-         * @return {@code True} if it is ok to evict this page, {@code false} if another page should be selected.
+         * @param saveDirtyPage implementation to save dirty page to persistent storage.
+         * @return {@code True} if it is ok to replace this page, {@code false} if another page should be selected.
          * @throws IgniteCheckedException If failed to write page to the underlying store during eviction.
          */
-        private boolean prepareEvict(FullPageId fullPageId, long absPtr) throws IgniteCheckedException {
+        private boolean preparePageRemoval(FullPageId fullPageId, long absPtr, ReplacedPageWriter saveDirtyPage) throws IgniteCheckedException {
             assert writeLock().isHeldByCurrentThread();
 
             // Do not evict cache meta pages.
@@ -1921,7 +1961,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     memMetrics.updatePageReplaceRate(U.currentTimeMillis() - PageHeader.readTimestamp(absPtr));
 
-                    flushDirtyPage.applyx(
+                    saveDirtyPage.writePage(
                         fullPageId,
                         wrapPointer(absPtr + PAGE_OVERHEAD, pageSize()),
                         partTag(
@@ -1986,16 +2026,17 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         /**
-         * Evict random oldest page from memory to storage.
+         * Removes random oldest page for page replacement from memory to storage.
          *
-         * @return Relative address for evicted page.
+         * @return Relative address for removed page, now it can be replaced by allocated or reloaded page.
          * @throws IgniteCheckedException If failed to evict page.
+         * @param saveDirtyPage Replaced page writer, implementation to save dirty page to persistent storage.
          */
-        private long evictPage() throws IgniteCheckedException {
+        private long removePageForReplacement(ReplacedPageWriter saveDirtyPage) throws IgniteCheckedException {
             assert getWriteHoldCount() > 0;
 
-            if (!pageEvictWarned) {
-                pageEvictWarned = true;
+            if (!pageReplacementWarned) {
+                pageReplacementWarned = true;
 
                 U.warn(log, "Page evictions started, this will affect storage performance (consider increasing " +
                     "DataRegionConfiguration#setMaxSize).");
@@ -2024,15 +2065,17 @@ public class PageMemoryImpl implements PageMemoryEx {
             // every time the same page may be found.
             Set<Long> ignored = null;
 
-            long relEvictAddr = INVALID_REL_PTR;
+            long relRmvAddr = INVALID_REL_PTR;
 
             int iterations = 0;
 
             while (true) {
                 long cleanAddr = INVALID_REL_PTR;
                 long cleanTs = Long.MAX_VALUE;
-                long dirtyTs = Long.MAX_VALUE;
                 long dirtyAddr = INVALID_REL_PTR;
+                long dirtyTs = Long.MAX_VALUE;
+                long metaAddr = INVALID_REL_PTR;
+                long metaTs = Long.MAX_VALUE;
 
                 for (int i = 0; i < RANDOM_PAGES_EVICT_NUM; i++) {
                     ++iterations;
@@ -2068,7 +2111,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                     boolean skip = ignored != null && ignored.contains(rndAddr);
 
-                    if (relEvictAddr == rndAddr || pinned || skip) {
+                    if (relRmvAddr == rndAddr || pinned || skip) {
                         i--;
 
                         continue;
@@ -2077,37 +2120,48 @@ public class PageMemoryImpl implements PageMemoryEx {
                     final long pageTs = PageHeader.readTimestamp(absPageAddr);
 
                     final boolean dirty = isDirty(absPageAddr);
+                    final boolean storMeta = isStoreMetadataPage(absPageAddr);
 
-                    if (pageTs < cleanTs && !dirty) {
+                    if (pageTs < cleanTs && !dirty && !storMeta) {
                         cleanAddr = rndAddr;
 
                         cleanTs = pageTs;
                     }
-                    else if (pageTs < dirtyTs && dirty) {
+                    else if (pageTs < dirtyTs && dirty && !storMeta) {
                         dirtyAddr = rndAddr;
 
                         dirtyTs = pageTs;
                     }
+                    else if (pageTs < metaTs && storMeta) {
+                        metaAddr = rndAddr;
 
-                    relEvictAddr = cleanAddr == INVALID_REL_PTR ? dirtyAddr : cleanAddr;
+                        metaTs = pageTs;
+                    }
+
+                    if (cleanAddr != INVALID_REL_PTR)
+                        relRmvAddr = cleanAddr;
+                    else if (dirtyAddr != INVALID_REL_PTR)
+                        relRmvAddr = dirtyAddr;
+                    else
+                        relRmvAddr = metaAddr;
                 }
 
-                assert relEvictAddr != INVALID_REL_PTR;
+                assert relRmvAddr != INVALID_REL_PTR;
 
-                final long absEvictAddr = absolute(relEvictAddr);
+                final long absRmvAddr = absolute(relRmvAddr);
 
-                final FullPageId fullPageId = PageHeader.fullPageId(absEvictAddr);
+                final FullPageId fullPageId = PageHeader.fullPageId(absRmvAddr);
 
-                if (!prepareEvict(fullPageId, absEvictAddr)) {
+                if (!preparePageRemoval(fullPageId, absRmvAddr, saveDirtyPage)) {
                     if (iterations > 10) {
                         if (ignored == null)
                             ignored = new HashSet<>();
 
-                        ignored.add(relEvictAddr);
+                        ignored.add(relRmvAddr);
                     }
 
                     if (iterations > pool.pages() * FULL_SCAN_THRESHOLD)
-                        return tryToFindSequentially(cap);
+                        return tryToFindSequentially(cap, saveDirtyPage);
 
                     continue;
                 }
@@ -2121,16 +2175,38 @@ public class PageMemoryImpl implements PageMemoryEx {
                     )
                 );
 
-                return relEvictAddr;
+                return relRmvAddr;
             }
         }
 
         /**
+         * @param absPageAddr Absolute page address
+         * @return {@code True} if page is related to partition metadata, which is loaded in saveStoreMetadata().
+         */
+        private boolean isStoreMetadataPage(long absPageAddr) {
+            try {
+                long dataAddr = absPageAddr + PAGE_OVERHEAD;
+
+                int type = PageIO.getType(dataAddr);
+                int ver = PageIO.getVersion(dataAddr);
+
+                PageIO io = PageIO.getPageIO(type, ver);
+
+                return io instanceof PagePartitionMetaIO
+                    || io instanceof PagesListMetaIO
+                    || io instanceof PagePartitionCountersIO;
+            }
+            catch (IgniteCheckedException ignored) {
+                return false;
+            }
+        }
+        /**
          * Will scan all segment pages to find one to evict it
          *
          * @param cap Capacity.
+         * @param saveDirtyPage Evicted page writer.
          */
-        private long tryToFindSequentially(int cap) throws IgniteCheckedException {
+        private long tryToFindSequentially(int cap, ReplacedPageWriter saveDirtyPage) throws IgniteCheckedException {
             assert getWriteHoldCount() > 0;
 
             long prevAddr = INVALID_REL_PTR;
@@ -2165,7 +2241,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 final FullPageId fullPageId = PageHeader.fullPageId(absEvictAddr);
 
-                if (prepareEvict(fullPageId, absEvictAddr)) {
+                if (preparePageRemoval(fullPageId, absEvictAddr, saveDirtyPage)) {
                     loadedPages.remove(
                         fullPageId.groupId(),
                         PageIdUtils.effectivePageId(fullPageId.pageId()),
