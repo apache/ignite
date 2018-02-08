@@ -111,7 +111,7 @@ object IgniteDataFrameSettings {
       * @example {{{
       * val igniteDF = spark.write.format(IGNITE)
       *     // other options ...
-      *     .option(OPTION_STREAMING_FLUSH_FREQUENCY, )
+      *     .option(OPTION_STREAMING_FLUSH_FREQUENCY, 10000)
       *     .save()
       * }}}
       *
