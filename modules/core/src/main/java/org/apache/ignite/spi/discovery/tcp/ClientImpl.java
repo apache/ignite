@@ -487,6 +487,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         long startTime = U.currentTimeMillis();
 
         while (true) {
+            log.info(">>>>>>> Trying to connect");
             if (Thread.currentThread().isInterrupted())
                 throw new InterruptedException();
 
@@ -505,9 +506,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                             "Please check IP finder configuration" +
                             (spi.ipFinder instanceof TcpDiscoveryMulticastIpFinder ?
                                 " and make sure multicast works on your network. " : ". ") +
-                            "Will retry every 2 secs.", true);
+                            "Will retry every " + spi.getReconnectDelay() + " ms.", true);
 
-                    Thread.sleep(2000);
+                    Thread.sleep(spi.getReconnectDelay());
                 }
             }
 
@@ -566,24 +567,18 @@ class ClientImpl extends TcpDiscoveryImpl {
                 }
             }
 
-            if (wait) {
-                if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
-                    return null;
+            if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
+                return null;
 
+            if (wait) {
                 if (log.isDebugEnabled())
                     log.debug("Will wait before retry join.");
-
-                Thread.sleep(2000);
             }
-            else if (addrs.isEmpty()) {
-                if (timeout > 0 && (U.currentTimeMillis() - startTime) > timeout)
-                    return null;
-
+            else if (addrs.isEmpty())
                 LT.warn(log, "Failed to connect to any address from IP finder (will retry to join topology " +
-                    "every 2 secs): " + toOrderedList(addrs0), true);
+                    "every " + spi.getReconnectDelay() + " ms): " + toOrderedList(addrs0), true);
 
-                Thread.sleep(2000);
-            }
+            Thread.sleep(spi.getReconnectDelay());
         }
     }
 
@@ -1059,7 +1054,6 @@ class ClientImpl extends TcpDiscoveryImpl {
                 catch (IOException e) {
                     msgWorker.addMessage(new SocketClosedMessage(sockStream));
 
-                    if (log.isDebugEnabled())
                         U.error(log, "Connection failed [sock=" + sock + ", locNodeId=" + getLocalNodeId() + ']', e);
                 }
                 finally {
@@ -1657,8 +1651,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                                     queue.addFirst(SPI_RECONNECT_FAILED);
                                 }
                                 else {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Connection closed, will try to restore connection.");
+                                        log.error("Connection closed, will try to restore connection.");
 
                                     assert reconnector == null;
 
@@ -1836,6 +1829,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             try {
                 joinRes = joinTopology(null, spi.joinTimeout);
+                log.info(">>>>>>> Joined topology");
             }
             catch (IgniteSpiException e) {
                 joinError(e);

@@ -326,7 +326,7 @@ abstract class TcpDiscoveryImpl {
             }
             catch (IgniteSpiException e) {
                 LT.error(log, e, "Failed to register local node address in IP finder on start " +
-                    "(retrying every 2000 ms).");
+                    "(retrying every " + spi.getReconnectDelay() + " ms).");
             }
 
             if (start > 0 && (U.currentTimeMillis() - start) > spi.getJoinTimeout())
@@ -337,7 +337,7 @@ abstract class TcpDiscoveryImpl {
                         "[joinTimeout=" + spi.getJoinTimeout() + ']');
 
             try {
-                U.sleep(2000);
+                U.sleep(spi.getReconnectDelay());
             }
             catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
