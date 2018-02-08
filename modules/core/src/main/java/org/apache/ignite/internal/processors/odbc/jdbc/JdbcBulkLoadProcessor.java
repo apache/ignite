@@ -124,12 +124,12 @@ public class JdbcBulkLoadProcessor {
     }
 
     /**
-     * Aborts processing and closes the underlying objects.
-     *
-     * @param isAbort true if the processing is aborted, false when terminated normally.
+     * Closes the underlying objects.
+     * Currently we don't handle normal termination vs. abort.
      */
-    public void close(boolean isAbort) {
-        processor.close(isAbort);
+    public void close() throws Exception {
+        processor.close();
+
         nextBatchIdx = -1;
     }
 

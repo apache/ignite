@@ -48,13 +48,13 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
     public static final int CMD_FINISHED_EOF = 2;
 
     /** QueryID of the original COPY command request. */
-    @NotNull private long queryId;
+    private long qryId;
 
     /** Batch index starting from 0. */
-    @NotNull private int batchIdx;
+    private int batchIdx;
 
     /** Command (see CMD_xxx constants above). */
-    @NotNull private int cmd;
+    private int cmd;
 
     /** Data in this batch. */
     @NotNull private byte[] data;
@@ -65,36 +65,36 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
     public JdbcBulkLoadBatchRequest() {
         super(BULK_LOAD_BATCH);
 
-        this.queryId = -1;
-        this.batchIdx = -1;
-        this.cmd = CMD_UNKNOWN;
-        this.data = null;
+        qryId = -1;
+        batchIdx = -1;
+        cmd = CMD_UNKNOWN;
+        data = null;
     }
 
     /**
      * Creates the request with specified parameters and zero-length data.
      * Typically used with {@link #CMD_FINISHED_ERROR} and {@link #CMD_FINISHED_EOF}.
      *
-     * @param queryId The query ID from the {@link JdbcBulkLoadAckResult}.
+     * @param qryId The query ID from the {@link JdbcBulkLoadAckResult}.
      * @param batchIdx Index of the current batch starting with 0.
      * @param cmd The command ({@link #CMD_CONTINUE}, {@link #CMD_FINISHED_EOF}, or {@link #CMD_FINISHED_ERROR}).
      */
-    public JdbcBulkLoadBatchRequest(long queryId, int batchIdx, int cmd) {
-        this(queryId, batchIdx, cmd, new byte[0]);
+    public JdbcBulkLoadBatchRequest(long qryId, int batchIdx, int cmd) {
+        this(qryId, batchIdx, cmd, new byte[0]);
     }
 
     /**
      * Creates the request with the specified parameters.
      *
-     * @param queryId The query ID from the {@link JdbcBulkLoadAckResult}.
+     * @param qryId The query ID from the {@link JdbcBulkLoadAckResult}.
      * @param batchIdx Index of the current batch starting with 0.
      * @param cmd The command ({@link #CMD_CONTINUE}, {@link #CMD_FINISHED_EOF}, or {@link #CMD_FINISHED_ERROR}).
      * @param data The data block (zero length is acceptable).
      */
-    public JdbcBulkLoadBatchRequest(long queryId, int batchIdx, int cmd, byte[] data) {
+    public JdbcBulkLoadBatchRequest(long qryId, int batchIdx, int cmd, @NotNull byte[] data) {
         super(BULK_LOAD_BATCH);
 
-        this.queryId = queryId;
+        this.qryId = qryId;
         this.batchIdx = batchIdx;
 
         assert isCmdValid(cmd) : "Invalid command value: " + cmd;
@@ -109,7 +109,7 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
      * @return The original query ID.
      */
     public long queryId() {
-        return queryId;
+        return qryId;
     }
 
     /**
@@ -135,7 +135,7 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
      *
      * @return data if data was not supplied
      */
-    public @NotNull byte[] data() {
+    @NotNull public byte[] data() {
         return data;
     }
 
@@ -143,7 +143,7 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeLong(queryId);
+        writer.writeLong(qryId);
         writer.writeInt(batchIdx);
         writer.writeInt(cmd);
         writer.writeByteArray(data);
@@ -153,7 +153,7 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        queryId = reader.readLong();
+        qryId = reader.readLong();
         batchIdx = reader.readInt();
 
         int c = reader.readInt();

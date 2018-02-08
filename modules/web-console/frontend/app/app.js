@@ -29,7 +29,6 @@ import './modules/states/signin.state';
 import './modules/states/logout.state';
 import './modules/states/password.state';
 import './modules/states/configuration.state';
-import './modules/states/profile.state';
 import './modules/states/admin.state';
 import './modules/states/errors.state';
 
@@ -108,7 +107,6 @@ import uiGridSubcategories from './filters/uiGridSubcategories.filter';
 import id8 from './filters/id8.filter';
 
 // Controllers
-import profile from 'Controllers/profile-controller';
 import resetPassword from './controllers/reset-password.controller';
 
 // Components
@@ -135,6 +133,8 @@ import uiGridFilters from './components/ui-grid-filters';
 import listEditable from './components/list-editable';
 import clusterSelector from './components/cluster-selector';
 import connectedClusters from './components/connected-clusters';
+
+import pageProfile from './components/page-profile';
 
 import igniteServices from './services';
 
@@ -182,7 +182,6 @@ angular.module('ignite-console', [
     'ignite-console.states.logout',
     'ignite-console.states.password',
     'ignite-console.states.configuration',
-    'ignite-console.states.profile',
     'ignite-console.states.admin',
     'ignite-console.states.errors',
     // Common modules.
@@ -218,6 +217,7 @@ angular.module('ignite-console', [
     clusterSelector.name,
     connectedClusters.name,
     igniteListOfRegisteredUsers.name,
+    pageProfile.name,
     // Ignite modules.
     IgniteModules.name
 ])
@@ -269,7 +269,6 @@ angular.module('ignite-console', [
 .service(CSV.name, CSV)
 // Controllers.
 .controller(...resetPassword)
-.controller(...profile)
 // Filters.
 .filter('byName', byName)
 .filter('defaultName', defaultName)

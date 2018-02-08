@@ -180,7 +180,7 @@ namespace ignite
     {
         using odbc::Environment;
 
-        LOG_MSG("SQLFreeEnv called");
+        LOG_MSG("SQLFreeEnv called: " << env);
 
         Environment *environment = reinterpret_cast<Environment*>(env);
 

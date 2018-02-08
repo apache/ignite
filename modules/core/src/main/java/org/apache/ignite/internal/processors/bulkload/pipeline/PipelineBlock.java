@@ -35,8 +35,8 @@ public abstract class PipelineBlock<I, O> {
      * <p>(There is no nextBlock argument in the constructor: setting the next block using
      * {@link #append(PipelineBlock)} method is more convenient.
      */
-    public PipelineBlock() {
-        this.nextBlock = null;
+    protected PipelineBlock() {
+        nextBlock = null;
     }
 
     /**

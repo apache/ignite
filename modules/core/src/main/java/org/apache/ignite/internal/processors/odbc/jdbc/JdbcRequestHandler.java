@@ -241,7 +241,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 case CMD_FINISHED_EOF:
                     bulkLoadRequests.remove(req.queryId());
 
-                    processor.close(req.cmd() == CMD_FINISHED_ERROR);
+                    processor.close();
 
                     break;
 
@@ -291,12 +291,16 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 for (JdbcQueryCursor cursor : qryCursors.values())
                     cursor.close();
 
-                ConcurrentHashMap<Long, JdbcBulkLoadProcessor> requests = bulkLoadRequests;
+                for (JdbcBulkLoadProcessor processor : bulkLoadRequests.values()) {
+                    try {
+                        processor.close();
+                    }
+                    catch (Exception e) {
+                        U.error(null, "Error closing JDBC bulk load processor.", e);
+                    }
+                }
 
                 bulkLoadRequests.clear();
-
-                for (JdbcBulkLoadProcessor processor : requests.values())
-                    processor.close(true);
             }
             finally {
                 busyLock.leaveBusy();

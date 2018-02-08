@@ -26,9 +26,9 @@ public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
     /**
      * Tests for COPY command.
      *
-     * @throws Exception If any of subtests was failed.
+     * @throws Exception If any of sub-tests was failed.
      */
-    public void testCopy() throws Exception {
+    public void testCopy() {
         assertParseError(null,
             "copy grom \"any.file\" into Person (_key, age, firstName, lastName) format csv",
             "Unexpected token: \"GROM\" (expected: \"FROM\")");

@@ -62,7 +62,7 @@ public class BulkLoadAckClientParameters {
      *
      * @return The local name of file to send.
      */
-    public @NotNull String localFileName() {
+    @NotNull public String localFileName() {
         return locFileName;
     }
 
@@ -92,7 +92,6 @@ public class BulkLoadAckClientParameters {
      * @return The string with the error message.
      */
     public static String batchSizeErrorMsg(int sz) {
-        return "Batch size should be within [" +
-            BulkLoadAckClientParameters.MIN_BATCH_SIZE + ".." + BulkLoadAckClientParameters.MAX_BATCH_SIZE + "]: " + sz;
+        return "Batch size should be within [" + MIN_BATCH_SIZE + ".." + MAX_BATCH_SIZE + "]: " + sz;
     }
 }

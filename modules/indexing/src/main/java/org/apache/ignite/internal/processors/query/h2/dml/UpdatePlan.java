@@ -249,14 +249,14 @@ public final class UpdatePlan {
 
         // We update columns in the order specified by the table for a reason - table's
         // column order preserves their precedence for correct update of nested properties.
-        Column[] tableCols = tbl.getColumns();
+        Column[] tblCols = tbl.getColumns();
 
         // First 3 columns are _key, _val and _ver. Skip 'em.
-        for (int i = DEFAULT_COLUMNS_COUNT; i < tableCols.length; i++) {
+        for (int i = DEFAULT_COLUMNS_COUNT; i < tblCols.length; i++) {
             if (tbl.rowDescriptor().isKeyValueOrVersionColumn(i))
                 continue;
 
-            String colName = tableCols[i].getName();
+            String colName = tblCols[i].getName();
 
             if (!newColVals.containsKey(colName))
                 continue;

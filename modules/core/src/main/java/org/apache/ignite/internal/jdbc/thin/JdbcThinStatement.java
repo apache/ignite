@@ -188,12 +188,12 @@ public class JdbcThinStatement implements Statement {
     /**
      * Sends a file to server in batches via multiple {@link JdbcBulkLoadBatchRequest}s.
      *
-     * @param cmdResult Result of invoking COPY command: contains server-parsed
+     * @param cmdRes Result of invoking COPY command: contains server-parsed
      *    bulk load parameters, such as file name and batch size.
      */
-    private JdbcResult sendFile(JdbcBulkLoadAckResult cmdResult) throws SQLException {
-        String fileName = cmdResult.params().localFileName();
-        int batchSize = cmdResult.params().batchSize();
+    private JdbcResult sendFile(JdbcBulkLoadAckResult cmdRes) throws SQLException {
+        String fileName = cmdRes.params().localFileName();
+        int batchSize = cmdRes.params().batchSize();
 
         int batchNum = 0;
 
@@ -207,7 +207,7 @@ public class JdbcThinStatement implements Statement {
                         continue;
 
                     JdbcResult res = conn.sendRequest(new JdbcBulkLoadBatchRequest(
-                        cmdResult.queryId(),
+                        cmdRes.queryId(),
                         batchNum++,
                         JdbcBulkLoadBatchRequest.CMD_CONTINUE,
                         readBytes == buf.length ? buf : Arrays.copyOf(buf, readBytes)));
@@ -217,7 +217,7 @@ public class JdbcThinStatement implements Statement {
                 }
 
                 return conn.sendRequest(new JdbcBulkLoadBatchRequest(
-                    cmdResult.queryId(),
+                    cmdRes.queryId(),
                     batchNum++,
                     JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF));
             }
@@ -225,8 +225,8 @@ public class JdbcThinStatement implements Statement {
         catch (Exception e) {
             try {
                 conn.sendRequest(new JdbcBulkLoadBatchRequest(
-                    cmdResult.queryId(),
-                    batchNum++,
+                    cmdRes.queryId(),
+                    batchNum,
                     JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR));
             }
             catch (SQLException e1) {
