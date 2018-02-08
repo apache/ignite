@@ -25,9 +25,11 @@ mixin form-field__phone({ label, model, name, disabled, required, placeholder, t
             - attributes.type='tel'
             +form-field__input({ name, model, disabled, required, placeholder })(attributes=attributes)
 
-        .form-field__errors
+        .form-field__errors(
+            ng-messages=`(${form}[${name}].$dirty || ${form}[${name}].$touched || ${form}[${name}].$submitted) && ${form}[${name}].$invalid ? ${form}[${name}].$error : {}`
+        )
             if block
                 block
 
             if required
-                +form-field__feedback({ name, error: 'required', message: `${errLbl} could not be empty!` })
+                +form-field__error({ name, error: 'required', message: `${errLbl} could not be empty!` })

@@ -22,20 +22,25 @@ mixin form-field__number({ label, model, name, disabled, required, placeholder, 
             +form-field__tooltip({ title: tip, options: tipOpts })
 
         .form-field__control
-            - attributes.type='number'
-            - attributes.min=min ? min : '0'
-            - attributes.max=max ? max : '{{ Number.MAX_VALUE }}'
-            - attributes.step=step ? step : '1'
+            - attributes.type = 'number'
+            - attributes.min = min ? min : '0'
+            - attributes.max = max ? max : '{{ Number.MAX_VALUE }}'
+            - attributes.step = step ? step : '1'
             +form-field__input({ name, model, disabled, required, placeholder })(attributes=attributes)
 
-        .form-field__errors
+        .form-field__errors(
+            ng-messages=`(${form}[${name}].$dirty || ${form}[${name}].$touched || ${form}[${name}].$submitted) && ${form}[${name}].$invalid ? ${form}[${name}].$error : {}`
+        )
             if block
                 block
 
             if required
-                +form-field__feedback({ name, error: 'required', message: `${errLbl} could not be empty!` })
+                +form-field__error({ error: 'required', message: `${errLbl} could not be empty!` })
 
-            +form-field__feedback({ name, error: 'required', message: 'This field could not be empty' })
-            +form-field__feedback({ name, error: 'min', message: 'Value is less than allowable minimum: '+ min || 0 })
-            +form-field__feedback({ name, error: 'max', message: 'Value is more than allowable maximum: '+ max })
-            +form-field__feedback({ name, error: 'number', message: 'Only numbers allowed' })
+            if min
+                +form-field__error({ error: 'min', message: `${errLbl} is less than allowable minimum: ${ min || 0 }`})
+
+            if max
+                +form-field__error({ error: 'max', message: `${errLbl} is more than allowable maximum: ${ max }`})
+
+            +form-field__error({ error: 'number', message: 'Only numbers allowed' })

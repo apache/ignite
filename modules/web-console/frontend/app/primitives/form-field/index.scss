@@ -46,8 +46,10 @@
         display: flex;
         width: 100%;
 
-        & > input::placeholder, & > button.select-toggle.placeholder {
+        & > input::placeholder,
+        & > button.select-toggle.placeholder {
             color: rgba(66, 66, 66, 0.5);
+            text-align: left;
         }
 
         & > input,
@@ -87,19 +89,21 @@
                 opacity: .5;
             }
         }
-
-        & > input[type='number'] {
-            text-align: right;
-        }
     }
 
     &__errors {
         position: absolute;
         right: 0;
         bottom: 0;
+
+        [ng-message] {
+            // TODO: remove after replace all fields to new
+            overflow: visible !important;
+            animation: none !important;
+        }
     }
 
-    &__feedback {
+    &__error {
         z-index: 2;
         position: relative;
         width: 0;
@@ -118,12 +122,12 @@
         }
 
         div {
+            z-index: 1;
             position: absolute;
-            top: 10px;
+            top: 0;
             right: 0;
             width: 36px;
-            height: 26px;
-            z-index: 1;
+            height: 36px;
         }
 
         svg {
@@ -137,21 +141,20 @@
 
 .form-field__checkbox {
     display: flex;
-    align-items: center;
-    align-content: center;
-    
     height: 36px;
 
     .form-field {
         &__label {
             order: 1;
             margin: 0;
+
+            line-height: 1.25;
         }
 
         &__control {
             width: auto;
-            margin-top: -1px;
             margin-right: 10px;
+            padding: 3px 0;
 
             input {
                 width: auto;

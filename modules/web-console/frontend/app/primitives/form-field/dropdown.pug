@@ -22,9 +22,9 @@ mixin form-field__dropdown({ label, model, name, disabled, required, multiple, p
 
             data-placeholder=placeholderEmpty ? `{{ ${options}.length > 0 ? '${placeholder}' : '${placeholderEmpty}' }}` : placeholder
             
-            data-ng-model=model
-            data-ng-disabled=disabled && `${disabled}`
-            data-ng-required=required && `${required}`
+            ng-model=model
+            ng-disabled=disabled && `${disabled}`
+            ng-required=required && `${required}`
 
             bs-select
             bs-options=`item.value as item.label for item in ${options}`
@@ -32,8 +32,6 @@ mixin form-field__dropdown({ label, model, name, disabled, required, multiple, p
             data-multiple=multiple ? '1' : false
 
             tabindex='0'
-
-            data-ignite-form-panel-field=''
         )&attributes(attributes.attributes)
 
     .form-field
@@ -43,9 +41,11 @@ mixin form-field__dropdown({ label, model, name, disabled, required, multiple, p
         .form-field__control
             +__form-field__input(attributes=attributes)
 
-        .form-field__errors
+        .form-field__errors(
+            ng-messages=`(${form}[${name}].$dirty || ${form}[${name}].$touched || ${form}[${name}].$submitted) && ${form}[${name}].$invalid ? ${form}[${name}].$error : {}`
+        )
             if block
                 block
 
             if required
-                +form-field__feedback({ name, error: 'required', message: `${errLbl} could not be empty!` })
+                +form-field__error({ name, error: 'required', message: `${errLbl} could not be empty!` })

@@ -26,6 +26,11 @@
 
 
 .tooltip--error {
+    &.top {
+        margin-top: 8px;
+        margin-left: -1px;
+    }
+
     &.top .tooltip-arrow {
         border-top-color: #f34718;
     }
