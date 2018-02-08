@@ -45,41 +45,7 @@ public class AuthenticationProcessorPersistEnabledTest extends AuthenticationPro
     /**
      * @throws Exception If failed.
      */
-    public void testQ() throws Exception {
-        final IgniteInternalFuture restartFut = restartCoordinator();
-
-        AuthorizationContext.context(actxDflt);
-
-        final AtomicInteger usrCnt = new AtomicInteger();
-
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            @Override public void run() {
-                AuthorizationContext.context(actxDflt);
-                String user = "test" + usrCnt.getAndIncrement();
-
-                try {
-                    while (!restartFut.isDone()) {
-                        grid(CLI_NODE).context().authentication().addUser(user, "passwd_" + user);
-
-                        grid(CLI_NODE).context().authentication().updateUser(user, "new_passwd_" + user);
-
-                        grid(CLI_NODE).context().authentication().removeUser(user);
-                    }
-                }
-                catch (Exception e) {
-                    U.error(log, "Unexpected exception on concurrent add/remove", e);
-                    fail();
-                }
-            }
-        }, 1, "user-op");
-
-        restartFut.get();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void _testUserPersistence() throws Exception {
+    public void testUserPersistence() throws Exception {
         AuthorizationContext.context(actxDflt);
 
         try {

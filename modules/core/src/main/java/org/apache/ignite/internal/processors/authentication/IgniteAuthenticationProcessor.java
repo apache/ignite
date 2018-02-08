@@ -161,7 +161,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         readyFutCompletor = new Runnable() {
             @Override public void run() {
-                log.info("+++ READY");
+//                log.info("+++ READY");
                 readyFut.onDone();
             }
         };
@@ -394,10 +394,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 }
             });
 
-            for (User u : readUsers.values()) {
+            for (User u : readUsers.values())
                 users.put(u.name(), u);
-                log.info("+++ READ " + u);
-            }
         }
         else
             users = null;
@@ -467,7 +465,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         opFinishFuts.put(op.id(), fut);
 
-//        log.info("+++ ADD DFLT OP");
         exec.execute(new UserOperationWorker(op, fut));
     }
 
@@ -527,7 +524,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private void processOperationLocal(UserManagementOperation op) throws IgniteCheckedException {
         assert op != null && op.user() != null : "Invalid operation: " + op;
 
-        log.info("+++ DO " + op);
+//        log.info("+++ DO " + op);
 
         switch (op.type()) {
             case ADD:
@@ -860,7 +857,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      */
     private void sendFinish(UserManagementOperationFinishedMessage msg) {
         try {
-            log.info("+++ SEND FINISH " + msg);
+//            log.info("+++ SEND FINISH " + msg);
             ctx.io().sendToGridTopic(coordinator(), GridTopic.TOPIC_AUTH, msg, GridIoPolicy.SYSTEM_POOL);
         }
         catch (Exception e) {
@@ -916,7 +913,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             if (ctx.isStopping() || ctx.clientNode())
                 return;
 
-          log.info("+++ PROPOSE " + msg.operation());
+//          log.info("+++ PROPOSE " + msg.operation());
             if (log.isDebugEnabled())
                 log.debug(msg.toString());
 
@@ -947,7 +944,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             if (log.isDebugEnabled())
                 log.debug(msg.toString());
 
-            log.info("+++ ACK " + msg.operationId());
+//            log.info("+++ ACK " + msg.operationId());
             UserOperationFinishFuture f = opFinishFuts.get(msg.operationId());
 
             if (f != null) {
@@ -1069,7 +1066,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
          *
          */
         private void checkOperationFinished() {
-            log.info("+++ CHECK F req="  + requiredFinish.size() + ", revc=" + receivedFinish.size());
+//            log.info("+++ CHECK F req="  + requiredFinish.size() + ", revc=" + receivedFinish.size());
             if (receivedFinish.containsAll(requiredFinish))
                 onFinishOperation(op.id(), err);
         }
