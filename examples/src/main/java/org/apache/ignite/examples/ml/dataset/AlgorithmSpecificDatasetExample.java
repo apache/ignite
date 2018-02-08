@@ -28,22 +28,38 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetFactory;
-import org.apache.ignite.ml.dataset.api.DatasetWrapper;
-import org.apache.ignite.ml.dataset.api.builder.data.SimpleLabeledDatasetDataBuilder;
-import org.apache.ignite.ml.dataset.api.data.SimpleLabeledDatasetData;
+import org.apache.ignite.ml.dataset.primitive.DatasetWrapper;
+import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
+import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
 
 /**
- * How to create a algorithm specific cache based dataset from an existing Ignite Cache?
+ * Example that shows how to implement your own algorithm (gradient descent trainer for linear regression) which uses
+ * dataset as an underlying infrastructure.
+ *
+ * The common idea behind using algorithm specific datasets is to write a simple local version algorithm at first, then
+ * find operations which involves data manipulations, and finally define algorithm specific version of the dataset
+ * extended by introducing these new operations. As result your algorithm will work with extended dataset (based on
+ * {@link DatasetWrapper}) in a sequential manner.
+ *
+ * In this example we need to implement gradient descent. This is iterative method that involves calculation of gradient
+ * on every step. In according with the common idea we defines
+ * {@link AlgorithmSpecificDatasetExample.AlgorithmSpecificDataset} - extended version of {@code Dataset} with
+ * {@code gradient} method. As result our gradient descent method looks like a simple loop where every iteration
+ * includes call of the {@code gradient} method. In the example we want to keep iteration number as well for logging.
+ * Iteration number cannot be recovered from the {@code upstream} data and we need to keep it in the custom
+ * partition {@code context} which is represented by
+ * {@link AlgorithmSpecificDatasetExample.AlgorithmSpecificPartitionContext} class.
  */
 public class AlgorithmSpecificDatasetExample {
     /** Run example. */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            System.out.println(">>> D-Learn Cache Dataset example started.");
+            System.out.println(">>> Algorithm Specific Dataset example started.");
 
             IgniteCache<Integer, Person> persons = createCache(ignite);
 
-            // Creates a algorithm specific dataset to perform linear regression.
+            // Creates a algorithm specific dataset to perform linear regression. Here we defines the way features and
+            // labels are extracted, and partition data and context are created.
             try (AlgorithmSpecificDataset dataset = DatasetFactory.create(
                 ignite,
                 persons,
@@ -82,10 +98,14 @@ public class AlgorithmSpecificDatasetExample {
 
                 System.out.println("Linear Regression Model: " + Arrays.toString(linearRegressionMdl));
             }
+
+            System.out.println(">>> Algorithm Specific Dataset example completed.");
         }
     }
 
-    /** Algorithm specific dataset. */
+    /**
+     * Algorithm specific dataset. Extended version of {@code Dataset} with {@code gradient} method.
+     */
     private static class AlgorithmSpecificDataset
         extends DatasetWrapper<AlgorithmSpecificPartitionContext, SimpleLabeledDatasetData> {
         /** BLAS (Basic Linear Algebra Subprograms) instance. */
@@ -137,7 +157,9 @@ public class AlgorithmSpecificDatasetExample {
         }
     }
 
-    /** Algorithm specific partition context. */
+    /**
+     * Algorithm specific partition context which keeps iteration number.
+     */
     private static class AlgorithmSpecificPartitionContext implements Serializable {
         /** */
         private static final long serialVersionUID = 1887368924266684044L;
@@ -159,13 +181,17 @@ public class AlgorithmSpecificDatasetExample {
     /** */
     private static IgniteCache<Integer, Person> createCache(Ignite ignite) {
         CacheConfiguration<Integer, Person> cacheConfiguration = new CacheConfiguration<>();
+
         cacheConfiguration.setName("PERSONS");
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 2));
+
         IgniteCache<Integer, Person> persons = ignite.createCache(cacheConfiguration);
+
         persons.put(1, new Person("Mike", 1, 1));
         persons.put(2, new Person("John", 2, 2));
         persons.put(3, new Person("George", 3, 3));
         persons.put(4, new Person("Karl", 4, 4));
+
         return persons;
     }
 }

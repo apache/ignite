@@ -19,8 +19,8 @@ package org.apache.ignite.ml.dataset;
 
 import java.io.Serializable;
 import java.util.Iterator;
-import org.apache.ignite.ml.dataset.api.builder.data.SimpleDatasetDataBuilder;
-import org.apache.ignite.ml.dataset.api.builder.data.SimpleLabeledDatasetDataBuilder;
+import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleDatasetDataBuilder;
+import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**

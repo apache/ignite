@@ -24,16 +24,17 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.ml.dataset.DatasetFactory;
-import org.apache.ignite.ml.dataset.api.SimpleDataset;
+import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 
 /**
- * How to create a local dataset from an existing local data?
+ * Example that shows how to create dataset based on an existing local storage and then use it to calculate {@code mean}
+ * and {@code std} values as well as {@code covariance} and {@code correlation} matrices.
  */
 public class LocalDatasetExample {
     /** Run example. */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            System.out.println(">>> D-Learn Cache Dataset example started.");
+            System.out.println(">>> Local Dataset example started.");
 
             Map<Integer, Person> persons = createCache(ignite);
 
@@ -63,19 +64,21 @@ public class LocalDatasetExample {
                 System.out.println("Correlation matrix ");
                 for (double[] row : corr)
                     System.out.println("\t" + Arrays.toString(row));
-
-                System.out.println(">>> D-Learn Cache Dataset example completed.");
             }
+
+            System.out.println(">>> Local Dataset example completed.");
         }
     }
 
     /** */
     private static Map<Integer, Person> createCache(Ignite ignite) {
         Map<Integer, Person> persons = new HashMap<>();
+
         persons.put(1, new Person("Mike", 42, 10000));
         persons.put(2, new Person("John", 32, 64000));
         persons.put(3, new Person("George", 53, 120000));
         persons.put(4, new Person("Karl", 24, 70000));
+
         return persons;
     }
 }

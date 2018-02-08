@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
@@ -597,7 +598,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridInternalSubscriptionProcessor)
             internalSubscriptionProc = (GridInternalSubscriptionProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
-                || comp instanceof PlatformPluginProcessor))
+            || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
 
         if (addToList)
@@ -623,15 +624,19 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return ((IgniteKernal)grid).isStopping();
     }
 
-    /** {@inheritDoc} */
-    @Override public UUID localNodeId() {
-        if (locNode != null)
-            return locNode.id();
-
-        if (discoMgr != null)
+    /** */
+    @Nullable private ClusterNode localNode() {
+        if (locNode == null && discoMgr != null)
             locNode = discoMgr.localNode();
 
-        return locNode != null ? locNode.id() : config().getNodeId();
+        return locNode;
+    }
+
+    /** {@inheritDoc} */
+    @Override public UUID localNodeId() {
+        ClusterNode locNode0 = localNode();
+
+        return locNode0 != null ? locNode0.id() : config().getNodeId();
     }
 
     /** {@inheritDoc} */
@@ -886,7 +891,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public boolean isDaemon() {
-        return config().isDaemon() || "true".equalsIgnoreCase(System.getProperty(IGNITE_DAEMON));
+        ClusterNode locNode0 = localNode();
+
+        return locNode0 != null ? locNode0.isDaemon() :
+            (config().isDaemon() || IgniteSystemProperties.getBoolean(IGNITE_DAEMON));
     }
 
     /** {@inheritDoc} */
@@ -1068,10 +1076,9 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public boolean clientDisconnected() {
-        if (locNode == null)
-            locNode = discoMgr != null ? discoMgr.localNode() : null;
+        ClusterNode locNode0 = localNode();
 
-        return locNode != null ? (locNode.isClient() && disconnected) : false;
+        return locNode0 != null ? (locNode0.isClient() && disconnected) : false;
     }
 
     /** {@inheritDoc} */
@@ -1091,7 +1098,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.disconnected = disconnected;
     }
 
-    /**{@inheritDoc}*/
+    /** {@inheritDoc} */
     @Override public PdsFoldersResolver pdsFolderResolver() {
         return pdsFolderRslvr;
     }

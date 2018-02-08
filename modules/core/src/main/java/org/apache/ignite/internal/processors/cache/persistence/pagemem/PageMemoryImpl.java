@@ -226,10 +226,10 @@ public class PageMemoryImpl implements PageMemoryEx {
     @Nullable private final GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
 
     /** Pages write throttle. */
-    private PagesWriteThrottle writeThrottle;
+    private PagesWriteThrottlePolicy writeThrottle;
 
-    /** Write throttle enabled flag. */
-    private boolean throttleEnabled;
+    /** Write throttle type. */
+    private ThrottlingPolicy throttlingPlc;
 
     /**  */
     private boolean pageEvictWarned;
@@ -246,7 +246,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @param pageSize Page size.
      * @param flushDirtyPage Callback invoked when a dirty page is evicted.
      * @param changeTracker Callback invoked to track changes in pages.
-     * @param throttleEnabled Write throttle enabled flag.
+     * @param throttlingPlc Write throttle enabled and type.
      */
     public PageMemoryImpl(
         DirectMemoryProvider directMemoryProvider,
@@ -257,7 +257,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         @Nullable GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker,
         CheckpointLockStateChecker stateChecker,
         DataRegionMetricsImpl memMetrics,
-        boolean throttleEnabled
+        ThrottlingPolicy throttlingPlc
     ) {
         assert ctx != null;
 
@@ -269,7 +269,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         this.flushDirtyPage = flushDirtyPage;
         this.changeTracker = changeTracker;
         this.stateChecker = stateChecker;
-        this.throttleEnabled = throttleEnabled;
+        this.throttlingPlc = throttlingPlc;
 
         storeMgr = ctx.pageStore();
         walMgr = ctx.wal();
@@ -320,7 +320,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             totalAllocated += reg.size();
 
-            segments[i] = new Segment(i, regions.get(i), checkpointPool.pages() / segments.length, throttleEnabled);
+            segments[i] = new Segment(i, regions.get(i), checkpointPool.pages() / segments.length, throttlingPlc);
 
             pages += segments[i].pages();
             totalTblSize += segments[i].tableSize();
@@ -344,11 +344,17 @@ public class PageMemoryImpl implements PageMemoryEx {
             log.error("Write throttle can't start. Unexpected class of database manager: " +
                 ctx.database().getClass());
 
-            throttleEnabled = false;
+            throttlingPlc = ThrottlingPolicy.NONE;
         }
 
-        if (throttleEnabled)
-            writeThrottle = new PagesWriteThrottle(this, (GridCacheDatabaseSharedManager)ctx.database());
+        if (isThrottlingEnabled()) {
+            GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)ctx.database();
+
+            if (throttlingPlc == ThrottlingPolicy.SPEED_BASED)
+                writeThrottle = new PagesWriteSpeedBasedThrottle(this, db, log);
+            else if(throttlingPlc == ThrottlingPolicy.TARGET_RATIO_BASED)
+                writeThrottle = new PagesWriteThrottle(this, db);
+        }
     }
 
     /** {@inheritDoc} */
@@ -430,6 +436,9 @@ public class PageMemoryImpl implements PageMemoryEx {
             "flags = " + flags + ", partId = " + partId;
 
         assert ctx.database().checkpointLockIsHeldByThread();
+
+        if (isThrottlingEnabled())
+            writeThrottle.onMarkDirty(false);
 
         long pageId = storeMgr.allocatePage(cacheId, partId, flags);
 
@@ -876,6 +885,32 @@ public class PageMemoryImpl implements PageMemoryEx {
         return false;
     }
 
+    /**
+     * @return Max dirty ratio from the segments.
+     */
+    double getDirtyPagesRatio() {
+        double res = 0;
+
+        for (Segment segment : segments) {
+            res = Math.max(res, segment.getDirtyPagesRatio());
+        }
+
+        return res;
+    }
+
+    /**
+     * @return Total pages can be placed in all segments.
+     */
+    public long totalPages() {
+        long res = 0;
+
+        for (Segment segment : segments) {
+            res += segment.pages();
+        }
+
+        return res;
+    }
+
     /** {@inheritDoc} */
     @Override public GridMultiCollectionWrapper<FullPageId> beginCheckpoint() throws IgniteException {
         if (segments == null)
@@ -896,7 +931,17 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         memMetrics.resetDirtyPages();
 
+        if (isThrottlingEnabled())
+            writeThrottle.onBeginCheckpoint();
+
         return new GridMultiCollectionWrapper<>(collections);
+    }
+
+    /**
+     * @return {@code True} if throttling is enabled.
+     */
+    private boolean isThrottlingEnabled() {
+        return throttlingPlc != ThrottlingPolicy.NONE;
     }
 
     /** {@inheritDoc} */
@@ -908,7 +953,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         for (Segment seg : segments)
             seg.segCheckpointPages = null;
 
-        if (throttleEnabled)
+        if (isThrottlingEnabled())
             writeThrottle.onFinishCheckpoint();
     }
 
@@ -1327,7 +1372,11 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /**
      * @param page Page pointer.
+     * @param fullId full page ID.
+     * @param walPlc
      * @param walPlc Full page WAL record policy.
+     * @param markDirty set dirty flag to page.
+     * @param restore
      */
     private void writeUnlockPage(
         long page,
@@ -1336,13 +1385,13 @@ public class PageMemoryImpl implements PageMemoryEx {
         boolean markDirty,
         boolean restore
     ) {
-        boolean dirty = isDirty(page);
+        boolean wasDirty = isDirty(page);
 
         //if page is for restore, we shouldn't mark it as changed
-        if (!restore && markDirty && !dirty && changeTracker != null)
+        if (!restore && markDirty && !wasDirty && changeTracker != null)
             changeTracker.apply(page, fullId, this);
 
-        boolean pageWalRec = markDirty && walPlc != FALSE && (walPlc == TRUE || !dirty);
+        boolean pageWalRec = markDirty && walPlc != FALSE && (walPlc == TRUE || !wasDirty);
 
         assert GridUnsafe.getInt(page + PAGE_OVERHEAD + 4) == 0; //TODO GG-11480
 
@@ -1360,7 +1409,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         try {
             rwLock.writeUnlock(page + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
 
-            if (throttleEnabled && !restore && markDirty)
+            if (isThrottlingEnabled() && !restore && markDirty && !wasDirty)
                 writeThrottle.onMarkDirty(isInCheckpoint(fullId));
         }
         catch (AssertionError ex) {
@@ -1449,12 +1498,13 @@ public class PageMemoryImpl implements PageMemoryEx {
     /**
      * This method must be called in synchronized context.
      *
+     * @param pageId full page ID.
      * @param absPtr Absolute pointer.
      * @param dirty {@code True} dirty flag.
      * @param forceAdd If this flag is {@code true}, then the page will be added to the dirty set regardless whether the
      * old flag was dirty or not.
      */
-    void setDirty(FullPageId pageId, long absPtr, boolean dirty, boolean forceAdd) {
+    private void setDirty(FullPageId pageId, long absPtr, boolean dirty, boolean forceAdd) {
         boolean wasDirty = PageHeader.dirty(absPtr, dirty);
 
         if (dirty) {
@@ -1733,9 +1783,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         /**
          * @param region Memory region.
-         * @param throttlingEnabled Write throttling enabled flag.
+         * @param throttlingPlc policy determine if write throttling enabled and its type.
          */
-        private Segment(int idx, DirectMemoryRegion region, int cpPoolPages, boolean throttlingEnabled) {
+        private Segment(int idx, DirectMemoryRegion region, int cpPoolPages, ThrottlingPolicy throttlingPlc) {
             long totalMemory = region.size();
 
             int pages = (int)(totalMemory / sysPageSize);
@@ -1752,7 +1802,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             pool = new PagePool(idx, poolRegion, null);
 
-            maxDirtyPages = throttlingEnabled ? pool.pages() * 3 / 4 : Math.min(pool.pages() * 2 / 3, cpPoolPages);
+            maxDirtyPages = throttlingPlc != ThrottlingPolicy.NONE
+                ? pool.pages() * 3 / 4
+                : Math.min(pool.pages() * 2 / 3, cpPoolPages);
         }
 
         /**
@@ -1780,7 +1832,14 @@ public class PageMemoryImpl implements PageMemoryEx {
          * @param dirtyRatioThreshold Throttle threshold.
          */
         private boolean shouldThrottle(double dirtyRatioThreshold) {
-            return ((double)dirtyPages.size()) / pages() > dirtyRatioThreshold;
+            return getDirtyPagesRatio() > dirtyRatioThreshold;
+        }
+
+        /**
+         * @return dirtyRatio to be compared with Throttle threshold.
+         */
+        private double getDirtyPagesRatio() {
+            return ((double)dirtyPages.size()) / pages();
         }
 
         /**
@@ -2604,5 +2663,14 @@ public class PageMemoryImpl implements PageMemoryEx {
                 doneFut.onDone(e);
             }
         }
+    }
+
+    /**
+     * Throttling enabled and its type enum.
+     */
+    public enum ThrottlingPolicy {
+        /** Not throttled. */NONE,
+        /** Target ratio based: CP progress is used as border. */ TARGET_RATIO_BASED,
+        /** Speed based. CP writting speed and estimated ideal speed are used as border */ SPEED_BASED
     }
 }

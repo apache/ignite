@@ -84,7 +84,7 @@ public class BPlusTreePageMemoryImplTest extends BPlusTreeSelfTest {
                 }
             },
             new DataRegionMetricsImpl(new DataRegionConfiguration()),
-            false
+            PageMemoryImpl.ThrottlingPolicy.NONE
         );
 
         mem.start();

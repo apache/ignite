@@ -15,22 +15,14 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+package org.apache.ignite.ml.dataset.primitive.context;
 
-import templateUrl from 'views/settings/profile.tpl.pug';
+import java.io.Serializable;
 
-angular
-.module('ignite-console.states.profile', [
-    'ui.router'
-])
-.config(['$stateProvider', function($stateProvider) {
-    // set up the states
-    $stateProvider.state('base.settings.profile', {
-        url: '/profile',
-        templateUrl,
-        permission: 'profile',
-        tfMetaTags: {
-            title: 'User profile'
-        }
-    });
-}]);
+/**
+ * An empty partition {@code context}.
+ */
+public class EmptyContext implements Serializable {
+    /** */
+    private static final long serialVersionUID = 4108938672110578991L;
+}

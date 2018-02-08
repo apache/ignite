@@ -25,16 +25,17 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.ml.dataset.DatasetFactory;
-import org.apache.ignite.ml.dataset.api.SimpleDataset;
+import org.apache.ignite.ml.dataset.primitive.SimpleDataset;
 
 /**
- * How to create a cache based dataset from an existing Ignite Cache?
+ * Example that shows how to create dataset based on an existing Ignite Cache and then use it to calculate {@code mean}
+ * and {@code std} values as well as {@code covariance} and {@code correlation} matrices.
  */
 public class CacheBasedDatasetExample {
     /** Run example. */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            System.out.println(">>> D-Learn Cache Dataset example started.");
+            System.out.println(">>> Cache Based Dataset example started.");
 
             IgniteCache<Integer, Person> persons = createCache(ignite);
 
@@ -64,22 +65,26 @@ public class CacheBasedDatasetExample {
                 System.out.println("Correlation matrix ");
                 for (double[] row : corr)
                     System.out.println("\t" + Arrays.toString(row));
-
-                System.out.println(">>> D-Learn Cache Dataset example completed.");
             }
+
+            System.out.println(">>> Cache Based Dataset example completed.");
         }
     }
 
     /** */
     private static IgniteCache<Integer, Person> createCache(Ignite ignite) {
         CacheConfiguration<Integer, Person> cacheConfiguration = new CacheConfiguration<>();
+
         cacheConfiguration.setName("PERSONS");
         cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 2));
+
         IgniteCache<Integer, Person> persons = ignite.createCache(cacheConfiguration);
+
         persons.put(1, new Person("Mike", 42, 10000));
         persons.put(2, new Person("John", 32, 64000));
         persons.put(3, new Person("George", 53, 120000));
         persons.put(4, new Person("Karl", 24, 70000));
+
         return persons;
     }
 }

@@ -17,13 +17,13 @@
 
 package org.apache.ignite.ml.dataset;
 
-import org.apache.ignite.ml.dataset.api.DatasetWrapperTest;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilderTest;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetTest;
 import org.apache.ignite.ml.dataset.impl.cache.util.ComputeUtilsTest;
 import org.apache.ignite.ml.dataset.impl.cache.util.DatasetAffinityFunctionWrapperTest;
 import org.apache.ignite.ml.dataset.impl.cache.util.PartitionDataStorageTest;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilderTest;
+import org.apache.ignite.ml.dataset.primitive.DatasetWrapperTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
