@@ -24,9 +24,9 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- *
+ * Some page from loaded pages found during random {@link LoadedPagesMap} touch.
  */
-public class EvictCandidate {
+public class ReplaceCandidate {
     /** */
     private int tag;
 
@@ -43,7 +43,7 @@ public class EvictCandidate {
      * @param relPtr Relative pointer.
      * @param fullId Full page ID.
      */
-    public EvictCandidate(int tag, long relPtr, FullPageId fullId) {
+    public ReplaceCandidate(int tag, long relPtr, FullPageId fullId) {
         this.tag = tag;
         this.relPtr = relPtr;
         this.fullId = fullId;
@@ -72,6 +72,6 @@ public class EvictCandidate {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(EvictCandidate.class, this, "relPtr", U.hexLong(relPtr));
+        return S.toString(ReplaceCandidate.class, this, "relPtr", U.hexLong(relPtr));
     }
 }

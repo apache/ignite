@@ -35,7 +35,7 @@ import static org.apache.ignite.IgniteSystemProperties.getFloat;
 /**
  *
  */
-public class FullPageIdTable {
+public class FullPageIdTable implements LoadedPagesMap {
     /** Load factor. */
     private static final float LOAD_FACTOR = getFloat(IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR, 2.5f);
 
@@ -130,34 +130,21 @@ public class FullPageIdTable {
             clear();
     }
 
-    /**
-     * @return Current number of entries in the map.
-     */
-    public final int size() {
+    /** {@inheritDoc} */
+    @Override public final int size() {
         return GridUnsafe.getInt(valPtr);
     }
 
-    /**
-     * @return Maximum number of entries in the map. This maximum can not be always reached.
-     */
-    public final int capacity() {
+    /** {@inheritDoc} */
+    @Override public final int capacity() {
         return capacity;
     }
 
-    /**
-     * Gets value associated with the given key.
-     *
-     * @param cacheId Cache ID.
-     * @param pageId Page ID.
-     * @param tag
-     * @param absent
-     * @param outdated
-     * @return A value associated with the given key.
-     */
-    public long get(int cacheId, long pageId, int tag, long absent, long outdated) {
-        assert assertKey(cacheId, pageId);
+    /** {@inheritDoc} */
+    @Override public long get(int grpId, long pageId, int tag, long absent, long outdated) {
+        assert assertKey(grpId, pageId);
 
-        int idx = getKey(cacheId, pageId, tag, false);
+        int idx = getKey(grpId, pageId, tag, false);
 
         if (idx == -1)
             return absent;
@@ -192,18 +179,13 @@ public class FullPageIdTable {
         return valueAt(idx);
     }
 
-    /**
-     * Associates the given key with the given value.
-     *  @param cacheId Cache ID
-     * @param pageId Page ID.
-     * @param value Value to set.
-     */
-    public void put(int cacheId, long pageId, long value, int tag) {
+    /** {@inheritDoc} */
+    @Override public void put(int cacheId, long pageId, long val, int tag) {
         assert assertKey(cacheId, pageId);
 
         int index = putKey(cacheId, pageId, tag);
 
-        setValueAt(index, value);
+        setValueAt(index, val);
     }
 
     /**
@@ -222,13 +204,13 @@ public class FullPageIdTable {
     }
 
     /**
-     * Find nearest value from specified position to the right.
+     * Find nearest presented value from specified position to the right.
      *
-     * @param idx Index to start searching from.
-     * @param absent Default value that will be returned if no values present.
-     * @return Closest value to the index and it's partition tag or {@code absent} and -1 if no values found.
+     * @param idx Index to start searching from. Bounded with {@link #capacity()}.
+     * @return Closest value to the index and it's partition tag or  {@code null} value that will
+     * be returned if no values present.
      */
-    public EvictCandidate getNearestAt(final int idx, final long absent) {
+    @Override public ReplaceCandidate getNearestAt(final int idx) {
         for (int i = idx; i < capacity + idx; i++) {
             final int idx2 = normalizeIndex(i);
 
@@ -240,7 +222,7 @@ public class FullPageIdTable {
                 long pageId = GridUnsafe.getLong(base + PAGE_ID_OFFSET);
                 long val = GridUnsafe.getLong(base + VALUE_OFFSET);
 
-                return new EvictCandidate(tag, val, new FullPageId(pageId, grpId));
+                return new ReplaceCandidate(tag, val, new FullPageId(pageId, grpId));
             }
         }
 
@@ -370,6 +352,7 @@ public class FullPageIdTable {
     /**
      * @param cacheId Cache ID.
      * @param pageId Page ID.
+     * @param refresh Refresh.
      * @return Key index.
      */
     private int getKey(int cacheId, long pageId, int tag, boolean refresh) {

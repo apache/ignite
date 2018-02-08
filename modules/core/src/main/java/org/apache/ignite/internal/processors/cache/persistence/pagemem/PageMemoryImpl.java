@@ -1755,7 +1755,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         private static final double FULL_SCAN_THRESHOLD = 0.4;
 
         /** Page ID to relative pointer map. */
-        private FullPageIdTable loadedPages;
+        private LoadedPagesMap loadedPages;
 
         /** */
         private long acquiredPagesPtr;
@@ -2043,7 +2043,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                     // We need to lookup for pages only in current segment for thread safety,
                     // so peeking random memory will lead to checking for found page segment.
                     // It's much faster to check available pages for segment right away.
-                    EvictCandidate nearest = loadedPages.getNearestAt(rnd.nextInt(cap), INVALID_REL_PTR);
+                    ReplaceCandidate nearest = loadedPages.getNearestAt(rnd.nextInt(cap));
 
                     assert nearest != null && nearest.relativePointer() != INVALID_REL_PTR;
 
@@ -2174,7 +2174,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             int failToPrepare = 0;
 
             for (int i = 0; i < cap; i++) {
-                final EvictCandidate nearest = loadedPages.getNearestAt(i, INVALID_REL_PTR);
+                final ReplaceCandidate nearest = loadedPages.getNearestAt(i);
 
                 assert nearest != null && nearest.relativePointer() != INVALID_REL_PTR;
 
