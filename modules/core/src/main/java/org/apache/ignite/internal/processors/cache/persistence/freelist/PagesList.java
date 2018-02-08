@@ -617,21 +617,21 @@ public abstract class PagesList extends DataStructure {
         for (int lockAttempt = 0; ;) {
             Stripe stripe = getPageForPut(bucket, bag);
 
+            if (bag != null && bag.isEmpty())
+                return;
+
             final long tailId = stripe.tailId;
             final long tailPage = acquirePage(tailId);
 
             try {
                 long tailAddr = writeLockPage(tailId, tailPage, bucket, lockAttempt++, bag); // Explicit check.
 
-                if (bag != null && bag.isEmpty()) {
-                    if (tailAddr != 0L)
-                        writeUnlock(tailId, tailPage, tailAddr, false);
-
-                    return;
+                if (tailAddr == 0L) {
+                    if (bag != null && bag.isEmpty())
+                        return;
+                    else
+                        continue;
                 }
-
-                if (tailAddr == 0L)
-                    continue;
 
                 assert PageIO.getPageId(tailAddr) == tailId : "pageId = " + PageIO.getPageId(tailAddr) + ", tailId = " + tailId;
                 assert PageIO.getType(tailAddr) == PageIO.T_PAGE_LIST_NODE;
