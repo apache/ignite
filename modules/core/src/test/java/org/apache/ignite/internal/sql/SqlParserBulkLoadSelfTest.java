@@ -21,11 +21,7 @@ package org.apache.ignite.internal.sql;
  * Tests for SQL parser: COPY command.
  */
 public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
-    /**
-     * Tests for COPY command.
-     *
-     * @throws Exception If any of sub-tests was failed.
-     */
+    /** Tests for COPY command. */
     public void testCopy() {
         assertParseError(null,
             "copy grom \"any.file\" into Person (_key, age, firstName, lastName) format csv",

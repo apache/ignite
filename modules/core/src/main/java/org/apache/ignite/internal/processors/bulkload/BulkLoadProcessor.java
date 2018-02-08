@@ -17,13 +17,12 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.lang.IgniteBiTuple;
-
-import java.util.List;
 
 /**
  * Bulk load (COPY) command processor used on server to keep various context data and process portions of input

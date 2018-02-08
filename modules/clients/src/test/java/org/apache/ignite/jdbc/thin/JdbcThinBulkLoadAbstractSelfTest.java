@@ -17,14 +17,6 @@
 
 package org.apache.ignite.jdbc.thin;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.testframework.GridTestUtils;
-
 import java.sql.BatchUpdateException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -34,6 +26,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -44,38 +43,37 @@ import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
  * COPY statement tests.
  */
 public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractDmlStatementSelfTest {
-    /** Default table name. */
-    private static final String TBL_NAME = "Person";
-
-    /** JDBC statement. */
-    private Statement stmt;
+    /** Subdirectory with CSV files */
+    private static final String CSV_FILE_SUBDIR = "/modules/clients/src/test/resources/";
 
     /** A CSV file with zero records */
     private static final String BULKLOAD_EMPTY_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload0.csv"))
-            .getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload0.csv")).getAbsolutePath();
 
     /** A CSV file with one record. */
     private static final String BULKLOAD_ONE_LINE_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload1.csv"))
-            .getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload1.csv")).getAbsolutePath();
 
     /** A CSV file with two records. */
     private static final String BULKLOAD_TWO_LINES_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2.csv"))
-            .getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload2.csv")).getAbsolutePath();
 
-    /** A file with UTF records. */
+    /** A CSV file in UTF-8. */
     private static final String BULKLOAD_UTF_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath("/modules/clients/src/test/resources/bulkload2_utf.csv"))
-            .getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload2_utf8.csv")).getAbsolutePath();
+
+    /** Default table name. */
+    private static final String TBL_NAME = "Person";
 
     /** Basic COPY statement used in majority of the tests. */
     public static final String BASIC_SQL_COPY_STMT =
         "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\"" +
-            " into " + TBL_NAME +
-            " (_key, age, firstName, lastName)" +
-            " format csv";
+        " into " + TBL_NAME +
+        " (_key, age, firstName, lastName)" +
+        " format csv";
+
+    /** JDBC statement. */
+    private Statement stmt;
 
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfig() {
@@ -110,27 +108,6 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Returns true if we are testing near cache.
-     *
-     * @return true if we are testing near cache.
-     */
-    protected abstract boolean nearCache();
-
-    /**
-     * Returns cache atomicity mode we are testing.
-     *
-     * @return The cache atomicity mode we are testing.
-     */
-    protected abstract CacheAtomicityMode atomicityMode();
-
-    /**
-     * Returns cache mode we are testing.
-     *
-     * @return The cache mode we are testing.
-     */
-    protected abstract CacheMode cacheMode();
-
-    /**
      * Creates cache configuration with {@link QueryEntity} created
      * using {@link CacheConfiguration#setQueryEntities(Collection)} call.
      *
@@ -157,6 +134,27 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
         return cache;
     }
+
+    /**
+     * Returns true if we are testing near cache.
+     *
+     * @return true if we are testing near cache.
+     */
+    protected abstract boolean nearCache();
+
+    /**
+     * Returns cache atomicity mode we are testing.
+     *
+     * @return The cache atomicity mode we are testing.
+     */
+    protected abstract CacheAtomicityMode atomicityMode();
+
+    /**
+     * Returns cache mode we are testing.
+     *
+     * @return The cache mode we are testing.
+     */
+    protected abstract CacheMode cacheMode();
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -197,38 +195,20 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Imports two-entry CSV file with UTF-8 characters into a table and checks
-     * the created entries using SELECT statement.
+     * Imports zero-entry CSV file into a table and checks that no entries are created
+     * using SELECT statement.
      *
      * @throws SQLException If failed.
      */
-    public void testUtf() throws SQLException {
+    public void testEmptyFile() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + BULKLOAD_UTF_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName, lastName)" +
-                " format csv");
+            "copy from \"" + BULKLOAD_EMPTY_CSV_FILE + "\" into " + TBL_NAME +
+            " (_key, age, firstName, lastName)" +
+            " format csv");
 
-        assertEquals(2, updatesCnt);
+        assertEquals(0, updatesCnt);
 
-        checkUtfCacheContents(TBL_NAME, true, 2);
-    }
-
-    /**
-     * Imports two-entry CSV file with UTF-8 characters into a table using batch size of one byte
-     * (thus splitting each two-byte UTF-8 character into two batches)
-     * and checks the created entries using SELECT statement.
-     *
-     * @throws SQLException If failed.
-     */
-    public void testUtfBatchSize_1() throws SQLException {
-        int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + BULKLOAD_UTF_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName, lastName)" +
-                " format csv batch_size 1");
-
-        assertEquals(2, updatesCnt);
-
-        checkUtfCacheContents(TBL_NAME, true, 2);
+        checkCacheContents(TBL_NAME, true, 0);
     }
 
     /**
@@ -239,8 +219,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     public void testOneLineFile() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
             "copy from \"" + BULKLOAD_ONE_LINE_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName, lastName)" +
-                " format csv");
+            " (_key, age, firstName, lastName)" +
+            " format csv");
 
         assertEquals(1, updatesCnt);
 
@@ -248,143 +228,20 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Imports zero-entry CSV file into a table and checks that no entries are created
-     * using SELECT statement.
+     * Imports two-entry CSV file with UTF-8 characters into a table and checks
+     * the created entries using SELECT statement.
      *
      * @throws SQLException If failed.
      */
-    public void testEmptyFile() throws SQLException {
+    public void testUtf() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + BULKLOAD_EMPTY_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName, lastName)" +
-                " format csv");
-
-        assertEquals(0, updatesCnt);
-
-        checkCacheContents(TBL_NAME, true, 0);
-    }
-
-    /**
-     * Checks that error is reported for a non-existent file.
-     */
-    public void testWrongFileName() {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                stmt.executeUpdate(
-                    "copy from \"nonexistent\" into Person" +
-                        " (_key, age, firstName, lastName)" +
-                        " format csv");
-
-                return null;
-            }
-        }, SQLException.class, "Failed to read file: 'nonexistent'");
-    }
-
-    /**
-     * Checks that error is reported if the destination table is missing.
-     */
-    public void testMissingTable() {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                stmt.executeUpdate(
-                    "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into Peterson" +
-                        " (_key, age, firstName, lastName)" +
-                        " format csv");
-
-                return null;
-            }
-        }, SQLException.class, "Table does not exist: PETERSON");
-    }
-
-    /**
-     * Checks that error is reported when a non-existing column is specified in the SQL command.
-     */
-    public void testWrongColumnName() {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                stmt.executeUpdate(
-                    "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into Person" +
-                        " (_key, age, firstName, lostName)" +
-                        " format csv");
-
-                return null;
-            }
-        }, SQLException.class, "Column \"LOSTNAME\" not found");
-    }
-
-    /**
-     * Checks that error is reported if field read from CSV file cannot be converted to the type of the column.
-     */
-    public void testWrongColumnType() {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                stmt.executeUpdate(
-                    "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into Person" +
-                        " (_key, firstName, age, lastName)" +
-                        " format csv");
-
-                return null;
-            }
-        }, SQLException.class, "Value conversion failed [from=java.lang.String, to=java.lang.Integer]");
-    }
-
-    /**
-     * Checks that if even a subset of fields is imported, the imported fields are set correctly.
-     *
-     * @throws SQLException If failed.
-     */
-    public void testFieldsSubset() throws SQLException {
-        int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
-                " (_key, age, firstName)" +
-                " format csv");
+            "copy from \"" + BULKLOAD_UTF_CSV_FILE + "\" into " + TBL_NAME +
+            " (_key, age, firstName, lastName)" +
+            " format csv");
 
         assertEquals(2, updatesCnt);
 
-        checkCacheContents(TBL_NAME, false, 2);
-    }
-
-    /**
-     * Checks that bulk load works when we create table using 'CREATE TABLE' command.
-     *
-     * The majority of the tests in this class use {@link CacheConfiguration#setIndexedTypes(Class[])}
-     * to create the table.
-     *
-     * @throws SQLException If failed.
-     */
-    public void testCreateAndBulkLoadTable() throws SQLException {
-        String tblName = QueryUtils.DFLT_SCHEMA + ".\"PersonTbl\"";
-
-        execute(conn, "create table " + tblName +
-            " (id int primary key, age int, firstName varchar(30), lastName varchar(30))");
-
-        int updatesCnt = stmt.executeUpdate(
-            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + tblName +
-                "(_key, age, firstName, lastName)" +
-                " format csv");
-
-        assertEquals(2, updatesCnt);
-
-        checkCacheContents(tblName, true, 2);
-    }
-
-    /**
-     * Checks that bulk load works when we create table with {@link CacheConfiguration#setQueryEntities(Collection)}.
-     *
-     * The majority of the tests in this class use {@link CacheConfiguration#setIndexedTypes(Class[])}
-     * to create a table.
-     *
-     * @throws SQLException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    public void testConfigureQueryEntityAndBulkLoad() throws SQLException {
-        ignite(0).getOrCreateCache(cacheConfigWithQueryEntity());
-
-        int updatesCnt = stmt.executeUpdate(BASIC_SQL_COPY_STMT);
-
-        assertEquals(2, updatesCnt);
-
-        checkCacheContents(TBL_NAME, true, 2);
+        checkUtfCacheContents(TBL_NAME, true, 2);
     }
 
     /**
@@ -402,11 +259,150 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Verifies exception thrown if COPY is added into a batch.
+     * Imports two-entry CSV file with UTF-8 characters into a table using batch size of one byte
+     * (thus splitting each two-byte UTF-8 character into two batches)
+     * and checks the created entries using SELECT statement.
      *
      * @throws SQLException If failed.
      */
-    public void testMultipleStatement() throws SQLException {
+    public void testUtfBatchSize_1() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(
+            "copy from \"" + BULKLOAD_UTF_CSV_FILE + "\" into " + TBL_NAME +
+            " (_key, age, firstName, lastName)" +
+            " format csv batch_size 1");
+
+        assertEquals(2, updatesCnt);
+
+        checkUtfCacheContents(TBL_NAME, true, 2);
+    }
+
+    /**
+     * Checks that error is reported for a non-existent file.
+     */
+    public void testWrongFileName() {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.executeUpdate(
+                    "copy from \"nonexistent\" into Person" +
+                    " (_key, age, firstName, lastName)" +
+                    " format csv");
+
+                return null;
+            }
+        }, SQLException.class, "Failed to read file: 'nonexistent'");
+    }
+
+    /**
+     * Checks that error is reported if the destination table is missing.
+     */
+    public void testMissingTable() {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.executeUpdate(
+                    "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into Peterson" +
+                    " (_key, age, firstName, lastName)" +
+                    " format csv");
+
+                return null;
+            }
+        }, SQLException.class, "Table does not exist: PETERSON");
+    }
+
+    /**
+     * Checks that error is reported when a non-existing column is specified in the SQL command.
+     */
+    public void testWrongColumnName() {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.executeUpdate(
+                    "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into Person" +
+                    " (_key, age, firstName, lostName)" +
+                    " format csv");
+
+                return null;
+            }
+        }, SQLException.class, "Column \"LOSTNAME\" not found");
+    }
+
+    /**
+     * Checks that error is reported if field read from CSV file cannot be converted to the type of the column.
+     */
+    public void testWrongColumnType() {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.executeUpdate(
+                    "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into Person" +
+                    " (_key, firstName, age, lastName)" +
+                    " format csv");
+
+                return null;
+            }
+        }, SQLException.class, "Value conversion failed [from=java.lang.String, to=java.lang.Integer]");
+    }
+
+    /**
+     * Checks that if even a subset of fields is imported, the imported fields are set correctly.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testFieldsSubset() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(
+            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
+            " (_key, age, firstName)" +
+            " format csv");
+
+        assertEquals(2, updatesCnt);
+
+        checkCacheContents(TBL_NAME, false, 2);
+    }
+
+    /**
+     * Checks that bulk load works when we create table using 'CREATE TABLE' command.
+     * <p>
+     * The majority of the tests in this class use {@link CacheConfiguration#setIndexedTypes(Class[])}
+     * to create the table.
+     *
+     * @throws SQLException If failed.
+     */
+    public void testCreateAndBulkLoadTable() throws SQLException {
+        String tblName = QueryUtils.DFLT_SCHEMA + ".\"PersonTbl\"";
+
+        execute(conn, "create table " + tblName +
+            " (id int primary key, age int, firstName varchar(30), lastName varchar(30))");
+
+        int updatesCnt = stmt.executeUpdate(
+            "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + tblName +
+            "(_key, age, firstName, lastName)" +
+            " format csv");
+
+        assertEquals(2, updatesCnt);
+
+        checkCacheContents(tblName, true, 2);
+    }
+
+    /**
+     * Checks that bulk load works when we create table with {@link CacheConfiguration#setQueryEntities(Collection)}.
+     * <p>
+     * The majority of the tests in this class use {@link CacheConfiguration#setIndexedTypes(Class[])}
+     * to create a table.
+     *
+     * @throws SQLException If failed.
+     */
+    @SuppressWarnings("unchecked")
+    public void testConfigureQueryEntityAndBulkLoad() throws SQLException {
+        ignite(0).getOrCreateCache(cacheConfigWithQueryEntity());
+
+        int updatesCnt = stmt.executeUpdate(BASIC_SQL_COPY_STMT);
+
+        assertEquals(2, updatesCnt);
+
+        checkCacheContents(TBL_NAME, true, 2);
+    }
+
+    /**
+     * Verifies exception thrown if COPY is added into a batch.
+     */
+    public void testMultipleStatement() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 stmt.addBatch(BASIC_SQL_COPY_STMT);
@@ -428,10 +424,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
     /**
      * Verifies that COPY command is rejected by Statement.executeQuery().
-     *
-     * @throws SQLException If failed.
      */
-    public void testExecuteQuery() throws SQLException {
+    public void testExecuteQuery() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 stmt.executeQuery(BASIC_SQL_COPY_STMT);
@@ -471,16 +465,14 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
     /**
      * Verifies that COPY command reports an error when used with PreparedStatement parameter.
-     *
-     * @throws SQLException If failed.
      */
-    public void testPreparedStatementWithParameter() throws SQLException {
+    public void testPreparedStatementWithParameter() {
         GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     PreparedStatement pstmt = conn.prepareStatement(
                         "copy from \"" + BULKLOAD_TWO_LINES_CSV_FILE + "\" into " + TBL_NAME +
-                            " (_key, age, firstName, lastName)" +
-                            " format ?");
+                        " (_key, age, firstName, lastName)" +
+                        " format ?");
 
                     pstmt.setString(1, "csv");
 
