@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.sql;
 
-import java.lang.reflect.Field;
-import java.util.HashSet;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.typedef.F;
+
+import java.lang.reflect.Field;
+import java.util.HashSet;
 
 /**
  * SQL keyword constants.
