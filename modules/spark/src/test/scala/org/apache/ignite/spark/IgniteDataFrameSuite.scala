@@ -25,6 +25,8 @@ import org.scalatest.Suites
 class IgniteDataFrameSuite extends Suites (
     new IgniteDataFrameSchemaSpec,
     new IgniteSQLDataFrameSpec,
+    new IgniteSQLDataFrameWriteSpec,
+    new IgniteSQLDataFrameIgniteSessionWriteSpec,
     new IgniteDataFrameWrongConfigSpec,
     new IgniteCatalogSpec
 )
