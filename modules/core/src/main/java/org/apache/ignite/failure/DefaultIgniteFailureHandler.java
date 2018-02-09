@@ -32,6 +32,9 @@ public class DefaultIgniteFailureHandler implements IgniteFailureHandler {
             case EXCHANGE_WORKER_STOP:
                 return IgniteFailureAction.STOP;
 
+            case PERSISTENCE_ERROR:
+                return IgniteFailureAction.STOP;
+
             default:
                 assert false : "Unsupported Ignite failure type: " + type;
 

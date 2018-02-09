@@ -19,6 +19,7 @@ package org.apache.ignite.failure;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -28,6 +29,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 public class IgniteFailureProcessor {
     /** Instance. */
     public static final IgniteFailureProcessor INSTANCE = new IgniteFailureProcessor();
+
+    /** Stop timeout milliseconds. */
+    private static final long STOP_TIMEOUT_MS = 60 * 1000;
+
+    /** Lock. */
+    private final Object lock = new Object();
 
     /**
      * @param ctx Context.
@@ -42,7 +49,17 @@ public class IgniteFailureProcessor {
         if (hnd == null)
             hnd = IgniteFailureHandler.DFLT_HND;
 
-        final IgniteFailureAction act = hnd.onFailure(ctx, type, cause);
+        final IgniteFailureAction act;
+
+        synchronized (lock) {
+            if (ctx.invalidated())
+                return;
+
+            act = hnd.onFailure(ctx, type, cause);
+
+            if (act != IgniteFailureAction.NOOP)
+                ctx.invalidate();
+        }
 
         final IgniteLogger log = ctx.log(getClass());
 
@@ -94,7 +111,7 @@ public class IgniteFailureProcessor {
                 @Override public void run() {
                     ctx.failure(type);
 
-                    G.stop(ctx.igniteInstanceName(), true);
+                    IgnitionEx.stop(ctx.igniteInstanceName(), true, true, STOP_TIMEOUT_MS);
                 }
             }
         ).start();

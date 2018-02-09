@@ -660,16 +660,12 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public GridInternalSubscriptionProcessor internalSubscriptionProcessor();
 
     /**
-     * TODO: Should be replaced with proper implementation in https://issues.apache.org/jira/browse/IGNITE-6891
-     *
      * @return {@code true} if node was invalidated, false in other case.
      */
     public boolean invalidated();
 
     /**
      * Invalidates node.
-     *
-     * TODO: Should be replaced with proper implementation in https://issues.apache.org/jira/browse/IGNITE-6891
      */
     public void invalidate();
 }
