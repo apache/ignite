@@ -20,7 +20,6 @@ package org.apache.ignite.internal.jdbc2;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Properties;
 import org.apache.ignite.IgniteJdbcDriver;
@@ -38,9 +37,9 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * Data streaming test.
+ * Data streaming test for thick driver and no explicit caches.
  */
-public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
+public class JdbcNoCacheStreamingSelfTest extends GridCommonAbstractTest {
     /** JDBC URL. */
     private static final String BASE_URL = CFG_URL_PREFIX +
         "cache=default@modules/clients/src/test/config/jdbc-config.xml";
@@ -105,33 +104,16 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
      * @return Connection to use for the test.
      * @throws Exception if failed.
      */
-    protected Connection createStreamedConnection(boolean allowOverwrite) throws Exception {
-        return createStreamedConnection(allowOverwrite, 500);
-    }
-
-    /**
-     * @param allowOverwrite Allow overwriting of existing keys.
-     * @return Connection to use for the test.
-     * @throws Exception if failed.
-     */
-    protected Connection createStreamedConnection(boolean allowOverwrite, long flushTimeout) throws Exception {
+    protected Connection createConnection(boolean allowOverwrite) throws Exception {
         Properties props = new Properties();
 
         props.setProperty(IgniteJdbcDriver.PROP_STREAMING, "true");
-        props.setProperty(IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ, String.valueOf(flushTimeout));
+        props.setProperty(IgniteJdbcDriver.PROP_STREAMING_FLUSH_FREQ, "500");
 
         if (allowOverwrite)
             props.setProperty(IgniteJdbcDriver.PROP_STREAMING_ALLOW_OVERWRITE, "true");
 
         return DriverManager.getConnection(BASE_URL, props);
-    }
-
-    /**
-     * @return Connection without streaming turned on.
-     * @throws SQLException if failed.
-     */
-    protected Connection createOrdinaryConnection() throws SQLException {
-        return DriverManager.getConnection(BASE_URL, new Properties());
     }
 
     /** {@inheritDoc} */
@@ -150,7 +132,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         for (int i = 10; i <= 100; i += 10)
             ignite(0).cache(DEFAULT_CACHE_NAME).put(i, i * 100);
 
-        try (Connection conn = createStreamedConnection(false)) {
+        try (Connection conn = createConnection(false)) {
             try (PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)")) {
                 for (int i = 1; i <= 100; i++) {
                     stmt.setInt(1, i);
@@ -179,7 +161,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         for (int i = 10; i <= 100; i += 10)
             ignite(0).cache(DEFAULT_CACHE_NAME).put(i, i * 100);
 
-        try (Connection conn = createStreamedConnection(true)) {
+        try (Connection conn = createConnection(true)) {
             try (PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)")) {
                 for (int i = 1; i <= 100; i++) {
                     stmt.setInt(1, i);

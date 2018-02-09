@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -142,20 +143,19 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
         boolean first;
 
         if (first = (cursor == null)) {
-            IgniteCache<?, ?> cache = ignite.cache(cacheName);
+            IgniteCache<?, ?> cache;
 
-            // Don't create caches on server nodes in order to avoid of data rebalancing.
-            boolean start = ignite.configuration().isClientMode();
+            if (cacheName == null){
+                // Don't create caches on server nodes in order to avoid of data rebalancing.
+                boolean start = ignite.configuration().isClientMode();
 
-            if (cache == null && cacheName == null)
                 cache = ((IgniteKernal)ignite).context().cache().getOrStartPublicCache(start, !loc && locQry);
-
-            if (cache == null) {
-                if (cacheName == null)
-                    throw new SQLException("Failed to execute query. No suitable caches found.");
-                else
-                    throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
             }
+            else
+                cache = ignite.cache(cacheName);
+
+            if (cache == null && cacheName != null)
+                throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
 
             SqlFieldsQuery qry = (isQry != null ? new SqlFieldsQueryEx(sql, isQry) : new SqlFieldsQuery(sql))
                 .setArgs(args);
@@ -168,7 +168,9 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
             qry.setLazy(lazy());
             qry.setSchema(schemaName);
 
-            QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)cache.withKeepBinary().query(qry);
+            QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)(cache != null ?
+                cache.withKeepBinary().query(qry) :
+                ((IgniteEx)ignite).context().query().querySqlFields(qry, true));
 
             if (isQry == null)
                 isQry = qryCursor.isQuery();

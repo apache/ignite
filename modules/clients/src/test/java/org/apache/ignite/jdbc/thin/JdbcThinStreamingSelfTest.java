@@ -18,6 +18,7 @@
 package org.apache.ignite.jdbc.thin;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 import org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest;
 
 /**
@@ -25,12 +26,17 @@ import org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest;
  */
 public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
     /** {@inheritDoc} */
-    @Override protected Connection createConnection(boolean allowOverwrite) throws Exception {
-        Connection res = JdbcThinAbstractSelfTest.connect(grid(0), "streaming=true&streamingFlushFrequency=500&" +
-            "streamingAllowOverwrite=" + allowOverwrite);
+    @Override protected Connection createStreamedConnection(boolean allowOverwrite, long flushFreq) throws Exception {
+        Connection res = JdbcThinAbstractSelfTest.connect(grid(0), "streaming=true&streamingFlushFrequency="
+            + flushFreq + "&" + "streamingAllowOverwrite=" + allowOverwrite);
 
         res.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
         return res;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected Connection createOrdinaryConnection() throws SQLException {
+        return JdbcThinAbstractSelfTest.connect(grid(0), null);
     }
 }

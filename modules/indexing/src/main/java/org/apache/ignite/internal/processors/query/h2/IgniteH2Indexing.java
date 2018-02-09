@@ -1004,14 +1004,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Nullable Object[] params, SqlClientContext cliCtx) throws IgniteCheckedException {
         final Connection conn = connectionForSchema(schemaName);
 
-        final PreparedStatement stmt;
-
-        try {
-            stmt = prepareStatement(conn, qry, true);
-        }
-        catch (SQLException e) {
-            throw new IgniteSQLException(e);
-        }
+        final PreparedStatement stmt = prepareStatementAndCaches(conn, qry);
 
         if (GridSqlQueryParser.checkMultipleStatements(stmt))
             throw new IgniteSQLException("Multiple statements queries are not supported for streaming mode.",
