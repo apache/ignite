@@ -17,12 +17,13 @@
 
 package org.apache.ignite.spark.impl
 
-import org.apache.ignite.{Ignite, IgniteException}
+import org.apache.ignite.IgniteException
 import org.apache.ignite.cache.{CacheMode, QueryEntity}
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.spark.{IgniteContext, IgniteRDD}
 import org.apache.spark.Partition
+import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
@@ -37,7 +38,7 @@ import scala.collection.mutable.ArrayBuffer
 class IgniteSQLRelation[K, V](
     private[spark] val ic: IgniteContext,
     private[spark] val tableName: String)
-    (@transient val sqlContext: SQLContext) extends BaseRelation with PrunedFilteredScan {
+    (@transient val sqlContext: SQLContext) extends BaseRelation with PrunedFilteredScan with Logging {
 
     /**
       * @return Schema of Ignite SQL table.
@@ -55,6 +56,19 @@ class IgniteSQLRelation[K, V](
       * @return Apache Ignite RDD implementation.
       */
     override def buildScan(columns: Array[String], filters: Array[Filter]): RDD[Row] = {
+        val qryAndArgs = queryAndArgs(columns, filters)
+
+        IgniteSQLDataFrameRDD[K, V](ic, cacheName, schema, qryAndArgs._1, qryAndArgs._2, calcPartitions(filters))
+    }
+
+    override def toString = s"IgniteSQLRelation[table=$tableName]"
+
+    /**
+      * @param columns Columns to select.
+      * @param filters Filters to apply.
+      * @return SQL query string and arguments for it.
+      */
+    private def queryAndArgs(columns: Array[String], filters: Array[Filter]): (String, List[Any]) = {
         val columnsStr =
             if (columns.isEmpty)
                 "*"
@@ -65,82 +79,17 @@ class IgniteSQLRelation[K, V](
         //Query will be executed by Ignite SQL Engine.
         val qryAndArgs = filters match {
             case Array(_, _*) ⇒
-                val where = compileWhere(filters)
+                val where = QueryUtils.compileWhere(filters)
+
                 (s"SELECT $columnsStr FROM $tableName WHERE ${where._1}", where._2)
+
             case _ ⇒
                 (s"SELECT $columnsStr FROM $tableName", List.empty)
         }
 
-        IgniteSQLDataFrameRDD[K, V](ic, cacheName, schema, qryAndArgs._1, qryAndArgs._2, calcPartitions(filters))
-    }
+        logInfo(qryAndArgs._1)
 
-    override def toString = s"IgniteSQLRelation[table=$tableName]"
-
-    /**
-      * Builds `where` part of SQL query.
-      *
-      * @param filters Filter to apply.
-      * @return Tuple contains `where` string and `List[Any]` of query parameters.
-      */
-    private def compileWhere(filters: Array[Filter]): (String, List[Any]) =
-        filters.foldLeft(("", List[Any]()))(buildSingleClause)
-
-    /**
-      * Adds single where clause to `state` and returns new state.
-      *
-      * @param state Current `where` state.
-      * @param clause Clause to add.
-      * @return `where` with given clause.
-      */
-    private def buildSingleClause(state: (String, List[Any]), clause: Filter): (String, List[Any]) = {
-        val filterStr = state._1
-        val params = state._2
-
-        clause match {
-            case EqualTo(attr, value) ⇒ (addStrClause(filterStr, s"$attr = ?"), params :+ value)
-
-            case EqualNullSafe(attr, value) ⇒ (addStrClause(filterStr, s"($attr IS NULL OR $attr = ?)"), params :+ value)
-
-            case GreaterThan(attr, value) ⇒ (addStrClause(filterStr, s"$attr > ?"), params :+ value)
-
-            case GreaterThanOrEqual(attr, value) ⇒ (addStrClause(filterStr, s"$attr >= ?"), params :+ value)
-
-            case LessThan(attr, value) ⇒ (addStrClause(filterStr, s"$attr < ?"), params :+ value)
-
-            case LessThanOrEqual(attr, value) ⇒ (addStrClause(filterStr, s"$attr <= ?"), params :+ value)
-
-            case In(attr, values) ⇒ (addStrClause(filterStr, s"$attr IN (${values.map(_ ⇒ "?").mkString(",")})"), params ++ values)
-
-            case IsNull(attr) ⇒ (addStrClause(filterStr, s"$attr IS NULL"), params)
-
-            case IsNotNull(attr) ⇒ (addStrClause(filterStr, s"$attr IS NOT NULL"), params)
-
-            case And(left, right) ⇒
-                val leftClause = buildSingleClause(("", params), left)
-                val rightClause = buildSingleClause(("", leftClause._2), right)
-
-                (addStrClause(filterStr, s"${leftClause._1} AND ${rightClause._1}"), rightClause._2)
-
-            case Or(left, right) ⇒
-                val leftClause = buildSingleClause(("", params), left)
-                val rightClause = buildSingleClause(("", leftClause._2), right)
-
-                (addStrClause(filterStr, s"${leftClause._1} OR ${rightClause._1}"), rightClause._2)
-
-            case Not(child) ⇒
-                val innerClause = buildSingleClause(("", params), child)
-
-                (addStrClause(filterStr, s"NOT ${innerClause._1}"), innerClause._2)
-
-            case StringStartsWith(attr, value) ⇒
-                (addStrClause(filterStr, s"$attr LIKE ?"), params :+ (value + "%"))
-
-            case StringEndsWith(attr, value) ⇒
-                (addStrClause(filterStr, s"$attr LIKE ?"), params :+ ("%" + value))
-
-            case StringContains(attr, value) ⇒
-                (addStrClause(filterStr, s"$attr LIKE ?"), params :+ ("%" + value + "%"))
-        }
+        qryAndArgs
     }
 
     private def calcPartitions(filters: Array[Filter]): Array[Partition] = {
