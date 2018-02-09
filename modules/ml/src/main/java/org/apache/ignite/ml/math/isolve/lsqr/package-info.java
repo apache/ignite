@@ -15,25 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
-
-import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer;
-
 /**
- * Interface for Trainers. Trainer is just a function which produces model from the data.
- * See for example {@link ColumnDecisionTreeTrainer}.
- *
- * @param <M> Type of produced model.
- * @param <T> Type of data needed for model producing.
+ * <!-- Package description. -->
+ * Contains LSQR algorithm implementation.
  */
-// TODO: IGNITE-7659: Reduce multiple Trainer interfaces to one
-@Deprecated
-public interface Trainer<M extends Model, T> {
-    /**
-     * Returns model based on data
-     *
-     * @param data data to build model
-     * @return model
-     */
-    M train(T data);
-}
+package org.apache.ignite.ml.math.isolve.lsqr;
