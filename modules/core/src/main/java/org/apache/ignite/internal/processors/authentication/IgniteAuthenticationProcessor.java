@@ -161,7 +161,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         readyFutCompletor = new Runnable() {
             @Override public void run() {
-//                log.info("+++ READY");
+                log.info("+++ READY");
                 readyFut.onDone();
             }
         };

@@ -553,6 +553,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                     U.error(log, "Unexpected exception on coordinator restart", e);
                     fail();
                 }
+                System.out.println("+++ END RESTART ");
             }
         });
     }
