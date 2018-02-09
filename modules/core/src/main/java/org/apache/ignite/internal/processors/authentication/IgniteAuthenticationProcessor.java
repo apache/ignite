@@ -172,14 +172,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
     }
 
-    /**
-     * @param n Node.
-     * @return {@code true} if node holds user information. Otherwise returns {@code false}.
-     */
-    private static boolean isNodeHoldsUsers(ClusterNode n) {
-        return !n.isClient() && !n.isDaemon();
-    }
-
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         super.start();
@@ -416,6 +408,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
+        if (!isEnabled)
+            return;
+
         synchronized (muxChangeUserVer) {
             if (!dataBag.commonDataCollectedFor(AUTH_PROC.ordinal())) {
                 InitialUsersData d = new InitialUsersData(users.values(), activeOperations, usersInfoVer);
@@ -430,6 +425,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void onGridDataReceived(DiscoveryDataBag.GridDiscoveryData data) {
+        if (!isEnabled)
+            return;
+
         initUsrs = (InitialUsersData)data.commonData();
     }
 
@@ -864,6 +862,14 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             U.error(log, "Failed to send UserManagementOperationFinishedMessage. [op=" + msg.operationId() +
                 ", node=" + coordinator() + ", err=" + msg.errorMessage() + ']', e);
         }
+    }
+
+    /**
+     * @param n Node.
+     * @return {@code true} if node holds user information. Otherwise returns {@code false}.
+     */
+    private static boolean isNodeHoldsUsers(ClusterNode n) {
+        return !n.isClient() && !n.isDaemon();
     }
 
     /**
