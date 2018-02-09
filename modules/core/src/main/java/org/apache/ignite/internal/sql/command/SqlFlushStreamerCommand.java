@@ -17,11 +17,7 @@
 
 package org.apache.ignite.internal.sql.command;
 
-import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlLexer;
-import org.apache.ignite.internal.sql.SqlLexerTokenType;
-import org.apache.ignite.internal.sql.SqlParserUtils;
-import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * FLUSH STREAMER command.
@@ -29,10 +25,7 @@ import org.apache.ignite.internal.util.typedef.F;
 public class SqlFlushStreamerCommand implements SqlCommand {
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
-        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT && F.eq(lex.token(), SqlKeyword.STREAMER))
-            return this;
-
-        throw SqlParserUtils.errorUnexpectedToken(lex, SqlKeyword.STREAMER);
+        return this;
     }
 
     /** {@inheritDoc} */

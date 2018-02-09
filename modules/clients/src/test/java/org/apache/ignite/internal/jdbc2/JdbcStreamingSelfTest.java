@@ -20,7 +20,6 @@ package org.apache.ignite.internal.jdbc2;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Properties;
 import org.apache.ignite.IgniteJdbcDriver;
@@ -44,9 +43,6 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     /** JDBC URL. */
     private static final String BASE_URL = CFG_URL_PREFIX +
         "cache=default@modules/clients/src/test/config/jdbc-config.xml";
-
-    /** Connection. */
-    protected Connection conn;
 
     /** */
     protected transient IgniteLogger log;
@@ -126,18 +122,8 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         return DriverManager.getConnection(BASE_URL, props);
     }
 
-    /**
-     * @return Connection without streaming turned on.
-     * @throws SQLException if failed.
-     */
-    protected Connection createOrdinaryConnection() throws SQLException {
-        return DriverManager.getConnection(BASE_URL, new Properties());
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        U.closeQuiet(conn);
-
         ignite(0).cache(DEFAULT_CACHE_NAME).clear();
 
         super.afterTest();

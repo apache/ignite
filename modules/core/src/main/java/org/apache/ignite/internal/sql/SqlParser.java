@@ -24,6 +24,7 @@ import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlFlushStreamerCommand;
 import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
+import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.ALTER;
@@ -126,7 +127,7 @@ public class SqlParser {
                             break;
 
                         case FLUSH:
-                            cmd = new SqlFlushStreamerCommand();
+                            cmd = processFlush();
 
                             break;
                     }
@@ -151,6 +152,22 @@ public class SqlParser {
                     throw errorUnexpectedToken(lex);
             }
         }
+    }
+
+    /**
+     * Process FLUSH keyword.
+     *
+     * @return Command.
+     */
+    private SqlCommand processFlush() {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
+            switch (lex.token()) {
+                case SqlKeyword.STREAMER:
+                    return new SqlFlushStreamerCommand().parse(lex);
+            }
+        }
+
+        throw SqlParserUtils.errorUnexpectedToken(lex, SqlKeyword.STREAMER);
     }
 
     /**

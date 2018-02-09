@@ -36,7 +36,6 @@ import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -145,19 +144,20 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
         boolean first;
 
         if (first = (cursor == null)) {
-            IgniteCache<?, ?> cache;
+            IgniteCache<?, ?> cache = ignite.cache(cacheName);
 
-            if (cacheName == null){
-                // Don't create caches on server nodes in order to avoid of data rebalancing.
-                boolean start = ignite.configuration().isClientMode();
+            // Don't create caches on server nodes in order to avoid of data rebalancing.
+            boolean start = ignite.configuration().isClientMode();
 
+            if (cache == null && cacheName == null)
                 cache = ((IgniteKernal)ignite).context().cache().getOrStartPublicCache(start, !loc && locQry);
-            }
-            else
-                cache = ignite.cache(cacheName);
 
-            if (cache == null && cacheName != null)
-                throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
+            if (cache == null) {
+                if (cacheName == null)
+                    throw new SQLException("Failed to execute query. No suitable caches found.");
+                else
+                    throw new SQLException("Cache not found [cacheName=" + cacheName + ']');
+            }
 
             SqlFieldsQuery qry = (isQry != null ? new SqlFieldsQueryEx(sql, isQry) : new SqlFieldsQuery(sql))
                 .setArgs(args);
@@ -170,20 +170,18 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
             qry.setLazy(lazy());
             qry.setSchema(schemaName);
 
-            FieldsQueryCursor<List<?>> qryCursor = (cache != null ?
-                cache.withKeepBinary().query(qry) :
-                ((IgniteEx)ignite).context().query().querySqlFields(qry, true));
+            FieldsQueryCursor<List<?>> fldQryCursor = cache.withKeepBinary().query(qry);
 
-            if (qryCursor instanceof BulkLoadContextCursor) {
-                qryCursor.close();
-
+            if (fldQryCursor instanceof BulkLoadContextCursor) {
+                fldQryCursor.close();
+                
                 throw new SQLException("COPY command is currently supported only in thin JDBC driver.");
             }
 
-            assert qryCursor instanceof QueryCursorImpl;
+            QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)fldQryCursor;
 
             if (isQry == null)
-                isQry = ((QueryCursorImpl)qryCursor).isQuery();
+                isQry = qryCursor.isQuery();
 
             CURSORS.put(uuid, cursor = new Cursor(qryCursor, qryCursor.iterator()));
         }

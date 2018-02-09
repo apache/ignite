@@ -1585,29 +1585,35 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 code, e);
         }
 
-        if (cliCtx != null) {
-            if (cmd instanceof SqlSetStreamingCommand) {
-                if (((SqlSetStreamingCommand)cmd).isTurnOn())
-                    cliCtx.enableStreaming();
-                else
-                    cliCtx.disableStreaming();
-            }
-            else if (cmd instanceof SqlFlushStreamerCommand)
-                cliCtx.flushOpenStreamers();
-            else if (cliCtx.isStream()) {
-                // We should not allow DDL statements in streaming mode.
-                throw new IgniteSQLException("Only tuple based INSERT statements and SET/FLUSH are supported " +
-                    "in streaming mode", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-            }
-        }
-
         // Execute.
         if (cmd instanceof SqlBulkLoadCommand) {
             FieldsQueryCursor<List<?>> cursor = dmlProc.runNativeDmlStatement(sql, cmd);
 
             return Collections.singletonList(cursor);
         }
+        else if (cmd instanceof SqlSetStreamingCommand) {
+            if (cliCtx != null) {
+                if (((SqlSetStreamingCommand) cmd).isTurnOn())
+                    cliCtx.enableStreaming();
+                else
+                    cliCtx.disableStreaming();
+            }
+
+            return Collections.singletonList(DdlStatementsProcessor.zeroCursor());
+        }
+        else if (cmd instanceof SqlFlushStreamerCommand) {
+            if (cliCtx != null)
+                cliCtx.flushOpenStreamers();
+
+            return Collections.singletonList(DdlStatementsProcessor.zeroCursor());
+        }
         else {
+            if (cliCtx != null && cliCtx.isStream()) {
+                // We should not allow DDL statements in streaming mode.
+                throw new IgniteSQLException("Only tuple based INSERT statements and SET/FLUSH are supported " +
+                    "in streaming mode", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            }
+
             try {
                 FieldsQueryCursor<List<?>> cursor = ddlProc.runDdlStatement(sql, cmd);
 
@@ -1773,8 +1779,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     throw new IgniteSQLException("DDL statements are not supported for LOCAL caches",
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-                if (cliCtx != null)
-                    cliCtx.flushOpenStreamers();
+                ctx.query().flushAllSqlStreams();
 
                 try {
                     return Collections.singletonList(ddlProc.runDdlStatement(sqlQry, prepared));

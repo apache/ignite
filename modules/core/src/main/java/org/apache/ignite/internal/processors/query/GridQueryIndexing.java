@@ -76,7 +76,7 @@ public interface GridQueryIndexing {
      * Detect whether SQL query should be executed in distributed or local manner and execute it.
      * @param schemaName Schema name.
      * @param qry Query.
-     * @param cliCtx
+     * @param cliCtx Client context.
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts Whether an exception should be thrown for multiple statements query.
      * @param cancel Query cancel state handler.    @return Cursor.
