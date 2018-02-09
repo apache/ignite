@@ -2075,7 +2075,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, cancel);
 
                     if (cctx != null)
-                        sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx.name());
+                        sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx);
 
                     return res;
                 }
@@ -2211,7 +2211,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         sendQueryExecutedEvent(
                             qry.getSql(),
                             qry.getArgs(),
-                            cctx.name());
+                            cctx);
 
                         if (cctx.config().getQueryParallelism() > 1) {
                             qry.setDistributedJoins(true);
@@ -2375,14 +2375,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param sqlQry Sql query.
      * @param params Params.
      */
-    private void sendQueryExecutedEvent(String sqlQry, Object[] params, String cacheName) {
-        if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+    private void sendQueryExecutedEvent(String sqlQry, Object[] params, GridCacheContext<?, ?> cctx) {
+        if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
             ctx.event().record(new CacheQueryExecutedEvent<>(
                 ctx.discovery().localNode(),
                 "SQL query executed.",
                 EVT_CACHE_QUERY_EXECUTED,
                 CacheQueryType.SQL.name(),
-                cacheName,
+                cctx.name(),
                 null,
                 sqlQry,
                 null,

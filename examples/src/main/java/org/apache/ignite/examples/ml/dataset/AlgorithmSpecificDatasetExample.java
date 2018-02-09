@@ -42,11 +42,13 @@ import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
  * {@link DatasetWrapper}) in a sequential manner.
  *
  * In this example we need to implement gradient descent. This is iterative method that involves calculation of gradient
- * on every step. In according with the common idea we defines {@link AlgorithmSpecificDataset} - extended version
- * of {@code Dataset} with {@code gradient} method. As result our gradient descent method looks like a simple loop where
- * every iteration includes call of the {@code gradient} method. In the example we want to keep iteration number as well
- * for logging. Iteration number cannot be recovered from the {@code upstream} data and we need to keep it in the custom
- * partition {@code context} which is represented by {@link AlgorithmSpecificPartitionContext} class.
+ * on every step. In according with the common idea we defines
+ * {@link AlgorithmSpecificDatasetExample.AlgorithmSpecificDataset} - extended version of {@code Dataset} with
+ * {@code gradient} method. As result our gradient descent method looks like a simple loop where every iteration
+ * includes call of the {@code gradient} method. In the example we want to keep iteration number as well for logging.
+ * Iteration number cannot be recovered from the {@code upstream} data and we need to keep it in the custom
+ * partition {@code context} which is represented by
+ * {@link AlgorithmSpecificDatasetExample.AlgorithmSpecificPartitionContext} class.
  */
 public class AlgorithmSpecificDatasetExample {
     /** Run example. */

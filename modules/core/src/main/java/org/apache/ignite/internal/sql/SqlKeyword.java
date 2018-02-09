@@ -42,6 +42,9 @@ public class SqlKeyword {
     /** Keyword: BOOL. */
     public static final String BOOL = "BOOL";
 
+    /** Keyword: BATCH_SIZE. */
+    public static final String BATCH_SIZE = "BATCH_SIZE";
+
     /** Keyword: BOOLEAN. */
     public static final String BOOLEAN = "BOOLEAN";
 
@@ -53,6 +56,9 @@ public class SqlKeyword {
 
     /** Keyword: CHARACTER. */
     public static final String CHARACTER = "CHARACTER";
+
+    /** Keyword: COPY. */
+    public static final String COPY = "COPY";
 
     /** Keyword: CREATE. */
     public static final String CREATE = "CREATE";
@@ -93,6 +99,12 @@ public class SqlKeyword {
     /** Keyword: FLUSH. */
     public static final String FLUSH = "FLUSH";
 
+    /** Keyword: FORMAT. */
+    public static final String FORMAT = "FORMAT";
+
+    /** Keyword: FROM. */
+    public static final String FROM = "FROM";
+
     /** Keyword: FULLTEXT. */
     public static final String FULLTEXT = "FULLTEXT";
 
@@ -122,6 +134,9 @@ public class SqlKeyword {
 
     /** Keyword: INTEGER. */
     public static final String INTEGER = "INTEGER";
+
+    /** Keyword: INTO. */
+    public static final String INTO = "INTO";
 
     /** Keyword: KEY. */
     public static final String KEY = "KEY";

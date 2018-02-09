@@ -60,12 +60,31 @@ public class IgnitePdsTestSuite2 extends TestSuite {
 
         addRealPageStoreTests(suite);
 
+        addRealPageStoreTestsLongRunning(suite);
+
         // BaselineTopology tests
         suite.addTestSuite(IgniteAllBaselineNodesOnlineFullApiSelfTest.class);
         suite.addTestSuite(IgniteOfflineBaselineNodeFullApiSelfTest.class);
         suite.addTestSuite(IgniteOnlineNodeOutOfBaselineFullApiSelfTest.class);
 
         return suite;
+    }
+
+    /**
+     * Fills {@code suite} with PDS test subset, which operates with real page store, but requires long time to execute.
+     *
+     * @param suite suite to add tests into.
+     */
+    public static void addRealPageStoreTestsLongRunning(TestSuite suite) {
+        suite.addTestSuite(IgnitePdsTransactionsHangTest.class);
+
+        suite.addTestSuite(IgnitePdsPageEvictionDuringPartitionClearTest.class);
+
+        // Rebalancing test
+        suite.addTestSuite(IgnitePdsContinuousRestartTest.class);
+        suite.addTestSuite(IgnitePdsContinuousRestartTest2.class);
+
+        suite.addTestSuite(IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes.class);
     }
 
     /**
@@ -81,21 +100,13 @@ public class IgnitePdsTestSuite2 extends TestSuite {
         // Metrics test.
         suite.addTestSuite(IgniteDataStorageMetricsSelfTest.class);
 
-        suite.addTestSuite(IgnitePdsTransactionsHangTest.class);
-
         suite.addTestSuite(IgnitePdsRebalancingOnNotStableTopologyTest.class);
 
         suite.addTestSuite(IgnitePdsWholeClusterRestartTest.class);
 
-        suite.addTestSuite(IgnitePdsPageEvictionDuringPartitionClearTest.class);
 
         // Rebalancing test
         suite.addTestSuite(IgniteWalHistoryReservationsTest.class);
-
-        suite.addTestSuite(IgnitePdsContinuousRestartTest.class);
-        suite.addTestSuite(IgnitePdsContinuousRestartTest2.class);
-
-        suite.addTestSuite(IgnitePdsContinuousRestartTestWithSharedGroupAndIndexes.class);
 
         suite.addTestSuite(IgnitePersistentStoreDataStructuresTest.class);
 

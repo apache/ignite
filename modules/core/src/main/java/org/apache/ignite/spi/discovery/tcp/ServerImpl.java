@@ -1091,7 +1091,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     log.debug("Concurrent discovery SPI start has been detected (local node should wait).");
 
                 try {
-                    U.sleep(2000);
+                    U.sleep(spi.getReconnectDelay());
                 }
                 catch (IgniteInterruptedCheckedException e) {
                     throw new IgniteSpiException("Thread has been interrupted.", e);
@@ -1125,7 +1125,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 try {
-                    U.sleep(2000);
+                    U.sleep(spi.getReconnectDelay());
                 }
                 catch (IgniteInterruptedCheckedException ex) {
                     throw new IgniteSpiException("Thread has been interrupted.", ex);

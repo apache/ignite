@@ -25,11 +25,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.AffinityFunctionContext;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -40,8 +45,15 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.TestDelayingCommunicationSpi;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -61,6 +73,9 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
     /** */
     private static final int NODE_COUNT = 4;
+
+    /** */
+    private static boolean delayRebalance = false;
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
@@ -105,6 +120,9 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         if (client)
             cfg.setClientMode(true);
+
+        if (delayRebalance)
+            cfg.setCommunicationSpi(new DelayRebalanceCommunicationSpi());
 
         return cfg;
     }
@@ -594,7 +612,10 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         assertEquals(val2, primary.cache(CACHE_NAME).get(key));
         assertEquals(val2, backup.cache(CACHE_NAME).get(key));
 
-        primary.cache(CACHE_NAME).rebalance().get();
+        for (int i = 0; i < NODE_COUNT; i++)
+            grid(i).cache(CACHE_NAME).rebalance().get();
+
+        awaitPartitionMapExchange();
 
         affNodes = (List<ClusterNode>) ig.affinity(CACHE_NAME).mapKeyToPrimaryAndBackups(key);
 
@@ -697,6 +718,83 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         assertTrue(ig.affinity(inMemoryCache.getName()).allPartitions(newNode.cluster().localNode()).length > 0);
     }
 
+    /**
+     * @throws Exception if failed.
+     */
+    public void testAffinityAssignmentChangedAfterRestart() throws Exception {
+        delayRebalance = false;
+
+        int parts = 32;
+
+        final List<Integer> partMapping = new ArrayList<>();
+
+        for (int p = 0; p < parts; p++)
+            partMapping.add(p);
+
+        final AffinityFunction affFunc = new TestAffinityFunction(new RendezvousAffinityFunction(false, parts));
+
+        TestAffinityFunction.partsAffMapping = partMapping;
+
+        String cacheName = CACHE_NAME + 2;
+
+        startGrids(4);
+
+        IgniteEx ig = grid(0);
+
+        ig.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cache = ig.createCache(
+            new CacheConfiguration<Integer, Integer>()
+                .setName(cacheName)
+                .setCacheMode(PARTITIONED)
+                .setBackups(1)
+                .setPartitionLossPolicy(READ_ONLY_SAFE)
+                .setReadFromBackup(true)
+                .setWriteSynchronizationMode(FULL_SYNC)
+                .setRebalanceDelay(-1)
+                .setAffinity(affFunc));
+
+        Map<Integer, String> keyToConsId = new HashMap<>();
+
+        for (int k = 0; k < 1000; k++) {
+            cache.put(k, k);
+
+            keyToConsId.put(k, ig.affinity(cacheName).mapKeyToNode(k).consistentId().toString());
+        }
+
+        stopAllGrids();
+
+        Collections.shuffle(TestAffinityFunction.partsAffMapping, new Random(1));
+
+        delayRebalance = true;
+
+        startGrids(4);
+
+        ig = grid(0);
+
+        ig.active(true);
+
+        cache = ig.cache(cacheName);
+
+        GridDhtPartitionFullMap partMap = ig.cachex(cacheName).context().topology().partitionMap(false);
+
+        for (int i = 1; i < 4; i++) {
+            IgniteEx ig0 = grid(i);
+
+            for (int p = 0; p < 32; p++)
+                assertEqualsCollections(ig.affinity(cacheName).mapPartitionToPrimaryAndBackups(p), ig0.affinity(cacheName).mapPartitionToPrimaryAndBackups(p));
+        }
+
+        for (Map.Entry<Integer, String> e : keyToConsId.entrySet()) {
+            int p = ig.affinity(cacheName).partition(e.getKey());
+
+            assertEquals("p=" + p, GridDhtPartitionState.OWNING, partMap.get(ig.affinity(cacheName).mapKeyToNode(e.getKey()).id()).get(p));
+        }
+
+        for (int k = 0; k < 1000; k++)
+            assertEquals("k=" + k, Integer.valueOf(k), cache.get(k));
+    }
+
     /** */
     private Collection<BaselineNode> baselineNodes(Collection<ClusterNode> clNodes) {
         Collection<BaselineNode> res = new ArrayList<>(clNodes.size());
@@ -756,6 +854,75 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
             result = 31 * result + f4;
 
             return result;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestAffinityFunction implements AffinityFunction {
+        /** */
+        private final AffinityFunction delegate;
+
+        /** */
+        private static List<Integer> partsAffMapping;
+
+        /** */
+        public TestAffinityFunction(AffinityFunction delegate) {
+            this.delegate = delegate;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void reset() {
+            delegate.reset();;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partitions() {
+            return delegate.partitions();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partition(Object key) {
+            return delegate.partition(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
+            List<List<ClusterNode>> res0 = delegate.assignPartitions(affCtx);
+
+            List<List<ClusterNode>> res = new ArrayList<>(res0.size());
+
+            for (int p = 0; p < res0.size(); p++)
+                res.add(p, null);
+
+            for (int p = 0; p < res0.size(); p++)
+                res.set(partsAffMapping.get(p), res0.get(p));
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeNode(UUID nodeId) {
+            delegate.removeNode(nodeId);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class DelayRebalanceCommunicationSpi extends TestDelayingCommunicationSpi {
+        /** {@inheritDoc} */
+        @Override protected boolean delayMessage(Message msg, GridIoMessage ioMsg) {
+            if (msg != null && (msg instanceof GridDhtPartitionDemandMessage || msg instanceof GridDhtPartitionSupplyMessage))
+                return true;
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected int delayMillis() {
+            return 1_000_000;
         }
     }
 }
