@@ -199,7 +199,7 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
             @Override public Object call() throws Exception {
                 return executeSql("SELECT * from Person");
             }
-        }, IgniteSQLException.class, "Failed to parse query: SELECT * from Person");
+        }, IgniteSQLException.class, "Table \"PERSON\" not found");
     }
 
     /**
@@ -330,7 +330,7 @@ public abstract class H2DynamicIndexingComplexTest extends DynamicIndexAbstractS
      * @return Run result.
      */
     private List<List<?>> executeSql(IgniteEx node, String stmt, Object... args) {
-        return node.context().query().querySqlFieldsNoCache(new SqlFieldsQuery(stmt).setArgs(args), true).getAll();
+        return node.context().query().querySqlFields(new SqlFieldsQuery(stmt).setArgs(args), true).getAll();
     }
 
     /**

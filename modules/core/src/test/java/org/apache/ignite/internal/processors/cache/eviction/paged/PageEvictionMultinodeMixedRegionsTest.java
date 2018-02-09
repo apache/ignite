@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- *
+ * Enables but not touches persistent region, checks page eviction and PDS+no PDS mode.
  */
 public class PageEvictionMultinodeMixedRegionsTest extends PageEvictionMultinodeTest {
     /** {@inheritDoc} */
@@ -34,7 +34,8 @@ public class PageEvictionMultinodeMixedRegionsTest extends PageEvictionMultinode
 
         DataRegionConfiguration persReg = new DataRegionConfiguration()
             .setName("persisted")
-            .setPersistenceEnabled(true);
+            .setPersistenceEnabled(true)
+            .setMaxSize(128 * 1024 * 1024); // limit memory to save space on agents
 
         cfg.getDataStorageConfiguration().setDataRegionConfigurations(persReg);
 
