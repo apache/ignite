@@ -225,6 +225,19 @@ public class SqlParserUtils {
     }
 
     /**
+     * Skip next token if it matches expected type.
+     *
+     * @param lex Lexer.
+     * @param tokenTyp Expected token type.
+     */
+    public static void skipIfMatches(SqlLexer lex, SqlLexerTokenType tokenTyp) {
+        if (lex.shift() && F.eq(lex.tokenType(), tokenTyp))
+            return;
+
+        throw errorUnexpectedToken(lex, tokenTyp.asString());
+    }
+
+    /**
      * Create parse exception referring to current lexer position.
      *
      * @param token Token.

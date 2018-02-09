@@ -2412,7 +2412,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private boolean isDaemon() {
         assert cfg != null;
 
-        return cfg.isDaemon() || "true".equalsIgnoreCase(System.getProperty(IGNITE_DAEMON));
+        return cfg.isDaemon() || IgniteSystemProperties.getBoolean(IGNITE_DAEMON);
     }
 
     /**

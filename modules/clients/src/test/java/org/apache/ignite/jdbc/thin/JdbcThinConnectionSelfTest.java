@@ -75,6 +75,14 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     /** */
     private static final String URL = "jdbc:ignite:thin://127.0.0.1";
 
+    /** Client key store path. */
+    private static final String CLI_KEY_STORE_PATH = U.getIgniteHome() +
+        "/modules/clients/src/test/keystore/client.jks";
+
+    /** Server key store path. */
+    private static final String SRV_KEY_STORE_PATH = U.getIgniteHome() +
+        "/modules/clients/src/test/keystore/server.jks";
+
     /** {@inheritDoc} */
     @SuppressWarnings("deprecation")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -272,16 +280,16 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testTcpNoDelay() throws Exception {
         assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=0",
-            "Failed to parse boolean property [name=tcpNoDelay, value=0]");
+            "Invalid property value. [name=tcpNoDelay, val=0, choices=[true, false]]");
 
         assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=1",
-            "Failed to parse boolean property [name=tcpNoDelay, value=1]");
+            "Invalid property value. [name=tcpNoDelay, val=1, choices=[true, false]]");
 
         assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=false1",
-            "Failed to parse boolean property [name=tcpNoDelay, value=false1]");
+            "Invalid property value. [name=tcpNoDelay, val=false1, choices=[true, false]]");
 
         assertInvalid("jdbc:ignite:thin://127.0.0.1?tcpNoDelay=true1",
-            "Failed to parse boolean property [name=tcpNoDelay, value=true1]");
+            "Invalid property value. [name=tcpNoDelay, val=true1, choices=[true, false]]");
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
             assertTrue(io(conn).connectionProperties().isTcpNoDelay());
@@ -312,7 +320,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
     public void testAutoCloseServerCursorProperty() throws Exception {
         String url = "jdbc:ignite:thin://127.0.0.1?autoCloseServerCursor";
 
-        String err = "Failed to parse boolean property [name=autoCloseServerCursor";
+        String err = "Invalid property value. [name=autoCloseServerCursor";
 
         assertInvalid(url + "=0", err);
         assertInvalid(url + "=1", err);
@@ -1815,6 +1823,22 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             ctor.setAccessible(acc);
         }
+    }
+
+    /**
+     */
+    public void testSslClientAndPlainServer()  {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?sslMode=require" +
+                    "&sslClientCertificateKeyStoreUrl=" + CLI_KEY_STORE_PATH +
+                    "&sslClientCertificateKeyStorePassword=123456" +
+                    "&sslTrustCertificateKeyStoreUrl=" + SRV_KEY_STORE_PATH +
+                    "&sslTrustCertificateKeyStorePassword=123456");
+
+                return null;
+            }
+        }, SQLException.class, "Failed to SSL connect to server");
     }
 
     /**
