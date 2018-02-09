@@ -27,7 +27,7 @@ import java.util.Arrays;
  * This implementation is based on SciPy implementation.
  * SciPy implementation: https://github.com/scipy/scipy/blob/master/scipy/sparse/linalg/isolve/lsqr.py#L98.
  */
-// TODO: IGNITE-7660: Refactor LSQR algorithm
+// TODO: IGNITE-7660: Refactor LSQR algorithm.
 public abstract class AbstractLSQR {
     /** The smallest representable positive number such that 1.0 + eps != 1.0. */
     private static final double eps = Double.longBitsToDouble(Double.doubleToLongBits(1.0) | 1) - 1.0;
