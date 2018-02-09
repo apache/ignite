@@ -68,6 +68,11 @@ public class RecordSerializerFactoryImpl implements RecordSerializerFactory {
                 return new RecordV2Serializer(dataV2Serializer,
                     writePointer, marshalledMode, skipPositionCheck, recordDeserializeFilter);
 
+            case 3:
+                RecordDataV3Serializer dataV3Serializer = new RecordDataV3Serializer(new RecordDataV2Serializer(new RecordDataV1Serializer(cctx)));
+
+                return new RecordV3Serializer(dataV3Serializer,
+                        writePointer, marshalledMode, skipPositionCheck, recordDeserializeFilter);
             default:
                 throw new IgniteCheckedException("Failed to create a serializer with the given version " +
                     "(forward compatibility is not supported): " + ver);

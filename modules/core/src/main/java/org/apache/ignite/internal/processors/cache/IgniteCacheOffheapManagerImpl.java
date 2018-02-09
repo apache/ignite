@@ -1266,13 +1266,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         /** {@inheritDoc} */
-        @Override public void update(GridCacheContext cctx,KeyCacheObject key,
-
-            CacheObject val,
-            GridCacheVersion ver,
-            long expireTime,
-            @Nullable CacheDataRow oldRow,
-        @Nullable WALPointer reference) throws IgniteCheckedException {
+        @Override public void update(
+                GridCacheContext cctx,
+                KeyCacheObject key,
+                CacheObject val,
+                GridCacheVersion ver,
+                long expireTime,
+                @Nullable CacheDataRow oldRow,
+                @Nullable WALPointer reference) throws IgniteCheckedException {
             assert oldRow == null || oldRow.link() != 0L : oldRow;
 
             if (!busyLock.enterBusy())

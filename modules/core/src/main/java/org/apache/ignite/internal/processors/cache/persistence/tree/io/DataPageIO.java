@@ -44,7 +44,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
 
     /** {@inheritDoc} */
     @Override
-    protected void writeFragmentData(
+    public void writeFragmentData(
         final CacheDataRow row,
         final ByteBuffer buf,
         final int rowOff,
@@ -245,88 +245,41 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     @Override
     protected void writeRowData(
         long pageAddr,
-        ByteBuffer buf,
         int dataOff,
         int payloadSize,
         CacheDataRow row,
         boolean newRow
     ) throws IgniteCheckedException {
-        // Flag indicates that data should be stored into PageMemory directly.
-        boolean storeDirect = pageAddr != 0;
-
-        assert pageAddr != 0 || buf != null
-                : "Both page address and byte buffer are not valid.";
-
         long addr = pageAddr + dataOff;
 
         int cacheIdSize = row.cacheId() != 0 ? 4 : 0;
 
         if (newRow) {
-            if (storeDirect) {
-                PageUtils.putShort(addr, 0, (short)payloadSize);
-                addr += 2;
-            }
+            PageUtils.putShort(addr, 0, (short)payloadSize);
+            addr += 2;
 
             if (cacheIdSize != 0) {
-                if (storeDirect) {
-                    PageUtils.putInt(addr, 0, row.cacheId());
-                    addr += cacheIdSize;
-                }
-                else {
-                    buf.putInt(row.cacheId());
-                }
+                PageUtils.putInt(addr, 0, row.cacheId());
+
+                addr += cacheIdSize;
             }
 
-            if (storeDirect) {
-                addr += row.key().putValue(addr);
-            } else {
-                row.key().putValue(buf);
-            }
+            addr += row.key().putValue(addr);
         }
         else
             addr += (2 + cacheIdSize + row.key().valueBytesLength(null));
 
-        if (storeDirect) {
-            addr += row.value().putValue(addr);
-        }
-        else {
-            row.value().putValue(buf);
-        }
+        addr += row.value().putValue(addr);
 
-        if (storeDirect) {
-            CacheVersionIO.write(addr, row.version(), false);
-            addr += CacheVersionIO.size(row.version(), false);
-        }
-        else {
-            CacheVersionIO.write(buf, row.version(), false);
-        }
+        CacheVersionIO.write(addr, row.version(), false);
+        addr += CacheVersionIO.size(row.version(), false);
 
-        if (storeDirect) {
-            PageUtils.putLong(addr, 0, row.expireTime());
-        }
-        else {
-            buf.putLong(row.expireTime());
-        }
-    }
-
-    /**
-     *
-     * @param row Cache data row.
-     * @param buf Byte buffer.
-     * @param payloadSize Payload size.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static void writeRowData(
-            CacheDataRow row,
-            ByteBuffer buf,
-            int payloadSize
-    ) throws IgniteCheckedException {
-        writeRowData(0, buf, 0, payloadSize, row, true);
+        PageUtils.putLong(addr, 0, row.expireTime());
     }
 
     /** {@inheritDoc} */
     @Override
-    protected void writeRowData(
+    public void writeRowData(
         long pageAddr,
         int dataOff,
         byte[] payload

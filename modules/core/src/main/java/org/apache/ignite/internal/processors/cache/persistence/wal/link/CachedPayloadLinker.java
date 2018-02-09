@@ -84,33 +84,27 @@ public class CachedPayloadLinker {
         };
     }
 
+    public void addDataRecord(DataRecord record, WALPointer pointer) throws IgniteCheckedException {
+        // Create and cache linker with new DataRecord in case of CREATE or UPDATE operations.
+        if (record.operation() == GridCacheOperation.CREATE
+                || record.operation() == GridCacheOperation.UPDATE) {
+            DataRecordPayloadLinker linker = new DataRecordPayloadLinker(record);
+            dataRecordsCache.put(pointer, linker);
+        }
+    }
+
     /**
      * Link {@code byte[]} payload from {@link DataRecord} entry to {@link WALReferenceAwareRecord} record.
      *
      * @param record WAL record.
-     * @param pointer WAL pointer.
      * @throws IgniteCheckedException If unable to link payload to record.
      */
-    public void linkPayload(WALRecord record, WALPointer pointer) throws IgniteCheckedException {
-        if (record instanceof DataRecord) {
-            DataRecord dataRecord = (DataRecord) record;
+    public void linkPayload(WALReferenceAwareRecord record) throws IgniteCheckedException {
+        WALPointer lookupPointer = record.reference();
 
-            // Create and cache linker with new DataRecord in case of CREATE or UPDATE operations.
-            if (dataRecord.operation() == GridCacheOperation.CREATE
-                    || dataRecord.operation() == GridCacheOperation.UPDATE) {
-                DataRecordPayloadLinker linker = new DataRecordPayloadLinker(dataRecord);
-                dataRecordsCache.put(pointer, linker);
-            }
-        }
-        else if (record instanceof WALReferenceAwareRecord) {
-            WALReferenceAwareRecord referenceRecord = (WALReferenceAwareRecord) record;
+        DataRecordPayloadLinker linker = lookupLinker(lookupPointer);
 
-            WALPointer lookupPointer = referenceRecord.reference();
-
-            DataRecordPayloadLinker linker = lookupLinker(lookupPointer);
-
-            linker.linkPayload(referenceRecord);
-        }
+        linker.linkPayload(record);
     }
 
     /**

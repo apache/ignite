@@ -330,7 +330,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                 val = cctx.toCacheObject("value-" + i);
 
             entries.add(new DataEntry(cctx.cacheId(), key, val, op, null, cctx.versions().next(), 0L,
-                cctx.affinity().partition(i), i));
+                cctx.affinity().partition(i), i, false));
         }
 
         UUID cpId = UUID.randomUUID();

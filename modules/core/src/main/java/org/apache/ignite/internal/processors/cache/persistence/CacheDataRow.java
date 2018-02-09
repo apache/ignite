@@ -56,9 +56,4 @@ public interface CacheDataRow extends CacheSearchRow, Storable {
      * @param key Key.
      */
     public void key(KeyCacheObject key);
-
-    /**
-     * @return WAL reference to {@link DataRecord}.
-     */
-    WALPointer reference();
 }

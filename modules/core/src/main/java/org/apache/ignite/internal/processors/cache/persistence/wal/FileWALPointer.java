@@ -85,7 +85,7 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
      */
     public void put(ByteBuffer buf) {
         buf.putLong(idx);
-        buf.putInt(fileOffset);
+        buf.putInt(fileOff);
         buf.putInt(len);
     }
 

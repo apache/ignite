@@ -326,7 +326,6 @@ public class RecordV1Serializer implements RecordSerializer {
 
             // This call will move buffer position to the end of the record again.
             int crcVal = PureJavaCrc32.calcCrc32(buf, curPos - startPos);
-        boolean storeCacheId = in.readByte() == (byte) 1;
 
             buf.putInt(crcVal);
         }

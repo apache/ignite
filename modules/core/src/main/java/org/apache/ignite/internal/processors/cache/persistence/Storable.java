@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+
 /**
  * Simple interface for data, store in some RowStore.
  */
@@ -35,4 +38,9 @@ public interface Storable {
      * @return Partition.
      */
     public int partition();
+
+    /**
+     * @return WAL reference to {@link DataRecord}.
+     */
+    WALPointer reference();
 }

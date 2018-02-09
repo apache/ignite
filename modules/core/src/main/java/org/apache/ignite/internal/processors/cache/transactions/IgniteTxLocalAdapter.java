@@ -503,6 +503,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             batchStoreCommit(writeEntries());
 
             WALPointer reference = null;
+            WALPointer ptr = null;
 
             cctx.database().checkpointReadLock();
 
@@ -790,7 +791,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 writeVersion(),
                                                 0,
                                                 txEntry.key().partition(),
-                                                txEntry.updateCounter())));
+                                                txEntry.updateCounter(), cacheCtx.group().sharedGroup())));
                                         }
 
                                         ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);

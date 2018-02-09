@@ -57,7 +57,7 @@ public class RecordV2Serializer implements RecordSerializer {
     private static final int FILE_WAL_POINTER_SIZE = 8 + 4 + 4;
 
     /** V2 data serializer. */
-    private final RecordDataV2Serializer dataSerializer;
+    private RecordDataSerializer dataSerializer;
 
     /** Write pointer. */
     private final boolean writePointer;
@@ -173,12 +173,16 @@ public class RecordV2Serializer implements RecordSerializer {
     /**
      * Create an instance of Record V2 serializer.
      * @param dataSerializer V2 data serializer.
+     * @param writePointer Flag to write (or not) wal pointer to record
      * @param marshalledMode Marshalled mode.
      * @param skipPositionCheck Skip position check mode.
      * @param recordFilter Record type filter. {@link FilteredRecord} is deserialized instead of original record
      */
-    public RecordV2Serializer(RecordDataV2Serializer dataSerializer, boolean writePointer,
-        boolean marshalledMode, boolean skipPositionCheck, IgniteBiPredicate<RecordType, WALPointer> recordFilter) {
+    public RecordV2Serializer(RecordDataSerializer dataSerializer,
+                              boolean writePointer,
+                              boolean marshalledMode,
+                              boolean skipPositionCheck,
+                              IgniteBiPredicate<RecordType, WALPointer> recordFilter) {
         this.dataSerializer = dataSerializer;
         this.writePointer = writePointer;
         this.marshalledMode = marshalledMode;

@@ -475,7 +475,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
                 in.readFully(payload);
 
-                res = new DataPageInsertFragmentRecord(cacheId, pageId, payload, lastLink);
+                res = new DataPageInsertFragmentRecord(cacheId, pageId, lastLink, payload);
 
                 break;
             }
@@ -1492,7 +1492,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     writeVer,
                     expireTime,
                     partId,
-                    partCntr
+                    partCntr,
+                    cacheCtx.group().sharedGroup()
             );
         }
         else
@@ -1508,7 +1509,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     writeVer,
                     expireTime,
                     partId,
-                    partCntr);
+                    partCntr, cacheCtx.group().sharedGroup());
     }
 
     /**

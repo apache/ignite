@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
@@ -47,6 +46,9 @@ public class DataRecordPayloadLinker {
     /** Linking entry. */
     private final CacheDataRow entry;
 
+    /** Data page IO. */
+    private static final DataPageIO pageIO = DataPageIO.VERSIONS.latest();
+
     /**
      * Create linker with given {@code record}.
      *
@@ -59,7 +61,7 @@ public class DataRecordPayloadLinker {
         DataEntry writeEntry = record.writeEntries().get(0);
 
         this.entry = wrap(writeEntry);
-        this.entrySize = FreeListImpl.getRowSize(entry, writeEntry.storeCacheId());
+        this.entrySize = pageIO.getRowSize(entry);
     }
 
     /**
@@ -73,13 +75,19 @@ public class DataRecordPayloadLinker {
         ByteBuffer payloadBuffer = ByteBuffer.allocate(record.payloadSize());
         payloadBuffer.order(ByteOrder.nativeOrder());
 
-        // Write data entry payload to buffer.
-        if (record.offset() != -1)
-            DataPageIO.writeFragmentData(entry, payloadBuffer, entrySize - record.offset() - record.payloadSize(), record.payloadSize());
-        else
-            DataPageIO.writeRowData(entry, payloadBuffer, record.payloadSize());
+        byte[] restoredPayload;
 
-        record.payload(payloadBuffer.array());
+        // Write data entry payload to buffer.
+        if (record.offset() != -1) {
+            pageIO.writeFragmentData(entry, payloadBuffer, entrySize - record.offset() - record.payloadSize(), record.payloadSize());
+            restoredPayload = payloadBuffer.array();
+        }
+        else {
+            restoredPayload = new byte[record.payloadSize()];
+            //pageIO.writeRowData(entry, record.payloadSize(), restoredPayload);
+        }
+
+        record.payload(restoredPayload);
     }
 
     /**
@@ -101,40 +109,40 @@ public class DataRecordPayloadLinker {
 
             // Create key from raw bytes.
             KeyCacheObject key;
-            switch (lazyEntry.keyType()) {
+            switch (lazyEntry.getKeyType()) {
                 case CacheObject.TYPE_REGULAR: {
-                    key = new KeyCacheObjectImpl(null, lazyEntry.rawKey(), lazyEntry.partitionId());
+                    key = new KeyCacheObjectImpl(null, lazyEntry.getKeyBytes(), lazyEntry.partitionId());
                     break;
                 }
                 case CacheObject.TYPE_BINARY: {
-                    key = new BinaryObjectImpl(null, lazyEntry.rawKey(), 0);
+                    key = new BinaryObjectImpl(null, lazyEntry.getKeyBytes(), 0);
                     break;
                 }
                 default:
-                    throw new IllegalStateException("Undefined key type: " + lazyEntry.keyType());
+                    throw new IllegalStateException("Undefined key type: " + lazyEntry.getKeyType());
             }
 
             // Create value from raw bytes.
             CacheObject value;
-            switch (lazyEntry.valueType()) {
+            switch (lazyEntry.getValType()) {
                 case CacheObject.TYPE_REGULAR: {
-                    value = new CacheObjectImpl(null, lazyEntry.rawValue());
+                    value = new CacheObjectImpl(null, lazyEntry.getValBytes());
                     break;
                 }
                 case CacheObject.TYPE_BINARY: {
-                    value = new BinaryObjectImpl(null, lazyEntry.rawValue(), 0);
+                    value = new BinaryObjectImpl(null, lazyEntry.getValBytes(), 0);
                     break;
                 }
                 case CacheObject.TYPE_BYTE_ARR: {
-                    value = new CacheObjectByteArrayImpl(lazyEntry.rawValue());
+                    value = new CacheObjectByteArrayImpl(lazyEntry.getValBytes());
                     break;
                 }
                 case CacheObject.TYPE_BINARY_ENUM: {
-                    value = new BinaryEnumObjectImpl(null, lazyEntry.rawValue());
+                    value = new BinaryEnumObjectImpl(null, lazyEntry.getValBytes());
                     break;
                 }
                 default:
-                    throw new IllegalStateException("Undefined value type: " + lazyEntry.valueType());
+                    throw new IllegalStateException("Undefined value type: " + lazyEntry.getValType());
             }
 
             return new CacheDataRowAdapter(

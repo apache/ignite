@@ -104,7 +104,7 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
         return RecordType.DATA_PAGE_INSERT_FRAGMENT_RECORD;
     }
 
-    public byte[] getPayload() {
+    public byte[] payload() {
         return payload;
     }
 
@@ -129,6 +129,8 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
     @Override public void payload(byte[] payload) {
         this.payload = payload;
     }
+
+
 
     /** {@inheritDoc} */
     @Override public WALPointer reference() {

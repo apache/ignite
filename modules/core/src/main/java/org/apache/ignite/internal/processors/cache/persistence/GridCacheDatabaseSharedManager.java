@@ -2105,7 +2105,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
                                     if (cacheCtx != null)
-                                        applyUpdate(cacheCtx, dataEntry);
+                                        applyUpdate(cacheCtx, dataEntry, next.get1());
                                     else if (log != null)
                                         log.warning("Cache (cacheId=" + cacheId + ") is not started, can't apply updates.");
                                 }

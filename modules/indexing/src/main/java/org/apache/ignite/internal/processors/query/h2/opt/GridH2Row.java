@@ -87,8 +87,8 @@ public abstract class GridH2Row extends GridH2SearchRowAdapter implements CacheD
         return row.cacheId();
     }
 
-    @Override
-    public WALPointer reference() {
+    /** {@inheritDoc} */
+    @Override public WALPointer reference() {
         return null;
     }
 }

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -69,7 +70,7 @@ public class DataRow extends CacheDataRowAdapter {
      * @param expireTime Expire time.
      * @param cacheId Cache ID.
      */
-    public DataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part, long expireTime, int cacheId) {
+    public DataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part, long expireTime, int cacheId, WALPointer reference) {
         super(0);
 
         this.hash = key.hashCode();
@@ -79,6 +80,7 @@ public class DataRow extends CacheDataRowAdapter {
         this.part = part;
         this.expireTime = expireTime;
         this.cacheId = cacheId;
+        this.reference = reference;
     }
 
     /** {@inheritDoc} */

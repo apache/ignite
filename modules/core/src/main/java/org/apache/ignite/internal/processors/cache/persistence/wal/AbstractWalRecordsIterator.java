@@ -146,6 +146,12 @@ public abstract class AbstractWalRecordsIterator
 
     /** {@inheritDoc} */
     @Override protected void onClose() throws IgniteCheckedException {
+        int walLookups = linker.walLookups();
+        if (walLookups > 0)
+            log.warning("The number DataRecord WAL lookups is " + walLookups +
+                    ". Try to increase " + IgniteSystemProperties.IGNITE_WAL_DATA_RECORDS_CACHE_SIZE_MB
+                    + " to reduce number of such lookups.");
+
         try {
             buf.close();
         }
@@ -238,8 +244,11 @@ public abstract class AbstractWalRecordsIterator
 
             actualFilePtr.length(rec.size());
 
-            // Link payload for records with reference to DataRecord.
-            linker.linkPayload(rec, ptr);
+            if (rec instanceof DataRecord) {
+                linker.addDataRecord((DataRecord) rec, actualFilePtr);
+            } else if (rec instanceof WALReferenceAwareRecord) {
+                linker.linkPayload((WALReferenceAwareRecord) rec);
+            }
 
             // cast using diamond operator here can break compile for 7
             return new IgniteBiTuple<>((WALPointer)actualFilePtr, postProcessRecord(rec));
@@ -253,17 +262,6 @@ public abstract class AbstractWalRecordsIterator
 
             return null;
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void onClose() throws IgniteCheckedException {
-        int walLookups = linker.walLookups();
-        if (walLookups > 0)
-            log.warning("The number DataRecord WAL lookups is " + walLookups +
-                ". Try to increase " + IgniteSystemProperties.IGNITE_WAL_DATA_RECORDS_CACHE_SIZE_MB
-                + " to reduce number of such lookups.");
-
-        super.onClose();
     }
 
     /**

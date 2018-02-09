@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.io.Externalizable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -482,6 +483,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     try {
                         Collection<IgniteTxEntry> entries = near() || cctx.snapshot().needTxReadLogging() ? allEntries() : writeEntries();
 
+                        List<DataEntry> dataEntries = null;
+
                         batchStoreCommit(writeMap().values());
 
                         try {
@@ -575,7 +578,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         writeVersion(),
                                                         0,
                                                         txEntry.key().partition(),
-                                                        txEntry.updateCounter()
+                                                        txEntry.updateCounter(),
+                                                        cacheCtx.group().sharedGroup()
                                                     )
                                                 );
                                             }
@@ -604,25 +608,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     assert val != null : txEntry;
 
                                                     GridCacheUpdateTxResult updRes = cached.innerSet(this,
-                                                    WALPointer reference = null;
-
-                                                    if (cctx.wal() != null)
-                                                        reference = cctx.wal().log(new DataRecord(
-                                                            new DataEntry(
-                                                                    cacheCtx.cacheId(),
-                                                                    txEntry.key(),
-                                                                    val,
-                                                                    op,
-                                                                    nearXidVersion(),
-                                                                    writeVersion(),
-                                                                    cached.expireTime(),
-                                                                    txEntry.key().partition(),
-                                                                    txEntry.updateCounter(),
-                                                                    cacheCtx.group().storeCacheIdInDataPage()
-                                                            )
-                                                        ));
-
-                                                    cached.innerSet(this,
                                                         eventNodeId(),
                                                         nodeId,
                                                         val,
@@ -643,7 +628,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         resolveTaskName(),
                                                         dhtVer,
                                                         txEntry.updateCounter(),
-                                                        reference);
+                                                        null);
 
                                                     if (updRes.loggedPointer() != null)
                                                         ptr = updRes.loggedPointer();
@@ -776,7 +761,6 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 cctx.wal().log(new DataRecord(dataEntries));
 
                             if (ptr != null && !cctx.tm().logTxRecords())
-                            if (ptr != null)
                                 cctx.wal().fsync(ptr);
                         }
                         catch (StorageException e) {

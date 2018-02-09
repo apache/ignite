@@ -71,6 +71,9 @@ public class CacheDataRowAdapter implements CacheDataRow {
     @GridToStringInclude
     protected int cacheId;
 
+
+    protected WALPointer reference;
+
     /**
      * @param link Link.
      */
@@ -86,7 +89,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param ver Version.
      */
     public CacheDataRowAdapter(KeyCacheObject key, CacheObject val, GridCacheVersion ver, long expireTime) {
-        this(key, val, ver, expireTime, 0);
+        this(key, val, ver, expireTime, 0, null);
     }
 
     /**
@@ -96,12 +99,13 @@ public class CacheDataRowAdapter implements CacheDataRow {
      * @param ver Version.
      * @param cacheId Cache id.
      */
-    public CacheDataRowAdapter(KeyCacheObject key, CacheObject val, GridCacheVersion ver, long expireTime, int cacheId) {
+    public CacheDataRowAdapter(KeyCacheObject key, CacheObject val, GridCacheVersion ver, long expireTime, int cacheId, WALPointer reference) {
         this.key = key;
         this.val = val;
         this.ver = ver;
         this.expireTime = expireTime;
         this.cacheId = cacheId;
+        this.reference = reference;
     }
 
     /**

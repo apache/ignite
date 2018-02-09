@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.metastorage;
 
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 
 /**
@@ -32,11 +33,20 @@ public class MetastorageDataRow implements MetastorageSearchRow, Storable {
     /** */
     private byte[] value;
 
+    private WALPointer reference;
+
     /** */
     public MetastorageDataRow(long link, String key, byte[] value) {
         this.link = link;
         this.key = key;
         this.value = value;
+    }
+
+    /** */
+    public MetastorageDataRow(String key, byte[] value, WALPointer reference) {
+        this.key = key;
+        this.value = value;
+        this.reference = reference;
     }
 
     /** */
@@ -62,6 +72,11 @@ public class MetastorageDataRow implements MetastorageSearchRow, Storable {
     @Override
     public int partition() {
         return 0;
+    }
+
+    @Override
+    public WALPointer reference() {
+        return reference;
     }
 
     /** {@inheritDoc} */
