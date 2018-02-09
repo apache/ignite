@@ -17,41 +17,56 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.sql.BatchUpdateException;
 import java.sql.ParameterMetaData;
+import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.query.BulkLoadContextCursor;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
-import org.apache.ignite.internal.jdbc2.JdbcSqlFieldsQuery;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcQueryGetColumnsMetaRequest;
 import org.apache.ignite.internal.processors.query.GridQueryIndexDescriptor;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_CONTINUE;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_3_0;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext.VER_2_4_0;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BATCH_EXEC;
+import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.BULK_LOAD_BATCH;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_COLUMNS;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_INDEXES;
 import static org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest.META_PARAMS;
@@ -85,6 +100,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Current queries cursors. */
     private final ConcurrentHashMap<Long, JdbcQueryCursor> qryCursors = new ConcurrentHashMap<>();
 
+    /** Current bulk load processors. */
+    private final ConcurrentHashMap<Long, JdbcBulkLoadProcessor> bulkLoadRequests = new ConcurrentHashMap<>();
+
     /** Distributed joins flag. */
     private final boolean distributedJoins;
 
@@ -99,6 +117,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
     /** Lazy query execution flag. */
     private final boolean lazy;
+
+    /** Skip reducer on update flag. */
+    private final boolean skipReducerOnUpdate;
 
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
@@ -118,11 +139,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param replicatedOnly Replicated only flag.
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
+     * @param skipReducerOnUpdate Skip reducer on update flag.
      * @param protocolVer Protocol version.
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
-        boolean autoCloseCursors, boolean lazy, ClientListenerProtocolVersion protocolVer) {
+        boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate,
+        ClientListenerProtocolVersion protocolVer) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -132,6 +155,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.replicatedOnly = replicatedOnly;
         this.autoCloseCursors = autoCloseCursors;
         this.lazy = lazy;
+        this.skipReducerOnUpdate = skipReducerOnUpdate;
         this.protocolVer = protocolVer;
 
         log = ctx.log(getClass());
@@ -183,6 +207,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 case META_SCHEMAS:
                     return getSchemas((JdbcMetaSchemasRequest)req);
+
+                case BULK_LOAD_BATCH:
+                    return processBulkLoadFileBatch((JdbcBulkLoadBatchRequest)req);
             }
 
             return new JdbcResponse(IgniteQueryErrorCode.UNSUPPORTED_OPERATION,
@@ -190,6 +217,46 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         }
         finally {
             busyLock.leaveBusy();
+        }
+    }
+
+    /**
+     * Processes a file batch sent from client as part of bulk load COPY command.
+     *
+     * @param req Request object with a batch of a file received from client.
+     * @return Response to send to the client.
+     */
+    private ClientListenerResponse processBulkLoadFileBatch(JdbcBulkLoadBatchRequest req) {
+        JdbcBulkLoadProcessor processor = bulkLoadRequests.get(req.queryId());
+
+        if (ctx == null)
+            return new JdbcResponse(IgniteQueryErrorCode.UNEXPECTED_OPERATION, "Unknown query ID: "
+                + req.queryId() + ". Bulk load session may have been reclaimed due to timeout.");
+
+        try {
+            processor.processBatch(req);
+
+            switch (req.cmd()) {
+                case CMD_FINISHED_ERROR:
+                case CMD_FINISHED_EOF:
+                    bulkLoadRequests.remove(req.queryId());
+
+                    processor.close();
+
+                    break;
+
+                case CMD_CONTINUE:
+                    break;
+
+                default:
+                    throw new IllegalArgumentException();
+            }
+
+            return new JdbcResponse(new JdbcQueryExecuteResult(req.queryId(), processor.updateCnt()));
+        }
+        catch (Exception e) {
+            U.error(null, "Error processing file batch", e);
+            return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e);
         }
     }
 
@@ -223,6 +290,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             {
                 for (JdbcQueryCursor cursor : qryCursors.values())
                     cursor.close();
+
+                for (JdbcBulkLoadProcessor processor : bulkLoadRequests.values()) {
+                    try {
+                        processor.close();
+                    }
+                    catch (Exception e) {
+                        U.error(null, "Error closing JDBC bulk load processor.", e);
+                    }
+                }
+
+                bulkLoadRequests.clear();
             }
             finally {
                 busyLock.leaveBusy();
@@ -260,14 +338,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     break;
 
                 case SELECT_STATEMENT_TYPE:
-                    qry = new JdbcSqlFieldsQuery(sql, true);
+                    qry = new SqlFieldsQueryEx(sql, true);
 
                     break;
 
                 default:
                     assert req.expectedStatementType() == JdbcStatementType.UPDATE_STMT_TYPE;
 
-                    qry = new JdbcSqlFieldsQuery(sql, false);
+                    qry = new SqlFieldsQueryEx(sql, false);
+
+                    if (skipReducerOnUpdate)
+                        ((SqlFieldsQueryEx)qry).setSkipReducerOnUpdate(true);
             }
 
             qry.setArgs(req.arguments());
@@ -290,13 +371,25 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFieldsNoCache(qry, true,
-                protocolVer.compareTo(JdbcConnectionContext.VER_2_3_1) < 0);
+            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFields(qry, true,
+                protocolVer.compareTo(VER_2_3_0) < 0);
+
+            FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
+
+            if (fieldsCur instanceof BulkLoadContextCursor) {
+                BulkLoadContextCursor blCur = (BulkLoadContextCursor) fieldsCur;
+
+                BulkLoadProcessor blProcessor = blCur.bulkLoadProcessor();
+                BulkLoadAckClientParameters clientParams = blCur.clientParams();
+
+                bulkLoadRequests.put(qryId, new JdbcBulkLoadProcessor(blProcessor));
+
+                return new JdbcResponse(new JdbcBulkLoadAckResult(qryId, clientParams));
+            }
 
             if (results.size() == 1) {
-                FieldsQueryCursor<List<?>> qryCur = results.get(0);
-
-                JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), (QueryCursorImpl)qryCur);
+                JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(),
+                    (QueryCursorImpl)fieldsCur);
 
                 JdbcQueryExecuteResult res;
 
@@ -333,8 +426,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     if (qryCur.isQuery()) {
                         jdbcRes = new JdbcResultInfo(true, -1, qryId);
 
-                        JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(),
-                            (QueryCursorImpl)qryCur);
+                        JdbcQueryCursor cur = new JdbcQueryCursor(qryId, req.pageSize(), req.maxRows(), qryCur);
 
                         qryCursors.put(qryId, cur);
 
@@ -353,8 +445,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 return new JdbcResponse(new JdbcQueryExecuteMultipleStatementsResult(jdbcResults, items, last));
             }
-
-
         }
         catch (Exception e) {
             qryCursors.remove(qryId);
@@ -463,19 +553,21 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         if (F.isEmpty(schemaName))
             schemaName = QueryUtils.DFLT_SCHEMA;
 
-        int successQueries = 0;
-        int updCnts[] = new int[req.queries().size()];
+        int qryCnt = req.queries().size();
 
-        try {
-            String sql = null;
+        List<Integer> updCntsAcc = new ArrayList<>(qryCnt);
 
-            for (JdbcQuery q : req.queries()) {
-                if (q.sql() != null)
-                    sql = q.sql();
+        // Send back only the first error. Others will be written to the log.
+        IgniteBiTuple<Integer, String> firstErr = new IgniteBiTuple<>();
 
-                SqlFieldsQuery qry = new JdbcSqlFieldsQuery(sql, false);
+        SqlFieldsQueryEx qry = null;
 
-                qry.setArgs(q.args());
+        for (JdbcQuery q : req.queries()) {
+            if (q.sql() != null) { // If we have a new query string in the batch,
+                if (qry != null) // then execute the previous sub-batch and create a new SqlFieldsQueryEx.
+                    executeBatchedQuery(qry, updCntsAcc, firstErr);
+
+                qry = new SqlFieldsQueryEx(q.sql(), false);
 
                 qry.setDistributedJoins(distributedJoins);
                 qry.setEnforceJoinOrder(enforceJoinOrder);
@@ -484,38 +576,91 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 qry.setLazy(lazy);
 
                 qry.setSchema(schemaName);
-
-                QueryCursorImpl<List<?>> qryCur = (QueryCursorImpl<List<?>>)ctx.query()
-                    .querySqlFieldsNoCache(qry, true, true).get(0);
-
-                assert !qryCur.isQuery();
-
-                List<List<?>> items = qryCur.getAll();
-
-                updCnts[successQueries++] = ((Long)items.get(0).get(0)).intValue();
             }
 
+            assert qry != null;
+
+            qry.addBatchedArgs(q.args());
+        }
+
+        if (qry != null)
+            executeBatchedQuery(qry, updCntsAcc, firstErr);
+
+        int updCnts[] = U.toIntArray(updCntsAcc);
+
+        if (firstErr.isEmpty())
             return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, ClientListenerResponse.STATUS_SUCCESS, null));
+        else
+            return new JdbcResponse(new JdbcBatchExecuteResult(updCnts, firstErr.getKey(), firstErr.getValue()));
+    }
+
+    /**
+     * Executes query and updates result counters.
+     *
+     * @param qry Query.
+     * @param updCntsAcc Per query rows updates counter.
+     * @param firstErr First error data - code and message.
+     */
+    private void executeBatchedQuery(SqlFieldsQueryEx qry, List<Integer> updCntsAcc,
+        IgniteBiTuple<Integer, String> firstErr) {
+        try {
+            List<FieldsQueryCursor<List<?>>> qryRes = ctx.query().querySqlFields(qry, true, true);
+
+            for (FieldsQueryCursor<List<?>> cur : qryRes) {
+                if (cur instanceof BulkLoadContextCursor)
+                    throw new IgniteSQLException("COPY command cannot be executed in batch mode.");
+
+                assert !((QueryCursorImpl)cur).isQuery();
+
+                Iterator<List<?>> it = cur.iterator();
+
+                if (it.hasNext()) {
+                    int val = ((Long)it.next().get(0)).intValue();
+
+                    updCntsAcc.add(val);
+                }
+            }
         }
         catch (Exception e) {
-            U.error(log, "Failed to execute batch query [reqId=" + req.requestId() + ", req=" + req + ']', e);
-
             int code;
 
             String msg;
 
             if (e instanceof IgniteSQLException) {
-                code = ((IgniteSQLException) e).statusCode();
+                BatchUpdateException batchCause = X.cause(e, BatchUpdateException.class);
 
-                msg = e.getMessage();
+                if (batchCause != null) {
+                    int[] updCntsOnErr = batchCause.getUpdateCounts();
+
+                    for (int i = 0; i < updCntsOnErr.length; i++)
+                        updCntsAcc.add(updCntsOnErr[i]);
+
+                    msg = batchCause.getMessage();
+
+                    code = batchCause.getErrorCode();
+                }
+                else {
+                    for (int i = 0; i < qry.batchedArguments().size(); i++)
+                        updCntsAcc.add(Statement.EXECUTE_FAILED);
+
+                    msg = e.getMessage();
+
+                    code = ((IgniteSQLException)e).statusCode();
+                }
             }
             else {
-                code = IgniteQueryErrorCode.UNKNOWN;
+                for (int i = 0; i < qry.batchedArguments().size(); i++)
+                    updCntsAcc.add(Statement.EXECUTE_FAILED);
 
                 msg = e.getMessage();
+
+                code = IgniteQueryErrorCode.UNKNOWN;
             }
 
-            return new JdbcResponse(new JdbcBatchExecuteResult(Arrays.copyOf(updCnts, successQueries), code, msg));
+            if (firstErr.isEmpty())
+                firstErr.set(code, msg);
+            else
+                U.error(log, "Failed to execute batch query [qry=" + qry +']', e);
         }
     }
 
@@ -559,9 +704,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Get columns metadata request.
      * @return Response.
      */
+    @SuppressWarnings("unchecked")
     private JdbcResponse getColumnsMeta(JdbcMetaColumnsRequest req) {
         try {
-            Collection<JdbcColumnMeta> meta = new HashSet<>();
+            Collection<JdbcColumnMeta> meta = new LinkedHashSet<>();
 
             for (String cacheName : ctx.cache().publicCacheNames()) {
                 for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
@@ -572,11 +718,28 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                         continue;
 
                     for (Map.Entry<String, Class<?>> field : table.fields().entrySet()) {
-                        if (!matches(field.getKey(), req.columnName()))
+                        String colName = field.getKey();
+
+                        if (!matches(colName, req.columnName()))
                             continue;
 
-                        JdbcColumnMeta columnMeta = new JdbcColumnMeta(table.schemaName(), table.tableName(),
-                            field.getKey(), field.getValue());
+                        JdbcColumnMeta columnMeta;
+
+                        if (protocolVer.compareTo(VER_2_4_0) >= 0) {
+                            GridQueryProperty prop = table.property(colName);
+
+                            columnMeta = new JdbcColumnMetaV3(table.schemaName(), table.tableName(),
+                                field.getKey(), field.getValue(), !prop.notNull(), prop.defaultValue());
+                        }
+                        else if (protocolVer.compareTo(VER_2_3_0) >= 0) {
+                            GridQueryProperty prop = table.property(colName);
+
+                            columnMeta = new JdbcColumnMetaV2(table.schemaName(), table.tableName(),
+                                field.getKey(), field.getValue(), !prop.notNull());
+                        }
+                        else
+                            columnMeta = new JdbcColumnMeta(table.schemaName(), table.tableName(),
+                                field.getKey(), field.getValue());
 
                         if (!meta.contains(columnMeta))
                             meta.add(columnMeta);
@@ -584,7 +747,14 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 }
             }
 
-            JdbcMetaColumnsResult res = new JdbcMetaColumnsResult(meta);
+            JdbcMetaColumnsResult res;
+
+            if (protocolVer.compareTo(VER_2_4_0) >= 0)
+                res = new JdbcMetaColumnsResultV3(meta);
+            else if (protocolVer.compareTo(VER_2_3_0) >= 0)
+                res = new JdbcMetaColumnsResultV2(meta);
+            else
+                res = new JdbcMetaColumnsResult(meta);
 
             return new JdbcResponse(res);
         }

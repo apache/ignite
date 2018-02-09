@@ -21,8 +21,10 @@ import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 
 /**
  * This interface defines a JMX view on {@link MemoryMetrics}.
+ * @deprecated Part of old API. Metrics are accessible through {@link DataRegionMetricsMXBean}.
  */
 @MXBeanDescription("MBean that provides access to MemoryMetrics of a local Apache Ignite node.")
+@Deprecated
 public interface MemoryMetricsMXBean extends MemoryMetrics {
     /** {@inheritDoc} */
     @MXBeanDescription("A name of a memory region the metrics are collected for.")

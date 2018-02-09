@@ -31,9 +31,17 @@ namespace ignite
         class ProtocolVersion
         {
         public:
-            /** Current protocol version. */
+            /** Version 2.1.0. */
             static const ProtocolVersion VERSION_2_1_0;
+
+            /** Version 2.1.5: added "lazy" flag. */
             static const ProtocolVersion VERSION_2_1_5;
+
+            /** Version 2.3.0: added "skipReducerOnUpdate" flag. */
+            static const ProtocolVersion VERSION_2_3_0;
+
+            /** Version 2.3.2: added multiple statements support. */
+            static const ProtocolVersion VERSION_2_3_2;
 
             typedef std::set<ProtocolVersion> VersionSet;
 

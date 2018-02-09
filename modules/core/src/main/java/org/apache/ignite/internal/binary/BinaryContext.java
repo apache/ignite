@@ -23,7 +23,6 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -48,6 +47,7 @@ import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -342,6 +342,7 @@ public class BinaryContext {
         registerPredefinedType(BinaryMetadataKey.class, 0);
         registerPredefinedType(BinaryMetadata.class, 0);
         registerPredefinedType(BinaryEnumObjectImpl.class, 0);
+        registerPredefinedType(BinaryTreeMap.class, 0);
 
         registerPredefinedType(PlatformDotNetSessionData.class, 0);
         registerPredefinedType(PlatformDotNetSessionLockResult.class, 0);
@@ -552,55 +553,53 @@ public class BinaryContext {
 
         ClassLoader ldr = U.gridClassLoader();
 
-        if (ldr instanceof URLClassLoader) {
-            String pkgPath = pkgName.replaceAll("\\.", "/");
+        String pkgPath = pkgName.replaceAll("\\.", "/");
 
-            URL[] urls = ((URLClassLoader)ldr).getURLs();
+        URL[] urls = IgniteUtils.classLoaderUrls(ldr);
 
-            for (URL url : urls) {
-                String proto = url.getProtocol().toLowerCase();
+        for (URL url : urls) {
+            String proto = url.getProtocol().toLowerCase();
 
-                if ("file".equals(proto)) {
-                    try {
-                        File cpElement = new File(url.toURI());
+            if ("file".equals(proto)) {
+                try {
+                    File cpElement = new File(url.toURI());
 
-                        if (cpElement.isDirectory()) {
-                            File pkgDir = new File(cpElement, pkgPath);
+                    if (cpElement.isDirectory()) {
+                        File pkgDir = new File(cpElement, pkgPath);
 
-                            if (pkgDir.isDirectory()) {
-                                for (File file : pkgDir.listFiles()) {
-                                    String fileName = file.getName();
+                        if (pkgDir.isDirectory()) {
+                            for (File file : pkgDir.listFiles()) {
+                                String fileName = file.getName();
 
-                                    if (file.isFile() && fileName.toLowerCase().endsWith(".class"))
-                                        clsNames.add(pkgName + '.' + fileName.substring(0, fileName.length() - 6));
-                                }
-                            }
-                        }
-                        else if (cpElement.isFile()) {
-                            try {
-                                JarFile jar = new JarFile(cpElement);
-
-                                Enumeration<JarEntry> entries = jar.entries();
-
-                                while (entries.hasMoreElements()) {
-                                    String entry = entries.nextElement().getName();
-
-                                    if (entry.startsWith(pkgPath) && entry.endsWith(".class")) {
-                                        String clsName = entry.substring(pkgPath.length() + 1, entry.length() - 6);
-
-                                        if (!clsName.contains("/") && !clsName.contains("\\"))
-                                            clsNames.add(pkgName + '.' + clsName);
-                                    }
-                                }
-                            }
-                            catch (IOException ignored) {
-                                // No-op.
+                                if (file.isFile() && fileName.toLowerCase().endsWith(".class"))
+                                    clsNames.add(pkgName + '.' + fileName.substring(0, fileName.length() - 6));
                             }
                         }
                     }
-                    catch (URISyntaxException ignored) {
-                        // No-op.
+                    else if (cpElement.isFile()) {
+                        try {
+                            JarFile jar = new JarFile(cpElement);
+
+                            Enumeration<JarEntry> entries = jar.entries();
+
+                            while (entries.hasMoreElements()) {
+                                String entry = entries.nextElement().getName();
+
+                                if (entry.startsWith(pkgPath) && entry.endsWith(".class")) {
+                                    String clsName = entry.substring(pkgPath.length() + 1, entry.length() - 6);
+
+                                    if (!clsName.contains("/") && !clsName.contains("\\"))
+                                        clsNames.add(pkgName + '.' + clsName);
+                                }
+                            }
+                        }
+                        catch (IOException ignored) {
+                            // No-op.
+                        }
                     }
+                }
+                catch (URISyntaxException ignored) {
+                    // No-op.
                 }
             }
         }

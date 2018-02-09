@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.ConnectorConfiguration;
@@ -43,10 +44,10 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientTaskResultBean;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.cache.GridCacheCommandHandler;
+import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.datastructures.DataStructuresCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.log.GridLogCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.query.QueryCommandHandler;
-import org.apache.ignite.internal.processors.rest.handlers.cluster.GridChangeStateCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.task.GridTaskCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.top.GridTopologyCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.version.GridVersionCommandHandler;
@@ -67,8 +68,6 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
-import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
-import org.apache.ignite.internal.visor.misc.VisorChangeGridActiveStateTask;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -77,7 +76,6 @@ import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.thread.IgniteThread;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
@@ -112,7 +110,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
     private final GridSpinReadWriteLock busyLock = new GridSpinReadWriteLock();
 
     /** Workers count. */
-    private final LongAdder8 workersCnt = new LongAdder8();
+    private final LongAdder workersCnt = new LongAdder();
 
     /** ClientId-SessionId map. */
     private final ConcurrentMap<UUID, UUID> clientId2SesId = new ConcurrentHashMap<>();
@@ -623,6 +621,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
                 case CACHE_PUT_ALL:
                 case CACHE_REMOVE:
                 case CACHE_REMOVE_ALL:
+                case CACHE_CLEAR:
                 case CACHE_REPLACE:
                 case ATOMIC_INCREMENT:
                 case ATOMIC_DECREMENT:
@@ -778,6 +777,7 @@ public class GridRestProcessor extends GridProcessorAdapter {
 
             case CACHE_REMOVE:
             case CACHE_REMOVE_ALL:
+            case CACHE_CLEAR:
             case CACHE_GET_AND_REMOVE:
             case CACHE_REMOVE_VALUE:
                 perm = SecurityPermission.CACHE_REMOVE;
@@ -811,6 +811,9 @@ public class GridRestProcessor extends GridProcessorAdapter {
             case ATOMIC_DECREMENT:
             case NAME:
             case LOG:
+            case CLUSTER_CURRENT_STATE:
+            case CLUSTER_ACTIVE:
+            case CLUSTER_INACTIVE:
                 break;
 
             default:

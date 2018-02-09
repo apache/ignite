@@ -116,6 +116,11 @@ namespace ignite
             {
                 return 0;
             }
+
+            SqlResult::Type SpecialColumnsQuery::NextResultSet()
+            {
+                return SqlResult::AI_NO_DATA;
+            }
         }
     }
 }

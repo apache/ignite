@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
+    using System.Xml.Serialization;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
@@ -34,6 +35,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Configuration;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cache.Affinity;
@@ -46,7 +48,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     /// <summary>
     /// Defines grid cache configuration.
     /// </summary>
-    public class CacheConfiguration
+    public class CacheConfiguration : IBinaryRawWriteAware<BinaryWriter>
     {
         /// <summary> Default size of rebalance thread pool. </summary>
         public const int DefaultRebalanceThreadPoolSize = 2;
@@ -137,6 +139,27 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for <see cref="PartitionLossPolicy"/>. </summary>
         public const PartitionLossPolicy DefaultPartitionLossPolicy = PartitionLossPolicy.Ignore;
 
+        /// <summary> Default value for <see cref="SqlIndexMaxInlineSize"/>. </summary>
+        public const int DefaultSqlIndexMaxInlineSize = -1;
+
+        /// <summary> Default value for <see cref="StoreConcurrentLoadAllThreshold"/>. </summary>
+        public const int DefaultStoreConcurrentLoadAllThreshold = 5;
+
+        /// <summary> Default value for <see cref="RebalanceOrder"/>. </summary>
+        public const int DefaultRebalanceOrder = 0;
+
+        /// <summary> Default value for <see cref="RebalanceBatchesPrefetchCount"/>. </summary>
+        public const long DefaultRebalanceBatchesPrefetchCount = 2;
+
+        /// <summary> Default value for <see cref="MaxQueryIteratorsCount"/>. </summary>
+        public const int DefaultMaxQueryIteratorsCount = 1024;
+
+        /// <summary> Default value for <see cref="QueryDetailMetricsSize"/>. </summary>
+        public const int DefaultQueryDetailMetricsSize = 0;
+
+        /// <summary> Default value for <see cref="QueryParallelism"/>. </summary>
+        public const int DefaultQueryParallelism = 1;
+
         /// <summary>
         /// Gets or sets the cache name.
         /// </summary>
@@ -184,6 +207,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindFlushThreadCount= DefaultWriteBehindFlushThreadCount;
             WriteBehindCoalescing = DefaultWriteBehindCoalescing;
             PartitionLossPolicy = DefaultPartitionLossPolicy;
+            SqlIndexMaxInlineSize = DefaultSqlIndexMaxInlineSize;
+            StoreConcurrentLoadAllThreshold = DefaultStoreConcurrentLoadAllThreshold;
+            RebalanceOrder = DefaultRebalanceOrder;
+            RebalanceBatchesPrefetchCount = DefaultRebalanceBatchesPrefetchCount;
+            MaxQueryIteratorsCount = DefaultMaxQueryIteratorsCount;
+            QueryParallelism = DefaultQueryParallelism;
         }
 
         /// <summary>
@@ -282,15 +311,21 @@ namespace Apache.Ignite.Core.Cache.Configuration
             ReadThrough = reader.ReadBoolean();
             WriteThrough = reader.ReadBoolean();
             EnableStatistics = reader.ReadBoolean();
-            MemoryPolicyName = reader.ReadString();
+            DataRegionName = reader.ReadString();
             PartitionLossPolicy = (PartitionLossPolicy) reader.ReadInt();
             GroupName = reader.ReadString();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
+            SqlIndexMaxInlineSize = reader.ReadInt();
+            OnheapCacheEnabled = reader.ReadBoolean();
+            StoreConcurrentLoadAllThreshold = reader.ReadInt();
+            RebalanceOrder = reader.ReadInt();
+            RebalanceBatchesPrefetchCount = reader.ReadLong();
+            MaxQueryIteratorsCount = reader.ReadInt();
+            QueryDetailMetricsSize = reader.ReadInt();
+            QueryParallelism = reader.ReadInt();
+            SqlSchema = reader.ReadString();
 
-            var count = reader.ReadInt();
-            QueryEntities = count == 0
-                ? null
-                : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
+            QueryEntities = reader.ReadCollectionRaw(r => new QueryEntity(r));
 
             NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
 
@@ -298,7 +333,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             AffinityFunction = AffinityFunctionSerializer.Read(reader);
             ExpiryPolicyFactory = ExpiryPolicySerializer.ReadPolicyFactory(reader);
 
-            count = reader.ReadInt();
+            KeyConfiguration = reader.ReadCollectionRaw(r => new CacheKeyConfiguration(r));
+
+            var count = reader.ReadInt();
 
             if (count > 0)
             {
@@ -319,6 +356,15 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Writes this instance to the specified writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        void IBinaryRawWriteAware<BinaryWriter>.Write(BinaryWriter writer)
+        {
+            Write(writer);
         }
 
         /// <summary>
@@ -361,25 +407,21 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteBoolean(ReadThrough);
             writer.WriteBoolean(WriteThrough);
             writer.WriteBoolean(EnableStatistics);
-            writer.WriteString(MemoryPolicyName);
+            writer.WriteString(DataRegionName);
             writer.WriteInt((int) PartitionLossPolicy);
             writer.WriteString(GroupName);
             writer.WriteObject(CacheStoreFactory);
+            writer.WriteInt(SqlIndexMaxInlineSize);
+            writer.WriteBoolean(OnheapCacheEnabled);
+            writer.WriteInt(StoreConcurrentLoadAllThreshold);
+            writer.WriteInt(RebalanceOrder);
+            writer.WriteLong(RebalanceBatchesPrefetchCount);
+            writer.WriteInt(MaxQueryIteratorsCount);
+            writer.WriteInt(QueryDetailMetricsSize);
+            writer.WriteInt(QueryParallelism);
+            writer.WriteString(SqlSchema);
 
-            if (QueryEntities != null)
-            {
-                writer.WriteInt(QueryEntities.Count);
-
-                foreach (var entity in QueryEntities)
-                {
-                    if (entity == null)
-                        throw new InvalidOperationException("Invalid cache configuration: QueryEntity can't be null.");
-
-                    entity.Write(writer);
-                }
-            }
-            else
-                writer.WriteInt(0);
+            writer.WriteCollectionRaw(QueryEntities);
 
             if (NearConfiguration != null)
             {
@@ -392,6 +434,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             EvictionPolicyBase.Write(writer, EvictionPolicy);
             AffinityFunctionSerializer.Write(writer, AffinityFunction);
             ExpiryPolicySerializer.WritePolicyFactory(writer, ExpiryPolicyFactory);
+
+            writer.WriteCollectionRaw(KeyConfiguration);
 
             if (PluginConfigurations != null)
             {
@@ -741,7 +785,18 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets the name of the <see cref="MemoryPolicyConfiguration"/> for this cache.
         /// See <see cref="IgniteConfiguration.MemoryConfiguration"/>.
         /// </summary>
-        public string MemoryPolicyName { get; set; }
+        [Obsolete("Use DataRegionName.")]
+        [XmlIgnore]
+        public string MemoryPolicyName
+        {
+            get { return DataRegionName; }
+            set { DataRegionName = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the name of the data region, see <see cref="DataRegionConfiguration"/>.
+        /// </summary>
+        public string DataRegionName { get; set; }
 
         /// <summary>
         /// Gets or sets write coalescing flag for write-behind cache store operations.
@@ -764,10 +819,98 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <para />
         /// Since underlying cache is shared, the following configuration properties should be the same within group:
         /// <see cref="AffinityFunction"/>, <see cref="CacheMode"/>, <see cref="PartitionLossPolicy"/>,
-        /// <see cref="MemoryPolicyName"/>
+        /// <see cref="DataRegionName"/>
         /// <para />
         /// Grouping caches reduces overall overhead, since internal data structures are shared.
         /// </summary>
         public string GroupName { get;set; }
+
+        /// <summary>
+        /// Gets or sets maximum inline size in bytes for sql indexes. See also <see cref="QueryIndex.InlineSize"/>.
+        /// -1 for automatic.
+        /// </summary>
+        [DefaultValue(DefaultSqlIndexMaxInlineSize)]
+        public int SqlIndexMaxInlineSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the key configuration.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public ICollection<CacheKeyConfiguration> KeyConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether on-heap cache is enabled for the off-heap based page memory.
+        /// </summary>
+        public bool OnheapCacheEnabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the threshold to use when multiple keys are being loaded from an underlying cache store
+        /// (see <see cref="CacheStoreFactory"/>).
+        /// 
+        /// In the situation when several threads load the same or intersecting set of keys
+        /// and the total number of keys to load is less or equal to this threshold then there will be no
+        /// second call to the storage in order to load a key from thread A if the same key is already being
+        /// loaded by thread B.
+        ///
+        /// The threshold should be controlled wisely. On the one hand if it's set to a big value then the
+        /// interaction with a storage during the load of missing keys will be minimal.On the other hand the big
+        /// value may result in significant performance degradation because it is needed to check
+        /// for every key whether it's being loaded or not.
+        /// </summary>
+        [DefaultValue(DefaultStoreConcurrentLoadAllThreshold)]
+        public int StoreConcurrentLoadAllThreshold { get; set; }
+
+        /// <summary>
+        /// Gets or sets the cache rebalance order. Caches with bigger RebalanceOrder are rebalanced later than caches
+        /// with smaller RebalanceOrder.
+        /// <para />
+        /// Default is 0, which means unordered rebalance. All caches with RebalanceOrder=0 are rebalanced without any
+        /// delay concurrently.
+        /// <para />
+        /// This parameter is applicable only for caches with <see cref="RebalanceMode"/> of
+        /// <see cref="CacheRebalanceMode.Sync"/> and <see cref="CacheRebalanceMode.Async"/>.
+        /// </summary>
+        [DefaultValue(DefaultRebalanceOrder)]
+        public int RebalanceOrder { get; set; }
+
+        /// <summary>
+        /// Gets or sets the rebalance batches prefetch count.
+        /// <para />
+        /// Source node can provide more than one batch at rebalance start to improve performance.
+        /// Default is <see cref="DefaultRebalanceBatchesPrefetchCount"/>, minimum is 2.
+        /// </summary>
+        [DefaultValue(DefaultRebalanceBatchesPrefetchCount)]
+        public long RebalanceBatchesPrefetchCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum number of active query iterators.
+        /// </summary>
+        [DefaultValue(DefaultMaxQueryIteratorsCount)]
+        public int MaxQueryIteratorsCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of the query detail metrics to be stored in memory.
+        /// <para />
+        /// 0 means disabled metrics.
+        /// </summary>
+        [DefaultValue(DefaultQueryDetailMetricsSize)]
+        public int QueryDetailMetricsSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the SQL schema.
+        /// Non-quoted identifiers are not case sensitive. Quoted identifiers are case sensitive.
+        /// <para />
+        /// Quoted <see cref="Name"/> is used by default.
+        /// </summary>
+        public string SqlSchema { get; set; }
+
+        /// <summary>
+        /// Gets or sets the desired query parallelism within a single node.
+        /// Query executor may or may not use this hint, depending on estimated query cost.
+        /// <para />
+        /// Default is <see cref="DefaultQueryParallelism"/>.
+        /// </summary>
+        [DefaultValue(DefaultQueryParallelism)]
+        public int QueryParallelism { get; set; }
     }
 }

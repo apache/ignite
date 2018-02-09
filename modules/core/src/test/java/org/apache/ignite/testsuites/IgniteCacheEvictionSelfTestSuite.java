@@ -29,11 +29,14 @@ import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictableEn
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionFilterSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionLockUnlockSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEvictionTouchSelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.fifo.FifoEvictionPolicyFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.fifo.FifoEvictionPolicySelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.lru.LruEvictionPolicyFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.lru.LruNearOnlyNearEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionDataStreamerTest;
+import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionMultinodeMixedRegionsTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionReadThroughTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.PageEvictionTouchOrderTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruNearEnabledPageEvictionMultinodeTest;
@@ -42,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.eviction.paged.Random2LruPage
 import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruNearEnabledPageEvictionMultinodeTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionMultinodeTest;
 import org.apache.ignite.internal.processors.cache.eviction.paged.RandomLruPageEvictionWithRebalanceTest;
+import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictionPolicyFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.sorted.SortedEvictionPolicySelfTest;
 
 /**
@@ -58,6 +62,9 @@ public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(FifoEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(SortedEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(LruEvictionPolicySelfTest.class));
+        suite.addTest(new TestSuite(FifoEvictionPolicyFactorySelfTest.class));
+        suite.addTest(new TestSuite(SortedEvictionPolicyFactorySelfTest.class));
+        suite.addTest(new TestSuite(LruEvictionPolicyFactorySelfTest.class));
         suite.addTest(new TestSuite(LruNearEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(LruNearOnlyNearEvictionPolicySelfTest.class));
         suite.addTest(new TestSuite(GridCacheNearEvictionSelfTest.class));
@@ -81,6 +88,8 @@ public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(PageEvictionTouchOrderTest.class));
         suite.addTest(new TestSuite(PageEvictionReadThroughTest.class));
         suite.addTest(new TestSuite(PageEvictionDataStreamerTest.class));
+
+        suite.addTest(new TestSuite(PageEvictionMultinodeMixedRegionsTest.class));
 
         return suite;
     }

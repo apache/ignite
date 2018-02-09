@@ -82,6 +82,21 @@ namespace ignite
 
                     /** Connection attribute keyword for lazy attribute. */
                     static const std::string lazy;
+
+                    /** Connection attribute keyword for skipReducerOnUpdate attribute. */
+                    static const std::string skipReducerOnUpdate;
+
+                    /** Connection attribute keyword for sslMode attribute. */
+                    static const std::string sslMode;
+
+                    /** Connection attribute keyword for sslKeyFile attribute. */
+                    static const std::string sslKeyFile;
+
+                    /** Connection attribute keyword for sslCertFile attribute. */
+                    static const std::string sslCertFile;
+
+                    /** Connection attribute keyword for sslCaFile attribute. */
+                    static const std::string sslCaFile;
                 };
 
                 /** Default values for configuration. */
@@ -101,6 +116,18 @@ namespace ignite
 
                     /** Default value for server attribute. */
                     static const std::string server;
+
+                    /** Default value for sslMode attribute. */
+                    static const std::string sslMode;
+
+                    /** Default value for sslKeyFile attribute. */
+                    static const std::string sslKeyFile;
+
+                    /** Default value for sslCertFile attribute. */
+                    static const std::string sslCertFile;
+
+                    /** Default value for sslCaFile attribute. */
+                    static const std::string sslCaFile;
 
                     /** Default value for protocol version. */
                     static const ProtocolVersion& protocolVersion;
@@ -125,6 +152,9 @@ namespace ignite
 
                     /** Default value for lazy attribute. */
                     static const bool lazy;
+
+                    /** Default value for skipReducerOnUpdate attribute. */
+                    static const bool skipReducerOnUpdate;
                 };
 
                 /**
@@ -177,8 +207,8 @@ namespace ignite
                 /**
                  * Fill configuration data using config attributes string.
                  *
-                 * @param str Pointer to list of zero-terminated strings.
-                 *            Terminated by two zero bytes.
+                 * @param attributes Pointer to list of zero-terminated strings.
+                 *     Terminated by two zero bytes.
                  */
                 void FillFromConfigAttributes(const char* attributes);
 
@@ -284,6 +314,86 @@ namespace ignite
                 void SetAddress(const std::string& address);
 
                 /**
+                 * Get SSL mode.
+                 *
+                 * @return SSL mode.
+                 */
+                const std::string& GetSslMode() const
+                {
+                    return GetStringValue(Key::sslMode, DefaultValue::sslMode);
+                }
+
+                /**
+                 * Set SSL mode.
+                 *
+                 * @param sslMode SSL mode.
+                 */
+                void SetSslMode(const std::string& sslMode)
+                {
+                    arguments[Key::sslMode] = sslMode;
+                }
+
+                /**
+                 * Get SSL key file path.
+                 *
+                 * @return SSL key file path.
+                 */
+                const std::string& GetSslKeyFile() const
+                {
+                    return GetStringValue(Key::sslKeyFile, DefaultValue::sslKeyFile);
+                }
+
+                /**
+                 * Set SSL key file path.
+                 *
+                 * @param sslKeyFile SSL key file path.
+                 */
+                void SetSslKeyFile(const std::string& sslKeyFile)
+                {
+                    arguments[Key::sslKeyFile] = sslKeyFile;
+                }
+
+                /**
+                 * Get SSL certificate file path.
+                 *
+                 * @return SSL certificate file path.
+                 */
+                const std::string& GetSslCertFile() const
+                {
+                    return GetStringValue(Key::sslCertFile, DefaultValue::sslCertFile);
+                }
+
+                /**
+                 * Set SSL certificate file path.
+                 *
+                 * @param sslCertFile SSL certificate file path.
+                 */
+                void SetSslCertFile(const std::string& sslCertFile)
+                {
+                    arguments[Key::sslCertFile] = sslCertFile;
+                }
+
+                /**
+                 * Get SSL certificate authority file path.
+                 *
+                 * @return SSL certificate authority file path.
+                 */
+                const std::string& GetSslCaFile() const
+                {
+                    return GetStringValue(Key::sslCaFile, DefaultValue::sslCaFile);
+                }
+
+                /**
+                 * Set SSL certificate authority file path.
+                 *
+                 * @param sslCaFile SSL certificate authority file path.
+                 */
+                void SetSslCaFile(const std::string& sslCaFile)
+                {
+                    arguments[Key::sslCaFile] = sslCaFile;
+                }
+
+                /**
                  * Check distributed joins flag.
                  *
                  * @return True if distributed joins are enabled.
@@ -384,6 +494,26 @@ namespace ignite
                 }
 
                 /**
+                 * Check update on server flag.
+                 *
+                 * @return True if update on server.
+                 */
+                bool IsSkipReducerOnUpdate() const
+                {
+                    return GetBoolValue(Key::skipReducerOnUpdate, DefaultValue::skipReducerOnUpdate);
+                }
+
+                /**
+                 * Set update on server.
+                 *
+                 * @param val Value to set.
+                 */
+                void SetSkipReducerOnUpdate(bool val)
+                {
+                    SetBoolValue(Key::skipReducerOnUpdate, val);
+                }
+
+                /**
                  * Get protocol version.
                  *
                  * @return Protocol version.
@@ -469,7 +599,7 @@ namespace ignite
                  *
                  * @param str String to parse.
                  * @param len String length.
-                 * @param params Parsing result.
+                 * @param args Parsing result.
                  */
                 static void ParseAttributeList(const char* str, size_t len, char delimeter, ArgumentMap& args);
 

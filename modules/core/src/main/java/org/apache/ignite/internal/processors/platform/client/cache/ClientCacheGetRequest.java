@@ -25,10 +25,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 /**
  * Cache get request.
  */
-public class ClientCacheGetRequest extends ClientCacheRequest {
-    /** Key. */
-    private final Object key;
-
+public class ClientCacheGetRequest extends ClientCacheKeyRequest {
     /**
      * Constructor.
      *
@@ -36,14 +33,12 @@ public class ClientCacheGetRequest extends ClientCacheRequest {
      */
     public ClientCacheGetRequest(BinaryRawReaderEx reader) {
         super(reader);
-
-        key = reader.readObjectDetached();
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        Object val = cache(ctx).get(key);
+        Object val = cache(ctx).get(key());
 
         return new ClientObjectResponse(requestId(), val);
     }

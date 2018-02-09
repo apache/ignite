@@ -91,7 +91,7 @@ public final class IgniteQueryErrorCode {
     /** Attempt to INSERT or MERGE {@code null} key. */
     public final static int NULL_KEY = 4003;
 
-    /** Attempt to INSERT or MERGE {@code null} value. */
+    /** Attempt to INSERT or MERGE {@code null} value, or to to set {@code null} to a {@code NOT NULL} column. */
     public final static int NULL_VALUE = 4004;
 
     /** {@link EntryProcessor} has thrown an exception during {@link IgniteCache#invokeAll}. */

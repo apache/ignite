@@ -6,5 +6,5 @@ Apache Ignite In-Memory Data Fabric is designed to deliver uncompromised perform
 [high performance computing](https://ignite.apache.org/features.html), to the industry most advanced [data grid](https://ignite.apache.org/features.html), 
 highly available [service grid](https://ignite.apache.org/features.html), and [streaming](https://ignite.apache.org/features.html).
 
-* [API Documentation](/api)
+* [API Documentation](api/)
 * [Gettting Started](https://apacheignite-net.readme.io/docs/getting-started)

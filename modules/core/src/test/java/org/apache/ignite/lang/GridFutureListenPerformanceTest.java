@@ -23,11 +23,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.jsr166.ConcurrentLinkedDeque8;
-import org.jsr166.LongAdder8;
 
 /**
  *
@@ -41,7 +41,7 @@ public class GridFutureListenPerformanceTest {
      * @throws InterruptedException If failed.
      */
     public static void main(String[] args) throws InterruptedException {
-        final LongAdder8 cnt = new LongAdder8();
+        final LongAdder cnt = new LongAdder();
 
         final ConcurrentLinkedDeque8<GridFutureAdapter<Object>> futs = new ConcurrentLinkedDeque8<>();
 

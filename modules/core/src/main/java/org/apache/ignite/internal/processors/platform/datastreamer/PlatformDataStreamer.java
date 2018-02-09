@@ -86,6 +86,12 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
     /** */
     private static final int OP_LISTEN_TOPOLOGY = 11;
 
+    /** */
+    private static final int OP_GET_TIMEOUT = 12;
+
+    /** */
+    private static final int OP_SET_TIMEOUT = 13;
+
     /** Cache name. */
     private final String cacheName;
 
@@ -230,6 +236,14 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
 
             case OP_PER_NODE_PARALLEL_OPS:
                 return ldr.perNodeParallelOperations();
+
+            case OP_GET_TIMEOUT:
+                return ldr.timeout();
+
+            case OP_SET_TIMEOUT:
+                ldr.timeout(val);
+
+                return TRUE;
         }
 
         return super.processInLongOutLong(type, val);

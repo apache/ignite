@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.InputStream;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -25,21 +28,24 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadAckResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteMultipleStatementsResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
-import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultInfo;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBulkLoadBatchRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -54,6 +60,9 @@ public class JdbcThinStatement implements Statement {
 
     /** JDBC Connection implementation. */
     protected JdbcThinConnection conn;
+
+    /** Schema name. */
+    private final String schema;
 
     /** Closed flag. */
     private boolean closed;
@@ -87,12 +96,14 @@ public class JdbcThinStatement implements Statement {
      *
      * @param conn JDBC connection.
      * @param resHoldability Result set holdability.
+     * @param schema Schema name.
      */
-    JdbcThinStatement(JdbcThinConnection conn, int resHoldability) {
+    JdbcThinStatement(JdbcThinConnection conn, int resHoldability, String schema) {
         assert conn != null;
 
         this.conn = conn;
         this.resHoldability = resHoldability;
+        this.schema = schema;
     }
 
     /** {@inheritDoc} */
@@ -122,10 +133,13 @@ public class JdbcThinStatement implements Statement {
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty.");
 
-        JdbcResult res0 = conn.sendRequest(new JdbcQueryExecuteRequest(stmtType, conn.getSchema(), pageSize,
+        JdbcResult res0 = conn.sendRequest(new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
             maxRows, sql, args == null ? null : args.toArray(new Object[args.size()])));
 
         assert res0 != null;
+
+        if (res0 instanceof JdbcBulkLoadAckResult)
+            res0 = sendFile((JdbcBulkLoadAckResult)res0);
 
         if (res0 instanceof JdbcQueryExecuteResult) {
             JdbcQueryExecuteResult res = (JdbcQueryExecuteResult)res0;
@@ -169,6 +183,61 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("Unexpected result [res=" + res0 + ']');
 
         assert resultSets.size() > 0 : "At least one results set is expected";
+    }
+
+    /**
+     * Sends a file to server in batches via multiple {@link JdbcBulkLoadBatchRequest}s.
+     *
+     * @param cmdRes Result of invoking COPY command: contains server-parsed
+     *    bulk load parameters, such as file name and batch size.
+     */
+    private JdbcResult sendFile(JdbcBulkLoadAckResult cmdRes) throws SQLException {
+        String fileName = cmdRes.params().localFileName();
+        int batchSize = cmdRes.params().batchSize();
+
+        int batchNum = 0;
+
+        try {
+            try (InputStream input = new BufferedInputStream(new FileInputStream(fileName))) {
+                byte[] buf = new byte[batchSize];
+
+                int readBytes;
+                while ((readBytes = input.read(buf)) != -1) {
+                    if (readBytes == 0)
+                        continue;
+
+                    JdbcResult res = conn.sendRequest(new JdbcBulkLoadBatchRequest(
+                        cmdRes.queryId(),
+                        batchNum++,
+                        JdbcBulkLoadBatchRequest.CMD_CONTINUE,
+                        readBytes == buf.length ? buf : Arrays.copyOf(buf, readBytes)));
+
+                    if (!(res instanceof JdbcQueryExecuteResult))
+                        throw new SQLException("Unknown response sent by the server: " + res);
+                }
+
+                return conn.sendRequest(new JdbcBulkLoadBatchRequest(
+                    cmdRes.queryId(),
+                    batchNum++,
+                    JdbcBulkLoadBatchRequest.CMD_FINISHED_EOF));
+            }
+        }
+        catch (Exception e) {
+            try {
+                conn.sendRequest(new JdbcBulkLoadBatchRequest(
+                    cmdRes.queryId(),
+                    batchNum,
+                    JdbcBulkLoadBatchRequest.CMD_FINISHED_ERROR));
+            }
+            catch (SQLException e1) {
+                throw new SQLException("Cannot send finalization request: " + e1.getMessage(), e);
+            }
+
+            if (e instanceof SQLException)
+                throw (SQLException) e;
+            else
+                throw new SQLException("Failed to read file: '" + fileName + "'", SqlStateCode.INTERNAL_ERROR, e);
+        }
     }
 
     /** {@inheritDoc} */

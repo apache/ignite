@@ -17,17 +17,17 @@
 
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
-import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
-
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.atomic.LongAdder;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Worker for lazy query execution.
@@ -37,7 +37,7 @@ public class MapQueryLazyWorker extends GridWorker {
     private static final ThreadLocal<MapQueryLazyWorker> LAZY_WORKER = new ThreadLocal<>();
 
     /** Active lazy worker count (for testing purposes). */
-    private static final LongAdder8 ACTIVE_CNT = new LongAdder8();
+    private static final LongAdder ACTIVE_CNT = new LongAdder();
 
     /** Task to be executed. */
     private final BlockingQueue<Runnable> tasks = new LinkedBlockingDeque<>();
@@ -123,6 +123,14 @@ public class MapQueryLazyWorker extends GridWorker {
                 }
             });
         else {
+            GridH2QueryContext qctx = GridH2QueryContext.get();
+
+            if (qctx != null) {
+                qctx.clearContext(false);
+
+                GridH2QueryContext.clearThreadLocal();
+            }
+
             isCancelled = true;
 
             stopLatch.countDown();

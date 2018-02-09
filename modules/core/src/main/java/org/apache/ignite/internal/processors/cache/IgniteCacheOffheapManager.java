@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.IgniteTree;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
@@ -60,7 +61,7 @@ public interface IgniteCacheOffheapManager {
 
     /**
      * @param cacheId Cache ID.
-     * @param destroy Destroy data flag.
+     * @param destroy Destroy data flag. Setting to <code>true</code> will remove all cache data.
      */
     public void stopCache(int cacheId, boolean destroy);
 
@@ -181,18 +182,6 @@ public interface IgniteCacheOffheapManager {
         long expireTime,
         GridDhtLocalPartition part,
         @Nullable CacheDataRow oldRow
-    ) throws IgniteCheckedException;
-
-    /**
-     * @param cctx Cache context.
-     * @param key Key.
-     * @param part Partition.
-     * @throws IgniteCheckedException If failed.
-     */
-    public void updateIndexes(
-        GridCacheContext cctx,
-        KeyCacheObject key,
-        GridDhtLocalPartition part
     ) throws IgniteCheckedException;
 
     /**
@@ -454,13 +443,6 @@ public interface IgniteCacheOffheapManager {
         /**
          * @param cctx Cache context.
          * @param key Key.
-         * @throws IgniteCheckedException If failed.
-         */
-        void updateIndexes(GridCacheContext cctx, KeyCacheObject key) throws IgniteCheckedException;
-
-        /**
-         * @param cctx Cache context.
-         * @param key Key.
          * @param c Closure.
          * @throws IgniteCheckedException If failed.
          */
@@ -540,5 +522,12 @@ public interface IgniteCacheOffheapManager {
          * @param cntr Counter.
          */
         void updateInitialCounter(long cntr);
+
+        /**
+         * Inject rows cache cleaner.
+         *
+         * @param rowCacheCleaner Rows cache cleaner.
+         */
+        public void setRowCacheCleaner(GridQueryRowCacheCleaner rowCacheCleaner);
     }
 }

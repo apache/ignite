@@ -42,7 +42,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteVersionUtils;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -78,11 +78,16 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(
             cacheConfiguration("pers").setQueryEntities(Arrays.asList(
-                new QueryEntity(AffinityKey.class, Person.class)
-                    .setIndexes(Arrays.asList(
-                        new QueryIndex("orgId"),
-                        new QueryIndex().setFields(persFields))))
-            ),
+                new QueryEntityEx(
+                    new QueryEntity(AffinityKey.class.getName(), Person.class.getName())
+                        .addQueryField("name", String.class.getName(), null)
+                        .addQueryField("age", Integer.class.getName(), null)
+                        .addQueryField("orgId", Integer.class.getName(), null)
+                        .setIndexes(Arrays.asList(
+                            new QueryIndex("orgId"),
+                            new QueryIndex().setFields(persFields))))
+                    .setNotNullFields(new HashSet<>(Arrays.asList("age", "name")))
+            )),
             cacheConfiguration("org").setQueryEntities(Arrays.asList(
                 new QueryEntity(AffinityKey.class, Organization.class))));
 
@@ -208,13 +213,14 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGetColumns() throws Exception {
-        final boolean primitivesInformationIsLostAfterStore = ignite(0).configuration().getMarshaller() instanceof BinaryMarshaller;
         try (Connection conn = DriverManager.getConnection(BASE_URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
             ResultSet rs = meta.getColumns("", "pers", "PERSON", "%");
 
             assertNotNull(rs);
+
+            assertEquals(24, rs.getMetaData().getColumnCount());
 
             Collection<String> names = new ArrayList<>(2);
 
@@ -232,11 +238,21 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                 if ("NAME".equals(name)) {
                     assertEquals(VARCHAR, rs.getInt("DATA_TYPE"));
                     assertEquals("VARCHAR", rs.getString("TYPE_NAME"));
-                    assertEquals(1, rs.getInt("NULLABLE"));
-                } else if ("AGE".equals(name) || "ORGID".equals(name)) {
+                    assertEquals(0, rs.getInt("NULLABLE"));
+                    assertEquals(0, rs.getInt(11)); // nullable column by index
+                    assertEquals("NO", rs.getString("IS_NULLABLE"));
+                } else if ("AGE".equals(name)) {
                     assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
                     assertEquals("INTEGER", rs.getString("TYPE_NAME"));
-                    assertEquals(primitivesInformationIsLostAfterStore ? 1 : 0, rs.getInt("NULLABLE"));
+                    assertEquals(0, rs.getInt("NULLABLE"));
+                    assertEquals(0, rs.getInt(11)); // nullable column by index
+                    assertEquals("NO", rs.getString("IS_NULLABLE"));
+                } else if ("ORGID".equals(name)) {
+                    assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
+                    assertEquals("INTEGER", rs.getString("TYPE_NAME"));
+                    assertEquals(1, rs.getInt("NULLABLE"));
+                    assertEquals(1, rs.getInt(11)); // nullable column by index
+                    assertEquals("YES", rs.getString("IS_NULLABLE"));
                 }
 
                 cnt++;
@@ -263,10 +279,14 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
                     assertEquals(INTEGER, rs.getInt("DATA_TYPE"));
                     assertEquals("INTEGER", rs.getString("TYPE_NAME"));
                     assertEquals(0, rs.getInt("NULLABLE"));
+                    assertEquals(0, rs.getInt(11)); // nullable column by index
+                    assertEquals("NO", rs.getString("IS_NULLABLE"));
                 } else if ("name".equals(name)) {
                     assertEquals(VARCHAR, rs.getInt("DATA_TYPE"));
                     assertEquals("VARCHAR", rs.getString("TYPE_NAME"));
                     assertEquals(1, rs.getInt("NULLABLE"));
+                    assertEquals(1, rs.getInt(11)); // nullable column by index
+                    assertEquals("YES", rs.getString("IS_NULLABLE"));
                 }
 
                 cnt++;

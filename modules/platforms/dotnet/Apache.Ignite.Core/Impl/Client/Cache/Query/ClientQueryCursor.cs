@@ -17,26 +17,16 @@
 
 namespace Apache.Ignite.Core.Impl.Client.Cache.Query
 {
-    using System.Collections.Generic;
-    using System.Linq;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
-    using Apache.Ignite.Core.Impl.Cache.Query;
     using Apache.Ignite.Core.Impl.Client;
 
     /// <summary>
     /// Client query cursor.
     /// </summary>
-    internal class ClientQueryCursor<TK, TV> : QueryCursorBase<ICacheEntry<TK, TV>>
+    internal sealed class ClientQueryCursor<TK, TV> : ClientQueryCursorBase<ICacheEntry<TK, TV>>
     {
-        /** Ignite. */
-        private readonly IgniteClient _ignite;
-
-        /** Cursor ID. */
-        private readonly long _cursorId;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="ClientQueryCursor{TK, TV}" /> class.
         /// </summary>
@@ -44,51 +34,13 @@ namespace Apache.Ignite.Core.Impl.Client.Cache.Query
         /// <param name="cursorId">The cursor identifier.</param>
         /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="initialBatchStream">Optional stream with initial batch.</param>
-        public ClientQueryCursor(IgniteClient ignite, long cursorId, bool keepBinary, 
-            IBinaryStream initialBatchStream) 
-            : base(ignite.Marshaller, keepBinary, initialBatchStream)
-        {
-            _ignite = ignite;
-            _cursorId = cursorId;
-        }
-
-        /** <inheritdoc /> */
-        protected override void InitIterator()
+        /// <param name="getPageOp">The get page op.</param>
+        public ClientQueryCursor(IgniteClient ignite, long cursorId, bool keepBinary,
+            IBinaryStream initialBatchStream, ClientOp getPageOp)
+            : base(ignite, cursorId, keepBinary, initialBatchStream, getPageOp,
+                r => new CacheEntry<TK, TV>(r.ReadObject<TK>(), r.ReadObject<TV>()))
         {
             // No-op.
-        }
-
-        /** <inheritdoc /> */
-        protected override IList<ICacheEntry<TK, TV>> GetAllInternal()
-        {
-            return this.ToArray();
-        }
-
-        /** <inheritdoc /> */
-        protected override ICacheEntry<TK, TV> Read(BinaryReader reader)
-        {
-            return new CacheEntry<TK, TV>(reader.ReadObject<TK>(), reader.ReadObject<TV>());
-        }
-
-        /** <inheritdoc /> */
-        protected override ICacheEntry<TK, TV>[] GetBatch()
-        {
-            return _ignite.Socket.DoOutInOp(ClientOp.QueryScanCursorGetPage,
-                w => w.WriteLong(_cursorId),
-                s => ConvertGetBatch(s));
-        }
-
-        /** <inheritdoc /> */
-        protected override void Dispose(bool disposing)
-        {
-            try
-            {
-                _ignite.Socket.DoOutInOp<object>(ClientOp.ResourceClose, w => w.WriteLong(_cursorId), null);
-            }
-            finally
-            {
-                base.Dispose(disposing);
-            }
         }
     }
 }

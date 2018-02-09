@@ -18,22 +18,26 @@
 package org.apache.ignite.internal.processors.query.schema;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.thread.IgniteThread;
 
-import java.util.Collection;
+import java.util.List;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
@@ -42,36 +46,54 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  * Traversor operating all primary and backup partitions of given cache.
  */
+@SuppressWarnings("ForLoopReplaceableByForEach")
 public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
-    /** Query procssor. */
-    private final GridQueryProcessor qryProc;
+    /** Default degree of parallelism. */
+    private static final int DFLT_PARALLELISM = Math.max(1, Runtime.getRuntime().availableProcessors() / 4);
+
+    /** Count of rows, being processed within a single checkpoint lock. */
+    private static final int BATCH_SIZE = 1000;
 
     /** Cache context. */
     private final GridCacheContext cctx;
 
-    /** Cache name. */
-    private final String cacheName;
-
-    /** Table name. */
-    private final String tblName;
+    /** Row filter. */
+    private final SchemaIndexCacheFilter rowFilter;
 
     /** Cancellation token. */
     private final SchemaIndexOperationCancellationToken cancel;
+
+    /** Parallelism. */
+    private final int parallelism;
+
+    /** Whether to stop the process. */
+    private volatile boolean stop;
+
+    /**
+     * Constructor.
+     *  @param cctx Cache context.
+     */
+    public SchemaIndexCacheVisitorImpl(GridCacheContext cctx) {
+        this(cctx, null, null, 0);
+    }
 
     /**
      * Constructor.
      *
      * @param cctx Cache context.
-     * @param cacheName Cache name.
-     * @param tblName Table name.
+     * @param rowFilter Row filter.
      * @param cancel Cancellation token.
+     * @param parallelism Degree of parallelism.
      */
-    public SchemaIndexCacheVisitorImpl(GridQueryProcessor qryProc, GridCacheContext cctx, String cacheName,
-        String tblName, SchemaIndexOperationCancellationToken cancel) {
-        this.qryProc = qryProc;
-        this.cacheName = cacheName;
-        this.tblName = tblName;
+    public SchemaIndexCacheVisitorImpl(GridCacheContext cctx, SchemaIndexCacheFilter rowFilter,
+        SchemaIndexOperationCancellationToken cancel, int parallelism) {
+        this.rowFilter = rowFilter;
         this.cancel = cancel;
+
+        if (parallelism > 0)
+            this.parallelism = Math.min(Runtime.getRuntime().availableProcessors(), parallelism);
+        else
+            this.parallelism =  DFLT_PARALLELISM;
 
         if (cctx.isNear())
             cctx = ((GridNearCacheAdapter)cctx.cache()).dht().context();
@@ -83,12 +105,65 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     @Override public void visit(SchemaIndexCacheVisitorClosure clo) throws IgniteCheckedException {
         assert clo != null;
 
-        FilteringVisitorClosure filterClo = new FilteringVisitorClosure(clo);
+        List<GridDhtLocalPartition> parts = cctx.topology().localPartitions();
 
-        Collection<GridDhtLocalPartition> parts = cctx.topology().localPartitions();
+        if (parts.isEmpty())
+            return;
 
-        for (GridDhtLocalPartition part : parts)
-            processPartition(part, filterClo);
+        GridCompoundFuture<Void, Void> fut = null;
+
+        if (parallelism > 1) {
+            fut = new GridCompoundFuture<>();
+
+            for (int i = 1; i < parallelism; i++)
+                fut.add(processPartitionsAsync(parts, clo, i));
+
+            fut.markInitialized();
+        }
+
+        processPartitions(parts, clo, 0);
+
+        if (fut != null)
+            fut.get();
+    }
+
+    /**
+     * Process partitions asynchronously.
+     *
+     * @param parts Partitions.
+     * @param clo Closure.
+     * @param remainder Remainder.
+     * @return Future.
+     */
+    private GridFutureAdapter<Void> processPartitionsAsync(List<GridDhtLocalPartition> parts,
+        SchemaIndexCacheVisitorClosure clo, int remainder) {
+        GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
+
+        AsyncWorker worker = new AsyncWorker(parts, clo, remainder, fut);
+
+        new IgniteThread(worker).start();
+
+        return fut;
+    }
+
+    /**
+     * Process partitions.
+     *
+     * @param parts Partitions.
+     * @param clo Closure.
+     * @param remainder Remainder.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void processPartitions(List<GridDhtLocalPartition> parts, SchemaIndexCacheVisitorClosure clo,
+        int remainder)
+        throws IgniteCheckedException {
+        for (int i = 0, size = parts.size(); i < size; i++) {
+            if (stop)
+                break;
+
+            if ((i % parallelism) == remainder)
+                processPartition(parts.get(i), clo);
+        }
     }
 
     /**
@@ -98,7 +173,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      * @param clo Index closure.
      * @throws IgniteCheckedException If failed.
      */
-    private void processPartition(GridDhtLocalPartition part, FilteringVisitorClosure clo)
+    private void processPartition(GridDhtLocalPartition part, SchemaIndexCacheVisitorClosure clo)
         throws IgniteCheckedException {
         checkCancelled();
 
@@ -111,17 +186,38 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
             return;
 
         try {
-            GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor();
+            GridCursor<? extends CacheDataRow> cursor = part.dataStore().cursor(cctx.cacheId(), null, null,
+                CacheDataRowAdapter.RowData.KEY_ONLY);
 
-            while (cursor.next()) {
-                CacheDataRow row = cursor.get();
+            boolean locked = false;
 
-                KeyCacheObject key = row.key();
+            try {
+                int cntr = 0;
 
-                processKey(key, row.link(), clo);
+                while (cursor.next() && !stop) {
+                    KeyCacheObject key = cursor.get().key();
 
-                if (part.state() == RENTING)
-                    break;
+                    if (!locked) {
+                        cctx.shared().database().checkpointReadLock();
+
+                        locked = true;
+                    }
+
+                    processKey(key, clo);
+
+                    if (++cntr % BATCH_SIZE == 0) {
+                        cctx.shared().database().checkpointReadUnlock();
+
+                        locked = false;
+                    }
+
+                    if (part.state() == RENTING)
+                        break;
+                }
+            }
+            finally {
+                if (locked)
+                    cctx.shared().database().checkpointReadUnlock();
             }
         }
         finally {
@@ -133,11 +229,10 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      * Process single key.
      *
      * @param key Key.
-     * @param link Link.
      * @param clo Closure.
      * @throws IgniteCheckedException If failed.
      */
-    private void processKey(KeyCacheObject key, long link, FilteringVisitorClosure clo) throws IgniteCheckedException {
+    private void processKey(KeyCacheObject key, SchemaIndexCacheVisitorClosure clo) throws IgniteCheckedException {
         while (true) {
             try {
                 checkCancelled();
@@ -145,7 +240,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
                 GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
                 try {
-                    entry.updateIndex(clo, link);
+                    entry.updateIndex(rowFilter, clo);
                 }
                 finally {
                     cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
@@ -168,7 +263,7 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
      * @throws IgniteCheckedException If cancelled.
      */
     private void checkCancelled() throws IgniteCheckedException {
-        if (cancel.isCancelled())
+        if (cancel != null && cancel.isCancelled())
             throw new IgniteCheckedException("Index creation was cancelled.");
     }
 
@@ -178,27 +273,58 @@ public class SchemaIndexCacheVisitorImpl implements SchemaIndexCacheVisitor {
     }
 
     /**
-     * Filtering visitor closure.
+     * Async worker.
      */
-    private class FilteringVisitorClosure implements SchemaIndexCacheVisitorClosure {
+    private class AsyncWorker extends GridWorker {
+        /** Partitions. */
+        private final List<GridDhtLocalPartition> parts;
 
-        /** Target closure. */
-        private final SchemaIndexCacheVisitorClosure target;
+        /** Closure. */
+        private final SchemaIndexCacheVisitorClosure clo;
+
+        /** Remained.. */
+        private final int remainder;
+
+        /** Future. */
+        private final GridFutureAdapter<Void> fut;
 
         /**
          * Constructor.
          *
-         * @param target Target.
+         * @param parts Partitions.
+         * @param clo Closure.
+         * @param remainder Remainder.
+         * @param fut Future.
          */
-        public FilteringVisitorClosure(SchemaIndexCacheVisitorClosure target) {
-            this.target = target;
+        @SuppressWarnings("unchecked")
+        public AsyncWorker(List<GridDhtLocalPartition> parts, SchemaIndexCacheVisitorClosure clo, int remainder,
+            GridFutureAdapter<Void> fut) {
+            super(cctx.igniteInstanceName(), "parallel-idx-worker-" + cctx.cache().name() + "-" + remainder,
+                cctx.logger(AsyncWorker.class));
+
+            this.parts = parts;
+            this.clo = clo;
+            this.remainder = remainder;
+            this.fut = fut;
         }
 
         /** {@inheritDoc} */
-        @Override public void apply(KeyCacheObject key, int part, CacheObject val, GridCacheVersion ver,
-            long expiration, long link) throws IgniteCheckedException {
-            if (qryProc.belongsToTable(cctx, cacheName, tblName, key, val))
-                target.apply(key, part, val, ver, expiration, link);
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            Throwable err = null;
+
+            try {
+                processPartitions(parts, clo, remainder);
+            }
+            catch (Throwable e) {
+                err = e;
+
+                U.error(log, "Error during parallel index create/rebuild.", e);
+
+                stop = true;
+            }
+            finally {
+                fut.onDone(err);
+            }
         }
     }
 }

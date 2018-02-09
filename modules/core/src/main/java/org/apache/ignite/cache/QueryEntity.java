@@ -86,6 +86,9 @@ public class QueryEntity implements Serializable {
     /** Fields that must have non-null value. NB: DO NOT remove underscore to avoid clashes with QueryEntityEx. */
     private Set<String> _notNullFields;
 
+    /** Fields default values. */
+    private Map<String, Object> defaultFieldValues = new HashMap<>();
+
     /**
      * Creates an empty query entity.
      */
@@ -114,6 +117,9 @@ public class QueryEntity implements Serializable {
         tableName = other.tableName;
 
         _notNullFields = other._notNullFields != null ? new HashSet<>(other._notNullFields) : null;
+
+        defaultFieldValues = other.defaultFieldValues != null ? new HashMap<>(other.defaultFieldValues)
+            : new HashMap<String, Object>();
     }
 
     /**
@@ -134,7 +140,7 @@ public class QueryEntity implements Serializable {
      * @param valCls Value type.
      */
     public QueryEntity(Class<?> keyCls, Class<?> valCls) {
-        this(convert(processKeyAndValueClasses(keyCls,valCls)));
+        this(convert(processKeyAndValueClasses(keyCls, valCls)));
     }
 
     /**
@@ -353,10 +359,14 @@ public class QueryEntity implements Serializable {
 
     /**
      * Sets table name for this query entity.
+     *
      * @param tableName table name
+     * @return {@code this} for chaining.
      */
-    public void setTableName(String tableName) {
+    public QueryEntity setTableName(String tableName) {
         this.tableName = tableName;
+
+        return this;
     }
 
     /**
@@ -381,7 +391,29 @@ public class QueryEntity implements Serializable {
     }
 
     /**
+     * Gets fields default values.
+     *
+     * @return Field's name to default value map.
+     */
+    public Map<String, Object> getDefaultFieldValues() {
+        return defaultFieldValues;
+    }
+
+    /**
+     * Sets fields default values.
+     *
+     * @param defaultFieldValues Field's name to default value map.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setDefaultFieldValues(Map<String, Object> defaultFieldValues) {
+        this.defaultFieldValues = defaultFieldValues;
+
+        return this;
+    }
+
+    /**
      * Utility method for building query entities programmatically.
+     *
      * @param fullName Full name of the field.
      * @param type Type of the field.
      * @param alias Field alias.
@@ -468,6 +500,9 @@ public class QueryEntity implements Serializable {
 
         if (!F.isEmpty(idxs))
             entity.setIndexes(idxs);
+
+        if (!F.isEmpty(desc.notNullFields()))
+            entity.setNotNullFields(desc.notNullFields());
 
         return entity;
     }
@@ -591,6 +626,9 @@ public class QueryEntity implements Serializable {
                 desc.addFieldToIndex(idxName, prop.fullName(), 0, sqlAnn.descending());
             }
 
+            if (sqlAnn.notNull())
+                desc.addNotNullField(prop.fullName());
+
             if ((!F.isEmpty(sqlAnn.groups()) || !F.isEmpty(sqlAnn.orderedGroups()))
                 && sqlAnn.inlineSize() != QueryIndex.DFLT_INLINE_SIZE) {
                 throw new CacheException("Inline size cannot be set on a field with group index [" +
@@ -612,7 +650,6 @@ public class QueryEntity implements Serializable {
             desc.addFieldToTextIndex(prop.fullName());
     }
 
-
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -632,13 +669,14 @@ public class QueryEntity implements Serializable {
             F.eq(aliases, entity.aliases) &&
             F.eqNotOrdered(idxs, entity.idxs) &&
             F.eq(tableName, entity.tableName) &&
-            F.eq(_notNullFields, entity._notNullFields);
+            F.eq(_notNullFields, entity._notNullFields) &&
+            F.eq(defaultFieldValues, entity.defaultFieldValues);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
         return Objects.hash(keyType, valType, keyFieldName, valueFieldName, fields, keyFields, aliases, idxs,
-            tableName, _notNullFields);
+            tableName, _notNullFields, defaultFieldValues);
     }
 
     /** {@inheritDoc} */
