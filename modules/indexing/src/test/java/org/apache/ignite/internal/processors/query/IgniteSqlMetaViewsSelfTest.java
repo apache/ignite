@@ -168,7 +168,10 @@ public class IgniteSqlMetaViewsSelfTest extends GridCommonAbstractTest {
         // Assert values.
         assertEquals(ignite.cluster().localNode().id(), res.get(0).get(1));
 
-        assertTrue(U.currentTimeMillis() > ((Timestamp)res.get(0).get(2)).getTime());
+        long txStartTime = ((Timestamp)res.get(0).get(2)).getTime();
+        long curTime = U.currentTimeMillis();
+
+        assertTrue("Invalid tx start time: " + txStartTime + " current time: " + curTime,  curTime >= txStartTime);
 
         assertEquals("00:16:40" /* 1_000_000 ms */, res.get(0).get(3).toString());
 
