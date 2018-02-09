@@ -15,22 +15,17 @@
  * limitations under the License.
  */
 
-.page-profile {
-    .docs-header {
-        display: flex;
-        flex-direction: row;
-        align-items: baseline;
-
-        margin: 40px 0 20px 0;
-
-        h1 {
-            font-size: 24px;
-            margin: 0 10px 0 0;
-        }
+page-profile {
+    .panel--ignite {
+        width: 100%;
     }
 
-    .panel--ignite {
-    	padding: 10px 30px;
+    footer {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .btn-ignite + .btn-ignite {
+        margin-left: 10px;
     }
 }
-    

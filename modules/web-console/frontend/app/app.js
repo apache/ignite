@@ -27,7 +27,6 @@ import './modules/demo/Demo.module';
 
 import './modules/states/signin.state';
 import './modules/states/logout.state';
-import './modules/states/password.state';
 import './modules/states/configuration.state';
 import './modules/states/admin.state';
 import './modules/states/errors.state';
@@ -106,9 +105,6 @@ import hasPojo from './filters/hasPojo.filter';
 import uiGridSubcategories from './filters/uiGridSubcategories.filter';
 import id8 from './filters/id8.filter';
 
-// Controllers
-import resetPassword from './controllers/reset-password.controller';
-
 // Components
 import igniteListOfRegisteredUsers from './components/list-of-registered-users';
 import IgniteActivitiesUserDialog from './components/activities-user-dialog';
@@ -139,6 +135,7 @@ import igniteFormField from './components/ignite-form-field';
 
 import pageProfile from './components/page-profile';
 import pagePasswordChanged from './components/page-password-changed';
+import pagePasswordReset from './components/page-password-reset';
 
 import igniteServices from './services';
 
@@ -185,7 +182,6 @@ angular.module('ignite-console', [
     // States.
     'ignite-console.states.login',
     'ignite-console.states.logout',
-    'ignite-console.states.password',
     'ignite-console.states.configuration',
     'ignite-console.states.admin',
     'ignite-console.states.errors',
@@ -227,6 +223,7 @@ angular.module('ignite-console', [
     breadcrumbs.name,
     igniteFormField.name,
     pagePasswordChanged.name,
+    pagePasswordReset.name,
     // Ignite modules.
     IgniteModules.name
 ])
@@ -277,8 +274,6 @@ angular.module('ignite-console', [
 .service('Clusters', Clusters)
 .service('Caches', Caches)
 .service(CSV.name, CSV)
-// Controllers.
-.controller(...resetPassword)
 // Filters.
 .filter('byName', byName)
 .filter('defaultName', defaultName)

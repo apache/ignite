@@ -15,28 +15,17 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+page-password-reset {
+	display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
 
-import templateUrl from 'views/reset.tpl.pug';
+    footer {
+        display: flex;
+        justify-content: flex-end;
+    }
 
-angular
-.module('ignite-console.states.password', [
-    'ui.router'
-])
-.config(['$stateProvider', function($stateProvider) {
-    // set up the states
-    $stateProvider
-    .state('password', {
-        url: '/password',
-        abstract: true,
-        template: '<ui-view></ui-view>'
-    })
-    .state('password.reset', {
-        url: '/reset?{token}',
-        templateUrl,
-        unsaved: true,
-        tfMetaTags: {
-            title: 'Reset password'
-        }
-    });
-}]);
+    .btn-ignite + .btn-ignite {
+        margin-left: 10px;
+    }
+}

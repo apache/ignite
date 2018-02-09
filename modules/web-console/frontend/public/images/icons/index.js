@@ -35,3 +35,5 @@ export plus from './plus.svg';
 export copy from './copy.svg';
 export home from './home.svg';
 export exclamation from './exclamation.svg';
+export collapse from './collapse.svg';
+export expand from './expand.svg';

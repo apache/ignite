@@ -24,8 +24,6 @@
 
     &__label {
         display: flex;
-        float: left;
-        width: 100%;
         margin: 0 0 4px;
 
         color: #424242;
@@ -38,6 +36,11 @@
 
         &.required:after {
             content: '';
+        }
+
+        i {
+            font-style: normal;
+            color: $gray-light;
         }
     }
 
@@ -83,10 +86,6 @@
             &:focus {
                 border-color: $ignite-brand-success;
                 box-shadow: none;
-            }
-
-            &:disabled {
-                opacity: .5;
             }
         }
     }
@@ -136,6 +135,10 @@
             right: 0;
             width: 38px;
         }
+    }
+
+    [disabled] {
+        opacity: .5;
     }
 }
 
