@@ -269,7 +269,7 @@ public class SqlKeyword {
             throw new IgniteException("Failed to initialize keywords collection.", e);
         }
 
-        NATIVE_KEYWORDS = Collections.unmodifiableSet(new HashSet<>(F.asList(ALTER, INDEX, BEGIN, COMMIT, ROLLBACK)));
+        NATIVE_KEYWORDS = Collections.unmodifiableSet(new HashSet<>(F.asList(ALTER, INDEX, BEGIN, COMMIT, ROLLBACK, COPY)));
     }
 
     /**
