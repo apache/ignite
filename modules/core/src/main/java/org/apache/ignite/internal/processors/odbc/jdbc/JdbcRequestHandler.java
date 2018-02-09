@@ -618,9 +618,20 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param updCntsAcc Per query rows updates counter.
      * @param firstErr First error data - code and message.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     private void executeBatchedQuery(SqlFieldsQueryEx qry, List<Integer> updCntsAcc,
         IgniteBiTuple<Integer, String> firstErr) {
         try {
+            if (cliCtx.isStream()) {
+                List<Long> cnt = ctx.query().streamBatchedUpdateQuery(qry.getSchema(), cliCtx, qry.getSql(),
+                    qry.batchedArguments());
+
+                for (int i = 0; i < cnt.size(); i++)
+                    updCntsAcc.add(cnt.get(i).intValue());
+
+                return;
+            }
+
             List<FieldsQueryCursor<List<?>>> qryRes = ctx.query().querySqlFields(null, qry, cliCtx, true, true);
 
             for (FieldsQueryCursor<List<?>> cur : qryRes) {

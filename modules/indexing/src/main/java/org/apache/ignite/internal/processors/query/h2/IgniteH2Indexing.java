@@ -1024,6 +1024,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public long streamUpdateQuery(String schemaName, String qry,
         @Nullable Object[] params, SqlClientContext cliCtx) throws IgniteCheckedException {
+        if (cliCtx == null || !cliCtx.isStream()) {
+            U.warn(log, "Connection is not in streaming mode.");
+
+            return 0L;
+        }
+
         final Connection conn = connectionForSchema(schemaName);
 
         // SET/FLUSH return 0 anyway, anything else will throw an exception in streaming mode.
@@ -1053,6 +1059,61 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             return 0L;
         }
+    }
+
+    /** {@inheritDoc} */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
+    @Override public List<Long> streamBatchedUpdateQuery(String schemaName, String qry, List<Object[]> params,
+        SqlClientContext cliCtx) throws IgniteCheckedException {
+        if (cliCtx == null || !cliCtx.isStream()) {
+            U.warn(log, "Connection is not in streaming mode.");
+
+            return zeroBatchedStreamedUpdateResult(params.size());
+        }
+
+        final Connection conn = connectionForSchema(schemaName);
+
+        final PreparedStatement stmt = prepareStatementAndCaches(conn, qry);
+
+        if (GridSqlQueryParser.checkMultipleStatements(stmt))
+            throw new IgniteSQLException("Multiple statements queries are not supported for streaming mode.",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        Prepared p = GridSqlQueryParser.prepared(stmt);
+
+        UpdatePlan plan = dmlProc.getPlanForStatement(schemaName, conn, p, null, true, null);
+
+        if (!plan.isStreamable())
+            throw new IgniteSQLException("Only tuple based INSERT statements and SET/FLUSH are supported " +
+                "in streaming mode", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        IgniteDataStreamer<?, ?> streamer = cliCtx.streamerForCache(plan.cacheContext().name());
+
+        if (streamer != null) {
+            List<Long> res = new ArrayList<>(params.size());
+
+            for (int i = 0; i < params.size(); i++)
+                res.add(dmlProc.streamUpdateQuery(schemaName, streamer, stmt, params.get(i)));
+
+            return res;
+        }
+        else {
+            U.warn(log, "Streaming has been turned off by concurrent command.");
+
+            return zeroBatchedStreamedUpdateResult(params.size());
+        }
+    }
+
+    /**
+     * @param size Result size.
+     * @return List of given size filled with 0Ls.
+     */
+    private static List<Long> zeroBatchedStreamedUpdateResult(int size) {
+        Long[] res = new Long[size];
+
+        Arrays.fill(res, 0);
+
+        return Arrays.asList(res);
     }
 
     /**

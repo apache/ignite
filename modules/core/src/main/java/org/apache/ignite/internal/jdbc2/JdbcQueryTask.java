@@ -170,7 +170,7 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
             qry.setLazy(lazy());
             qry.setSchema(schemaName);
 
-            QueryCursorImpl<List<?>> qryCursor = (QueryCursorImpl<List<?>>)(cache != null ?
+            FieldsQueryCursor<List<?>> qryCursor = (cache != null ?
                 cache.withKeepBinary().query(qry) :
                 ((IgniteEx)ignite).context().query().querySqlFields(qry, true));
 
@@ -180,8 +180,10 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTaskResult> {
                 throw new SQLException("COPY command is currently supported only in thin JDBC driver.");
             }
 
+            assert qryCursor instanceof QueryCursorImpl;
+
             if (isQry == null)
-                isQry = qryCursor.isQuery();
+                isQry = ((QueryCursorImpl)qryCursor).isQuery();
 
             CURSORS.put(uuid, cursor = new Cursor(qryCursor, qryCursor.iterator()));
         }
