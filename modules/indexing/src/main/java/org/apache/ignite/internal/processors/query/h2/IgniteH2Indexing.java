@@ -1659,7 +1659,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 return Collections.singletonList(resCur);
             }
 
-            throw new IgniteSQLException("Unsupported DDL/DML operation: " + prepared.getClass().getName());
+            throw new IgniteSQLException("Unsupported DDL/DML operation: " + prepared.getClass().getName(),
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
         }
 
         if (twoStepQry != null) {

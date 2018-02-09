@@ -49,61 +49,22 @@ public class IgniteSqlMetaViewsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Execute sql statement by JDBC connection.
-     *
      * @param sql Sql.
      */
-    private void execSqlJdbc(String sql) throws SQLException {
-        IgniteH2Indexing idx = (IgniteH2Indexing)grid().context().query().getIndexing();
-
-        try (Connection c = idx.connectionForSchema(IgniteSqlMetaViewProcessor.SCHEMA_NAME)) {
-            try (Statement s = c.createStatement()) {
-                s.executeUpdate(sql);
-            }
-        }
-    }
-
-    /**
-     * Execute sql statement by ignite cache query processor.
-     *
-     * @param sql Sql.
-     */
-    private void execSqlIgnite(String sql) throws SQLException {
-        IgniteCache cache = grid().getOrCreateCache("cache");
-
-        cache.query(new SqlFieldsQuery(sql)).getAll();
-    }
-
-    /**
-     * @param sql Sql.
-     * @param expJdbcErrorCode Expected jdbc error code.
-     * @param expIgniteErrorCode Expected ignite error code.
-     */
-    private void assertSqlError(final String sql, int expJdbcErrorCode, int expIgniteErrorCode) {
-        SQLException jdbcE = (SQLException)GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
+    private void assertSqlError(final String sql) {
+        Throwable t = GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                execSqlJdbc(sql);
+                IgniteCache cache = grid().getOrCreateCache("cache");
 
-                return null;
-            }
-        }, SQLException.class);
-
-
-        Throwable igniteT = GridTestUtils.assertThrowsWithCause(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                execSqlIgnite(sql);
+                cache.query(new SqlFieldsQuery(sql)).getAll();
 
                 return null;
             }
         }, IgniteSQLException.class);
 
-        IgniteSQLException igniteE = X.cause(igniteT, IgniteSQLException.class);
+        IgniteSQLException sqlE = X.cause(t, IgniteSQLException.class);
 
-        if (expJdbcErrorCode != 0)
-            assertEquals(expJdbcErrorCode, jdbcE.getErrorCode());
-
-        if (expIgniteErrorCode != 0)
-            assertEquals(expIgniteErrorCode, igniteE.statusCode());
+        assertEquals(IgniteQueryErrorCode.UNSUPPORTED_OPERATION, sqlE.statusCode());
     }
     
     /**
@@ -112,31 +73,26 @@ public class IgniteSqlMetaViewsSelfTest extends GridCommonAbstractTest {
     public void testModifications() throws Exception {
         startGrid();
 
-        assertSqlError("DROP TABLE IGNITE.LOCAL_TRANSACTIONS", ErrorCode.CANNOT_DROP_TABLE_1, 0);
+        assertSqlError("DROP TABLE IGNITE.LOCAL_TRANSACTIONS");
 
-        assertSqlError("TRUNCATE TABLE IGNITE.LOCAL_TRANSACTIONS", ErrorCode.CANNOT_TRUNCATE_1, 0);
+        assertSqlError("TRUNCATE TABLE IGNITE.LOCAL_TRANSACTIONS");
 
-        assertSqlError("ALTER TABLE IGNITE.LOCAL_TRANSACTIONS RENAME TO IGNITE.TX",
-            ErrorCode.FEATURE_NOT_SUPPORTED_1, 0);
+        assertSqlError("ALTER TABLE IGNITE.LOCAL_TRANSACTIONS RENAME TO IGNITE.TX");
 
-        assertSqlError("ALTER TABLE IGNITE.LOCAL_TRANSACTIONS ADD COLUMN C VARCHAR",
-            ErrorCode.FEATURE_NOT_SUPPORTED_1, 0);
+        assertSqlError("ALTER TABLE IGNITE.LOCAL_TRANSACTIONS ADD COLUMN C VARCHAR");
 
-        assertSqlError("ALTER TABLE IGNITE.LOCAL_TRANSACTIONS DROP COLUMN XID", ErrorCode.FEATURE_NOT_SUPPORTED_1, 0);
+        assertSqlError("ALTER TABLE IGNITE.LOCAL_TRANSACTIONS DROP COLUMN XID");
 
-        assertSqlError("ALTER TABLE IGNITE.LOCAL_TRANSACTIONS RENAME COLUMN XID TO C",
-            ErrorCode.FEATURE_NOT_SUPPORTED_1, 0);
+        assertSqlError("ALTER TABLE IGNITE.LOCAL_TRANSACTIONS RENAME COLUMN XID TO C");
 
-        assertSqlError("CREATE INDEX IDX ON IGNITE.LOCAL_TRANSACTIONS(XID)", ErrorCode.FEATURE_NOT_SUPPORTED_1, 0);
+        assertSqlError("CREATE INDEX IDX ON IGNITE.LOCAL_TRANSACTIONS(XID)");
 
-        assertSqlError("INSERT INTO IGNITE.LOCAL_TRANSACTIONS (XID) VALUES ('-')", ErrorCode.FEATURE_NOT_SUPPORTED_1,
-            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        assertSqlError("INSERT INTO IGNITE.LOCAL_TRANSACTIONS (XID) VALUES ('-')");
 
         try (Transaction tx = grid().transactions().txStart()) {
-            assertSqlError("UPDATE IGNITE.LOCAL_TRANSACTIONS SET XID = '-'", 0,
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            assertSqlError("UPDATE IGNITE.LOCAL_TRANSACTIONS SET XID = '-'");
 
-            assertSqlError("DELETE IGNITE.LOCAL_TRANSACTIONS", 0, IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+            assertSqlError("DELETE IGNITE.LOCAL_TRANSACTIONS");
 
             tx.commit();
         }

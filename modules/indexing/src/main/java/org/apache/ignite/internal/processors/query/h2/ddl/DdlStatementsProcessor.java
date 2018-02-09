@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
+import org.apache.ignite.internal.processors.query.h2.views.IgniteSqlMetaViewProcessor;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
@@ -109,6 +110,8 @@ public class DdlStatementsProcessor {
         IgniteInternalFuture fut;
 
         try {
+            isDdlOnSchemaSupported(cmd.schemaName());
+
             if (cmd instanceof SqlCreateIndexCommand) {
                 SqlCreateIndexCommand cmd0 = (SqlCreateIndexCommand)cmd;
 
@@ -239,6 +242,8 @@ public class DdlStatementsProcessor {
             if (stmt0 instanceof GridSqlCreateIndex) {
                 GridSqlCreateIndex cmd = (GridSqlCreateIndex)stmt0;
 
+                isDdlOnSchemaSupported(cmd.schemaName());
+
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
                 if (tbl == null)
@@ -276,6 +281,8 @@ public class DdlStatementsProcessor {
             else if (stmt0 instanceof GridSqlDropIndex) {
                 GridSqlDropIndex cmd = (GridSqlDropIndex) stmt0;
 
+                isDdlOnSchemaSupported(cmd.schemaName());
+
                 GridH2Table tbl = idx.dataTableForIndex(cmd.schemaName(), cmd.indexName());
 
                 if (tbl != null) {
@@ -294,6 +301,8 @@ public class DdlStatementsProcessor {
             }
             else if (stmt0 instanceof GridSqlCreateTable) {
                 GridSqlCreateTable cmd = (GridSqlCreateTable)stmt0;
+
+                isDdlOnSchemaSupported(cmd.schemaName());
 
                 if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
                     throw new SchemaOperationException("CREATE TABLE can only be executed on " +
@@ -328,6 +337,8 @@ public class DdlStatementsProcessor {
             else if (stmt0 instanceof GridSqlDropTable) {
                 GridSqlDropTable cmd = (GridSqlDropTable)stmt0;
 
+                isDdlOnSchemaSupported(cmd.schemaName());
+
                 if (!F.eq(QueryUtils.DFLT_SCHEMA, cmd.schemaName()))
                     throw new SchemaOperationException("DROP TABLE can only be executed on " +
                         QueryUtils.DFLT_SCHEMA + " schema.");
@@ -350,6 +361,8 @@ public class DdlStatementsProcessor {
             }
             else if (stmt0 instanceof GridSqlAlterTableAddColumn) {
                 GridSqlAlterTableAddColumn cmd = (GridSqlAlterTableAddColumn)stmt0;
+
+                isDdlOnSchemaSupported(cmd.schemaName());
 
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
@@ -408,6 +421,8 @@ public class DdlStatementsProcessor {
             }
             else if (stmt0 instanceof GridSqlAlterTableDropColumn) {
                 GridSqlAlterTableDropColumn cmd = (GridSqlAlterTableDropColumn)stmt0;
+
+                isDdlOnSchemaSupported(cmd.schemaName());
 
                 GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
@@ -483,6 +498,17 @@ public class DdlStatementsProcessor {
         catch (Exception e) {
             throw new IgniteSQLException(e.getMessage(), e);
         }
+    }
+
+    /**
+     * Check if schema supports DDL statement.
+     *
+     * @param schemaName Schema name.
+     */
+    private static void isDdlOnSchemaSupported(String schemaName) {
+        if (F.eq(IgniteSqlMetaViewProcessor.SCHEMA_NAME, schemaName))
+            throw new IgniteSQLException("DDL statements are not supported on " + schemaName + " schema",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**
