@@ -17,12 +17,14 @@
 
 package org.apache.spark.sql.ignite
 
+import java.net.URI
+
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.spark.IgniteDataFrameSettings.OPTION_TABLE
 import org.apache.ignite.spark.IgniteContext
 import org.apache.ignite.spark.IgniteDataFrameSettings._
 import org.apache.ignite.spark.impl.IgniteSQLRelation.schema
-import org.apache.ignite.{Ignite, Ignition}
+import org.apache.ignite.{Ignite, IgniteException, Ignition}
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
@@ -31,7 +33,8 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.util.StringUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.ignite.spark.impl._
-import org.apache.spark.sql.ignite.IgniteExternalCatalog.OPTION_GRID
+import org.apache.spark.sql.catalyst.catalog.SessionCatalog.DEFAULT_DATABASE
+import org.apache.spark.sql.ignite.IgniteExternalCatalog.{IGNITE_PROTOCOL, IGNITE_URI, OPTION_GRID}
 
 import scala.collection.JavaConversions._
 
@@ -40,7 +43,8 @@ import scala.collection.JavaConversions._
   *
   * @param defaultIgniteContext Ignite context to provide access to Ignite instance. If <code>None</code> passed then no-name instance of Ignite used.
   */
-private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext) extends ExternalCatalog {
+private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext)
+    extends ExternalCatalog {
     /**
       * Default Ignite instance.
       */
@@ -51,7 +55,7 @@ private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext)
       * @return Description of Ignite instance.
       */
     override def getDatabase(db: String): CatalogDatabase =
-        CatalogDatabase(db, db, null, Map.empty)
+        CatalogDatabase(db, db, IGNITE_URI, Map.empty)
 
     /**
       * Checks Ignite instance with provided name exists.
@@ -61,7 +65,7 @@ private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext)
       * @return True is Ignite instance exists.
       */
     override def databaseExists(db: String): Boolean =
-        db == SessionCatalog.DEFAULT_DATABASE || igniteExists(db)
+        db == DEFAULT_DATABASE || igniteExists(db)
 
     /**
       * @return List of all known Ignite instances names.
@@ -104,7 +108,7 @@ private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext)
                     identifier = new TableIdentifier(tableName, Some(gridName)),
                     tableType = CatalogTableType.EXTERNAL,
                     storage = CatalogStorageFormat(
-                        locationUri = None,
+                        locationUri = Some(URI.create(IGNITE_PROTOCOL + tableName)),
                         inputFormat = Some(FORMAT_IGNITE),
                         outputFormat = Some(FORMAT_IGNITE),
                         serde = None,
@@ -259,12 +263,39 @@ private[ignite] class IgniteExternalCatalog(defaultIgniteContext: IgniteContext)
         throw new UnsupportedOperationException("unsupported")
 
     /** @inheritdoc */
-    override protected def doCreateTable(tableDefinition: CatalogTable, ignoreIfExists: Boolean): Unit =
-        throw new UnsupportedOperationException("unsupported")
+    override protected def doCreateTable(tableDefinition: CatalogTable, ignoreIfExists: Boolean): Unit = {
+        val ignite = igniteOrDefault(tableDefinition.identifier.database.getOrElse(DEFAULT_DATABASE), default)
+
+        igniteSQLTable(ignite, tableDefinition.identifier.table) match {
+            case Some(_) ⇒
+                /* no-op */
+
+            case None ⇒
+                val props = tableDefinition.storage.properties
+
+                QueryHelper.createTable(tableDefinition.schema,
+                    tableDefinition.identifier.table,
+                    props(OPTION_CREATE_TABLE_PRIMARY_KEY_FIELDS).split(","),
+                    props.get(OPTION_CREATE_TABLE_PARAMETERS),
+                    ignite)
+        }
+    }
 
     /** @inheritdoc */
-    override protected def doDropTable(db: String, table: String, ignoreIfNotExists: Boolean, purge: Boolean): Unit =
-        throw new UnsupportedOperationException("unsupported")
+    override protected def doDropTable(db: String, tabName: String, ignoreIfNotExists: Boolean, purge: Boolean): Unit = {
+        val ignite = igniteOrDefault(db, default)
+
+        igniteSQLTable(ignite, tabName) match {
+            case Some(table) ⇒
+                val tableName = table.getTableName
+
+                QueryHelper.dropTable(tableName, ignite)
+
+            case None ⇒
+                if (!ignoreIfNotExists)
+                    throw new IgniteException(s"Table $tabName doesn't exists.")
+        }
+    }
 
     /** @inheritdoc */
     override protected def doRenameTable(db: String, oldName: String, newName: String): Unit =
@@ -302,4 +333,14 @@ object IgniteExternalCatalog {
       * @see [[org.apache.ignite.Ignite#name()]]
       */
     private[apache] val OPTION_GRID = "grid"
+
+    /**
+      * Location of ignite tables.
+      */
+    private[apache] val IGNITE_PROTOCOL = "ignite:/"
+
+    /**
+      * URI location of ignite tables.
+      */
+    private val IGNITE_URI = new URI(IGNITE_PROTOCOL)
 }

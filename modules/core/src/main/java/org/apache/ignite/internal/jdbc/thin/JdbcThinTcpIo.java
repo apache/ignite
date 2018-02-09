@@ -111,7 +111,25 @@ public class JdbcThinTcpIo {
      * @throws IOException On IO error in handshake.
      */
     public void start() throws SQLException, IOException {
-        Socket sock = new Socket();
+        Socket sock;
+
+        if (ConnectionProperties.SSL_MODE_REQUIRE.equalsIgnoreCase(connProps.getSslMode()))
+            sock = JdbcThinSSLUtil.createSSLSocket(connProps);
+        else if (ConnectionProperties.SSL_MODE_DISABLE.equalsIgnoreCase(connProps.getSslMode())) {
+            sock = new Socket();
+
+            try {
+                sock.connect(new InetSocketAddress(connProps.getHost(), connProps.getPort()));
+            }
+            catch (IOException e) {
+                throw new SQLException("Failed to connect to server [host=" + connProps.getHost() +
+                    ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            }
+        }
+        else {
+            throw new SQLException("Unknown sslMode. [sslMode=" + connProps.getSslMode() + ']',
+                SqlStateCode.CLIENT_CONNECTION_FAILED);
+        }
 
         if (connProps.getSocketSendBuffer() != 0)
             sock.setSendBufferSize(connProps.getSocketSendBuffer());
@@ -122,14 +140,12 @@ public class JdbcThinTcpIo {
         sock.setTcpNoDelay(connProps.isTcpNoDelay());
 
         try {
-            sock.connect(new InetSocketAddress(connProps.getHost(), connProps.getPort()));
-
             endpoint = new IpcClientTcpEndpoint(sock);
 
             out = new BufferedOutputStream(endpoint.outputStream());
             in = new BufferedInputStream(endpoint.inputStream());
         }
-        catch (IOException | IgniteCheckedException e) {
+        catch (IgniteCheckedException e) {
             throw new SQLException("Failed to connect to server [host=" + connProps.getHost() +
                 ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }

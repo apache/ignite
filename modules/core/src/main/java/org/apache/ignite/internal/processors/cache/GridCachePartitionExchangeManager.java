@@ -965,7 +965,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      * For coordinator causes {@link GridDhtPartitionsFullMessage FullMessages} send,
      * for non coordinator -  {@link GridDhtPartitionsSingleMessage SingleMessages} send
      */
-    private void refreshPartitions() {
+    public void refreshPartitions() {
         // TODO https://issues.apache.org/jira/browse/IGNITE-6857
         if (cctx.snapshot().snapshotOperationInProgress()) {
             scheduleResendPartitions();

@@ -580,7 +580,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     throw new IllegalStateException("Should never be called.");
 
                 case SCAN:
-                    if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                    if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                         cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                             cctx.localNode(),
                             "Scan query executed.",
@@ -601,7 +601,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     break;
 
                 case TEXT:
-                    if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                    if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                         cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                             cctx.localNode(),
                             "Full text query executed.",
@@ -675,7 +675,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         if (qry.type() == SQL_FIELDS) {
-            if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+            if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                 cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                     cctx.localNode(),
                     "SQL fields query executed.",
@@ -707,7 +707,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         else {
             assert qry.type() == SPI : "Unexpected query type: " + qry.type();
 
-            if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+            if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                 cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                     cctx.localNode(),
                     "SPI query executed.",
@@ -917,7 +917,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final boolean statsEnabled = cctx.statisticsEnabled();
 
-            final boolean readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+            final boolean readEvt = cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
             try {
                 // Preparing query closures.
@@ -1159,7 +1159,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 final boolean statsEnabled = cctx.statisticsEnabled();
 
-                final boolean readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+                final boolean readEvt = cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
                 CacheObjectContext objCtx = cctx.cacheObjectContext();
 
@@ -1429,7 +1429,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             final ClusterNode locNode = cctx.localNode();
             final UUID subjId = qry.subjectId();
 
-            if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+            if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                 cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                     locNode,
                     "Scan query executed.",
@@ -2964,7 +2964,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             statsEnabled = locNode && cctx.statisticsEnabled();
 
-            readEvt = locNode && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+            readEvt = locNode && cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
             if (readEvt){
                 taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
