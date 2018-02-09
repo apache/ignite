@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.sql;
 
+import org.apache.ignite.internal.util.typedef.X;
+
 /**
  * Tests for SQL parser: COPY command.
  */
@@ -95,5 +97,11 @@ public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
             "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv" +
                 " batch_size postmark",
             "Unexpected token: \"POSTMARK\" (expected: \"[integer]\")");
+    }
+
+    public static void assertParseSuccess(String schemaName, String sql) {
+        new SqlParser(schemaName, sql).nextCommand();
+
+        X.println("Successfully parsed SQL statement: " + sql);
     }
 }
