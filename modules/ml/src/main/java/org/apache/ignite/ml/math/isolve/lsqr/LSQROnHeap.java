@@ -25,7 +25,7 @@ import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.math.isolve.LinSysPartitionDataOnHeap;
 
 /**
- * Distributed implementation of LSQR algorithm based on.
+ * Distributed implementation of LSQR algorithm based on {@link AbstractLSQR} and {@link Dataset}.
  */
 public class LSQROnHeap<K, V> extends AbstractLSQR implements AutoCloseable {
     /** Dataset. */

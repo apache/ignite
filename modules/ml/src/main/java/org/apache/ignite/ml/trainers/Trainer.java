@@ -20,6 +20,7 @@ package org.apache.ignite.ml.trainers;
 import org.apache.ignite.ml.Model;
 
 /** Trainer interface. */
+@Deprecated
 public interface Trainer<M extends Model, T> {
     /**
      * Train the model based on provided data.

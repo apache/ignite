@@ -26,6 +26,7 @@ import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer
  * @param <M> Type of produced model.
  * @param <T> Type of data needed for model producing.
  */
+@Deprecated
 public interface Trainer<M extends Model, T> {
     /**
      * Returns model based on data

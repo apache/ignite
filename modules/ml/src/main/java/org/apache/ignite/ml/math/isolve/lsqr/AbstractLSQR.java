@@ -23,6 +23,9 @@ import java.util.Arrays;
 /**
  * Basic implementation of the LSQR algorithm without assumptions about dataset storage format or data processing
  * device.
+ *
+ * This implementation is based of SciPy implementation.
+ * SciPy implementation: https://github.com/scipy/scipy/blob/master/scipy/sparse/linalg/isolve/lsqr.py#L98.
  */
 public abstract class AbstractLSQR {
     /** The smallest representable positive number such that 1.0 + eps != 1.0. */
@@ -48,14 +51,18 @@ public abstract class AbstractLSQR {
     public LSQRResult solve(double damp, double atol, double btol, double conlim, double iterLim, boolean calcVar,
         double[] x0) {
         int n = getColumns();
+
         if (iterLim < 0)
             iterLim = 2 * n;
+
         double[] var = new double[n];
         int itn = 0;
         int istop = 0;
         double ctol = 0;
+
         if (conlim > 0)
             ctol = 1 / conlim;
+
         double anorm = 0;
         double acond = 0;
         double dampsq = Math.pow(damp, 2.0);
@@ -72,6 +79,7 @@ public abstract class AbstractLSQR {
         double bnorm = bnorm();
         double[] x;
         double beta;
+
         if (x0 == null) {
             x = new double[n];
             beta = bnorm;
@@ -80,8 +88,10 @@ public abstract class AbstractLSQR {
             x = x0;
             beta = beta(x, -1.0, 1.0);
         }
+
         double[] v = new double[n];
         double alfa;
+
         if (beta > 0) {
             v = iter(beta, v);
             alfa = blas.dnrm2(v.length, v, 1);
@@ -93,6 +103,7 @@ public abstract class AbstractLSQR {
 
         if (alfa > 0)
             blas.dscal(v.length, 1 / alfa, v, 1);
+
         double[] w = Arrays.copyOf(v, v.length);
 
         double rhobar = alfa;
@@ -102,6 +113,7 @@ public abstract class AbstractLSQR {
         double r2norm = rnorm;
         double arnorm = alfa * beta;
         double[] dk = new double[w.length];
+
         if (arnorm == 0)
             return new LSQRResult(x, itn, istop, r1norm, r2norm, anorm, acond, arnorm, xnorm, var);
 
@@ -116,10 +128,14 @@ public abstract class AbstractLSQR {
             beta = beta(v, 1.0, -alfa);
             if (beta > 0) {
                 anorm = Math.sqrt(Math.pow(anorm, 2) + Math.pow(alfa, 2) + Math.pow(beta, 2) + Math.pow(damp, 2));
+
                 blas.dscal(v.length, -beta, v, 1);
+
                 iter(beta, v);
+
                 //v = dataset.iter(beta, n);
                 alfa = blas.dnrm2(v.length, v, 1);
+
                 if (alfa > 0)
                     blas.dscal(v.length, 1 / alfa, v, 1);
             }
@@ -147,6 +163,7 @@ public abstract class AbstractLSQR {
 
             double t1 = phi / rho;
             double t2 = -theta / rho;
+
             blas.dcopy(w.length, w, 1, dk, 1);
             blas.dscal(dk.length, 1 / rho, dk, 1);
 
@@ -155,6 +172,7 @@ public abstract class AbstractLSQR {
             // w = v + t2*w
             blas.dscal(w.length, t2, w, 1);
             blas.daxpy(w.length, 1, v, 1, w, 1);
+
             ddnorm = ddnorm + Math.pow(blas.dnrm2(dk.length, dk, 1), 2);
 
             if (calcVar)
@@ -192,8 +210,10 @@ public abstract class AbstractLSQR {
             // Although there is cancellation, it might be accurate enough.
             double r1sq = Math.pow(rnorm, 2) - dampsq * xxnorm;
             r1norm = Math.sqrt(Math.abs(r1sq));
+
             if (r1sq < 0)
                 r1norm = -r1norm;
+
             r2norm = rnorm;
 
             // Now use these norms to estimate certain other quantities,
@@ -211,24 +231,30 @@ public abstract class AbstractLSQR {
             // atol = eps,  btol = eps,  conlim = 1/eps.
             if (itn >= iterLim)
                 istop = 7;
+
             if (1 + test3 <= 1)
                 istop = 6;
+
             if (1 + test2 <= 1)
                 istop = 5;
+
             if (1 + t1 <= 1)
                 istop = 4;
 
             // Allow for tolerances set by the user.
             if (test3 <= ctol)
                 istop = 3;
+
             if (test2 <= atol)
                 istop = 2;
+
             if (test1 <= rtol)
                 istop = 1;
 
             if (istop != 0)
                 break;
         }
+
         return new LSQRResult(x, itn, istop, r1norm, r2norm, anorm, acond, arnorm, xnorm, var);
     }
 
@@ -269,6 +295,7 @@ public abstract class AbstractLSQR {
             return new double[] {0, Math.signum(b), Math.abs(b)};
         else {
             double c, s, r;
+
             if (Math.abs(b) > Math.abs(a)) {
                 double tau = a / b;
                 s = Math.signum(b) / Math.sqrt(1 + tau * tau);
@@ -281,6 +308,7 @@ public abstract class AbstractLSQR {
                 s = c * tau;
                 r = a / c;
             }
+
             return new double[] {c, s, r};
         }
     }
@@ -294,8 +322,10 @@ public abstract class AbstractLSQR {
      */
     private static double[] pow2(double[] a) {
         double[] res = new double[a.length];
+
         for (int i = 0; i < res.length; i++)
             res[i] = Math.pow(a[i], 2);
+
         return res;
     }
 
