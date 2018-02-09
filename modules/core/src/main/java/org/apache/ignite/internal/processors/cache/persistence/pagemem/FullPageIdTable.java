@@ -188,30 +188,23 @@ public class FullPageIdTable implements LoadedPagesMap {
         setValueAt(index, val);
     }
 
-    /**
-     * Removes key-value association for the given key.
-     *
-     * @param grpId Cache group ID.
-     * @param pageId Page ID.
-     */
-    public void remove(int grpId, long pageId, int tag) {
+    /** {@inheritDoc} */
+    @Override public boolean remove(int grpId, long pageId) {
         assert assertKey(grpId, pageId);
 
-        int index = removeKey(grpId, pageId, tag);
+        int idx = removeKey(grpId, pageId);
 
-        if (index >= 0)
-            setValueAt(index, 0);
+        boolean valRmv = idx >= 0;
+
+        if (valRmv)
+            setValueAt(idx, 0);
+
+        return valRmv;
     }
 
-    /**
-     * Find nearest presented value from specified position to the right.
-     *
-     * @param idx Index to start searching from. Bounded with {@link #capacity()}.
-     * @return Closest value to the index and it's partition tag or  {@code null} value that will
-     * be returned if no values present.
-     */
-    @Override public ReplaceCandidate getNearestAt(final int idx) {
-        for (int i = idx; i < capacity + idx; i++) {
+    /** {@inheritDoc} */
+    @Override public ReplaceCandidate getNearestAt(final int idxStart) {
+        for (int i = idxStart; i < capacity + idxStart; i++) {
             final int idx2 = normalizeIndex(i);
 
             if (isValuePresentAt(idx2)) {
@@ -229,13 +222,8 @@ public class FullPageIdTable implements LoadedPagesMap {
         return null;
     }
 
-    /**
-     * @param idx Index to clear value at.
-     * @param pred Test predicate.
-     * @param absent Value to return if the cell is empty.
-     * @return Value at the given index.
-     */
-    public long clearAt(int idx, GridPredicate3<Integer, Long, Integer> pred, long absent) {
+    /** {@inheritDoc} */
+    @Override public long clearAt(int idx, GridPredicate3<Integer, Long, Integer> pred, long absent) {
         long base = entryBase(idx);
 
         int grpId = GridUnsafe.getInt(base);
@@ -513,7 +501,7 @@ public class FullPageIdTable implements LoadedPagesMap {
      * @param pageId Page ID.
      * @return Key index.
      */
-    private int removeKey(int cacheId, long pageId, int tag) {
+    private int removeKey(int cacheId, long pageId) {
         int step = 1;
 
         int idx = U.safeAbs(FullPageId.hashCode(cacheId, pageId)) % capacity;
@@ -521,7 +509,7 @@ public class FullPageIdTable implements LoadedPagesMap {
         int foundIdx = -1;
 
         do {
-            long res = testKeyAt(idx, cacheId, pageId, tag);
+            long res = testKeyAt(idx, cacheId, pageId, -1);
 
             if (res == EQUAL || res == OUTDATED) {
                 foundIdx = idx;

@@ -753,7 +753,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         if (rmv)
-            seg.loadedPages.remove(cacheId, PageIdUtils.effectivePageId(pageId), tag);
+            seg.loadedPages.remove(cacheId, PageIdUtils.effectivePageId(pageId));
 
         if (seg.segCheckpointPages != null)
             seg.segCheckpointPages.remove(new FullPageId(pageId, cacheId));
@@ -2128,11 +2128,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 loadedPages.remove(
                     fullPageId.groupId(),
-                    PageIdUtils.effectivePageId(fullPageId.pageId()),
-                    partTag(
-                        fullPageId.groupId(),
-                        PageIdUtils.partId(fullPageId.pageId())
-                    )
+                    PageIdUtils.effectivePageId(fullPageId.pageId())
                 );
 
                 return relEvictAddr;
@@ -2204,11 +2200,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (prepareEvict(fullPageId, absEvictAddr)) {
                     loadedPages.remove(
                         fullPageId.groupId(),
-                        PageIdUtils.effectivePageId(fullPageId.pageId()),
-                        partTag(
-                            fullPageId.groupId(),
-                            PageIdUtils.partId(fullPageId.pageId())
-                        )
+                        PageIdUtils.effectivePageId(fullPageId.pageId())
                     );
 
                     return addr;

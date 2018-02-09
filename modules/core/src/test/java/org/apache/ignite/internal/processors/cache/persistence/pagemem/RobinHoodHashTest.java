@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.Consumer;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -29,7 +30,7 @@ import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -39,7 +40,8 @@ public class RobinHoodHashTest {
     private boolean dump = false;
 
     private void withMap(Consumer<RobinHoodBackwardShiftHashMap> tester, int cap) {
-        long addr = GridUnsafe.allocateMemory(cap * RobinHoodBackwardShiftHashMap.BYTES_PER_ENTRY);
+        long addr = GridUnsafe.allocateMemory(
+            RobinHoodBackwardShiftHashMap.requiredMemoryByBuckets(cap));
 
         RobinHoodBackwardShiftHashMap map = new RobinHoodBackwardShiftHashMap(addr, cap);
         try {
@@ -54,38 +56,59 @@ public class RobinHoodHashTest {
 
     @Test
     public void testSimplestPutGet() throws Exception {
+        int cnt = 100;
         withMap(map -> {
-                for (int i = 0; i < 100; i++) {
+                for (int i = 0; i < cnt; i++) {
                     int grpId = i + 1;
                     int val = grpId * grpId;
-                    assertTrue("Unique put should be successful " + grpId, map.put(grpId, 1, val, 1));
+
+                    assertSizeChanged("Unique put should be successful " + grpId,
+                        map, ()-> map.put(grpId, 1, val, 1) );
                     assertEquals(val, map.get(grpId, 1, 0, -1, -2));
 
-                    assertFalse("Duplicate put for " + grpId, map.put(grpId, 1, 1, 1));
+                    assertSizeNotchanged("Duplicate put for " + grpId,
+                        map, ()-> map.put(grpId, 1, 1, 1));
                     assertEquals(1, map.get(grpId, 1, 0, -1, -2));
                 }
+
+                assertEquals(cnt, map.size());
             }
-            , 100);
+            , cnt);
     }
 
-    @Test
+    @Test(expected = IgniteOutOfMemoryException.class)
     public void testSimplestOverflow() throws Exception {
         withMap(map -> {
                 for (int i = 0; i < 10; i++) {
                     int grpId = i + 1;
                     int val = grpId * grpId;
-                    assertTrue("Unique put should be successful " + grpId, map.put(grpId, 1, val, 1));
+                    assertSizeChanged("Unique put should be successful [" + grpId + "]", map, () -> map.put(grpId, 1, val, 1));
 
                     assertEquals(val, map.get(grpId, 1, 0, -1, -2));
 
-                    assertFalse("Duplicate put for " + grpId, map.put(grpId, 1, 1, 1));
+                    assertSizeNotchanged("Duplicate put for " + grpId, map, () -> map.put(grpId, 1, 1, 1));
                     assertEquals(1, map.get(grpId, 1, 0, -1, -2));
                 }
 
-                boolean put = map.put(11, 1, 11, 1);
-                assertFalse(put);
+                map.put(11, 1, 11, 1);
             }
             , 10);
+    }
+
+    private static void assertSizeChanged(String msg, LoadedPagesMap map, Runnable act) {
+        int size = map.size();
+        act.run();
+        int newSize = map.size();
+
+        assertNotEquals(msg, size, newSize);
+    }
+
+    private static void assertSizeNotchanged(String msg, LoadedPagesMap map, Runnable act) {
+        int size = map.size();
+        act.run();
+        int newSize = map.size();
+
+        assertEquals(msg, size, newSize);
     }
 
     @Test
@@ -97,7 +120,8 @@ public class RobinHoodHashTest {
                 for (int i = 0; i < 99; i++) {
                     int grpId = i + 1;
                     int val = grpId * grpId;
-                    assertTrue("Unique put should be successful " + grpId, map.put(grpId, 1, val, 1));
+                    assertSizeChanged("Unique put should be successful " + grpId, map,
+                        ()-> map.put(grpId, 1, val, 1));
                 }
 
                 doAddRemove(map);
@@ -112,7 +136,7 @@ public class RobinHoodHashTest {
             map.put(grpId, 1, val, 1);
             assertEquals(val, map.get(grpId, 1, 0, -1, -2));
 
-            assertTrue(map.remove(grpId, 1, 1));
+            assertTrue(map.remove(grpId, 1));
             assertEquals(-1, map.get(grpId, 1, 0, -1, -2));
         }
     }
@@ -133,7 +157,7 @@ public class RobinHoodHashTest {
                 map.put(grpId, pageId, val, 1);
             }
             for (FullPageId next : control.keySet()) {
-                assertTrue(map.remove(next.groupId(), next.pageId(), 1));
+                assertTrue(map.remove(next.groupId(), next.pageId()));
             }
         }, cap);
     }
@@ -199,7 +223,7 @@ public class RobinHoodHashTest {
                         System.out.println("put " + getPageString(fullId) + " -> " + val);
                 }
                 else if ((op == 3) && check.size() >= elementsCnt * 2 / 3) {
-                    tbl.remove(cacheId, pageId, tag);
+                    tbl.remove(cacheId, pageId);
                     check.remove(fullId);
 
 
@@ -210,7 +234,7 @@ public class RobinHoodHashTest {
                     if (ec != null) {
                         FullPageId fullPageId = ec.fullId();
 
-                        tbl.remove(fullPageId.groupId(), fullPageId.pageId(), ec.tag());
+                        tbl.remove(fullPageId.groupId(), fullPageId.pageId());
 
                         check.remove(fullPageId);
                     }

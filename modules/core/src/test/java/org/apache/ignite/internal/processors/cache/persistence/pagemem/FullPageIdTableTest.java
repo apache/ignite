@@ -92,7 +92,7 @@ public class FullPageIdTableTest  {
                     check.put(fullId, val);
                 }
                 else {
-                    tbl.remove(cacheId, pageId, 0);
+                    tbl.remove(cacheId, pageId);
                     check.remove(fullId);
                 }
 
@@ -175,7 +175,7 @@ public class FullPageIdTableTest  {
                     check.put(fullId, val);
                 }
                 else if ((op == 3) && check.size() >= elementsCnt * 2 / 3) {
-                    tbl.remove(cacheId, pageId, tag);
+                    tbl.remove(cacheId, pageId);
                     check.remove(fullId);
                 }
                 else if (check.size() >= elementsCnt * 2 / 3) {
@@ -184,7 +184,7 @@ public class FullPageIdTableTest  {
                     if (ec != null) {
                         FullPageId fullPageId = ec.fullId();
 
-                        tbl.remove(fullPageId.groupId(), fullPageId.pageId(), ec.tag());
+                        tbl.remove(fullPageId.groupId(), fullPageId.pageId());
 
                         check.remove(fullPageId);
                     }

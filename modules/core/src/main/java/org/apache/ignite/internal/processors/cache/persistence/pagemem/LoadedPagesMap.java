@@ -59,11 +59,11 @@ public interface LoadedPagesMap {
 
     /**
      * Removes key-value association for the given key.
-     *
      * @param grpId Cache group ID.
      * @param pageId Page ID.
+     * @return {@code True} if value was actually found and removed.
      */
-    public void remove(int grpId, long pageId, int tag);
+    public boolean remove(int grpId, long pageId);
 
     /**
      * @return Maximum number of entries in the map. This maximum can not be always reached.
@@ -79,11 +79,11 @@ public interface LoadedPagesMap {
     /**
      * Find nearest presented value from specified position to the right.
      *
-     * @param idx Index to start searching from. Bounded with {@link #capacity()}.
+     * @param idxStart Index to start searching from. Bounded with {@link #capacity()}.
      * @return Closest value to the index and it's partition tag or  {@code null} value that will
      * be returned if no values present.
      */
-    public ReplaceCandidate getNearestAt(int idx);
+    public ReplaceCandidate getNearestAt(int idxStart);
 
     /**
      * @param idx Index to clear value at. Bounded with {@link #capacity()}.
