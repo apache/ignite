@@ -672,9 +672,7 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         U.writeEnum(out, mode);
         out.writeBoolean(sys);
         out.writeInt(size);
-        out.writeLong(sizeLong);
         out.writeInt(keySize);
-        out.writeLong(keySizeLong);
         out.writeLong(reads);
         out.writeFloat(avgReadTime);
         out.writeLong(writes);
@@ -723,6 +721,10 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         out.writeLong(rebalancingBytesRate);
 
         out.writeObject(qryMetrics);
+
+        // V2
+        out.writeLong(sizeLong);
+        out.writeLong(keySizeLong);
     }
 
     /** {@inheritDoc} */
@@ -782,6 +784,11 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         rebalancingBytesRate = in.readLong();
 
         qryMetrics = (VisorQueryMetrics)in.readObject();
+
+        if (protoVer > V1) {
+            sizeLong = in.readLong();
+            keySizeLong = in.readLong();
+        }
     }
 
     /** {@inheritDoc} */
