@@ -45,10 +45,11 @@ public class BulkLoadCsvParser extends BulkLoadParser {
      *  @param format Format options (parsed from COPY command).
      */
     public BulkLoadCsvParser(BulkLoadCsvFormat format) {
-        Charset charset;
-
         try {
-            charset = Charset.forName(format.inputCharsetName());
+            Charset charset = format.inputCharsetName() == null ? BulkLoadFormat.DEFAULT_INPUT_CHARSET :
+                Charset.forName(format.inputCharsetName());
+
+            inputBlock = new CharsetDecoderBlock(charset);
         }
         catch (IllegalCharsetNameException e) {
             throw new IgniteSQLException("Unknown charset name: '" + format.inputCharsetName() + "': " +
@@ -58,8 +59,6 @@ public class BulkLoadCsvParser extends BulkLoadParser {
             throw new IgniteSQLException("Charset is not supported: '" + format.inputCharsetName() + "': " +
                 e.getMessage());
         }
-
-        inputBlock = new CharsetDecoderBlock(charset != null ? charset : BulkLoadFormat.DEFAULT_INPUT_CHARSET);
 
         collectorBlock = new StrListAppenderBlock();
 
