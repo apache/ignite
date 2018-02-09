@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
@@ -84,13 +85,26 @@ public interface GridQueryIndexing {
         SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, GridQueryCancel cancel);
 
     /**
-     * Perform a MERGE statement using data streamer as receiver.
+     * Execute an INSERT statement using data streamer as receiver.
+     *
+     * @param schemaName Schema name.
+     * @param qry Query.
+     * @param params Query parameters.
+     * @param streamer Data streamer to feed data to.
+     * @return Update counter.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long streamUpdateQuery(String schemaName, String qry, @Nullable Object[] params,
+        IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException;
+
+    /**
+     * Execute an INSERT statement using data streamer as receiver.
      *
      * @param schemaName Schema name.
      * @param qry Query.
      * @param params Query parameters.
      * @param cliCtx Client connection context.
-     * @return Query result.
+     * @return Update counter.
      * @throws IgniteCheckedException If failed.
      */
     public long streamUpdateQuery(String schemaName, String qry, @Nullable Object[] params, SqlClientContext cliCtx)
