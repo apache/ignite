@@ -15,19 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers;
-
-import org.apache.ignite.ml.Model;
-
-/** Trainer interface. */
-@Deprecated
-// TODO: IGNITE-7659: Reduce multiple Trainer interfaces to one.
-public interface Trainer<M extends Model, T> {
-    /**
-     * Train the model based on provided data.
-     *
-     * @param data Data for training.
-     * @return Trained model.
-     */
-    public M train(T data);
-}
+/**
+ * <!-- Package description. -->
+ * Contains iterative algorithms for solving linear systems.
+ */
+package org.apache.ignite.ml.math.isolve;

@@ -15,19 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers;
+package org.apache.ignite.ml.math.isolve.lsqr;
 
-import org.apache.ignite.ml.Model;
+import java.io.Serializable;
 
-/** Trainer interface. */
-@Deprecated
-// TODO: IGNITE-7659: Reduce multiple Trainer interfaces to one.
-public interface Trainer<M extends Model, T> {
-    /**
-     * Train the model based on provided data.
-     *
-     * @param data Data for training.
-     * @return Trained model.
-     */
-    public M train(T data);
+/**
+ * Partition context of the LSQR algorithm.
+ */
+public class LSQRPartitionContext implements Serializable {
+    /** */
+    private static final long serialVersionUID = -8159608186899430315L;
+
+    /** Part of U vector. */
+    private double[] u;
+
+    /** */
+    public double[] getU() {
+        return u;
+    }
+
+    /** */
+    public void setU(double[] u) {
+        this.u = u;
+    }
 }
