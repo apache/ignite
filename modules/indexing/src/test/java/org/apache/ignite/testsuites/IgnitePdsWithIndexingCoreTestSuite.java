@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsTxCacheR
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePersistentStoreCacheGroupsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsMultiNodePutGetRestartTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsPageEvictionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCacheDestroyDuringCheckpointTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCacheIntegrationTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsNoActualWalHistoryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsThreadInterruptionTest;
@@ -55,6 +56,7 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
         suite.addTestSuite(IgnitePdsTxCacheRebalancingTest.class);
 
         suite.addTestSuite(IgniteWalRecoveryPPCTest.class);
+        suite.addTestSuite(IgnitePdsCacheDestroyDuringCheckpointTest.class);
 
         suite.addTestSuite(IgnitePdsBinaryMetadataOnClusterRestartTest.class);
         suite.addTestSuite(IgnitePdsMarshallerMappingRestoreOnNodeStartTest.class);
