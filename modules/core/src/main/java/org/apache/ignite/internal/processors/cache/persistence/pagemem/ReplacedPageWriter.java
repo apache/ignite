@@ -14,19 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-package org.apache.ignite.spark
-
-import org.scalatest.Suites
+import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.FullPageId;
 
 /**
-  * Test suite for Spark DataFram API implementation.
-  */
-class IgniteDataFrameSuite extends Suites (
-    new IgniteDataFrameSchemaSpec,
-    new IgniteSQLDataFrameSpec,
-    new IgniteSQLDataFrameWriteSpec,
-    new IgniteSQLDataFrameIgniteSessionWriteSpec,
-    new IgniteDataFrameWrongConfigSpec,
-    new IgniteCatalogSpec
-)
+ * Flush (write) dirty page implementation for freed page during page replacement. When possible, will be called by
+ * removePageForReplacement().
+ */
+public interface ReplacedPageWriter {
+    /**
+     * @param fullPageId Full page ID being evicted.
+     * @param byteBuf Buffer with page data.
+     * @param tag partition update tag, increasing counter.
+     * @throws IgniteCheckedException if page write failed.
+     */
+    void writePage(FullPageId fullPageId, ByteBuffer byteBuf, int tag) throws IgniteCheckedException;
+}

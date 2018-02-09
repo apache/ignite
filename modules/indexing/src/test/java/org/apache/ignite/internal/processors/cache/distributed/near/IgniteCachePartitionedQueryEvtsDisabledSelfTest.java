@@ -15,18 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import org.scalatest.Suites
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
-  * Test suite for Spark DataFram API implementation.
-  */
-class IgniteDataFrameSuite extends Suites (
-    new IgniteDataFrameSchemaSpec,
-    new IgniteSQLDataFrameSpec,
-    new IgniteSQLDataFrameWriteSpec,
-    new IgniteSQLDataFrameIgniteSessionWriteSpec,
-    new IgniteDataFrameWrongConfigSpec,
-    new IgniteCatalogSpec
-)
+ * Tests for partitioned cache queries with events disabled.
+ */
+public class IgniteCachePartitionedQueryEvtsDisabledSelfTest extends IgniteCachePartitionedQuerySelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration() {
+        return super.cacheConfiguration().setEventsDisabled(true);
+    }
+}

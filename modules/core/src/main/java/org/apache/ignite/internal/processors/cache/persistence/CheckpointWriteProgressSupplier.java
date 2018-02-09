@@ -15,39 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark.examples;
+package org.apache.ignite.internal.processors.cache.persistence;
 
-import org.apache.ignite.examples.spark.IgniteCatalogExample;
-import org.apache.ignite.examples.spark.IgniteDataFrameExample;
-import org.apache.ignite.examples.spark.IgniteDataFrameWriteExample;
-import org.junit.Test;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * Provider for counters of checkpoint writes progress.
  */
-public class IgniteDataFrameSelfTest {
-    static final String[] EMPTY_ARGS = new String[0];
+public interface CheckpointWriteProgressSupplier {
+    /**
+     * Counter for written checkpoint pages. Not null only if checkpoint is running.
+     */
+    public AtomicInteger writtenPagesCounter();
 
     /**
-     * @throws Exception If failed.
+     * @return Counter for fsynced checkpoint pages. Not null only if checkpoint is running.
      */
-    @Test
-    public void testCatalogExample() throws Exception {
-        IgniteCatalogExample.main(EMPTY_ARGS);
-    }
+    public AtomicInteger syncedPagesCounter();
 
     /**
-     * @throws Exception If failed.
+     * @return Counter for evicted pages during current checkpoint. Not null only if checkpoint is running.
      */
-    @Test
-    public void testDataFrameExample() throws Exception {
-        IgniteDataFrameExample.main(EMPTY_ARGS);
-    }
+    public AtomicInteger evictedPagesCntr();
 
     /**
-     * @throws Exception If failed.
+     * @return Number of pages in current checkpoint. If checkpoint is not running, returns 0.
      */
-    @Test
-    public void testDataFrameWriteExample() throws Exception {
-        IgniteDataFrameWriteExample.main(EMPTY_ARGS);
-    }
+    public int currentCheckpointPagesCount();
 }
