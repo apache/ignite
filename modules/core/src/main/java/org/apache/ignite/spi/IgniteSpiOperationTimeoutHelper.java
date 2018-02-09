@@ -75,7 +75,7 @@ public class IgniteSpiOperationTimeoutHelper {
         else {
             long curTs = U.currentTimeMillis();
 
-            timeout = timeout - (curTs - lastOperStartTs);
+            timeout = remainingTime(curTs);
 
             lastOperStartTs = curTs;
 
@@ -95,12 +95,18 @@ public class IgniteSpiOperationTimeoutHelper {
      * @return {@code true} if failure detection timeout is reached, {@code false} otherwise.
      */
     public boolean checkFailureTimeoutReached(Exception e) {
-        if (!failureDetectionTimeoutEnabled)
-            return false;
+        return failureDetectionTimeoutEnabled &&
+            (X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class)
+                || remainingTime(U.currentTimeMillis()) <= 0);
+    }
 
-        if (X.hasCause(e, IgniteSpiOperationTimeoutException.class, SocketTimeoutException.class, SocketException.class))
-            return true;
-
-        return (timeout - (U.currentTimeMillis() - lastOperStartTs) <= 0);
+    /**
+     * Returns remaining time for current timeout chunk.
+     *
+     * @param curTs Current time stamp.
+     * @return Time to wait in millis.
+     */
+    private long remainingTime(long curTs) {
+        return timeout - (curTs - lastOperStartTs);
     }
 }

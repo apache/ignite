@@ -91,8 +91,6 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        System.setProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL, "true");
-
         super.beforeTestsStarted();
 
         startGrids(SRVS);
@@ -111,8 +109,6 @@ public class IgniteCacheGetRestartTest extends GridCommonAbstractTest {
         super.afterTestsStopped();
 
         stopAllGrids();
-
-        System.clearProperty(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
     }
 
     /** {@inheritDoc} */

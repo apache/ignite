@@ -358,10 +358,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     private ConnectionPolicy connPlc;
 
     /** */
-    private boolean enableForcibleNodeKill = IgniteSystemProperties
-        .getBoolean(IgniteSystemProperties.IGNITE_ENABLE_FORCIBLE_NODE_KILL);
-
-    /** */
     private boolean enableTroubleshootingLog = IgniteSystemProperties
         .getBoolean(IgniteSystemProperties.IGNITE_TROUBLESHOOTING_LOGGER);
 
@@ -2920,11 +2916,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             try {
                 safeShmemHandshake(client, node.id(), timeoutHelper.nextTimeoutChunk(connTimeout0));
             }
-            catch (HandshakeTimeoutException | IgniteSpiOperationTimeoutException e) {
+            catch (IgniteSpiOperationTimeoutException e) {
                 client.forceClose();
 
-                if (failureDetectionTimeoutEnabled() && (e instanceof HandshakeTimeoutException ||
-                    timeoutHelper.checkFailureTimeoutReached(e))) {
+                if (timeoutHelper.checkFailureTimeoutReached(e)) {
                     if (log.isDebugEnabled())
                         log.debug("Handshake timed out (failure threshold reached) [failureDetectionTimeout=" +
                             failureDetectionTimeout() + ", err=" + e.getMessage() + ", client=" + client + ']');
@@ -3089,8 +3084,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         GridCommunicationClient client = null;
         IgniteCheckedException errs = null;
 
-        int connectAttempts = 1;
-
         for (InetSocketAddress addr : addrs) {
             long connTimeout0 = connTimeout;
 
@@ -3111,6 +3104,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 }
 
                 boolean needWait = false;
+
+                long start = U.currentTimeMillis();
 
                 try {
                     SocketChannel ch = SocketChannel.open();
@@ -3171,12 +3166,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             sslMeta,
                             handshakeConnIdx);
 
-                        if (rcvCnt == ALREADY_CONNECTED) {
+                        if (rcvCnt == ALREADY_CONNECTED)
                             return null;
-                        }
-                        else if (rcvCnt == NODE_STOPPING) {
+                        else if (rcvCnt == NODE_STOPPING)
                             throw new ClusterTopologyCheckedException("Remote node started stop procedure: " + node.id());
-                        }
                         else if (rcvCnt == NEED_WAIT) {
                             needWait = true;
 
@@ -3211,17 +3204,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         }
                     }
                 }
-                catch (HandshakeTimeoutException | IgniteSpiOperationTimeoutException e) {
+                catch (IgniteSpiOperationTimeoutException e) { // Handshake is timed out.
                     if (client != null) {
                         client.forceClose();
 
                         client = null;
                     }
 
-                    if (failureDetectionTimeoutEnabled() && (e instanceof HandshakeTimeoutException ||
-                        X.hasCause(e, SocketException.class) ||
-                        timeoutHelper.checkFailureTimeoutReached(e))) {
-
+                    if (timeoutHelper.checkFailureTimeoutReached(e)) {
                         String msg = "Handshake timed out (failure detection timeout is reached) " +
                             "[failureDetectionTimeout=" + failureDetectionTimeout() + ", addr=" + addr + ']';
 
@@ -3279,7 +3269,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 catch (ClusterTopologyCheckedException e) {
                     throw e;
                 }
-                catch (Exception e) {
+                catch (Exception e) { // Most probably IO error on socket connect or handshake.
                     if (client != null) {
                         client.forceClose();
 
@@ -3295,7 +3285,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     if (enableTroubleshootingLog)
                         U.error(log, "Failed to establish connection to a remote node [node=" + node +
-                            ", addr=" + addr + ", connectAttempts=" + connectAttempts +
+                            ", addr=" + addr + ", connectAttempts=" + attempt +
                             ", failureDetThrReached=" + failureDetThrReached + ']', e);
 
                     if (failureDetThrReached)
@@ -3315,17 +3305,27 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     errs.addSuppressed(new IgniteCheckedException("Failed to connect to address " +
                         "[addr=" + addr + ", err=" + e.getMessage() + ']', e));
 
-                    // Reconnect for the second time, if connection is not established.
-                    if (!failureDetThrReached && connectAttempts < 5 &&
-                        (X.hasCause(e, ConnectException.class, HandshakeException.class, SocketTimeoutException.class))) {
-                        U.sleep(200);
+                    if (X.hasCause(e, ConnectException.class, HandshakeException.class, SocketTimeoutException.class) &&
+                        !failureDetThrReached && attempt <= reconCnt) {
+                        // Reconnect for the second time if connection was not established within current timeout chunk.
+                        attempt++;
 
-                        connectAttempts++;
+                        long delay = failureDetectionTimeoutEnabled() ? failureDetectionTimeout() : connTimeout0 -
+                            (U.currentTimeMillis() - start);
 
-                        continue;
+                        if (delay > 10) {
+                            try {
+                                U.sleep(delay);
+                            }
+                            catch (IgniteInterruptedCheckedException e1) {
+                                break;
+                            }
+                        }
+
+                        connTimeout0 *= 2;
                     }
-
-                    break;
+                    else
+                        break;
                 }
             }
 
@@ -3342,28 +3342,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     "operating system firewall is disabled on local and remote hosts) " +
                     "[addrs=" + addrs + ']');
 
-            if (enableForcibleNodeKill) {
-                if (getSpiContext().node(node.id()) != null
-                    && (CU.clientNode(node) ||  !CU.clientNode(getLocalNode())) &&
-                    connectionError(errs)) {
-                    String msg = "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
-                        "cluster [" + "rmtNode=" + node + ']';
+            if (getSpiContext().node(node.id()) != null
+                && (CU.clientNode(node) || !CU.clientNode(getLocalNode()))
+                && connectionError(errs)) {
+                String msg = "TcpCommunicationSpi failed to establish connection to node, node will be dropped from " +
+                    "cluster [" + "rmtNode=" + node + ']';
 
-                    if (enableTroubleshootingLog)
-                        U.error(log, msg, errs);
-                    else
-                        U.warn(log, msg);
+                if (enableTroubleshootingLog)
+                    U.error(log, msg, errs);
+                else
+                    U.warn(log, msg);
 
-                    getSpiContext().failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
-                        "rmtNode=" + node +
-                        ", errs=" + errs +
+                getSpiContext().failNode(node.id(), "TcpCommunicationSpi failed to establish connection to node [" +
+                    "rmtNode=" + node +
+                    ", errs=" + errs +
                         ", connectErrs=" + Arrays.toString(errs.getSuppressed()) + ']');
                 }
-            }
 
-            if (!X.hasCause(errs, SocketTimeoutException.class, HandshakeTimeoutException.class,
-                IgniteSpiOperationTimeoutException.class))
-                throw errs;
+            throw errs;
         }
 
         return client;
@@ -3377,8 +3373,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         return X.hasCause(errs, ConnectException.class,
             HandshakeException.class,
             SocketTimeoutException.class,
-            HandshakeTimeoutException.class,
             IgniteSpiOperationTimeoutException.class);
+    }
+
+    /** */
+    private IgniteSpiOperationTimeoutException handshakeTimeoutException() {
+        return new IgniteSpiOperationTimeoutException("Failed to perform handshake due to timeout " +
+            "(consider increasing 'connectionTimeout' configuration property).");
     }
 
     /**
@@ -3404,16 +3405,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             client.doHandshake(new HandshakeClosure(rmtNodeId));
         }
         finally {
-            boolean cancelled = obj.cancel();
-
-            if (cancelled)
+            if (obj.cancel())
                 removeTimeoutObject(obj);
-
-            // Ignoring whatever happened after timeout - reporting only timeout event.
-            if (!cancelled)
-                throw new HandshakeTimeoutException(
-                    new IgniteSpiOperationTimeoutException("Failed to perform handshake due to timeout " +
-                        "(consider increasing 'connectionTimeout' configuration property)."));
+            else
+                throw handshakeTimeoutException();
         }
     }
 
@@ -3640,16 +3635,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             throw new IgniteCheckedException("Failed to read from channel.", e);
         }
         finally {
-            boolean cancelled = obj.cancel();
-
-            if (cancelled)
+            if (obj.cancel())
                 removeTimeoutObject(obj);
-
-            // Ignoring whatever happened after timeout - reporting only timeout event.
-            if (!cancelled)
-                throw new HandshakeTimeoutException(
-                    new IgniteSpiOperationTimeoutException("Failed to perform handshake due to timeout " +
-                        "(consider increasing 'connectionTimeout' configuration property)."));
+            else
+                throw handshakeTimeoutException();
         }
 
         return rcvCnt;
@@ -3855,19 +3844,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
          */
         HandshakeException(String msg) {
             super(msg);
-        }
-    }
-
-    /** Internal exception class for proper timeout handling. */
-    private static class HandshakeTimeoutException extends IgniteCheckedException {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param cause Exception cause
-         */
-        HandshakeTimeoutException(IgniteSpiOperationTimeoutException cause) {
-            super(cause);
         }
     }
 
