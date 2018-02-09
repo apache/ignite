@@ -208,6 +208,54 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
+     * Verifies that error is reported for empty charset name.
+     */
+    public void testEmptyCharset() {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.executeUpdate(
+                    "copy from \"any.file\" into Person " +
+                        "(_key, age, firstName, lastName) " +
+                        "format csv charset \"\"");
+
+                return null;
+            }
+        }, SQLException.class, "Unknown charset name: ''");
+    }
+
+    /**
+     * Verifies that error is reported for unsupported charset name.
+     */
+    public void testNotSupportedCharset() {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.executeUpdate(
+                    "copy from \"any.file\" into Person " +
+                        "(_key, age, firstName, lastName) " +
+                        "format csv charset nonexistent");
+
+                return null;
+            }
+        }, SQLException.class, "Charset is not supported: 'NONEXISTENT'");
+    }
+
+    /**
+     * Verifies that error is reported for unknown charset name.
+     */
+    public void testUnknownCharset() {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                stmt.executeUpdate(
+                    "copy from \"any.file\" into Person " +
+                        "(_key, age, firstName, lastName) " +
+                        "format csv charset \"8^)\"");
+
+                return null;
+            }
+        }, SQLException.class, "Unknown charset name: '8^)'");
+    }
+
+    /**
      * Verifies that ASCII encoding is recognized and imported.
      *
      * @throws SQLException If failed.
