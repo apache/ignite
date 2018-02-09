@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.bulkload;
 
 import org.jetbrains.annotations.NotNull;
 
-import java.nio.charset.Charset;
-
 /**
  * Bulk load parameters, which are parsed from SQL command and sent from server to client.
  */
@@ -37,9 +35,6 @@ public class BulkLoadAckClientParameters {
     /** Size of a file batch for COPY command. */
     public static final int DEFAULT_BATCH_SIZE = 4 * 1024 * 1024;
 
-    /** The default input charset. */
-    public static final Charset DEFAULT_INPUT_CHARSET = Charset.forName("UTF-8");
-
     /** Local name of the file to send to server */
     @NotNull private final String locFileName;
 
@@ -50,7 +45,7 @@ public class BulkLoadAckClientParameters {
      * Creates a bulk load parameters.
      *
      * @param locFileName File name to send from client to server.
-     * @param batchSize Batch size (Number of bytes in a portion of a file to send in one Jdbc request/response).
+     * @param batchSize Batch size (Number of bytes in a portion of a file to send in one JDBC request/response).
      */
     public BulkLoadAckClientParameters(@NotNull String locFileName, int batchSize) {
         this.locFileName = locFileName;

@@ -61,7 +61,7 @@ public class BulkLoadCsvParser extends BulkLoadParser {
             format.escapeChars(BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS);
 
         inputBlock.append(new LineSplitterBlock(format.lineSeparator()))
-            .append(new CsvLineProcessorBlock(format.fieldSeparator(), fmt.quoteChars(),
+            .append(new CsvLineProcessorBlock(format.fieldSeparator(), format.quoteChars(),
                 format.commentChars(), format.escapeChars()))
             .append(collectorBlock);
     }
