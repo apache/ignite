@@ -27,8 +27,8 @@ import static org.apache.ignite.internal.util.GridUnsafe.getLong;
 /**
  *
  */
-public class RobinHoodHashMap {
-    public static final int SIZE_OF_COUNT = 8;
+public class RobinHoodBackwardShiftHashMap {
+    private static final int SIZE_OF_COUNT = 8;
 
 
     /** Size of ideal bucket. */
@@ -65,9 +65,12 @@ public class RobinHoodHashMap {
     private static final int EMPTY_CACHE_GRP_ID = 0;
 
     /** */
+
+    @Deprecated
     private static final long REMOVED_PAGE_ID = 0x8000000000000000L;
 
     /** */
+    @Deprecated
     private static final int REMOVED_CACHE_GRP_ID = 0;
 
     public static final int BYTES_PER_ENTRY = IDEAL_BUCKET_SIZE + GRP_ID_SIZE + PAGE_ID_SIZE + VALUE_SIZE;
@@ -75,7 +78,7 @@ public class RobinHoodHashMap {
     private final int numBuckets;
     private long baseAddr;
 
-    public RobinHoodHashMap(long baseAddr, int numBuckets) {
+    public RobinHoodBackwardShiftHashMap(long baseAddr, int numBuckets) {
         this.baseAddr = baseAddr;
         this.numBuckets = numBuckets;
 
@@ -154,40 +157,25 @@ public class RobinHoodHashMap {
             final int dibCurEntry = distance(idxCurr, curIdealBucket);
 
             if (isEmpty(curGrpId, curPageId)) {
-                setIdealBucket(base, idxIdealToInsert);
-                setGrpId(base, grpIdToInsert);
-                setPageId(base, pageIdToInsert);
-                setValue(base, valToInsert);
+                setCellValue(base, idxIdealToInsert, grpIdToInsert, pageIdToInsert, valToInsert);
+
                 return true;
-            } else if (isRemoved(curGrpId, curPageId)) {
-                if (dibCurEntry < dibEntryToInsert) {
-                    setIdealBucket(base, idxIdealToInsert);
-                    setGrpId(base, grpIdToInsert);
-                    setPageId(base, pageIdToInsert);
-                    setValue(base, valToInsert);
-                    //If a deleted entry is moved during an insertion,
-                    // and becomes the entry to insert, it is simply discarded, and the insertion finishes.
-                    return true;
-                } else {
-                    //todo
-                }
             } else if (curGrpId == grpIdToInsert && curPageId == pageIdToInsert) {
 
                 if (swapCount != 0) {
                     StringBuilder sb = new StringBuilder();
                     dumpEntry(sb, idxCurr);
 
-                    assert swapCount == 0 : "Swaped " + swapCount + " times:" +  sb.toString();
+                    assert swapCount == 0 : "Swapped " + swapCount + " times:" + sb.toString();
                 }
-                //equal value found
-                return false;
+
+                setValue(base, valToInsert);
+
+                return false; //equal value found
             }
             else if (dibCurEntry < dibEntryToInsert) {
                 //swapping *toInsert and state in bucket: save cur state to bucket
-                setIdealBucket(base, idxIdealToInsert);
-                setGrpId(base, grpIdToInsert);
-                setPageId(base, pageIdToInsert);
-                setValue(base, valToInsert);
+                setCellValue(base, idxIdealToInsert, grpIdToInsert, pageIdToInsert, valToInsert);
 
                 idxIdealToInsert = curIdealBucket;
                 pageIdToInsert = curPageId;
@@ -203,12 +191,26 @@ public class RobinHoodHashMap {
         return false;
     }
 
+    /**
+     * @param base Entry base, address in buffer of the entry start.
+     * @param idealBucket
+     * @param grpId
+     * @param pageId
+     * @param val
+     */
+    private void setCellValue(long base, long idealBucket, int grpId, long pageId, long val) {
+        setIdealBucket(base, idealBucket);
+        setGrpId(base, grpId);
+        setPageId(base, pageId);
+        setValue(base, val);
+    }
 
     public boolean remove(int grpId, long pageId, int tag) {
         assert grpId != 0;
 
         int idxInit = U.safeAbs(FullPageId.hashCode(grpId, pageId)) % numBuckets;
 
+        int idxEqualValFound   = -1;
         for (int i = 0; i < numBuckets; i++) {
             int idxCurr = (idxInit + i) % numBuckets;
 
@@ -222,24 +224,44 @@ public class RobinHoodHashMap {
 
             if (isEmpty(curGrpId, curPageId))
                 return false;
-            else if (isRemoved(curGrpId, curPageId)) {
-                if (dibCurEntry < dibEntryToInsert)
-                    return false;
-            }
             else if (curGrpId == grpId && curPageId == pageId) {
-
-                //equal value found
-                setRemoved(base);
-                return true;
+                idxEqualValFound = idxCurr;
+                break; //equal value found
             }
             else if (dibCurEntry < dibEntryToInsert) {
-                //swapping *toInsert and state in bucket: save cur state to bucket
+                //If our value was present in map we had already found it.
                 return false;
-            } else {
-                //need to switch to next idx;
             }
         }
-        return false;
+        assert idxEqualValFound >= 0;
+
+        //scanning rest of map
+        for (int i = 0; i < numBuckets - 1; i++) {
+            int idxCurr = (idxEqualValFound + i) % numBuckets;
+            int idxNext = (idxEqualValFound + i + 1) % numBuckets;
+
+            long baseCurr = entryBase(idxCurr);
+
+            long baseNext = entryBase(idxNext);
+            final int nextGrpId = getGrpId(baseNext);
+            final long nextPageId = getPageId(baseNext);
+            final int nextIdealBucket = getIdealBucket(baseNext);
+
+            if (isEmpty(nextGrpId, nextPageId)
+                || distance(idxNext, nextIdealBucket) == 0) {
+                setEmpty(baseCurr);
+
+                return true;
+            }
+            else
+                setCellValue(baseCurr, nextIdealBucket, nextGrpId, nextPageId, getValue(baseNext));
+        }
+
+        int lastShiftedIdx = (idxEqualValFound -1) % numBuckets;
+
+        setEmpty(entryBase(lastShiftedIdx));
+
+        return true;
     }
 
 
@@ -278,9 +300,12 @@ public class RobinHoodHashMap {
         setIdealBucket(addr, 0);
     }
 
+    @Deprecated
     private boolean isRemoved(int grpId, long pageId) {
         return pageId == REMOVED_PAGE_ID && grpId == REMOVED_CACHE_GRP_ID;
     }
+
+    @Deprecated
     private void setRemoved(long addr) {
         setPageId(addr, REMOVED_PAGE_ID);
         setGrpId(addr, REMOVED_CACHE_GRP_ID);
@@ -288,6 +313,10 @@ public class RobinHoodHashMap {
         // don't reset ideal bucket, setIdealBucket(addr, 0);
     }
 
+    /**
+     * @param base Entry base, address in buffer of the entry start.
+     * @param idxIdealToInsert
+     */
     private void setIdealBucket(long base, long idxIdealToInsert) {
         assert idxIdealToInsert < numBuckets;
 
@@ -315,10 +344,11 @@ public class RobinHoodHashMap {
         else if(isRemoved(curGrpId, curPageId))
             sb.append("Removed: ");
 
-        sb.append("i.buc=" ).append(getIdealBucket(base)).append(",");
-        sb.append("grp=" ).append(curGrpId).append(",");
-        sb.append("page=" ).append(curPageId).append("->");
-        sb.append("val=" ).append(curVal).append(",");
+        sb.append("i.buc=").append(getIdealBucket(base)).append(",");
+        sb.append("(grp=").append(curGrpId).append(",");
+        sb.append("page=").append(curPageId).append(")");
+        sb.append("->");
+        sb.append("val=").append(curVal).append(",");
 
         sb.append("\n");
     }

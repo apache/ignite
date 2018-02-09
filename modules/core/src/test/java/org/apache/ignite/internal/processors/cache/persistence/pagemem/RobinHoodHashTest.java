@@ -36,10 +36,12 @@ import static org.junit.Assert.assertTrue;
  *
  */
 public class RobinHoodHashTest {
-    private void withMap(Consumer<RobinHoodHashMap> tester, int cap) {
-        long addr = GridUnsafe.allocateMemory(cap * RobinHoodHashMap.BYTES_PER_ENTRY);
+    private boolean dump = false;
 
-        RobinHoodHashMap map = new RobinHoodHashMap(addr, cap);
+    private void withMap(Consumer<RobinHoodBackwardShiftHashMap> tester, int cap) {
+        long addr = GridUnsafe.allocateMemory(cap * RobinHoodBackwardShiftHashMap.BYTES_PER_ENTRY);
+
+        RobinHoodBackwardShiftHashMap map = new RobinHoodBackwardShiftHashMap(addr, cap);
         try {
             tester.accept(map);
         }
@@ -60,7 +62,7 @@ public class RobinHoodHashTest {
                     assertEquals(val, map.get(grpId, 1, 0, -1, -2));
 
                     assertFalse("Duplicate put for " + grpId, map.put(grpId, 1, 1, 1));
-                    assertEquals(val, map.get(grpId, 1, 0, -1, -2));
+                    assertEquals(1, map.get(grpId, 1, 0, -1, -2));
                 }
             }
             , 100);
@@ -77,7 +79,7 @@ public class RobinHoodHashTest {
                     assertEquals(val, map.get(grpId, 1, 0, -1, -2));
 
                     assertFalse("Duplicate put for " + grpId, map.put(grpId, 1, 1, 1));
-                    assertEquals(val, map.get(grpId, 1, 0, -1, -2));
+                    assertEquals(1, map.get(grpId, 1, 0, -1, -2));
                 }
 
                 boolean put = map.put(11, 1, 11, 1);
@@ -103,7 +105,7 @@ public class RobinHoodHashTest {
             , 100);
     }
 
-    private void doAddRemove(RobinHoodHashMap map) {
+    private void doAddRemove(RobinHoodBackwardShiftHashMap map) {
         for (int i = 0; i < 100; i++) {
             int grpId = i + 1;
             int val = grpId * grpId;
@@ -153,7 +155,7 @@ public class RobinHoodHashTest {
     }
 
     private void doPutRemoveTest(long seed) {
-        int elementsCnt = 100;
+        int elementsCnt = 10_000;
 
         System.setProperty(IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR, "11");
 
@@ -163,7 +165,7 @@ public class RobinHoodHashTest {
             Map<FullPageId, Long> check = new HashMap<>();
 
             int tag = 0;
-            for (int i = 0; i < 30_000; i++) {
+            for (int i = 0; i < 1_000_000; i++) {
                 int op = rnd.nextInt(5);
 
                 int cacheId = rnd.nextInt(100) + 1;
@@ -189,10 +191,12 @@ public class RobinHoodHashTest {
                 else if ((op == 1 || op == 2) && (check.size() < elementsCnt)) {
                     long val = U.safeAbs(rnd.nextInt(30));
 
+                    Long prevPut = check.put(fullId, val);
+                    boolean prevValuePresent = prevPut != null;
                     tbl.put(cacheId, pageId, val, tag);
-                    check.put(fullId, val);
 
-                    System.out.println("put " + getPageString(fullId) + " -> " + val);
+                    if (dump)
+                        System.out.println("put " + getPageString(fullId) + " -> " + val);
                 }
                 else if ((op == 3) && check.size() >= elementsCnt * 2 / 3) {
                     tbl.remove(cacheId, pageId, tag);
@@ -236,6 +240,10 @@ public class RobinHoodHashTest {
     }
 
     @NotNull private String getPageString(FullPageId fullId) {
-        return "(p=" + fullId.pageId() + " g=" + fullId.groupId() + ")";
+        StringBuilder sb = new StringBuilder();
+        sb.append("(grp=").append(fullId.groupId()).append(",");
+        sb.append("page=").append(fullId.pageId()).append(")");
+
+        return sb.toString();
     }
 }
