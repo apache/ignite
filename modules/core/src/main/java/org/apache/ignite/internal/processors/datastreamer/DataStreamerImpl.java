@@ -2132,9 +2132,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         // No-op.
                     }
                     catch (IgniteCheckedException ex) {
-                        IgniteLogger log = cache.unwrap(Ignite.class).log();
-
-                        U.error(log, "Failed to set initial value for cache entry: " + e, ex);
+                        throw new IgniteException("Failed to set initial value for cache entry", ex);
                     }
                     finally {
                         cctx.shared().database().checkpointReadUnlock();
