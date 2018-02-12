@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.authentication;
 import java.util.Base64;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.AuthenticationConfiguration;
@@ -27,6 +28,7 @@ import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -462,6 +464,29 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger usrCnt = new AtomicInteger();
 
+        IgniteInternalFuture dbgF=  GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    restartFut.get();
+                }
+                catch (IgniteCheckedException e) {
+                }
+
+                try {
+                    U.sleep(3000);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                }
+
+                if (!IgniteAuthenticationProcessor.MAP.isEmpty()) {
+                    System.out.println("+++ UNFINISHED");
+
+                    for (UserManagementOperation op : IgniteAuthenticationProcessor.MAP.keySet())
+                        System.out.println("+++ " + op);
+                }
+            }
+        });
+
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
                 AuthorizationContext.context(actxDflt);
@@ -481,9 +506,10 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                     fail();
                 }
             }
-        }, 10, "user-op");
+        }, 13, "user-op");
 
         restartFut.get();
+        dbgF.get();
     }
 
     /**
