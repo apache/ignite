@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db.file;
 
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
