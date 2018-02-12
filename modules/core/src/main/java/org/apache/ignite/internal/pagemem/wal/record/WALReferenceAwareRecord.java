@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.Storable;
 
 /**
  * Interface is needed to link WAL reference of {@link DataRecord} entries
@@ -25,25 +27,11 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
  */
 public interface WALReferenceAwareRecord {
     /**
-     * Record payload size which is needed for extracting actual payload from WAL reference.
+     * Sets {@link CacheDataRow} extracted from {@link DataRecord} to this record.
      *
-     * @return Payload size in bytes.
+     * @param row Cache data row.
      */
-    int payloadSize();
-
-    /**
-     * In case of fragmented record - offset of fragmented payload relatively to whole payload.
-     *
-     * @return Offset in bytes or -1 if record is not fragmented.
-     */
-    int offset();
-
-    /**
-     * Set payload extracted from {@link DataRecord} to this record.
-     *
-     * @param payload Payload.
-     */
-    void payload(byte[] payload);
+    void row(Storable row);
 
     /**
      * WAL reference to appropriate {@link DataRecord}.

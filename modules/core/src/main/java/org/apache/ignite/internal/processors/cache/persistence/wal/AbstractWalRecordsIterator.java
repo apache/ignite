@@ -28,13 +28,13 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
-import org.apache.ignite.internal.processors.cache.persistence.wal.link.CachedPayloadLinker;
-import org.apache.ignite.internal.processors.cache.persistence.wal.record.HeaderRecord;
+import org.apache.ignite.internal.processors.cache.persistence.wal.link.RowDataLinker;
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
@@ -88,7 +88,7 @@ public abstract class AbstractWalRecordsIterator
     private final ByteBufferExpander buf;
 
     /** Class to link {@link DataRecord) entries payload to {@link WALReferenceAwareRecord} records. */
-    private final CachedPayloadLinker linker;
+    private final RowDataLinker linker;
 
     /**
      * @param log Logger.
@@ -112,7 +112,7 @@ public abstract class AbstractWalRecordsIterator
         // Do not allocate direct buffer for iterator.
         this.buf = new ByteBufferExpander(bufSize, ByteOrder.nativeOrder());
 
-        this.linker = new CachedPayloadLinker(sharedCtx.wal());
+        this.linker = new RowDataLinker(sharedCtx);
     }
 
     /**
@@ -244,14 +244,22 @@ public abstract class AbstractWalRecordsIterator
 
             actualFilePtr.length(rec.size());
 
-            if (rec instanceof DataRecord) {
-                linker.addDataRecord((DataRecord) rec, actualFilePtr);
-            } else if (rec instanceof WALReferenceAwareRecord) {
-                linker.linkPayload((WALReferenceAwareRecord) rec);
+            rec = postProcessRecord(rec);
+
+            if (hnd.ser.version() >= 3) {
+                if (rec instanceof MetastoreDataRecord) {
+                    linker.addMetastorageDataRecord((MetastoreDataRecord) rec, actualFilePtr);
+                }
+                else if (rec instanceof DataRecord) {
+                    linker.addDataRecord((DataRecord) rec, actualFilePtr);
+                }
+                else if (rec instanceof WALReferenceAwareRecord) {
+                    linker.linkPayload((WALReferenceAwareRecord) rec);
+                }
             }
 
             // cast using diamond operator here can break compile for 7
-            return new IgniteBiTuple<>((WALPointer)actualFilePtr, postProcessRecord(rec));
+            return new IgniteBiTuple<>((WALPointer)actualFilePtr, rec);
         }
         catch (IOException | IgniteCheckedException e) {
             if (e instanceof WalSegmentTailReachedException)
@@ -283,7 +291,7 @@ public abstract class AbstractWalRecordsIterator
     protected void handleRecordException(
         @NotNull final Exception e,
         @Nullable final FileWALPointer ptr) {
-        log.warning("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr);
+        log.warning("Stopping WAL iteration due to an exception: " + e.getMessage() + ", ptr=" + ptr, e);
     }
 
     /**

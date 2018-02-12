@@ -548,7 +548,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
 
     @Override
     public WALPointer reference() {
-        return null;
+        return reference;
     }
 
     /** {@inheritDoc} */

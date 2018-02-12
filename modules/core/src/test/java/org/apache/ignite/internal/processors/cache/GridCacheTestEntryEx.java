@@ -459,8 +459,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
           UUID subjId,
           String taskName,
           @Nullable GridCacheVersion dhtVer,
-          @Nullable Long updateCntr,
-          @Nullable WALPointer reference)
+          @Nullable Long updateCntr)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         return new GridCacheUpdateTxResult(true, rawPut(val, ttl), null);
     }

@@ -383,8 +383,7 @@ public interface GridCacheEntryEx {
             @Nullable UUID subjId,
             String taskName,
             @Nullable GridCacheVersion dhtVer,
-            @Nullable Long updateCntr,
-            @Nullable WALPointer reference
+            @Nullable Long updateCntr
             ) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**

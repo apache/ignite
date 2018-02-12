@@ -502,7 +502,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         if (!empty) {
             batchStoreCommit(writeEntries());
 
-            WALPointer reference = null;
             WALPointer ptr = null;
 
             cctx.database().checkpointReadLock();
@@ -650,21 +649,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                     if (dhtVer == null)
                                         dhtVer = explicitVer != null ? explicitVer : writeVersion();
 
-                                    if (cctx.wal() != null && !writeEntries().isEmpty()
-                                        && op != NOOP && op != RELOAD && op != READ)
-                                        reference = cctx.wal().log(new DataRecord(new DataEntry(
-                                            cacheCtx.cacheId(),
-                                            txEntry.key(),
-                                            val,
-                                            op,
-                                            nearXidVersion(),
-                                            writeVersion(),
-                                            0,
-                                            txEntry.key().partition(),
-                                            txEntry.updateCounter(),
-                                            cacheCtx.group().storeCacheIdInDataPage())
-                                        ));
-
                                     if (op == CREATE || op == UPDATE) {
                                         assert val != null : txEntry;
 
@@ -689,8 +673,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             CU.subjectId(this, cctx),
                                             resolveTaskName(),
                                             dhtVer,
-                                            null,
-                                            reference);
+                                            null);
 
                                         if (updRes.success())
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
@@ -720,7 +703,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 CU.subjectId(this, cctx),
                                                 resolveTaskName(),
                                                 dhtVer,
-                                                null,
                                                 null);
                                         }
                                     }
@@ -791,7 +773,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 writeVersion(),
                                                 0,
                                                 txEntry.key().partition(),
-                                                txEntry.updateCounter(), cacheCtx.group().sharedGroup())));
+                                                txEntry.updateCounter())));
                                         }
 
                                         ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
@@ -894,8 +876,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
 
-                if (reference != null && !cctx.tm().logTxRecords())
-                    cctx.wal().fsync(reference);
+                if (ptr != null && !cctx.tm().logTxRecords())
+                    cctx.wal().fsync(ptr);
             }
             catch (StorageException e) {
                 throw new IgniteCheckedException("Failed to log transaction record " +

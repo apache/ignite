@@ -22,9 +22,9 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
+import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -34,33 +34,30 @@ public class DataPageUpdateRecord extends PageDeltaRecord implements WALReferenc
     /** */
     private final int itemId;
 
-    /** Actual fragment data size. */
-    private int payloadSize;
-
     /** WAL reference to {@link DataRecord}. */
     private WALPointer reference;
 
-    /** Actual fragment data. */
+    /** Actual data. */
     private byte[] payload;
+
+    /** Row associated with the page data. */
+    private Storable row;
 
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param itemId Item ID.
-     * @param payloadSize Record data size.
      * @param reference WAL reference to {@link DataRecord}.
      */
     public DataPageUpdateRecord(
         int grpId,
         long pageId,
         int itemId,
-        int payloadSize,
         WALPointer reference
     ) {
         super(grpId, pageId);
 
         this.itemId = itemId;
-        this.payloadSize = payloadSize;
         this.reference = reference;
     }
 
@@ -100,11 +97,16 @@ public class DataPageUpdateRecord extends PageDeltaRecord implements WALReferenc
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        assert payload != null;
+        assert payload != null || row != null;
 
-        AbstractDataPageIO io = PageIO.getPageIO(pageAddr);
+        AbstractDataPageIO<Storable> io = PageIO.getPageIO(pageAddr);
 
-        io.updateRow(pageAddr, itemId, pageMem.pageSize(), payload, null, 0);
+        if (payload != null) {
+            io.updateRow(pageAddr, itemId, pageMem.pageSize(), payload, null, 0);
+        }
+        else {
+            io.updateRow(pageAddr, itemId, pageMem.pageSize(), null, row, io.getRowSize(row));
+        }
     }
 
     /** {@inheritDoc} */
@@ -113,18 +115,8 @@ public class DataPageUpdateRecord extends PageDeltaRecord implements WALReferenc
     }
 
     /** {@inheritDoc} */
-    @Override public int payloadSize() {
-        return payloadSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int offset() {
-        return -1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void payload(byte[] payload) {
-        this.payload = payload;
+    @Override public void row(Storable row) {
+        this.row = row;
     }
 
     /** {@inheritDoc} */
@@ -135,7 +127,7 @@ public class DataPageUpdateRecord extends PageDeltaRecord implements WALReferenc
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DataPageUpdateRecord.class, this,
-                "payloadSize", payloadSize,
+                "reference", reference.toString(),
                 "super", super.toString());
     }
 }

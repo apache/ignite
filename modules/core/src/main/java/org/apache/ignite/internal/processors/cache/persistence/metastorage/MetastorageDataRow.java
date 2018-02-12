@@ -33,6 +33,7 @@ public class MetastorageDataRow implements MetastorageSearchRow, Storable {
     /** */
     private byte[] value;
 
+    /** */
     private WALPointer reference;
 
     /** */

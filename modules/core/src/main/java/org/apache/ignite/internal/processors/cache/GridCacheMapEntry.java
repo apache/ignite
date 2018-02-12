@@ -936,8 +936,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         @Nullable UUID subjId,
         String taskName,
         @Nullable GridCacheVersion dhtVer,
-        @Nullable Long updateCntr,
-        WALPointer reference
+        @Nullable Long updateCntr
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         CacheObject old;
 
@@ -1037,11 +1036,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             assert val != null;
 
-            storeValue(val, expireTime, newVer, null, reference);
-
-            if (cctx.deferredDelete() && deletedUnlocked() && !isInternal() && !detached())
-                deletedUnlocked(false);
-
             updateCntr0 = nextPartitionCounter(topVer, tx == null || tx.local(), updateCntr);
 
             if (updateCntr != null && updateCntr != 0)
@@ -1049,6 +1043,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (tx != null && cctx.group().persistenceEnabled() && cctx.group().walEnabled())
                 logPtr = logTxUpdate(tx, val, expireTime, updateCntr0);
+
+            storeValue(val, expireTime, newVer, null, logPtr);
+
+            if (cctx.deferredDelete() && deletedUnlocked() && !isInternal() && !detached())
+                deletedUnlocked(false);
 
             update(val, expireTime, ttl, newVer, true);
 
@@ -3552,8 +3551,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     writeVer,
                     expireTime,
                     partition(),
-                    updCntr,
-                    cctx.group().storeCacheIdInDataPage()
+                    updCntr
                 )));
 
             return null;
@@ -3575,7 +3573,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         throws IgniteCheckedException {
         assert cctx.transactional();
 
-        if (tx.local()) { // For remote tx we log all updates in batch: GridDistributedTxRemoteAdapter.commitIfLocked()
+        //if (tx.local()) { // For remote tx we log all updates in batch: GridDistributedTxRemoteAdapter.commitIfLocked()
             GridCacheOperation op;
             if (val == null)
                 op = GridCacheOperation.DELETE;
@@ -3591,11 +3589,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 tx.writeVersion(),
                 expireTime,
                 key.partition(),
-                updCntr,
-                cctx.group().sharedGroup())));
-        }
-        else
-            return null;
+                updCntr))
+            );
+        //}
+        //else
+        //    return null;
     }
 
     /**

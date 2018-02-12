@@ -108,7 +108,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             if (updated && needWalDeltaRecord(pageId, page, walPlc)) {
                 assert row.reference() != null;
 
-                wal.log(new DataPageUpdateRecord(grpId, pageId, itemId, rowSize, row.reference()));
+                wal.log(new DataPageUpdateRecord(grpId, pageId, itemId, row.reference()));
             }
 
             return updated;
@@ -182,7 +182,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             if (needWalDeltaRecord(pageId, page, null)) {
                 assert row.reference() != null;
 
-                wal.log(new DataPageInsertRecord(grpId, pageId, rowSize, row.reference()));
+                wal.log(new DataPageInsertRecord(grpId, pageId, row.reference()));
             }
 
             return rowSize;
@@ -218,7 +218,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             if (needWalDeltaRecord(pageId, page, null)) {
                 assert row.reference() != null;
 
-                wal.log(new DataPageInsertFragmentRecord(grpId, pageId, payloadSize, written, lastLink, row.reference()));
+                wal.log(new DataPageInsertFragmentRecord(grpId, pageId, written, lastLink, row.reference()));
             }
 
             return written + payloadSize;

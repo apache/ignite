@@ -22,11 +22,12 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
+import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Insert fragment (part of big object which is bigger than page size) to data page record.
@@ -34,9 +35,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WALReferenceAwareRecord {
     /** Link to the last entry fragment. */
     private final long lastLink;
-
-    /** Actual fragment data size. */
-    private int payloadSize;
 
     /** Fragment payload offset relatively to whole record payload. */
     private int offset;
@@ -46,12 +44,14 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
 
     /** Actual fragment data. */
     @GridToStringExclude
-    private byte[] payload;
+    @Nullable private byte[] payload;
+
+    /** Row associated with the current data fragment. */
+    @Nullable private Storable row;
 
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.
-     * @param payloadSize Fragment data size.
      * @param offset Fragment data offset.
      * @param lastLink Link to the last entry fragment.
      * @param reference WAL reference to {@link DataRecord}.
@@ -59,7 +59,6 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
     public DataPageInsertFragmentRecord(
         int grpId,
         long pageId,
-        int payloadSize,
         int offset,
         long lastLink,
         WALPointer reference
@@ -67,7 +66,6 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
         super(grpId, pageId);
 
         this.lastLink = lastLink;
-        this.payloadSize = payloadSize;
         this.offset = offset;
         this.reference = reference;
     }
@@ -94,9 +92,16 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        AbstractDataPageIO io = PageIO.getPageIO(pageAddr);
+        assert payload != null || row != null : "Both explicit payload and row are null";
 
-        io.addRowFragment(pageAddr, payload, lastLink, pageMem.pageSize());
+        AbstractDataPageIO<Storable> io = PageIO.getPageIO(pageAddr);
+
+        if (payload != null) {
+            io.addRowFragment(pageAddr, payload, lastLink, pageMem.pageSize());
+        }
+        else {
+            io.addRowFragment(pageMem, pageAddr, row, offset, io.getRowSize(row), pageMem.pageSize());
+        }
     }
 
     /** {@inheritDoc} */
@@ -104,6 +109,9 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
         return RecordType.DATA_PAGE_INSERT_FRAGMENT_RECORD;
     }
 
+    /**
+     * @return Actual payload of data.
+     */
     public byte[] payload() {
         return payload;
     }
@@ -115,22 +123,17 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
         return lastLink;
     }
 
-    /** {@inheritDoc} */
-    @Override public int payloadSize() {
-        return payloadSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int offset() {
+    /**
+     * @return Fragment payload offset relatively to whole record payload.
+     */
+    public int offset() {
         return offset;
     }
 
     /** {@inheritDoc} */
-    @Override public void payload(byte[] payload) {
-        this.payload = payload;
+    @Override public void row(Storable row) {
+        this.row = row;
     }
-
-
 
     /** {@inheritDoc} */
     @Override public WALPointer reference() {
@@ -140,7 +143,6 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DataPageInsertFragmentRecord.class, this,
-                "payloadSize", payloadSize,
                 "offset", offset,
                 "super", super.toString());
     }

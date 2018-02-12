@@ -22,6 +22,8 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -31,30 +33,27 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * Insert into data page.
  */
 public class DataPageInsertRecord extends PageDeltaRecord implements WALReferenceAwareRecord {
-    /** Actual fragment data size. */
-    private int payloadSize;
-
     /** WAL reference to {@link DataRecord}. */
     private WALPointer reference;
 
     /** Actual fragment data. */
     private byte[] payload;
 
+    /** Row associated with page data. */
+    private Storable row;
+
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.
-     * @param payloadSize Record data size.
      * @param reference WAL reference to {@link DataRecord}.
      */
     public DataPageInsertRecord(
         int grpId,
         long pageId,
-        int payloadSize,
         WALPointer reference
     ) {
         super(grpId, pageId);
 
-        this.payloadSize = payloadSize;
         this.reference = reference;
     }
 
@@ -84,11 +83,16 @@ public class DataPageInsertRecord extends PageDeltaRecord implements WALReferenc
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        assert payload != null;
+        assert payload != null || row != null;
 
-        AbstractDataPageIO io = PageIO.getPageIO(pageAddr);
+        AbstractDataPageIO<Storable> io = PageIO.getPageIO(pageAddr);
 
-        io.addRow(pageAddr, payload, pageMem.pageSize());
+        if (payload != null) {
+            io.addRow(pageAddr, payload, pageMem.pageSize());
+        }
+        else {
+            io.addRow(pageId(), pageAddr, row, io.getRowSize(row), pageMem.pageSize());
+        }
     }
 
     /** {@inheritDoc} */
@@ -97,18 +101,8 @@ public class DataPageInsertRecord extends PageDeltaRecord implements WALReferenc
     }
 
     /** {@inheritDoc} */
-    @Override public int payloadSize() {
-        return payloadSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int offset() {
-        return -1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void payload(byte[] payload) {
-        this.payload = payload;
+    @Override public void row(Storable row) {
+        this.row = row;
     }
 
     /** {@inheritDoc} */
@@ -119,7 +113,6 @@ public class DataPageInsertRecord extends PageDeltaRecord implements WALReferenc
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DataPageInsertRecord.class, this,
-                "payloadSize", payloadSize,
                 "super", super.toString());
     }
 }

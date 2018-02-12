@@ -61,9 +61,6 @@ public class DataEntry {
     @GridToStringInclude
     protected long partCnt;
 
-    /** Flag indicates that cache id is stored to page memory. */
-    private boolean storeCacheId;
-
     private DataEntry() {
         // No-op, used from factory methods.
     }
@@ -78,7 +75,6 @@ public class DataEntry {
      * @param expireTime Expire time.
      * @param partId Partition ID.
      * @param partCnt Partition counter.
-     * @param storeCacheId Flag indicates that cache id is stored to page memory.
      */
     public DataEntry(
         int cacheId,
@@ -89,8 +85,7 @@ public class DataEntry {
         GridCacheVersion writeVer,
         long expireTime,
         int partId,
-        long partCnt,
-        boolean storeCacheId
+        long partCnt
     ) {
         this.cacheId = cacheId;
         this.key = key;
@@ -101,7 +96,6 @@ public class DataEntry {
         this.expireTime = expireTime;
         this.partId = partId;
         this.partCnt = partCnt;
-        this.storeCacheId = storeCacheId;
 
         // Only READ, CREATE, UPDATE and DELETE operations should be stored in WAL.
         assert op == GridCacheOperation.READ || op == GridCacheOperation.CREATE || op == GridCacheOperation.UPDATE || op == GridCacheOperation.DELETE : op;
@@ -168,13 +162,6 @@ public class DataEntry {
      */
     public long expireTime() {
         return expireTime;
-    }
-
-    /**
-     * @return True if cache id is stored to page memory.
-     */
-    public boolean storeCacheId() {
-        return storeCacheId;
     }
 
     /** {@inheritDoc} */

@@ -1,24 +1,5 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.apache.ignite.internal.processors.cache.persistence.wal.link;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
@@ -26,84 +7,56 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.LazyDataEntry;
-import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
-/**
- * Class to extract and link payload from {@link DataRecord} entry to {@link WALReferenceAwareRecord} records.
- */
-public class DataRecordPayloadLinker {
-    /** Linking entry size. */
-    private final int entrySize;
+public class RowDataConverter {
 
-    /** Linking entry. */
-    private final CacheDataRow entry;
+    private final GridCacheSharedContext sharedCtx;
 
-    /** Data page IO. */
-    private static final DataPageIO pageIO = DataPageIO.VERSIONS.latest();
+    public RowDataConverter(GridCacheSharedContext sharedCtx) {
+        this.sharedCtx = sharedCtx;
+    }
 
-    /**
-     * Create linker with given {@code record}.
-     *
-     * @param record Data record.
-     * @throws IgniteCheckedException If it's impossible to create linker.
-     */
-    public DataRecordPayloadLinker(DataRecord record) throws IgniteCheckedException {
+    public RowDataHolder convertFrom(DataRecord record) throws IgniteCheckedException {
         assert record.writeEntries().size() == 1;
 
         DataEntry writeEntry = record.writeEntries().get(0);
 
-        this.entry = wrap(writeEntry);
-        this.entrySize = pageIO.getRowSize(entry);
+        boolean sharedGrp = false;
+        if (sharedCtx.cacheContext(writeEntry.cacheId()) != null)
+            sharedGrp = sharedCtx.cacheContext(writeEntry.cacheId()).group().sharedGroup();
+
+        CacheDataRow row = wrap(writeEntry, sharedGrp);
+
+        return new RowDataHolder(row, DataPageIO.VERSIONS.latest().getRowSize(row));
+    }
+
+    public RowDataHolder convertFrom(MetastoreDataRecord record) throws IgniteCheckedException {
+        assert record.value() != null;
+
+        MetastorageDataRow row = new MetastorageDataRow(record.key(), record.value());
+
+        return new RowDataHolder(row, SimpleDataPageIO.VERSIONS.latest().getRowSize(row));
     }
 
     /**
-     * Link {@link DataRecord} current entry {@code byte[]} payload to given {@code record}.
+     * Create CacheDataRow adapter to calculate row row size and extract byte payload from it.
      *
-     * @param record WAL record.
-     * @throws IgniteCheckedException If it's impossible to link payload to given {@code record}.
-     */
-    public void linkPayload(WALReferenceAwareRecord record) throws IgniteCheckedException {
-        // Initialize byte buffer for entry payload.
-        ByteBuffer payloadBuffer = ByteBuffer.allocate(record.payloadSize());
-        payloadBuffer.order(ByteOrder.nativeOrder());
-
-        byte[] restoredPayload;
-
-        // Write data entry payload to buffer.
-        if (record.offset() != -1) {
-            pageIO.writeFragmentData(entry, payloadBuffer, entrySize - record.offset() - record.payloadSize(), record.payloadSize());
-            restoredPayload = payloadBuffer.array();
-        }
-        else {
-            restoredPayload = new byte[record.payloadSize()];
-            //pageIO.writeRowData(entry, record.payloadSize(), restoredPayload);
-        }
-
-        record.payload(restoredPayload);
-    }
-
-    /**
-     * @return Linking entry size.
-     */
-    public int entrySize() {
-        return entrySize;
-    }
-
-    /**
-     * Create CacheDataRow adapter to calculate entry row size and extract byte payload from it.
-     *
-     * @param entry WAL {@link DataRecord} entry.
+     * @param entry WAL {@link DataRecord} row.
      * @return CacheDataRow.
      */
-    public static CacheDataRow wrap(DataEntry entry) {
+    public static CacheDataRow wrap(DataEntry entry, boolean sharedGrp) {
         if (entry instanceof LazyDataEntry) {
             LazyDataEntry lazyEntry = (LazyDataEntry) entry;
 
@@ -150,7 +103,7 @@ public class DataRecordPayloadLinker {
                     value,
                     lazyEntry.writeVersion(),
                     lazyEntry.expireTime(),
-                    lazyEntry.storeCacheId() ? lazyEntry.cacheId() : 0
+                    sharedGrp ? lazyEntry.cacheId() : 0
             );
         }
 
@@ -159,7 +112,7 @@ public class DataRecordPayloadLinker {
                 entry.value(),
                 entry.writeVersion(),
                 entry.expireTime(),
-                entry.storeCacheId() ? entry.cacheId() : 0
+                sharedGrp ? entry.cacheId() : 0
         );
     }
 
@@ -174,6 +127,7 @@ public class DataRecordPayloadLinker {
         private final GridCacheVersion version;
         private final long expireTime;
         private final int cacheId;
+        private long link;
 
         public CacheDataRowAdapter(KeyCacheObject key, CacheObject value, GridCacheVersion version, long expireTime, int cacheId) {
             this.key = key;
@@ -190,7 +144,7 @@ public class DataRecordPayloadLinker {
 
         @Override
         public long link() {
-            return 0;
+            return link;
         }
 
         @Override
@@ -225,7 +179,7 @@ public class DataRecordPayloadLinker {
 
         @Override
         public void link(long link) {
-
+            this.link = link;
         }
 
         @Override

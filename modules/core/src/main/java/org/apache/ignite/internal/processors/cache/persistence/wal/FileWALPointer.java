@@ -92,7 +92,7 @@ public class FileWALPointer implements WALPointer, Comparable<FileWALPointer> {
     /**
      * @return Size of pointer to serialize.
      */
-    public int size() {
+    public static int size() {
         // Index + offset + length.
         return 8 + 4 + 4;
     }

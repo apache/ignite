@@ -59,7 +59,7 @@ public class UnwrapDataEntry extends DataEntry {
         final long partCnt,
         final CacheObjectValueContext cacheObjValCtx,
         final boolean keepBinary) {
-        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt, cacheId != 0);
+        super(cacheId, key, val, op, nearXidVer, writeVer, expireTime, partId, partCnt);
         this.cacheObjValCtx = cacheObjValCtx;
         this.keepBinary = keepBinary;
     }

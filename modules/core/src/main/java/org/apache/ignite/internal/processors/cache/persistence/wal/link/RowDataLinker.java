@@ -26,24 +26,30 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.MetastoreDataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Cached wrapper of {@link DataRecordPayloadLinker} with possibility to cache {@link DataRecord} records and tracking cache misses.
+ * Cached wrapper of {@link RowDataHolder} with possibility to cache {@link DataRecord} records and tracking cache misses.
  */
-public class CachedPayloadLinker {
+public class RowDataLinker {
     /** Default cache size of {@link DataRecord} records in megabytes. */
     private static final long DEFAULT_CACHE_SIZE_MB = 128;
 
     /** WAL manager. */
     private final IgniteWriteAheadLogManager wal;
 
-    /** {@link DataRecordPayloadLinker} cache needed for link payload. */
-    private final LinkedHashMap<WALPointer, DataRecordPayloadLinker> dataRecordsCache;
+    /** Class to convert {@link DataRecord} or {@link MetastoreDataRecord} records to {@link RowDataHolder} entities. */
+    private final RowDataConverter converter;
+
+    /** {@link RowDataHolder} cache needed for link payload. */
+    private final LinkedHashMap<WALPointer, RowDataHolder> dataRecordsCache;
 
     /** The number of direct WAL lookups of {@link DataRecord} records. */
     private int walLookups;
@@ -51,10 +57,11 @@ public class CachedPayloadLinker {
     /**
      * Create an instance of linker with given {@code wal}.
      *
-     * @param wal WAL manager to lookup {@link DataRecord} records.
+     * @param sharedCtx Shared context.
      */
-    public CachedPayloadLinker(@NotNull IgniteWriteAheadLogManager wal) {
-        this.wal = wal;
+    public RowDataLinker(@NotNull GridCacheSharedContext sharedCtx) {
+        this.wal = sharedCtx.wal();
+        this.converter = new RowDataConverter(sharedCtx);
 
         // Extract DataRecords cache size from system properties.
         final long dataRecordsCacheSize = IgniteSystemProperties.getLong(
@@ -62,23 +69,23 @@ public class CachedPayloadLinker {
                 DEFAULT_CACHE_SIZE_MB) * 1024 * 1024;
 
         // DataRecords size bounded cache.
-        dataRecordsCache = new LinkedHashMap<WALPointer, DataRecordPayloadLinker>() {
+        dataRecordsCache = new LinkedHashMap<WALPointer, RowDataHolder>() {
             private final long MAX_RECORDS_SIZE = dataRecordsCacheSize;
 
             private long recordsTotalSize = 0;
 
             @Override
-            protected boolean removeEldestEntry(Map.Entry<WALPointer, DataRecordPayloadLinker> eldest) {
+            protected boolean removeEldestEntry(Map.Entry<WALPointer, RowDataHolder> eldest) {
                 if (recordsTotalSize > MAX_RECORDS_SIZE && size() > 1) {
-                    recordsTotalSize -= eldest.getValue().entrySize();
+                    recordsTotalSize -= eldest.getValue().rowSize();
                     return true;
                 }
                 return false;
             }
 
             @Override
-            public DataRecordPayloadLinker put(WALPointer key, DataRecordPayloadLinker value) {
-                recordsTotalSize += value.entrySize();
+            public RowDataHolder put(WALPointer key, RowDataHolder value) {
+                recordsTotalSize += value.rowSize();
                 return super.put(key, value);
             }
         };
@@ -88,8 +95,13 @@ public class CachedPayloadLinker {
         // Create and cache linker with new DataRecord in case of CREATE or UPDATE operations.
         if (record.operation() == GridCacheOperation.CREATE
                 || record.operation() == GridCacheOperation.UPDATE) {
-            DataRecordPayloadLinker linker = new DataRecordPayloadLinker(record);
-            dataRecordsCache.put(pointer, linker);
+            dataRecordsCache.put(pointer, converter.convertFrom(record));
+        }
+    }
+
+    public void addMetastorageDataRecord(MetastoreDataRecord record, WALPointer pointer) throws IgniteCheckedException {
+        if (record.value() != null) {
+            dataRecordsCache.put(pointer, converter.convertFrom(record));
         }
     }
 
@@ -102,23 +114,23 @@ public class CachedPayloadLinker {
     public void linkPayload(WALReferenceAwareRecord record) throws IgniteCheckedException {
         WALPointer lookupPointer = record.reference();
 
-        DataRecordPayloadLinker linker = lookupLinker(lookupPointer);
+        RowDataHolder linker = lookupLinker(lookupPointer);
 
-        linker.linkPayload(record);
+        linker.linkRow(record);
     }
 
     /**
      * Lookup {@link DataRecord} and associated linker from cache or WAL with given {@code lookupPointer}.
      *
      * @param lookupPointer Possible WAL reference to {@link DataRecord}.
-     * @return {@link DataRecordPayloadLinker} associated with given {@code lookupPointer}.
+     * @return {@link RowDataHolder} associated with given {@code lookupPointer}.
      * @throws IgniteCheckedException If unable to lookup {@link DataRecord}.
      */
-    private DataRecordPayloadLinker lookupLinker(WALPointer lookupPointer) throws IgniteCheckedException {
+    private RowDataHolder lookupLinker(WALPointer lookupPointer) throws IgniteCheckedException {
         // Try to find existed linker in cache.
-        DataRecordPayloadLinker linker = dataRecordsCache.get(lookupPointer);
-        if (linker != null)
-            return linker;
+        RowDataHolder holder = dataRecordsCache.get(lookupPointer);
+        if (holder != null)
+            return holder;
 
         walLookups++;
 
@@ -127,22 +139,32 @@ public class CachedPayloadLinker {
             WALIterator iterator = wal.replay(lookupPointer);
             IgniteBiTuple<WALPointer, WALRecord> tuple = iterator.next();
 
-            if (!(tuple.getValue() instanceof DataRecord))
+            if (!(tuple.getValue() instanceof DataRecord) && !(tuple.getValue() instanceof MetastoreDataRecord))
                 throw new IllegalStateException("Found unexpected WAL record " + tuple.getValue());
 
             if (!lookupPointer.equals(tuple.getKey()))
                 throw new IllegalStateException("DataRecord pointer is invalid " + tuple.getKey());
 
-            DataRecord record = (DataRecord) tuple.getValue();
+            if (tuple.getValue() instanceof DataRecord) {
+                DataRecord record = (DataRecord) tuple.getValue();
 
-            if (!(record.operation() == GridCacheOperation.CREATE || record.operation() == GridCacheOperation.UPDATE))
-                throw new IllegalStateException("DataRecord operation is invalid " + record.operation());
+                if (!(record.operation() == GridCacheOperation.CREATE || record.operation() == GridCacheOperation.UPDATE))
+                    throw new IllegalStateException("DataRecord operation is invalid " + record.operation());
 
-            linker = new DataRecordPayloadLinker(record);
+                holder = converter.convertFrom(record);
+            }
+            else if (tuple.getValue() instanceof MetastoreDataRecord) {
+                MetastoreDataRecord record = (MetastoreDataRecord) tuple.getValue();
 
-            dataRecordsCache.put(lookupPointer, linker);
+                if (record.value() == null)
+                    throw new IllegalStateException("MetastoreDataRecord is invalid " + record);
 
-            return linker;
+                holder = converter.convertFrom(record);
+            }
+
+            dataRecordsCache.put(lookupPointer, holder);
+
+            return holder;
         }
         catch (Exception e) {
             throw new IgniteCheckedException("Unable to lookup DataRecord by " + lookupPointer, e);

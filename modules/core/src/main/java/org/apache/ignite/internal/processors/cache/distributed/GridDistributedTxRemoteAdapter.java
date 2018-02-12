@@ -578,8 +578,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         writeVersion(),
                                                         0,
                                                         txEntry.key().partition(),
-                                                        txEntry.updateCounter(),
-                                                        cacheCtx.group().sharedGroup()
+                                                        txEntry.updateCounter()
                                                     )
                                                 );
                                             }
@@ -627,8 +626,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         CU.subjectId(this, cctx),
                                                         resolveTaskName(),
                                                         dhtVer,
-                                                        txEntry.updateCounter(),
-                                                        null);
+                                                        txEntry.updateCounter());
 
                                                     if (updRes.loggedPointer() != null)
                                                         ptr = updRes.loggedPointer();
@@ -757,8 +755,10 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                 }
                             }
 
+/*
                             if (!near() && !F.isEmpty(dataEntries) && cctx.wal() != null)
                                 cctx.wal().log(new DataRecord(dataEntries));
+*/
 
                             if (ptr != null && !cctx.tm().logTxRecords())
                                 cctx.wal().fsync(ptr);

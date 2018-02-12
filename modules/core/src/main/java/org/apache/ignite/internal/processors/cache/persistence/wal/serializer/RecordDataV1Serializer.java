@@ -185,7 +185,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case DATA_PAGE_INSERT_FRAGMENT_RECORD:
                 final DataPageInsertFragmentRecord difRec = (DataPageInsertFragmentRecord)record;
 
-                return 4 + 8 + 8 + 4 + difRec.payloadSize();
+                return 4 + 8 + 8 + 4 + difRec.payload().length;
 
             case DATA_PAGE_REMOVE_RECORD:
                 return 4 + 8 + 1;
@@ -996,7 +996,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putLong(difRec.pageId());
 
                 buf.putLong(difRec.lastLink());
-                buf.putInt(difRec.payloadSize());
+                buf.putInt(difRec.payload().length);
                 buf.put(difRec.payload());
 
                 break;
@@ -1492,8 +1492,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     writeVer,
                     expireTime,
                     partId,
-                    partCntr,
-                    cacheCtx.group().sharedGroup()
+                    partCntr
             );
         }
         else
@@ -1509,7 +1508,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                     writeVer,
                     expireTime,
                     partId,
-                    partCntr, cacheCtx.group().sharedGroup());
+                    partCntr);
     }
 
     /**
