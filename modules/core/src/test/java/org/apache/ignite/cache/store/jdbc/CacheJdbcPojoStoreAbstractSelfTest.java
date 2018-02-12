@@ -370,7 +370,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testLoadCacheWithStatement() throws Exception {
+    public void _testLoadCacheWithStatement() throws Exception {
         startTestGrid(false, false, false, false, 512);
 
         checkCacheLoadWithStatement();
@@ -379,7 +379,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testLoadCacheWithStatementTx() throws Exception {
+    public void _testLoadCacheWithStatementTx() throws Exception {
         startTestGrid(false, false, false, true, 512);
 
         checkCacheLoadWithStatement();
@@ -388,7 +388,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testLoadCache() throws Exception {
+    public void _testLoadCache() throws Exception {
         startTestGrid(false, false, false, false, 512);
 
         checkCacheLoad();
@@ -397,7 +397,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testLoadCacheAll() throws Exception {
+    public void _testLoadCacheAll() throws Exception {
         startTestGrid(false, false, false, false, ORGANIZATION_CNT + PERSON_CNT + 1);
 
         checkCacheLoad();
@@ -406,7 +406,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testLoadCacheWithSql() throws Exception {
+    public void _testLoadCacheWithSql() throws Exception {
         startTestGrid(false, false, false, false, 512);
 
         checkCacheLoadWithSql();
@@ -415,7 +415,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testLoadCacheTx() throws Exception {
+    public void _testLoadCacheTx() throws Exception {
         startTestGrid(false, false, false, true, 512);
 
         checkCacheLoad();
@@ -424,7 +424,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testLoadCacheWithSqlTx() throws Exception {
+    public void _testLoadCacheWithSqlTx() throws Exception {
         startTestGrid(false, false, false, true, 512);
 
         checkCacheLoadWithSql();
@@ -433,7 +433,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testLoadCachePrimitiveKeys() throws Exception {
+    public void _testLoadCachePrimitiveKeys() throws Exception {
         startTestGrid(true, false, false, false, 512);
 
         checkCacheLoad();
@@ -532,7 +532,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testPutRemoveBuiltIn() throws Exception {
+    public void _testPutRemoveBuiltIn() throws Exception {
         startTestGrid(true, false, false, false, 512);
 
         checkPutRemove();
@@ -541,7 +541,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testPutRemove() throws Exception {
+    public void _testPutRemove() throws Exception {
         startTestGrid(false, false, false, false, 512);
 
         checkPutRemove();
@@ -550,7 +550,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testPutRemoveTxBuiltIn() throws Exception {
+    public void _testPutRemoveTxBuiltIn() throws Exception {
         startTestGrid(true, false, false, true, 512);
 
         checkPutRemove();
@@ -559,7 +559,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testPutRemoveTx() throws Exception {
+    public void _testPutRemoveTx() throws Exception {
         startTestGrid(false, false, false, true, 512);
 
         checkPutRemove();
@@ -568,7 +568,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
-    public void testLoadNotRegisteredType() throws Exception {
+    public void _testLoadNotRegisteredType() throws Exception {
         startTestGrid(false, false, false, false, 512);
 
         IgniteCache<Object, Object> c1 = grid().cache(CACHE_NAME);
