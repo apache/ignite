@@ -167,12 +167,11 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         // Start other nodes.
         startGrid(config(SRV_2, false, false));
-        assertForAllNodes(CACHE_NAME, false);
 
-        if (crdFiltered) {
+        if (crdFiltered)
             srv.cluster().disableWal(CACHE_NAME);
-            assertForAllNodes(CACHE_NAME, false);
-        }
+
+        assertForAllNodes(CACHE_NAME, false);
 
         startGrid(config(SRV_3, false, !crdFiltered));
         assertForAllNodes(CACHE_NAME, false);
@@ -192,12 +191,11 @@ public class WalModeChangeAdvancedSelfTest extends WalModeChangeCommonAbstractSe
 
         // Start other nodes again.
         startGrid(config(SRV_2, false, false));
-        assertForAllNodes(CACHE_NAME, true);
 
-        if (crdFiltered) {
+        if (crdFiltered)
             srv.cluster().enableWal(CACHE_NAME);
-            assertForAllNodes(CACHE_NAME, true);
-        }
+
+        assertForAllNodes(CACHE_NAME, true);
 
         startGrid(config(SRV_3, false, !crdFiltered));
         assertForAllNodes(CACHE_NAME, true);
