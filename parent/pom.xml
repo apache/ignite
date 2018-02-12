@@ -311,7 +311,6 @@
                         <version>false</version>
                         <additionalparam>${javadoc.opts}</additionalparam>
                         <links>
-                            <link>http://docs.oracle.com/javase/7/docs/api/</link>
                             <link>http://hadoop.apache.org/docs/current/api/</link>
                         </links>
                         <groups>
@@ -816,6 +815,7 @@
                                         <exclude>**/*index*.md</exclude><!--readme files-->
                                         <exclude>**/*.timestamp</exclude><!--tmp-files-->
                                         <exclude>**/*.iml</exclude><!--IDEA files-->
+                                        <exclude>**/*.csv</exclude><!--CSV files-->
                                         <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
                                         <exclude>**/keystore/*.jks</exclude><!--bin-files-->
                                         <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
@@ -843,9 +843,7 @@
                                         <exclude>**/books/*.txt</exclude><!--books examples-->
                                         <exclude>src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
                                         <exclude>examples/src/main/java/org/apache/ignite/examples/streaming/wordcount/*.txt</exclude><!--books examples-->
-                                        <exclude>src/main/resources/person.csv</exclude><!--CacheLoadOnlyStoreExample csv-->
                                         <exclude>**/resources/datasets/**/*</exclude><!--KNN Datasets in ml module-->
-                                        <exclude>examples/src/main/resources/person.csv</exclude><!--CacheLoadOnlyStoreExample csv-->
                                         <exclude>src/main/java/org/jetbrains/annotations/*.java</exclude><!--copyright-->
                                         <exclude>dev-tools/IGNITE-*.patch</exclude>
                                         <exclude>dev-tools/.gradle/**/*</exclude>

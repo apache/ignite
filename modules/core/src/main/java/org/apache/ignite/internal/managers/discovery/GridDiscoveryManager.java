@@ -1059,25 +1059,28 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             /** {@inheritDoc} */
             @Override public Map<Integer, CacheMetrics> cacheMetrics() {
-                Collection<GridCacheAdapter<?, ?>> caches = ctx.cache().internalCaches();
+                try {
+                    Collection<GridCacheAdapter<?, ?>> caches = ctx.cache().internalCaches();
 
-                if (F.isEmpty(caches))
-                    return Collections.emptyMap();
+                    if (!F.isEmpty(caches)) {
+                        Map<Integer, CacheMetrics> metrics = U.newHashMap(caches.size());
 
-                Map<Integer, CacheMetrics> metrics = null;
+                        for (GridCacheAdapter<?, ?> cache : caches) {
+                            if (cache.context().statisticsEnabled() &&
+                                cache.context().started() &&
+                                cache.context().affinity().affinityTopologyVersion().topologyVersion() > 0) {
 
-                for (GridCacheAdapter<?, ?> cache : caches) {
-                    if (cache.context().statisticsEnabled() &&
-                        cache.context().started() &&
-                        cache.context().affinity().affinityTopologyVersion().topologyVersion() > 0) {
-                        if (metrics == null)
-                            metrics = U.newHashMap(caches.size());
+                                metrics.put(cache.context().cacheId(), cache.localMetrics());
+                            }
+                        }
 
-                        metrics.put(cache.context().cacheId(), cache.localMetrics());
+                        return metrics;
                     }
+                } catch (Exception e) {
+                    U.warn(log, "Failed to compute cache metrics", e);
                 }
 
-                return metrics == null ? Collections.<Integer, CacheMetrics>emptyMap() : metrics;
+                return Collections.emptyMap();
             }
         };
     }
