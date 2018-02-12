@@ -348,7 +348,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         synchronized (mux) {
             if (disconnected) {
-                throw new IgniteCheckedException("Failed to initiate WAL mode change because "
+                throw new IgniteCheckedException("Failed to initiate user management operation because "
                     + "client node is disconnected.");
             }
             UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
@@ -368,7 +368,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         synchronized (mux) {
             if (disconnected) {
-                throw new IgniteCheckedException("Failed to initiate WAL mode change because "
+                throw new IgniteCheckedException("Failed to initiate user management operation because "
                     + "client node is disconnected.");
             }
 
@@ -390,7 +390,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         synchronized (mux) {
             if (disconnected) {
-                throw new IgniteCheckedException("Failed to initiate WAL mode change because "
+                throw new IgniteCheckedException("Failed to initiate user management operation because "
                     + "client node is disconnected.");
             }
 
@@ -547,13 +547,13 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
 //        System.out.println("+++ SEND PRP " + msg);
 
-        MAP.put(op, true);
-        fut.get();
-        MAP.remove(op);
+//        MAP.put(op, true);
+//        fut.get();
+//        MAP.remove(op);
     }
 
-    /** */
-    public static ConcurrentHashMap<UserManagementOperation, Boolean> MAP = new ConcurrentHashMap<>();
+//    /** */
+//    public static ConcurrentHashMap<UserManagementOperation, Boolean> MAP = new ConcurrentHashMap<>();
 
 
     /**

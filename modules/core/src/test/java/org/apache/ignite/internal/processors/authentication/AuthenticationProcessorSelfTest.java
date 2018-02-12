@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.AuthenticationConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -466,32 +467,33 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
         final AtomicInteger usrCnt = new AtomicInteger();
 
-        IgniteInternalFuture dbgF =  GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    restartFut.get();
-                }
-                catch (IgniteCheckedException e) {
-                }
-
-                try {
-                    U.sleep(3000);
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                }
-
-                if (!IgniteAuthenticationProcessor.MAP.isEmpty()) {
-                    System.out.println("+++ UNFINISHED");
-
-                    for (UserManagementOperation op : IgniteAuthenticationProcessor.MAP.keySet())
-                        System.out.println("+++ " + op);
-                }
-            }
-        });
+//        IgniteInternalFuture dbgF =  GridTestUtils.runAsync(new Runnable() {
+//            @Override public void run() {
+//                try {
+//                    restartFut.get();
+//                }
+//                catch (IgniteCheckedException e) {
+//                }
+//
+//                try {
+//                    U.sleep(3000);
+//                }
+//                catch (IgniteInterruptedCheckedException e) {
+//                }
+//
+//                if (!IgniteAuthenticationProcessor.MAP.isEmpty()) {
+//                    System.out.println("+++ UNFINISHED");
+//
+//                    for (UserManagementOperation op : IgniteAuthenticationProcessor.MAP.keySet())
+//                        System.out.println("+++ " + op);
+//                }
+//            }
+//        });
 
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
                 AuthorizationContext.context(actxDflt);
+
                 String user = "test" + usrCnt.getAndIncrement();
 
                 try {
@@ -503,15 +505,18 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                         grid(CLI_NODE).context().authentication().removeUser(user);
                     }
                 }
+                catch(IgniteClientDisconnectedCheckedException e) {
+                    //
+                }
                 catch (Exception e) {
                     U.error(log, "Unexpected exception on concurrent add/remove", e);
                     fail();
                 }
             }
-        }, 13, "user-op");
+        }, 10, "user-op");
 
         restartFut.get();
-        dbgF.get();
+//        dbgF.get();
     }
 
     /**
