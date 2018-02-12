@@ -18,25 +18,28 @@
 package org.apache.ignite.examples.ml.regression.linear;
 
 import java.util.Arrays;
+import java.util.UUID;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.math.matrix.SparseDistributedMatrixExample;
-import org.apache.ignite.ml.Trainer;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.impls.matrix.SparseDistributedMatrix;
-import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
+import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionQRTrainer;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Run linear regression model over distributed matrix.
  *
- * @see LinearRegressionQRTrainer
+ * @see LinearRegressionLSQRTrainer
  */
-public class DistributedLinearRegressionExampleWithSGDTrainer {
+public class DistributedLinearRegressionWithLSQRTrainerExample {
     /** */
     private static final double[][] data = {
         {8, 78, 284, 9.100000381, 109},
@@ -101,31 +104,42 @@ public class DistributedLinearRegressionExampleWithSGDTrainer {
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
+
             // Create IgniteThread, we must work with SparseDistributedMatrix inside IgniteThread
             // because we create ignite cache internally.
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 SparseDistributedMatrixExample.class.getSimpleName(), () -> {
-
-                // Create SparseDistributedMatrix, new cache will be created automagically.
-                System.out.println(">>> Create new SparseDistributedMatrix inside IgniteThread.");
-                SparseDistributedMatrix distributedMatrix = new SparseDistributedMatrix(data);
+                IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
                 System.out.println(">>> Create new linear regression trainer object.");
-                Trainer<LinearRegressionModel, Matrix> trainer = new LinearRegressionSGDTrainer(100_000, 1e-12);
+                LinearRegressionLSQRTrainer<Integer, double[]> trainer = new LinearRegressionLSQRTrainer<>();
 
                 System.out.println(">>> Perform the training to get the model.");
-                LinearRegressionModel model = trainer.train(distributedMatrix);
-                System.out.println(">>> Linear regression model: " + model);
+                LinearRegressionModel mdl = trainer.fit(
+                    new CacheBasedDatasetBuilder<>(ignite, dataCache),
+                    (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+                    (k, v) -> v[0],
+                    4
+                );
+
+                System.out.println(">>> Linear regression model: " + mdl);
 
                 System.out.println(">>> ---------------------------------");
                 System.out.println(">>> | Prediction\t| Ground Truth\t|");
                 System.out.println(">>> ---------------------------------");
-                for (double[] observation : data) {
-                    Vector inputs = new SparseDistributedVector(Arrays.copyOfRange(observation, 1, observation.length));
-                    double prediction = model.apply(inputs);
-                    double groundTruth = observation[0];
-                    System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
+
+                try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
+                    for (Cache.Entry<Integer, double[]> observation : observations) {
+                        double[] val = observation.getValue();
+                        double[] inputs = Arrays.copyOfRange(val, 1, val.length);
+                        double groundTruth = val[0];
+
+                        double prediction = mdl.apply(new DenseLocalOnHeapVector(inputs));
+
+                        System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
+                    }
                 }
+
                 System.out.println(">>> ---------------------------------");
             });
 
@@ -133,5 +147,24 @@ public class DistributedLinearRegressionExampleWithSGDTrainer {
 
             igniteThread.join();
         }
+    }
+
+    /**
+     * Fills cache with data and returns it.
+     *
+     * @param ignite Ignite instance.
+     * @return Filled Ignite Cache.
+     */
+    private static IgniteCache<Integer, double[]> getTestCache(Ignite ignite) {
+        CacheConfiguration<Integer, double[]> cacheConfiguration = new CacheConfiguration<>();
+        cacheConfiguration.setName("TEST_" + UUID.randomUUID());
+        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
+
+        IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
+
+        for (int i = 0; i < data.length; i++)
+            cache.put(i, data[i]);
+
+        return cache;
     }
 }

@@ -3312,6 +3312,20 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
 
         /** {@inheritDoc} */
+        @Override public boolean isEmpty() {
+            if (freePages == null)
+                return true;
+
+            if (freePages.getClass() == GridLongList.class) {
+                GridLongList list = ((GridLongList)freePages);
+
+                return list.isEmpty();
+            }
+
+            return false;
+        }
+
+        /** {@inheritDoc} */
         @Override boolean notFound(BPlusIO<L> io, long pageAddr, int idx, int lvl) {
             if (lvl == 0) {
                 assert tail == null;
