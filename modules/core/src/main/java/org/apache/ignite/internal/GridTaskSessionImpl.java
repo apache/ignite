@@ -166,7 +166,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
         this.sesId = sesId;
         this.startTime = startTime;
         this.endTime = endTime;
-        this.siblings = siblings != null ? Collections.unmodifiableCollection(siblings) : null;
+        this.siblings = siblings;
         this.ctx = ctx;
 
         if (attrs != null && !attrs.isEmpty()) {
@@ -498,7 +498,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
      */
     public void setJobSiblings(Collection<ComputeJobSibling> siblings) {
         synchronized (mux) {
-            this.siblings = Collections.unmodifiableCollection(siblings);
+            this.siblings = siblings;
         }
     }
 
@@ -514,7 +514,7 @@ public class GridTaskSessionImpl implements GridTaskSessionInternal {
             tmp.addAll(this.siblings);
             tmp.addAll(siblings);
 
-            this.siblings = Collections.unmodifiableCollection(tmp);
+            this.siblings = tmp;
         }
     }
 
