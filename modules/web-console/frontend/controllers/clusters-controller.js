@@ -468,7 +468,14 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
                 failoverSpi: [],
                 logger: {Log4j: { mode: 'Default'}},
                 caches: linkId && _.find($scope.caches, {value: linkId}) ? [linkId] : [],
-                igfss: linkId && _.find($scope.igfss, {value: linkId}) ? [linkId] : []
+                igfss: linkId && _.find($scope.igfss, {value: linkId}) ? [linkId] : [],
+                clientConnectorConfiguration: {
+                    tcpNoDelay: true,
+                    jdbcEnabled: true,
+                    odbcEnabled: true,
+                    thinClientEnabled: true,
+                    useIgniteSslContextFactory: true
+                }
             });
         }
 
