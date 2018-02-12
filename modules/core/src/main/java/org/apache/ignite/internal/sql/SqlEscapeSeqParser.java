@@ -26,7 +26,6 @@ import java.util.function.BiConsumer;
 
 /** Parses SQL escape sequences and converts them to string. */
 public class SqlEscapeSeqParser {
-
     /** Sentinel value for the case of single character escape sequence (like {@code \n} or {@code \t}). */
     private static final int SINGLE_CHAR_RADIX = -1;
 
@@ -63,8 +62,8 @@ public class SqlEscapeSeqParser {
 
     /**
      * Creates a parser in {@link State#START} state.
-     *
-     * <p>Note that the escape start character is already parsed by this time.
+     * <p>
+     * Note that the escape start character is already parsed by this time.
      */
     public SqlEscapeSeqParser() {
         state = State.START;
@@ -74,14 +73,14 @@ public class SqlEscapeSeqParser {
      * Feeds a next character to the parser.
      *
      * @param c The character.
+     * @param endOfInput {@code true}, if this is the last character.
      * @return The new state of the parser. See {@link State} for details.
      */
-    public State accept(char c) {
-
+    public State accept(char c, boolean endOfInput) {
         if (state == State.START)
-            acceptPrefix(c);
+            acceptPrefix(c, endOfInput);
         else
-            acceptValueChar(c);
+            acceptValueChar(c, endOfInput);
 
         return state;
     }
@@ -90,8 +89,9 @@ public class SqlEscapeSeqParser {
      * Processes the first character of the escape sequence and defines min/max length, the radix and so on.
      *
      * @param c The character.
+     * @param endOfInput {@code true}, if this is the last character.
      */
-    private void acceptPrefix(char c) {
+    private void acceptPrefix(char c, boolean endOfInput) {
         if (state != State.START)
             throw invalidStateException();
 
@@ -109,7 +109,7 @@ public class SqlEscapeSeqParser {
                 minLen = 1;
                 maxLen = 3;
                 radix = 8;
-                acceptValueChar(c);
+                acceptValueChar(c, endOfInput);
                 break;
 
             case 'x':
@@ -117,6 +117,8 @@ public class SqlEscapeSeqParser {
                 minLen = 1;
                 maxLen = 2;
                 radix = 16;
+                if (endOfInput)
+                    state = State.ERROR;
                 break;
 
             // Upper-case 'U' is intentionally not supported (as in Postgres),
@@ -127,13 +129,15 @@ public class SqlEscapeSeqParser {
                 minLen = 4;
                 maxLen = 4;
                 radix = 16;
+                if (endOfInput)
+                    state = State.ERROR;
                 break;
 
             default:
                 minLen = 1;
                 maxLen = 1;
                 radix = SINGLE_CHAR_RADIX;
-                acceptValueChar(c);
+                acceptValueChar(c, endOfInput);
         }
     }
 
@@ -141,20 +145,24 @@ public class SqlEscapeSeqParser {
      * Processes the character starting from the second one.
      *
      * @param c The character.
+     * @param endOfInput true if this is the last character in the input string.
+     *     The method should not be called afterwards.
      */
-    private void acceptValueChar(char c) {
+    private void acceptValueChar(char c, boolean endOfInput) {
         int inputLen = input.length();
 
         if (state == State.PROCESSING) {
+            if (radix != SINGLE_CHAR_RADIX) {
+                if (endOfInput || !isValidDigit(c)) {
+                    assert inputLen < maxLen;
 
-            if (radix != SINGLE_CHAR_RADIX && !isValidDigit(c)) {
+                    if (inputLen >= minLen && isValidUnicodeInput())
+                        state = State.FINISHED_CHAR_REJECTED;
+                    else
+                        state = State.ERROR;
 
-                if (inputLen >= minLen && isValidUnicodeInput())
-                    state = State.FINISHED_CHAR_REJECTED;
-                else
-                    state = State.ERROR;
-
-                return;
+                    return;
+                }
             }
         }
 
@@ -179,48 +187,13 @@ public class SqlEscapeSeqParser {
     }
 
     /**
-     * Tells the parser that end of input has occured.
+     * Checks if the character is a valid digit in the current {@link #radix}.
      *
-     * @return The new state of the parser. See {@link State} for details.
+     * @param c The character to check.
+     * @return {@code true} if the character is valid.
      */
-    public State acceptEnd() {
-        int inputLen = input.length();
-
-        switch (state) {
-            case FINISHED_CHAR_ACCEPTED:
-            case FINISHED_CHAR_REJECTED:
-            case ERROR:
-                break;
-
-            case START:
-                state = State.ERROR;
-
-                break;
-
-            case PROCESSING:
-                if (radix != SINGLE_CHAR_RADIX) {
-                    assert inputLen <= maxLen;
-
-                    if (inputLen >= minLen && isValidUnicodeInput())
-                        state = State.FINISHED_CHAR_ACCEPTED;
-                    else
-                        state = State.ERROR;
-
-                    return state;
-                }
-
-                break;
-
-            default:
-                throw invalidStateException();
-        }
-
-        return state;
-    }
-
-    /** Checks if the character is a valid digit in the current {@link #radix}. */
     private boolean isValidDigit(char c) {
-        if (radix < 10)
+        if (radix <= 10)
             return c >= '0' && c < ('0' + radix);
         else
             return (c >= '0' && c <= '9') ||
@@ -276,10 +249,9 @@ public class SqlEscapeSeqParser {
         if (state != State.FINISHED_CHAR_ACCEPTED && state != State.FINISHED_CHAR_REJECTED)
             throw invalidStateException();
 
-        if (radix == SINGLE_CHAR_RADIX)
-            return Character.toString(convertEscSeqChar(input.charAt(0)));
-        else
-            return new String(Character.toChars(Integer.parseInt(input.toString(), radix)));
+        return (radix == SINGLE_CHAR_RADIX) ?
+            Character.toString(convertEscSeqChar(input.charAt(0))) :
+            new String(Character.toChars(Integer.parseInt(input.toString(), radix)));
     }
 
     /**
@@ -302,7 +274,6 @@ public class SqlEscapeSeqParser {
                 return '\t';
             case 'Z':
                 return '\032';
-
             default:
                 return c;
         }
@@ -319,9 +290,8 @@ public class SqlEscapeSeqParser {
      * @return The string with escape sequences replaced or null if input was null.
      * @throws RuntimeException Any exception that errorReporter might throw.
      */
-    public static @Nullable String replaceAll(@Nullable String input, String escapeChars,
+    @Nullable public static String replaceAll(@Nullable String input, String escapeChars,
         BiConsumer<String, Integer> errorReporter) {
-
         if (F.isEmpty(input))
             return input;
 
@@ -340,13 +310,8 @@ public class SqlEscapeSeqParser {
 
             do {
                 curPos++;
-
-                if (curPos >= input.length()) {
-                    seqParser.acceptEnd();
-
-                    break;
-                }
-            } while (seqParser.accept(input.charAt(curPos)) == State.PROCESSING);
+            }
+            while (seqParser.accept(input.charAt(curPos), curPos >= input.length()) == State.PROCESSING);
 
             switch (seqParser.state()) {
                 case ERROR:

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.bulkload.pipeline;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -63,4 +64,16 @@ public abstract class PipelineBlock<I, O> {
      * @param isLastPortion Is this the last portion.
      */
     public abstract void accept(I inputPortion, boolean isLastPortion) throws IgniteCheckedException;
+
+    /**
+     * Handles an error in the input and returns either new position to continue parsing from
+     * or throws an exception if parsing should be terminated.
+     *
+     * @param input The input string.
+     * @param pos The current position in the input.
+     * @param errorMsg The error message from the parser.
+     * @return New position to continue procesing from
+     *     (the new position should be in range {@code [(pos + 1)..input.length()]}).
+     */
+    protected abstract IgniteBiTuple<Integer, String> handleError(I input, int pos, String errorMsg);
 }

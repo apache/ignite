@@ -62,7 +62,7 @@ public class BulkLoadCsvParser extends BulkLoadParser {
 
         inputBlock.append(new LineSplitterBlock(format.lineSeparator()))
             .append(new CsvLineProcessorBlock(format.fieldSeparator(), format.quoteChars(),
-                format.commentChars(), format.escapeChars()))
+                format.commentChars(), format.escapeChars(), format.flags()))
             .append(collectorBlock);
     }
 
