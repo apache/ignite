@@ -129,7 +129,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
         long expDelay = 0;
 
         for (int i = 0; i < reconnectCnt && expDelay < maxConnectTimeout; i++)
-            expDelay += connectTimeout * (1L << i);
+            expDelay += (connectTimeout << i);
 
         return expDelay;
     }
