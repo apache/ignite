@@ -18,10 +18,18 @@
 namespace Apache.Ignite.Core.Cluster.Ssl
 {
     /// <summary>
-    /// Default SSL context wrapper for <see cref="SslContextFactory"/>.
+    /// Interface for SSL Context Factory.
     /// </summary>
-    public class SslContext : ISslContext
+    public interface ISslContextFactory
     {
+        /// <summary>
+        /// Path to key store file.
+        /// </summary>
+        string KeyStoreFilePath { get; set; }
 
+        /// <summary>
+        /// Key store password.
+        /// </summary>
+        string KeyStorePassword { get; set; }
     }
 }

@@ -20,13 +20,12 @@ namespace Apache.Ignite.Core.Cluster.Ssl
     using System;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// This SSL context factory that provides ssl context configuration with specified key and trust stores.
     /// </summary>
     [Serializable]
-    public class SslContextFactory : IFactory<ISslContext>
+    public class SslContextFactory : ISslContextFactory
     {
         /// <summary> Default value for <see cref="KeyAlgorithm"/>. </summary>
         public const string DefaultKeyAlgorithm = "SunX509";
@@ -49,14 +48,10 @@ namespace Apache.Ignite.Core.Cluster.Ssl
         /// </summary>
         public string KeyStoreType { get; set; }
 
-        /// <summary>
-        /// Path to key store file.
-        /// </summary>
+        /// <inheritdoc />
         public string KeyStoreFilePath { get; set; }
 
-        /// <summary>
-        /// Key store password.
-        /// </summary>
+        /// <inheritdoc />
         public string KeyStorePassword { get; set; }
 
         /// <summary>
@@ -166,12 +161,6 @@ namespace Apache.Ignite.Core.Cluster.Ssl
             writer.WriteString(TrustStoreType);
             writer.WriteString(TrustStoreFilePath);
             writer.WriteString(TrustStorePassword);
-        }
-
-        /** <inheritdoc /> */
-        public ISslContext CreateInstance()
-        {
-            return new SslContext();
         }
     }
 }

@@ -20,17 +20,16 @@ namespace Apache.Ignite.Core.Impl.Cluster.Ssl
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster.Ssl;
-    using Apache.Ignite.Core.Common;
 
     /// <summary>
-    /// Serializer/deserializer for <see cref="SslContextFactory"/>.
+    /// Serializer/deserializer for <see cref="ISslContextFactory"/>.
     /// </summary>
     public class SslFactorySerializer
     {
         /// <summary>
-        /// Writes the policy factory.
+        /// Writes the SSL context factory.
         /// </summary>
-        public static void Write(IBinaryRawWriter writer, IFactory<ISslContext> factory)
+        public static void Write(IBinaryRawWriter writer, ISslContextFactory factory)
         {
             Debug.Assert(writer != null);
 
@@ -49,9 +48,9 @@ namespace Apache.Ignite.Core.Impl.Cluster.Ssl
         }
 
         /// <summary>
-        /// Reads the expiry policy factory.
+        /// Reads the SSL context factory.
         /// </summary>
-        public static IFactory<ISslContext> Read(IBinaryRawReader reader)
+        public static ISslContextFactory Read(IBinaryRawReader reader)
         {
             return reader.ReadBoolean() ? new SslContextFactory(reader) : null;
         }

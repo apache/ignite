@@ -43,7 +43,6 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Cluster.Ssl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
@@ -1256,7 +1255,7 @@ namespace Apache.Ignite.Core
         /// Default is null (no SSL).
         /// <para />
         /// </summary>
-        public IFactory<ISslContext> SslContextFactory { get; set; }
+        public ISslContextFactory SslContextFactory { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating how user assemblies should be loaded on remote nodes.
