@@ -545,7 +545,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         ctx.discovery().sendCustomEvent(msg);
 
-        System.out.println("+++ SEND PRP " + msg);
+//        System.out.println("+++ SEND PRP " + msg);
 
         MAP.put(op, true);
         fut.get();
@@ -966,10 +966,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         /** {@inheritDoc} */
         @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
             final UserProposedMessage msg) {
-            log.info("+++ PROP ALL" + msg.operation());
-            if (ctx.isStopping() || ctx.clientNode()) {
+//            log.info("+++ PROP ALL" + msg);
+            if (ctx.isStopping() || ctx.clientNode())
                 return;
-            }
 
 //            log.info("+++ PROPOSE " + msg.operation());
             if (log.isDebugEnabled())

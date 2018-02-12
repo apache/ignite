@@ -458,13 +458,36 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentAddUpdateRemoveNodeRestartCoordinator() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7472");
+//        fail("https://issues.apache.org/jira/browse/IGNITE-7472");
 
         final IgniteInternalFuture restartFut = restartCoordinator();
 
         AuthorizationContext.context(actxDflt);
 
         final AtomicInteger usrCnt = new AtomicInteger();
+
+        IgniteInternalFuture dbgF =  GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    restartFut.get();
+                }
+                catch (IgniteCheckedException e) {
+                }
+
+                try {
+                    U.sleep(3000);
+                }
+                catch (IgniteInterruptedCheckedException e) {
+                }
+
+                if (!IgniteAuthenticationProcessor.MAP.isEmpty()) {
+                    System.out.println("+++ UNFINISHED");
+
+                    for (UserManagementOperation op : IgniteAuthenticationProcessor.MAP.keySet())
+                        System.out.println("+++ " + op);
+                }
+            }
+        });
 
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
@@ -488,6 +511,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         }, 13, "user-op");
 
         restartFut.get();
+        dbgF.get();
     }
 
     /**
@@ -543,11 +567,11 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
                             stopGrid(i);
 
-                            U.sleep(1000);
+                            U.sleep(500);
 
                             startGrid(i);
 
-                            U.sleep(1000);
+                            U.sleep(500);
                         }
                     }
                 }
