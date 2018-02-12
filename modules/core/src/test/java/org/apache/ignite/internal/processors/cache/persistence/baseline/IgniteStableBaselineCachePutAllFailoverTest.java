@@ -85,7 +85,7 @@ public class IgniteStableBaselineCachePutAllFailoverTest extends CachePutAllFail
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         startGrids(GRIDS_COUNT);
 
@@ -100,6 +100,6 @@ public class IgniteStableBaselineCachePutAllFailoverTest extends CachePutAllFail
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 }

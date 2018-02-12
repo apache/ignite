@@ -24,7 +24,7 @@ public class IgniteAllBaselineNodesOnlineFullApiSelfTest extends IgniteBaselineA
     @Override protected void beforeTestsStarted() throws Exception {
         initStoreStrategy();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         startGrids(gridCount());
 
