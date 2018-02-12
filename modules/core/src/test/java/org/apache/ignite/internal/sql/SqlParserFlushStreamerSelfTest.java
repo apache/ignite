@@ -36,8 +36,8 @@ public class SqlParserFlushStreamerSelfTest extends SqlParserAbstractSelfTest {
             "Failed to parse SQL statement \"flush[*]\": Unexpected end of command (expected: \"STREAMER\")");
 
         assertParseError(QueryUtils.DFLT_SCHEMA, "flush something",
-            "Failed to parse SQL statement \"set streaming[*]\": Unexpected end of command (expected: " +
-                "\"ON\", \"OFF\", \"1\", \"0\")");
+            "Failed to parse SQL statement \"flush [*]something\": Unexpected token: \"SOMETHING\" " +
+                "(expected: \"STREAMER\")");
 
         assertParseError(QueryUtils.DFLT_SCHEMA, "flush 500",
             "Failed to parse SQL statement \"flush [*]500\": Unexpected token: \"500\" (expected: \"STREAMER\")");
