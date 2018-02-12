@@ -859,7 +859,15 @@ module.exports.factory = function(mongoose) {
             socketReceiveBufferSize: Number,
             tcpNoDelay: {type: Boolean, default: true},
             maxOpenCursorsPerConnection: Number,
-            threadPoolSize: Number
+            threadPoolSize: Number,
+            idleTimeout: Number,
+            jdbcEnabled: {type: Boolean, default: true},
+            odbcEnabled: {type: Boolean, default: true},
+            thinClientEnabled: {type: Boolean, default: true},
+            sslEnabled: Boolean,
+            useIgniteSslContextFactory: {type: Boolean, default: true},
+            sslClientAuth: Boolean,
+            sslContextFactory: String
         },
         loadBalancingSpi: [{
             kind: {type: String, enum: ['RoundRobin', 'Adaptive', 'WeightedRandom', 'Custom']},
