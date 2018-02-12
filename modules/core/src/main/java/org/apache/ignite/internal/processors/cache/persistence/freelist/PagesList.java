@@ -408,12 +408,13 @@ public abstract class PagesList extends DataStructure {
      * Adds stripe to the given bucket.
      *
      * @param bucket Bucket.
+     * @param bag Reuse bag.
      * @param reuse {@code True} if possible to use reuse list.
      * @throws IgniteCheckedException If failed.
      * @return Tail page ID.
      */
-    private Stripe addStripe(int bucket, boolean reuse) throws IgniteCheckedException {
-        long pageId = reuse ? allocatePage(null) : allocatePageNoReuse();
+    private Stripe addStripe(int bucket, ReuseBag bag, boolean reuse) throws IgniteCheckedException {
+        long pageId = allocatePage(bag, reuse);
 
         init(pageId, PagesListNodeIO.VERSIONS.latest());
 
@@ -504,10 +505,11 @@ public abstract class PagesList extends DataStructure {
 
     /**
      * @param bucket Bucket.
+     * @param bag Reuse bag.
      * @return Page ID where the given page
      * @throws IgniteCheckedException If failed.
      */
-    private Stripe getPageForPut(int bucket) throws IgniteCheckedException {
+    private Stripe getPageForPut(int bucket, ReuseBag bag) throws IgniteCheckedException {
         // Striped pool optimization.
         IgniteThread igniteThread = IgniteThread.current();
 
@@ -519,7 +521,7 @@ public abstract class PagesList extends DataStructure {
             assert stripeIdx != -1 : igniteThread;
 
             while (tails == null || stripeIdx >= tails.length) {
-                addStripe(bucket, true);
+                addStripe(bucket, bag, true);
 
                 tails = getBucket(bucket);
             }
@@ -528,7 +530,7 @@ public abstract class PagesList extends DataStructure {
         }
 
         if (tails == null)
-            return addStripe(bucket, true);
+            return addStripe(bucket, bag, true);
 
         return randomTail(tails);
     }
@@ -617,16 +619,25 @@ public abstract class PagesList extends DataStructure {
         assert bag == null ^ dataAddr == 0L;
 
         for (int lockAttempt = 0; ;) {
-            Stripe stripe = getPageForPut(bucket);
+            Stripe stripe = getPageForPut(bucket, bag);
+
+            // No need to continue if bag has been utilized at getPageForPut.
+            if (bag != null && bag.isEmpty())
+                return;
 
             final long tailId = stripe.tailId;
             final long tailPage = acquirePage(tailId);
 
             try {
-                long tailAddr = writeLockPage(tailId, tailPage, bucket, lockAttempt++); // Explicit check.
+                long tailAddr = writeLockPage(tailId, tailPage, bucket, lockAttempt++, bag); // Explicit check.
 
-                if (tailAddr == 0L)
-                    continue;
+                if (tailAddr == 0L) {
+                    // No need to continue if bag has been utilized at writeLockPage.
+                    if (bag != null && bag.isEmpty())
+                        return;
+                    else
+                        continue;
+                }
 
                 assert PageIO.getPageId(tailAddr) == tailId : "pageId = " + PageIO.getPageId(tailAddr) + ", tailId = " + tailId;
                 assert PageIO.getType(tailAddr) == PageIO.T_PAGE_LIST_NODE;
@@ -830,6 +841,9 @@ public abstract class PagesList extends DataStructure {
         ReuseBag bag,
         int bucket
     ) throws IgniteCheckedException {
+        assert bag != null : "bag is null";
+        assert !bag.isEmpty() : "bag is empty";
+
         if (io.getNextId(pageAddr) != 0L)
             return false; // Splitted.
 
@@ -967,10 +981,11 @@ public abstract class PagesList extends DataStructure {
      * @param page Page pointer.
      * @param bucket Bucket.
      * @param lockAttempt Lock attempts counter.
+     * @param bag Reuse bag.
      * @return Page address if page is locked of {@code null} if can retry lock.
      * @throws IgniteCheckedException If failed.
      */
-    private long writeLockPage(long pageId, long page, int bucket, int lockAttempt)
+    private long writeLockPage(long pageId, long page, int bucket, int lockAttempt, ReuseBag bag)
         throws IgniteCheckedException {
         // Striped pool optimization.
         IgniteThread igniteThread = IgniteThread.current();
@@ -990,7 +1005,7 @@ public abstract class PagesList extends DataStructure {
             Stripe[] stripes = getBucket(bucket);
 
             if (stripes == null || stripes.length < MAX_STRIPES_PER_BUCKET) {
-                addStripe(bucket, !isReuseBucket(bucket));
+                addStripe(bucket, bag, !isReuseBucket(bucket));
 
                 return 0L;
             }
@@ -1016,7 +1031,7 @@ public abstract class PagesList extends DataStructure {
             final long tailPage = acquirePage(tailId);
 
             try {
-                long tailAddr = writeLockPage(tailId, tailPage, bucket, lockAttempt++); // Explicit check.
+                long tailAddr = writeLockPage(tailId, tailPage, bucket, lockAttempt++, null); // Explicit check.
 
                 if (tailAddr == 0L)
                     continue;
@@ -1472,6 +1487,11 @@ public abstract class PagesList extends DataStructure {
             pageId = 0L;
 
             return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isEmpty() {
+            return pageId == 0L;
         }
 
         /** {@inheritDoc} */
