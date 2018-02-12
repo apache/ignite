@@ -24,12 +24,12 @@ namespace Apache.Ignite.Core.Impl.Cluster.Ssl
     /// <summary>
     /// Serializer/deserializer for <see cref="ISslContextFactory"/>.
     /// </summary>
-    public class SslFactorySerializer
+    internal static class SslFactorySerializer
     {
         /// <summary>
         /// Writes the SSL context factory.
         /// </summary>
-        public static void Write(IBinaryRawWriter writer, ISslContextFactory factory)
+        internal static void Write(IBinaryRawWriter writer, ISslContextFactory factory)
         {
             Debug.Assert(writer != null);
 
@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Impl.Cluster.Ssl
         /// <summary>
         /// Reads the SSL context factory.
         /// </summary>
-        public static ISslContextFactory Read(IBinaryRawReader reader)
+        internal static ISslContextFactory Read(IBinaryRawReader reader)
         {
             return reader.ReadBoolean() ? new SslContextFactory(reader) : null;
         }
