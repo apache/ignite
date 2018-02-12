@@ -359,15 +359,13 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
     /** {@inheritDoc} */
     @Override public List<FieldsQueryCursor<List<?>>> queryMultipleStatements(SqlFieldsQuery qry) {
-        GridCacheGateway<K, V> gate = gate();
-
-        CacheOperationContext prev = onEnter(gate, opCtx);
+        CacheOperationGate opGate = onEnter();
 
         try {
             return delegate.queryMultipleStatements(qry);
         }
         finally {
-            onLeave(gate, prev);
+            onLeave(opGate);
         }
     }
 
@@ -1461,7 +1459,7 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
 
         if (isCacheProxy)
             ((IgniteCacheProxyImpl) delegate).checkRestart();
-        
+
         if (gate == null)
             throw new IllegalStateException("Gateway is unavailable. Probably cache has been destroyed, but proxy is not closed.");
 
@@ -1478,13 +1476,13 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
         }
         return gate;
     }
-    
+
     /**
      * @return Previous projection set on this thread.
      */
     private CacheOperationGate onEnter() {
         GridCacheGateway<K, V> gate = checkProxyIsValid(gate(), true);
-        
+
         return new CacheOperationGate(gate,
             lock ? gate.enter(opCtx) : gate.enterNoLock(opCtx));
     }
