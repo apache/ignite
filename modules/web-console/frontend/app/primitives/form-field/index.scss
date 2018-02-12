@@ -28,7 +28,7 @@
 
         color: #424242;
         font-size: 14px;
-        line-height: 14px;
+        line-height: 1.25;
 
         .icon-help {
             line-height: 14px;
@@ -144,14 +144,11 @@
 
 .form-field__checkbox {
     display: flex;
-    height: 36px;
 
     .form-field {
         &__label {
             order: 1;
             margin: 0;
-
-            line-height: 1.25;
         }
 
         &__control {
