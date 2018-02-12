@@ -107,12 +107,14 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private final Runnable readyFutCompletor;
 
     /** Active operations. */
+    // TODO: LinkedHashMap<id -> op>
     private List<UserManagementOperation> activeOperations = Collections.synchronizedList(new ArrayList<>());
 
     /** User map. */
     private ConcurrentMap<String, User> users;
 
     /** Users info version. */
+    // TODO: Do we need it?
     private long usersInfoVer;
 
     /** Shared context. */
@@ -129,6 +131,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private ClusterNode crdNode;
 
     /** Is authentication enabled. */
+    // TODO: Move to IgniteConfiguration from ClientConnectorConfiguration, exchange in node attributes, validate on join
     private boolean isEnabled;
 
     /** Disconnected flag. */
@@ -137,10 +140,11 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /** Pending message of the finished operation. May be resend when coordinator node leave. */
     private UserManagementOperationFinishedMessage pendingFinishMsg;
 
-    /** Initial users map and operations received from coordinator on the node joined to the cluster. */
+        /** Initial users map and operations received from coordinator on the node joined to the cluster. */
     private InitialUsersData initUsrs;
 
     /** I/O message listener. */
+    // TODO: Need to catch too early IO finish responses
     private GridMessageListener ioLsnr;
 
     /** System discovery message listener. */
@@ -865,6 +869,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /**
      * Called on node activate.
      */
+    // TODO: This is invalid place.
     public void onActivate() {
         activateFut.onDone();
     }

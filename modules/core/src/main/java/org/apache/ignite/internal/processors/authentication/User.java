@@ -47,7 +47,7 @@ public class User implements Serializable, Message {
     private static final String DFLT_USER_PASSWORD = "ignite";
 
     /** Salt length. */
-    private static final int SALT_LEN = 16;
+    private static final int SALT_LEN = 64;
 
     /** Random. */
     private static final SecureRandom random = new SecureRandom();
