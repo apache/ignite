@@ -1368,6 +1368,43 @@ namespace ignite
             }
 
             /**
+             * Rebalances cache partitions. This method is usually used when rebalanceDelay configuration parameter
+             * has non-zero value. When many nodes are started or stopped almost concurrently, it is more efficient
+             * to delay rebalancing until the node topology is stable to make sure that no redundant re-partitioning
+             * happens.
+             *
+             * In case of partitioned caches, for better efficiency user should usually make sure that new nodes get
+             * placed on the same place of consistent hash ring as the left nodes, and that nodes are restarted before
+             * rebalanceDelay expires.
+             *
+             */
+            void Rebalance()
+            {
+                IgniteError err;
+
+                impl.Get()->Rebalance(err);
+
+                IgniteError::ThrowIfNeeded(err);
+            }
+
+            /**
+             * Rebalances cache partitions. This method is usually used when rebalanceDelay configuration parameter
+             * has non-zero value. When many nodes are started or stopped almost concurrently, it is more efficient
+             * to delay rebalancing until the node topology is stable to make sure that no redundant re-partitioning
+             * happens.
+             *
+             * In case of partitioned caches, for better efficiency user should usually make sure that new nodes get
+             * placed on the same place of consistent hash ring as the left nodes, and that nodes are restarted before
+             * rebalanceDelay expires.
+             *
+             * @param err Error.
+             */
+            void Rebalance(IgniteError &err)
+            {
+                return impl.Get()->Rebalance(err);
+            }
+
+            /**
              * Perform SQL query.
              *
              * This method should only be used on the valid instance.

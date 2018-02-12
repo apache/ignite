@@ -285,6 +285,13 @@ namespace ignite
                 int32_t Size(int32_t peekModes, bool local, IgniteError& err);
 
                 /**
+                 * Perform Rebalance.
+                 *
+                 * @param err Error.
+                 */
+                void Rebalance(IgniteError& err);
+
+                /**
                  * Invoke query.
                  *
                  * @param qry Query.
