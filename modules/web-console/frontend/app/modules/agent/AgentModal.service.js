@@ -21,22 +21,20 @@ export default class AgentModal {
     static $inject = ['$rootScope', '$state', '$modal', 'IgniteMessages'];
 
     constructor($root, $state, $modal, Messages) {
-        const self = this;
-
-        self.$state = $state;
-        self.Messages = Messages;
+        this.$state = $state;
+        this.Messages = Messages;
 
         // Pre-fetch modal dialogs.
-        self.modal = $modal({
+        this.modal = $modal({
             templateUrl,
             show: false,
             backdrop: 'static',
             keyboard: false,
-            controller: () => self,
+            controller: () => this,
             controllerAs: 'ctrl'
         });
 
-        $root.$on('user', (event, user) => self.user = user);
+        $root.$on('user', (event, user) => this.user = user);
     }
 
     hide() {
@@ -62,14 +60,12 @@ export default class AgentModal {
      * @param {String} [backText]
      */
     agentDisconnected(backText, backState) {
-        const self = this;
+        this.backText = backText;
+        this.backState = backState;
 
-        self.backText = backText;
-        self.backState = backState;
+        this.status = 'agentMissing';
 
-        self.status = 'agentMissing';
-
-        self.modal.$promise.then(self.modal.show);
+        return this.modal.$promise.then(this.modal.show);
     }
 
     /**
@@ -77,13 +73,11 @@ export default class AgentModal {
      * @param {String} [backText]
      */
     clusterDisconnected(backText, backState) {
-        const self = this;
+        this.backText = backText;
+        this.backState = backState;
 
-        self.backText = backText;
-        self.backState = backState;
+        this.status = 'nodeMissing';
 
-        self.status = 'nodeMissing';
-
-        self.modal.$promise.then(self.modal.show);
+        return this.modal.$promise.then(this.modal.show);
     }
 }

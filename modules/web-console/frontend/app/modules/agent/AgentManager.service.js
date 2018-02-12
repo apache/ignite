@@ -22,6 +22,7 @@ import SimpleWorkerPool from '../../utils/SimpleWorkerPool';
 import maskNull from 'app/core/utils/maskNull';
 
 const State = {
+    INIT: 'INIT',
     AGENT_DISCONNECTED: 'AGENT_DISCONNECTED',
     CLUSTER_DISCONNECTED: 'CLUSTER_DISCONNECTED',
     CONNECTED: 'CONNECTED'
@@ -33,7 +34,7 @@ class ConnectionState {
     constructor(cluster) {
         this.cluster = cluster;
         this.clusters = [];
-        this.state = State.AGENT_DISCONNECTED;
+        this.state = State.INIT;
     }
 
     updateCluster(cluster) {
