@@ -20,13 +20,11 @@ package org.apache.ignite.yardstick.upload;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
+import org.yardstickframework.BenchmarkConfiguration;
 
 public class BatchedInsertBenchmark extends AbstractUploadBenchmark {
     /** Rows count to be inserted and deleted during warmup */
     public static final int WARMUP_ROWS_CNT = 3000_000;
-
-    /** Number of inserts in batch */
-    public static final int BATCH_SIZE = 1000;
 
     /** {@inheritDoc} */
     @Override public void warmup() throws SQLException {
@@ -53,17 +51,15 @@ public class BatchedInsertBenchmark extends AbstractUploadBenchmark {
 
     /** Sequence of single inserts */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        int n = args.sqlRange();
-
         try (PreparedStatement insert = conn.get()
                 .prepareStatement("INSERT INTO test_long VALUES (?, ?)")) {
-            for (int i = 1; i <= n; i++) {
+            for (int i = 1; i <= INSERT_SIZE; i++) {
                 insert.setLong(1, i);
                 insert.setLong(2, i + 1);
 
                 insert.addBatch();
 
-                if (i % BATCH_SIZE == 0 || i == n)
+                if (i % BATCH_SIZE == 0 || i == INSERT_SIZE)
                     insert.executeBatch();
             }
         }

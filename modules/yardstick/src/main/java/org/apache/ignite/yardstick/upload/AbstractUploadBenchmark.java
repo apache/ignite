@@ -27,9 +27,19 @@ import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
 public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
+    /** Total inserts size */
+    public int INSERT_SIZE;
+
+    /** Number of inserts in batch */
+    public int BATCH_SIZE;
+
     /** {@inheritDoc} */
     public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
+
+        INSERT_SIZE = args.range();
+        BATCH_SIZE = args.sqlRange();
+
         warmup();
     }
 

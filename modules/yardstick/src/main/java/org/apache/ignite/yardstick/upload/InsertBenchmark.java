@@ -32,8 +32,15 @@ public class InsertBenchmark extends AbstractJdbcBenchmark {
     /** Rows count to be inserted and deleted during warmup */
     public static final int WARMUP_ROWS_CNT = 10_000;
 
+    /** Total inserts size */
+    public int INSERT_SIZE;
+
+    /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
+
+        INSERT_SIZE = args.range();
+
         warmup();
     }
 
@@ -65,9 +72,7 @@ public class InsertBenchmark extends AbstractJdbcBenchmark {
 
     /** Sequence of single inserts */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        int n = args.sqlRange();
-
-        for (int i = 1; i <= n; i++) {
+        for (int i = 1; i <= INSERT_SIZE; i++) {
             try (PreparedStatement insert = conn.get().prepareStatement("INSERT INTO test_long VALUES (?, ?)")) {
                 insert.setLong(1, i);
                 insert.setLong(2, i + 1);
