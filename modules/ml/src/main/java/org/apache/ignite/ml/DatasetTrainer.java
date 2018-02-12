@@ -17,23 +17,26 @@
 
 package org.apache.ignite.ml;
 
-import org.apache.ignite.ml.trees.trainers.columnbased.ColumnDecisionTreeTrainer;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
- * Interface for Trainers. Trainer is just a function which produces model from the data.
- * See for example {@link ColumnDecisionTreeTrainer}.
+ * Interface for trainers. Trainer is just a function which produces model from the data.
  *
- * @param <M> Type of produced model.
- * @param <T> Type of data needed for model producing.
+ * @param <K> Type of a key in {@code upstream} data.
+ * @param <V> Type of a value in {@code upstream} data.
+ * @param <M> Type of a produced model.
  */
-// TODO: IGNITE-7659: Reduce multiple Trainer interfaces to one
-@Deprecated
-public interface Trainer<M extends Model, T> {
+public interface DatasetTrainer<K, V, M extends Model> {
     /**
-     * Returns model based on data
+     * Trains model based on the specified data.
      *
-     * @param data data to build model
-     * @return model
+     * @param datasetBuilder Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     * @param cols Number of columns.
+     * @return Model.
      */
-    M train(T data);
+    public M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, Double> lbExtractor, int cols);
 }
