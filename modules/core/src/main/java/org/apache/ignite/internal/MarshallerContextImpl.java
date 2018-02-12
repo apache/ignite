@@ -50,24 +50,22 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.MarshallerContext;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
+import static org.apache.ignite.marshaller.MarshallerUtils.CLS_NAMES_FILE;
+import static org.apache.ignite.marshaller.MarshallerUtils.JDK_CLS_NAMES_FILE;
 
 /**
  * Marshaller context implementation.
  */
 public class MarshallerContextImpl implements MarshallerContext {
-    /** */
-    private static final String CLS_NAMES_FILE = "META-INF/classnames.properties";
-
-    /** */
-    private static final String JDK_CLS_NAMES_FILE = "META-INF/classnames-jdk.properties";
-
     /** */
     private final Map<Integer, MappedName> sysTypesMap = new HashMap<>();
 
@@ -89,6 +87,12 @@ public class MarshallerContextImpl implements MarshallerContext {
     /** */
     private boolean clientNode;
 
+    /** Class name filter. */
+    private final IgnitePredicate<String> clsFilter;
+
+    /** JDK marshaller. */
+    private final JdkMarshaller jdkMarsh;
+
     /**
      * Marshaller mapping file store directory. {@code null} used for standard folder, in this case folder is calculated
      * from work directory. Non null value may be used to setup custom directory from outside
@@ -100,7 +104,10 @@ public class MarshallerContextImpl implements MarshallerContext {
      *
      * @param plugins Plugins.
      */
-    public MarshallerContextImpl(@Nullable Collection<PluginProvider> plugins) {
+    public MarshallerContextImpl(@Nullable Collection<PluginProvider> plugins, IgnitePredicate<String> clsFilter) {
+        this.clsFilter = clsFilter;
+        this.jdkMarsh = new JdkMarshaller(clsFilter);
+
         initializeCaches();
 
         try {
@@ -330,7 +337,7 @@ public class MarshallerContextImpl implements MarshallerContext {
         if (clsName == null)
             throw new ClassNotFoundException("Unknown type ID: " + typeId);
 
-        return U.forName(clsName, ldr);
+        return U.forName(clsName, ldr, clsFilter);
     }
 
     /** {@inheritDoc} */
@@ -383,6 +390,16 @@ public class MarshallerContextImpl implements MarshallerContext {
         }
 
         return clsName;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgnitePredicate<String> classNameFilter() {
+        return clsFilter;
+    }
+
+    /** {@inheritDoc} */
+    @Override public JdkMarshaller jdkMarshaller() {
+        return jdkMarsh;
     }
 
     /**

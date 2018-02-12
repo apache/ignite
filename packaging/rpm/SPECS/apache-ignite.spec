@@ -204,3 +204,11 @@ ln -sf %{_var}/log/%{name} %{buildroot}%{_sharedstatedir}/%{name}/log
 %doc %{name}-*/NOTICE
 %doc %{name}-*/RELEASE_NOTES.txt
 %license %{name}-*/LICENSE
+
+#-------------------------------------------------------------------------------
+#
+# Changelog
+#
+%changelog
+* Wed Jan 17 2018 GridGain Systems <ggs@gridgain.com> - 2.4.0-1
+- Initial package release
