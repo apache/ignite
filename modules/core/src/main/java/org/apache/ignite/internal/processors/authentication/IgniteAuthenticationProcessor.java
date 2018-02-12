@@ -100,6 +100,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /** Mutex for change coordinator node. */
     private final Object muxCrdNode = new Object();
 
+    /** Operation mutex. */
+    private final Object mux = new Object();
+
     /** Task to put on auth executor queue to complete readyFut. */
     private final Runnable readyFutCompletor;
 
@@ -262,7 +265,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (!isEnabled)
             return;
 
-        cancelFutures("Kernal stopped.");
+        synchronized (mux) {
+            cancelFutures("Kernal stopped.");
+        }
     }
 
     /** {@inheritDoc} */
@@ -270,20 +275,27 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (!isEnabled)
             return;
 
-        assert !disconnected;
+        synchronized (mux) {
+            assert !disconnected;
 
-        disconnected = true;
+            disconnected = true;
 
-        cancelFutures("Client node was disconnected from topology (operation result is unknown).");
+            cancelFutures("Client node was disconnected from topology (operation result is unknown).");
+        }
     }
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> onReconnected(boolean active) {
-        assert disconnected;
+        if (!isEnabled)
+            return null;
 
-        disconnected = false;
+        synchronized (mux) {
+            assert disconnected;
 
-        return null;
+            disconnected = false;
+
+            return null;
+        }
     }
 
     /**
@@ -334,10 +346,16 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         checkActivate();
         checkEnabled();
 
-        UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
-            UserManagementOperation.OperationType.ADD);
+        synchronized (mux) {
+            if (disconnected) {
+                throw new IgniteCheckedException("Failed to initiate WAL mode change because "
+                    + "client node is disconnected.");
+            }
+            UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
+                UserManagementOperation.OperationType.ADD);
 
-        execUserOperation(op);
+            execUserOperation(op);
+        }
     }
 
     /**
@@ -348,10 +366,17 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         checkActivate();
         checkEnabled();
 
-        UserManagementOperation op = new UserManagementOperation(User.create(login),
-            UserManagementOperation.OperationType.REMOVE);
+        synchronized (mux) {
+            if (disconnected) {
+                throw new IgniteCheckedException("Failed to initiate WAL mode change because "
+                    + "client node is disconnected.");
+            }
 
-        execUserOperation(op);
+            UserManagementOperation op = new UserManagementOperation(User.create(login),
+                UserManagementOperation.OperationType.REMOVE);
+
+            execUserOperation(op);
+        }
     }
 
     /**
@@ -363,10 +388,17 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         checkActivate();
         checkEnabled();
 
-        UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
-            UserManagementOperation.OperationType.UPDATE);
+        synchronized (mux) {
+            if (disconnected) {
+                throw new IgniteCheckedException("Failed to initiate WAL mode change because "
+                    + "client node is disconnected.");
+            }
 
-        execUserOperation(op);
+            UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
+                UserManagementOperation.OperationType.UPDATE);
+
+            execUserOperation(op);
+        }
     }
 
     /** {@inheritDoc} */

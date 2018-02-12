@@ -458,34 +458,13 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testConcurrentAddUpdateRemoveNodeRestartCoordinator() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7472");
+
         final IgniteInternalFuture restartFut = restartCoordinator();
 
         AuthorizationContext.context(actxDflt);
 
         final AtomicInteger usrCnt = new AtomicInteger();
-
-        IgniteInternalFuture dbgF=  GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    restartFut.get();
-                }
-                catch (IgniteCheckedException e) {
-                }
-
-                try {
-                    U.sleep(3000);
-                }
-                catch (IgniteInterruptedCheckedException e) {
-                }
-
-                if (!IgniteAuthenticationProcessor.MAP.isEmpty()) {
-                    System.out.println("+++ UNFINISHED");
-
-                    for (UserManagementOperation op : IgniteAuthenticationProcessor.MAP.keySet())
-                        System.out.println("+++ " + op);
-                }
-            }
-        });
 
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
@@ -509,7 +488,6 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         }, 13, "user-op");
 
         restartFut.get();
-        dbgF.get();
     }
 
     /**
@@ -563,12 +541,10 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                             if (restarts >= RESTARTS)
                                 break;
 
-                            System.out.println("+++ STOP " + i);
                             stopGrid(i);
 
                             U.sleep(1000);
 
-                            System.out.println("+++ START " + i);
                             startGrid(i);
 
                             U.sleep(1000);
@@ -579,7 +555,6 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                     U.error(log, "Unexpected exception on coordinator restart", e);
                     fail();
                 }
-                System.out.println("+++ END RESTART ");
             }
         });
     }
