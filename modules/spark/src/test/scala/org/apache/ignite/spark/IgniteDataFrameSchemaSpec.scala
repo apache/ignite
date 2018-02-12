@@ -45,7 +45,7 @@ class IgniteDataFrameSchemaSpec extends AbstractDataFrameSpec {
                     ("IS_RESIDENT", BooleanType, true),
                     ("SALARY", DoubleType, true),
                     ("PENSION", DoubleType, true),
-                    ("ACCOUNT", DecimalType(10, 0), true),
+                    ("ACCOUNT", IgniteRDD.DECIMAL, true),
                     ("AGE", IntegerType, true),
                     ("ID", LongType, false),
                     ("CITY_ID", LongType, false))

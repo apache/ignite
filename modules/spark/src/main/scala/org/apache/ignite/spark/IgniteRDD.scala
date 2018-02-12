@@ -336,6 +336,8 @@ class IgniteRDD[K, V] (
 }
 
 object IgniteRDD {
+    val DECIMAL = DecimalType(DecimalType.MAX_PRECISION, 3) //TODO: How to know precision and scale directly from Ignite.
+
     /**
       * Gets Spark data type based on type name.
       *
@@ -350,7 +352,7 @@ object IgniteRDD {
         case "java.lang.Long" ⇒ LongType
         case "java.lang.Float" ⇒ FloatType
         case "java.lang.Double" ⇒ DoubleType
-        case "java.math.BigDecimal" ⇒ DataTypes.createDecimalType()
+        case "java.math.BigDecimal" ⇒ DECIMAL
         case "java.lang.String" ⇒ StringType
         case "java.util.Date" ⇒ DateType
         case "java.sql.Date" ⇒ DateType

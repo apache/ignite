@@ -21,6 +21,8 @@ import java.lang.{Long ⇒ JLong}
 
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.internal.IgnitionEx
+import org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath
+import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, EMPLOYEE_CACHE_NAME, TEST_CONFIG_FILE, enclose}
 import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, EMPLOYEE_CACHE_NAME, TEST_CONFIG_FILE, enclose}
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.apache.spark.sql.types.{LongType, StringType}
@@ -57,7 +59,7 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
         it("Should provide ability to query SQL table without explicit registration") {
             val res = igniteSession.sql("SELECT id, name FROM city").rdd
 
-            res.count should equal(3)
+            res.count should equal(4)
 
             val cities = res.collect.sortBy(_.getAs[JLong]("id"))
 
@@ -65,7 +67,8 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
                 Array(
                     (1, "Forest Hill"),
                     (2, "Denver"),
-                    (3, "St. Petersburg")
+                    (3, "St. Petersburg"),
+                    (4, "St. Petersburg")
                 )
             )
         }
@@ -105,7 +108,8 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
         }
 
         it("Should allow register tables based on other datasources") {
-            val citiesDataFrame = igniteSession.read.json("src/test/resources/cities.json")
+            val citiesDataFrame = igniteSession.read.json(
+                resolveIgnitePath("modules/spark/src/test/resources/cities.json").getAbsolutePath)
 
             citiesDataFrame.createOrReplaceTempView("JSON_CITIES")
 
@@ -134,7 +138,7 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
 
         createEmployeeCache(client, EMPLOYEE_CACHE_NAME)
 
-        val configProvider = enclose(null) (x ⇒ () ⇒ {
+        val configProvider = enclose(null) (_ ⇒ () ⇒ {
             val cfg = IgnitionEx.loadConfiguration(TEST_CONFIG_FILE).get1()
 
             cfg.setClientMode(true)
