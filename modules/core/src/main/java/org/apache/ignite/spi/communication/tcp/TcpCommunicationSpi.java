@@ -23,7 +23,6 @@ import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -3089,8 +3088,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             int attempt = 1;
 
-            IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this,
-                !node.isClient());
+            IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this, !node.isClient());
 
             int lastWaitingTimeout = 1;
 
@@ -3314,11 +3312,19 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             (U.currentTimeMillis() - start);
 
                         if (delay > 10) {
-                            try {
-                                U.sleep(delay);
-                            }
-                            catch (IgniteInterruptedCheckedException e1) {
-                                break;
+                            while(delay > 0) {
+                                // Stop waiting if node is out of topology.
+                                if (getSpiContext().node(node.id()) == null)
+                                    break;
+
+                                try {
+                                    U.sleep(10);
+
+                                    delay -= 10;
+                                }
+                                catch (IgniteInterruptedCheckedException e1) {
+                                    break;
+                                }
                             }
                         }
 
