@@ -154,8 +154,8 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "temp", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "temp", false));
     }
 
     /** {@inheritDoc} */
