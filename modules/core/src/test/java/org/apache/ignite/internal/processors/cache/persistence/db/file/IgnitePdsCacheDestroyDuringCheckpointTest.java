@@ -80,7 +80,7 @@ public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstrac
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -89,7 +89,7 @@ public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstrac
 
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /**
@@ -150,12 +150,5 @@ public class IgnitePdsCacheDestroyDuringCheckpointTest extends GridCommonAbstrac
                 assertTrue(false);
             }
         }
-    }
-
-    /**
-     * @throws IgniteCheckedException If fail.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 }
