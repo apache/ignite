@@ -117,7 +117,8 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected boolean removeMeta(Object meta) {
-        return queue.unlinkx((Node<EvictableEntry<K, V>>)meta);
+        // TODO: removeFirstOccurence
+        return queue.unlink((EvictableEntry<K, V>)meta);
     }
 
     /**
@@ -125,46 +126,32 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
      * @return {@code True} if queue has been changed by this call.
      */
     protected boolean touch(EvictableEntry<K, V> entry) {
-        Node<EvictableEntry<K, V>> node = entry.meta();
+        // Entry is already in queue.
+        if (entry.meta() != null)
+            return false;
 
-        // Entry has not been enqueued yet.
-        if (node == null) {
-            while (true) {
-                node = queue.offerLastx(entry);
+        // 1 - put entry to the queue, 2 - mark entry as queued through CAS on entry meta.
+        // Strictly speaking, this order does not provides correct concurrency,
+        // but inconsistency effect is negligible, unlike the opposite order.
+        // See shrink0 and super.onEntryAccessed().
+        queue.offerLast(entry);
 
-                if (entry.putMetaIfAbsent(node) != null) {
-                    // Was concurrently added, need to clear it from queue.
-                    queue.unlinkx(node);
+        if (!entry.isCached() || entry.putMetaIfAbsent(entry) != null) {
+            // TODO: removeFirstOccurence
+            queue.unlink(entry);
 
-                    // Queue has not been changed.
-                    return false;
-                }
-                else if (node.item() != null) {
-                    if (!entry.isCached()) {
-                        // Was concurrently evicted, need to clear it from queue.
-                        queue.unlinkx(node);
-
-                        return false;
-                    }
-
-                    memSize.add(entry.size());
-
-                    return true;
-                }
-                // If node was unlinked by concurrent shrink() call, we must repeat the whole cycle.
-                else if (!entry.removeMeta(node))
-                    return false;
-            }
+            return false;
         }
 
-        // Entry is already in queue.
-        return false;
+        memSize.add(entry.size());
+
+        return true;
     }
 
     /**
      * Tries to remove one item from queue.
      *
-     * @return number of bytes that was free. {@code -1} if queue is empty.
+     * @return number of bytes freed or {@code -1} if queue is empty.
      */
     @Override protected int shrink0() {
         EvictableEntry<K, V> entry = queue.poll();
@@ -174,9 +161,9 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
 
         int size = 0;
 
-        Node<EvictableEntry<K, V>> meta = entry.removeMeta();
+        EvictableEntry<K, V> self = entry.removeMeta();
 
-        if (meta != null) {
+        if (self != null) {
             size = entry.size();
 
             memSize.add(-size);

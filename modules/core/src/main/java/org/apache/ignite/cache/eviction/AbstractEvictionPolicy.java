@@ -86,10 +86,10 @@ public abstract class AbstractEvictionPolicy<K, V> implements EvictionPolicy<K, 
                 shrink();
         }
         else {
-            Object node = entry.removeMeta();
+            Object meta = entry.removeMeta();
 
-            if (node != null) {
-                removeMeta(node);
+            if (meta != null) {
+                removeMeta(meta);
 
                 memSize.add(-entry.size());
             }

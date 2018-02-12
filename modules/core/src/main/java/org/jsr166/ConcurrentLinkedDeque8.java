@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.atomic.LongAdder;
 import sun.misc.Unsafe;

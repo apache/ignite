@@ -296,6 +296,7 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
                 break;
 
             if (evts.unlinkx(node) && log.isDebugEnabled())
+                // No need for unlinkx. Just remove(Object)
                 log.debug("Event expired by age: " + node.item());
         }
     }
