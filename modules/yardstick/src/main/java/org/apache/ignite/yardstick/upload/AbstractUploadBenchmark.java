@@ -30,6 +30,8 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     /** Total inserts size */
     public int INSERT_SIZE;
 
+    QueryFactory queries = new QueryFactory();
+
     /** Number of inserts in batch */
     public int BATCH_SIZE;
 
@@ -48,7 +50,7 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
 
     /** create empty table */
     protected void setupData(){
-        SqlFieldsQuery qry = new SqlFieldsQuery("CREATE TABLE test_long (id LONG PRIMARY KEY, val LONG);");
+        SqlFieldsQuery qry = new SqlFieldsQuery(queries.createTable());
         GridQueryProcessor qProc = ((IgniteEx)ignite()).context().query();
         qProc.querySqlFields(qry, false);
 
@@ -56,7 +58,7 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
 
     /** {@inheritDoc} */
     public void tearDown() throws Exception {
-        try(PreparedStatement count = conn.get().prepareStatement("SELECT COUNT(id) FROM test_long;")){
+        try(PreparedStatement count = conn.get().prepareStatement(queries.count())){
             try (ResultSet rs = count.executeQuery()) {
                 rs.next();
                 long size = rs.getLong(1);

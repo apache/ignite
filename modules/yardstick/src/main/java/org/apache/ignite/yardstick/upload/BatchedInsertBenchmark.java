@@ -20,7 +20,6 @@ package org.apache.ignite.yardstick.upload;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Map;
-import org.yardstickframework.BenchmarkConfiguration;
 
 public class BatchedInsertBenchmark extends AbstractUploadBenchmark {
     /** Rows count to be inserted and deleted during warmup */
@@ -28,21 +27,19 @@ public class BatchedInsertBenchmark extends AbstractUploadBenchmark {
 
     /** {@inheritDoc} */
     @Override public void warmup() throws SQLException {
-        try (PreparedStatement insert = conn.get()
-                .prepareStatement("INSERT INTO test_long VALUES (?, ?)")) {
-            for (int i = 1; i <= WARMUP_ROWS_CNT ; i++) {
-                insert.setLong(1, i);
-                insert.setLong(2, i + 1);
+        try (PreparedStatement insert = conn.get().prepareStatement(queries.insert())) {
+            for (int id = 1; id <= WARMUP_ROWS_CNT ; id++) {
+                queries.setRandomInsertArgs(insert, id);
 
                 insert.addBatch();
 
-                if (i % BATCH_SIZE == 0 || i == WARMUP_ROWS_CNT)
+                if (id % BATCH_SIZE == 0 || id == WARMUP_ROWS_CNT)
                     insert.executeBatch();
 
             }
         }
 
-        try(PreparedStatement delete = conn.get().prepareStatement("DELETE FROM test_long WHERE id > 0")){
+        try(PreparedStatement delete = conn.get().prepareStatement(queries.deleteAll())){
             // todo: Should we perform subsequent insert+delete in warmup?
             delete.executeUpdate();
         }
@@ -51,15 +48,13 @@ public class BatchedInsertBenchmark extends AbstractUploadBenchmark {
 
     /** Sequence of single inserts */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        try (PreparedStatement insert = conn.get()
-                .prepareStatement("INSERT INTO test_long VALUES (?, ?)")) {
-            for (int i = 1; i <= INSERT_SIZE; i++) {
-                insert.setLong(1, i);
-                insert.setLong(2, i + 1);
+        try (PreparedStatement insert = conn.get().prepareStatement(queries.insert())) {
+            for (int id = 1; id <= INSERT_SIZE; id++) {
+                queries.setRandomInsertArgs(insert, id);
 
                 insert.addBatch();
 
-                if (i % BATCH_SIZE == 0 || i == INSERT_SIZE)
+                if (id % BATCH_SIZE == 0 || id == INSERT_SIZE)
                     insert.executeBatch();
             }
         }

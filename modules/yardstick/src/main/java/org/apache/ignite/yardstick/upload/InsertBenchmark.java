@@ -35,6 +35,8 @@ public class InsertBenchmark extends AbstractJdbcBenchmark {
     /** Total inserts size */
     public int INSERT_SIZE;
 
+    private QueryFactory queries = new QueryFactory();
+
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
@@ -47,23 +49,22 @@ public class InsertBenchmark extends AbstractJdbcBenchmark {
     /** create empty table */
     // todo: use args.range == 0 ?
     @Override protected void setupData(){
-        SqlFieldsQuery qry = new SqlFieldsQuery("CREATE TABLE test_long (id LONG PRIMARY KEY, val LONG);");
+        SqlFieldsQuery qry = new SqlFieldsQuery(queries.createTable());
         GridQueryProcessor qProc = ((IgniteEx)ignite()).context().query();
         qProc.querySqlFields(qry, false);
 
     }
 
     private void warmup() throws SQLException {
-        try (PreparedStatement insert = conn.get()
-            .prepareStatement("INSERT INTO test_long VALUES (?, ?)")) {
-            for (int i = 1; i <= WARMUP_ROWS_CNT ; i++) {
-                insert.setLong(1, i);
-                insert.setLong(2, i + 1);
+        try (PreparedStatement insert = conn.get().prepareStatement(queries.insert())) {
+            for (int id = 1; id <= WARMUP_ROWS_CNT ; id++) {
+                queries.setRandomInsertArgs(insert, id);
+
                 insert.executeUpdate();
             }
         }
 
-        try(PreparedStatement delete = conn.get().prepareStatement("DELETE FROM test_long WHERE id > 0")){
+        try(PreparedStatement delete = conn.get().prepareStatement(queries.deleteAll())){
             // todo: Should we perform subsequent insert+delete in warmup?
             delete.executeUpdate();
         }
@@ -72,10 +73,10 @@ public class InsertBenchmark extends AbstractJdbcBenchmark {
 
     /** Sequence of single inserts */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        for (int i = 1; i <= INSERT_SIZE; i++) {
-            try (PreparedStatement insert = conn.get().prepareStatement("INSERT INTO test_long VALUES (?, ?)")) {
-                insert.setLong(1, i);
-                insert.setLong(2, i + 1);
+        for (int id = 1; id <= INSERT_SIZE; id++) {
+            try (PreparedStatement insert = conn.get().prepareStatement(queries.insert())) {
+                queries.setRandomInsertArgs(insert, id);
+
                 insert.executeUpdate();
             }
 
@@ -86,7 +87,7 @@ public class InsertBenchmark extends AbstractJdbcBenchmark {
 
     /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
-        try(PreparedStatement count = conn.get().prepareStatement("SELECT COUNT(id) FROM test_long;")){
+        try(PreparedStatement count = conn.get().prepareStatement(queries.count())){
             try (ResultSet rs = count.executeQuery()) {
                 rs.next();
                 long size = rs.getLong(1);
