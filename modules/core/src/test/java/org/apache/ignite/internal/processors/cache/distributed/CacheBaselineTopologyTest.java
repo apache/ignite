@@ -87,7 +87,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -96,7 +96,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         client = false;
     }
