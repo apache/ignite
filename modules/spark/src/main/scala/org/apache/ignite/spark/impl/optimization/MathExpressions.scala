@@ -203,7 +203,7 @@ private[optimization] object MathExpressions extends SupportedExpressions {
 
         case Logarithm(base, arg) ⇒
             childToString(base) match {
-                //Spark internally make LN(XXX) to LOG(2.718281828459045, XXX).
+                //Spark internally converts LN(XXX) to LOG(2.718281828459045, XXX).
                 //Because H2 doesn't have builtin function for a free base logarithm
                 //I want to prevent usage of log(a, b) = ln(a)/ln(b) when possible.
                 case "2.718281828459045" ⇒
