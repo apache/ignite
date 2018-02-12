@@ -46,6 +46,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
@@ -674,6 +675,7 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 cctx.cacheId(),
                 id,
                 cctx.name(),
+                qry.transform(),
                 qry.pageSize(),
                 qry.includeBackups(),
                 fut.fields(),

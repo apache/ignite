@@ -165,6 +165,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
      * @param cacheId Cache ID.
      * @param id Request ID.
      * @param cacheName Cache name.
+     * @param trans Transformer.
      * @param pageSize Page size.
      * @param incBackups {@code true} if need to include backups.
      * @param fields Fields query flag.
@@ -179,6 +180,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         int cacheId,
         long id,
         String cacheName,
+        IgniteClosure<?, ?> trans,
         int pageSize,
         boolean incBackups,
         boolean fields,
@@ -192,6 +194,7 @@ public class GridCacheQueryRequest extends GridCacheIdMessage implements GridCac
         this.cacheId = cacheId;
         this.id = id;
         this.cacheName = cacheName;
+        this.trans = trans;
         this.pageSize = pageSize;
         this.incBackups = incBackups;
         this.fields = fields;

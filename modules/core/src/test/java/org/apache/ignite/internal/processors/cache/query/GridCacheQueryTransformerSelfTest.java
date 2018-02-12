@@ -271,13 +271,13 @@ public class GridCacheQueryTransformerSelfTest extends GridCommonAbstractTest {
             IgniteCache<Integer, BinaryObject> binaryCache = cache.withKeepBinary();
 
             IgniteClosure<Cache.Entry<Integer, BinaryObject>, Integer> transformer =
-                new IgniteClosure<Cache.Entry<Integer, BinaryObject>, Integer>() {
-                    @Override public Integer apply(Cache.Entry<Integer, BinaryObject> e) {
-                        return e.getValue().field("idx");
-                    }
-                };
+                    e -> e.getValue().field("idx");
 
-            List<Integer> res = binaryCache.query(new ScanQuery<Integer, BinaryObject>(), transformer).getAll();
+            List<Integer> res = binaryCache.query(new ScanQuery<Integer, BinaryObject>().setPageSize(2), transformer)
+                    .getAll();
+
+            for (Object item: res)
+                assert item instanceof Integer;
 
             assertEquals(50, res.size());
 
