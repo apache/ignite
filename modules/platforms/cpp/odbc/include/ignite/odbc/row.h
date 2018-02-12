@@ -29,6 +29,11 @@ namespace ignite
 {
     namespace odbc
     {
+        namespace diagnostic
+        {
+            class Diagnosable;
+        }
+
         /**
          * Query result row.
          */
@@ -37,6 +42,8 @@ namespace ignite
         public:
             /**
              * Constructor.
+             *
+             * @param pageData Page data.
              */
             Row(ignite::impl::interop::InteropUnpooledMemory& pageData);
 
@@ -58,10 +65,11 @@ namespace ignite
             /**
              * Read column data and store it in application data buffer.
              *
+             * @param columnIdx Column index.
              * @param dataBuf Application data buffer.
-             * @return True on success.
+             * @return Conversation result.
              */
-            SqlResult::Type ReadColumnToBuffer(uint16_t columnIdx, app::ApplicationDataBuffer& dataBuf);
+            app::ConversionResult::Type ReadColumnToBuffer(uint16_t columnIdx, app::ApplicationDataBuffer& dataBuf);
 
             /**
              * Move to next row.

@@ -42,22 +42,28 @@ namespace ignite
              */
             struct ConversionResult
             {
-                enum T
+                enum Type
                 {
                     /** Conversion successfull. No data lost. */
-                    SUCCESS,
+                    AI_SUCCESS,
 
                     /** Conversion successfull, but fractional truncation occurred. */
-                    FRACTIONAL_TRUNCATED,
+                    AI_FRACTIONAL_TRUNCATED,
 
                     /** Conversion successfull, but right-side variable length data truncation occurred. */
-                    VARLEN_DATA_TRUNCATED,
+                    AI_VARLEN_DATA_TRUNCATED,
 
                     /** Conversation is not supported. */
-                    UNSUPPORTED_CONVERSATION,
+                    AI_UNSUPPORTED_CONVERSATION,
 
                     /** Indicator buffer needed to complete the operation but it is NULL. */
-                    INDICATOR_NEEDED
+                    AI_INDICATOR_NEEDED,
+
+                    /** No data found. */
+                    AI_NO_DATA,
+
+                    /** General operation failure. */
+                    AI_FAILURE
                 };
             };
 
@@ -129,7 +135,7 @@ namespace ignite
                  * @param value Value.
                  * @return Conversion result.
                  */
-                ConversionResult::T PutInt8(int8_t value);
+                ConversionResult::Type PutInt8(int8_t value);
 
                 /**
                  * Put in buffer value of type int16_t.
@@ -137,7 +143,7 @@ namespace ignite
                  * @param value Value.
                  * @return Conversion result.
                  */
-                ConversionResult::T PutInt16(int16_t value);
+                ConversionResult::Type PutInt16(int16_t value);
 
                 /**
                  * Put in buffer value of type int32_t.
@@ -145,7 +151,7 @@ namespace ignite
                  * @param value Value.
                  * @return Conversion result.
                  */
-                ConversionResult::T PutInt32(int32_t value);
+                ConversionResult::Type PutInt32(int32_t value);
 
                 /**
                  * Put in buffer value of type int64_t.
@@ -153,7 +159,7 @@ namespace ignite
                  * @param value Value.
                  * @return Conversion result.
                  */
-                ConversionResult::T PutInt64(int64_t value);
+                ConversionResult::Type PutInt64(int64_t value);
 
                 /**
                  * Put in buffer value of type float.
@@ -161,7 +167,7 @@ namespace ignite
                  * @param value Value.
                  * @return Conversion result.
                  */
-                ConversionResult::T PutFloat(float value);
+                ConversionResult::Type PutFloat(float value);
 
                 /**
                  * Put in buffer value of type double.
@@ -169,7 +175,7 @@ namespace ignite
                  * @param value Value.
                  * @return Conversion result.
                  */
-                ConversionResult::T PutDouble(double value);
+                ConversionResult::Type PutDouble(double value);
 
                 /**
                  * Put in buffer value of type string.
@@ -177,7 +183,16 @@ namespace ignite
                  * @param value Value.
                  * @return Conversion result.
                  */
-                ConversionResult::T PutString(const std::string& value);
+                ConversionResult::Type PutString(const std::string& value);
+
+                /**
+                 * Put in buffer value of type string.
+                 *
+                 * @param value Value.
+                 * @param written Number of written characters.
+                 * @return Conversion result.
+                 */
+                ConversionResult::Type PutString(const std::string& value, int32_t& written);
 
                 /**
                  * Put in buffer value of type GUID.
@@ -185,22 +200,23 @@ namespace ignite
                  * @param value Value.
                  * @return Conversion result.
                  */
-                ConversionResult::T PutGuid(const Guid& value);
+                ConversionResult::Type PutGuid(const Guid& value);
 
                 /**
                  * Put binary data in buffer.
                  *
                  * @param data Data pointer.
                  * @param len Data length.
+                 * @param written Number of written characters.
                  * @return Conversion result.
                  */
-                ConversionResult::T PutBinaryData(void* data, size_t len);
+                ConversionResult::Type PutBinaryData(void* data, size_t len, int32_t& written);
 
                 /**
                  * Put NULL.
                  * @return Conversion result.
                  */
-                ConversionResult::T PutNull();
+                ConversionResult::Type PutNull();
 
                 /**
                  * Put decimal value to buffer.
@@ -208,7 +224,7 @@ namespace ignite
                  * @param value Value to put.
                  * @return Conversion result.
                  */
-                ConversionResult::T PutDecimal(const common::Decimal& value);
+                ConversionResult::Type PutDecimal(const common::Decimal& value);
 
                 /**
                  * Put date to buffer.
@@ -216,7 +232,7 @@ namespace ignite
                  * @param value Value to put.
                  * @return Conversion result.
                  */
-                ConversionResult::T PutDate(const Date& value);
+                ConversionResult::Type PutDate(const Date& value);
 
                 /**
                  * Put timestamp to buffer.
@@ -224,7 +240,7 @@ namespace ignite
                  * @param value Value to put.
                  * @return Conversion result.
                  */
-                ConversionResult::T PutTimestamp(const Timestamp& value);
+                ConversionResult::Type PutTimestamp(const Timestamp& value);
 
                 /**
                  * Put time to buffer.
@@ -232,7 +248,7 @@ namespace ignite
                  * @param value Value to put.
                  * @return Conversion result.
                  */
-                ConversionResult::T PutTime(const Time& value);
+                ConversionResult::Type PutTime(const Time& value);
 
                 /**
                  * Get string.
@@ -406,7 +422,7 @@ namespace ignite
                  * @return Conversion result.
                  */
                 template<typename T>
-                ConversionResult::T PutNum(T value);
+                ConversionResult::Type PutNum(T value);
 
                 /**
                  * Put numeric value to numeric buffer.
@@ -415,7 +431,7 @@ namespace ignite
                  * @return Conversion result.
                  */
                 template<typename Tbuf, typename Tin>
-                ConversionResult::T PutNumToNumBuffer(Tin value);
+                ConversionResult::Type PutNumToNumBuffer(Tin value);
 
                 /**
                  * Put value to string buffer.
@@ -424,7 +440,7 @@ namespace ignite
                  * @return Conversion result.
                  */
                 template<typename CharT, typename Tin>
-                ConversionResult::T PutValToStrBuffer(const Tin& value);
+                ConversionResult::Type PutValToStrBuffer(const Tin& value);
 
                 /**
                  * Put value to string buffer.
@@ -433,25 +449,27 @@ namespace ignite
                  * @return Conversion result.
                  */
                 template<typename CharT>
-                ConversionResult::T PutValToStrBuffer(const int8_t & value);
+                ConversionResult::Type PutValToStrBuffer(const int8_t & value);
 
                 /**
                  * Put string to string buffer.
                  *
                  * @param value String value.
+                 * @param written Number of characters written.
                  * @return Conversion result.
                  */
                 template<typename OutCharT, typename InCharT>
-                ConversionResult::T PutStrToStrBuffer(const std::basic_string<InCharT>& value);
+                ConversionResult::Type PutStrToStrBuffer(const std::basic_string<InCharT>& value, int32_t& written);
 
                 /**
                  * Put raw data to any buffer.
                  *
                  * @param data Data pointer.
                  * @param len Data length.
+                 * @param written Number of characters written.
                  * @return Conversion result.
                  */
-                ConversionResult::T PutRawDataToBuffer(void *data, size_t len);
+                ConversionResult::Type PutRawDataToBuffer(void *data, size_t len, int32_t& written);
 
                 /**
                  * Get int of type T.

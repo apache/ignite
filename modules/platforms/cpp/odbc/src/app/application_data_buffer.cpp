@@ -32,12 +32,12 @@ namespace
 {
     // Just copy bytes currently.
     // Only works for ASCII character set.
-    ignite::odbc::app::ConversionResult::T StringToWstring(const char* str, int64_t strLen, wchar_t* wstr, int64_t wstrLen)
+    ignite::odbc::app::ConversionResult::Type StringToWstring(const char* str, int64_t strLen, wchar_t* wstr, int64_t wstrLen)
     {
         using namespace ignite::odbc;
 
         if (wstrLen <= 0)
-            return app::ConversionResult::VARLEN_DATA_TRUNCATED;
+            return app::ConversionResult::AI_VARLEN_DATA_TRUNCATED;
 
         int64_t toCopy = std::min(strLen, wstrLen - 1);
 
@@ -45,7 +45,7 @@ namespace
         {
             wstr[0] = 0;
 
-            return app::ConversionResult::VARLEN_DATA_TRUNCATED;
+            return app::ConversionResult::AI_VARLEN_DATA_TRUNCATED;
         }
 
         for (int64_t i = 0; i < toCopy; ++i)
@@ -54,9 +54,9 @@ namespace
         wstr[toCopy] = 0;
 
         if (toCopy < strLen)
-            return app::ConversionResult::VARLEN_DATA_TRUNCATED;
+            return app::ConversionResult::AI_VARLEN_DATA_TRUNCATED;
 
-        return app::ConversionResult::SUCCESS;
+        return app::ConversionResult::AI_SUCCESS;
     }
 }
 
@@ -120,7 +120,7 @@ namespace ignite
             }
 
             template<typename T>
-            ConversionResult::T ApplicationDataBuffer::PutNum(T value)
+            ConversionResult::Type ApplicationDataBuffer::PutNum(T value)
             {
                 using namespace type_traits;
 
@@ -213,7 +213,7 @@ namespace ignite
                         if (resLenPtr)
                             *resLenPtr = static_cast<SqlLen>(sizeof(SQL_NUMERIC_STRUCT));
 
-                        return ConversionResult::SUCCESS;
+                        return ConversionResult::AI_SUCCESS;
                     }
 
                     case OdbcNativeType::AI_BINARY:
@@ -225,7 +225,7 @@ namespace ignite
                         if (resLenPtr)
                             *resLenPtr = sizeof(value);
 
-                        return ConversionResult::SUCCESS;
+                        return ConversionResult::AI_SUCCESS;
                     }
 
                     case OdbcNativeType::AI_TDATE:
@@ -247,11 +247,11 @@ namespace ignite
                         break;
                 }
 
-                return ConversionResult::UNSUPPORTED_CONVERSATION;
+                return ConversionResult::AI_UNSUPPORTED_CONVERSATION;
             }
 
             template<typename Tbuf, typename Tin>
-            ConversionResult::T ApplicationDataBuffer::PutNumToNumBuffer(Tin value)
+            ConversionResult::Type ApplicationDataBuffer::PutNumToNumBuffer(Tin value)
             {
                 void* dataPtr = GetData();
                 SqlLen* resLenPtr = GetResLen();
@@ -265,11 +265,11 @@ namespace ignite
                 if (resLenPtr)
                     *resLenPtr = static_cast<SqlLen>(sizeof(Tbuf));
 
-                return ConversionResult::SUCCESS;
+                return ConversionResult::AI_SUCCESS;
             }
 
             template<typename CharT, typename Tin>
-            ConversionResult::T ApplicationDataBuffer::PutValToStrBuffer(const Tin& value)
+            ConversionResult::Type ApplicationDataBuffer::PutValToStrBuffer(const Tin& value)
             {
                 typedef std::basic_stringstream<CharT> ConverterType;
 
@@ -277,11 +277,13 @@ namespace ignite
 
                 converter << value;
 
-                return PutStrToStrBuffer<CharT>(converter.str());
+                int32_t written = 0;
+
+                return PutStrToStrBuffer<CharT>(converter.str(), written);
             }
 
             template<typename CharT>
-            ConversionResult::T ApplicationDataBuffer::PutValToStrBuffer(const int8_t& value)
+            ConversionResult::Type ApplicationDataBuffer::PutValToStrBuffer(const int8_t& value)
             {
                 typedef std::basic_stringstream<CharT> ConverterType;
 
@@ -289,12 +291,17 @@ namespace ignite
 
                 converter << static_cast<int>(value);
 
-                return PutStrToStrBuffer<CharT>(converter.str());
+                int32_t written = 0;
+
+                return PutStrToStrBuffer<CharT>(converter.str(), written);
             }
 
             template<typename OutCharT, typename InCharT>
-            ConversionResult::T ApplicationDataBuffer::PutStrToStrBuffer(const std::basic_string<InCharT>& value)
+            ConversionResult::Type ApplicationDataBuffer::PutStrToStrBuffer(const std::basic_string<InCharT>& value,
+                int32_t& written)
             {
+                written = 0;
+
                 SqlLen charSize = static_cast<SqlLen>(sizeof(OutCharT));
 
                 SqlLen* resLenPtr = GetResLen();
@@ -304,10 +311,10 @@ namespace ignite
                     *resLenPtr = static_cast<SqlLen>(value.size());
 
                 if (!dataPtr)
-                    return ConversionResult::SUCCESS;
+                    return ConversionResult::AI_SUCCESS;
 
                 if (buflen < charSize)
-                    return ConversionResult::VARLEN_DATA_TRUNCATED;
+                    return ConversionResult::AI_VARLEN_DATA_TRUNCATED;
 
                 OutCharT* out = reinterpret_cast<OutCharT*>(dataPtr);
 
@@ -320,13 +327,15 @@ namespace ignite
 
                 out[toCopy] = 0;
 
-                if (toCopy > static_cast<SqlLen>(value.size()))
-                    return ConversionResult::VARLEN_DATA_TRUNCATED;
+                written = static_cast<int32_t>(toCopy);
 
-                return ConversionResult::SUCCESS;
+                if (toCopy > static_cast<SqlLen>(value.size()))
+                    return ConversionResult::AI_VARLEN_DATA_TRUNCATED;
+
+                return ConversionResult::AI_SUCCESS;
             }
 
-            ConversionResult::T ApplicationDataBuffer::PutRawDataToBuffer(void *data, size_t len)
+            ConversionResult::Type ApplicationDataBuffer::PutRawDataToBuffer(void *data, size_t len, int32_t& written)
             {
                 SqlLen ilen = static_cast<SqlLen>(len);
 
@@ -341,40 +350,49 @@ namespace ignite
                 if (dataPtr != 0 && toCopy > 0)
                     memcpy(dataPtr, data, static_cast<size_t>(toCopy));
 
-                return ConversionResult::SUCCESS;
+                written = static_cast<int32_t>(toCopy);
+
+                return ConversionResult::AI_SUCCESS;
             }
 
-            ConversionResult::T ApplicationDataBuffer::PutInt8(int8_t value)
+            ConversionResult::Type ApplicationDataBuffer::PutInt8(int8_t value)
             {
                 return PutNum(value);
             }
 
-            ConversionResult::T ApplicationDataBuffer::PutInt16(int16_t value)
+            ConversionResult::Type ApplicationDataBuffer::PutInt16(int16_t value)
             {
                 return PutNum(value);
             }
 
-            ConversionResult::T ApplicationDataBuffer::PutInt32(int32_t value)
+            ConversionResult::Type ApplicationDataBuffer::PutInt32(int32_t value)
             {
                 return PutNum(value);
             }
 
-            ConversionResult::T ApplicationDataBuffer::PutInt64(int64_t value)
+            ConversionResult::Type ApplicationDataBuffer::PutInt64(int64_t value)
             {
                 return PutNum(value);
             }
 
-            ConversionResult::T ApplicationDataBuffer::PutFloat(float value)
+            ConversionResult::Type ApplicationDataBuffer::PutFloat(float value)
             {
                 return PutNum(value);
             }
 
-            ConversionResult::T ApplicationDataBuffer::PutDouble(double value)
+            ConversionResult::Type ApplicationDataBuffer::PutDouble(double value)
             {
                 return PutNum(value);
             }
 
-            ConversionResult::T ApplicationDataBuffer::PutString(const std::string& value)
+            ConversionResult::Type ApplicationDataBuffer::PutString(const std::string & value)
+            {
+                int32_t written = 0;
+
+                return PutString(value, written);
+            }
+
+            ConversionResult::Type ApplicationDataBuffer::PutString(const std::string& value, int32_t& written)
             {
                 using namespace type_traits;
 
@@ -401,6 +419,8 @@ namespace ignite
 
                         converter >> numValue;
 
+                        written = static_cast<int32_t>(value.size());
+
                         return PutNum(numValue);
                     }
 
@@ -415,6 +435,8 @@ namespace ignite
 
                         converter >> numValue;
 
+                        written = static_cast<int32_t>(value.size());
+
                         return PutNum(numValue);
                     }
 
@@ -422,22 +444,22 @@ namespace ignite
                     case OdbcNativeType::AI_BINARY:
                     case OdbcNativeType::AI_DEFAULT:
                     {
-                        return PutStrToStrBuffer<char>(value);
+                        return PutStrToStrBuffer<char>(value, written);
                     }
 
                     case OdbcNativeType::AI_WCHAR:
                     {
-                        return PutStrToStrBuffer<wchar_t>(value);
+                        return PutStrToStrBuffer<wchar_t>(value, written);
                     }
 
                     default:
                         break;
                 }
 
-                return ConversionResult::UNSUPPORTED_CONVERSATION;
+                return ConversionResult::AI_UNSUPPORTED_CONVERSATION;
             }
 
-            ConversionResult::T ApplicationDataBuffer::PutGuid(const Guid & value)
+            ConversionResult::Type ApplicationDataBuffer::PutGuid(const Guid& value)
             {
                 using namespace type_traits;
 
@@ -474,17 +496,17 @@ namespace ignite
                         if (resLenPtr)
                             *resLenPtr = static_cast<SqlLen>(sizeof(SQLGUID));
 
-                        return ConversionResult::SUCCESS;
+                        return ConversionResult::AI_SUCCESS;
                     }
 
                     default:
                         break;
                 }
 
-                return ConversionResult::UNSUPPORTED_CONVERSATION;
+                return ConversionResult::AI_UNSUPPORTED_CONVERSATION;
             }
 
-            ConversionResult::T ApplicationDataBuffer::PutBinaryData(void *data, size_t len)
+            ConversionResult::Type ApplicationDataBuffer::PutBinaryData(void *data, size_t len, int32_t& written)
             {
                 using namespace type_traits;
 
@@ -493,7 +515,7 @@ namespace ignite
                     case OdbcNativeType::AI_BINARY:
                     case OdbcNativeType::AI_DEFAULT:
                     {
-                        return PutRawDataToBuffer(data, len);
+                        return PutRawDataToBuffer(data, len, written);
                     }
 
                     case OdbcNativeType::AI_CHAR:
@@ -510,7 +532,7 @@ namespace ignite
                                       << static_cast<unsigned>(dataBytes[i]);
                         }
 
-                        return PutStrToStrBuffer<char>(converter.str());
+                        return PutStrToStrBuffer<char>(converter.str(), written);
                     }
 
                     case OdbcNativeType::AI_WCHAR:
@@ -527,29 +549,29 @@ namespace ignite
                                       << static_cast<unsigned>(dataBytes[i]);
                         }
 
-                        return PutStrToStrBuffer<wchar_t>(converter.str());
+                        return PutStrToStrBuffer<wchar_t>(converter.str(), written);
                     }
 
                     default:
                         break;
                 }
                 
-                return ConversionResult::UNSUPPORTED_CONVERSATION;
+                return ConversionResult::AI_UNSUPPORTED_CONVERSATION;
             }
 
-            ConversionResult::T ApplicationDataBuffer::PutNull()
+            ConversionResult::Type ApplicationDataBuffer::PutNull()
             {
                 SqlLen* resLenPtr = GetResLen();
 
                 if (!resLenPtr)
-                    return ConversionResult::INDICATOR_NEEDED;
+                    return ConversionResult::AI_INDICATOR_NEEDED;
 
                 *resLenPtr = SQL_NULL_DATA;
 
-                return ConversionResult::SUCCESS;
+                return ConversionResult::AI_SUCCESS;
             }
 
-            ConversionResult::T ApplicationDataBuffer::PutDecimal(const common::Decimal& value)
+            ConversionResult::Type ApplicationDataBuffer::PutDecimal(const common::Decimal& value)
             {
                 using namespace type_traits;
 
@@ -569,7 +591,7 @@ namespace ignite
                     {
                         PutNum<int64_t>(value.ToInt64());
 
-                        return ConversionResult::FRACTIONAL_TRUNCATED;
+                        return ConversionResult::AI_FRACTIONAL_TRUNCATED;
                     }
 
                     case OdbcNativeType::AI_FLOAT:
@@ -577,7 +599,7 @@ namespace ignite
                     {
                         PutNum<double>(value.ToDouble());
 
-                        return ConversionResult::FRACTIONAL_TRUNCATED;
+                        return ConversionResult::AI_FRACTIONAL_TRUNCATED;
                     }
 
                     case OdbcNativeType::AI_CHAR:
@@ -587,7 +609,9 @@ namespace ignite
 
                         converter << value;
 
-                        return PutString(converter.str());
+                        int32_t dummy = 0;
+
+                        return PutString(converter.str(), dummy);
                     }
 
                     case OdbcNativeType::AI_NUMERIC:
@@ -621,9 +645,9 @@ namespace ignite
                             *resLenPtr = static_cast<SqlLen>(sizeof(SQL_NUMERIC_STRUCT));
 
                         if (bytesBuffer.GetSize() > SQL_MAX_NUMERIC_LEN)
-                            return ConversionResult::FRACTIONAL_TRUNCATED;
+                            return ConversionResult::AI_FRACTIONAL_TRUNCATED;
 
-                        return ConversionResult::SUCCESS;
+                        return ConversionResult::AI_SUCCESS;
                     }
 
                     case OdbcNativeType::AI_DEFAULT:
@@ -632,10 +656,10 @@ namespace ignite
                         break;
                 }
 
-                return ConversionResult::UNSUPPORTED_CONVERSATION;
+                return ConversionResult::AI_UNSUPPORTED_CONVERSATION;
             }
 
-            ConversionResult::T ApplicationDataBuffer::PutDate(const Date& value)
+            ConversionResult::Type ApplicationDataBuffer::PutDate(const Date& value)
             {
                 using namespace type_traits;
 
@@ -660,9 +684,9 @@ namespace ignite
                             strftime(buffer, GetSize(), "%Y-%m-%d", &tmTime);
 
                         if (static_cast<SqlLen>(valLen) + 1 > GetSize())
-                            return ConversionResult::VARLEN_DATA_TRUNCATED;
+                            return ConversionResult::AI_VARLEN_DATA_TRUNCATED;
 
-                        return ConversionResult::SUCCESS;
+                        return ConversionResult::AI_SUCCESS;
                     }
 
                     case OdbcNativeType::AI_WCHAR:
@@ -683,9 +707,9 @@ namespace ignite
                         }
 
                         if (static_cast<SqlLen>(valLen) + 1 > GetSize())
-                            return ConversionResult::VARLEN_DATA_TRUNCATED;
+                            return ConversionResult::AI_VARLEN_DATA_TRUNCATED;
 
-                        return ConversionResult::SUCCESS;
+                        return ConversionResult::AI_SUCCESS;
                     }
 
                     case OdbcNativeType::AI_TDATE:
@@ -699,7 +723,7 @@ namespace ignite
                         if (resLenPtr)
                             *resLenPtr = static_cast<SqlLen>(sizeof(SQL_DATE_STRUCT));
 
-                        return ConversionResult::SUCCESS;
+                        return ConversionResult::AI_SUCCESS;
                     }
 
                     case OdbcNativeType::AI_TTIME:
@@ -713,7 +737,7 @@ namespace ignite
                         if (resLenPtr)
                             *resLenPtr = static_cast<SqlLen>(sizeof(SQL_TIME_STRUCT));
 
-                        return ConversionResult::SUCCESS;
+                        return ConversionResult::AI_SUCCESS;
                     }
 
                     case OdbcNativeType::AI_TTIMESTAMP:
@@ -731,7 +755,7 @@ namespace ignite
                         if (resLenPtr)
                             *resLenPtr = static_cast<SqlLen>(sizeof(SQL_TIMESTAMP_STRUCT));
 
-                        return ConversionResult::SUCCESS;
+                        return ConversionResult::AI_SUCCESS;
                     }
 
                     case OdbcNativeType::AI_BINARY:
@@ -752,10 +776,10 @@ namespace ignite
                         break;
                 }
 
-                return ConversionResult::UNSUPPORTED_CONVERSATION;
+                return ConversionResult::AI_UNSUPPORTED_CONVERSATION;
             }
 
-            ConversionResult::T ApplicationDataBuffer::PutTimestamp(const Timestamp& value)
+            ConversionResult::Type ApplicationDataBuffer::PutTimestamp(const Timestamp& value)
             {
                 using namespace type_traits;
 
@@ -781,9 +805,9 @@ namespace ignite
                             strftime(buffer, GetSize(), "%Y-%m-%d %H:%M:%S", &tmTime);
 
                         if (static_cast<SqlLen>(valLen) + 1 > GetSize())
-                            return ConversionResult::VARLEN_DATA_TRUNCATED;
+                            return ConversionResult::AI_VARLEN_DATA_TRUNCATED;
 
-                        return ConversionResult::SUCCESS;
+                        return ConversionResult::AI_SUCCESS;
                     }
 
                     case OdbcNativeType::AI_WCHAR:
@@ -805,9 +829,9 @@ namespace ignite
                         }
 
                         if (static_cast<SqlLen>(valLen) + 1 > GetSize())
-                            return ConversionResult::VARLEN_DATA_TRUNCATED;
+                            return ConversionResult::AI_VARLEN_DATA_TRUNCATED;
 
-                        return ConversionResult::SUCCESS;
+                        return ConversionResult::AI_SUCCESS;
                     }
 
                     case OdbcNativeType::AI_TDATE:
@@ -821,7 +845,7 @@ namespace ignite
                         if (resLenPtr)
                             *resLenPtr = static_cast<SqlLen>(sizeof(SQL_DATE_STRUCT));
 
-                        return ConversionResult::FRACTIONAL_TRUNCATED;
+                        return ConversionResult::AI_FRACTIONAL_TRUNCATED;
                     }
 
                     case OdbcNativeType::AI_TTIME:
@@ -835,7 +859,7 @@ namespace ignite
                         if (resLenPtr)
                             *resLenPtr = static_cast<SqlLen>(sizeof(SQL_TIME_STRUCT));
 
-                        return ConversionResult::FRACTIONAL_TRUNCATED;
+                        return ConversionResult::AI_FRACTIONAL_TRUNCATED;
                     }
 
                     case OdbcNativeType::AI_TTIMESTAMP:
@@ -853,7 +877,7 @@ namespace ignite
                         if (resLenPtr)
                             *resLenPtr = static_cast<SqlLen>(sizeof(SQL_TIMESTAMP_STRUCT));
 
-                        return ConversionResult::SUCCESS;
+                        return ConversionResult::AI_SUCCESS;
                     }
 
                     case OdbcNativeType::AI_BINARY:
@@ -874,10 +898,10 @@ namespace ignite
                         break;
                 }
 
-                return ConversionResult::UNSUPPORTED_CONVERSATION;
+                return ConversionResult::AI_UNSUPPORTED_CONVERSATION;
             }
 
-            ConversionResult::T ApplicationDataBuffer::PutTime(const Time& value)
+            ConversionResult::Type ApplicationDataBuffer::PutTime(const Time& value)
             {
                 using namespace type_traits;
 
@@ -903,9 +927,9 @@ namespace ignite
                             strftime(buffer, GetSize(), "%H:%M:%S", &tmTime);
 
                         if (static_cast<SqlLen>(valLen) + 1 > GetSize())
-                            return ConversionResult::VARLEN_DATA_TRUNCATED;
+                            return ConversionResult::AI_VARLEN_DATA_TRUNCATED;
 
-                        return ConversionResult::SUCCESS;
+                        return ConversionResult::AI_SUCCESS;
                     }
 
                     case OdbcNativeType::AI_WCHAR:
@@ -927,9 +951,9 @@ namespace ignite
                         }
 
                         if (static_cast<SqlLen>(valLen) + 1 > GetSize())
-                            return ConversionResult::VARLEN_DATA_TRUNCATED;
+                            return ConversionResult::AI_VARLEN_DATA_TRUNCATED;
 
-                        return ConversionResult::SUCCESS;
+                        return ConversionResult::AI_SUCCESS;
                     }
 
                     case OdbcNativeType::AI_TTIME:
@@ -943,7 +967,7 @@ namespace ignite
                         if (resLenPtr)
                             *resLenPtr = static_cast<SqlLen>(sizeof(SQL_TIME_STRUCT));
 
-                        return ConversionResult::SUCCESS;
+                        return ConversionResult::AI_SUCCESS;
                     }
 
                     case OdbcNativeType::AI_TTIMESTAMP:
@@ -961,7 +985,7 @@ namespace ignite
                         if (resLenPtr)
                             *resLenPtr = static_cast<SqlLen>(sizeof(SQL_TIMESTAMP_STRUCT));
 
-                        return ConversionResult::SUCCESS;
+                        return ConversionResult::AI_SUCCESS;
                     }
 
                     case OdbcNativeType::AI_BINARY:
@@ -983,7 +1007,7 @@ namespace ignite
                         break;
                 }
 
-                return ConversionResult::UNSUPPORTED_CONVERSATION;
+                return ConversionResult::AI_UNSUPPORTED_CONVERSATION;
             }
 
             std::string ApplicationDataBuffer::GetString(size_t maxLen) const
