@@ -535,15 +535,31 @@ public class GridDhtPartitionDemander {
             return;
         }
 
+        for (GridCacheContext cctx : grp.caches()) {
+            if (cctx.statisticsEnabled()) {
+                final CacheMetricsImpl metrics = cctx.cache().metrics0();
+
+                metrics.rebalanceClearingPartitions(fullPartitions.size());
+            }
+        }
+
         final AtomicInteger clearingPartitions = new AtomicInteger(fullPartitions.size());
 
         for (int partId : fullPartitions) {
             GridDhtLocalPartition part = grp.topology().localPartition(partId);
-            if (part != null && part.state() == MOVING) {
+            if (part != null && part.state() == MOVING && !fut.isDone()) {
                 part.onClearFinished(f -> {
                     // Cancel rebalance if partition clearing was failed.
                     if (f.error() != null) {
                         if (!fut.isDone()) {
+                            for (GridCacheContext cctx : grp.caches()) {
+                                if (cctx.statisticsEnabled()) {
+                                    final CacheMetricsImpl metrics = cctx.cache().metrics0();
+
+                                    metrics.rebalanceClearingPartitions(0);
+                                }
+                            }
+
                             log.error("Unable to await partition clearing " + part, f.error());
 
                             fut.cancel();
@@ -551,9 +567,20 @@ public class GridDhtPartitionDemander {
                     }
                     // If all partitions are cleared send initial demand message.
                     else {
-                        int existed = clearingPartitions.decrementAndGet();
-                        if (existed == 0) {
-                            ctx.kernalContext().closure().runLocalSafe(initDemandRequestTask, true);
+                        if (!fut.isDone()) {
+                            int existed = clearingPartitions.decrementAndGet();
+
+                            for (GridCacheContext cctx : grp.caches()) {
+                                if (cctx.statisticsEnabled()) {
+                                    final CacheMetricsImpl metrics = cctx.cache().metrics0();
+
+                                    metrics.rebalanceClearingPartitions(existed);
+                                }
+                            }
+
+                            if (existed == 0) {
+                                ctx.kernalContext().closure().runLocalSafe(initDemandRequestTask, true);
+                            }
                         }
                     }
                 });
