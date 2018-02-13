@@ -9,6 +9,10 @@ public class IgnitePdsEvictionTest2 extends IgnitePdsEvictionTest {
         return 15 * 60 * 1000;
     }
 
+    protected int getPagesNum() {
+        return 1000;
+    }
+
     @Override public void testPageEviction() throws Exception {
         super.testPageEviction();
     }
