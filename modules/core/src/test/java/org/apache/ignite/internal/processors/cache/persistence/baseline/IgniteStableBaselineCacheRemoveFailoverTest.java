@@ -80,7 +80,7 @@ public class IgniteStableBaselineCacheRemoveFailoverTest extends GridCacheAbstra
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         startGrids(GRIDS_COUNT);
 
@@ -95,7 +95,7 @@ public class IgniteStableBaselineCacheRemoveFailoverTest extends GridCacheAbstra
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */

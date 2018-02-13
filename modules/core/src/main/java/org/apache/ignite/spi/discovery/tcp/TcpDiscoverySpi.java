@@ -55,6 +55,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -259,6 +260,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     /** Default reconnect attempts count (value is <tt>10</tt>). */
     public static final int DFLT_RECONNECT_CNT = 10;
 
+    /** Default delay between attempts to connect to the cluster in milliseconds (value is <tt>2000</tt>). */
+    public static final long DFLT_RECONNECT_DELAY = 2000;
+
     /** Default IP finder clean frequency in milliseconds (value is <tt>60,000ms</tt>). */
     public static final long DFLT_IP_FINDER_CLEAN_FREQ = 60 * 1000;
 
@@ -333,7 +337,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     protected volatile long gridStartTime;
 
     /** Marshaller. */
-    private final Marshaller marsh = new JdkMarshaller();
+    private Marshaller marsh;
 
     /** Statistics. */
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
@@ -347,6 +351,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     /** Reconnect attempts count. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     private int reconCnt = DFLT_RECONNECT_CNT;
+
+    /** Delay between attempts to connect to the cluster. */
+    private long reconDelay = DFLT_RECONNECT_DELAY;
 
     /** Statistics print frequency. */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized", "RedundantFieldInitialization"})
@@ -551,6 +558,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         if (ignite != null) {
             setLocalAddress(ignite.configuration().getLocalHost());
             setAddressResolver(ignite.configuration().getAddressResolver());
+
+            if (ignite instanceof IgniteKernal) // IgniteMock instance can be injected from tests.
+                marsh = ((IgniteKernal)ignite).context().marshallerContext().jdkMarshaller();
+            else
+                marsh = new JdkMarshaller();
         }
     }
 
@@ -631,6 +643,31 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
         this.reconCnt = reconCnt;
 
         failureDetectionTimeoutEnabled(false);
+
+        return this;
+    }
+
+    /**
+     * Gets the amount of time in milliseconds that node waits before retrying to (re)connect to the cluster.
+     *
+     * @return Delay between attempts to connect to the cluster in milliseconds.
+     */
+    public long getReconnectDelay() {
+        return reconDelay;
+    }
+
+    /**
+     * Sets the amount of time in milliseconds that node waits before retrying to (re)connect to the cluster.
+     * <p>
+     * If not specified, default is {@link #DFLT_RECONNECT_DELAY}.
+     *
+     * @param reconDelay Delay between attempts to connect to the cluster in milliseconds.
+     *
+     * @return {@code this} for chaining.
+     */
+    @IgniteSpiConfiguration(optional = true)
+    public TcpDiscoverySpi setReconnectDelay(int reconDelay) {
+        this.reconDelay = reconDelay;
 
         return this;
     }
@@ -1724,11 +1761,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
             }
             catch (IgniteSpiException e) {
                 LT.error(log, e, "Failed to get registered addresses from IP finder on start " +
-                    "(retrying every 2000 ms).");
+                    "(retrying every " + getReconnectDelay() + "ms; change 'reconnectDelay' to configure " +
+                    "the frequency of retries).");
             }
 
             try {
-                U.sleep(2000);
+                U.sleep(getReconnectDelay());
             }
             catch (IgniteInterruptedCheckedException e) {
                 throw new IgniteSpiException("Thread has been interrupted.", e);
