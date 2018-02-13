@@ -102,6 +102,7 @@
     <Compile Include="Client\IgniteClientException.cs" />
     <Compile Include="Client\IIgniteClient.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
+    <Compile Include="Cluster\Ssl\ISslContextFactory.cs" />
     <Compile Include="Configuration\Package-Info.cs" />
     <Compile Include="Configuration\ClientConnectorConfiguration.cs" />
     <Compile Include="Impl\Binary\BinaryTypeId.cs" />
@@ -111,6 +112,8 @@
     <Compile Include="Impl\Binary\BinaryProcessorClient.cs" />
     <Compile Include="Impl\Binary\IBinaryProcessor.cs" />
     <Compile Include="Impl\Client\ClientStatus.cs" />
+    <Compile Include="Cluster\Ssl\SslContextFactory.cs" />
+    <Compile Include="Impl\Cluster\Ssl\SslFactorySerializer.cs" />
     <Compile Include="Impl\IIgniteInternal.cs" />
     <Compile Include="Impl\Client\Cache\CacheClient.cs" />
     <Compile Include="Impl\Client\ClientOp.cs" />
@@ -590,14 +593,14 @@
     <None Include="Apache.Ignite.Core.nuspec" />
     <None Include="Apache.Ignite.Core.Schema.nuspec" />
     <None Include="build-common.ps1" />
-    <None Include="NuGet\Uninstall.ps1" />
-    <None Include="NuGet\PostBuild.ps1" />
-    <None Include="NuGet\Install.ps1" />
-    <None Include="Apache.Ignite.Core.snk" />
     <None Include="IgniteConfigurationSection.xsd">
       <SubType>Designer</SubType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="NuGet\Uninstall.ps1" />
+    <None Include="NuGet\PostBuild.ps1" />
+    <None Include="NuGet\Install.ps1" />
+    <None Include="Apache.Ignite.Core.snk" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Impl\Common\JavaObjects\" />
