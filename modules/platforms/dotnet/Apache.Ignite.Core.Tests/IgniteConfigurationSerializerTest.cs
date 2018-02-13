@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -38,6 +38,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Cluster.Ssl;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Configuration;
@@ -331,6 +332,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(pers.MetricsEnabled);
             Assert.AreEqual(3, pers.SubIntervals);
             Assert.AreEqual(TimeSpan.FromSeconds(6), pers.RateTimeInterval);
+
+            Assert.IsInstanceOf<SslContextFactory>(cfg.SslContextFactory);
         }
 
         /// <summary>
@@ -927,7 +930,8 @@ namespace Apache.Ignite.Core.Tests
                     MetricsEnabled = true,
                     RateTimeInterval = TimeSpan.FromDays(1)
                 },
-                IsActiveOnStart = false
+                IsActiveOnStart = false,
+                SslContextFactory = new SslContextFactory()
             };
         }
 

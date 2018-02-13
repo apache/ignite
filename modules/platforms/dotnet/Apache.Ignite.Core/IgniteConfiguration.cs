@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Cluster.Ssl;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication;
     using Apache.Ignite.Core.Communication.Tcp;
@@ -42,6 +43,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cluster.Ssl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
@@ -479,7 +481,11 @@ namespace Apache.Ignite.Core
                 writer.WriteBoolean(false);
             }
 
-            // Plugins (should be last)
+
+            // SSL Context factory.
+            SslFactorySerializer.Write(writer, SslContextFactory);
+
+            // Plugins (should be last).
             if (PluginConfigurations != null)
             {
                 var pos = writer.Stream.Position;
@@ -651,6 +657,10 @@ namespace Apache.Ignite.Core
             {
                 PersistentStoreConfiguration = new PersistentStoreConfiguration(r);
             }
+        }
+
+            // SSL context factory.
+            SslContextFactory = SslFactorySerializer.Read(r);
         }
 
         /// <summary>
@@ -1127,6 +1137,14 @@ namespace Apache.Ignite.Core
         /// <see cref="MemoryConfiguration"/> for more details.
         /// </summary>
         public MemoryConfiguration MemoryConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the SSL context factory that will be used for creating a secure socket layer b/w nodes.
+        /// <para />
+        /// Default is null (no SSL).
+        /// <para />
+        /// </summary>
+        public ISslContextFactory SslContextFactory { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating how user assemblies should be loaded on remote nodes.
