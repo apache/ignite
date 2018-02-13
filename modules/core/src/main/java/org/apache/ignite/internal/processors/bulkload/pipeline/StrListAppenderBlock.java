@@ -45,11 +45,8 @@ public class StrListAppenderBlock extends PipelineBlock<List<Object>, Object> {
         this.output = output;
     }
 
-    public volatile List<Object> disableOptimization;
-
     /** {@inheritDoc} */
     @Override public void accept(List<Object> elements, boolean isLastPortion) {
-        //disableOptimization = elements;
         output.add(elements);
     }
 }

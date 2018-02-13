@@ -6,39 +6,34 @@ import org.apache.ignite.IgniteCheckedException;
 
 public class CsvParserBlock extends PipelineBlock<char[], List<Object>> {
     /** Leftover characters from the previous invocation of {@link #accept(char[], boolean)}. */
-    private StringBuilder leftover = new StringBuilder();
-    private List<Object> fields = new ArrayList<>();
+    private StringBuilder leftover;
 
-    private final byte action[] = new byte[128];
+    /* Current parsed fields from the beginning of the line. */
+    private List<Object> fields;
 
     /**
      * Creates line splitter block.
      */
     public CsvParserBlock() {
-        action[','] = 2;
-        action['\r'] = 1;
-        action['\n'] = 1;
+        leftover = new StringBuilder();
+        fields = new ArrayList<>();
     }
 
     /** {@inheritDoc} */
     @Override public void accept(char[] chars, boolean isLastPortion) throws IgniteCheckedException {
-//        if (action[0] == 0)
-//            return;
-
         leftover.append(chars);
 
         int lastPos = 0;
         for (int i = 0; i < leftover.length(); i++) {
             char c = leftover.charAt(i);
-            if (c >= 128)
-                continue;
-            switch (action[c]) {
-                case 2:
+            switch (c) {
+                case ',':
                     fields.add(leftover.substring(lastPos, i));
                     lastPos = i + 1;
                     break;
 
-                case 1:
+                case '\r':
+                case '\n':
                     fields.add(leftover.substring(lastPos, i));
                     nextBlock.accept(new ArrayList<>(fields), false);
                     fields.clear();
