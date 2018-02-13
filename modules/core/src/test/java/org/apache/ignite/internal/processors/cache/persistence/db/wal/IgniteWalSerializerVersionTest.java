@@ -37,6 +37,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.PartitionMetaStateRec
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV2Serializer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV3Serializer;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridFilteredClosableIterator;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
@@ -102,7 +103,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         stopGrid();
 
-        System.setProperty(IGNITE_WAL_SERIALIZER_VERSION, "3");
+        System.setProperty(IGNITE_WAL_SERIALIZER_VERSION, "4");
 
         GridTestUtils.assertThrowsAnyCause(log, new GPC<Void>() {
             @Override public Void call() throws Exception {
@@ -142,8 +143,8 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
         long time0 = U.currentTimeMillis();
 
         check(new Checker(
-            1,
-            RecordV1Serializer.class,
+            2,
+            RecordV2Serializer.class,
             recordsFactory,
             Arrays.asList(0L, time0)
         ));
@@ -151,8 +152,8 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
         long time1 = U.currentTimeMillis();
 
         check(new Checker(
-            2,
-            RecordV2Serializer.class,
+            3,
+            RecordV3Serializer.class,
             recordsFactory,
             Arrays.asList(time1, time1)
         ));

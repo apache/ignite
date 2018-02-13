@@ -179,8 +179,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
             case DATA_PAGE_UPDATE_RECORD:
                 DataPageUpdateRecord uRec = (DataPageUpdateRecord)record;
 
-                return 4 + 8 + 2 + 4 +
-                        uRec.payload().length;
+                return 4 + 8 + 2 + 4 + uRec.payload().length;
 
             case DATA_PAGE_INSERT_FRAGMENT_RECORD:
                 final DataPageInsertFragmentRecord difRec = (DataPageInsertFragmentRecord)record;
