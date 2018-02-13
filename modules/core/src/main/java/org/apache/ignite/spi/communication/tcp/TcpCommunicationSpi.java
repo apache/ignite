@@ -3308,23 +3308,24 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         // Reconnect for the second time if connection was not established within current timeout chunk.
                         attempt++;
 
-                        long delay = failureDetectionTimeoutEnabled() ? failureDetectionTimeout() : connTimeout0 -
-                            (U.currentTimeMillis() - start);
+                        // Wait a bit before next retry to mitigate short network or node problems.
+                        long delay = failureDetectionTimeoutEnabled() ? failureDetectionTimeout() / reconCnt :
+                            connTimeout0 - (U.currentTimeMillis() - start);
 
-                        if (delay > 10) {
-                            while(delay > 0) {
-                                // Stop waiting if node is out of topology.
-                                if (getSpiContext().node(node.id()) == null)
-                                    break;
+                        if (delay > 0 && delay < 200) delay = 200;
 
-                                try {
-                                    U.sleep(10);
+                        while (delay > 0) {
+                            // Stop waiting if node is out of topology.
+                            if (getSpiContext().node(node.id()) == null)
+                                break;
 
-                                    delay -= 10;
-                                }
-                                catch (IgniteInterruptedCheckedException e1) {
-                                    break;
-                                }
+                            try {
+                                U.sleep(200);
+
+                                delay -= 200;
+                            }
+                            catch (IgniteInterruptedCheckedException e1) {
+                                break;
                             }
                         }
 

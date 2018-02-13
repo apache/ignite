@@ -92,8 +92,8 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
         cfg.setCommunicationSpi(commSpi);
 
-        if (clientMode) // Prevent waiting too long on reconnect attempt.
-            cfg.setFailureDetectionTimeout(RECONNECT_TIMEOUT / 3).setClientMode(true);
+        if (clientMode) // Use low failure detection time for faster reconnection.
+            cfg.setFailureDetectionTimeout(1000).setClientMode(true);
 
         return cfg;
     }
