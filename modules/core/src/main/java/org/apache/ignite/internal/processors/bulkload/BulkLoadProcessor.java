@@ -17,9 +17,15 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import javafx.util.Pair;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.lang.IgniteBiTuple;
 
@@ -41,24 +47,26 @@ public class BulkLoadProcessor implements AutoCloseable {
 
     /** Streamer that puts actual key/value into the cache. */
     private final BulkLoadCacheWriter outputStreamer;
+    private final GridCacheAdapter cache;
 
     /** Becomes true after {@link #close()} method is called. */
     private boolean isClosed;
 
     /**
      * Creates bulk load processor.
-     *
-     * @param inputParser Parser of the input bytes.
+     *  @param inputParser Parser of the input bytes.
      * @param dataConverter Converter, which transforms the list of strings parsed from the input stream to the
      *     key+value entry to add to the cache.
      * @param outputStreamer Streamer that puts actual key/value into the cache.
+     * @param cache
      */
     public BulkLoadProcessor(BulkLoadParser inputParser, IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter,
-        BulkLoadCacheWriter outputStreamer) {
+        BulkLoadCacheWriter outputStreamer, GridCacheAdapter cache) {
         this.inputParser = inputParser;
         this.dataConverter = dataConverter;
         this.outputStreamer = outputStreamer;
         isClosed = false;
+        this.cache = cache;
     }
 
     /**
@@ -81,14 +89,54 @@ public class BulkLoadProcessor implements AutoCloseable {
         if (isClosed)
             throw new IgniteIllegalStateException("Attempt to process a batch on a closed BulkLoadProcessor");
 
-        Iterable<List<Object>> inputRecords = inputParser.parseBatch(batchData, isLastBatch);
+        List<List<Object>> inputRecords = inputParser.parseBatch(batchData, isLastBatch);
+//        Map<Object, Object> outRecs = new HashMap<>();
 
-        for (List<Object> record : inputRecords) {
+        if (inputRecords.isEmpty())
+            return;
+
+        Thread[] threads = new Thread[8];
+
+        int strip = (inputRecords.size() + threads.length - 1) / threads.length;
+        int start = 0;
+        int end = start + strip;
+        for (int i = 0; i < threads.length; ++i) {
+            if (end > inputRecords.size())
+                end = inputRecords.size();
+
+            List<List<Object>> subList = inputRecords.subList(start, end);
+
+            threads[i] = new Thread(new Runnable() {
+                @Override public void run() {
+                    for (List<Object> entry : subList) {
+                        IgniteBiTuple<?, ?> kv = dataConverter.apply(entry);
+                        outputStreamer.apply(kv);
+                    }
+                }
+            });
+            threads[i].start();
+
+            start = end;
+            end += strip;
+        }
+
+//        for (List<Object> record : inputRecords) {
 //            noOpt2 = record;
-            IgniteBiTuple<?, ?> kv = dataConverter.apply(record);
+//            IgniteBiTuple<?, ?> kv = dataConverter.apply(record);
+//            outRecs.put(kv.getKey(), kv.getValue());
 
 //            noOpt1 = kv;
-            outputStreamer.apply(kv);
+//            outputStreamer.apply(kv);
+//        }
+//        cache.putAll(outRecs);
+
+        for (int i = 0; i < threads.length; ++i) {
+            try {
+                threads[i].join();
+            }
+            catch (InterruptedException e) {
+                // swallow
+            }
         }
     }
 

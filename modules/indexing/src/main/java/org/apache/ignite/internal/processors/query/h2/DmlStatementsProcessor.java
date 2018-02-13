@@ -44,6 +44,7 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCacheWriter;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadDirectCacheWriter;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadParser;
@@ -1029,10 +1030,12 @@ public class DmlStatementsProcessor {
         IgniteDataStreamer<Object, Object> streamer = cache.grid().dataStreamer(cache.name());
 
         BulkLoadCacheWriter outputWriter = new BulkLoadStreamerWriter(streamer);
+//        BulkLoadCacheWriter outputWriter = new BulkLoadDirectCacheWriter(cache.cache());
 
         BulkLoadParser inputParser = BulkLoadParser.createParser(cmd.inputFormat());
 
-        BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter);
+//        BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter);
+        BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter, cache.cache());
 
         BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.batchSize());
 

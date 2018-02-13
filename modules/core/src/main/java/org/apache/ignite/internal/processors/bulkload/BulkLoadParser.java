@@ -42,7 +42,7 @@ public abstract class BulkLoadParser {
      * @return The list of records.
      * @throws IgniteCheckedException If any processing error occurs.
      */
-    protected abstract Iterable<List<Object>> parseBatch(byte[] batchData, boolean isLastBatch)
+    protected abstract List<List<Object>> parseBatch(byte[] batchData, boolean isLastBatch)
         throws IgniteCheckedException;
 
     /**
