@@ -872,6 +872,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * @return {@code True} if clearing process is running at the moment on the partition.
+     */
+    public boolean isClearing() {
+        return !clearFuture.isDone();
+    }
+
+    /**
      * Completes {@link #clearFuture}.
      *
      * In case of enabled persistence and allowed fast eviction method destroys and creates again {@link #store}.

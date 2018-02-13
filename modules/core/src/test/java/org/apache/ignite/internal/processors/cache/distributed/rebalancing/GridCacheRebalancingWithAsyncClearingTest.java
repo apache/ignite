@@ -1,0 +1,194 @@
+/*
+ *  Licensed to the Apache Software Foundation (ASF) under one or more
+ *  contributor license agreements.  See the NOTICE file distributed with
+ *  this work for additional information regarding copyright ownership.
+ *  The ASF licenses this file to You under the Apache License, Version 2.0
+ *  (the "License"); you may not use this file except in compliance with
+ *  the License.  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+package org.apache.ignite.internal.processors.cache.distributed.rebalancing;
+
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
+
+/**
+ *
+ */
+public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstractTest {
+    /** */
+    private static final String CACHE_NAME = "cache";
+
+    /** */
+    private static final int PARTITIONS_CNT = 32;
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        cfg.setConsistentId(igniteInstanceName)
+                .setDataStorageConfiguration(
+                        new DataStorageConfiguration()
+                                .setCheckpointFrequency(120_000)
+                                .setWalMode(WALMode.LOG_ONLY)
+                                .setDefaultDataRegionConfiguration(
+                                        new DataRegionConfiguration()
+                                                .setPersistenceEnabled(true)
+                                                .setMaxSize(100L * 1024 * 1024)))
+        .setCacheConfiguration(new CacheConfiguration(CACHE_NAME)
+                .setBackups(2)
+                .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+                .setIndexedTypes(Integer.class, Integer.class)
+                .setAffinity(new RendezvousAffinityFunction(false, PARTITIONS_CNT))
+        );
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        System.clearProperty(IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE);
+
+        stopAllGrids();
+
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        System.clearProperty(IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE);
+
+        stopAllGrids();
+
+        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+    }
+
+    /**
+     * Test that partition clearing doesn't block partitions map exchange.
+     * @throws Exception If failed.
+     */
+    public void testPartitionClearingNotBlockExchange() throws Exception {
+        System.setProperty(IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, "1");
+
+        IgniteEx ig = (IgniteEx) startGrids(3);
+        ig.cluster().active(true);
+
+        final int entitiesCount = 300_000;
+
+        try (IgniteDataStreamer ds = ig.dataStreamer(CACHE_NAME)) {
+            log.info("Writing initial data...");
+
+            ds.allowOverwrite(true);
+            for (int k = 0; k < entitiesCount; k++) {
+                ds.addData(k, k);
+                if (k % 50_000 == 0)
+                    log.info("Written " + k + " entities.");
+            }
+
+            log.info("Writing initial data finished.");
+        }
+
+        stopGrid(2);
+
+        awaitPartitionMapExchange();
+
+        try (IgniteDataStreamer ds = ig.dataStreamer(CACHE_NAME)) {
+            log.info("Writing external data...");
+
+            ds.allowOverwrite(true);
+            for (int k = 0; k < entitiesCount; k++) {
+                ds.addData(k, 2 * k);
+                if (k % 50_000 == 0)
+                    log.info("Written " + k + " entities.");
+            }
+
+            log.info("Writing external data finished.");
+        }
+
+        IgniteCache<Integer, Integer> cache = ig.cache(CACHE_NAME);
+
+        forceCheckpoint();
+        forceCheckpoint();
+
+        GridCachePartitionExchangeManager exchangeManager = ig.cachex(CACHE_NAME).context().shared().exchange();
+
+        long topVer = exchangeManager.lastTopologyFuture().topologyVersion().topologyVersion();
+
+        startGrid(2);
+
+        // Check that exchange future is completed and version is incremented
+        GridDhtPartitionsExchangeFuture fut1 = exchangeManager.lastTopologyFuture();
+
+        fut1.get();
+
+        Assert.assertEquals(topVer + 1, fut1.topologyVersion().topologyVersion());
+
+        // Check that additional exchange didn't influence on asynchronous partitions eviction.
+        boolean asyncClearingIsRunning = false;
+        for (int p = 0; p < PARTITIONS_CNT; p++) {
+            GridDhtLocalPartition part = grid(2).cachex(CACHE_NAME).context().topology().localPartition(p);
+            if (part != null && part.state() == GridDhtPartitionState.MOVING && part.isClearing()) {
+                asyncClearingIsRunning = true;
+                break;
+            }
+        }
+
+        Assert.assertTrue("Async clearing is not running at the moment", asyncClearingIsRunning);
+
+        // Check that stopping & starting node didn't break rebalance process.
+        stopGrid(1);
+
+        startGrid(1);
+
+        cache.rebalance().get();
+
+        for (int k = 0; k < entitiesCount; k++) {
+            Integer value = cache.get(k);
+            Assert.assertTrue("Check failed for " + k, value == 2 * k);
+        }
+    }
+
+    /**
+     * Forces checkpoint on all available nodes.
+     * @throws Exception If failed.
+     */
+    private void forceCheckpoint() throws Exception {
+        for (Ignite ignite : G.allGrids()) {
+            if (ignite.cluster().localNode().isClient())
+                continue;
+
+            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
+                    .cache().context().database();
+
+            dbMgr.waitForCheckpoint("test");
+        }
+    }
+
+}
