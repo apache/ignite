@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.bulkload.pipeline;
 
-import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A {@link PipelineBlock}, which splits input stream of char[] into lines using the specified {@link Pattern}
@@ -42,31 +44,33 @@ public class LineSplitterBlock extends PipelineBlock<char[], String> {
         this.delim = delim;
     }
 
+    public volatile char[] noOpt;
+
     /** {@inheritDoc} */
     @Override public void accept(char[] chars, boolean isLastPortion) throws IgniteCheckedException {
-        leftover.append(chars);
+        noOpt = chars;
 
-        int lastPos = 0;
-        for (int i = 0; i < leftover.length(); i++) {
-            char c = leftover.charAt(i);
-            if (c == '\r' || c == '\n') {
-                nextBlock.accept(leftover.substring(lastPos, i), false);
-                lastPos = i;
-                if (leftover.charAt(lastPos) == '\n') {
-                    lastPos++;
-                    i++;
-                }
-            }
-        }
-
-        if (lastPos >= leftover.length())
-            leftover.setLength(0);
-        else if (lastPos != 0)
-            leftover.delete(0, lastPos);
-
-        if (isLastPortion && leftover.length() > 0) {
-            nextBlock.accept(leftover.toString(), true);
-            leftover.setLength(0);
-        }
+//        leftover.append(chars);
+//
+//        String input = leftover.toString();
+//        Matcher matcher = delim.matcher(input);
+//
+//        int lastPos = 0;
+//        while (matcher.find()) {
+//            String outStr = input.substring(lastPos, matcher.start());
+//
+//            if (!outStr.isEmpty())
+//                nextBlock.accept(outStr, false);
+//
+//            lastPos = matcher.end();
+//        }
+//
+//        if (lastPos != 0)
+//            leftover.delete(0, lastPos);
+//
+//        if (isLastPortion && leftover.length() > 0) {
+//            nextBlock.accept(leftover.toString(), true);
+//            leftover.setLength(0);
+//        }
     }
 }

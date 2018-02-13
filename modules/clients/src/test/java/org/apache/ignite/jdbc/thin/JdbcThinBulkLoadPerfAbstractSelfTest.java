@@ -147,6 +147,7 @@ public class JdbcThinBulkLoadPerfAbstractSelfTest extends JdbcThinAbstractDmlSta
         int tableFldCnt = 10;
         int fileFldCnt = 10;
         int fldSize = 10;
+//        DB db = DB.POSTGRESQL;
         DB db = DB.IGNITE;
 
         switch (db) {
@@ -229,9 +230,10 @@ public class JdbcThinBulkLoadPerfAbstractSelfTest extends JdbcThinAbstractDmlSta
             while (recCnt < lines && tries < 10);
 
             System.out.print(">>>>>>>>>>>\n" +
-                "    Elapsed: " + String.format("%12.6f sec", (stopNs - startNs) / 10e9) + "\n" +
-                "    Lines: " + lines + " => " + recCnt + "\n" +
-                "    Lines/sec: " + String.format("%12.6f sec", 10e9 * ((double)lineCnt / (stopNs - startNs))) + "\n");
+                "    Elapsed  : " + String.format("%12.6f sec", (stopNs - startNs) / 10e9) + "\n" +
+                "    Lines    : " + lines + " => " + recCnt + "\n" +
+                "    Lines/sec: " + String.format("%12.6f sec", 10e9 * ((double)lineCnt / (stopNs - startNs))) + "\n" +
+                "    Sec/line : " + String.format("%12.6f us", 10e-3 * ((double)(stopNs - startNs) / lineCnt)) + "\n");
 
             System.out.println("Dropping table");
             stmt.executeUpdate("drop table public.FldTest2");

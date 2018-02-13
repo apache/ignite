@@ -4,10 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 
-public class CsvParserBlock extends PipelineBlock<char[], String[]> {
+public class CsvParserBlock extends PipelineBlock<char[], List<Object>> {
     /** Leftover characters from the previous invocation of {@link #accept(char[], boolean)}. */
     private StringBuilder leftover = new StringBuilder();
-    private List<String> fields = new ArrayList<>();
+    private List<Object> fields = new ArrayList<>();
 
     private final byte action[] = new byte[128];
 
@@ -22,21 +22,25 @@ public class CsvParserBlock extends PipelineBlock<char[], String[]> {
 
     /** {@inheritDoc} */
     @Override public void accept(char[] chars, boolean isLastPortion) throws IgniteCheckedException {
+//        if (action[0] == 0)
+//            return;
+
         leftover.append(chars);
 
         int lastPos = 0;
         for (int i = 0; i < leftover.length(); i++) {
             char c = leftover.charAt(i);
-            byte act = c < 128 ? action[c] : 0;
-            switch (act) {
+            if (c >= 128)
+                continue;
+            switch (action[c]) {
                 case 2:
                     fields.add(leftover.substring(lastPos, i));
-                    i++;
-                    lastPos = i;
+                    lastPos = i + 1;
                     break;
 
                 case 1:
-                    nextBlock.accept(fields.toArray(new String[fields.size()]), false);
+                    fields.add(leftover.substring(lastPos, i));
+                    nextBlock.accept(new ArrayList<>(fields), false);
                     fields.clear();
 
                     lastPos = i + 1;
@@ -56,9 +60,8 @@ public class CsvParserBlock extends PipelineBlock<char[], String[]> {
         if (isLastPortion && leftover.length() > 0) {
             fields.add(leftover.toString());
             leftover.setLength(0);
-            nextBlock.accept(fields.toArray(new String[fields.size()]), true);
+            nextBlock.accept(new ArrayList<>(fields), true);
             fields.clear();
         }
     }
-
 }
