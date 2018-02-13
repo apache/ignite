@@ -78,7 +78,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
 
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
 
     /** {@inheritDoc} */
@@ -87,7 +87,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
 
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
 
     /**
