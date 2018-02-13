@@ -33,11 +33,11 @@ public class RowDataConverter {
 
         DataEntry writeEntry = record.writeEntries().get(0);
 
-        boolean sharedGrp = false;
+        boolean storeCacheId = false;
         if (sharedCtx.cacheContext(writeEntry.cacheId()) != null)
-            sharedGrp = sharedCtx.cacheContext(writeEntry.cacheId()).group().sharedGroup();
+            storeCacheId = sharedCtx.cacheContext(writeEntry.cacheId()).group().storeCacheIdInDataPage();
 
-        CacheDataRow row = wrap(writeEntry, sharedGrp);
+        CacheDataRow row = wrap(writeEntry, storeCacheId);
 
         return new RowDataHolder(row, DataPageIO.VERSIONS.latest().getRowSize(row));
     }
@@ -56,7 +56,7 @@ public class RowDataConverter {
      * @param entry WAL {@link DataRecord} row.
      * @return CacheDataRow.
      */
-    public static CacheDataRow wrap(DataEntry entry, boolean sharedGrp) {
+    public static CacheDataRow wrap(DataEntry entry, boolean storeCacheId) {
         if (entry instanceof LazyDataEntry) {
             LazyDataEntry lazyEntry = (LazyDataEntry) entry;
 
@@ -103,7 +103,7 @@ public class RowDataConverter {
                     value,
                     lazyEntry.writeVersion(),
                     lazyEntry.expireTime(),
-                    sharedGrp ? lazyEntry.cacheId() : 0
+                    storeCacheId ? lazyEntry.cacheId() : 0
             );
         }
 
@@ -112,7 +112,7 @@ public class RowDataConverter {
                 entry.value(),
                 entry.writeVersion(),
                 entry.expireTime(),
-                sharedGrp ? entry.cacheId() : 0
+                storeCacheId ? entry.cacheId() : 0
         );
     }
 

@@ -279,7 +279,7 @@ public abstract class AbstractWalRecordsIterator
      * @param rec record to post process.
      * @return post processed record.
      */
-    @NotNull protected WALRecord postProcessRecord(@NotNull final WALRecord rec) {
+    @NotNull protected WALRecord postProcessRecord(@NotNull WALRecord rec) {
         return rec;
     }
 

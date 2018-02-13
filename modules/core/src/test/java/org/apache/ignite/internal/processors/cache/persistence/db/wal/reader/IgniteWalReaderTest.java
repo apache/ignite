@@ -326,7 +326,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             }
         }, EVT_WAL_SEGMENT_ARCHIVED);
 
-        putDummyRecords(ignite, 500);
+        putDummyRecords(ignite, 5000);
 
         stopGrid("node0");
         assertTrue(evtRecorded.get());
@@ -781,7 +781,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
             putAllDummyRecords(ignite, write);
             totalEntries += write;
             Assert.assertTrue("Too much entries generated, but segments was not become available",
-                totalEntries < 10000);
+                totalEntries < 50000);
         }
         final String subfolderName = genDbSubfolderName(ignite, 0);
 
