@@ -106,9 +106,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             evictionTracker.touchPage(pageId);
 
             if (updated && needWalDeltaRecord(pageId, page, walPlc)) {
-                assert row.reference() != null;
+                if (row.reference() != null) {
+                    wal.log(new DataPageUpdateRecord(grpId, pageId, itemId, row.reference()));
+                }
 
-                wal.log(new DataPageUpdateRecord(grpId, pageId, itemId, row.reference()));
+//                assert row.reference() != null;
             }
 
             return updated;
@@ -180,9 +182,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             io.addRow(pageId, pageAddr, row, rowSize, pageSize());
 
             if (needWalDeltaRecord(pageId, page, null)) {
-                assert row.reference() != null;
+                if (row.reference() != null) {
+                    wal.log(new DataPageInsertRecord(grpId, pageId, row.reference()));
+                }
 
-                wal.log(new DataPageInsertRecord(grpId, pageId, row.reference()));
+//                assert row.reference() != null;
             }
 
             return rowSize;
@@ -216,9 +220,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             assert payloadSize > 0 : payloadSize;
 
             if (needWalDeltaRecord(pageId, page, null)) {
-                assert row.reference() != null;
+                if (row.reference() != null) {
+                    wal.log(new DataPageInsertFragmentRecord(grpId, pageId, written, lastLink, row.reference()));
+                }
 
-                wal.log(new DataPageInsertFragmentRecord(grpId, pageId, written, lastLink, row.reference()));
+//                assert row.reference() != null;
             }
 
             return written + payloadSize;

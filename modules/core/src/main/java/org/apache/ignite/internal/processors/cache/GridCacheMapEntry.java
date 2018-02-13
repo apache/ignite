@@ -2909,7 +2909,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
                     if (val != null) {
-                        storeValue(val, expTime, newVer, null, null);
+                        WALPointer reference = logUpdate(GridCacheOperation.CREATE, val, newVer, expTime, 0);
+
+                        storeValue(val, expTime, newVer, null, reference);
 
                         if (deletedUnlocked())
                             deletedUnlocked(false);
@@ -3528,7 +3530,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert lock.isHeldByCurrentThread();
         assert val != null : "null values in update for key: " + key;
 
-        cctx.offheap().invoke(cctx, key,  localPartition(), new UpdateClosure(this, val, ver, expireTime, reference));
+        cctx.offheap().invoke(cctx, key, localPartition(), new UpdateClosure(this, val, ver, expireTime, reference));
     }
 
     /**

@@ -78,6 +78,13 @@ public class IgniteDbPutGetWithCacheStoreTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        GridTestUtils.deleteDbFiles();
+
+        storeMap.clear();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         GridTestUtils.deleteDbFiles();
 
