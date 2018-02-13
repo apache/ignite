@@ -58,6 +58,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     /** Allocation rate calculator. */
     private volatile HitRateMetrics allocRate = new HitRateMetrics(60_000, 5);
 
+    /** Eviction rate calculator. */
+    private volatile HitRateMetrics evictRate = new HitRateMetrics(60_000, 5);
+
     /** */
     private volatile HitRateMetrics pageReplaceRate = new HitRateMetrics(60_000, 5);
 
@@ -114,7 +117,10 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /** {@inheritDoc} */
     @Override public float getEvictionRate() {
-        return 0;
+        if (!metricsEnabled)
+            return 0;
+
+        return ((float)evictRate.getRate() * 1000) / rateTimeInterval;
     }
 
     /** {@inheritDoc} */
@@ -221,6 +227,14 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     }
 
     /**
+     * Updates eviction rate metric.
+     */
+    public void updateEvictionRate() {
+        if (metricsEnabled)
+            evictRate.onHit();
+    }
+
+    /**
      * @param intervalNum Interval number.
      */
     private long subInt(int intervalNum) {
@@ -278,7 +292,8 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
         this.rateTimeInterval = rateTimeInterval;
 
         allocRate = new HitRateMetrics((int) rateTimeInterval, subInts);
-        pageReplaceRate = new HitRateMetrics((int) rateTimeInterval, subInts);
+        evictRate = new HitRateMetrics((int) rateTimeInterval, subInts);
+        pageReplaceRate = new HitRateMetrics((int)rateTimeInterval, subInts);
     }
 
     /**
@@ -296,6 +311,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
             subInts = (int) rateTimeInterval / 10;
 
         allocRate = new HitRateMetrics((int) rateTimeInterval, subInts);
-        pageReplaceRate = new HitRateMetrics((int) rateTimeInterval, subInts);
+        evictRate = new HitRateMetrics((int) rateTimeInterval, subInts);
+        pageReplaceRate = new HitRateMetrics((int)rateTimeInterval, subInts);
     }
 }
