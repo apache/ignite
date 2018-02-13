@@ -25,8 +25,16 @@ public class BatchedInsertBenchmark extends AbstractUploadBenchmark {
     /** Rows count to be inserted and deleted during warmup */
     public static final int WARMUP_ROWS_CNT = 3000_000;
 
+    /** Number of inserts in batch */
+    public int BATCH_SIZE;
+
     /** {@inheritDoc} */
-    @Override public void warmup() throws SQLException {
+    @Override protected void init() {
+        BATCH_SIZE = args.sqlRange();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void warmup() throws SQLException {
         try (PreparedStatement insert = conn.get().prepareStatement(queries.insert())) {
             for (int id = 1; id <= WARMUP_ROWS_CNT ; id++) {
                 queries.setRandomInsertArgs(insert, id);

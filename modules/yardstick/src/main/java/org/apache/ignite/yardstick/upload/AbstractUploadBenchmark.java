@@ -30,23 +30,34 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     /** Total inserts size */
     public int INSERT_SIZE;
 
+    /**
+     * Factory that hides all test data details:
+     * what query to use to create table
+     * or what random arguments to set in prepared statement
+     */
     QueryFactory queries = new QueryFactory();
 
-    /** Number of inserts in batch */
-    public int BATCH_SIZE;
-
     /** {@inheritDoc} */
-    public void setUp(BenchmarkConfiguration cfg) throws Exception {
+    public final void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
         INSERT_SIZE = args.range();
-        BATCH_SIZE = args.sqlRange();
 
+        init();
         warmup();
     }
 
-    /** Method to warm up Benchmark server */
-    public abstract void warmup() throws Exception;
+    /** Method to init benchmark fields */
+    protected void init() {
+        // No-op
+    }
+
+    /**
+     * Method to warm up Benchmark server
+     * In upload benchmarks we need warmup action
+     * and real test action to be separated
+     */
+    protected abstract void warmup() throws Exception;
 
     /** create empty table */
     protected void setupData(){
