@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -79,7 +80,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
@@ -236,7 +236,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             log = U.logger(cctx.kernalContext(), logRef, GridDhtColocatedLockFuture.class);
         }
 
-        valMap = new ConcurrentHashMap8<>();
+        valMap = new ConcurrentHashMap<>();
     }
 
     /** {@inheritDoc} */
