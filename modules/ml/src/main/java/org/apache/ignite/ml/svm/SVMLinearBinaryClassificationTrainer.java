@@ -32,7 +32,7 @@ import org.jetbrains.annotations.NotNull;
  * and +1 labels for two classes and makes binary classification. </p> The paper about this algorithm could be found
  * here https://arxiv.org/abs/1409.1458.
  */
-public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearClassificationModel, LabeledDataset> {
+public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearBinaryClassificationModel, LabeledDataset> {
     /** Amount of outer SDCA algorithm iterations. */
     private int amountOfIterations = 20;
 
@@ -51,7 +51,7 @@ public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearCl
      * @param data data to build model
      * @return model
      */
-    @Override public SVMLinearClassificationModel train(LabeledDataset data) {
+    @Override public SVMLinearBinaryClassificationModel train(LabeledDataset data) {
         isDistributed = data.isDistributed();
 
         final int weightVectorSizeWithIntercept = data.colSize() + 1;
@@ -62,7 +62,7 @@ public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearCl
             weights = weights.plus(deltaWeights); // creates new vector
         }
 
-        return new SVMLinearClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
+        return new SVMLinearBinaryClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
     }
 
     /** */
