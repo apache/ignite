@@ -55,7 +55,7 @@ public class BulkLoadCsvParser extends BulkLoadParser {
     }
 
     /** {@inheritDoc} */
-    @Override protected Iterable<List<Object>> parseBatch(byte[] batchData, boolean isLastBatch)
+    @Override protected List<List<Object>> parseBatch(byte[] batchData, boolean isLastBatch)
         throws IgniteCheckedException {
         List<List<Object>> res = new LinkedList<>();
 
