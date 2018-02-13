@@ -55,6 +55,7 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -860,23 +861,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * Awaits completion of {@code clearFuture} within specified {@code timeoutMs}.
+     * Adds listener on {@link #clearFuture} finish.
      *
-     * @param timeoutMs Timeout to await clear completion in millis.
-     * @throws IgniteFutureTimeoutCheckedException If unable to await within specified timeout.
-     * @throws IgniteCheckedException If clear future was completed with exception.
+     * @param lsnr Listener.
      */
-    public void awaitClearing(long timeoutMs) throws IgniteCheckedException {
-        try {
-            clearFuture.get(timeoutMs);
-        }
-        catch (IgniteFutureTimeoutCheckedException e) {
-            throw e;
-        }
-        catch (IgniteCheckedException e) {
-            log.error("Unable to await eviction for partition " + this, e);
-
-            throw e;
+    public void onClearFinished(IgniteInClosure<? super IgniteInternalFuture<?>> lsnr) {
+        synchronized (clearFuture) {
+            clearFuture.listen(lsnr);
         }
     }
 
@@ -904,7 +895,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                         store.setRowCacheCleaner(cleaner);
                 }
             } catch (IgniteCheckedException e) {
-                clearFuture.onDone(e);
+                synchronized (clearFuture) {
+                    clearFuture.onDone(e);
+                }
 
                 return;
             }
