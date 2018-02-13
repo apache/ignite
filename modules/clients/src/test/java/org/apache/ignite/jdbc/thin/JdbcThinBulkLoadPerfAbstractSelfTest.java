@@ -22,32 +22,19 @@ import java.io.FileOutputStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.BatchUpdateException;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Formattable;
-import java.util.Formatter;
-import java.util.Objects;
-import java.util.concurrent.Callable;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_PARSER_DISABLE_H2_FALLBACK;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
-import static org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath;
 
 /**
  * COPY statement tests.
@@ -151,16 +138,35 @@ public class JdbcThinBulkLoadPerfAbstractSelfTest extends JdbcThinAbstractDmlSta
         }
     }
 
-    public void testPerf() throws SQLException, FileNotFoundException, InterruptedException {
-        int lineCnt = 200_000;
-        int tableFldCnt = 500;
-        int fileFldCnt = 500;
-        int fldSize = 10;
-        boolean isPostgres = true;
+    private enum DB {
+        IGNITE, POSTGRESQL, MYSQL
+    }
 
-        if (isPostgres) {
-            conn = DriverManager.getConnection("jdbc:postgresql://localhost/postgres", "postgres", "admin");
-            stmt = conn.createStatement();
+    public void testPerf() throws SQLException, FileNotFoundException, InterruptedException, ClassNotFoundException {
+        int lineCnt = 1_000_000;
+        int tableFldCnt = 10;
+        int fileFldCnt = 10;
+        int fldSize = 10;
+        DB db = DB.IGNITE;
+
+        switch (db) {
+            case IGNITE:
+                break;
+
+            case POSTGRESQL:
+                conn = DriverManager.getConnection("jdbc:postgresql://localhost/postgres", "postgres", "admin");
+                stmt = conn.createStatement();
+                break;
+
+            case MYSQL:
+                Class.forName("com.mysql.jdbc.Driver");
+                conn = DriverManager.getConnection("jdbc:mysql://localhost/mysql", "mysql", "admin");
+                stmt = conn.createStatement();
+                stmt.executeUpdate("SET GLOBAL time_zone = '+3:00'");
+                break;
+
+            default:
+                throw new IllegalArgumentException();
         }
 
         System.out.print("\n\n\n\n\n");
@@ -177,20 +183,34 @@ public class JdbcThinBulkLoadPerfAbstractSelfTest extends JdbcThinAbstractDmlSta
 
         System.out.println("Creating table");
         stmt.executeUpdate("drop table if exists public.FldTest2");
-        stmt.executeUpdate("create table public.FldTest2 (" + fieldsCreate.toString() + ")");
-
         StringBuilder fieldsInsert = new StringBuilder();
         fieldsInsert.append("f000000");
         for (int i = 1; i < tableFldCnt; ++i)
             fieldsInsert.append(",").append(String.format("f%06d", i));
 
         for (int i = 0; i < 10; ++i) {
+            stmt.executeUpdate("create table public.FldTest2 (" + fieldsCreate.toString() + ")");
+
             long startNs = System.nanoTime();
 
             System.out.println("Running COPY");
-            String sql = isPostgres
-                ? ("copy public.FldTest2 " + "(" + fieldsInsert.toString() + ") from '" + fileName + "' with (format csv)")
-                : ("copy from \"" + fileName + "\" into public.FldTest2 " + "(" + fieldsInsert.toString() + ") format csv");
+            String sql;
+            switch (db) {
+                case IGNITE:
+                    sql = "copy from \"" + fileName + "\" into public.FldTest2 " + "(" + fieldsInsert.toString() + ") format csv";
+                    break;
+
+                case POSTGRESQL:
+                    sql = "copy public.FldTest2 " + "(" + fieldsInsert.toString() + ") from '" + fileName + "' with (format csv)";
+                    break;
+
+                case MYSQL:
+                    sql = "load data infile '" + fileName + "' into table public.FldTest2";
+                    break;
+
+                default:
+                    throw new IllegalArgumentException();
+            }
 
             long lines = stmt.executeUpdate(sql);
             long stopNs = System.nanoTime();
@@ -211,20 +231,10 @@ public class JdbcThinBulkLoadPerfAbstractSelfTest extends JdbcThinAbstractDmlSta
             System.out.print(">>>>>>>>>>>\n" +
                 "    Elapsed: " + String.format("%12.6f sec", (stopNs - startNs) / 10e9) + "\n" +
                 "    Lines: " + lines + " => " + recCnt + "\n" +
-                "    Lines/sec: " + String.format("%12.6f sec", 10e9 * ((double)lines / (stopNs - startNs))) + "\n");
+                "    Lines/sec: " + String.format("%12.6f sec", 10e9 * ((double)lineCnt / (stopNs - startNs))) + "\n");
 
-            System.out.println("Deleting records");
-            tries = 0;
-            do {
-                stmt.executeUpdate("delete from public.FldTest2");
-                Thread.sleep(100);
-                ResultSet rs = stmt.executeQuery("select count(*) from public.FldTest2");
-                rs.next();
-                recCnt = rs.getInt(1);
-                System.out.printf("DELETE left entries in the cache: %d\n", recCnt);
-                tries++;
-            }
-            while (recCnt > 0 && tries < 10);
+            System.out.println("Dropping table");
+            stmt.executeUpdate("drop table public.FldTest2");
         }
 
         System.out.println(">>>>>>>>>>>\n\n\n\n\n");

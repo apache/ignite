@@ -17,15 +17,13 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.bulkload.pipeline.CharsetDecoderBlock;
-import org.apache.ignite.internal.processors.bulkload.pipeline.CsvLineProcessorBlock;
-import org.apache.ignite.internal.processors.bulkload.pipeline.PipelineBlock;
-import org.apache.ignite.internal.processors.bulkload.pipeline.StrListAppenderBlock;
-import org.apache.ignite.internal.processors.bulkload.pipeline.LineSplitterBlock;
-
 import java.util.LinkedList;
 import java.util.List;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.bulkload.pipeline.CharsetDecoderBlock;
+import org.apache.ignite.internal.processors.bulkload.pipeline.CsvParserBlock;
+import org.apache.ignite.internal.processors.bulkload.pipeline.PipelineBlock;
+import org.apache.ignite.internal.processors.bulkload.pipeline.StrListAppenderBlock;
 
 /** CSV parser for COPY command. */
 public class BulkLoadCsvParser extends BulkLoadParser {
@@ -46,9 +44,11 @@ public class BulkLoadCsvParser extends BulkLoadParser {
         collectorBlock = new StrListAppenderBlock();
 
         // Handling of the other options is to be implemented in IGNITE-7537.
-        inputBlock.append(new LineSplitterBlock(format.lineSeparator()))
-               .append(new CsvLineProcessorBlock(format.fieldSeparator(), format.quoteChars()))
-               .append(collectorBlock);
+//        inputBlock.append(new LineSplitterBlock(format.lineSeparator()))
+//               .append(new CsvLineProcessorBlock(format.fieldSeparator(), format.quoteChars()))
+//               .append(collectorBlock);
+        inputBlock.append(new CsvParserBlock())
+                  .append(collectorBlock);
     }
 
     /** {@inheritDoc} */

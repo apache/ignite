@@ -17,10 +17,11 @@
 
 package org.apache.ignite.internal.processors.bulkload.pipeline;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.NotNull;
-
-import java.util.regex.Pattern;
 
 /**
  * A {@link PipelineBlock}, which splits line according to CSV format rules and unquotes fields.
@@ -46,13 +47,20 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
 
     /** {@inheritDoc} */
     @Override public void accept(String input, boolean isLastPortion) throws IgniteCheckedException {
-        // Currently we don't process quoted field delimiter properly, will be fixed in IGNITE-7537.
-        String[] fields = fldDelim.split(input);
+        List<String> fields = new ArrayList<>();
 
-        for (int i = 0; i < fields.length; i++)
-            fields[i] = trim(fields[i]);
+        int lastPos = 0;
+        for (int i = 0; i < input.length(); i++) {
+            if (input.charAt(i) == ',') {
+                fields.add(trim(input.substring(lastPos, i)));
+                lastPos = i + 1;
+            }
+        }
 
-        nextBlock.accept(fields, isLastPortion);
+        if (lastPos < input.length())
+            fields.add(trim(input.substring(lastPos)));
+
+        nextBlock.accept(fields.toArray(new String[fields.size()]), isLastPortion);
     }
 
     /**
