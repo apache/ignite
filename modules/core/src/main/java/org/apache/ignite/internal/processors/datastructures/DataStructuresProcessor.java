@@ -1215,32 +1215,32 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(name, key, cache);
 
                 //check Cluster state against semaphore state
-                if (val!=null) {
-                    GridCacheSemaphoreState semState=(GridCacheSemaphoreState)val;
+                if (val != null) {
+                    GridCacheSemaphoreState semState = (GridCacheSemaphoreState) val;
 
-                    boolean updated=false;
+                    boolean updated = false;
 
                     Map<UUID,Integer> waiters = semState.getWaiters();
 
-                    Integer permit=((GridCacheSemaphoreState) val).getCount();
+                    Integer permit = ((GridCacheSemaphoreState) val).getCount();
 
-                    for (UUID nodeId:waiters.keySet()) {
+                    for (UUID nodeId : waiters.keySet()) {
 
                         ClusterNode node = ctx.cluster().get().node(nodeId);
 
-                        if (node==null) {
+                        if (node == null) {
                             permit += waiters.get(nodeId);
 
                             waiters.remove(nodeId);
 
-                            updated=true;
+                            updated = true;
                         }
                     }
                     if (updated) {
                         semState.setWaiters(waiters);
                         semState.setCount(permit);
 
-                        retVal=semState;
+                        retVal = semState;
                     }
                 }
 
