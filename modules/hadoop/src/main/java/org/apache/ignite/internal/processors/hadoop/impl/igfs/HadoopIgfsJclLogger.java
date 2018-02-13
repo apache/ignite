@@ -62,13 +62,28 @@ public class HadoopIgfsJclLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
+    @Override public void trace(String marker, String msg) {
+        trace(msg);
+    }
+
+    /** {@inheritDoc} */
     @Override public void debug(String msg) {
         impl.debug(msg);
     }
 
     /** {@inheritDoc} */
+    @Override public void debug(String marker, String msg) {
+        debug(msg);
+    }
+
+    /** {@inheritDoc} */
     @Override public void info(String msg) {
         impl.info(msg);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void info(String marker, String msg) {
+        info(msg);
     }
 
     /** {@inheritDoc} */
@@ -79,6 +94,11 @@ public class HadoopIgfsJclLogger implements IgniteLogger {
     /** {@inheritDoc} */
     @Override public void warning(String msg, @Nullable Throwable e) {
         impl.warn(msg, e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void warning(String marker, String msg, @Nullable Throwable e) {
+        warning(msg, e);
     }
 
     /** {@inheritDoc} */
@@ -94,6 +114,11 @@ public class HadoopIgfsJclLogger implements IgniteLogger {
     /** {@inheritDoc} */
     @Override public void error(String msg, @Nullable Throwable e) {
         impl.error(msg, e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(String marker, String msg, @Nullable Throwable e) {
+        error(msg, e);
     }
 
     /** {@inheritDoc} */

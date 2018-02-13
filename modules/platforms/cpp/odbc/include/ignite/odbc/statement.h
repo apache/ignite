@@ -264,11 +264,11 @@ namespace ignite
             bool DataAvailable() const;
 
             /**
-             * Next results.
+             * More results.
              *
              * Move to next result set or affected rows number.
              */
-            void NextResults();
+            void MoreResults();
 
             /**
              * Get column attribute.
@@ -581,7 +581,7 @@ namespace ignite
              *
              * @return Operation result.
              */
-            SqlResult::Type InternalNextResults();
+            SqlResult::Type InternalMoreResults();
 
             /**
              * Get column attribute.
@@ -666,7 +666,11 @@ namespace ignite
             /** Offset added to pointers to change binding of column data. */
             int* columnBindOffset;
 
+            /** Parameters. */
             app::ParameterSet parameters;
+
+            /** Query timeout in seconds. */
+            int32_t timeout;
         };
     }
 }

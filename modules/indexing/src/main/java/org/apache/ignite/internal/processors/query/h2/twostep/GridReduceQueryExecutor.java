@@ -90,6 +90,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.transactions.TransactionException;
 import org.h2.command.ddl.CreateTableData;
 import org.h2.engine.Session;
 import org.h2.index.Index;
@@ -560,9 +561,15 @@ public class GridReduceQueryExecutor {
 
             AffinityTopologyVersion topVer = h2.readyTopologyVersion();
 
+            // Check if topology is changed while retrying on locked topology.
+            if (h2.serverTopologyChanged(topVer) && ctx.cache().context().lockedTopologyVersion(null) != null) {
+                throw new CacheException(new TransactionException("Server topology is changed during query " +
+                    "execution inside a transaction. It's recommended to rollback and retry transaction."));
+            }
+
             List<Integer> cacheIds = qry.cacheIds();
 
-            Collection<ClusterNode> nodes = null;
+            Collection<ClusterNode> nodes;
 
             // Explicit partition mapping for unstable topology.
             Map<ClusterNode, IntArray> partsMap = null;

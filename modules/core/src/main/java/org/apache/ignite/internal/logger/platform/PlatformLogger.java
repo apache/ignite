@@ -24,7 +24,10 @@ import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
@@ -49,24 +52,31 @@ public class PlatformLogger implements IgniteLogger {
     public static final int LVL_ERROR = 4;
 
     /** Callbacks. */
+    @GridToStringExclude
     private volatile PlatformCallbackGateway gate;
 
     /** Context. */
+    @GridToStringExclude
     private volatile PlatformContext ctx;
 
     /** Category. */
+    @GridToStringExclude
     private final String category;
 
     /** Trace flag. */
+    @GridToStringInclude
     private volatile boolean traceEnabled;
 
     /** Debug flag. */
+    @GridToStringInclude
     private volatile boolean debugEnabled;
 
     /** Info flag. */
+    @GridToStringInclude
     private volatile boolean infoEnabled;
 
     /** Quiet flag. */
+    @GridToStringInclude
     private static final boolean isQuiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "true"));
 
     /**
@@ -101,13 +111,27 @@ public class PlatformLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
+    @Override public void trace(String marker, String msg) {
+        trace(msg);
+    }
+
+    /** {@inheritDoc} */
     @Override public void debug(String msg) {
         log(LVL_DEBUG, msg, null);
+    }
+
+    @Override public void debug(String marker, String msg) {
+        debug(msg);
     }
 
     /** {@inheritDoc} */
     @Override public void info(String msg) {
         log(LVL_INFO, msg, null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void info(String marker, String msg) {
+        info(msg);
     }
 
     /** {@inheritDoc} */
@@ -121,6 +145,11 @@ public class PlatformLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
+    @Override public void warning(String marker, String msg, @Nullable Throwable e) {
+        warning(msg, e);
+    }
+
+    /** {@inheritDoc} */
     @Override public void error(String msg) {
         log(LVL_ERROR, msg, null);
     }
@@ -128,6 +157,10 @@ public class PlatformLogger implements IgniteLogger {
     /** {@inheritDoc} */
     @Override public void error(String msg, @Nullable Throwable e) {
         log(LVL_ERROR, msg, e);
+    }
+
+    @Override public void error(String marker, String msg, @Nullable Throwable e) {
+        error(msg, e);
     }
 
     /** {@inheritDoc} */
@@ -219,5 +252,10 @@ public class PlatformLogger implements IgniteLogger {
         return ctgr instanceof Class
             ? ((Class)ctgr).getName()
             : (ctgr == null ? null : String.valueOf(ctgr));
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(PlatformLogger.class, this);
     }
 }

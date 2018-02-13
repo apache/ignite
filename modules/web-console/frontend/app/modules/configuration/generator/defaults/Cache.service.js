@@ -85,18 +85,8 @@ const DFLT_CACHE = {
         nearStartSize: 375000
     },
     evictionPolicy: {
-        LRU: {
-            batchSize: 1,
-            maxSize: 100000
-        },
-        FIFO: {
-            batchSize: 1,
-            maxSize: 100000
-        },
-        SORTED: {
-            batchSize: 1,
-            maxSize: 100000
-        }
+        batchSize: 1,
+        maxSize: 100000
     },
     queryMetadata: 'Configuration',
     queryDetailMetricsSize: 0,

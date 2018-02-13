@@ -17,21 +17,22 @@
 
 'use strict';
 
+const _ = require('lodash');
+
 // Fire me up!
 
 module.exports = {
     implements: 'services/clusters',
-    inject: ['require(lodash)', 'mongo', 'services/spaces', 'errors']
+    inject: ['mongo', 'services/spaces', 'errors']
 };
 
 /**
- * @param _
  * @param mongo
  * @param {SpacesService} spacesService
  * @param errors
  * @returns {ClustersService}
  */
-module.exports.factory = (_, mongo, spacesService, errors) => {
+module.exports.factory = (mongo, spacesService, errors) => {
     /**
      * Convert remove status operation to own presentation.
      *
@@ -57,6 +58,8 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
             .catch((err) => {
                 if (err.code === mongo.errCodes.DUPLICATE_KEY_UPDATE_ERROR || err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
                     throw new errors.DuplicateKeyException('Cluster with name: "' + cluster.name + '" already exist.');
+                else
+                    throw err;
             });
     };
 
@@ -76,6 +79,8 @@ module.exports.factory = (_, mongo, spacesService, errors) => {
             .catch((err) => {
                 if (err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
                     throw new errors.DuplicateKeyException('Cluster with name: "' + cluster.name + '" already exist.');
+                else
+                    throw err;
             });
     };
 

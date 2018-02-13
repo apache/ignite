@@ -18,6 +18,7 @@
 package org.apache.ignite.logger;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -35,12 +36,27 @@ public class NullLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
+    @Override public void trace(String marker, String msg) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void debug(String msg) {
         // No-op.
     }
 
     /** {@inheritDoc} */
+    @Override public void debug(String marker, String msg) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void info(String msg) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void info(String marker, String msg) {
         // No-op.
     }
 
@@ -55,12 +71,22 @@ public class NullLogger implements IgniteLogger {
     }
 
     /** {@inheritDoc} */
+    @Override public void warning(String marker, String msg, @Nullable Throwable e) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public void error(String msg) {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public void error(String msg, @Nullable Throwable e) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(String marker, String msg, @Nullable Throwable e) {
         // No-op.
     }
 
@@ -87,5 +113,10 @@ public class NullLogger implements IgniteLogger {
     /** {@inheritDoc} */
     @Nullable @Override public String fileName() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(NullLogger.class, this);
     }
 }

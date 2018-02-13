@@ -66,9 +66,6 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     private long lockWaitTime;
 
     /** */
-    private long checkpointPageBufSize;
-
-    /** */
     private int checkpointThreads;
 
     /** Checkpoint write order. */
@@ -233,13 +230,6 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
     }
 
     /**
-     * @return Checkpointing page buffer size in bytes.
-     */
-    public long getCheckpointPageBufferSize() {
-        return checkpointPageBufSize;
-    }
-
-    /**
      * @return Number of checkpointing threads.
      */
     public int getCheckpointThreads() {
@@ -390,7 +380,7 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         U.writeString(out, storagePath);
         out.writeLong(checkpointFreq);
         out.writeLong(lockWaitTime);
-        out.writeLong(0);
+        out.writeLong(0);  // Write stub for removed checkpointPageBufSize.
         out.writeInt(checkpointThreads);
         U.writeEnum(out, checkpointWriteOrder);
         out.writeInt(walHistSize);
@@ -423,7 +413,7 @@ public class VisorDataStorageConfiguration extends VisorDataTransferObject {
         storagePath = U.readString(in);
         checkpointFreq = in.readLong();
         lockWaitTime = in.readLong();
-        checkpointPageBufSize = in.readLong();
+        in.readLong(); // Read stub for removed checkpointPageBufSize.
         checkpointThreads = in.readInt();
         checkpointWriteOrder = CheckpointWriteOrder.fromOrdinal(in.readByte());
         walHistSize = in.readInt();

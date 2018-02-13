@@ -19,7 +19,7 @@ export default class {
     static $inject = ['IgniteVersion'];
 
     constructor(Version) {
-        this.titleSuffix = ' – Apache Ignite Web Console';
+        this.titleSuffix = ' - Apache Ignite Web Console';
 
         this.headerLogo = '/images/ignite-logo.svg';
 
