@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Exception that represents failures of user management operations.
  */
-public class UserAuthenticationException extends IgniteCheckedException {
+public class UserManagementException extends IgniteCheckedException {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -32,7 +32,7 @@ public class UserAuthenticationException extends IgniteCheckedException {
      *
      * @param msg Error message.
      */
-    public UserAuthenticationException(String msg) {
+    public UserManagementException(String msg) {
         super(msg);
     }
 
@@ -42,7 +42,7 @@ public class UserAuthenticationException extends IgniteCheckedException {
      * @param msg Error message.
      * @param cause Optional nested exception (can be {@code null}).
      */
-    public UserAuthenticationException(String msg, @Nullable Throwable cause) {
+    public UserManagementException(String msg, @Nullable Throwable cause) {
         super(msg, cause);
     }
 }

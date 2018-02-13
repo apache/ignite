@@ -18,7 +18,9 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -29,13 +31,20 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Test for disabled {@link IgniteAuthenticationProcessor}.
  */
-public class AuthenticationProcessorDisableTest extends GridCommonAbstractTest {
+public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
-    /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+    /**
+     * @param idx Node index.
+     * @param authEnabled Authentication enabled.
+     * @return Ignite configuration.
+     * @throws Exception On error.
+     */
+    private IgniteConfiguration configuration(int idx, boolean authEnabled, boolean client) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx));
+
+        cfg.setClientMode(client);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -43,14 +52,9 @@ public class AuthenticationProcessorDisableTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(spi);
 
+        cfg.setAuthenicationEnabled(authEnabled);
+
         return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        startGrids(1);
     }
 
     /** {@inheritDoc} */
@@ -63,7 +67,71 @@ public class AuthenticationProcessorDisableTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void test() throws Exception {
+    public void testServerNodeJoinDisabled() throws Exception {
+        checkNodeJoinDisabled(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientNodeJoinDisabled() throws Exception {
+        checkNodeJoinDisabled(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServerNodeJoinEnabled() throws Exception {
+        checkNodeJoinEnabled(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientNodeJoinEnabled() throws Exception {
+        checkNodeJoinEnabled(true);
+    }
+
+    /**
+     * @param client Is joining node client.
+     * @throws Exception If failed.
+     */
+    private void checkNodeJoinDisabled(boolean client) throws Exception {
+        startGrid(configuration(0, true, false));
+
+        startGrid(configuration(1, false, client));
+
+        AuthorizationContext actx = grid(1).context().authentication().authenticate("ignite", "ignite");
+
+        assertNotNull(actx);
+
+        assertEquals("ignite", actx.userName());
+    }
+
+    /**
+     * @param client Is joining node client.
+     * @throws Exception If failed.
+     */
+    private void checkNodeJoinEnabled(boolean client) throws Exception {
+        startGrid(configuration(0, false, false));
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    startGrid(configuration(1, true, client));
+
+                    return null;
+                }
+            },
+            IgniteCheckedException.class,
+            "User authentication is disabled on cluster");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDisabledAuthentication() throws Exception {
+        startGrid(configuration(0, false, false));
+
         GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     grid(0).context().authentication().addUser("test", "test");

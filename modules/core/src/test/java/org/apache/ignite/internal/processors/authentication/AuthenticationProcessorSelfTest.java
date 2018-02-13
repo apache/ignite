@@ -22,7 +22,6 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -42,9 +41,6 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
     /** Nodes count. */
     protected static final int NODES_COUNT = 4;
-
-    /** Nodes restarts count. */
-    private static final int RESTARTS = 10;
 
     /** Iterations count. */
     private static final int ITERATIONS = 10;
@@ -267,7 +263,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
                         return null;
                     }
-                }, UserAuthenticationException.class, "The user name or password is incorrect");
+                }, IgniteAccessControlException.class, "The user name or password is incorrect");
 
                 GridTestUtils.assertThrows(log, new Callable<Object>() {
                     @Override public Object call() throws Exception {
@@ -275,7 +271,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
                         return null;
                     }
-                }, UserAuthenticationException.class, "The user name or password is incorrect");
+                }, IgniteAccessControlException.class, "The user name or password is incorrect");
             }
         }
         finally {
@@ -337,7 +333,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
                         return null;
                     }
-                }, UserAuthenticationException.class, "User doesn't exist");
+                }, UserManagementException.class, "User doesn't exist");
 
                 GridTestUtils.assertThrows(log, new Callable<Object>() {
                     @Override public Object call() throws Exception {
@@ -345,7 +341,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
                         return null;
                     }
-                }, UserAuthenticationException.class, "User doesn't exist");
+                }, UserManagementException.class, "User doesn't exist");
             }
         }
         finally {
@@ -371,7 +367,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
                         return null;
                     }
-                }, UserAuthenticationException.class, "User already exists");
+                }, UserManagementException.class, "User already exists");
             }
         }
         finally {
@@ -447,189 +443,6 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                 }
             }
         }, 10, "user-op");
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void _testConcurrentAddUpdateRemoveNodeRestartCoordinator() throws Exception {
-//        fail("https://issues.apache.org/jira/browse/IGNITE-7472");
-
-        final IgniteInternalFuture restartFut = restartCoordinator();
-
-        AuthorizationContext.context(actxDflt);
-
-        final AtomicInteger usrCnt = new AtomicInteger();
-
-//        IgniteInternalFuture dbgF =  GridTestUtils.runAsync(new Runnable() {
-//            @Override public void run() {
-//                try {
-//                    restartFut.get();
-//                }
-//                catch (IgniteCheckedException e) {
-//                }
-//
-//                try {
-//                    U.sleep(3000);
-//                }
-//                catch (IgniteInterruptedCheckedException e) {
-//                }
-//
-//                if (!IgniteAuthenticationProcessor.MAP.isEmpty()) {
-//                    System.out.println("+++ UNFINISHED");
-//
-//                    for (UserManagementOperation op : IgniteAuthenticationProcessor.MAP.keySet())
-//                        System.out.println("+++ " + op);
-//                }
-//            }
-//        });
-
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            @Override public void run() {
-                AuthorizationContext.context(actxDflt);
-
-                String user = "test" + usrCnt.getAndIncrement();
-
-                try {
-                    while (!restartFut.isDone()) {
-                        grid(CLI_NODE).context().authentication().addUser(user, "passwd_" + user);
-
-                        grid(CLI_NODE).context().authentication().updateUser(user, "new_passwd_" + user);
-
-                        grid(CLI_NODE).context().authentication().removeUser(user);
-                    }
-                }
-                catch (Exception e) {
-                    U.error(log, "Unexpected exception on concurrent add/remove: " + user, e);
-                    fail();
-                }
-            }
-        }, 10, "user-op");
-
-        restartFut.get();
-//        dbgF.get();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testConcurrentAuthorizeNodeRestartCoordinator() throws Exception {
-        final int testUsersCnt = 10;
-
-        AuthorizationContext.context(actxDflt);
-
-        for (int i = 0; i < testUsersCnt; ++i)
-            grid(CLI_NODE).context().authentication().addUser("test" + i, "passwd_test" + i);
-
-        final IgniteInternalFuture restartFut = restartCoordinator();
-
-        final AtomicInteger usrCnt = new AtomicInteger();
-
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            @Override public void run() {
-                String user = "test" + usrCnt.getAndIncrement();
-
-                try {
-                    while (!restartFut.isDone()) {
-                        AuthorizationContext actx = grid(CLI_NODE).context().authentication()
-                            .authenticate(user, "passwd_" + user);
-
-                        assertNotNull(actx);
-                    }
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                    fail("Unexpected exception");
-                }
-            }
-        }, testUsersCnt, "user-op");
-
-        restartFut.get();
-    }
-
-    /**
-     * @return Future.
-     */
-    protected IgniteInternalFuture restartCoordinator() {
-        return GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    int restarts = 0;
-
-                    while (restarts < RESTARTS) {
-                        for (int i = 0; i < CLI_NODE; ++i, ++restarts) {
-                            if (restarts >= RESTARTS)
-                                break;
-
-                            stopGrid(i);
-
-                            U.sleep(500);
-
-                            startGrid(i);
-
-                            U.sleep(500);
-                        }
-                    }
-                }
-                catch (Exception e) {
-                    U.error(log, "Unexpected exception on coordinator restart", e);
-                    fail();
-                }
-            }
-        });
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testConcurrentAddUpdateRemoveNodeRestartServer() throws Exception {
-        final IgniteInternalFuture restartFut = GridTestUtils.runAsync(new Runnable() {
-            @Override public void run() {
-                try {
-                    for (int i = 0; i < RESTARTS; ++i) {
-                        stopGrid(1);
-
-                        U.sleep(500);
-
-                        startGrid(1);
-
-                        U.sleep(500);
-                    }
-                }
-                catch (Exception e) {
-                    e.printStackTrace(System.err);
-                    fail("Unexpected exception on server restart: " + e.getMessage());
-                }
-            }
-        });
-
-        AuthorizationContext.context(actxDflt);
-
-        final AtomicInteger usrCnt = new AtomicInteger();
-
-        GridTestUtils.runMultiThreaded(new Runnable() {
-            @Override public void run() {
-                AuthorizationContext.context(actxDflt);
-
-                String user = "test" + usrCnt.getAndIncrement();
-
-                try {
-                    while (!restartFut.isDone()) {
-                        grid(CLI_NODE).context().authentication().addUser(user, "init");
-
-                        grid(CLI_NODE).context().authentication().updateUser(user, "passwd_" + user);
-
-                        grid(CLI_NODE).context().authentication().removeUser(user);
-                    }
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                    fail("Unexpected exception on add / remove");
-                }
-            }
-        }, 10, "user-op");
-
-        restartFut.get();
     }
 
     /**

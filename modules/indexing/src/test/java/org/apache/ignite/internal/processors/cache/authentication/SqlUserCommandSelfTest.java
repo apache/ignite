@@ -20,12 +20,11 @@ package org.apache.ignite.internal.processors.cache.authentication;
 import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.authentication.User;
-import org.apache.ignite.internal.processors.authentication.UserAuthenticationException;
+import org.apache.ignite.internal.processors.authentication.UserManagementException;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -129,7 +128,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, UserAuthenticationException.class, "User already exists. [login=TEST]");
+            }, UserManagementException.class, "User already exists. [login=TEST]");
         }
     }
 
@@ -148,7 +147,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, UserAuthenticationException.class, "User doesn't exist. [userName=TEST]");
+            }, UserManagementException.class, "User doesn't exist. [userName=TEST]");
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -156,7 +155,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, UserAuthenticationException.class, "User doesn't exist. [userName=TEST]");
+            }, UserManagementException.class, "User doesn't exist. [userName=TEST]");
         }
     }
 

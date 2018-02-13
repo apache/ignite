@@ -22,9 +22,9 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
- * Test for {@link IgniteAuthenticationProcessor} with enabled persistence.
+ * Test for {@link IgniteAuthenticationProcessor} with enabled persistence on unstable topology.
  */
-public class AuthenticationProcessorPersistEnabledTest extends AuthenticationProcessorSelfTest {
+public class AuthenticationProcessorPersistEnabledNodeRestartTest extends AuthenticationProcessorNodeRestartTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -37,44 +37,4 @@ public class AuthenticationProcessorPersistEnabledTest extends AuthenticationPro
 
         return cfg;
     }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testUserPersistence() throws Exception {
-        AuthorizationContext.context(actxDflt);
-
-        try {
-            for (int i = 0; i < NODES_COUNT; ++i)
-                grid(i).context().authentication().addUser("test" + i , "passwd" + i);
-
-            grid(CLI_NODE).context().authentication().updateUser("ignite", "new_passwd");
-
-            stopAllGrids();
-
-            System.out.println("+++ RESTART");
-
-            startGrids(NODES_COUNT);
-
-            for (int i = 0; i < NODES_COUNT; ++i) {
-                for (int usrIdx = 0; usrIdx < NODES_COUNT; ++usrIdx) {
-                    AuthorizationContext actx = grid(i).context().authentication()
-                        .authenticate("test" + usrIdx, "passwd" + usrIdx);
-
-                    assertNotNull(actx);
-                    assertEquals("test" + usrIdx, actx.userName());
-                }
-
-                AuthorizationContext actx = grid(i).context().authentication()
-                    .authenticate("ignite", "new_passwd");
-
-                assertNotNull(actx);
-                assertEquals("ignite", actx.userName());
-            }
-        }
-        finally {
-            AuthorizationContext.clear();
-        }
-    }
-
 }
