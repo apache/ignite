@@ -51,24 +51,24 @@ public class IgniteSpringTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new IgniteTestSuite("Spring Test Suite");
 
-        suite.addTestSuite(GridSpringBeanSerializationSelfTest.class);
-        suite.addTestSuite(IgniteSpringBeanTest.class);
-        suite.addTestSuite(GridFactorySelfTest.class);
-
-        suite.addTest(IgniteResourceSelfTestSuite.suite());
-
-        suite.addTestSuite(IgniteExcludeInConfigurationTest.class);
-
-        // Tests moved to this suite since they require Spring functionality.
-        suite.addTestSuite(GridP2PUserVersionChangeSelfTest.class);
-
-        suite.addTestSuite(GridSpringCacheManagerSelfTest.class);
-
-        suite.addTestSuite(IgniteDynamicCacheConfigTest.class);
-
-        suite.addTestSuite(IgniteStartFromStreamConfigurationTest.class);
-
-        suite.addTestSuite(CacheSpringStoreSessionListenerSelfTest.class);
+//        suite.addTestSuite(GridSpringBeanSerializationSelfTest.class);
+//        suite.addTestSuite(IgniteSpringBeanTest.class);
+//        suite.addTestSuite(GridFactorySelfTest.class);
+//
+//        suite.addTest(IgniteResourceSelfTestSuite.suite());
+//
+//        suite.addTestSuite(IgniteExcludeInConfigurationTest.class);
+//
+//        // Tests moved to this suite since they require Spring functionality.
+//        suite.addTestSuite(GridP2PUserVersionChangeSelfTest.class);
+//
+//        suite.addTestSuite(GridSpringCacheManagerSelfTest.class);
+//
+//        suite.addTestSuite(IgniteDynamicCacheConfigTest.class);
+//
+//        suite.addTestSuite(IgniteStartFromStreamConfigurationTest.class);
+//
+//        suite.addTestSuite(CacheSpringStoreSessionListenerSelfTest.class);
 
         suite.addTestSuite(CacheJdbcBlobStoreFactorySelfTest.class);
         suite.addTestSuite(CacheJdbcPojoStoreFactorySelfTest.class);
