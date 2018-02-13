@@ -480,8 +480,7 @@ namespace Apache.Ignite.Core
             {
                 writer.WriteBoolean(false);
             }
-
-
+            
             // SSL Context factory.
             SslFactorySerializer.Write(writer, SslContextFactory);
 
@@ -657,7 +656,6 @@ namespace Apache.Ignite.Core
             {
                 PersistentStoreConfiguration = new PersistentStoreConfiguration(r);
             }
-        }
 
             // SSL context factory.
             SslContextFactory = SslFactorySerializer.Read(r);

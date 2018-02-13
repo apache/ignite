@@ -1639,7 +1639,6 @@ public class PlatformConfigurationUtils {
         }
     }
 
-
     /**
      * Writes the SSL context factory.
      *
@@ -1670,55 +1669,6 @@ public class PlatformConfigurationUtils {
         w.writeString(sslCtxFactory.getTrustStoreFilePath());
         w.writeString(new String(sslCtxFactory.getTrustStorePassword()));
     }
-
-    /**
-     * Reads the data region configuration.
-     *
-     * @param r Reader.
-     */
-    private static DataRegionConfiguration readDataRegionConfiguration(BinaryRawReader r) {
-        assert r != null;
-
-        return new DataRegionConfiguration()
-                .setName(r.readString())
-                .setPersistenceEnabled(r.readBoolean())
-                .setInitialSize(r.readLong())
-                .setMaxSize(r.readLong())
-                .setSwapPath(r.readString())
-                .setPageEvictionMode(DataPageEvictionMode.fromOrdinal(r.readInt()))
-                .setEvictionThreshold(r.readDouble())
-                .setEmptyPagesPoolSize(r.readInt())
-                .setMetricsEnabled(r.readBoolean())
-                .setMetricsSubIntervalCount(r.readInt())
-                .setMetricsRateTimeInterval(r.readLong())
-                .setCheckpointPageBufferSize(r.readLong());
-    }
-
-    /**
-     * Reads the plugin configuration.
-     *
-     * @param cfg Ignite configuration to update.
-     * @param in Reader.
-     */
-    private static void readLocalEventListeners(IgniteConfiguration cfg, BinaryRawReader in) {
-        int cnt = in.readInt();
-
-        if (cnt == 0) {
-            return;
-        }
-
-        Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap<>(cnt);
-
-        for (int i = 0; i < cnt; i++) {
-            int[] types = in.readIntArray();
-
-            lsnrs.put(new PlatformLocalEventListener(i), types);
-        }
-
-        cfg.setLocalEventListeners(lsnrs);
-    }
-
-
 
     /**
      * Private constructor.
