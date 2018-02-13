@@ -378,9 +378,9 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
     /** {@inheritDoc} */
     @Override public void onStateFinishMessage(ChangeGlobalStateFinishMessage msg) {
-        DiscoveryDataClusterState state = globalState;
+        UUID transitionRequestId = globalState.transitionRequestId();
 
-        if (msg.requestId().equals(state.transitionRequestId())) {
+        if (msg.requestId().equals(transitionRequestId)) {
             log.info("Received state change finish message: " + msg.clusterActive());
 
             globalState = globalState.finish(msg.success());
@@ -394,13 +394,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             if (joinFut != null)
                 joinFut.onDone(false);
 
-            GridFutureAdapter<Void> transitionFut = transitionFuts.remove(state.transitionRequestId());
+            GridFutureAdapter<Void> transitionFut = transitionFuts.remove(transitionRequestId);
 
-            if (transitionFut != null) {
-                state.setTransitionResult(msg.requestId(), msg.clusterActive());
-
+            if (transitionFut != null)
                 transitionFut.onDone();
-            }
         }
         else
             U.warn(log, "Received state finish message with unexpected ID: " + msg);
@@ -490,16 +487,18 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                 transitionFuts.put(msg.requestId(), new GridFutureAdapter<Void>());
 
+                Boolean activate = null;
+
+                if (msg.forceChangeBaselineTopology() && msg.requestId().equals(msg.requestId()))
+                    activate = msg.activate();
+
                 globalState = DiscoveryDataClusterState.createTransitionState(
                     globalState,
                     msg.activate(),
                     msg.activate() ? msg.baselineTopology() : globalState.baselineTopology(),
                     msg.requestId(),
                     topVer,
-                    nodeIds);
-
-                if (msg.forceChangeBaselineTopology())
-                    globalState.setTransitionResult(msg.requestId(), msg.activate());
+                    nodeIds, activate);
 
                 AffinityTopologyVersion stateChangeTopVer = topVer.nextMinorVersion();
 
@@ -1130,7 +1129,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 if (req.activate())
                     onFinalActivate(req);
 
-                globalState.setTransitionResult(req.requestId(), req.activate());
+                globalState = globalState.setTransitionResult(req.requestId(), req.activate());
             }
 
             sendChangeGlobalStateResponse(req.requestId(), req.initiatorNodeId(), null);

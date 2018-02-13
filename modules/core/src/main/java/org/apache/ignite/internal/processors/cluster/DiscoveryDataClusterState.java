@@ -35,10 +35,8 @@ import org.jetbrains.annotations.Nullable;
  * a {@code transitionReqId} field is set to a non-null value and {@code prevState} captures previous cluster state.
  * A joining node catching the cluster in an intermediate state will observe {@code transitionReqId} field to be
  * non-null, however the {@code prevState} will not be sent to the joining node.
- *
- * TODO https://issues.apache.org/jira/browse/IGNITE-7640 This class must be immutable, transitionRes must be set by calling finish().
  */
-public class DiscoveryDataClusterState implements Serializable {
+public final class DiscoveryDataClusterState implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,39 +50,36 @@ public class DiscoveryDataClusterState implements Serializable {
      * Transition request ID. Set to a non-null value if the cluster is changing it's state.
      * The ID is assigned on the initiating node.
      */
-    private final UUID transitionReqId;
+    @Nullable private final UUID transitionReqId;
 
     /**
      * Topology version in the cluster when state change request was received by the coordinator.
      * The exchange fired for the cluster state change will be on version {@code transitionTopVer.nextMinorVersion()}.
      */
     @GridToStringInclude
-    private final AffinityTopologyVersion transitionTopVer;
+    @Nullable private final AffinityTopologyVersion transitionTopVer;
 
     /** Nodes participating in state change exchange. */
     @GridToStringExclude
-    private final Set<UUID> transitionNodes;
+    @Nullable private final Set<UUID> transitionNodes;
 
     /**
      * Local flag for state transition active state result (global state is updated asynchronously by custom message),
      * {@code null} means that state change is not completed yet.
      */
-    private transient volatile Boolean transitionRes;
+    @Nullable private transient final Boolean transitionRes;
 
     /**
      * Previous cluster state if this state is a transition state and it was not received by a joining node.
      */
-    private transient DiscoveryDataClusterState prevState;
-
-    /** Transition result error. */
-    private transient volatile Exception transitionError;
+    private transient final DiscoveryDataClusterState prevState;
 
     /**
      * @param active Current status.
      * @return State instance.
      */
     static DiscoveryDataClusterState createState(boolean active, @Nullable BaselineTopology baselineTopology) {
-        return new DiscoveryDataClusterState(null, active, baselineTopology, null, null, null);
+        return new DiscoveryDataClusterState(null, active, baselineTopology, null, null, null, null);
     }
 
     /**
@@ -100,7 +95,8 @@ public class DiscoveryDataClusterState implements Serializable {
         @Nullable BaselineTopology baselineTopology,
         UUID transitionReqId,
         AffinityTopologyVersion transitionTopVer,
-        Set<UUID> transitionNodes
+        Set<UUID> transitionNodes,
+        Boolean transitionRes
     ) {
         assert transitionReqId != null;
         assert transitionTopVer != null;
@@ -113,7 +109,8 @@ public class DiscoveryDataClusterState implements Serializable {
             baselineTopology,
             transitionReqId,
             transitionTopVer,
-            transitionNodes);
+            transitionNodes,
+            transitionRes);
     }
 
     /**
@@ -129,7 +126,8 @@ public class DiscoveryDataClusterState implements Serializable {
         @Nullable BaselineTopology baselineTopology,
         @Nullable UUID transitionReqId,
         @Nullable AffinityTopologyVersion transitionTopVer,
-        @Nullable Set<UUID> transitionNodes
+        @Nullable Set<UUID> transitionNodes,
+        @Nullable Boolean transitionRes
     ) {
         this.prevState = prevState;
         this.active = active;
@@ -137,6 +135,7 @@ public class DiscoveryDataClusterState implements Serializable {
         this.transitionReqId = transitionReqId;
         this.transitionTopVer = transitionTopVer;
         this.transitionNodes = transitionNodes;
+        this.transitionRes = transitionRes;
     }
 
     /**
@@ -153,9 +152,12 @@ public class DiscoveryDataClusterState implements Serializable {
      * @param reqId Request ID.
      * @param active New cluster state.
      */
-    public void setTransitionResult(UUID reqId, boolean active) {
+    public DiscoveryDataClusterState setTransitionResult(UUID reqId, boolean active) {
         if (reqId.equals(transitionReqId))
-            transitionRes = active;
+            return new DiscoveryDataClusterState(this.prevState, this.active, this.baselineTopology,
+                this.transitionReqId, this.transitionTopVer, this.transitionNodes, active);
+
+        return this;
     }
 
     /**
@@ -208,20 +210,6 @@ public class DiscoveryDataClusterState implements Serializable {
     }
 
     /**
-     * @return Transition error.
-     */
-    @Nullable public Exception transitionError() {
-        return transitionError;
-    }
-
-    /**
-     * @param ex Exception
-     */
-    public void transitionError(Exception ex) {
-        transitionError = ex;
-    }
-
-    /**
      * Creates a non-transitional cluster state. This method effectively cleans all fields identifying the
      * state as transitional and creates a new state with the state transition result.
      *
@@ -234,6 +222,7 @@ public class DiscoveryDataClusterState implements Serializable {
                 null,
                 active,
                 baselineTopology,
+                null,
                 null,
                 null,
                 null

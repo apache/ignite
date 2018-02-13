@@ -858,9 +858,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         DiscoveryDataClusterState state = cctx.kernalContext().state().clusterState();
 
-        if (state.transitionError() != null)
-            changeGlobalStateE = state.transitionError();
-
         if (req.activeChanged()) {
             if (req.activate()) {
                 if (log.isInfoEnabled()) {
