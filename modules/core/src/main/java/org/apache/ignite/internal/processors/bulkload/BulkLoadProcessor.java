@@ -84,11 +84,16 @@ public class BulkLoadProcessor implements AutoCloseable {
         Iterable<List<Object>> inputRecords = inputParser.parseBatch(batchData, isLastBatch);
 
         for (List<Object> record : inputRecords) {
+//            noOpt2 = record;
             IgniteBiTuple<?, ?> kv = dataConverter.apply(record);
 
+//            noOpt1 = kv;
             outputStreamer.apply(kv);
         }
     }
+
+    public volatile IgniteBiTuple<?, ?> noOpt1;
+    public volatile List<Object> noOpt2;
 
     /**
      * Aborts processing and closes the underlying objects ({@link IgniteDataStreamer}).

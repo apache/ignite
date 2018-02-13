@@ -27,7 +27,7 @@ import org.jetbrains.annotations.NotNull;
  * A {@link PipelineBlock}, which splits line according to CSV format rules and unquotes fields.
  * The next block {@link PipelineBlock#accept(Object, boolean)} is called per-line.
  */
-public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
+public class CsvLineProcessorBlock extends PipelineBlock<String, List<Object>> {
     /** Field delimiter pattern. */
     private final Pattern fldDelim;
 
@@ -47,20 +47,14 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
 
     /** {@inheritDoc} */
     @Override public void accept(String input, boolean isLastPortion) throws IgniteCheckedException {
-        List<String> fields = new ArrayList<>();
+        // Currently we don't process quoted field delimiter properly, will be fixed in IGNITE-7537.
+        String[] fields = fldDelim.split(input);
 
-        int lastPos = 0;
-        for (int i = 0; i < input.length(); i++) {
-            if (input.charAt(i) == ',') {
-                fields.add(trim(input.substring(lastPos, i)));
-                lastPos = i + 1;
-            }
-        }
+        ArrayList<Object> flds = new ArrayList<>(fields.length);
+        for (int i = 0; i < fields.length; i++)
+            flds.add(trim(fields[i]));
 
-        if (lastPos < input.length())
-            fields.add(trim(input.substring(lastPos)));
-
-        nextBlock.accept(fields.toArray(new String[fields.size()]), isLastPortion);
+        nextBlock.accept(flds, isLastPortion);
     }
 
     /**

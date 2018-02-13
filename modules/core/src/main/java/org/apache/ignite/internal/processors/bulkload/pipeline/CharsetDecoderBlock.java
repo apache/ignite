@@ -17,10 +17,15 @@
 
 package org.apache.ignite.internal.processors.bulkload.pipeline;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
+import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteIllegalStateException;
 
 /**
  * A {@link PipelineBlock}, which converts stream of bytes supplied as byte[] arrays to an array of char[] using
@@ -52,6 +57,8 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
         leftover = null;
     }
 
+    public volatile byte[] noOpt;
+
     /** {@inheritDoc} */
     @Override public void accept(byte[] data, boolean isLastAppend) throws IgniteCheckedException {
         assert nextBlock != null;
@@ -60,74 +67,76 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
 
         isEndOfInput = isLastAppend;
 
-        char[] c = new char[data.length];
+//        noOpt = data;
 
-        for (int i = 0; i < data.length; i++)
-            c[i] = (char) (((int) data[i]) & 0xFF);
+//        char[] c = new char[data.length];
+//
+//        for (int i = 0; i < data.length; i++)
+//            c[i] = (char) (((int) data[i]) & 0xFF);
+//
+//        nextBlock.accept(c, isLastAppend);
 
-        nextBlock.accept(c, isLastAppend);
+        if (leftover == null && data.length == 0) {
+            nextBlock.accept(new char[0], isLastAppend);
+            return;
+        }
 
-//        if (leftover == null && data.length == 0) {
-//            nextBlock.accept(new char[0], isLastAppend);
-//            return;
-//        }
-//
-//        ByteBuffer dataBuf;
-//
-//        if (leftover == null)
-//            dataBuf = ByteBuffer.wrap(data);
-//        else {
-//            dataBuf = ByteBuffer.allocate(leftover.length + data.length);
-//
-//            dataBuf.put(leftover)
-//                   .put(data);
-//
-//            dataBuf.flip();
-//
-//            leftover = null;
-//        }
-//
-//        int outBufLen = (int)Math.ceil(charsetDecoder.maxCharsPerByte() * (data.length + 1));
-//
-//        assert outBufLen > 0;
-//
-//        CharBuffer outBuf = CharBuffer.allocate(outBufLen);
-//
-//        for (;;) {
-//            CoderResult res = charsetDecoder.decode(dataBuf, outBuf, isEndOfInput);
-//
-//            if (res.isUnderflow()) {
-//                // End of input buffer reached. Either skip the partial character at the end or wait for the next batch.
-//                if (!isEndOfInput && dataBuf.remaining() > 0)
-//                    leftover = Arrays.copyOfRange(dataBuf.array(),
-//                        dataBuf.arrayOffset() + dataBuf.position(), dataBuf.limit());
-//
-//                if (isEndOfInput)
-//                    charsetDecoder.flush(outBuf); // See {@link CharsetDecoder} class javadoc for the protocol.
-//
-//                if (outBuf.position() > 0)
-//                    nextBlock.accept(Arrays.copyOfRange(outBuf.array(), outBuf.arrayOffset(), outBuf.position()),
-//                        isEndOfInput);
-//
-//                break;
-//            }
-//
-//            if (res.isOverflow()) { // Not enough space in the output buffer, flush it and retry.
-//                assert outBuf.position() > 0;
-//
-//                nextBlock.accept(Arrays.copyOfRange(outBuf.array(), outBuf.arrayOffset(), outBuf.position()),
-//                    isEndOfInput);
-//
-//                outBuf.flip();
-//
-//                continue;
-//            }
-//
-//            assert ! res.isMalformed() && ! res.isUnmappable();
-//
-//            // We're not supposed to reach this point with the current implementation.
-//            // The code below will fire exception if Oracle implementation of CharsetDecoder will be changed in future.
-//            throw new IgniteIllegalStateException("Unknown CharsetDecoder state");
-//        }
+        ByteBuffer dataBuf;
+
+        if (leftover == null)
+            dataBuf = ByteBuffer.wrap(data);
+        else {
+            dataBuf = ByteBuffer.allocate(leftover.length + data.length);
+
+            dataBuf.put(leftover)
+                   .put(data);
+
+            dataBuf.flip();
+
+            leftover = null;
+        }
+
+        int outBufLen = (int)Math.ceil(charsetDecoder.maxCharsPerByte() * (data.length + 1));
+
+        assert outBufLen > 0;
+
+        CharBuffer outBuf = CharBuffer.allocate(outBufLen);
+
+        for (;;) {
+            CoderResult res = charsetDecoder.decode(dataBuf, outBuf, isEndOfInput);
+
+            if (res.isUnderflow()) {
+                // End of input buffer reached. Either skip the partial character at the end or wait for the next batch.
+                if (!isEndOfInput && dataBuf.remaining() > 0)
+                    leftover = Arrays.copyOfRange(dataBuf.array(),
+                        dataBuf.arrayOffset() + dataBuf.position(), dataBuf.limit());
+
+                if (isEndOfInput)
+                    charsetDecoder.flush(outBuf); // See {@link CharsetDecoder} class javadoc for the protocol.
+
+                if (outBuf.position() > 0)
+                    nextBlock.accept(Arrays.copyOfRange(outBuf.array(), outBuf.arrayOffset(), outBuf.position()),
+                        isEndOfInput);
+
+                break;
+            }
+
+            if (res.isOverflow()) { // Not enough space in the output buffer, flush it and retry.
+                assert outBuf.position() > 0;
+
+                nextBlock.accept(Arrays.copyOfRange(outBuf.array(), outBuf.arrayOffset(), outBuf.position()),
+                    isEndOfInput);
+
+                outBuf.flip();
+
+                continue;
+            }
+
+            assert ! res.isMalformed() && ! res.isUnmappable();
+
+            // We're not supposed to reach this point with the current implementation.
+            // The code below will fire exception if Oracle implementation of CharsetDecoder will be changed in future.
+            throw new IgniteIllegalStateException("Unknown CharsetDecoder state");
+        }
     }
 }
