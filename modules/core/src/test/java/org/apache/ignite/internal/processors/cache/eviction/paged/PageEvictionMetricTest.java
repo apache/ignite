@@ -43,22 +43,22 @@ public class PageEvictionMetricTest extends PageEvictionAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testPageEvictionMetric()
-        throws Exception {
+    public void testPageEvictionMetric() throws Exception {
         IgniteEx ignite = startGrid(0);
 
-        DataRegionMetricsImpl metrics = ignite.context().cache().context().database().dataRegion(null).memoryMetrics();
+        DataRegionMetricsImpl metrics =
+            ignite.context().cache().context().database().dataRegion(null).memoryMetrics();
 
         metrics.enableMetrics();
 
-        CacheConfiguration<Object, Object> cfg = cacheConfig("evict-metric", null, CacheMode.PARTITIONED,
-            CacheAtomicityMode.ATOMIC, CacheWriteSynchronizationMode.PRIMARY_SYNC);
+        CacheConfiguration<Object, Object> cfg = cacheConfig("evict-metric", null,
+            CacheMode.PARTITIONED, CacheAtomicityMode.ATOMIC, CacheWriteSynchronizationMode.PRIMARY_SYNC);
 
         IgniteCache<Object, Object> cache = ignite.getOrCreateCache(cfg);
 
         for (int i = 1; i <= ENTRIES; i++) {
-            cache.put(i, new TestObject(PAGE_SIZE / 6));
             // Row size is between PAGE_SIZE / 2 and PAGE_SIZE. Enforces "one row - one page".
+            cache.put(i, new TestObject(PAGE_SIZE / 6));
 
             if (i % (ENTRIES / 10) == 0)
                 System.out.println(">>> Entries put: " + i);
