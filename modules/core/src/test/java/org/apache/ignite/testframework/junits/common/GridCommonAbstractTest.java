@@ -111,6 +111,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -850,7 +851,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                     .append(" res=").append(f.isDone() ? f.get() : "N/A")
                     .append(" topVer=")
                     .append((U.hasField(f, "topVer") ?
-                        U.field(f, "topVer") : "[unknown] may be it is finished future"))
+                        String.valueOf(U.field(f, "topVer")) : "[unknown] may be it is finished future"))
                     .append("\n");
 
                 Map<UUID, T2<Long, Collection<Integer>>> remaining = U.field(f, "remaining");
@@ -1646,31 +1647,13 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * @param file File or directory to delete.
+     *
      */
-    protected boolean deleteRecursively(File file) {
-        boolean ok = true;
-
-        long size = -1;
-
-        if (file.isDirectory()) {
-            for (File f : file.listFiles())
-                ok = deleteRecursively(f) & ok;
-        }
-        else
-            size = file.length();
-
-        if (!file.delete()) {
-            info("Failed to delete: " + file);
-
-            ok = false;
-        }
-
-        if (ok && log().isDebugEnabled()) // too much logging on real data
-            log().debug("Deleted OK: " + file.getAbsolutePath() +
-                (size >= 0 ? "(" + IgniteUtils.readableSize(size, false) + ")" : ""));
-
-        return ok;
+    protected void cleanPersistenceDir() throws Exception {
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "cp", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
     }
 
     /**

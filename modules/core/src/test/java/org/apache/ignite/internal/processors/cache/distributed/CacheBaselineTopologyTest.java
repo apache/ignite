@@ -47,6 +47,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.TestDelayingCommunicationSpi;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
@@ -54,6 +55,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -75,13 +78,16 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     private static final int NODE_COUNT = 4;
 
     /** */
-    private static boolean delayRebalance = false;
+    private boolean delayRebalance;
+
+    /** */
+    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -90,7 +96,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         client = false;
     }
@@ -98,6 +104,11 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
+
+        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+        discoSpi.setIpFinder(IP_FINDER);
+
+        cfg.setDiscoverySpi(discoSpi);
 
         cfg.setConsistentId(igniteInstanceName);
 
@@ -350,6 +361,9 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
                 .setPartitionLossPolicy(READ_ONLY_SAFE)
         );
 
+        for (int i = 0; i < NODE_COUNT; i++)
+            grid(i).cache(CACHE_NAME).rebalance().get();
+
         int key = -1;
 
         for (int k = 0; k < 100_000; k++) {
@@ -471,6 +485,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         IgniteEx backup = null;
 
         for (int i = 0; i < NODE_COUNT; i++) {
+            grid(i).cache(CACHE_NAME).rebalance().get();
+
             if (grid(i).localNode().equals(affNodes.get(0))) {
                 primaryIdx = i;
                 primary = grid(i);
@@ -497,6 +513,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         }
 
         primary.close();
+
+        backup.context().cache().context().exchange().affinityReadyFuture(new AffinityTopologyVersion(5, 0)).get();
 
         assertEquals(backup.localNode(), ig.affinity(CACHE_NAME).mapKeyToNode(key));
 
@@ -553,6 +571,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         IgniteEx backup = null;
 
         for (int i = 0; i < NODE_COUNT; i++) {
+            grid(i).cache(CACHE_NAME).rebalance().get();
+
             if (grid(i).localNode().equals(affNodes.get(0))) {
                 primaryIdx = i;
                 primary = grid(i);
