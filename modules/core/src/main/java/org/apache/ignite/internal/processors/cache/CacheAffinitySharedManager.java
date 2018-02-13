@@ -70,6 +70,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -147,6 +148,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         cctx.kernalContext().event().addLocalEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
 
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
+        synchronized (mux) {
+            lastAffVer = null;
+        }
+    }
+
     /**
      * Callback invoked from discovery thread when discovery message is received.
      *
@@ -171,7 +179,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         if ((!CU.clientNode(node) && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT)) ||
             DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg)) {
             synchronized (mux) {
-                assert lastAffVer == null || topVer.compareTo(lastAffVer) > 0;
+                assert lastAffVer == null || topVer.compareTo(lastAffVer) > 0 : "lastAffVer=" + lastAffVer + ", topVer=" + topVer;
 
                 lastAffVer = topVer;
             }
