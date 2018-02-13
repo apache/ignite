@@ -191,10 +191,20 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
 
     /** */
     public static Vector emptyVector(int size, boolean isDistributed) {
-
         if(isDistributed)
             return new SparseDistributedVector(size);
         else
             return new DenseLocalOnHeapVector(size);
+    }
+
+    /** Makes copy with new Label objects and old features and Metadata objects. */
+    public LabeledDataset copy(){
+        LabeledDataset res = new LabeledDataset(this.data, this.colSize);
+        res.isDistributed = this.isDistributed;
+        res.meta = this.meta;
+        for (int i = 0; i < rowSize; i++)
+            res.setLabel(i, this.label(i));
+
+        return res;
     }
 }

@@ -15,23 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm;
+package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
+ * Tests replicated query with disabled events.
  */
-public class LocalLinearSVMClassificationSCDATrainerTest extends GenericLinearSVMTrainerTest {
-    /** */
-    public LocalLinearSVMClassificationSCDATrainerTest() {
-        super(
-            new SVMLinearBinaryClassificationTrainer()
-                .withLambda(0.2)
-                .withAmountOfIterations(10)
-                .withAmountOfLocIterations(20),
-            false,
-            1e-2);
+public class IgniteCacheReplicatedQueryEvtsDisabledSelfTest extends IgniteCacheReplicatedQuerySelfTest {
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration() {
+        return super.cacheConfiguration().setEventsDisabled(true);
     }
 }

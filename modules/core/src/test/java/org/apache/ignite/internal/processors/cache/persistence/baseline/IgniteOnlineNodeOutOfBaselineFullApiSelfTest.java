@@ -16,8 +16,6 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.baseline;
 
-import org.apache.ignite.testframework.GridTestUtils;
-
 /**
  *
  */
@@ -26,7 +24,7 @@ public class IgniteOnlineNodeOutOfBaselineFullApiSelfTest extends IgniteBaseline
     @Override protected void beforeTestsStarted() throws Exception {
         initStoreStrategy();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         startGrids(gridCount());
 

@@ -20,6 +20,8 @@ package org.apache.ignite.ml.trainers;
 import org.apache.ignite.ml.Model;
 
 /** Trainer interface. */
+@Deprecated
+// TODO: IGNITE-7659: Reduce multiple Trainer interfaces to one
 public interface Trainer<M extends Model, T> {
     /**
      * Train the model based on provided data.

@@ -80,14 +80,14 @@ public class IgniteBaselineAffinityTopologyActivationTest extends GridCommonAbst
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids(false);
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /**
