@@ -254,7 +254,7 @@ public abstract class AbstractWalRecordsIterator
                     linker.addDataRecord((DataRecord) rec, actualFilePtr);
                 }
                 else if (rec instanceof WALReferenceAwareRecord) {
-                    linker.linkPayload((WALReferenceAwareRecord) rec);
+                    linker.linkRow((WALReferenceAwareRecord) rec);
                 }
             }
 

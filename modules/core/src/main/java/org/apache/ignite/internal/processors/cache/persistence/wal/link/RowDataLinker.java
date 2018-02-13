@@ -31,7 +31,6 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 
@@ -49,9 +48,9 @@ public class RowDataLinker {
     private final RowDataConverter converter;
 
     /** {@link RowDataHolder} cache needed for link payload. */
-    private final LinkedHashMap<WALPointer, RowDataHolder> dataRecordsCache;
+    private final LinkedHashMap<WALPointer, RowDataHolder> rowDataCache;
 
-    /** The number of direct WAL lookups of {@link DataRecord} records. */
+    /** The number of explicit WAL lookups for {@link DataRecord} or {@link MetastoreDataRecord} records. */
     private int walLookups;
 
     /**
@@ -69,7 +68,7 @@ public class RowDataLinker {
                 DEFAULT_CACHE_SIZE_MB) * 1024 * 1024;
 
         // DataRecords size bounded cache.
-        dataRecordsCache = new LinkedHashMap<WALPointer, RowDataHolder>() {
+        rowDataCache = new LinkedHashMap<WALPointer, RowDataHolder>() {
             private final long MAX_RECORDS_SIZE = dataRecordsCacheSize;
 
             private long recordsTotalSize = 0;
@@ -95,13 +94,13 @@ public class RowDataLinker {
         // Create and cache linker with new DataRecord in case of CREATE or UPDATE operations.
         if (record.operation() == GridCacheOperation.CREATE
                 || record.operation() == GridCacheOperation.UPDATE) {
-            dataRecordsCache.put(pointer, converter.convertFrom(record));
+            rowDataCache.put(pointer, converter.convertFrom(record));
         }
     }
 
     public void addMetastorageDataRecord(MetastoreDataRecord record, WALPointer pointer) throws IgniteCheckedException {
         if (record.value() != null) {
-            dataRecordsCache.put(pointer, converter.convertFrom(record));
+            rowDataCache.put(pointer, converter.convertFrom(record));
         }
     }
 
@@ -111,24 +110,24 @@ public class RowDataLinker {
      * @param record WAL record.
      * @throws IgniteCheckedException If unable to link payload to record.
      */
-    public void linkPayload(WALReferenceAwareRecord record) throws IgniteCheckedException {
+    public void linkRow(WALReferenceAwareRecord record) throws IgniteCheckedException {
         WALPointer lookupPointer = record.reference();
 
-        RowDataHolder linker = lookupLinker(lookupPointer);
+        RowDataHolder holder = lookupRowData(lookupPointer);
 
-        linker.linkRow(record);
+        holder.linkRow(record);
     }
 
     /**
-     * Lookup {@link DataRecord} and associated linker from cache or WAL with given {@code lookupPointer}.
+     * Lookup {@link RowDataHolder} from cache or WAL associated with given {@code lookupPointer}.
      *
      * @param lookupPointer Possible WAL reference to {@link DataRecord}.
      * @return {@link RowDataHolder} associated with given {@code lookupPointer}.
      * @throws IgniteCheckedException If unable to lookup {@link DataRecord}.
      */
-    private RowDataHolder lookupLinker(WALPointer lookupPointer) throws IgniteCheckedException {
-        // Try to find existed linker in cache.
-        RowDataHolder holder = dataRecordsCache.get(lookupPointer);
+    private RowDataHolder lookupRowData(WALPointer lookupPointer) throws IgniteCheckedException {
+        // Try to find existed data in cache.
+        RowDataHolder holder = rowDataCache.get(lookupPointer);
         if (holder != null)
             return holder;
 
@@ -162,7 +161,7 @@ public class RowDataLinker {
                 holder = converter.convertFrom(record);
             }
 
-            dataRecordsCache.put(lookupPointer, holder);
+            rowDataCache.put(lookupPointer, holder);
 
             return holder;
         }

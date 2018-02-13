@@ -57,7 +57,7 @@ public class RecordV2Serializer implements RecordSerializer {
     private static final int FILE_WAL_POINTER_SIZE = 8 + 4 + 4;
 
     /** V2 data serializer. */
-    private RecordDataSerializer dataSerializer;
+    private final RecordDataSerializer dataSerializer;
 
     /** Write pointer. */
     private final boolean writePointer;
