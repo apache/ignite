@@ -67,7 +67,7 @@ public class UserProposedMessage implements DiscoveryCustomMessage {
 
     /** {@inheritDoc} */
     @Override public boolean isMutable() {
-        return true;
+        return false;
     }
 
     /** {@inheritDoc} */

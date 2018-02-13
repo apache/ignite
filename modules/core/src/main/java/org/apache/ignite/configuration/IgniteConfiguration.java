@@ -486,6 +486,9 @@ public class IgniteConfiguration {
     /** Client connector configuration. */
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
+    /** Authentication enabled. */
+    private boolean authEnabled;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -2925,6 +2928,28 @@ public class IgniteConfiguration {
      */
     @Nullable public ClientConnectorConfiguration getClientConnectorConfiguration() {
         return cliConnCfg;
+    }
+
+    /**
+     * Returns {@code true} if user authentication is enabled for cluster. Otherwise returns {@code false}.
+     * Default value is false: authentication is disabled.
+     *
+     * @return {@code true} if user authentication is enabled for cluster. Otherwise returns {@code false}.
+     */
+    public boolean isAuthenicationEnabled() {
+        return authEnabled;
+    }
+
+    /**
+     * Sets flag indicating whether the user authentication is enabled for cluster.
+     *
+     * @param authEnabled User authentication enabled flag. {@code true} enab
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setAuthenicationEnabled(boolean authEnabled) {
+        this.authEnabled = authEnabled;
+
+        return this;
     }
 
     /** {@inheritDoc} */

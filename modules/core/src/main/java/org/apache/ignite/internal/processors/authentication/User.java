@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  */
-public class User implements Serializable, Message {
+public class User implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -175,92 +175,5 @@ public class User implements Serializable, Message {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(User.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeString("encPasswd", encPasswd))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeString("name", name))
-                    return false;
-
-                writer.incrementState();
-
-            case 2:
-                if (!writer.writeByteArray("salt", salt))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                encPasswd = reader.readString("encPasswd");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                name = reader.readString("name");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 2:
-                salt = reader.readByteArray("salt");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(User.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 133;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 3;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
     }
 }

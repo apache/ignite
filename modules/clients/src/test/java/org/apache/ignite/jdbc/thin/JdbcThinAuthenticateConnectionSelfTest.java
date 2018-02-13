@@ -21,7 +21,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.Callable;
-import org.apache.ignite.configuration.AuthenticationConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
@@ -55,9 +54,7 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
-            .setAuthenticationConfiguration(new AuthenticationConfiguration()
-                .setEnabled(true)));
+        cfg.setAuthenicationEnabled(true);
 
         return cfg;
     }
@@ -107,6 +104,7 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
     }
 
     /**
+     * @throws SQLException On failed.
      */
     public void testUserSqlOnAuthorized() throws SQLException {
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1", "ignite", "ignite")) {

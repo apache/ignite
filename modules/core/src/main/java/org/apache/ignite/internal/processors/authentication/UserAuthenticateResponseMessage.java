@@ -34,9 +34,6 @@ public class UserAuthenticateResponseMessage implements Message {
     /** Request ID. */
     private IgniteUuid id;
 
-    /** User. */
-    private User usr;
-
     /** Error message. */
     private String errMsg;
 
@@ -51,7 +48,6 @@ public class UserAuthenticateResponseMessage implements Message {
      */
     public UserAuthenticateResponseMessage(IgniteUuid id, User usr, String errMsg) {
         this.id = id;
-        this.usr = usr;
         this.errMsg = errMsg;
     }
 
@@ -74,13 +70,6 @@ public class UserAuthenticateResponseMessage implements Message {
      */
     public IgniteUuid id() {
         return id;
-    }
-
-    /**
-     * @return Authorize user object.
-     */
-    public User user() {
-        return usr;
     }
 
     /** {@inheritDoc} */
@@ -107,11 +96,6 @@ public class UserAuthenticateResponseMessage implements Message {
 
                 writer.incrementState();
 
-            case 2:
-                if (!writer.writeMessage("usr", usr))
-                    return false;
-
-                writer.incrementState();
 
         }
 
@@ -141,15 +125,6 @@ public class UserAuthenticateResponseMessage implements Message {
                     return false;
 
                 reader.incrementState();
-
-            case 2:
-                usr = reader.readMessage("usr");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
         }
 
         return reader.afterMessageRead(UserAuthenticateResponseMessage.class);

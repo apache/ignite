@@ -99,9 +99,6 @@ public class ClientConnectorConfiguration {
     /** SSL connection factory. */
     private Factory<SSLContext> sslCtxFactory;
 
-    /** Authentication config. */
-    private AuthenticationConfiguration authCfg;
-
     /**
      * Creates SQL connector configuration with all default values.
      */
@@ -130,7 +127,6 @@ public class ClientConnectorConfiguration {
         sslClientAuth = cfg.isSslClientAuth();
         useIgniteSslCtxFactory = cfg.isUseIgniteSslContextFactory();
         sslCtxFactory = cfg.getSslContextFactory();
-        authCfg = cfg.getAuthenticationConfiguration();
     }
 
     /**
@@ -407,28 +403,6 @@ public class ClientConnectorConfiguration {
      */
     public ClientConnectorConfiguration setThinClientEnabled(boolean thinCliEnabled) {
         this.thinCliEnabled = thinCliEnabled;
-
-        return this;
-    }
-
-    /**
-     * Gets user authentication configuration.
-     *
-     * @return Authentication configuration.
-     */
-    public AuthenticationConfiguration getAuthenticationConfiguration() {
-        return authCfg;
-    }
-
-    /**
-     * Sets authentication configuration.
-     *
-     * @param authCfg authentication configuration.
-     * @see #getAuthenticationConfiguration()
-     * @return {@code this} for chaining.
-     */
-    public ClientConnectorConfiguration setAuthenticationConfiguration(AuthenticationConfiguration authCfg) {
-        this.authCfg = authCfg;
 
         return this;
     }

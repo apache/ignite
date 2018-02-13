@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.authentication;
 import java.util.List;
 import java.util.concurrent.Callable;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.configuration.AuthenticationConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
@@ -62,9 +61,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(spi);
 
-        cfg.setClientConnectorConfiguration(new ClientConnectorConfiguration()
-            .setAuthenticationConfiguration(new AuthenticationConfiguration()
-                .setEnabled(true)));
+        cfg.setAuthenicationEnabled(true);
 
         return cfg;
     }
