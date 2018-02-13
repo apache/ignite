@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#include "ignite/odbc/diagnostic/diagnosable.h"
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/row.h"
 

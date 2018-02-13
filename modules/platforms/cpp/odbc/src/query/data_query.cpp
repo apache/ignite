@@ -407,7 +407,7 @@ namespace ignite
 
                     case app::ConversionResult::AI_VARLEN_DATA_TRUNCATED:
                     {
-                        diag.AddStatusRecord(SqlState::S22001_STRING_RIGHT_TRUNCATED,
+                        diag.AddStatusRecord(SqlState::S01004_DATA_TRUNCATED,
                             "Buffer is too small for the column data. Truncated from the right.", rowIdx, columnIdx);
 
                         return SqlResult::AI_SUCCESS_WITH_INFO;

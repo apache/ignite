@@ -29,11 +29,6 @@ namespace ignite
 {
     namespace odbc
     {
-        namespace diagnostic
-        {
-            class Diagnosable;
-        }
-
         /**
          * Query result row.
          */

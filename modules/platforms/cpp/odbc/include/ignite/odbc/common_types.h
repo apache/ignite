@@ -83,9 +83,6 @@ namespace ignite
                 /** Restricted data type attribute violation. */
                 S07006_RESTRICTION_VIOLATION,
 
-                /** String data right truncated. */
-                S22001_STRING_RIGHT_TRUNCATED,
-
                 /** Indicator needed but not suplied. */
                 S22002_INDICATOR_NEEDED,
 

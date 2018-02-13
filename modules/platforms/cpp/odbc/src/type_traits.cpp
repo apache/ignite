@@ -23,7 +23,7 @@
 namespace
 {
     /** Default variable size data display size. */
-    enum { DEFAULT_VARDATA_SIZE = 32 };
+    enum { DEFAULT_VARDATA_SIZE = SQL_NO_TOTAL };
 }
 
 namespace ignite

@@ -329,7 +329,9 @@ namespace ignite
 
                 written = static_cast<int32_t>(toCopy);
 
-                if (toCopy > static_cast<SqlLen>(value.size()))
+                LOG_MSG("toCopy=" << toCopy << ", static_cast<SqlLen>(value.size())=" << static_cast<SqlLen>(value.size()));
+
+                if (toCopy < static_cast<SqlLen>(value.size()))
                     return ConversionResult::AI_VARLEN_DATA_TRUNCATED;
 
                 return ConversionResult::AI_SUCCESS;
