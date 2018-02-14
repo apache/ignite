@@ -19,12 +19,12 @@ package org.apache.ignite.cache.eviction.fifo;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.cache.eviction.AbstractEvictionPolicy;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
-import org.jsr166.ConcurrentLinkedDeque8;
-import org.jsr166.ConcurrentLinkedDeque8.Node;
+import org.jsr166.ConcurrentLinkedDequeEx;
 
 /**
  * Eviction policy based on {@code First In First Out (FIFO)} algorithm and supports batch eviction.
@@ -49,8 +49,8 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
     private static final long serialVersionUID = 0L;
 
     /** FIFO queue. */
-    private final ConcurrentLinkedDeque8<EvictableEntry<K, V>> queue =
-        new ConcurrentLinkedDeque8<>();
+    private final ConcurrentLinkedDequeEx<EvictableEntry<K, V>> queue =
+        new ConcurrentLinkedDequeEx<>(new ConcurrentLinkedDeque<EvictableEntry<K, V>>());
 
     /**
      * Constructs FIFO eviction policy with all defaults.
@@ -81,7 +81,7 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
 
     /** {@inheritDoc} */
     @Override public int getCurrentSize() {
-        return queue.sizex();
+        return queue.size();
     }
 
     /** {@inheritDoc} */
@@ -117,8 +117,7 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected boolean removeMeta(Object meta) {
-        // TODO: removeFirstOccurence
-        return queue.unlink((EvictableEntry<K, V>)meta);
+        return queue.removeFirstOccurrence(meta);
     }
 
     /**
@@ -137,8 +136,7 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
         queue.offerLast(entry);
 
         if (!entry.isCached() || entry.putMetaIfAbsent(entry) != null) {
-            // TODO: removeFirstOccurence
-            queue.unlink(entry);
+            queue.removeFirstOccurrence(entry);
 
             return false;
         }
