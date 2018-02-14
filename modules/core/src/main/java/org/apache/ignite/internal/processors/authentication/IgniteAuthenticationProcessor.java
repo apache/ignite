@@ -329,12 +329,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
             UserManagementOperation.OperationType.ADD);
 
-        MAP.put(op,true);
-        try {
-            execUserOperation(op).get();
-        }finally {
-            MAP.remove(op);
-        }
+        execUserOperation(op).get();
     }
 
     /**
@@ -345,12 +340,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         UserManagementOperation op = new UserManagementOperation(User.create(login),
             UserManagementOperation.OperationType.REMOVE);
 
-        MAP.put(op,true);
-        try {
-            execUserOperation(op).get();
-        }finally {
-            MAP.remove(op);
-        }
+        execUserOperation(op).get();
     }
 
     /**
@@ -362,12 +352,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
             UserManagementOperation.OperationType.UPDATE);
 
-        MAP.put(op,true);
-        try {
-            execUserOperation(op).get();
-        }finally {
-            MAP.remove(op);
-        }
+        execUserOperation(op).get();
     }
 
     /** {@inheritDoc} */
@@ -537,9 +522,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             return fut;
         }
     }
-
-    /** */
-    public static ConcurrentHashMap<UserManagementOperation, Boolean> MAP = new ConcurrentHashMap<>();
 
     /**
      * @param op The operation with users.
