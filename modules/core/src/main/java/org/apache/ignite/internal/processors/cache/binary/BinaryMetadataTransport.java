@@ -418,6 +418,9 @@ final class BinaryMetadataTransport {
 
         /** {@inheritDoc} */
         @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MetadataUpdateAcceptedMessage msg) {
+            if (log.isDebugEnabled())
+                log.debug("MetadataUpdata ack received: " + msg);
+
             if (msg.duplicated())
                 return;
 

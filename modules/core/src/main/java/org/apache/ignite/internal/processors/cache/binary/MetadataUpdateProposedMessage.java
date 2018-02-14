@@ -123,6 +123,8 @@ public final class MetadataUpdateProposedMessage implements DiscoveryCustomMessa
      * {@inheritDoc}
      */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        System.out.println("-->>-->> [" + Thread.currentThread().getName() + "] "  + System.currentTimeMillis() + " acking binMeta propose msg: " + status);
+
         return (status == ProposalStatus.SUCCESSFUL) ? new MetadataUpdateAcceptedMessage(typeId, pendingVer) : null;
     }
 
