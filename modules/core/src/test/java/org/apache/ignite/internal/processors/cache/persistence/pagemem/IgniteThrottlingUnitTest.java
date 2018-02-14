@@ -21,6 +21,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.logger.NullLogger;
 import org.junit.Test;
@@ -42,6 +44,9 @@ public class IgniteThrottlingUnitTest {
     /** Page memory 2 g. */
     private PageMemoryImpl pageMemory2g = mock(PageMemoryImpl.class);
 
+    /** State checker. */
+    private CheckpointLockStateChecker stateChecker = () -> true;
+
     {
         when(pageMemory2g.totalPages()).thenReturn((2L * 1024 * 1024 * 1024) / 4096);
     }
@@ -51,7 +56,7 @@ public class IgniteThrottlingUnitTest {
      */
     @Test
     public void breakInCaseTooFast() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
         long time = throttle.getParkTime(0.67,
             (362584 + 67064) / 2,
@@ -68,7 +73,7 @@ public class IgniteThrottlingUnitTest {
      */
     @Test
     public void noBreakIfNotFastWrite() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
         long time = throttle.getParkTime(0.47,
             ((362584 + 67064) / 2),
@@ -150,7 +155,7 @@ public class IgniteThrottlingUnitTest {
      */
     @Test
     public void beginOfCp() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
         assertTrue(throttle.getParkTime(0.01, 100,400000,
             1,
@@ -177,7 +182,7 @@ public class IgniteThrottlingUnitTest {
      */
     @Test
     public void enforceThrottleAtTheEndOfCp() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
         long time1 = throttle.getParkTime(0.70, 300000, 400000,
             1, 20200, 23000);
@@ -200,7 +205,7 @@ public class IgniteThrottlingUnitTest {
      */
     @Test
     public void tooMuchPagesMarkedDirty() {
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, log);
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, null, stateChecker, log);
 
        // 363308	350004	348976	10604
         long time = throttle.getParkTime(0.75,
@@ -234,11 +239,10 @@ public class IgniteThrottlingUnitTest {
         }).when(log).info(anyString());
 
         AtomicInteger written = new AtomicInteger();
-        GridCacheDatabaseSharedManager db = mock(GridCacheDatabaseSharedManager.class);
-        when(db.checkpointLockIsHeldByThread()).thenReturn(true);
-        when(db.writtenPagesCounter()).thenReturn(written);
+        CheckpointWriteProgressSupplier cpProgress = mock(CheckpointWriteProgressSupplier.class);
+        when(cpProgress.writtenPagesCounter()).thenReturn(written);
 
-        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, db, log) {
+        PagesWriteSpeedBasedThrottle throttle = new PagesWriteSpeedBasedThrottle(pageMemory2g, cpProgress, stateChecker, log) {
             @Override protected void doPark(long throttleParkTimeNs) {
                 //do nothing
             }

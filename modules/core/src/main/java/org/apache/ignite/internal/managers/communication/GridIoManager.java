@@ -97,7 +97,6 @@ import org.apache.ignite.spi.communication.CommunicationListener;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -140,7 +139,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     private static final ThreadLocal<Byte> CUR_PLC = new ThreadLocal<>();
 
     /** Listeners by topic. */
-    private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Object, GridMessageListener> lsnrMap = new ConcurrentHashMap<>();
 
     /** System listeners. */
     private volatile GridMessageListener[] sysLsnrs;
@@ -159,14 +158,13 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
 
     /** */
     private final ConcurrentMap<Object, ConcurrentMap<UUID, GridCommunicationMessageSet>> msgSetMap =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Local node ID. */
     private final UUID locNodeId;
 
     /** Cache for messages that were received prior to discovery. */
-    private final ConcurrentMap<UUID, Deque<DelayedMessage>> waitMap =
-        new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, Deque<DelayedMessage>> waitMap = new ConcurrentHashMap<>();
 
     /** Communication message listener. */
     private CommunicationListener<Serializable> commLsnr;
@@ -2799,7 +2797,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /**
      *
      */
-    private static class ConcurrentHashMap0<K, V> extends ConcurrentHashMap8<K, V> {
+    private static class ConcurrentHashMap0<K, V> extends ConcurrentHashMap<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
 
