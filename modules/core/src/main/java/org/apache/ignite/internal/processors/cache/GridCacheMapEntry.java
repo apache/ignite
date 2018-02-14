@@ -761,8 +761,17 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     long expTime = CU.toExpireTime(ttl);
 
+                    WALPointer reference;
+                    if (tx != null) {
+                        reference = logTxUpdate(tx, ret, expTime, 0L);
+                    }
+                    else {
+                        GridCacheOperation op = this.val == null ? GridCacheOperation.CREATE : GridCacheOperation.UPDATE;
+                        reference = logUpdate(op, ret, nextVer, expTime, 0L);
+                    }
+
                     // Update indexes before actual write to entry.
-                    storeValue(ret, expTime, nextVer, null, null);
+                    storeValue(ret, expTime, nextVer, null, reference);
 
                     update(ret, expTime, ttl, nextVer, true);
 
@@ -1041,7 +1050,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (updateCntr != null && updateCntr != 0)
                 updateCntr0 = updateCntr;
 
-            if (tx != null && cctx.group().persistenceEnabled() && cctx.group().walEnabled())
+            if (tx != null)
                 logPtr = logTxUpdate(tx, val, expireTime, updateCntr0);
 
             storeValue(val, expireTime, newVer, null, logPtr);
@@ -1235,7 +1244,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (updateCntr != null && updateCntr != 0)
                 updateCntr0 = updateCntr;
 
-            if (tx != null && cctx.group().persistenceEnabled() && cctx.group().walEnabled())
+            if (tx != null)
                 logPtr = logTxUpdate(tx, null, 0, updateCntr0);
 
             drReplicate(drType, null, newVer, topVer);
@@ -1586,13 +1595,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     // Must persist inside synchronization in non-tx mode.
                     cctx.store().put(null, key, updated, ver);
 
-                WALPointer reference = logUpdate(
-                        op,
-                        updated,
-                        ver,
-                        expireTime,
-                        updateCntr
-                );
+                WALPointer reference = logUpdate(op, updated, ver, expireTime, updateCntr);
 
                 storeValue(updated, expireTime, ver, oldRow, reference);
 
@@ -2909,7 +2912,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
                     if (val != null) {
-                        WALPointer reference = logUpdate(GridCacheOperation.CREATE, val, newVer, expTime, 0);
+                        GridCacheOperation op = this.val == null ? GridCacheOperation.CREATE : GridCacheOperation.UPDATE;
+                        WALPointer reference = logUpdate(op, val, newVer, expTime, 0);
 
                         storeValue(val, expTime, newVer, null, reference);
 
@@ -3575,7 +3579,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         throws IgniteCheckedException {
         assert cctx.transactional();
 
-        //if (tx.local()) { // For remote tx we log all updates in batch: GridDistributedTxRemoteAdapter.commitIfLocked()
+        if (cctx.group().persistenceEnabled() && cctx.group().walEnabled()) {
             GridCacheOperation op;
             if (val == null)
                 op = GridCacheOperation.DELETE;
@@ -3583,19 +3587,19 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 op = this.val == null ? GridCacheOperation.CREATE : GridCacheOperation.UPDATE;
 
             return cctx.shared().wal().log(new DataRecord(new DataEntry(
-                cctx.cacheId(),
-                key,
-                val,
-                op,
-                tx.nearXidVersion(),
-                tx.writeVersion(),
-                expireTime,
-                key.partition(),
-                updCntr))
+                    cctx.cacheId(),
+                    key,
+                    val,
+                    op,
+                    tx.nearXidVersion(),
+                    tx.writeVersion(),
+                    expireTime,
+                    key.partition(),
+                    updCntr))
             );
-        //}
-        //else
-        //    return null;
+        }
+
+        return null;
     }
 
     /**
