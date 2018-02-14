@@ -70,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheExplicitLockSpan;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -642,7 +643,22 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                         for (int i = 0; ; i++) {
                             boolean match = false;
 
-                            AffinityTopologyVersion readyVer = dht.context().shared().exchange().readyAffinityVersion();
+                            GridCachePartitionExchangeManager<?, ?> exchMgr = dht.context().shared().exchange();
+
+                            AffinityTopologyVersion readyVer = exchMgr.readyAffinityVersion();
+
+                            // Wait for the exchange completion (there is a race between ready affinity version
+                            // initialization and partition topology version update).
+                            // Otherwise, there may be an assertion when printing top.readyTopologyVersion().
+                            try {
+                                IgniteInternalFuture<?> fut = exchMgr.affinityReadyFuture(readyVer);
+
+                                if (fut != null)
+                                    fut.get();
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw new IgniteException(e);
+                            }
 
                             if (readyVer.topologyVersion() > 0 && c.context().started()) {
                                 // Must map on updated version of topology.
@@ -851,7 +867,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                     .append(" res=").append(f.isDone() ? f.get() : "N/A")
                     .append(" topVer=")
                     .append((U.hasField(f, "topVer") ?
-                        U.field(f, "topVer") : "[unknown] may be it is finished future"))
+                        String.valueOf(U.field(f, "topVer")) : "[unknown] may be it is finished future"))
                     .append("\n");
 
                 Map<UUID, T2<Long, Collection<Integer>>> remaining = U.field(f, "remaining");
