@@ -443,6 +443,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
             BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
 
+            if (mergedMeta == oldMeta)
+                return;
+
             MetadataUpdateResult res = transport.requestMetadataUpdate(mergedMeta).get();
 
             assert res != null;
