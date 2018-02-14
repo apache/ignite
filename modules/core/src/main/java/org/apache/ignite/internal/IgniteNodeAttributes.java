@@ -193,7 +193,7 @@ public final class IgniteNodeAttributes {
     /** Data storage configuration. */
     public static final String ATTR_DATA_STORAGE_CONFIG = ATTR_PREFIX + ".data.storage.config";
 
-    /** Data storage configuration. */
+    /** User authentication enabled flag. */
     public static final String ATTR_AUTHENTICATION_ENABLED = ATTR_PREFIX + ".authentication.enabled";
 
     /**

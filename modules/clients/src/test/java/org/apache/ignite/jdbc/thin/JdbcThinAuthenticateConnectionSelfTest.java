@@ -21,7 +21,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.concurrent.Callable;
-import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
@@ -54,7 +53,7 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        cfg.setAuthenicationEnabled(true);
+        cfg.setAuthenticationEnabled(true);
 
         return cfg;
     }

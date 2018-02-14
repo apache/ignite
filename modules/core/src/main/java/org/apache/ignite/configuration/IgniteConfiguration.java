@@ -598,7 +598,7 @@ public class IgniteConfiguration {
         utilityCachePoolSize = cfg.getUtilityCacheThreadPoolSize();
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
-        authEnabled = cfg.isAuthenicationEnabled();
+        authEnabled = cfg.isAuthenticationEnabled();
     }
 
     /**
@@ -2937,7 +2937,7 @@ public class IgniteConfiguration {
      *
      * @return {@code true} if user authentication is enabled for cluster. Otherwise returns {@code false}.
      */
-    public boolean isAuthenicationEnabled() {
+    public boolean isAuthenticationEnabled() {
         return authEnabled;
     }
 
@@ -2947,7 +2947,7 @@ public class IgniteConfiguration {
      * @param authEnabled User authentication enabled flag. {@code true} enab
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setAuthenicationEnabled(boolean authEnabled) {
+    public IgniteConfiguration setAuthenticationEnabled(boolean authEnabled) {
         this.authEnabled = authEnabled;
 
         return this;

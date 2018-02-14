@@ -140,7 +140,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     public IgniteAuthenticationProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        isEnabled = ctx.config().isAuthenicationEnabled();
+        isEnabled = ctx.config().isAuthenticationEnabled();
 
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
     }

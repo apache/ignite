@@ -60,7 +60,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(spi);
 
-        cfg.setAuthenicationEnabled(true);
+        cfg.setAuthenticationEnabled(true);
 
         return cfg;
     }

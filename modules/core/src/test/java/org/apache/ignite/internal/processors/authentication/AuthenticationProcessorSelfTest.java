@@ -79,7 +79,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(spi);
 
-        cfg.setAuthenicationEnabled(true);
+        cfg.setAuthenticationEnabled(true);
 
         return cfg;
     }

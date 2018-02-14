@@ -60,7 +60,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
 
         cfg.setDiscoverySpi(spi);
 
-        cfg.setAuthenicationEnabled(true);
+        cfg.setAuthenticationEnabled(true);
 
         return cfg;
     }

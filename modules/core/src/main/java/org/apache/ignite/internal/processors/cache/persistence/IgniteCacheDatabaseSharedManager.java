@@ -132,6 +132,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             for (MetastorageLifecycleListener lsnr : ctx.internalSubscriptionProcessor().getMetastorageSubscribers()) {
                 lsnr.onReadyForRead(metaStorage);
+
                 lsnr.onReadyForReadWrite(metaStorage);
             }
         }

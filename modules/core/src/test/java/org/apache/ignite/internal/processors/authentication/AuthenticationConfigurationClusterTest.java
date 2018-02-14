@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.authentication;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -38,11 +37,12 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
     /**
      * @param idx Node index.
      * @param authEnabled Authentication enabled.
+     * @param client Client node flag.
      * @return Ignite configuration.
      * @throws Exception On error.
      */
     private IgniteConfiguration configuration(int idx, boolean authEnabled, boolean client) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(getTestIgniteInstanceName(idx));
+        IgniteConfiguration cfg = getConfiguration(getTestIgniteInstanceName(idx));
 
         cfg.setClientMode(client);
 
@@ -52,7 +52,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
 
         cfg.setDiscoverySpi(spi);
 
-        cfg.setAuthenicationEnabled(authEnabled);
+        cfg.setAuthenticationEnabled(authEnabled);
 
         return cfg;
     }
