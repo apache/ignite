@@ -1030,7 +1030,6 @@ public class DmlStatementsProcessor {
         IgniteDataStreamer<Object, Object> streamer = cache.grid().dataStreamer(cache.name());
 
         BulkLoadProcessor processor = new BulkLoadStreamerProcessor(inputParser, dataConverter, streamer);
-//        BulkLoadProcessor processor = new BulkLoadCachePutAllProcessor(inputParser, dataConverter, cache.cache());
 
         BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.batchSize());
 

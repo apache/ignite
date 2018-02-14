@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.bulkload.pipeline;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteIllegalStateException;
+
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -24,8 +27,6 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.util.Arrays;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteIllegalStateException;
 
 /**
  * A {@link PipelineBlock}, which converts stream of bytes supplied as byte[] arrays to an array of char[] using
@@ -57,8 +58,6 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
         leftover = null;
     }
 
-    public volatile byte[] noOpt;
-
     /** {@inheritDoc} */
     @Override public void accept(byte[] data, boolean isLastAppend) throws IgniteCheckedException {
         assert nextBlock != null;
@@ -66,15 +65,6 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
         assert !isEndOfInput : "convertBytes() called after end of input";
 
         isEndOfInput = isLastAppend;
-
-//        noOpt = data;
-
-//        char[] c = new char[data.length];
-//
-//        for (int i = 0; i < data.length; i++)
-//            c[i] = (char) (((int) data[i]) & 0xFF);
-//
-//        nextBlock.accept(c, isLastAppend);
 
         if (leftover == null && data.length == 0) {
             nextBlock.accept(new char[0], isLastAppend);
