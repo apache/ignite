@@ -132,7 +132,7 @@ public class DataStorageConfiguration implements Serializable {
     public static final int DFLT_WAL_FLUSH_FREQ = 2000;
 
     /** Default wal fsync delay. */
-    public static final int DFLT_WAL_FSYNC_DELAY = 1000;
+    public static final int DFLT_WAL_FSYNC_DELAY = 0;
 
     /** Default wal record iterator buffer size. */
     public static final int DFLT_WAL_RECORD_ITERATOR_BUFFER_SIZE = 64 * 1024 * 1024;
