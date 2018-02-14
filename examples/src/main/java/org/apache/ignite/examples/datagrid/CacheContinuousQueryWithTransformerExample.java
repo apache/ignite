@@ -57,7 +57,7 @@ import org.apache.ignite.lang.IgniteClosure;
  */
 public class CacheContinuousQueryWithTransformerExample {
     /** Cache name. */
-    private static final String CACHE_NAME = CacheContinuousQueryExample.class.getSimpleName();
+    private static final String CACHE_NAME = CacheContinuousQueryWithTransformerExample.class.getSimpleName();
 
     /**
      * Executes example.
@@ -76,17 +76,17 @@ public class CacheContinuousQueryWithTransformerExample {
                 ContinuousQueryWithTransformer<Integer, Organization, String> qry =
                     new ContinuousQueryWithTransformer<>();
 
-                //Factory to create transformers.
+                // Factory to create transformers.
                 Factory<IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Organization>, String>> factory =
                     FactoryBuilder.factoryOf(
-                        //Return one field of complex object.
-                        //Only this field will be sent over to a local node over the network.
+                        // Return one field of complex object.
+                        // Only this field will be sent over to a local node over the network.
                         (IgniteClosure<CacheEntryEvent<? extends Integer, ? extends Organization>, String>)
                             event -> event.getValue().name());
 
                 qry.setRemoteTransformerFactory(factory);
 
-                //Listener that will receive transformed data.
+                // Listener that will receive transformed data.
                 qry.setLocalListener(names -> {
                     for (String name : names)
                         System.out.println("New organization name: " + name);
@@ -145,8 +145,6 @@ public class CacheContinuousQueryWithTransformerExample {
             new Address("4800 Lilly Ave, Edwards, CA", 793523), // Address.
             OrganizationType.NON_PROFIT, // Type.
             new Timestamp(System.currentTimeMillis()))); // Last update time.
-
-
 
         cache.putAll(data);
     }
