@@ -178,7 +178,7 @@ public abstract class IgniteAbstractStandByClientReconnectTest extends GridCommo
                     .setIpFinder(clientIpFinder)
             );
 
-        cfg3.setClientMode(true);
+        cfg3.setClientMode(true).setFailureDetectionTimeout(1000);
 
         IgniteEx ig1 = startGrid(cfg1);
         IgniteEx ig2 = startGrid(cfg2);

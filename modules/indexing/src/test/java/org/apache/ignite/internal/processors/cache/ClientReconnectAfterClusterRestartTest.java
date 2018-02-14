@@ -58,7 +58,7 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
         cfg.setIncludeEventTypes(EventType.EVTS_CACHE);
 
         if (getTestIgniteInstanceName(CLIENT_ID).equals(igniteInstanceName))
-            cfg.setClientMode(true);
+            cfg.setClientMode(true).setFailureDetectionTimeout(1000);
         else {
             CacheConfiguration ccfg = getCacheConfiguration();
 
