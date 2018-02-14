@@ -17,7 +17,16 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteIllegalStateException;
@@ -29,14 +38,23 @@ import org.apache.ignite.lang.IgniteBiTuple;
  * received from the client side.
  */
 public class BulkLoadStreamerProcessor extends BulkLoadProcessor {
-    /** Number of parallel processing threads. */
+    /** Typical number of parallel processing threads per batch. */
     private static final int STREAMER_THREADS = 8;
+
+    /** Max. number of parallel processing threads. */
+    private static final int POOL_THREADS_CNT = STREAMER_THREADS * 2;
+
+    /** Minimum of records per thread. */
+    private static final int MIN_STRIP_SIZE = 32;
 
     /** Streamer that puts actual key/value into the cache. */
     private final IgniteDataStreamer<Object, Object> outputStreamer;
 
-    /** Becomes true after {@link #close()} method is called. */
-    private boolean isClosed;
+    /** Thread pool to execute processing threads. */
+    private final ExecutorService threadPool;
+
+    /** List of started convert+stream threads. */
+    private List<Future<Integer>> futures;
 
     /**
      * Creates bulk load processor.
@@ -51,7 +69,10 @@ public class BulkLoadStreamerProcessor extends BulkLoadProcessor {
         super(inputParser, dataConverter);
 
         this.outputStreamer = outputStreamer;
-        isClosed = false;
+
+        threadPool = Executors.newFixedThreadPool(POOL_THREADS_CNT);
+
+        futures = new LinkedList<>();
     }
 
     /**
@@ -61,41 +82,65 @@ public class BulkLoadStreamerProcessor extends BulkLoadProcessor {
      * @param isLastBatch true if this is the last batch.
      * @throws IgniteIllegalStateException when called after {@link #close()}.
      */
-    public void processBatch(byte[] batchData, boolean isLastBatch) throws IgniteCheckedException {
-        if (isClosed)
-            throw new IgniteIllegalStateException("Attempt to process a batch on a closed BulkLoadProcessor");
-
+    @Override public void processBatch(byte[] batchData, boolean isLastBatch) throws IgniteCheckedException {
         List<List<Object>> inputRecords = inputParser.parseBatch(batchData, isLastBatch);
 
-        if (inputRecords.isEmpty())
-            return;
+        if (!inputRecords.isEmpty()) {
+            int strip = Math.max(MIN_STRIP_SIZE, (inputRecords.size() + STREAMER_THREADS - 1) / STREAMER_THREADS);
 
-        StreamerThread[] threads = new StreamerThread[STREAMER_THREADS];
+            int start = 0;
 
-        int strip = (inputRecords.size() + threads.length - 1) / threads.length;
-        int start = 0;
-        int end = start + strip;
+            do {
+                int end = start + strip;
 
-        for (int i = 0; i < threads.length; ++i) {
-            if (end > inputRecords.size())
-                end = inputRecords.size();
+                if (end > inputRecords.size())
+                    end = inputRecords.size();
 
-            List<List<Object>> threadRecords = inputRecords.subList(start, end);
+                final List<List<Object>> threadRecords = inputRecords.subList(start, end);
 
-            threads[i] = new StreamerThread(threadRecords);
-            threads[i].start();
+                Callable<Integer> streamer = new Callable<Integer>() {
+                    @Override public Integer call() {
+                        Map<Object, Object> dataToAdd = new HashMap<>(threadRecords.size());
 
-            start = end;
-            end += strip;
+                        for (List<Object> entry : threadRecords) {
+                            IgniteBiTuple<?, ?> kv = dataConverter.apply(entry);
+
+                            dataToAdd.put(kv.getKey(), kv.getValue());
+
+                            if (Thread.interrupted())
+                                return 0;
+                        }
+
+                        outputStreamer.addData(dataToAdd);
+                        return dataToAdd.size();
+                    }
+                };
+
+                futures.add(threadPool.submit(streamer));
+
+                start = end;
+            }
+            while (start < inputRecords.size());
         }
 
-        for (int i = 0; i < threads.length; ++i) {
-            try {
-                threads[i].join();
-                updateCnt += threads[i].threadUpdateCnt();
-            }
-            catch (InterruptedException e) {
-                // swallow
+        Iterator<Future<Integer>> futIt = futures.iterator();
+
+        while (futIt.hasNext()) {
+            Future<Integer> fut = futIt.next();
+
+            if (isLastBatch || fut.isDone()) {
+                try {
+                    updateCnt += fut.get();
+                    futIt.remove();
+                }
+                catch (InterruptedException ignored) {
+                    return;
+                }
+                catch (ExecutionException e) {
+                    futIt.remove();
+
+                    throw new IgniteCheckedException(e.getCause());
+                }
             }
         }
     }
@@ -104,35 +149,10 @@ public class BulkLoadStreamerProcessor extends BulkLoadProcessor {
      * Aborts processing and closes the underlying objects ({@link IgniteDataStreamer}).
      */
     @Override public void close() throws Exception {
-        if (isClosed)
-            return;
+        threadPool.shutdownNow();
 
-        isClosed = true;
+        futures.clear();
 
         outputStreamer.close();
-    }
-
-    private class StreamerThread extends Thread {
-        private final List<List<Object>> records;
-        private int threadUpdateCnt;
-
-        StreamerThread(List<List<Object>> records) {
-            this.records = records;
-            threadUpdateCnt = 0;
-        }
-
-        @Override public void run() {
-            for (List<Object> entry : records) {
-                IgniteBiTuple<?, ?> kv = dataConverter.apply(entry);
-
-                outputStreamer.addData(kv.getKey(), kv.getValue());
-
-                threadUpdateCnt++;
-            }
-        }
-
-        int threadUpdateCnt() {
-            return threadUpdateCnt;
-        }
     }
 }

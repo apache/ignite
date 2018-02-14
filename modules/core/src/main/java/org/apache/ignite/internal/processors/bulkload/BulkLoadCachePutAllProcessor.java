@@ -57,7 +57,8 @@ public class BulkLoadCachePutAllProcessor extends BulkLoadProcessor {
      * @param isLastBatch true if this is the last batch.
      * @throws IgniteIllegalStateException when called after {@link #close()}.
      */
-    public void processBatch(byte[] batchData, boolean isLastBatch) throws IgniteCheckedException {
+    @SuppressWarnings("unchecked")
+    @Override public void processBatch(byte[] batchData, boolean isLastBatch) throws IgniteCheckedException {
         List<List<Object>> inputRecords = inputParser.parseBatch(batchData, isLastBatch);
 
         if (inputRecords.isEmpty())
