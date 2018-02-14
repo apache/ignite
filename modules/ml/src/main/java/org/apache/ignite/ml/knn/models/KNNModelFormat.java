@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.util.Arrays;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.structures.newstructures.NewLabeledDataset;
 
 /**
  * kNN model representation.

@@ -164,7 +164,7 @@ public class DatasetFactory {
      * @param datasetBuilder Dataset builder.
      * @param partCtxBuilder Partition {@code context} builder.
      * @param featureExtractor Feature extractor used to extract features and build {@link SimpleLabeledDatasetData}.
-     * @param lbExtractor Label extractor used to extract labels and buikd {@link SimpleLabeledDatasetData}.
+     * @param lbExtractor Label extractor used to extract labels and build {@link SimpleLabeledDatasetData}.
      * @param cols Number of columns (features) will be extracted.
      * @param <K> Type of a key in {@code upstream} data.
      * @param <V> Type of a value in {@code upstream} data.
