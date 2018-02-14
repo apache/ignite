@@ -220,7 +220,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             false,
             txSize,
             subjId,
-            taskNameHash);
+            taskNameHash,
+            ctx.tm().getTxId());
 
         mappings = implicitSingle ? new IgniteTxMappingsSingleImpl() : new IgniteTxMappingsImpl();
 
@@ -1140,7 +1141,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                     // Check if lock is being explicitly acquired by the same thread.
                     if (!implicit && cctx.kernalContext().config().isCacheSanityCheckEnabled() &&
-                        entry.lockedByThread(threadId, xidVer)) {
+                        entry.lockedByThread(threadId, xidVer)
+                        ) {
                         throw new IgniteCheckedException("Cannot access key within transaction if lock is " +
                             "externally held [key=" + CU.value(cacheKey, cacheCtx, false) +
                             ", entry=" + entry +
@@ -2866,10 +2868,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (log.isDebugEnabled())
             log.debug("Suspend near local tx: " + this);
 
-        if (pessimistic())
-            throw new UnsupportedOperationException("Suspension is not supported for pessimistic transactions.");
+//        if (pessimistic())
+//            throw new UnsupportedOperationException("Suspension is not supported for pessimistic transactions.");
 
-        if (threadId() != Thread.currentThread().getId())
+        if (cctx.tm().tx() != null && threadId() != cctx.tm().localTx().threadId())
             throw new IgniteCheckedException("Only thread started transaction can suspend it.");
 
         synchronized (this) {
@@ -2888,8 +2890,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (log.isDebugEnabled())
             log.debug("Resume near local tx: " + this);
 
-        if (pessimistic())
-            throw new UnsupportedOperationException("Resume is not supported for pessimistic transactions.");
+//        if (pessimistic())
+//            throw new UnsupportedOperationException("Resume is not supported for pessimistic transactions.");
 
         synchronized (this) {
             checkValid();

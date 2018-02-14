@@ -159,7 +159,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
             nodeId,
             xidVer,
             ctx.versions().last(),
-            Thread.currentThread().getId(),
+            ctx.tm().getTxId(),
             sys,
             plc,
             concurrency,

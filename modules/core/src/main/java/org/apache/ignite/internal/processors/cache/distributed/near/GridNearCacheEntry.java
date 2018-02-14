@@ -655,7 +655,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
 
                 boolean emptyBefore = mvcc.isEmpty();
 
-                cand = mvcc.localCandidate(locId, Thread.currentThread().getId());
+                cand = mvcc.localCandidate(locId, cctx.tm().getTxId());
 
                 assert cand == null || cand.nearLocal();
 

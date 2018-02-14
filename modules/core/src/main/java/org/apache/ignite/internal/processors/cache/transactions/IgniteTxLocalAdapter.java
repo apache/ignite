@@ -158,6 +158,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
     }
 
     /**
+     * @param threadId
      * @param cctx Cache registry.
      * @param xidVer Transaction ID.
      * @param implicit {@code True} if transaction was implicitly started by the system,
@@ -185,7 +186,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         boolean onePhaseCommit,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        long threadId
     ) {
         super(
             cctx,
@@ -202,7 +204,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             onePhaseCommit,
             txSize,
             subjId,
-            taskNameHash
+            taskNameHash,
+            threadId
         );
 
         minVer = xidVer;

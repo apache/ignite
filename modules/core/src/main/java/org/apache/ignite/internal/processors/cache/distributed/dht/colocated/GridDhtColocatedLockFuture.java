@@ -225,7 +225,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         ignoreInterrupts();
 
-        threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
+        threadId = tx == null ? cctx.tm().getTxId() : tx.threadId();
 
         lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
 
@@ -723,7 +723,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
 
         // If there is another system transaction in progress, use it's topology version to prevent deadlock.
         if (topVer == null && tx != null && tx.system())
-            topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), tx);
+            topVer = cctx.tm().lockedTopologyVersion(cctx.tm().getTxId(), tx);
 
         if (topVer != null && tx != null)
             tx.topologyVersion(topVer);

@@ -928,7 +928,7 @@ public class GridCacheSharedContext<K, V> {
      * @return Not null topology version if current thread holds lock preventing topology change.
      */
     @Nullable public AffinityTopologyVersion lockedTopologyVersion(IgniteInternalTx ignore) {
-        long threadId = Thread.currentThread().getId();
+        long threadId = tm().getTxId();
 
         AffinityTopologyVersion topVer = txMgr.lockedTopologyVersion(threadId, ignore);
 

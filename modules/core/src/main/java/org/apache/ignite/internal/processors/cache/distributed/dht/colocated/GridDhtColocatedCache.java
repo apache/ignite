@@ -168,7 +168,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
     @Override public boolean isLockedByThread(K key) {
         KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-        return ctx.mvcc().isLockedByThread(ctx.txKey(cacheKey), Thread.currentThread().getId());
+        return ctx.mvcc().isLockedByThread(ctx.txKey(cacheKey), ctx.tm().getTxId());
     }
 
     /** {@inheritDoc} */
@@ -676,7 +676,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                 GridDistributedCacheEntry entry = peekExx(cacheKey);
 
                 GridCacheMvccCandidate lock =
-                    ctx.mvcc().removeExplicitLock(Thread.currentThread().getId(), txKey, null);
+                    ctx.mvcc().removeExplicitLock(ctx.tm().getTxId(), txKey, null);
 
                 if (lock != null) {
                     final AffinityTopologyVersion topVer = lock.topologyVersion();

@@ -17,14 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed;
 
-import org.apache.ignite.transactions.TransactionConcurrency;
-
 /**
  *
  */
-public class IgnitePessimisticTxSuspendResumeTest extends IgniteAbstractTxSuspendResumeTest {
-    /** {@inheritDoc} */
-    @Override protected TransactionConcurrency transactionConcurrency() {
-        return TransactionConcurrency.PESSIMISTIC;
+public class IgnitePessimisticTxSuspendResumeMultiServerTest extends IgnitePessimisticTxSuspendResumeTest {
+    /**
+     * @return Number of server nodes.
+     */
+    protected int serversNumber() {
+        return 4;
     }
 }
