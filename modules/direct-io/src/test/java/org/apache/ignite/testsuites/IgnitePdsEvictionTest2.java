@@ -12,7 +12,8 @@ public class IgnitePdsEvictionTest2 extends IgnitePdsEvictionTest {
 
     /** {@inheritDoc} */
     protected int getPagesNum() {
-        return 1024;
+        //64
+        return 64 * 1024;
     }
 
     @Override public void testPageEviction() throws Exception {
