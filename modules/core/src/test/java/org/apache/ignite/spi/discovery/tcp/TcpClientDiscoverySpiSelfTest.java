@@ -63,6 +63,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.IgniteSpiThread;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -161,6 +162,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setClientFailureDetectionTimeout(clientFailureDetectionTimeout());
+
+        // Override default settings to speed up reconnection.
+        cfg.setCommunicationSpi(new TcpCommunicationSpi().setConnectTimeout(500).setMaxConnectTimeout(1000).setReconnectCount(2));
 
         TcpDiscoverySpi disco = getDiscoverySpi();
 

@@ -166,7 +166,7 @@ public abstract class DynamicColumnsAbstractTest extends GridCommonAbstractTest 
 
         e.setFields(flds);
 
-        return commonConfiguration(idx).setClientMode(true).setCacheConfiguration(
+        return commonConfiguration(idx).setClientMode(true).setFailureDetectionTimeout(1000).setCacheConfiguration(
             new CacheConfiguration<>("idx").setQueryEntities(Collections.singletonList(e))
         );
     }

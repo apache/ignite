@@ -106,6 +106,9 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
 
         cfg.setClientMode(client);
 
+        if (client) // Speed up reconnect time on client node fail.
+            cfg.setFailureDetectionTimeout(1000);
+
         cfg.setActiveOnStart(active);
 
         if (ccfgs != null) {

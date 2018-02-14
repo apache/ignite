@@ -125,7 +125,7 @@ public abstract class DynamicIndexAbstractSelfTest extends AbstractSchemaSelfTes
      * @throws Exception If failed.
      */
     protected IgniteConfiguration clientConfiguration(int idx) throws Exception {
-        return commonConfiguration(idx).setClientMode(true);
+        return commonConfiguration(idx).setClientMode(true).setFailureDetectionTimeout(1000);
     }
 
     /**
