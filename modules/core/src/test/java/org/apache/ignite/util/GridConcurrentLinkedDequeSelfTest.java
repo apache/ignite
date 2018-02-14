@@ -17,21 +17,22 @@
 
 package org.apache.ignite.util;
 
+import java.util.Deque;
 import java.util.Iterator;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentLinkedDeque8;
+import org.jsr166.LongSizeCountingDeque;
 
-import static org.jsr166.ConcurrentLinkedDeque8.Node;
 
 /**
- * Tests for {@link org.jsr166.ConcurrentLinkedDeque8}.
+ * Tests for {@link org.jsr166.LongSizeCountingDeque}.
  */
 public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
     public void testPoll() throws Exception {
-        ConcurrentLinkedDeque8<Integer> deque = new ConcurrentLinkedDeque8<>();
+        Deque<Integer> deque = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
 
         deque.add(1);
         deque.add(2);
@@ -66,58 +67,8 @@ public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testUnlink() {
-        ConcurrentLinkedDeque8<Integer> deque = new ConcurrentLinkedDeque8<>();
-
-        Node<Integer> n1 = deque.addx(1);
-        Node<Integer> n2 = deque.addx(2);
-        Node<Integer> n3 = deque.addx(3);
-        Node<Integer> n4 = deque.addx(4);
-        Node<Integer> n5 = deque.addx(5);
-
-        deque.unlinkx(n2);
-
-        checkSize(deque, 4);
-
-        // Double unlinkx() call.
-        deque.unlinkx(n2);
-
-        checkSize(deque, 4);
-
-        Iterator<Integer> iter = deque.iterator();
-
-        boolean hasNext = iter.hasNext();
-
-        assert hasNext;
-
-        Integer next = iter.next();
-
-        assert next == 1;
-
-        iter.remove();
-
-        // Iterator should have set item to null.
-        assert n1.item() == null;
-
-        checkSize(deque, 3);
-
-        // Double unlinkx() call.
-        deque.unlinkx(n1);
-
-        checkSize(deque, 3);
-
-        deque.unlinkx(n3);
-        deque.unlinkx(n4);
-        deque.unlinkx(n5);
-
-        checkSize(deque, 0);
-    }
-
-    /**
-     *
-     */
     public void testEmptyDeque() {
-        ConcurrentLinkedDeque8<Integer> deque = new ConcurrentLinkedDeque8<>();
+        Deque<Integer> deque = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
 
         assert deque.poll() == null;
         assert deque.pollFirst() == null;
@@ -135,7 +86,7 @@ public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
      * @param expSize Expected size.
      */
     @SuppressWarnings({"ForLoopReplaceableByForEach"})
-    private <T> void checkSize(ConcurrentLinkedDeque8<T> q, int expSize) {
+    private <T> void checkSize(Deque<T> q, int expSize) {
         int actualSize = 0;
 
         for (Iterator<T> iter = q.iterator(); iter.hasNext();) {
@@ -158,76 +109,11 @@ public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
 
         assertEquals(expSize, q.size());
 
-        assertEquals(expSize, q.sizex());
+        assertEquals(expSize, q.size());
 
-        if (expSize > 0) {
+        if (expSize > 0)
             assert !q.isEmpty();
-
-            assert !q.isEmptyx();
-        }
-        else {
+        else
             assert q.isEmpty();
-
-            assert q.isEmptyx();
-        }
-    }
-
-    /**
-     *
-     */
-    public void testUnlinkWithIterator() {
-        ConcurrentLinkedDeque8<Integer> q = new ConcurrentLinkedDeque8<>();
-
-        q.add(1);
-        Node<Integer> n2 = q.addx(2);
-        Node<Integer> n3 = q.addx(3);
-        Node<Integer> n4 = q.addx(4);
-        Node<Integer> n5 = q.addx(5);
-        q.add(6);
-
-        Iterator<Integer> it = q.iterator();
-
-        assertTrue(it.hasNext());
-        assertEquals(1, it.next().intValue());
-
-        assertTrue(it.hasNext());
-        assertEquals(2, it.next().intValue());
-
-        assertTrue(it.hasNext());
-        assertEquals(3, it.next().intValue());
-
-        q.unlinkx(n2);
-        q.unlinkx(n3);
-        q.unlinkx(n4);
-        q.unlinkx(n5);
-
-        assertTrue(it.hasNext());
-        assertEquals(4, it.next().intValue());
-
-        assertTrue(it.hasNext());
-        assertEquals(6, it.next().intValue());
-    }
-
-    /**
-     *
-     */
-    public void testUnlinkLastWithIterator() {
-        ConcurrentLinkedDeque8<Integer> q = new ConcurrentLinkedDeque8<>();
-
-        q.add(1);
-        q.addx(2);
-        Node<Integer> n3 = q.addx(3);
-
-        Iterator<Integer> it = q.iterator();
-
-        assertTrue(it.hasNext());
-        assertEquals(1, it.next().intValue());
-
-        q.unlinkx(n3);
-
-        assertTrue(it.hasNext());
-        assertEquals(2, it.next().intValue());
-
-        assertFalse(it.hasNext());
     }
 }

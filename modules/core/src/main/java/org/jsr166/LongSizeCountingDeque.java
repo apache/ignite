@@ -18,15 +18,14 @@
 package org.jsr166;
 
 import java.util.Deque;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
- * {@link ConcurrentLinkedDeque} that uses {@link LongAdder} for fast element counting.
+ * {@link SizeCountingDeque} that uses {@link LongAdder} for fast element counting.
  *
  * @param <E> Deque element type.
  */
-public class ConcurrentLinkedDequeEx<E> extends SizeCountingDeque<E, Long> {
+public class LongSizeCountingDeque<E> extends SizeCountingDeque<E, Long> {
     /** */
     private static class Cntr implements SizeCountingDeque.Counter<Long> {
         /** */
@@ -54,7 +53,7 @@ public class ConcurrentLinkedDequeEx<E> extends SizeCountingDeque<E, Long> {
     }
 
     /** {@inheritDoc} */
-    public ConcurrentLinkedDequeEx(Deque<E> deque) {
+    public LongSizeCountingDeque(Deque<E> deque) {
         super(deque, new Cntr());
     }
 }

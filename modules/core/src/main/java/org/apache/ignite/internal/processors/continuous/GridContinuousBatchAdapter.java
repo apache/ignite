@@ -18,14 +18,16 @@
 package org.apache.ignite.internal.processors.continuous;
 
 import java.util.Collection;
-import org.jsr166.ConcurrentLinkedDeque8;
+import java.util.Deque;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import org.jsr166.LongSizeCountingDeque;
 
 /**
  * Continuous routine batch adapter.
  */
 public class GridContinuousBatchAdapter implements GridContinuousBatch {
     /** Buffer. */
-    protected final ConcurrentLinkedDeque8<Object> buf = new ConcurrentLinkedDeque8<>();
+    protected final Deque<Object> buf = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
 
     /** {@inheritDoc} */
     @Override public void add(Object obj) {
@@ -41,6 +43,6 @@ public class GridContinuousBatchAdapter implements GridContinuousBatch {
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return buf.sizex();
+        return buf.size();
     }
 }

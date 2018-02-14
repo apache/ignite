@@ -335,7 +335,7 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
-        return deque.isEmpty();
+        return cntr.get().intValue() == 0;
     }
 
     /** {@inheritDoc} */

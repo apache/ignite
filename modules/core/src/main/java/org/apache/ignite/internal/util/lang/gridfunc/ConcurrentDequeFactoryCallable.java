@@ -17,20 +17,22 @@
 
 package org.apache.ignite.internal.util.lang.gridfunc;
 
+import java.util.Deque;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteCallable;
-import org.jsr166.ConcurrentLinkedDeque8;
+import org.jsr166.LongSizeCountingDeque;
 
 /**
  * Deque factory.
  */
-public class ConcurrentDequeFactoryCallable implements IgniteCallable<ConcurrentLinkedDeque8> {
+public class ConcurrentDequeFactoryCallable implements IgniteCallable<Deque> {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override public ConcurrentLinkedDeque8 call() {
-        return new ConcurrentLinkedDeque8();
+    @Override public Deque call() {
+        return new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
     }
 
     /** {@inheritDoc} */

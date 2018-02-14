@@ -25,6 +25,7 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -49,7 +50,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
+import org.jsr166.LongSizeCountingDeque;
 
 /**
  * Tests synchronization performance vs. lock.
@@ -784,9 +785,9 @@ public class GridBasicPerformanceTest {
     private static void testGridDeque() throws Exception {
         X.println("Grid deque...");
 
-        testQueue(new ConcurrentLinkedDeque8<Integer>());
+        testQueue(new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>()));
 
-        testQueueMultiThreaded(new ConcurrentLinkedDeque8<Integer>());
+        testQueueMultiThreaded(new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>()));
     }
 
     /**

@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -104,7 +105,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * Contains factory and utility methods for {@code closures}, {@code predicates}, and {@code tuples}.
@@ -1276,7 +1276,7 @@ public class GridFunc {
     }
 
     /**
-     * Returns a factory closure that creates new {@link ConcurrentLinkedDeque8} instance.
+     * Returns a factory closure that creates new concurrent {@link Deque} instance.
      * Note that this method does not create a new closure but returns a static one.
      *
      * @param <T> Type parameters for the created {@link List}.
@@ -1284,8 +1284,8 @@ public class GridFunc {
      *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
      */
     @SuppressWarnings("unchecked")
-    public static <T> IgniteCallable<ConcurrentLinkedDeque8<T>> newDeque() {
-        return (IgniteCallable<ConcurrentLinkedDeque8<T>>)DEQUE_FACTORY;
+    public static <T> IgniteCallable<Deque<T>> newDeque() {
+        return (IgniteCallable<Deque<T>>)DEQUE_FACTORY;
     }
 
     /**

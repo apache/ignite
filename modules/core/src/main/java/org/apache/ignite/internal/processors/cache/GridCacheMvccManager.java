@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -65,7 +66,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ConcurrentLinkedDeque8;
+import org.jsr166.LongSizeCountingDeque;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_NESTED_LISTENER_CALLS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -122,7 +123,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentMap<GridCacheVersion, GridCacheVersion> near2dht = newMap();
 
     /** Finish futures. */
-    private final ConcurrentLinkedDeque8<FinishLockFuture> finishFuts = new ConcurrentLinkedDeque8<>();
+    private final Deque<FinishLockFuture> finishFuts = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
 
     /** Nested listener calls. */
     private final ThreadLocal<Integer> nestedLsnrCalls = new ThreadLocal<Integer>() {
@@ -242,7 +243,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         else if (log.isDebugEnabled())
             log.debug("Failed to find transaction for changed owner: " + owner);
 
-        if (!finishFuts.isEmptyx()) {
+        if (!finishFuts.isEmpty()) {
             for (FinishLockFuture f : finishFuts)
                 f.recheck(entry);
         }
@@ -1011,7 +1012,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         X.println(">>>   lockedSize: " + locked.size());
         X.println(">>>   futsSize: " + (verFuts.size() + futs.size()));
         X.println(">>>   near2dhtSize: " + near2dht.size());
-        X.println(">>>   finishFutsSize: " + finishFuts.sizex());
+        X.println(">>>   finishFutsSize: " + finishFuts.size());
     }
 
     /**
@@ -1031,7 +1032,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     public Map<IgniteTxKey, Collection<GridCacheMvccCandidate>> unfinishedLocks(AffinityTopologyVersion topVer) {
         Map<IgniteTxKey, Collection<GridCacheMvccCandidate>> cands = new HashMap<>();
 
-        if (!finishFuts.isEmptyx()) {
+        if (!finishFuts.isEmpty()) {
             for (FinishLockFuture fut : finishFuts) {
                 if (fut.topologyVersion().equals(topVer))
                     cands.putAll(fut.pendingLocks());
@@ -1161,7 +1162,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         if (exchLog.isDebugEnabled())
             exchLog.debug("Rechecking pending locks for completion.");
 
-        if (!finishFuts.isEmptyx()) {
+        if (!finishFuts.isEmpty()) {
             for (FinishLockFuture fut : finishFuts)
                 fut.recheck();
         }

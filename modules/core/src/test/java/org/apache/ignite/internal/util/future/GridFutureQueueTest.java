@@ -18,9 +18,11 @@
 package org.apache.ignite.internal.util.future;
 
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
-import org.jsr166.ConcurrentLinkedDeque8;
+import org.jsr166.LongSizeCountingDeque;
 
 /**
  * Performance tests added to compare the same functionality in .Net.
@@ -75,7 +77,7 @@ public class GridFutureQueueTest {
         private AtomicLong qSize = new AtomicLong();
 
         /** */
-        private final ConcurrentLinkedDeque8<Future> queue = new ConcurrentLinkedDeque8<>();
+        private final Deque<Future> queue = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
 
         /** */
         private volatile boolean stop;

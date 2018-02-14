@@ -17,7 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
+import java.util.Deque;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -27,7 +30,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ConcurrentLinkedDeque8;
+import org.jsr166.LongSizeCountingDeque;
 
 /**
  *
@@ -66,7 +69,7 @@ public abstract class GridDeferredAckMessageSender<T> {
      * @param nodeId Node ID.
      * @param vers Versions to send.
      */
-    public abstract void finish(UUID nodeId, ConcurrentLinkedDeque8<T> vers);
+    public abstract void finish(UUID nodeId, Collection<T> vers);
 
     /**
      *
@@ -116,7 +119,7 @@ public abstract class GridDeferredAckMessageSender<T> {
         private AtomicBoolean guard = new AtomicBoolean(false);
 
         /** Versions. */
-        private ConcurrentLinkedDeque8<T> vers = new ConcurrentLinkedDeque8<>();
+        private Deque<T> vers = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
 
         /** Node ID. */
         private final UUID nodeId;
@@ -184,7 +187,7 @@ public abstract class GridDeferredAckMessageSender<T> {
 
                 vers.add(ver);
 
-                if (vers.sizex() > getBufferSize() && guard.compareAndSet(false, true))
+                if (vers.size() > getBufferSize() && guard.compareAndSet(false, true))
                     snd = true;
             }
             finally {

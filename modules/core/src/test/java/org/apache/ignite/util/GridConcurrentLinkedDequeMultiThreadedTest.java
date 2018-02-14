@@ -17,17 +17,18 @@
 
 package org.apache.ignite.util;
 
+import java.util.Deque;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
-import org.jsr166.ConcurrentLinkedDeque8.Node;
+import org.jsr166.LongSizeCountingDeque;
 
 /**
- * Test for {@link org.jsr166.ConcurrentLinkedDeque8}.
+ * Test for {@link org.jsr166.LongSizeCountingDeque} with concurrent backing deque.
  */
 public class GridConcurrentLinkedDequeMultiThreadedTest extends GridCommonAbstractTest {
     /** */
@@ -40,7 +41,7 @@ public class GridConcurrentLinkedDequeMultiThreadedTest extends GridCommonAbstra
     public void testQueueMultiThreaded() throws Exception {
         final AtomicBoolean done = new AtomicBoolean();
 
-        final ConcurrentLinkedDeque8<Byte> queue = new ConcurrentLinkedDeque8<>();
+        final Deque<Byte> queue = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
 
         // Poll thread.
         IgniteInternalFuture<?> pollFut = multithreadedAsync(
@@ -74,10 +75,10 @@ public class GridConcurrentLinkedDequeMultiThreadedTest extends GridCommonAbstra
                     info("Thread started.");
 
                     while (!done.get()) {
-                        Node<Byte> n = queue.addx((byte)1);
+                        queue.add((byte)1);
 
                         if (RND.nextBoolean())
-                            queue.unlinkx(n);
+                            queue.remove((byte)1);
                     }
 
                     info("Thread finished.");

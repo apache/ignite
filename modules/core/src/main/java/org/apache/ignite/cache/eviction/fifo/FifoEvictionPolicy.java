@@ -19,12 +19,13 @@ package org.apache.ignite.cache.eviction.fifo;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.cache.eviction.AbstractEvictionPolicy;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
-import org.jsr166.ConcurrentLinkedDequeEx;
+import org.jsr166.LongSizeCountingDeque;
 
 /**
  * Eviction policy based on {@code First In First Out (FIFO)} algorithm and supports batch eviction.
@@ -49,8 +50,8 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
     private static final long serialVersionUID = 0L;
 
     /** FIFO queue. */
-    private final ConcurrentLinkedDequeEx<EvictableEntry<K, V>> queue =
-        new ConcurrentLinkedDequeEx<>(new ConcurrentLinkedDeque<EvictableEntry<K, V>>());
+    private final Deque<EvictableEntry<K, V>> queue =
+        new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<EvictableEntry<K, V>>());
 
     /**
      * Constructs FIFO eviction policy with all defaults.
@@ -117,7 +118,7 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected boolean removeMeta(Object meta) {
-        return queue.removeFirstOccurrence(meta);
+        return queue.remove(meta);
     }
 
     /**
@@ -136,7 +137,7 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
         queue.offerLast(entry);
 
         if (!entry.isCached() || entry.putMetaIfAbsent(entry) != null) {
-            queue.removeFirstOccurrence(entry);
+            queue.remove(entry);
 
             return false;
         }

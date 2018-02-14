@@ -58,7 +58,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
 
         assert linkedMap.size() == keyCnt;
         assert linkedMap.sizex() == keyCnt;
-        assert linkedMap.queue().sizex() == keyCnt;
+        assert linkedMap.queue().size() == keyCnt;
     }
 
     /**
@@ -101,8 +101,8 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
 
         assertTrue("Invalid map size: " + linkedMap.size(), U.safeAbs(maxSize - linkedMap.size()) <= diff);
         assertTrue("Invalid map sizex: " + linkedMap.sizex(), U.safeAbs(maxSize - linkedMap.sizex()) <= diff);
-        assertTrue("Invalid map queue size: " + linkedMap.queue().sizex(),
-            U.safeAbs(maxSize - linkedMap.queue().sizex()) <= diff);
+        assertTrue("Invalid map queue size: " + linkedMap.queue().size(),
+            U.safeAbs(maxSize - linkedMap.queue().size()) <= diff);
 
         while (!keys.isEmpty()) {
             boolean found = false;

@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -37,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.CacheEvictableEntryImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDequeEx;
+import org.jsr166.LongSizeCountingDeque;
 
 /**
  * IGFS eviction policy which evicts particular blocks.
@@ -63,8 +64,8 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
     private final AtomicBoolean excludeRecompile = new AtomicBoolean(true);
 
     /** Queue. */
-    private final ConcurrentLinkedDequeEx<EvictableEntry<IgfsBlockKey, byte[]>> queue =
-        new ConcurrentLinkedDequeEx<>(new ConcurrentLinkedDeque<EvictableEntry<IgfsBlockKey, byte[]>>());
+    private final Deque<EvictableEntry<IgfsBlockKey, byte[]>> queue =
+        new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<EvictableEntry<IgfsBlockKey, byte[]>>());
 
     /** Current size of all enqueued blocks in bytes. */
     private final LongAdder curSize = new LongAdder();
@@ -111,7 +112,7 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
         else {
             MetaEntry meta = entry.removeMeta();
 
-            if (meta != null && queue.removeFirstOccurrence(meta.entry()))
+            if (meta != null && queue.remove(meta.entry()))
                 changeSize(-meta.size());
         }
     }
@@ -132,11 +133,8 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
             queue.offerLast(entry);
 
             // 1 - put entry to the queue, 2 - mark entry as queued through CAS on entry meta.
-            // Strictly speaking, this order does not provides correct concurrency,
-            // but inconsistency effect is negligible, unlike the opposite order.
-            // See shrink0 and super.onEntryAccessed().
             if (!entry.isCached() || entry.putMetaIfAbsent(new MetaEntry(entry, blockSize)) != null) {
-                queue.removeFirstOccurrence(entry);
+                queue.remove(entry);
 
                 return false;
             }
@@ -151,7 +149,7 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
 
         EvictableEntry<IgfsBlockKey, byte[]> metaEntry = meta.entry();
 
-        if (queue.removeFirstOccurrence(metaEntry)) {
+        if (queue.remove(metaEntry)) {
             // Move entry to tail.
             queue.offerLast(entry);
 
@@ -159,7 +157,7 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
 
             if (!entry.replaceMeta(meta, new MetaEntry(entry, blockSize))) {
                 // Was concurrently added, need to clear it from queue.
-                if (queue.removeFirstOccurrence(entry))
+                if (queue.remove(entry))
                     // Now old entry is removed, but new is not added, delta is -oldBlockSize
                     delta -= blockSize;
             }

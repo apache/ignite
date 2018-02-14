@@ -24,6 +24,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
@@ -43,7 +44,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
  * Striped executor.
@@ -597,7 +597,7 @@ public class StripedExecutor implements ExecutorService {
             };
 
             for (int i = 0; i < poolSize; i++) {
-                queues[i] = new ConcurrentLinkedDeque8<>();
+                queues[i] = new ConcurrentLinkedDeque<>();
                 stripes[i] = new StealingStripe(i, igniteInstanceName, poolName, log, queues, unpark);
             }
 
