@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
-import java.util.LinkedList;
-import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.bulkload.pipeline.CharsetDecoderBlock;
 import org.apache.ignite.internal.processors.bulkload.pipeline.CsvParserBlock;
 import org.apache.ignite.internal.processors.bulkload.pipeline.PipelineBlock;
 import org.apache.ignite.internal.processors.bulkload.pipeline.StrListAppenderBlock;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /** CSV parser for COPY command. */
 public class BulkLoadCsvParser extends BulkLoadParser {
