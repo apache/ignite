@@ -22,10 +22,9 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest;
@@ -49,7 +48,8 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
     /** {@inheritDoc} */
     @Override protected Connection createStreamedConnection(boolean allowOverwrite, long flushFreq) throws Exception {
         Connection res = JdbcThinAbstractSelfTest.connect(grid(0), "streaming=true&streamingFlushFrequency="
-            + flushFreq + "&" + "streamingAllowOverwrite=" + allowOverwrite + "&streamingPerNodeBufferSize=1000");
+            + flushFreq + "&" + "streamingAllowOverwrite=" + allowOverwrite + "&streamingPerNodeBufferSize=1000&"
+            + "streamingBatchSize=17");
 
         res.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
@@ -221,23 +221,11 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
                 SqlClientContext cliCtx = sqlClientContext();
 
-                AtomicReference<ConcurrentHashMap<String, IgniteDataStreamer<?, ?>>> streamersRef =
-                    U.field(cliCtx, "streamers");
-
-                ConcurrentHashMap<String, IgniteDataStreamer<?, ?>> streamers = streamersRef.get();
+                HashMap<String, IgniteDataStreamer<?, ?>> streamers = U.field(cliCtx, "streamers");
 
                 assertEquals(2, streamers.size());
 
                 assertEqualsCollections(new HashSet<>(Arrays.asList("default", "T")), streamers.keySet());
-
-                execute(conn, "FLUSH STREAMER");
-
-                // Now let's check it's all there.
-                for (int i = 1; i <= 50; i++)
-                    assertEquals(i, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
-
-                for (int i = 51; i <= 100; i++)
-                    assertEquals(i, grid(0).cache("T").get(i));
             }
             finally {
                 U.closeQuiet(firstStmt);
@@ -245,6 +233,17 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
                 U.closeQuiet(secondStmt);
             }
         }
+
+        // Let's wait a little so that all data arrives to destination - we can't intercept streamers' flush
+        // on connection close in any way.
+        U.sleep(1000);
+
+        // Now let's check it's all there.
+        for (int i = 1; i <= 50; i++)
+            assertEquals(i, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
+
+        for (int i = 51; i <= 100; i++)
+            assertEquals(i, grid(0).cache("T").get(i));
     }
 
     /**

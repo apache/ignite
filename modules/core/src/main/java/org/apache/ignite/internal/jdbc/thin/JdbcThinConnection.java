@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.sql.Array;
+import java.sql.BatchUpdateException;
 import java.sql.Blob;
 import java.sql.CallableStatement;
 import java.sql.Clob;
@@ -33,13 +34,19 @@ import java.sql.SQLXML;
 import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
@@ -94,6 +101,9 @@ public class JdbcThinConnection implements Connection {
     /** Connection properties. */
     private ConnectionProperties connProps;
 
+    /** Batch for streaming. */
+    private List<JdbcQuery> streamBatch;
+
     /**
      * Creates new connection.
      *
@@ -132,6 +142,44 @@ public class JdbcThinConnection implements Connection {
 
             throw new SQLException("Failed to connect to Ignite cluster [host=" + connProps.getHost() +
                 ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+        }
+    }
+
+    /**
+     * @return Whether this connection is streamed or not.
+     */
+    public boolean isStream() {
+        return connProps.isStream();
+    }
+
+    /**
+     * Add another query for batched execution.
+     * @param sql Query.
+     * @param args Arguments.
+     */
+    public synchronized void addBatch(String sql, List<Object> args) throws SQLException {
+        JdbcQuery q  = new JdbcQuery(sql, args != null ? args.toArray() : null);
+
+        if (streamBatch == null)
+            streamBatch = new ArrayList<>(connProps.getStreamBatchSize());
+
+        streamBatch.add(q);
+
+        if (streamBatch.size() == connProps.getStreamBatchSize())
+            executeBatch();
+    }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    private void executeBatch() throws SQLException {
+        JdbcBatchExecuteResult res = sendRequest(new JdbcBatchExecuteRequest(schema, streamBatch));
+
+        streamBatch = null;
+
+        if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
+            throw new BatchUpdateException(res.errorMessage(), IgniteQueryErrorCode.codeToSqlState(res.errorCode()),
+                res.errorCode(), res.updateCounts());
         }
     }
 
@@ -276,6 +324,15 @@ public class JdbcThinConnection implements Connection {
     @Override public void close() throws SQLException {
         if (isClosed())
             return;
+
+        if (!F.isEmpty(streamBatch)) {
+            try {
+                executeBatch();
+            }
+            catch (SQLException e) {
+                LOG.log(Level.WARNING, "Exception during batch send on streamed connection close", e);
+            }
+        }
 
         closed = true;
 

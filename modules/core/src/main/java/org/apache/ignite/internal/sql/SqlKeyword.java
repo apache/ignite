@@ -189,9 +189,6 @@ public class SqlKeyword {
     /** Keyword: RESTRICT. */
     public static final String RESTRICT = "RESTRICT";
 
-    /** Keyword: SET. */
-    public static final String SET = "SET";
-
     /** Keyword: SIGNED. */
     public static final String SIGNED = "SIGNED";
 

@@ -184,9 +184,9 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isSkipReducerOnUpdate());
         writer.writeBoolean(connProps.isStream());
         writer.writeBoolean(connProps.isStreamAllowOverwrite());
-        writer.writeInt(connProps.streamParallelOperations());
-        writer.writeInt(connProps.streamBufferSize());
-        writer.writeLong(connProps.streamFlushFrequency());
+        writer.writeInt(connProps.getStreamParallelOperations());
+        writer.writeInt(connProps.getStreamBufferSize());
+        writer.writeLong(connProps.getStreamFlushFrequency());
 
         send(writer.array());
 

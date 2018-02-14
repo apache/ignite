@@ -20,7 +20,6 @@ package org.apache.ignite.internal.sql;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlFlushStreamerCommand;
-import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 
 /**
  * Tests for SQL parser: SET STREAMING.
