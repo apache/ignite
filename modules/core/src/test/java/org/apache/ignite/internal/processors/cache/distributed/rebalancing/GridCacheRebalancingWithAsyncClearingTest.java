@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -66,6 +67,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
                 .setBackups(2)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setIndexedTypes(Integer.class, Integer.class)
+                .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
                 .setAffinity(new RendezvousAffinityFunction(false, PARTITIONS_CNT))
         );
 
@@ -92,6 +94,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
 
     /**
      * Test that partition clearing doesn't block partitions map exchange.
+     *
      * @throws Exception If failed.
      */
     public void testPartitionClearingNotBlockExchange() throws Exception {
@@ -100,14 +103,16 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         IgniteEx ig = (IgniteEx) startGrids(3);
         ig.cluster().active(true);
 
-        final int entitiesCount = 300_000;
+        // High number of keys triggers long partition eviction.
+        final int keysCount = 300_000;
 
         try (IgniteDataStreamer ds = ig.dataStreamer(CACHE_NAME)) {
             log.info("Writing initial data...");
 
             ds.allowOverwrite(true);
-            for (int k = 0; k < entitiesCount; k++) {
+            for (int k = 0; k < keysCount; k++) {
                 ds.addData(k, k);
+
                 if (k % 50_000 == 0)
                     log.info("Written " + k + " entities.");
             }
@@ -123,8 +128,9 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
             log.info("Writing external data...");
 
             ds.allowOverwrite(true);
-            for (int k = 0; k < entitiesCount; k++) {
+            for (int k = 0; k < keysCount; k++) {
                 ds.addData(k, 2 * k);
+
                 if (k % 50_000 == 0)
                     log.info("Written " + k + " entities.");
             }
@@ -169,9 +175,63 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
 
         cache.rebalance().get();
 
-        for (int k = 0; k < entitiesCount; k++) {
+        // Check no data loss.
+        for (int k = 1; k <= keysCount; k++) {
             Integer value = cache.get(k);
-            Assert.assertTrue("Check failed for " + k, value == 2 * k);
+            Assert.assertNotNull("Value for " + k + " is null", value);
+            Assert.assertEquals("Check failed for " + k + " " + value, 2 * k, (int) value);
+        }
+    }
+
+    /**
+     * Test that partitions belong to affinity in state RENTING or EVICTED to affinity are correctly rebalanced.
+     *
+     * @throws Exception If failed.
+     */
+    public void testCorrectRebalancingCurrentlyRentingPartitions() throws Exception {
+        IgniteEx ignite = (IgniteEx) startGrids(3);
+        ignite.cluster().active(true);
+
+        // High number of keys triggers long partition eviction.
+        final int keysCount = 500_000;
+
+        try (IgniteDataStreamer ds = ignite.dataStreamer(CACHE_NAME)) {
+            log.info("Writing initial data...");
+
+            ds.allowOverwrite(true);
+            for (int k = 1; k <= keysCount; k++) {
+                ds.addData(k, k);
+
+                if (k % 50_000 == 0)
+                    log.info("Written " + k + " entities.");
+            }
+
+            log.info("Writing initial data finished.");
+        }
+
+        startGrid(3);
+
+        // Trigger partition eviction from other nodes.
+        ignite.cluster().setBaselineTopology(ignite.cluster().topologyVersion());
+
+        stopGrid(3);
+
+        // Trigger evicting partitions rebalancing.
+        ignite.cluster().setBaselineTopology(ignite.cluster().topologyVersion());
+
+        // Emulate stopping grid during partition eviction.
+        stopGrid(1);
+
+        // Started node should have partition in RENTING or EVICTED state.
+        startGrid(1);
+
+        awaitPartitionMapExchange();
+
+        // Check no data loss.
+        for (int k = 1; k <= keysCount; k++) {
+            Integer value = (Integer) ignite.cache(CACHE_NAME).get(k);
+            Assert.assertNotNull("Value for " + k + " is null", value);
+            Assert.assertEquals("Check failed for " + k + " = " + value, k, (int) value);
         }
     }
 
@@ -190,5 +250,4 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
             dbMgr.waitForCheckpoint("test");
         }
     }
-
 }

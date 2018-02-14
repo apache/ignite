@@ -446,9 +446,9 @@ public class GridDhtPartitionDemander {
 
                 parts = fut.remaining.get(node.id()).get2();
 
-                U.log(log, "Starting rebalancing [mode=" + cfg.getRebalanceMode() +
-                        ", fromNode=" + node.id() + ", partitionsCount=" + parts.size() +
-                        ", topology=" + fut.topologyVersion() + ", rebalanceId=" + fut.rebalanceId + "]");
+                U.log(log, "Starting rebalancing [grp=" + grp.cacheOrGroupName()
+                        + ", mode=" + cfg.getRebalanceMode() + ", fromNode=" + node.id() + ", partitionsCount=" + parts.size()
+                        + ", topology=" + fut.topologyVersion() + ", rebalanceId=" + fut.rebalanceId + "]");
             }
 
             int stripes = ctx.gridConfig().getRebalanceThreadPoolSize();
@@ -595,6 +595,15 @@ public class GridDhtPartitionDemander {
     }
 
     /**
+     * Handles supply message from {@code nodeId} with specified {@code topicId}.
+     *
+     * Supply message contains entries to populate rebalancing partitions.
+     *
+     * There is a cyclic process:
+     * Populate rebalancing partitions with entries from Supply message.
+     * If not all partitions specified in {@link #rebalanceFut} were rebalanced or marked as missed
+     * send new Demand message to request next batch of entries.
+     *
      * @param topicId Topic id.
      * @param nodeId Node id.
      * @param supply Supply message.
@@ -617,7 +626,7 @@ public class GridDhtPartitionDemander {
             return;
 
         if (!fut.isActual(supply.rebalanceId())) {
-            // Current future have another update sequence.
+            // Current future have another rebalance id.
             // Supple message based on another future.
             return;
         }
@@ -699,7 +708,7 @@ public class GridDhtPartitionDemander {
                                 if (grp.sharedGroup() && (cctx == null || cctx.cacheId() != entry.cacheId()))
                                     cctx = ctx.cacheContext(entry.cacheId());
 
-                                if(cctx != null && cctx.statisticsEnabled())
+                                if (cctx != null && cctx.statisticsEnabled())
                                     cctx.cache().metrics0().onRebalanceKeyReceived();
                             }
 
@@ -775,15 +784,17 @@ public class GridDhtPartitionDemander {
     }
 
     /**
-     * @param pick Node picked for preloading.
-     * @param p Partition.
+     * Adds {@code entry} to partition {@code p}.
+     *
+     * @param from Node which sent entry.
+     * @param p Partition id.
      * @param entry Preloaded entry.
      * @param topVer Topology version.
      * @return {@code False} if partition has become invalid during preloading.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     private boolean preloadEntry(
-        ClusterNode pick,
+        ClusterNode from,
         int p,
         GridCacheEntryInfo entry,
         AffinityTopologyVersion topVer
@@ -799,7 +810,7 @@ public class GridDhtPartitionDemander {
                 cached = cctx.dhtCache().entryEx(entry.key());
 
                 if (log.isDebugEnabled())
-                    log.debug("Rebalancing key [key=" + entry.key() + ", part=" + p + ", node=" + pick.id() + ']');
+                    log.debug("Rebalancing key [key=" + entry.key() + ", part=" + p + ", node=" + from.id() + ']');
 
                 cctx.shared().database().checkpointReadLock();
 
@@ -854,7 +865,7 @@ public class GridDhtPartitionDemander {
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to cache rebalanced entry (will stop rebalancing) [local=" +
-                ctx.localNode() + ", node=" + pick.id() + ", key=" + entry.key() + ", part=" + p + ']', e);
+                ctx.localNode() + ", node=" + from.id() + ", key=" + entry.key() + ", part=" + p + ']', e);
         }
         finally {
             ctx.database().checkpointReadUnlock();

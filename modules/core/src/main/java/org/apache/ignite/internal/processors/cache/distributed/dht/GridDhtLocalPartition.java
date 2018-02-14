@@ -167,6 +167,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /** Set if partition must be cleared in MOVING state. */
     private volatile boolean clear;
 
+    /** Flag indicates that eviction callback is registered on {@link #clearFuture}. */
+    private volatile boolean evictionCallbackRegistered;
+
     /**
      * @param ctx Context.
      * @param grp Cache group.
@@ -568,7 +571,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     /**
      * Forcibly moves partition to a MOVING state.
      */
-    void moving() {
+    public void moving() {
         while (true) {
             long state = this.state.get();
 
@@ -667,8 +670,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             if (done)
                 clearFuture.reset();
 
-            if (evictionRequested) {
+            if (evictionRequested && !evictionCallbackRegistered) {
                 // Initiates partition eviction and destroy.
+                evictionCallbackRegistered = true;
+
                 clearFuture.listen(f -> {
                     if (clearFuture.isFailed()) {
                         rent.onDone(clearFuture.error());
