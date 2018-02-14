@@ -18,6 +18,8 @@
 package org.apache.ignite.examples.datagrid;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
@@ -34,7 +36,14 @@ import org.apache.ignite.examples.model.EmployeeKey;
 import org.apache.ignite.lang.IgniteClosure;
 
 /**
- * This examples demonstrates continuous query with transformer API.
+ * This example demonstrates how to use continuous queries together with the transformer APIs.
+ * <p>
+ * This API can be used to get a notification about cache data changes.
+ * User should provide a custom transformer that will transform change event on a remote node.
+ * Result of the transformation will be sent over to a local node over the network.
+ * That should lead to better network usage and increase performance in case
+ * user select only required fields from a complex cache object.
+ * </p>
  * <p>
  * Remote nodes should always be started with special configuration file which
  * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.
@@ -50,6 +59,12 @@ public class CacheContinuousQueryWithTransformerExample {
     /** Cache name. */
     private static final String CACHE_NAME = CacheContinuousQueryExample.class.getSimpleName();
 
+    /**
+     * Executes example.
+     *
+     * @param args Command line arguments, none required.
+     * @throws Exception If example execution failed.
+     */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println();
@@ -65,7 +80,7 @@ public class CacheContinuousQueryWithTransformerExample {
                 Factory<IgniteClosure<CacheEntryEvent<? extends EmployeeKey, ? extends Employee>, String>> factory =
                     FactoryBuilder.factoryOf(
                         //Return one field of complex object.
-                        //Only returned field will be send to local node over network.
+                        //Only this field will be sent over to a local node over the network.
                         (IgniteClosure<CacheEntryEvent<? extends EmployeeKey, ? extends Employee>, String>)
                             event -> event.getValue().name());
 
@@ -99,53 +114,57 @@ public class CacheContinuousQueryWithTransformerExample {
      */
     @SuppressWarnings("TypeMayBeWeakened")
     private static void populateCache(IgniteCache<EmployeeKey, Employee> cache) {
-        cache.put(new EmployeeKey(1, 1), new Employee(
+        Map<EmployeeKey, Employee> data = new HashMap<>();
+
+        data.put(new EmployeeKey(1, 1), new Employee(
             "James Wilson",
             12500,
             new Address("1096 Eddy Street, San Francisco, CA", 94109),
             Arrays.asList("Human Resources", "Customer Service")
         ));
 
-        cache.put(new EmployeeKey(2, 1), new Employee(
+        data.put(new EmployeeKey(2, 1), new Employee(
             "Daniel Adams",
             11000,
             new Address("184 Fidler Drive, San Antonio, TX", 78130),
             Arrays.asList("Development", "QA")
         ));
 
-        cache.put(new EmployeeKey(3, 1), new Employee(
+        data.put(new EmployeeKey(3, 1), new Employee(
             "Cristian Moss",
             12500,
             new Address("667 Jerry Dove Drive, Florence, SC", 29501),
             Arrays.asList("Logistics")
         ));
 
-        cache.put(new EmployeeKey(4, 2), new Employee(
+        data.put(new EmployeeKey(4, 2), new Employee(
             "Allison Mathis",
             25300,
             new Address("2702 Freedom Lane, San Francisco, CA", 94109),
             Arrays.asList("Development")
         ));
 
-        cache.put(new EmployeeKey(5, 2), new Employee(
+        data.put(new EmployeeKey(5, 2), new Employee(
             "Breana Robbin",
             6500,
             new Address("3960 Sundown Lane, Austin, TX", 78130),
             Arrays.asList("Sales")
         ));
 
-        cache.put(new EmployeeKey(6, 2), new Employee(
+        data.put(new EmployeeKey(6, 2), new Employee(
             "Philip Horsley",
             19800,
             new Address("2803 Elsie Drive, Sioux Falls, SD", 57104),
             Arrays.asList("Sales")
         ));
 
-        cache.put(new EmployeeKey(7, 2), new Employee(
+        data.put(new EmployeeKey(7, 2), new Employee(
             "Brian Peters",
             10600,
             new Address("1407 Pearlman Avenue, Boston, MA", 12110),
             Arrays.asList("Development", "QA")
         ));
+
+        cache.putAll(data);
     }
 }
