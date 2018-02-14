@@ -35,10 +35,10 @@ public class QueryFactory {
     private String newCreateTableQuery() {
         StringBuilder create = new StringBuilder("CREATE TABLE test_upload (id LONG PRIMARY KEY");
 
-        for (int i = 1; i <= valFieldsCnt; i++) {
-            create.append(", val_").append(i);
+        for (int vi = 1; vi <= valFieldsCnt; vi++) {
+            create.append(", val_").append(vi);
 
-            if (i % 2 == 1)
+            if (vi % 2 == 1)
                 create.append(" VARCHAR(255)");
             else
                 create.append(" LONG");
@@ -52,7 +52,7 @@ public class QueryFactory {
 
     private String newInsertQuery() {
         StringBuilder insert = new StringBuilder("INSERT INTO test_upload VALUES (?");
-        for (int i = 1; i <= valFieldsCnt; i++)
+        for (int vi = 1; vi <= valFieldsCnt; vi++)
             insert.append(", ?");
 
         insert.append(");");
@@ -89,22 +89,72 @@ public class QueryFactory {
         return deleteAll;
     }
 
+    /**
+     * @param csvFilePath path to csv file
+     * @return sql query that inserts data from specified csv file
+     */
+    public String copyFrom(String csvFilePath){
+        return "COPY FROM \"" + csvFilePath + "\" INTO test_upload " + attributes() + " FORMAT CSV;";
+    }
+
+    /**
+     * Creates string - comma-separated attributes of test table, surrounded with braces
+     * Is used as a part of sql statement
+     *
+     * @return attributes list of test table as part of sql statement
+     */
+    private String attributes(){
+        StringBuilder attrs = new StringBuilder("(id");
+
+        for (int vi = 1; vi <= valFieldsCnt; vi++)
+            attrs.append(", val_").append(vi);
+
+        attrs.append(')');
+
+        return attrs.toString();
+    }
+
     public void setRandomInsertArgs(PreparedStatement stmt, long id) throws SQLException{
         stmt.setLong(1, id);
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        for (int i = 1; i <= valFieldsCnt ; i++) {
-            // "id" field has index 1, i is value index,
-            // so parameter indexes of values should be shifted by 1
-            int qryIdx = i + 1;
+        for (int vi = 1; vi <= valFieldsCnt ; vi++) {
+            // vi is value index (among all values), but we also have "id" which is primary key
+            // so index in query is value index shifted by 1
+            int qryIdx = vi + 1;
 
             long nextVal = rnd.nextLong();
 
-            if (i % 2 == 1)
+            if (vi % 2 == 1)
                 stmt.setLong(qryIdx, nextVal);
             else
                 // FIXME: use pre-generated values
                 stmt.setString(qryIdx, String.valueOf(nextVal));
         }
+    }
+
+    /**
+     * Generates CSV line containing specified id and random values.
+     * This line corresponds 1 row of the test table,
+     * which will be inserted in the end.
+     *
+     * @param id key in the test table
+     * @return generated comma-separated line
+     */
+    public String randomCsvLine(long id) {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        StringBuilder line = new StringBuilder().append(id);
+
+        for (int vi = 1; vi <= valFieldsCnt; vi++) {
+            line.append(',');
+
+            if (vi % 2 == 1)
+                line.append(rnd.nextLong());
+            else
+                line.append('"').append(rnd.nextLong()).append('"');
+        }
+
+        return line.toString();
     }
 }

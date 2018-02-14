@@ -30,6 +30,9 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     /** Total inserts size */
     public int INSERT_SIZE;
 
+    /** Rows count to be inserted and deleted during warmup */
+    public static final int WARMUP_ROWS_CNT = 3000_000;
+
     /**
      * Factory that hides all test data details:
      * what query to use to create table

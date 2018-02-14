@@ -22,9 +22,6 @@ import java.sql.SQLException;
 import java.util.Map;
 
 public class BatchedInsertBenchmark extends AbstractUploadBenchmark {
-    /** Rows count to be inserted and deleted during warmup */
-    public static final int WARMUP_ROWS_CNT = 3000_000;
-
     /** Number of inserts in batch */
     public int BATCH_SIZE;
 
