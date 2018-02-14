@@ -159,7 +159,7 @@ final class BinaryMetadataTransport {
         MetadataUpdateResultFuture resFut = new MetadataUpdateResultFuture();
 
         if (log.isDebugEnabled())
-            log.debug("Requesting metadata update for " + metadata.typeId());
+            log.debug("Requesting metadata update for " + metadata.typeId() + "; requesting thread waiting on future=[" + resFut + "]");
 
         synchronized (this) {
             unlabeledFutures.add(resFut);
@@ -471,7 +471,7 @@ final class BinaryMetadataTransport {
             GridFutureAdapter<MetadataUpdateResult> fut = syncMap.get(new SyncKey(typeId, newAcceptedVer));
 
             if (log.isDebugEnabled())
-                log.debug("Completing future for " + metaLocCache.get(typeId));
+                log.debug("Completing future for " + metaLocCache.get(typeId) + "; future=[" + fut + "]");
 
             if (fut != null)
                 fut.onDone(MetadataUpdateResult.createSuccessfulResult());
