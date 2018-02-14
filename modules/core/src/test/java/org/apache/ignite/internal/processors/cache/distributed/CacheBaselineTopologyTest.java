@@ -602,6 +602,8 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         stopGrid(primaryIdx, false);
 
+        backup.context().cache().context().exchange().affinityReadyFuture(new AffinityTopologyVersion(5, 0)).get();
+
         assertEquals(backup.localNode(), ig.affinity(CACHE_NAME).mapKeyToNode(key));
 
         cache.put(key, val2);
