@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testframework.junits.common;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -71,6 +70,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheExplicitLockSpan;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -88,7 +88,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTask;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -642,7 +641,22 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                         for (int i = 0; ; i++) {
                             boolean match = false;
 
-                            AffinityTopologyVersion readyVer = dht.context().shared().exchange().readyAffinityVersion();
+                            GridCachePartitionExchangeManager<?, ?> exchMgr = dht.context().shared().exchange();
+
+                            AffinityTopologyVersion readyVer = exchMgr.readyAffinityVersion();
+
+                            // Wait for the exchange completion (there is a race between ready affinity version
+                            // initialization and partition topology version update).
+                            // Otherwise, there may be an assertion when printing top.readyTopologyVersion().
+                            try {
+                                IgniteInternalFuture<?> fut = exchMgr.affinityReadyFuture(readyVer);
+
+                                if (fut != null)
+                                    fut.get();
+                            }
+                            catch (IgniteCheckedException e) {
+                                throw new IgniteException(e);
+                            }
 
                             if (readyVer.topologyVersion() > 0 && c.context().started()) {
                                 // Must map on updated version of topology.

@@ -67,7 +67,7 @@ import org.apache.ignite.marshaller.MarshallerExclusions;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.Assert.assertArrayEquals;
 
@@ -79,7 +79,7 @@ public class OptimizedObjectStreamSelfTest extends GridCommonAbstractTest {
     private static final MarshallerContext CTX = new MarshallerContextTestImpl();
 
     /** */
-    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap8<>();
+    private ConcurrentMap<Class, OptimizedClassDescriptor> clsMap = new ConcurrentHashMap<>();
 
     /**
      * @throws Exception If failed.
