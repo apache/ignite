@@ -18,21 +18,12 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import java.io.Serializable;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.util.Base64;
 import java.util.Objects;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.jetbrains.annotations.Nullable;
+import org.mindrot.BCrypt;
 
 /**
  */
@@ -46,22 +37,12 @@ public class User implements Serializable {
     /** Default user password. */
     private static final String DFLT_USER_PASSWORD = "ignite";
 
-    /** Salt length. */
-    private static final int SALT_LEN = 64;
-
-    /** Random. */
-    private static final SecureRandom random = new SecureRandom();
-
     /** User name. */
     private String name;
 
-    /** Encrypted password. */
+    /** Hashed password. */
     @GridToStringExclude
-    private String encPasswd;
-
-    /** Salt. */
-    @GridToStringExclude
-    private byte[] salt;
+    private String hashedPasswd;
 
     /**
      * Constructor.
@@ -71,13 +52,11 @@ public class User implements Serializable {
 
     /**
      * @param name User name.
-     * @param encPasswd Encoded password.
-     * @param salt Salt.
+     * @param hashedPasswd Hashed password.
      */
-    private User(String name, String encPasswd, byte[] salt) {
+    private User(String name, String hashedPasswd) {
         this.name = name;
-        this.encPasswd = encPasswd;
-        this.salt = salt;
+        this.hashedPasswd = hashedPasswd;
     }
 
     /**
@@ -94,11 +73,7 @@ public class User implements Serializable {
      * @return Created user.
      */
     public static User create(String name, String passwd) {
-        byte [] salt = new byte[SALT_LEN];
-
-        random.nextBytes(salt);
-
-        return new User(name, password(passwd, salt), salt);
+        return new User(name, password(passwd));
     }
 
     /**
@@ -107,7 +82,7 @@ public class User implements Serializable {
      * @return User.
      */
     public static User create(String name) {
-        return new User(name, null, null);
+        return new User(name, null);
     }
 
     /**
@@ -121,23 +96,18 @@ public class User implements Serializable {
 
     /**
      * @param passwd Plain text password.
-     * @param salt Salt.
      * @return Hashed password.
      */
-    @Nullable public static String password(String passwd, byte[] salt) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-512");
+    @Nullable public static String password(String passwd) {
+        return password_bcrypt(passwd);
+    }
 
-            for (int i = 0; i < 64; ++i) {
-                md.update(passwd.getBytes(StandardCharsets.UTF_8));
-
-                md.update(salt);
-            }
-
-            return Base64.getEncoder().encodeToString(md.digest(salt));
-        } catch (NoSuchAlgorithmException e) {
-            throw new IgniteException("Authentication error", e);
-        }
+    /**
+     * @param passwd Plain text password.
+     * @return Hashed password.
+     */
+    @Nullable private static String password_bcrypt(String passwd) {
+        return BCrypt.hashpw(passwd, BCrypt.gensalt());
     }
 
     /**
@@ -146,9 +116,9 @@ public class User implements Serializable {
      */
     public boolean authorize(String passwd) {
         if (F.isEmpty(passwd))
-            return encPasswd == null;
+            return hashedPasswd == null;
 
-        return encPasswd.equals(password(passwd, salt));
+        return BCrypt.checkpw(passwd, hashedPasswd);
     }
 
     /** {@inheritDoc} */
@@ -161,14 +131,12 @@ public class User implements Serializable {
 
         User u = (User)o;
 
-        return F.eq(name, u.name) &&
-            F.eq(salt, u.salt) &&
-            F.eq(encPasswd, u.encPasswd);
+        return F.eq(name, u.name) && F.eq(hashedPasswd, u.hashedPasswd);
     }
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = Objects.hash(name, encPasswd, salt);
+        int result = Objects.hash(name, hashedPasswd);
         return result;
     }
 

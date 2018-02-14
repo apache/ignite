@@ -83,25 +83,15 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private static final int[] DISCO_EVT_TYPES = new int[] {EVT_NODE_LEFT, EVT_NODE_FAILED, EVT_NODE_JOINED};
 
     /** User operation finish futures (Operation ID -> future). */
-    private final ConcurrentMap<IgniteUuid, UserOperationFinishFuture> opFinishFuts
-        = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<IgniteUuid, UserOperationFinishFuture> opFinishFuts = new ConcurrentHashMap<>();
 
     /** Futures prepared user map. Authentication message ID -> public future. */
     private final ConcurrentMap<IgniteUuid, GridFutureAdapter<Void>> authFuts = new ConcurrentHashMap<>();
 
-    /**
-     * Mutex used to synchronize discovery thread on collect data bag
-     * and change users from the thread of 'exec' executor.
-     */
-    private final Object muxChangeUserVer = new Object();
-
-    /** Mutex for change coordinator node. */
-    private final Object muxCrdNode = new Object();
-
     /** Operation mutex. */
     private final Object mux = new Object();
 
-    /** Active operations. */
+    /** Active operations. Collects to send on joining node. */
     private Map<IgniteUuid,  UserManagementOperation> activeOps =  Collections.synchronizedMap(new LinkedHashMap<>());
 
     /** User map. */
@@ -133,7 +123,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private InitialUsersData initUsrs;
 
     /** I/O message listener. */
-    // TODO: Need to catch too early IO finish responses
     private GridMessageListener ioLsnr;
 
     /** System discovery message listener. */
@@ -337,18 +326,14 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException On error.
      */
     public void addUser(String login, String passwd) throws IgniteCheckedException {
-        checkActivate();
-        checkEnabled();
+        UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
+            UserManagementOperation.OperationType.ADD);
 
-        synchronized (mux) {
-            if (disconnected) {
-                throw new UserManagementException("Failed to initiate user management operation because "
-                    + "client node is disconnected.");
-            }
-            UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
-                UserManagementOperation.OperationType.ADD);
-
-            execUserOperation(op);
+        MAP.put(op,true);
+        try {
+            execUserOperation(op).get();
+        }finally {
+            MAP.remove(op);
         }
     }
 
@@ -357,19 +342,14 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException On error.
      */
     public void removeUser(String login) throws IgniteCheckedException {
-        checkActivate();
-        checkEnabled();
+        UserManagementOperation op = new UserManagementOperation(User.create(login),
+            UserManagementOperation.OperationType.REMOVE);
 
-        synchronized (mux) {
-            if (disconnected) {
-                throw new IgniteCheckedException("Failed to initiate user management operation because "
-                    + "client node is disconnected.");
-            }
-
-            UserManagementOperation op = new UserManagementOperation(User.create(login),
-                UserManagementOperation.OperationType.REMOVE);
-
-            execUserOperation(op);
+        MAP.put(op,true);
+        try {
+            execUserOperation(op).get();
+        }finally {
+            MAP.remove(op);
         }
     }
 
@@ -379,19 +359,14 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException On error.
      */
     public void updateUser(String login, String passwd) throws IgniteCheckedException {
-        checkActivate();
-        checkEnabled();
+        UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
+            UserManagementOperation.OperationType.UPDATE);
 
-        synchronized (mux) {
-            if (disconnected) {
-                throw new IgniteCheckedException("Failed to initiate user management operation because "
-                    + "client node is disconnected.");
-            }
-
-            UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
-                UserManagementOperation.OperationType.UPDATE);
-
-            execUserOperation(op);
+        MAP.put(op,true);
+        try {
+            execUserOperation(op).get();
+        }finally {
+            MAP.remove(op);
         }
     }
 
@@ -446,7 +421,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (!isEnabled)
             return;
 
-        synchronized (muxChangeUserVer) {
+        synchronized (mux) {
             if (!dataBag.commonDataCollectedFor(AUTH_PROC.ordinal())) {
                 InitialUsersData d = new InitialUsersData(users.values(), activeOps.values());
 
@@ -531,34 +506,40 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /**
      * @param op User operation.
+     * @return Operation future.
      * @throws IgniteCheckedException On error.
      */
-    private void execUserOperation(UserManagementOperation op) throws IgniteCheckedException {
-        AuthorizationContext actx = AuthorizationContext.context();
+    private UserOperationFinishFuture execUserOperation(UserManagementOperation op) throws IgniteCheckedException {
+        checkActivate();
+        checkEnabled();
 
-        if (actx == null)
-            throw new IgniteAccessControlException("Operation not allowed: authorized context is empty.");
+        synchronized (mux) {
+            if (disconnected) {
+                throw new UserManagementException("Failed to initiate user management operation because "
+                    + "client node is disconnected.");
+            }
 
-        actx.checkUserOperation(op);
+            AuthorizationContext actx = AuthorizationContext.context();
 
-        UserOperationFinishFuture fut = new UserOperationFinishFuture(op, false);
+            if (actx == null)
+                throw new IgniteAccessControlException("Operation not allowed: authorized context is empty.");
 
-        opFinishFuts.putIfAbsent(op.id(), fut);
+            actx.checkUserOperation(op);
 
-        UserProposedMessage msg = new UserProposedMessage(op);
+            UserOperationFinishFuture fut = new UserOperationFinishFuture(op.id());
 
-        ctx.discovery().sendCustomEvent(msg);
+            opFinishFuts.put(op.id(), fut);
 
-//        System.out.println("+++ SEND PRP " + msg);
+            UserProposedMessage msg = new UserProposedMessage(op);
 
-//        MAP.put(op, true);
-        fut.get();
-//        MAP.remove(op);
+            ctx.discovery().sendCustomEvent(msg);
+
+            return fut;
+        }
     }
 
-//    /** */
-//    public static ConcurrentHashMap<UserManagementOperation, Boolean> MAP = new ConcurrentHashMap<>();
-
+    /** */
+    public static ConcurrentHashMap<UserManagementOperation, Boolean> MAP = new ConcurrentHashMap<>();
 
     /**
      * @param op The operation with users.
@@ -566,8 +547,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      */
     private void processOperationLocal(UserManagementOperation op) throws IgniteCheckedException {
         assert op != null && op.user() != null : "Invalid operation: " + op;
-
-//        log.info("+++ DO " + op);
 
         switch (op.type()) {
             case ADD:
@@ -603,7 +582,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         metastorage.write(STORE_USER_PREFIX + userName, usr);
 
-        synchronized (muxChangeUserVer) {
+        synchronized (mux) {
             activeOps.remove(op.id());
 
             users.put(userName, usr);
@@ -624,7 +603,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         metastorage.remove(STORE_USER_PREFIX + usr.name());
 
-        synchronized (muxChangeUserVer) {
+        synchronized (mux) {
             activeOps.remove(op.id());
 
             users.remove(usr.name());
@@ -645,7 +624,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         metastorage.write(STORE_USER_PREFIX + usr.name(), usr);
 
-        synchronized (muxChangeUserVer) {
+        synchronized (mux) {
             activeOps.remove(op.id());
 
             users.put(usr.name(), usr);
@@ -658,7 +637,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @return Coordinator node.
      */
     private ClusterNode coordinator() {
-        synchronized (muxCrdNode) {
+        synchronized (mux) {
             if (crdNode != null)
                 return crdNode;
             else {
@@ -682,8 +661,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @param msg Error message.
      */
     private void cancelFutures(String msg) {
-        for (UserOperationFinishFuture fut : opFinishFuts.values())
-            fut.onDone(null, new IgniteFutureCancelledException(msg));
+        synchronized (mux) {
+            for (UserOperationFinishFuture fut : opFinishFuts.values())
+                fut.onDone(null, new IgniteFutureCancelledException(msg));
+        }
 
         for (GridFutureAdapter<Void> fut : authFuts.values())
             fut.onDone(null, new IgniteFutureCancelledException(msg));
@@ -694,8 +675,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      */
     private void onNodeJoin(ClusterNode node) {
         if (isNodeHoldsUsers(ctx.discovery().localNode()) && isNodeHoldsUsers(node)) {
-            for (UserOperationFinishFuture f : opFinishFuts.values())
-                f.onNodeJoin(node.id());
+            synchronized (mux) {
+                for (UserOperationFinishFuture f : opFinishFuts.values())
+                    f.onNodeJoin(node.id());
+            }
         }
     }
 
@@ -703,7 +686,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @param nodeId Left node ID.
      */
     private void onNodeLeft(UUID nodeId) {
-        synchronized (muxCrdNode) {
+        synchronized (mux) {
             if (!ctx.clientNode()) {
                 for (UserOperationFinishFuture f : opFinishFuts.values())
                     f.onNodeLeft(nodeId);
@@ -733,11 +716,15 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         if (log.isDebugEnabled())
             log.debug(msg.toString());
 
-        UserOperationFinishFuture fut = opFinishFuts.get(msg.operationId());
+        synchronized (mux) {
+            UserOperationFinishFuture fut = opFinishFuts.get(msg.operationId());
 
-        if (fut == null)
-            log.warning("Not found appropriate user operation. [msg=" + msg + ']');
-        else {
+            if (fut == null) {
+                fut = new UserOperationFinishFuture(msg.operationId());
+
+                opFinishFuts.put(msg.operationId(), fut);
+            }
+
             if (msg.success())
                 fut.onSuccessOnNode(nodeId);
             else
@@ -852,8 +839,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
             assert initUsrs != null;
 
-//            log.info("+++ LOCAL JOIN" + initUsrs);
-
             // Can be empty on initial start of PDS cluster (default user will be created and stored after activate)
             if (!F.isEmpty(initUsrs.usrs)) {
                 users.clear();
@@ -864,13 +849,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 exec.execute(new RefreshUsersStorageWorker(initUsrs.usrs));
             }
 
-            for (UserManagementOperation op : initUsrs.activeOps) {
-                UserOperationFinishFuture fut = new UserOperationFinishFuture(op, true);
-
-                opFinishFuts.put(op.id(), fut);
-
-                exec.execute(new UserOperationWorker(op, fut));
-            }
+            for (UserManagementOperation op : initUsrs.activeOps)
+                submitOperation(op);
         }
     }
 
@@ -899,12 +879,36 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      */
     private void sendFinish(UserManagementOperationFinishedMessage msg) {
         try {
-//            log.info("+++ SEND FINISH " + msg);
             ctx.io().sendToGridTopic(coordinator(), GridTopic.TOPIC_AUTH, msg, GridIoPolicy.SYSTEM_POOL);
         }
         catch (Exception e) {
             U.error(log, "Failed to send UserManagementOperationFinishedMessage. [op=" + msg.operationId() +
                 ", node=" + coordinator() + ", err=" + msg.errorMessage() + ']', e);
+        }
+    }
+
+    /**
+     * Register operation, future and add operation worker to execute queue.
+     *
+     * @param op User operation.
+     */
+    private void submitOperation(UserManagementOperation op) {
+        synchronized (mux) {
+            UserOperationFinishFuture fut = opFinishFuts.get(op.id());
+
+            if (fut == null) {
+                fut = new UserOperationFinishFuture(op.id());
+
+                opFinishFuts.put(op.id(), fut);
+            }
+
+            if (!fut.workerSubmitted()) {
+                fut.workerSubmitted(true);
+
+                activeOps.put(op.id(), op);
+
+                exec.execute(new UserOperationWorker(op, fut));
+            }
         }
     }
 
@@ -955,7 +959,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         private static final long serialVersionUID = 0L;
     }
 
-    /**
+    /**i
      *
      */
     private final class UserProposedListener implements CustomEventListener<UserProposedMessage> {
@@ -965,25 +969,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             if (!isEnabled || ctx.isStopping() || ctx.clientNode())
                 return;
 
-//            log.info("+++ PROPOSE " + msg.operation());
             if (log.isDebugEnabled())
                 log.debug(msg.toString());
 
-            UserManagementOperation op = msg.operation();
-
-            UserOperationFinishFuture fut = new UserOperationFinishFuture(op, true);
-            UserOperationFinishFuture futPrev = opFinishFuts.putIfAbsent(op.id(), fut);
-
-            if (futPrev == null) {
-                activeOps.put(op.id(), op);
-
-                exec.execute(new UserOperationWorker(msg.operation(), fut));
-            }
-            else if (!futPrev.workerSubmitted()) {
-                activeOps.put(op.id(), op);
-
-                exec.execute(new UserOperationWorker(msg.operation(), futPrev));
-            }
+            submitOperation(msg.operation());
         }
     }
 
@@ -999,14 +988,15 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             if (log.isDebugEnabled())
                 log.debug(msg.toString());
 
-//            log.info("+++ ACK " + msg.operationId());
-            UserOperationFinishFuture f = opFinishFuts.get(msg.operationId());
+            synchronized (mux) {
+                UserOperationFinishFuture f = opFinishFuts.get(msg.operationId());
 
-            if (f != null) {
-                if (msg.error() != null)
-                    f.onDone(null, msg.error());
-                else
-                    f.onDone();
+                if (f != null) {
+                    if (msg.error() != null)
+                        f.onDone(null, msg.error());
+                    else
+                        f.onDone();
+                }
             }
         }
     }
@@ -1021,22 +1011,21 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         /** */
         private final Set<UUID> receivedFinish;
 
-        /** User management operation. */
-        private final UserManagementOperation op;
+        /** User management operation ID. */
+        private final IgniteUuid opId;
 
         /** Worker has been already submitted flag. */
-        private final boolean workerSubmitted;
+        private boolean workerSubmitted;
 
         /** Error. */
         private IgniteCheckedException err;
 
+
         /**
-         * @param op User management operation.
-         * @param workerSubmitted Worker has been already submitted flag.
+         * @param opId User management operation ID.
          */
-        UserOperationFinishFuture(UserManagementOperation op, boolean workerSubmitted) {
-            this.op = op;
-            this.workerSubmitted = workerSubmitted;
+        UserOperationFinishFuture(IgniteUuid opId) {
+            this.opId = opId;
 
             if (!ctx.clientNode()) {
                 requiredFinish = new HashSet<>();
@@ -1057,8 +1046,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
             boolean done = super.onDone(res, err);
 
-            if (done)
-                opFinishFuts.remove(op.id(), this);
+            synchronized (mux) {
+                if (done)
+                    opFinishFuts.remove(opId, this);
+            }
 
             return done;
         }
@@ -1107,7 +1098,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             receivedFinish.add(nodeId);
 
             UserManagementException e = new UserManagementException("Operation failed. [nodeId=" + nodeId
-                + ", op=" + op + ", err=" + errMsg + ']');
+                + ", opId=" + opId + ", err=" + errMsg + ']');
 
             if (err == null)
                 err = e;
@@ -1121,9 +1112,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
          *
          */
         private void checkOperationFinished() {
-//            log.info("+++ CHECK F req="  + requiredFinish.size() + ", revc=" + receivedFinish.size() + ", op="  + op.id());
             if (receivedFinish.containsAll(requiredFinish))
-                onFinishOperation(op.id(), err);
+                onFinishOperation(opId, err);
         }
 
         /**
@@ -1131,6 +1121,13 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
          */
         public boolean workerSubmitted() {
             return workerSubmitted;
+        }
+
+        /**
+         * @param val Worker submitted flag.
+         */
+        public void workerSubmitted(boolean val) {
+            workerSubmitted = val;
         }
     }
 

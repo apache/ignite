@@ -52,8 +52,6 @@ public class AuthenticationProcessorPersistEnabledTest extends AuthenticationPro
 
             stopAllGrids();
 
-            System.out.println("+++ RESTART");
-
             startGrids(NODES_COUNT);
 
             for (int i = 0; i < NODES_COUNT; ++i) {

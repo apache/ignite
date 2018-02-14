@@ -17,13 +17,9 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
-import java.util.Base64;
-import java.util.Random;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -95,36 +91,13 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testConcurrentAddUpdateRemoveNodeRestartCoordinator() throws Exception {
-//        fail("https://issues.apache.org/jira/browse/IGNITE-7472");
+        fail("https://issues.apache.org/jira/browse/IGNITE-7472");
 
         final IgniteInternalFuture restartFut = restartCoordinator();
 
         AuthorizationContext.context(actxDflt);
 
         final AtomicInteger usrCnt = new AtomicInteger();
-
-//        IgniteInternalFuture dbgF =  GridTestUtils.runAsync(new Runnable() {
-//            @Override public void run() {
-//                try {
-//                    restartFut.get();
-//                }
-//                catch (IgniteCheckedException e) {
-//                }
-//
-//                try {
-//                    U.sleep(3000);
-//                }
-//                catch (IgniteInterruptedCheckedException e) {
-//                }
-//
-//                if (!IgniteAuthenticationProcessor.MAP.isEmpty()) {
-//                    System.out.println("+++ UNFINISHED");
-//
-//                    for (UserManagementOperation op : IgniteAuthenticationProcessor.MAP.keySet())
-//                        System.out.println("+++ " + op);
-//                }
-//            }
-//        });
 
         GridTestUtils.runMultiThreaded(new Runnable() {
             @Override public void run() {
@@ -163,8 +136,8 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
                             fail("Unexpected exception on user operation");
                         }
                         catch (IgniteCheckedException e) {
+                            // Reconnect
                             U.error(log, e);
-                            // TODO: Check reconnect;
                         }
                     }
                 }
@@ -176,7 +149,6 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
         }, 10, "user-op");
 
         restartFut.get();
-//        dbgF.get();
     }
 
     /**
