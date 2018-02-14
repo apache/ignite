@@ -19,10 +19,9 @@ package org.apache.ignite.internal.processors.bulkload;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.bulkload.pipeline.CharsetDecoderBlock;
-import org.apache.ignite.internal.processors.bulkload.pipeline.CsvLineProcessorBlock;
+import org.apache.ignite.internal.processors.bulkload.pipeline.CsvParserBlock;
 import org.apache.ignite.internal.processors.bulkload.pipeline.PipelineBlock;
 import org.apache.ignite.internal.processors.bulkload.pipeline.StrListAppenderBlock;
-import org.apache.ignite.internal.processors.bulkload.pipeline.LineSplitterBlock;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -46,13 +45,12 @@ public class BulkLoadCsvParser extends BulkLoadParser {
         collectorBlock = new StrListAppenderBlock();
 
         // Handling of the other options is to be implemented in IGNITE-7537.
-        inputBlock.append(new LineSplitterBlock(format.lineSeparator()))
-               .append(new CsvLineProcessorBlock(format.fieldSeparator(), format.quoteChars()))
-               .append(collectorBlock);
+        inputBlock.append(new CsvParserBlock())
+                  .append(collectorBlock);
     }
 
     /** {@inheritDoc} */
-    @Override protected Iterable<List<Object>> parseBatch(byte[] batchData, boolean isLastBatch)
+    @Override protected List<List<Object>> parseBatch(byte[] batchData, boolean isLastBatch)
         throws IgniteCheckedException {
         List<List<Object>> res = new LinkedList<>();
 

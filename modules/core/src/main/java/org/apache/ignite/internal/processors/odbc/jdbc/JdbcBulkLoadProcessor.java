@@ -139,6 +139,6 @@ public class JdbcBulkLoadProcessor {
      * @return The update counter for sending in {@link JdbcBatchExecuteResult}.
      */
     public long updateCnt() {
-        return processor.outputStreamer().updateCnt();
+        return processor.updateCnt();
     }
 }

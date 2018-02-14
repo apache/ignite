@@ -33,7 +33,7 @@ public class BulkLoadAckClientParameters {
     public static final int MAX_BATCH_SIZE = Integer.MAX_VALUE - 512;
 
     /** Size of a file batch for COPY command. */
-    public static final int DEFAULT_BATCH_SIZE = 4 * 1024 * 1024;
+    public static final int DEFAULT_BATCH_SIZE = 512 * 1024;
 
     /** Local name of the file to send to server */
     @NotNull private final String locFileName;

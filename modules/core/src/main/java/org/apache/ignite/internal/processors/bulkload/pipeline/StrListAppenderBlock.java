@@ -25,7 +25,7 @@ import java.util.List;
  *
  * <p>The list is set using {@link #output(List)} method.
  */
-public class StrListAppenderBlock extends PipelineBlock<String[], Object> {
+public class StrListAppenderBlock extends PipelineBlock<List<Object>, Object> {
     /** The output list. */
     private List<List<Object>> output;
 
@@ -46,7 +46,7 @@ public class StrListAppenderBlock extends PipelineBlock<String[], Object> {
     }
 
     /** {@inheritDoc} */
-    @Override public void accept(String[] elements, boolean isLastPortion) {
-        output.add(Arrays.asList(elements));
+    @Override public void accept(List<Object> elements, boolean isLastPortion) {
+        output.add(elements);
     }
 }

@@ -17,32 +17,23 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.lang.IgniteBiTuple;
-
-import java.util.List;
 
 /**
  * Bulk load (COPY) command processor used on server to keep various context data and process portions of input
  * received from the client side.
  */
-public abstract class BulkLoadProcessor implements AutoCloseable {
-    /** Parser of the input bytes. */
-    protected final BulkLoadParser inputParser;
-
-    /**
-     * Converter, which transforms the list of strings parsed from the input stream to the key+value entry to add to
-     * the cache.
-     */
-    protected final IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter;
-
-    /**
-     * A number of updates made to the cache.
-     */
-    protected long updateCnt;
+public class BulkLoadCachePutAllProcessor extends BulkLoadProcessor {
+    /** The cache to put data to. */
+    private final GridCacheAdapter cache;
 
     /**
      * Creates bulk load processor.
@@ -50,10 +41,13 @@ public abstract class BulkLoadProcessor implements AutoCloseable {
      * @param inputParser Parser of the input bytes.
      * @param dataConverter Converter, which transforms the list of strings parsed from the input stream to the
      *     key+value entry to add to the cache.
+     * @param cache The cache to put data to.
      */
-    public BulkLoadProcessor(BulkLoadParser inputParser, IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter) {
-        this.inputParser = inputParser;
-        this.dataConverter = dataConverter;
+    public BulkLoadCachePutAllProcessor(BulkLoadParser inputParser,
+        IgniteClosureX<List<?>, IgniteBiTuple<?, ?>> dataConverter, GridCacheAdapter cache) {
+        super(inputParser, dataConverter);
+
+        this.cache = cache;
     }
 
     /**
@@ -63,19 +57,30 @@ public abstract class BulkLoadProcessor implements AutoCloseable {
      * @param isLastBatch true if this is the last batch.
      * @throws IgniteIllegalStateException when called after {@link #close()}.
      */
-    public abstract void processBatch(byte[] batchData, boolean isLastBatch) throws IgniteCheckedException;
+    @SuppressWarnings("unchecked")
+    @Override public void processBatch(byte[] batchData, boolean isLastBatch) throws IgniteCheckedException {
+        List<List<Object>> inputRecords = inputParser.parseBatch(batchData, isLastBatch);
+
+        if (inputRecords.isEmpty())
+            return;
+
+        Map<Object, Object> outRecs = new HashMap<>();
+
+        for (List<Object> record : inputRecords) {
+            IgniteBiTuple<?, ?> kv = dataConverter.apply(record);
+
+            outRecs.put(kv.getKey(), kv.getValue());
+        }
+
+        cache.putAll(outRecs);
+
+        updateCnt += outRecs.size();
+    }
 
     /**
      * Aborts processing and closes the underlying objects ({@link IgniteDataStreamer}).
      */
-    @Override public abstract void close() throws Exception;
-
-    /**
-     * Returns number of entry updates made by the processor.
-     *
-     * @return The number of cache entry updates.
-     */
-    public long updateCnt() {
-        return updateCnt;
+    @Override public void close() {
+        // no-op
     }
 }
