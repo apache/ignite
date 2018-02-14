@@ -26,7 +26,7 @@ public class IgniteOfflineBaselineNodeFullApiSelfTest extends IgniteBaselineAbst
     @Override protected void beforeTestsStarted() throws Exception {
         initStoreStrategy();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         startGrids(gridCount());
 

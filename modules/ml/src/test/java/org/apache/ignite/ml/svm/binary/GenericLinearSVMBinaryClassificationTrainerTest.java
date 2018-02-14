@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm;
+package org.apache.ignite.ml.svm.binary;
 
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -24,12 +24,14 @@ import org.apache.ignite.ml.Trainer;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
+import org.apache.ignite.ml.svm.BaseSVMTest;
+import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
 import org.junit.Test;
 
 /**
  * Base class for all linear regression trainers.
  */
-public class GenericLinearSVMTrainerTest extends BaseSVMTest {
+public class GenericLinearSVMBinaryClassificationTrainerTest extends BaseSVMTest {
     /** Fixed size of Dataset. */
     private static final int AMOUNT_OF_OBSERVATIONS = 100;
 
@@ -37,7 +39,7 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
     private static final int AMOUNT_OF_FEATURES = 2;
 
     /** */
-    private final Trainer<SVMLinearClassificationModel, LabeledDataset> trainer;
+    private final Trainer<SVMLinearBinaryClassificationModel, LabeledDataset> trainer;
 
     /** */
     private boolean isDistributed;
@@ -46,8 +48,8 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
     private final double precision;
 
     /** */
-    GenericLinearSVMTrainerTest(
-        Trainer<SVMLinearClassificationModel, LabeledDataset> trainer,
+    GenericLinearSVMBinaryClassificationTrainerTest(
+        Trainer<SVMLinearBinaryClassificationModel, LabeledDataset> trainer,
         boolean isDistributed,
         double precision) {
         super();
@@ -77,7 +79,7 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
             dataset.setLabel(i, lb);
         }
 
-        SVMLinearClassificationModel mdl = trainer.train(dataset);
+        SVMLinearBinaryClassificationModel mdl = trainer.train(dataset);
 
         TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[] {100, 10})), precision);
         TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[] {10, 100})), precision);
@@ -104,7 +106,7 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
             dataset.setLabel(i, lb);
         }
 
-        SVMLinearClassificationModel mdl = trainer.train(dataset);
+        SVMLinearBinaryClassificationModel mdl = trainer.train(dataset);
 
         TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[] {100, 10})), precision);
         TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[] {10, 100})), precision);
@@ -131,7 +133,7 @@ public class GenericLinearSVMTrainerTest extends BaseSVMTest {
             dataset.setLabel(i, lb);
         }
 
-        SVMLinearClassificationModel mdl = trainer.train(dataset);
+        SVMLinearBinaryClassificationModel mdl = trainer.train(dataset);
 
         TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[] {100, 10})), precision);
         TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[] {10, 100})), precision);
