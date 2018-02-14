@@ -439,11 +439,17 @@ public class GridDhtPartitionDemander {
 
             GridDhtPartitionDemandMessage d = e.getValue();
 
-            final IgniteDhtDemandedPartitionsMap parts = fut.remaining.get(node.id()).get2();
+            final IgniteDhtDemandedPartitionsMap parts;
+            synchronized (fut) { // Synchronized to prevent consistency issues in case of parallel cancellation.
+                if (fut.isDone())
+                    break;
 
-            U.log(log, "Starting rebalancing [mode=" + cfg.getRebalanceMode() +
-                ", fromNode=" + node.id() + ", partitionsCount=" + parts.size() +
-                ", topology=" + fut.topologyVersion() + ", rebalanceId=" + fut.rebalanceId + "]");
+                parts = fut.remaining.get(node.id()).get2();
+
+                U.log(log, "Starting rebalancing [mode=" + cfg.getRebalanceMode() +
+                        ", fromNode=" + node.id() + ", partitionsCount=" + parts.size() +
+                        ", topology=" + fut.topologyVersion() + ", rebalanceId=" + fut.rebalanceId + "]");
+            }
 
             int stripes = ctx.gridConfig().getRebalanceThreadPoolSize();
 
