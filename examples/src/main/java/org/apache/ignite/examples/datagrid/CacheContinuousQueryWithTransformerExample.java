@@ -18,6 +18,7 @@
 package org.apache.ignite.examples.datagrid;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import javax.cache.Cache;
@@ -134,28 +135,28 @@ public class CacheContinuousQueryWithTransformerExample {
             "Cristian Moss",
             12500,
             new Address("667 Jerry Dove Drive, Florence, SC", 29501),
-            Arrays.asList("Logistics")
+            Collections.singletonList("Logistics")
         ));
 
         data.put(new EmployeeKey(4, 2), new Employee(
             "Allison Mathis",
             25300,
             new Address("2702 Freedom Lane, San Francisco, CA", 94109),
-            Arrays.asList("Development")
+            Collections.singletonList("Development")
         ));
 
         data.put(new EmployeeKey(5, 2), new Employee(
             "Breana Robbin",
             6500,
             new Address("3960 Sundown Lane, Austin, TX", 78130),
-            Arrays.asList("Sales")
+            Collections.singletonList("Sales")
         ));
 
         data.put(new EmployeeKey(6, 2), new Employee(
             "Philip Horsley",
             19800,
             new Address("2803 Elsie Drive, Sioux Falls, SD", 57104),
-            Arrays.asList("Sales")
+            Collections.singletonList("Sales")
         ));
 
         data.put(new EmployeeKey(7, 2), new Employee(
