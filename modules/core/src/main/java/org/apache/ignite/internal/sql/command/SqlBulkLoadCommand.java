@@ -83,7 +83,12 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @param lex The lexer.
      */
     private void parseFileName(SqlLexer lex) {
-        locFileName = parseIdentifier(lex);
+        if (lex.lookAhead().tokenType() != SqlLexerTokenType.QUOTED)
+            throw error(lex.lookAhead(), "[quoted file name]");
+
+        lex.shift();
+
+        locFileName = lex.token();
     }
 
     /**
