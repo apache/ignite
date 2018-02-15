@@ -52,6 +52,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
@@ -206,8 +207,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 assert part != null;
                 assert part.id() == p;
 
-                // Do not rebalance OWNING partitions.
-                if (part.state() == OWNING)
+                // Do not rebalance OWNING or LOST partitions.
+                if (part.state() == OWNING || part.state() == LOST)
                     continue;
 
                 // If partition is currently rented prevent destroy and start clearing process.

@@ -667,8 +667,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         synchronized (clearFuture) {
             boolean done = clearFuture.isDone();
 
-            if (done)
+            if (done) {
                 clearFuture.reset();
+                evictionCallbackRegistered = false;
+            }
 
             if (evictionRequested && !evictionCallbackRegistered) {
                 // Initiates partition eviction and destroy.
