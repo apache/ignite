@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.io.Serializable;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Properties;
 import javax.naming.RefAddr;
 import javax.naming.Reference;
@@ -39,14 +40,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** Host name property. */
     private StringProperty host = new StringProperty(
-        "host", "Ignite node IP to connect", null, null, true, new PropertyValidator() {
-        private static final long serialVersionUID = 0L;
-
-        @Override public void validate(String host) throws SQLException {
-            if (F.isEmpty(host))
-                throw new SQLException("Host name is empty", SqlStateCode.CLIENT_CONNECTION_FAILED);
-        }
-    });
+        "host", "Ignite node IP to connect", null, null, true,
+        new EmptyStringValidator("Host name is empty"));
 
     /** Connection port property. */
     private IntegerProperty port = new IntegerProperty(
@@ -96,11 +91,70 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private BooleanProperty skipReducerOnUpdate = new BooleanProperty(
         "skipReducerOnUpdate", "Enable execution update queries on ignite server nodes", false, false);
 
+    /** SSL: Use SSL connection to Ignite node. */
+    private StringProperty sslMode = new StringProperty("sslMode",
+        "The SSL mode of the connection", SSL_MODE_DISABLE,
+        new String[] {SSL_MODE_DISABLE, SSL_MODE_REQUIRE}, false, null);
+
+    /** SSL: Client certificate key store url. */
+    private StringProperty sslProtocol = new StringProperty("sslProtocol",
+        "SSL protocol name", null,  null, false, null);
+
+    /** SSL: Key algorithm name. */
+    private StringProperty sslKeyAlgorithm = new StringProperty("sslKeyAlgorithm",
+        "SSL key algorithm name", "SunX509",  null, false, null);
+
+    /** SSL: Client certificate key store url. */
+    private StringProperty sslClientCertificateKeyStoreUrl =
+        new StringProperty("sslClientCertificateKeyStoreUrl",
+        "Client certificate key store URL",
+        null, null, false, null);
+
+    /** SSL: Client certificate key store password. */
+    private StringProperty sslClientCertificateKeyStorePassword =
+        new StringProperty("sslClientCertificateKeyStorePassword",
+        "Client certificate key store password",
+            null, null, false, null);
+
+    /** SSL: Client certificate key store type. */
+    private StringProperty sslClientCertificateKeyStoreType =
+        new StringProperty("sslClientCertificateKeyStoreType",
+        "Client certificate key store type",
+            null, null, false, null);
+
+    /** SSL: Trusted certificate key store url. */
+    private StringProperty sslTrustCertificateKeyStoreUrl =
+        new StringProperty("sslTrustCertificateKeyStoreUrl",
+        "Trusted certificate key store URL", null, null, false, null);
+
+    /** SSL Trusted certificate key store password. */
+    private StringProperty sslTrustCertificateKeyStorePassword =
+        new StringProperty("sslTrustCertificateKeyStorePassword",
+        "Trusted certificate key store password", null, null, false, null);
+
+    /** SSL: Trusted certificate key store type. */
+    private StringProperty sslTrustCertificateKeyStoreType =
+        new StringProperty("sslTrustCertificateKeyStoreType",
+        "Trusted certificate key store type",
+            null, null, false, null);
+
+    /** SSL: Trust all certificates. */
+    private BooleanProperty sslTrustAll = new BooleanProperty("sslTrustAll",
+        "Trust all certificates",false, false);
+
+    /** SSL: Custom class name that implements Factory&lt;SSLSocketFactory&gt;. */
+    private StringProperty sslFactory = new StringProperty("sslFactory",
+        "Custom class name that implements Factory<SSLSocketFactory>", null, null, false, null);
+
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {
         host, port,
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
-        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate
+        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
+        sslMode, sslProtocol, sslKeyAlgorithm,
+        sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
+        sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
+        sslTrustAll, sslFactory
     };
 
     /** {@inheritDoc} */
@@ -223,6 +277,116 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         skipReducerOnUpdate.setValue(val);
     }
 
+    /** {@inheritDoc} */
+    @Override public String getSslMode() {
+        return sslMode.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslMode(String mode) {
+        sslMode.setValue(mode);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslProtocol() {
+        return sslProtocol.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslProtocol(String sslProtocol) {
+        this.sslProtocol.setValue(sslProtocol);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslKeyAlgorithm() {
+        return sslKeyAlgorithm.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslKeyAlgorithm(String keyAlgorithm) {
+        sslKeyAlgorithm.setValue(keyAlgorithm);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslClientCertificateKeyStoreUrl() {
+        return sslClientCertificateKeyStoreUrl.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslClientCertificateKeyStoreUrl(String url) {
+        sslClientCertificateKeyStoreUrl.setValue(url);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslClientCertificateKeyStorePassword() {
+        return sslClientCertificateKeyStorePassword.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslClientCertificateKeyStorePassword(String passwd) {
+        sslClientCertificateKeyStorePassword.setValue(passwd);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslClientCertificateKeyStoreType() {
+        return sslClientCertificateKeyStoreType.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslClientCertificateKeyStoreType(String ksType) {
+        sslClientCertificateKeyStoreType.setValue(ksType);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslTrustCertificateKeyStoreUrl() {
+        return sslTrustCertificateKeyStoreUrl.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslTrustCertificateKeyStoreUrl(String url) {
+        sslTrustCertificateKeyStoreUrl.setValue(url);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslTrustCertificateKeyStorePassword() {
+        return sslTrustCertificateKeyStorePassword.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslTrustCertificateKeyStorePassword(String passwd) {
+        sslTrustCertificateKeyStorePassword.setValue(passwd);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslTrustCertificateKeyStoreType() {
+        return sslTrustCertificateKeyStoreType.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslTrustCertificateKeyStoreType(String ksType) {
+        sslTrustCertificateKeyStoreType.setValue(ksType);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isSslTrustAll() {
+        return sslTrustAll.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslTrustAll(boolean trustAll) {
+        this.sslTrustAll.setValue(trustAll);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslFactory() {
+        return sslFactory.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslFactory(String sslFactory) {
+        this.sslFactory.setValue(sslFactory);
+    }
+
     /**
      * @param props Environment properties.
      * @throws SQLException On error.
@@ -268,6 +432,30 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @throws SQLException On validation fails.
          */
         void validate(String val) throws SQLException;
+    }
+
+    /**
+     *
+     */
+    private static class EmptyStringValidator implements PropertyValidator {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Error message. */
+        private final String errMsg;
+
+        /**
+         * @param msg Error message.
+         */
+        private EmptyStringValidator(String msg) {
+            errMsg = msg;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void validate(String val) throws SQLException {
+            if (F.isEmpty(val))
+                throw new SQLException(errMsg, SqlStateCode.CLIENT_CONNECTION_FAILED);
+        }
     }
 
     /**
@@ -365,12 +553,33 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
                     SqlStateCode.CLIENT_CONNECTION_FAILED);
             }
 
+            checkChoices(strVal);
+
             if (validator != null)
                 validator.validate(strVal);
 
             props.remove(name);
 
             init(strVal);
+        }
+
+        /**
+         * @param strVal Checked value.
+         * @throws SQLException On check error.
+         */
+        protected void checkChoices(String strVal) throws SQLException {
+            if (strVal == null)
+                return;
+
+            if (choices != null) {
+                for (String ch : choices) {
+                    if (ch.equalsIgnoreCase(strVal))
+                        return;
+                }
+
+                throw new SQLException("Invalid property value. [name=" + name + ", val=" + strVal
+                    + ", choices=" + Arrays.toString(choices) + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
+            }
         }
 
         /**
@@ -626,7 +835,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         /** {@inheritDoc} */
         @Override void init(String str) throws SQLException {
-            val = str;
+            if (str == null)
+                val = (String)dfltVal;
+            else
+                val = str;
         }
 
         /** {@inheritDoc} */

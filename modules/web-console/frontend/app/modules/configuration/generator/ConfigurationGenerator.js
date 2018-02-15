@@ -788,6 +788,20 @@ export default class IgniteConfigurationGenerator {
             .intProperty('threadPoolSize')
             .boolProperty('tcpNoDelay');
 
+        if (available('2.4.0')) {
+            bean.longProperty('idleTimeout')
+                .boolProperty('jdbcEnabled')
+                .boolProperty('odbcEnabled')
+                .boolProperty('thinClientEnabled');
+        }
+
+        if (available('2.5.0')) {
+            bean.boolProperty('sslEnabled')
+                .boolProperty('sslClientAuth')
+                .boolProperty('useIgniteSslContextFactory')
+                .emptyBeanProperty('sslContextFactory');
+        }
+
         cfg.beanProperty('clientConnectorConfiguration', bean);
 
         return cfg;

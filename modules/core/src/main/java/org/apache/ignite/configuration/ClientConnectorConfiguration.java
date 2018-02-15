@@ -17,7 +17,10 @@
 
 package org.apache.ignite.configuration;
 
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.ssl.SslContextFactory;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -44,6 +47,9 @@ public class ClientConnectorConfiguration {
 
     /** Default idle timeout. */
     public static final int DFLT_IDLE_TIMEOUT = 0;
+
+    /** Default value of whether to use Ignite SSL context factory. */
+    public static final boolean DFLT_USE_IGNITE_SSL_CTX_FACTORY = true;
 
     /** Host. */
     private String host;
@@ -81,6 +87,18 @@ public class ClientConnectorConfiguration {
     /** JDBC connections enabled flag. */
     private boolean thinCliEnabled = true;
 
+    /** SSL enable flag, default is disabled. */
+    private boolean sslEnabled;
+
+    /** If to use SSL context factory from Ignite configuration. */
+    private boolean useIgniteSslCtxFactory = DFLT_USE_IGNITE_SSL_CTX_FACTORY;
+
+    /** SSL need client auth flag. */
+    private boolean sslClientAuth;
+
+    /** SSL connection factory. */
+    private Factory<SSLContext> sslCtxFactory;
+
     /**
      * Creates SQL connector configuration with all default values.
      */
@@ -105,6 +123,10 @@ public class ClientConnectorConfiguration {
         tcpNoDelay = cfg.isTcpNoDelay();
         threadPoolSize = cfg.getThreadPoolSize();
         idleTimeout = cfg.getIdleTimeout();
+        sslEnabled = cfg.isSslEnabled();
+        sslClientAuth = cfg.isSslClientAuth();
+        useIgniteSslCtxFactory = cfg.isUseIgniteSslContextFactory();
+        sslCtxFactory = cfg.getSslContextFactory();
     }
 
     /**
@@ -383,6 +405,100 @@ public class ClientConnectorConfiguration {
         this.thinCliEnabled = thinCliEnabled;
 
         return this;
+    }
+
+    /**
+     * Whether secure socket layer should be enabled on client connector.
+     * <p>
+     * Note that if this flag is set to {@code true}, an instance of {@code Factory&lt;SSLContext&gt;}
+     * should be provided, otherwise client connector will fail to start.
+     *
+     * @return {@code True} if SSL should be enabled.
+     */
+    public boolean isSslEnabled() {
+        return sslEnabled;
+    }
+
+    /**
+     * Sets whether Secure Socket Layer should be enabled for client connector.
+     * <p/>
+     * Note that if this flag is set to {@code true}, then a valid instance of {@code Factory&lt;SSLContext&gt;}
+     * should be provided in {@link IgniteConfiguration}. Otherwise, TCP binary protocol will fail to start.
+     *
+     * @param sslEnabled {@code True} if SSL should be enabled.
+     * @return {@code this} for chaining.
+     */
+    public ClientConnectorConfiguration setSslEnabled(boolean sslEnabled) {
+        this.sslEnabled = sslEnabled;
+
+        return this;
+    }
+
+    /**
+     * Gets whether to use Ignite SSL context factory configured through
+     * {@link IgniteConfiguration#getSslContextFactory()} if {@link #getSslContextFactory()} is not set.
+     *
+     * @return {@code True} if Ignite SSL context factory can be used.
+     */
+    public boolean isUseIgniteSslContextFactory() {
+        return useIgniteSslCtxFactory;
+    }
+
+    /**
+     * Sets whether to use Ignite SSL context factory. See {@link #isUseIgniteSslContextFactory()} for more information.
+     *
+     * @param useIgniteSslCtxFactory Whether to use Ignite SSL context factory
+     * @return {@code this} for chaining.
+     */
+    public ClientConnectorConfiguration setUseIgniteSslContextFactory(boolean useIgniteSslCtxFactory) {
+        this.useIgniteSslCtxFactory = useIgniteSslCtxFactory;
+
+        return this;
+    }
+
+    /**
+     * Gets a flag indicating whether or not remote clients will be required to have a valid SSL certificate which
+     * validity will be verified with trust manager.
+     *
+     * @return Whether or not client authentication is required.
+     */
+    public boolean isSslClientAuth() {
+        return sslClientAuth;
+    }
+
+    /**
+     * Sets flag indicating whether or not SSL client authentication is required.
+     *
+     * @param sslClientAuth Whether or not client authentication is required.
+     * @return {@code this} for chaining.
+     */
+    public ClientConnectorConfiguration setSslClientAuth(boolean sslClientAuth) {
+        this.sslClientAuth = sslClientAuth;
+
+        return this;
+    }
+
+    /**
+     * Sets SSL context factory that will be used for creating a secure socket layer.
+     *
+     * @param sslCtxFactory Ssl context factory.
+     * @see SslContextFactory
+     * @return {@code this} for chaining.
+     */
+    public ClientConnectorConfiguration setSslContextFactory(Factory<SSLContext> sslCtxFactory) {
+        this.sslCtxFactory = sslCtxFactory;
+
+        return this;
+    }
+
+    /**
+     * Returns SSL context factory that will be used for creating a secure socket layer.
+     *
+     * @return SSL connection factory.
+     * @see SslContextFactory
+     */
+    public Factory<SSLContext> getSslContextFactory() {
+        return sslCtxFactory;
     }
 
     /** {@inheritDoc} */

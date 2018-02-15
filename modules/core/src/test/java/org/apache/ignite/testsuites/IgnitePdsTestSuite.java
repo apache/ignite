@@ -19,7 +19,6 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistence;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsClientNearCachePutGetTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
@@ -93,7 +92,8 @@ public class IgnitePdsTestSuite extends TestSuite {
         // Persistence-enabled.
         suite.addTestSuite(IgnitePdsSingleNodePutGetPersistenceTest.class);
         suite.addTestSuite(IgnitePdsDynamicCacheTest.class);
-        suite.addTestSuite(IgnitePdsClientNearCachePutGetTest.class);
+        // TODO uncomment when https://issues.apache.org/jira/browse/IGNITE-7510 is fixed
+        // suite.addTestSuite(IgnitePdsClientNearCachePutGetTest.class);
         suite.addTestSuite(IgniteDbPutGetWithCacheStoreTest.class);
 
         suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistence.class);

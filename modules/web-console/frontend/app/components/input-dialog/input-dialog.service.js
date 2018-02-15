@@ -17,6 +17,7 @@
 
 import controller from './input-dialog.controller';
 import templateUrl from './input-dialog.tpl.pug';
+import {CancellationError} from 'app/errors/CancellationError';
 
 export default class InputDialog {
     static $inject = ['$modal', '$q'];
@@ -55,7 +56,7 @@ export default class InputDialog {
 
         const modalHide = modal.hide;
 
-        modal.hide = () => deferred.reject('cancelled');
+        modal.hide = () => deferred.reject(new CancellationError());
 
         return deferred.promise
             .finally(modalHide);

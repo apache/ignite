@@ -27,7 +27,6 @@ import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -182,7 +181,25 @@ public class JdbcThinTcpIo {
      * @throws IgniteCheckedException On connection reject.
      */
     private void connect(InetAddress addr, int timeout) throws IOException, IgniteCheckedException {
-        Socket sock = new Socket();
+        Socket sock;
+
+        if (ConnectionProperties.SSL_MODE_REQUIRE.equalsIgnoreCase(connProps.getSslMode()))
+            sock = JdbcThinSSLUtil.createSSLSocket(connProps);
+        else if (ConnectionProperties.SSL_MODE_DISABLE.equalsIgnoreCase(connProps.getSslMode())) {
+            sock = new Socket();
+
+            try {
+                sock.connect(new InetSocketAddress(addr, connProps.getPort()), timeout);
+            }
+            catch (IOException e) {
+                throw new SQLException("Failed to connect to server [host=" + addr +
+                    ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            }
+        }
+        else {
+            throw new SQLException("Unknown sslMode. [sslMode=" + connProps.getSslMode() + ']',
+                SqlStateCode.CLIENT_CONNECTION_FAILED);
+        }
 
         if (connProps.getSocketSendBuffer() != 0)
             sock.setSendBufferSize(connProps.getSocketSendBuffer());
@@ -192,13 +209,16 @@ public class JdbcThinTcpIo {
 
         sock.setTcpNoDelay(connProps.isTcpNoDelay());
 
-        sock.connect(new InetSocketAddress(addr, connProps.getPort()), timeout);
+        try {
+            endpoint = new IpcClientTcpEndpoint(sock);
 
-        endpoint = new IpcClientTcpEndpoint(sock);
-
-        out = new BufferedOutputStream(endpoint.outputStream());
-
-        in = new BufferedInputStream(endpoint.inputStream());
+            out = new BufferedOutputStream(endpoint.outputStream());
+            in = new BufferedInputStream(endpoint.inputStream());
+        }
+        catch (IgniteCheckedException e) {
+            throw new SQLException("Failed to connect to server [host=" + connProps.getHost() +
+                ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+        }
     }
 
     /**

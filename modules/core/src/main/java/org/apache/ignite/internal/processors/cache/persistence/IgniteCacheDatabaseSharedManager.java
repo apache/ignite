@@ -753,6 +753,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param fut Partition exchange future.
+     */
+    public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture fut) {
+        // No-op.
+    }
+
+    /**
      * Needed action before any cache will stop
      */
     public void prepareCachesStop() {
@@ -837,9 +844,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             boolean shouldEvict = allocatedPagesCnt > (memorySize / sysPageSize * plcCfg.getEvictionThreshold()) &&
                 emptyDataPagesCnt < plcCfg.getEmptyPagesPoolSize();
 
-            if (shouldEvict)
+            if (shouldEvict) {
                 memPlc.evictionTracker().evictDataPage();
-            else
+
+                memPlc.memoryMetrics().updateEvictionRate();
+            } else
                 break;
         }
     }

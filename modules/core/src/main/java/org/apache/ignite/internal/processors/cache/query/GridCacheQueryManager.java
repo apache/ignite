@@ -38,7 +38,9 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiFunction;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -68,7 +70,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -77,7 +78,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridSetQueryPredicate;
 import org.apache.ignite.internal.processors.datastructures.SetItemKey;
@@ -122,7 +122,6 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -166,14 +165,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         };
 
     /** Function to merge query detail metrics. */
-    private static final ConcurrentHashMap8.BiFun QRY_DETAIL_METRICS_MERGE_FX =
-        new ConcurrentHashMap8.BiFun<GridCacheQueryDetailMetricsAdapter,
-            GridCacheQueryDetailMetricsAdapter, GridCacheQueryDetailMetricsAdapter>() {
-            @Override public GridCacheQueryDetailMetricsAdapter apply(GridCacheQueryDetailMetricsAdapter oldVal,
-                GridCacheQueryDetailMetricsAdapter newVal) {
-                return oldVal.aggregate(newVal);
-            }
-        };
+    private static final BiFunction<
+        GridCacheQueryDetailMetricsAdapter,
+        GridCacheQueryDetailMetricsAdapter,
+        GridCacheQueryDetailMetricsAdapter>
+        QRY_DETAIL_METRICS_MERGE_FX = GridCacheQueryDetailMetricsAdapter::aggregate;
 
     /** Default is @{code true} */
     private final boolean isIndexingSpiAllowsBinary = !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_UNWRAP_BINARY_FOR_INDEXING_SPI);
@@ -194,17 +190,17 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private int detailMetricsSz;
 
     /** */
-    private ConcurrentHashMap8<GridCacheQueryDetailMetricsKey, GridCacheQueryDetailMetricsAdapter> detailMetrics;
+    private ConcurrentHashMap<GridCacheQueryDetailMetricsKey, GridCacheQueryDetailMetricsAdapter> detailMetrics;
 
     /** */
-    private final ConcurrentMap<UUID, RequestFutureMap> qryIters = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, RequestFutureMap> qryIters = new ConcurrentHashMap<>();
 
     /** */
     private final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<FieldsResult>>> fieldsQryRes =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** */
-    private volatile ConcurrentMap<Object, CachedResult<?>> qryResCache = new ConcurrentHashMap8<>();
+    private volatile ConcurrentMap<Object, CachedResult<?>> qryResCache = new ConcurrentHashMap<>();
 
     /** */
     private final GridSpinBusyLock busyLock = new GridSpinBusyLock();
@@ -238,7 +234,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         detailMetricsSz = ccfg.getQueryDetailMetricsSize();
 
         if (detailMetricsSz > 0)
-            detailMetrics = new ConcurrentHashMap8<>(detailMetricsSz);
+            detailMetrics = new ConcurrentHashMap<>(detailMetricsSz);
 
         lsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
@@ -375,7 +371,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     private void invalidateResultCache() {
         if (!qryResCache.isEmpty())
-            qryResCache = new ConcurrentHashMap8<>();
+            qryResCache = new ConcurrentHashMap<>();
     }
 
     /**
@@ -577,7 +573,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     throw new IllegalStateException("Should never be called.");
 
                 case SCAN:
-                    if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                    if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                         cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                             cctx.localNode(),
                             "Scan query executed.",
@@ -598,7 +594,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     break;
 
                 case TEXT:
-                    if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                    if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                         cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                             cctx.localNode(),
                             "Full text query executed.",
@@ -672,7 +668,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         if (qry.type() == SQL_FIELDS) {
-            if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+            if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                 cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                     cctx.localNode(),
                     "SQL fields query executed.",
@@ -704,7 +700,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         else {
             assert qry.type() == SPI : "Unexpected query type: " + qry.type();
 
-            if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+            if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                 cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                     cctx.localNode(),
                     "SPI query executed.",
@@ -912,7 +908,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final boolean statsEnabled = cctx.statisticsEnabled();
 
-            final boolean readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+            final boolean readEvt = cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
             try {
                 // Preparing query closures.
@@ -1154,7 +1150,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 final boolean statsEnabled = cctx.statisticsEnabled();
 
-                final boolean readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+                final boolean readEvt = cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
                 CacheObjectContext objCtx = cctx.cacheObjectContext();
 
@@ -1424,7 +1420,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             final ClusterNode locNode = cctx.localNode();
             final UUID subjId = qry.subjectId();
 
-            if (cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+            if (cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                 cctx.gridEvents().record(new CacheQueryExecutedEvent<>(
                     locNode,
                     "Scan query executed.",
@@ -2957,7 +2953,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             statsEnabled = locNode && cctx.statisticsEnabled();
 
-            readEvt = locNode && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+            readEvt = locNode && cctx.events().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
 
             if(readEvt){
                 taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());

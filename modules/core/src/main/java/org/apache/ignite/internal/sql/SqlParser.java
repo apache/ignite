@@ -18,12 +18,14 @@
 package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
+import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.ALTER;
+import static org.apache.ignite.internal.sql.SqlKeyword.COPY;
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
 import static org.apache.ignite.internal.sql.SqlKeyword.HASH;
@@ -103,6 +105,11 @@ public class SqlParser {
 
                             break;
 
+                        case COPY:
+                            cmd = processCopy();
+
+                            break;
+
                         case ALTER:
                             cmd = processAlter();
                     }
@@ -115,7 +122,7 @@ public class SqlParser {
                         return cmd;
                     }
                     else
-                        throw errorUnexpectedToken(lex, CREATE, DROP, ALTER);
+                        throw errorUnexpectedToken(lex, CREATE, DROP, COPY, ALTER);
 
                 case QUOTED:
                 case MINUS:
@@ -127,6 +134,15 @@ public class SqlParser {
                     throw errorUnexpectedToken(lex);
             }
         }
+    }
+
+    /**
+     * Processes COPY command.
+     *
+     * @return The {@link SqlBulkLoadCommand} command.
+     */
+    private SqlCommand processCopy() {
+        return new SqlBulkLoadCommand().parse(lex);
     }
 
     /**
