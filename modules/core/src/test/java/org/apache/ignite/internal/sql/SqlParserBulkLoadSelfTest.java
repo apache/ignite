@@ -25,10 +25,8 @@ import org.apache.ignite.internal.util.typedef.X;
 public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
     /**
      * Tests for COPY command.
-     *
-     * @throws Exception If any of subtests was failed.
      */
-    public void testCopy() throws Exception {
+    public void testCopy() {
         assertParseError(null,
             "copy grom \"any.file\" into Person (_key, age, firstName, lastName) format csv",
             "Unexpected token: \"GROM\" (expected: \"FROM\")");
@@ -46,16 +44,16 @@ public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
             "Unexpected token: \"UNQUOTED\" (expected: \"[quoted file name]\"");
 
         assertParseSuccess(null,
-            "copy from \"\" into Person (_key, age, firstName, lastName) format csv"));
+            "copy from \"\" into Person (_key, age, firstName, lastName) format csv");
 
         assertParseSuccess(null,
-            "copy from \"d:/copy/from/into/format.csv\" into Person (_key, age, firstName, lastName) format csv"));
+            "copy from \"d:/copy/from/into/format.csv\" into Person (_key, age, firstName, lastName) format csv");
 
         assertParseSuccess(null,
-            "copy from \"/into\" into Person (_key, age, firstName, lastName) format csv"));
+            "copy from \"/into\" into Person (_key, age, firstName, lastName) format csv");
 
         assertParseSuccess(null,
-            "copy from \"into\" into Person (_key, age, firstName, lastName) format csv"));
+            "copy from \"into\" into Person (_key, age, firstName, lastName) format csv");
 
         assertParseError(null,
             "copy from \"any.file\" to Person (_key, age, firstName, lastName) format csv",
@@ -118,6 +116,12 @@ public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
                 " batch_size 1");
     }
 
+    /**
+     * Verifies that SQL is successfully parsed and logs a message with the statement.
+     *
+     * @param schemaName The schema name.
+     * @param sql The SQL statement to verify.
+     */
     public static void assertParseSuccess(String schemaName, String sql) {
         new SqlParser(schemaName, sql).nextCommand();
 

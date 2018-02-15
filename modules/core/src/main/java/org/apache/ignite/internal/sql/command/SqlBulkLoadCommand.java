@@ -17,20 +17,19 @@
 
 package org.apache.ignite.internal.sql.command;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteIllegalStateException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Pattern;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadFormat;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.sql.SqlEscapeSeqParser;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.ArrayList;
-import java.util.List;
+import org.apache.ignite.lang.IgniteBiInClosure;
 
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
@@ -147,7 +146,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
             case BulkLoadCsvFormat.NAME:
                 BulkLoadCsvFormat fmt = new BulkLoadCsvFormat();
 
-                parseCsvOptions(lex, (BulkLoadCsvFormat) fmt);
+                parseCsvOptions(lex, fmt);
 
                 inputFormat = fmt;
 
@@ -232,17 +231,17 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @return The token with escape sequences replaced.
      */
     private String parseStrWithEscapeSeq(final SqlLexer lex) {
-        if (lex.lookAhead().tokenType() == SqlLexerTokenType.QUOTED) {
-            lex.shift();
-
-            String result = SqlEscapeSeqParser.replaceAll(lex.token(), DEFAULT_ESCAPE_CHARS, (errStr, pos) -> {
-                throw error(lex, errStr);
-            });
-
-            return result;
-        }
-        else
+        if (lex.lookAhead().tokenType() != SqlLexerTokenType.QUOTED)
             throw errorUnexpectedToken(lex.lookAhead(), "[quoted string]");
+
+        lex.shift();
+
+        return SqlEscapeSeqParser.replaceAll(lex.token(), DEFAULT_ESCAPE_CHARS,
+            new IgniteBiInClosure<String, Integer>() {
+                @Override public void apply(String errStr, Integer posIgnored) {
+                    throw error(lex, errStr);
+                }
+            });
     }
 
     /**

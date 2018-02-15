@@ -19,14 +19,12 @@ package org.apache.ignite.internal.sql;
 
 import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.function.BiConsumer;
-
 /** Parses SQL escape sequences and converts them to string. */
 public class SqlEscapeSeqParser {
-
     /** Sentinel value for the case of single character escape sequence (like {@code \n} or {@code \t}). */
     private static final int SINGLE_CHAR_RADIX = -1;
 
@@ -77,7 +75,6 @@ public class SqlEscapeSeqParser {
      * @return The new state of the parser. See {@link State} for details.
      */
     public State accept(char c) {
-
         if (state == State.START)
             acceptPrefix(c);
         else
@@ -145,37 +142,22 @@ public class SqlEscapeSeqParser {
     private void acceptValueChar(char c) {
         int inputLen = input.length();
 
-        if (state == State.PROCESSING) {
+        if (state == State.PROCESSING && radix != SINGLE_CHAR_RADIX && !isValidDigit(c)) {
+            state = inputLen >= minLen && isValidUnicodeInput() ? State.FINISHED_CHAR_REJECTED : State.ERROR;
 
-            if (radix != SINGLE_CHAR_RADIX && !isValidDigit(c)) {
-
-                if (inputLen >= minLen && isValidUnicodeInput())
-                    state = State.FINISHED_CHAR_REJECTED;
-                else
-                    state = State.ERROR;
-
-                return;
-            }
+            return;
         }
 
         if (inputLen >= maxLen || !isValidInput(c)) {
-            if (isValidUnicodeInput())
-                state = State.FINISHED_CHAR_REJECTED;
-            else
-                state = State.ERROR;
+            state = isValidUnicodeInput() ? State.FINISHED_CHAR_REJECTED : State.ERROR;
 
             return;
         }
 
         input.append(c);
 
-        if (input.length() >= maxLen) {
-
-            if (isValidUnicodeInput())
-                state = State.FINISHED_CHAR_ACCEPTED;
-            else
-                state = State.ERROR;
-        }
+        if (input.length() >= maxLen)
+            state = isValidUnicodeInput() ? State.FINISHED_CHAR_ACCEPTED : State.ERROR;
     }
 
     /**
@@ -201,10 +183,7 @@ public class SqlEscapeSeqParser {
                 if (radix != SINGLE_CHAR_RADIX) {
                     assert inputLen <= maxLen;
 
-                    if (inputLen >= minLen && isValidUnicodeInput())
-                        state = State.FINISHED_CHAR_ACCEPTED;
-                    else
-                        state = State.ERROR;
+                    state = inputLen >= minLen && isValidUnicodeInput() ? State.FINISHED_CHAR_ACCEPTED : State.ERROR;
 
                     return state;
                 }
@@ -319,9 +298,8 @@ public class SqlEscapeSeqParser {
      * @return The string with escape sequences replaced or null if input was null.
      * @throws RuntimeException Any exception that errorReporter might throw.
      */
-    public static @Nullable String replaceAll(@Nullable String input, String escapeChars,
-        BiConsumer<String, Integer> errorReporter) {
-
+    @Nullable public static String replaceAll(@Nullable String input, String escapeChars,
+        IgniteBiInClosure<String, Integer> errorReporter) {
         if (F.isEmpty(input))
             return input;
 
@@ -351,7 +329,7 @@ public class SqlEscapeSeqParser {
             switch (seqParser.state()) {
                 case ERROR:
                     if (errorReporter != null)
-                        errorReporter.accept("Can't parse input '" + input.substring(lastCopiedPos, curPos) + "'",
+                        errorReporter.apply("Can't parse input '" + input.substring(lastCopiedPos, curPos) + "'",
                             lastCopiedPos);
 
                     break;
