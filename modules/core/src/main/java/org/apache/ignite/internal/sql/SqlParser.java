@@ -112,8 +112,6 @@ public class SqlParser {
 
                         case ALTER:
                             cmd = processAlter();
-
-                            break;
                     }
 
                     if (cmd != null) {

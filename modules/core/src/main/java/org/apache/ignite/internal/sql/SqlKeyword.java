@@ -168,9 +168,6 @@ public class SqlKeyword {
     /** Keyword: NVARCHAR2. */
     public static final String NVARCHAR2 = "NVARCHAR2";
 
-    /** Keyword: OFF. */
-    public static final String OFF = "OFF";
-
     /** Keyword: ON. */
     public static final String ON = "ON";
 
@@ -197,12 +194,6 @@ public class SqlKeyword {
 
     /** Keyword: SPATIAL. */
     public static final String SPATIAL = "SPATIAL";
-
-    /** Keyword: STREAMER. */
-    public static final String STREAMER = "STREAMER";
-
-    /** Keyword: STREAMING. */
-    public static final String STREAMING = "STREAMING";
 
     /** Keyword: TABLE. */
     public static final String TABLE = "TABLE";
