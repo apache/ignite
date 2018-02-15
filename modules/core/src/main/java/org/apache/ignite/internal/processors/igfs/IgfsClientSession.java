@@ -21,7 +21,7 @@ import java.io.Closeable;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentMap;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * IGFS client session. Effectively used to manage lifecycle of opened resources and close them on
@@ -29,7 +29,7 @@ import org.jsr166.ConcurrentHashMap8;
  */
 public class IgfsClientSession {
     /** Session resources. */
-    private ConcurrentMap<Long, Closeable> rsrcMap = new ConcurrentHashMap8<>();
+    private ConcurrentMap<Long, Closeable> rsrcMap = new ConcurrentHashMap<>();
 
     /**
      * Registers resource within this session.

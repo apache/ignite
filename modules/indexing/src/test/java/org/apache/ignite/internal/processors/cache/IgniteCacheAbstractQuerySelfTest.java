@@ -85,7 +85,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -1521,7 +1520,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testScanQueryEvents() throws Exception {
-        final Map<Integer, Integer> map = new ConcurrentHashMap8<>();
+        final Map<Integer, Integer> map = new ConcurrentHashMap<>();
         final IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
         final boolean evtsDisabled = cache.getConfiguration(CacheConfiguration.class).isEventsDisabled();
         final CountDownLatch latch = new CountDownLatch(evtsDisabled ? 0 : 10);
@@ -1625,7 +1624,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testTextQueryEvents() throws Exception {
-        final Map<UUID, Person> map = new ConcurrentHashMap8<>();
+        final Map<UUID, Person> map = new ConcurrentHashMap<>();
         final IgniteCache<UUID, Person> cache = jcache(UUID.class, Person.class);
         final boolean evtsDisabled = cache.getConfiguration(CacheConfiguration.class).isEventsDisabled();
         final CountDownLatch latch = new CountDownLatch(evtsDisabled ? 0 : 2);
