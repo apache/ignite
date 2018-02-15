@@ -18,10 +18,10 @@
 package org.apache.ignite.internal.processors.bulkload.pipeline;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.jetbrains.annotations.NotNull;
-
+import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
 import org.apache.ignite.internal.sql.SqlEscapeSeqParser;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,6 +29,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static org.apache.ignite.internal.sql.SqlEscapeSeqParser.State.PROCESSING;
 
 /**
  * A {@link PipelineBlock}, which splits line according to CSV format rules and unquotes fields.
@@ -38,14 +40,36 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
     /** Field delimiter pattern. */
     @NotNull private final Pattern fldSeparator;
 
-    /* Quote characters. */
+    /** Quote characters. */
     @NotNull private final String quoteChars;
+
 
     /** Line comment start characters. */
     @Nullable private final Pattern commentStartRe;
 
     /** Escape sequence start characters. */
     @Nullable private final String escapeChars;
+
+    /** Parsing flags: see {@link BulkLoadCsvFormat} for details. */
+    private final int flags;
+
+    /** Leftover characters from previous field for multiline record case. */
+    @NotNull private final StringBuilder processedField;
+
+    /** FIXME SHQ */
+    @NotNull private final List<String> fields;
+
+    /** Current quote character. 0 if not in quotes. */
+    private char quoteChr;
+
+    /** FIXME SHQ */
+    private final Pattern exactFieldSep;
+
+    /** FIXME SHQ */
+    private final Pattern fieldSepOrQuote;
+
+    /** FIXME SHQ */
+    private final Pattern quoteOrEscSeq;
 
     /**
      * Creates a CSV line parser.
@@ -54,68 +78,222 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
      * @param quoteChars Quoting character.
      * @param commentStartRe Line comment start characters.
      * @param escapeChars Escape sequence start characters.
+     * @param csvFlags Parsing flags from {@link BulkLoadCsvFormat}.
      */
     public CsvLineProcessorBlock(@NotNull Pattern fldSeparator, @NotNull String quoteChars,
-        @Nullable Pattern commentStartRe, @Nullable String escapeChars) {
+        @Nullable Pattern commentStartRe, @Nullable String escapeChars, int csvFlags) {
+        if ((csvFlags & BulkLoadCsvFormat.FLAG_TRIM_DELIM_WHITESPACE) != 0)
+            fldSeparator = Pattern.compile("\\w*" + fldSeparator.pattern() + "\\w*");
+
         this.fldSeparator = fldSeparator;
         this.quoteChars = quoteChars;
         this.commentStartRe = commentStartRe;
         this.escapeChars = escapeChars;
+
+        flags = csvFlags;
+
+        exactFieldSep = Pattern.compile("^" + fldSeparator.pattern());
+
+        // FIXME SHQ: convert quote chars to regex syntax
+        fieldSepOrQuote = Pattern.compile(
+            "(" + fldSeparator.pattern() + ")|([" + quoteChars + "])");
+
+        // FIXME SHQ: convert escape chars to regex syntax
+        quoteOrEscSeq = Pattern.compile(
+            "([" + quoteChars + "])|([" + escapeChars + "])");
+
+        fields = new LinkedList<>();
+        processedField = new StringBuilder();
+        quoteChr = 0;
     }
 
     /** {@inheritDoc} */
     @Override public void accept(String input, boolean isEof) throws IgniteCheckedException {
         input = stripComment(input);
 
-        if (F.isEmpty(input))
-            return;
-
-        List<String> flds = new LinkedList<>();
-
-        Matcher fieldSepMatcher = fldSeparator.matcher(input);
+        Matcher exactFieldSepMatcher = exactFieldSep.matcher(input);
+        Matcher fieldSepOrQuoteMatcher = fieldSepOrQuote.matcher(input);
+        Matcher quoteOrEscSeqMatcher = quoteOrEscSeq.matcher(input);
 
         int pos = 0;
+
         while (pos < input.length()) {
-            char quoteChr = input.charAt(pos);
+            if (quoteChr == 0) {
+                if (!fieldSepOrQuoteMatcher.find(pos)) {
+                    processedField.append(input, pos, input.length());
 
-            String fld;
+                    fields.add(processedField.toString());
 
-            if (quoteChars.indexOf(quoteChr) != -1) {
-                pos++;
+                    processedField.setLength(0);
 
-                int fieldStartPos = pos;
+                    pos = input.length();
 
-                while (pos < input.length()) {
-                    char curChr = input.charAt(pos);
+                    break;
+                }
 
-                    // FIXME SHQ: process escapes
+                int matchStart = fieldSepOrQuoteMatcher.start(1);
+                if (matchStart != -1) { // Field separator found
+                    processedField.append(input, pos, matchStart);
 
-                    if (curChr == quoteChr)
+                    pos = fieldSepOrQuoteMatcher.end(1);
+
+                    fields.add(processedField.toString());
+
+                    processedField.setLength(0);
+
+                    continue;
+                }
+
+                // Quote found
+                matchStart = fieldSepOrQuoteMatcher.start(2);
+                assert matchStart >= 0 && matchStart < input.length();
+                if (matchStart == pos) {
+                    pos++;
+
+                    quoteChr = input.charAt(matchStart);
+                    state = State.IN_QUOTED_FIELD;
+                    assert processedField.length() == 0;
+                    continue;
+                }
+
+                if ((flags & BulkLoadCsvFormat.FLAG_STRICT_QUOTES) != 0) {
+                    IgniteBiTuple<Integer, String> handlerRes =
+                        handleError(input, matchStart, "Quote occurs in the middle of the field");
+
+                    assert handlerRes.get1() > pos;
+                    pos = handlerRes.get1();
+                    processedField.append(handlerRes.get2());
+
+                    continue;
+                }
+                else {
+                    int endPos = fieldSepOrQuoteMatcher.end(2);
+                    processedField.append(input, pos, endPos);
+                    pos = endPos;
+                    continue;
+                }
+            }
+            else if (state == State.IN_QUOTED_FIELD) {
+                assert quoteChr != 0;
+
+                //while (pos < input.length()) {
+                if (!quoteOrEscSeqMatcher.find(pos)) {
+                    processedField.append(input, pos, input.length());
+
+                    pos = input.length();
+
+                    break;
+                }
+
+                int foundPos = quoteOrEscSeqMatcher.start(1);
+                if (foundPos != -1) { // Quote found
+                    assert foundPos >= 0 && foundPos < input.length();
+
+                    if (input.charAt(foundPos) != quoteChr) {
+                        processedField.append(input, pos, foundPos + 1);
+                        pos = foundPos + 1;
+                        continue;
+                    }
+
+                    if (foundPos < input.length() - 1 && input.charAt(foundPos + 1) == quoteChr) {
+                        processedField.append(input, pos, foundPos + 1);
+                        pos = foundPos + 2;
+                        continue;
+                    }
+
+                    if (foundPos < input.length() - 1) {
+                        exactFieldSepMatcher.region(foundPos + 1, input.length());
+
+                        if (!exactFieldSepMatcher.matches()) {
+                            if ((flags & BulkLoadCsvFormat.FLAG_STRICT_QUOTES) != 0) {
+                                IgniteBiTuple<Integer, String> handlerRes =
+                                    handleError(input, foundPos, "Extra characters after ending quote");
+
+                                assert handlerRes.get1() > pos;
+                                pos = handlerRes.get1();
+
+                                processedField.append(handlerRes.get2());
+
+                                continue;
+                            }
+                            else {
+                                processedField.append(input, pos, foundPos + 1);
+                                pos = foundPos + 1;
+                                continue;
+                            }
+                        }
+
+                        processedField.append(input, pos, foundPos);
+
+                        pos = exactFieldSepMatcher.end();
+
+                        fields.add(processedField.toString());
+
+                        processedField.setLength(0);
+
+                        state = State.AT_FIELD_START;
+                        quoteChr = 0;
+
+                        continue;
+                    }
+                    else {
+                        processedField.append(input, pos, input.length());
+
+                        pos = input.length();
+
+                        fields.add(processedField.toString());
+
+                        processedField.setLength(0);
+
+                        state = State.AT_FIELD_START;
+                        quoteChr = 0;
+
                         break;
+                    }
+                }
+                else { // Escape sequence start found
+                    foundPos = quoteOrEscSeqMatcher.start(2);
+                    assert foundPos >= 0 && foundPos < input.length();
+
+                    processedField.append(input, pos, foundPos);
+
+                    pos = foundPos;
+
+                    SqlEscapeSeqParser escParser = new SqlEscapeSeqParser();
+
+                    SqlEscapeSeqParser.State r = PROCESSING;
+
+                    do {
+                        pos++;
+                        r = pos < input.length() ? escParser.accept(input.charAt(pos)) : escParser.acceptEnd();
+                    }
+                    while (r == PROCESSING);
+
+                    switch (r) {
+                        case FINISHED_CHAR_REJECTED:
+                            break;
+
+                        case FINISHED_CHAR_ACCEPTED:
+                            pos++;
+                            break;
+
+                        case ERROR:
+                            // errors are not reported for now
+                            // just ignore invalid escape sequenceы
+                            break;
+
+                        default:
+                            throw new IgniteIllegalStateException("Unknown escape sequence parser state: " + r);
+                    }
+
+                    processedField.append(escParser.convertedStr());
                 }
 
-                fld = input.substring(fieldStartPos, pos);
-
-                // FIXME SHQ: process field separator
+                // copy remainder of string?
             }
-            else {
-                int fldSepPos;
-                int nextPos;
-                if (fieldSepMatcher.find(pos)) {
-                    fldSepPos = fieldSepMatcher.start();
-                    nextPos = fieldSepMatcher.end();
-                }
-                else
-                    fldSepPos = nextPos = input.length();
-
-                fld = input.substring(pos, fldSepPos);
-                pos = nextPos;
-            }
-
-            fld = replaceEscSeq(trim(fld));
-
-            flds.add(fld);
         }
+
+        // remainder?
 
         assert nextBlock != null;
 
@@ -142,22 +320,19 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
     /**
      * Strips the line comment, if exists.
      *
-     * @param input Input line
-     * @return The line with comment stripped or null if the comment occupied the whole line
+     * @param input The input line.
+     * @return The line with the comment stripped.
      */
     @Nullable private String stripComment(@NotNull String input) {
-        if (commentStartRe != null) {
-            Matcher commentMatcher = commentStartRe.matcher(input);
+        if (commentStartRe == null)
+            return input;
 
-            if (commentMatcher.find()) {
-                if (commentMatcher.start() == 0)
-                    return null;
+        Matcher commentMatcher = commentStartRe.matcher(input);
 
-                return input.substring(0, commentMatcher.start());
-            }
-        }
-
-        return input;
+        if (commentMatcher.find())
+            return (commentMatcher.start() == 0) ? "" : input.substring(0, commentMatcher.start());
+        else
+            return input;
     }
 
     /**
@@ -171,5 +346,10 @@ public class CsvLineProcessorBlock extends PipelineBlock<String, String[]> {
             return input;
 
         return SqlEscapeSeqParser.replaceAll(input, escapeChars, null);
+    }
+
+    /** FIXME SHQ */
+    @Override protected IgniteBiTuple<Integer, String> handleError(String input, int pos, String errorMsg) {
+        return new IgniteBiTuple<>(pos + 1, input.substring(pos, pos + 1));
     }
 }

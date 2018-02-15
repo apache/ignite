@@ -38,32 +38,31 @@ public class BulkLoadCsvParser extends BulkLoadParser {
     /**
      * Creates bulk load CSV parser.
      *
-     *  @param fmt Format options (parsed from COPY command).
+     *  @param format Format options (parsed from COPY command).
      */
-    public BulkLoadCsvParser(BulkLoadCsvFormat fmt) {
+    public BulkLoadCsvParser(BulkLoadCsvFormat format) {
         inputBlock = new CharsetDecoderBlock(BulkLoadFormat.DEFAULT_INPUT_CHARSET);
 
         collectorBlock = new StrListAppenderBlock();
 
-        if (fmt.lineSeparator() == null)
-            fmt.lineSeparator(BulkLoadCsvFormat.DEFAULT_LINE_SEPARATOR);
+        if (format.lineSeparator() == null)
+            format.lineSeparator(BulkLoadCsvFormat.DEFAULT_LINE_SEPARATOR);
 
-        if (fmt.fieldSeparator() == null)
-            fmt.fieldSeparator(BulkLoadCsvFormat.DEFAULT_FIELD_SEPARATOR);
+        if (format.fieldSeparator() == null)
+            format.fieldSeparator(BulkLoadCsvFormat.DEFAULT_FIELD_SEPARATOR);
 
-        if (fmt.commentChars() == null)
-            fmt.commentChars(BulkLoadCsvFormat.DEFAULT_COMMENT_CHARS);
+        if (format.commentChars() == null)
+            format.commentChars(BulkLoadCsvFormat.DEFAULT_COMMENT_CHARS);
 
-        if (fmt.quoteChars() == null)
-            fmt.quoteChars(BulkLoadCsvFormat.DEFAULT_QUOTE_CHARS);
+        if (format.quoteChars() == null)
+            format.quoteChars(BulkLoadCsvFormat.DEFAULT_QUOTE_CHARS);
 
-        if (fmt.escapeChars() == null)
-            fmt.escapeChars(BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS);
+        if (format.escapeChars() == null)
+            format.escapeChars(BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS);
 
-
-        inputBlock.append(new LineSplitterBlock(fmt.lineSeparator()))
-            .append(new CsvLineProcessorBlock(fmt.fieldSeparator(), fmt.quoteChars(),
-                fmt.commentChars(), fmt.escapeChars()))
+        inputBlock.append(new LineSplitterBlock(format.lineSeparator()))
+            .append(new CsvLineProcessorBlock(format.fieldSeparator(), format.quoteChars(),
+                format.commentChars(), format.escapeChars(), format.flags()))
             .append(collectorBlock);
     }
 

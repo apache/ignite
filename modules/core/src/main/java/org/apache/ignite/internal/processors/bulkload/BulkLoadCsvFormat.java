@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.regex.Pattern;
 
-/** A placeholder for bulk load CSV format parser options. */
+/** Options for bulk load CSV format parser. */
 public class BulkLoadCsvFormat extends BulkLoadFormat {
     /** Line separator pattern. */
     @NotNull public static final Pattern DEFAULT_LINE_SEPARATOR = Pattern.compile("[\r\n]+");
@@ -38,6 +38,26 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
 
     /** Line comment start pattern. */
     @Nullable public static final Pattern DEFAULT_COMMENT_CHARS = null;
+
+    /**
+     * When this flag is set, parser allows quotes to appear only in accordance with
+     * <a href=https://tools.ietf.org/html/rfc4180>RFC4180</a>: in the beginning
+     * and end of the field and never in the middle.
+     * <p>
+     * When {@code FLAG_STRICT_QUOTES} is not set, quotes may appear in the middle of the field. In this case
+     * they are treated as normal characters (not stripped off) and escape processing does not occur between
+     * pairs of quotes.
+      */
+    public static final int FLAG_STRICT_QUOTES = 0x01;
+
+    /**
+     * When this flag is set, parser ignores white space characters (except line breaks) that immediately
+     * precede or follow field delimiters.
+     */
+    public static final int FLAG_TRIM_DELIM_WHITESPACE = 0x02;
+
+    /** Default value for the flags. */
+    public static final int FLAGS_DEFAULT = 0;
 
     /** Format name. */
     public static final String NAME = "CSV";
@@ -56,6 +76,15 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
 
     /** Set of escape start characters. */
     @Nullable private String escapeChars;
+
+    /**
+     * The parsing flags. A bitwise OR of the following flags:
+     * <ul>
+     *   <li>{@link #FLAG_STRICT_QUOTES},
+     *   <li>{@link #FLAG_TRIM_DELIM_WHITESPACE}.
+     * </ul>
+     * */
+    private int flags;
 
     /**
      * Returns the name of the format.
@@ -154,5 +183,23 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      */
     public void escapeChars(@Nullable String escapeChars) {
         this.escapeChars = escapeChars;
+    }
+
+    /**
+     * Returns parsing flags.
+     *
+     * @return The parsing flags.
+     */
+    public int flags() {
+        return flags;
+    }
+
+    /**
+     * Sets parsing flags.
+     *
+     * @param flags The new parsing flags.
+     */
+    public void flags(int flags) {
+        this.flags = flags;
     }
 }
