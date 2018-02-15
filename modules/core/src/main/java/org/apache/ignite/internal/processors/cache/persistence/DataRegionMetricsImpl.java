@@ -254,25 +254,28 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /**
      * Increments totalAllocatedPages counter.
+     *
+     * @param updateAllocationRate Whether to update allocation rate as well.
      */
-    public void incrementTotalAllocatedPages() {
-        updateTotalAllocatedPages(1);
+    public void incrementTotalAllocatedPages(boolean updateAllocationRate) {
+        updateTotalAllocatedPages(1, updateAllocationRate);
     }
 
     /** {@inheritDoc} */
-    @Override public void updateTotalAllocatedPages(long delta) {
+    @Override public void updateTotalAllocatedPages(long delta, boolean updateAllocationRate) {
         if (metricsEnabled) {
             totalAllocatedPages.add(delta);
 
-            updateAllocationRateMetrics();
+            if (updateAllocationRate)
+                updateAllocationRateMetrics(delta);
         }
     }
 
     /**
      *
      */
-    private void updateAllocationRateMetrics() {
-        allocRate.onHit();
+    private void updateAllocationRateMetrics(long hits) {
+        allocRate.onHits(hits);
     }
 
     /**

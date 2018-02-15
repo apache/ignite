@@ -274,7 +274,7 @@ public class FilePageStore implements PageStore {
 
             assert delta % pageSize == 0;
 
-            allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
+            allocatedTracker.updateTotalAllocatedPages(delta / pageSize, false);
         }
         catch (IOException e) {
             throw new PersistentStorageIOException(e);
@@ -314,7 +314,7 @@ public class FilePageStore implements PageStore {
 
                 assert delta % pageSize == 0;
 
-                allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
+                allocatedTracker.updateTotalAllocatedPages(delta / pageSize, false);
             }
 
             recover = false;
@@ -439,7 +439,7 @@ public class FilePageStore implements PageStore {
 
                         assert delta % pageSize == 0;
 
-                        allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
+                        allocatedTracker.updateTotalAllocatedPages(delta / pageSize, false);
 
                         allocated.set(newSize);
 
@@ -584,7 +584,7 @@ public class FilePageStore implements PageStore {
             off = allocated.get();
 
             if (allocated.compareAndSet(off, off + pageSize)) {
-                allocatedTracker.updateTotalAllocatedPages(1);
+                allocatedTracker.updateTotalAllocatedPages(1, true);
 
                 break;
             }
