@@ -630,7 +630,17 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                         res = node;
                 }
 
-                assert res != null;
+                if (res == null
+                    && !ctx.discovery().allNodes().isEmpty()
+                    && ctx.discovery().aliveServerNodes().isEmpty()) {
+                    U.warn(log, "Cannot find the server coordinator node. "
+                        + "Possible a client is started with forceServerMode=true. " +
+                        "Security warning: user authentication will be disabled on the client.");
+
+                    isEnabled = false;
+                }
+                else
+                    assert res != null;
 
                 crdNode = res;
 
@@ -775,7 +785,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @param cache Disco cache.
      */
     public void onLocalJoin(DiscoveryEvent evt, DiscoCache cache) {
-        if (coordinator().id().equals(ctx.localNodeId())) {
+        if (coordinator() == null)
+            return;
+
+        if (F.eq(coordinator().id(), ctx.localNodeId())) {
             if (!isEnabled)
                 return;
 

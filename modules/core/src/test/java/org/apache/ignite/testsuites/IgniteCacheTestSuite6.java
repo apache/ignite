@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.authentication.AuthenticationConfigurationClusterTest;
+import org.apache.ignite.internal.processors.authentication.AuthenticationForceServerModeClientTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNodeRestartTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorPersistEnabledNodeRestartTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorPersistEnabledTest;
@@ -77,6 +78,7 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(AuthenticationProcessorPersistEnabledTest.class);
         suite.addTestSuite(AuthenticationProcessorNodeRestartTest.class);
         suite.addTestSuite(AuthenticationProcessorPersistEnabledNodeRestartTest.class);
+        suite.addTestSuite(AuthenticationForceServerModeClientTest.class);
 
         return suite;
     }
