@@ -25,4 +25,12 @@ const mouseenterTrigger = ClientFunction((selector = '') => {
     });
 });
 
-module.exports = { mouseenterTrigger };
+const baseURL = process.env.APP_URL || 'http://localhost:9001/'
+
+/**
+ * Builds absolute page URL
+ * @param {string} relativePath Page relative path, without / at start
+ */
+const pageURL = (relativePath = '') => `${baseURL}${relativePath}`
+
+module.exports = { mouseenterTrigger, pageURL };
