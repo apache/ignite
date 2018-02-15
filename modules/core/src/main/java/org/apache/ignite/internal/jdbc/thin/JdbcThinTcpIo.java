@@ -144,7 +144,7 @@ public class JdbcThinTcpIo {
 
                 break;
             }
-            catch (IOException | IgniteCheckedException exception) {
+            catch (IOException | SQLException exception) {
                 if (inaccessibleAddrs == null)
                     inaccessibleAddrs = new ArrayList<>();
 
@@ -178,9 +178,9 @@ public class JdbcThinTcpIo {
      * @param addr Address.
      * @param timeout Socket connection timeout in ms.
      * @throws IOException On IO error.
-     * @throws IgniteCheckedException On connection reject.
+     * @throws SQLException On connection reject.
      */
-    private void connect(InetAddress addr, int timeout) throws IOException, IgniteCheckedException {
+    private void connect(InetAddress addr, int timeout) throws IOException, SQLException {
         Socket sock;
 
         if (ConnectionProperties.SSL_MODE_REQUIRE.equalsIgnoreCase(connProps.getSslMode()))
