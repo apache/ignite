@@ -395,9 +395,7 @@ public class DmlStatementsProcessor {
     @SuppressWarnings({"unchecked", "ConstantConditions"})
     long streamUpdateQuery(String schemaName, IgniteDataStreamer streamer, PreparedStatement stmt, final Object[] args)
         throws IgniteCheckedException {
-        if (!idx.isStreamableInsertStatement(stmt))
-            throw new IgniteSQLException("Only tuple based INSERT statements are supported " +
-                "in streaming mode", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        idx.checkStatementStreamable(stmt);
 
         Prepared p = GridSqlQueryParser.prepared(stmt);
 

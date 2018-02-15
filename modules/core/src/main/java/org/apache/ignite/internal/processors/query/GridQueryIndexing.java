@@ -344,7 +344,7 @@ public interface GridQueryIndexing {
      * @param nativeStmt Native statement.
      * @return {@code True} if streamable insert.
      */
-    public boolean isStreamableInsertStatement(PreparedStatement nativeStmt);
+    public void checkStatementStreamable(PreparedStatement nativeStmt);
 
     /**
      * Return row cache cleaner.

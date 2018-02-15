@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.CacheQueryObjectValueContext;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -1034,9 +1035,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteSQLException("Multiple statements queries are not supported for streaming mode.",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        if (!isStreamableInsertStatement(stmt))
-            throw new IgniteSQLException("Only tuple based INSERT statements are supported " +
-                "in streaming mode", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        checkStatementStreamable(stmt);
 
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
@@ -1071,9 +1070,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteSQLException("Multiple statements queries are not supported for streaming mode.",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        if (!isStreamableInsertStatement(stmt))
-            throw new IgniteSQLException("Only tuple based INSERT statements are supported " +
-                "in streaming mode", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        checkStatementStreamable(stmt);
 
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
@@ -2373,8 +2370,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isStreamableInsertStatement(PreparedStatement nativeStmt) {
-        return GridSqlQueryParser.isStreamableInsertStatement(nativeStmt);
+    @Override public void checkStatementStreamable(PreparedStatement nativeStmt) {
+        if (!GridSqlQueryParser.isStreamableInsertStatement(nativeStmt))
+            throw new IgniteSQLException("Only tuple based INSERT statements are supported in streaming mode",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /** {@inheritDoc} */
