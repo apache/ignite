@@ -17,9 +17,6 @@
 
 package org.apache.ignite.spark
 
-import java.lang.{Integer ⇒ JInteger, String ⇒ JString}
-
-import org.apache.ignite.Ignite
 import org.apache.ignite.spark.AbstractDataFrameSpec._
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types._

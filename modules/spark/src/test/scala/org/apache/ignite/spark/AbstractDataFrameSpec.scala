@@ -26,11 +26,9 @@ import java.lang.{Long ⇒ JLong}
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.cache.query.annotations.QuerySqlField
 import org.apache.ignite.internal.IgnitionEx.loadConfiguration
-import org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath
 import org.apache.ignite.spark.AbstractDataFrameSpec.configuration
 import org.apache.ignite.spark.impl.IgniteSQLAccumulatorRelation
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.spark.AbstractDataFrameSpec._
 
 import scala.annotation.meta.field
@@ -44,7 +42,7 @@ abstract class AbstractDataFrameSpec extends FunSpec with Matchers with BeforeAn
 
     var client: Ignite = _
 
-    override protected def beforeAll() = {
+    override protected def beforeAll(): Unit = {
         for (i ← 0 to 3)
             Ignition.start(configuration("grid-" + i, client = false))
 
@@ -199,9 +197,8 @@ object AbstractDataFrameSpec {
     }
 
     /**
-      *
-      * @param df
-      * @param qry
+      * @param df Data frame.
+      * @param qry SQL Query.
       */
     def checkOptimizationResult(df: DataFrame, qry: String = ""): Unit = {
         df.explain(true)
@@ -210,8 +207,6 @@ object AbstractDataFrameSpec {
 
         val cnt = plan.collectLeaves.count {
             case LogicalRelation(relation: IgniteSQLAccumulatorRelation[_, _], _, _) ⇒
-                println(relation.acc.compileQuery(prettyPrint = true))
-
                 if (qry != "")
                     assert(qry.toLowerCase == relation.acc.compileQuery().toLowerCase,
                         s"Generated query should be equal to expected.\nexpected  - $qry\ngenerated - ${relation.acc.compileQuery()}")

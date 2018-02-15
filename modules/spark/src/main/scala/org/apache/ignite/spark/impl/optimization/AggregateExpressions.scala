@@ -18,11 +18,11 @@
 package org.apache.ignite.spark.impl.optimization
 
 import org.apache.spark.sql.catalyst.expressions.aggregate._
-import org.apache.spark.sql.catalyst.expressions.{Expression, _}
+import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.types.{DataType, LongType}
 
 /**
-  * Object to support aggregate expressions like `sum` or `avg`
+  * Object to support aggregate expressions like `sum` or `avg`.
   */
 private[optimization] object AggregateExpressions extends SupportedExpressions {
     /** @inheritdoc */
@@ -100,5 +100,4 @@ private[optimization] object AggregateExpressions extends SupportedExpressions {
         case _ ⇒
             s"$sumSql"
     }
-
 }

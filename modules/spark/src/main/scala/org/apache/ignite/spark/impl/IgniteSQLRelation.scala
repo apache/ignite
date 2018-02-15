@@ -18,9 +18,7 @@
 package org.apache.ignite.spark.impl
 
 import org.apache.ignite.IgniteException
-import org.apache.ignite.cache.{CacheMode, QueryEntity}
-import org.apache.ignite.cluster.ClusterNode
-import org.apache.ignite.configuration.CacheConfiguration
+import org.apache.ignite.cache.QueryEntity
 import org.apache.ignite.spark.{IgniteContext, IgniteRDD, impl}
 import org.apache.spark.Partition
 import org.apache.spark.internal.Logging
@@ -30,7 +28,6 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SQLContext}
 
 import scala.collection.JavaConversions._
-import scala.collection.mutable.ArrayBuffer
 
 /**
   * Apache Ignite implementation of Spark BaseRelation with PrunedFilteredScan for Ignite SQL Tables
@@ -95,7 +92,7 @@ class IgniteSQLRelation[K, V](
     /**
       * Computes spark partitions for this relation.
       *
-      * @return Array of IgniteDataFramPartition
+      * @return Array of IgniteDataFramPartition.
       */
     private def calcPartitions(filters: Array[Filter]): Array[Partition] =
         impl.calcPartitions(ic, cacheName)

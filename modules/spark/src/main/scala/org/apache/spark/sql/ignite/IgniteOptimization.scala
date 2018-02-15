@@ -382,7 +382,7 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
       * @param exprs Expressions to substitute.
       * @param substitution Expressions for substitution
       * @param changeOnlyName If true substitute only expression name.
-      * @tparam T
+      * @tparam T Concrete expression type.
       * @return Substituted expressions.
       */
     private def substituteExpressions[T <: Expression](exprs: Seq[T], substitution: Seq[NamedExpression],

@@ -45,7 +45,7 @@ import java.lang.{Long ⇒ JLong}
   * XMLSTARTDOC
   * XMLTEXT
   * TO_CHAR - The function that can format a timestamp, a number, or text.
-  * ====== in master but not in release =====
+  * ====== This functions in spark master but not in release =====
   * LEFT
   * RIGHT
   * INSERT

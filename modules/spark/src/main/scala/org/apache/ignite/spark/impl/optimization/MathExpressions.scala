@@ -85,8 +85,8 @@ private[optimization] object MathExpressions extends SupportedExpressions {
         case Log10(child) ⇒
             checkChild(child)
 
-        case Logarithm(base, expr) ⇒
-            checkChild(base) && checkChild(expr)
+        case Logarithm(left, right) ⇒
+            checkChild(left) && checkChild(right)
 
         case ToRadians(child) ⇒
             checkChild(child)
