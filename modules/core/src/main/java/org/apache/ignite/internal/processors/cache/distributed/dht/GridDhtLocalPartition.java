@@ -1368,7 +1368,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             synchronized (this) {
                 // Double check
-                if (evictionCallbackRegistered || isDone())
+                if (evictionCallbackRegistered)
                     return;
 
                 evictionCallbackRegistered = true;
@@ -1395,7 +1395,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             synchronized (this) {
                 // Double check
-                if (clearingCallbackRegistered || isDone())
+                if (clearingCallbackRegistered)
                     return;
 
                 clearingCallbackRegistered = true;
