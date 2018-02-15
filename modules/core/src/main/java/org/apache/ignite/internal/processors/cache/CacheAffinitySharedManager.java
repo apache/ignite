@@ -148,13 +148,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         cctx.kernalContext().event().addLocalEventListener(discoLsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
     }
 
-    /** {@inheritDoc} */
-    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
-        synchronized (mux) {
-            lastAffVer = null;
-        }
-    }
-
     /**
      * Callback invoked from discovery thread when discovery message is received.
      *
@@ -169,17 +162,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         ClusterNode node,
         AffinityTopologyVersion topVer,
         DiscoveryDataClusterState state) {
+        if (type == EVT_NODE_JOINED && node.isLocal())
+            lastAffVer = null;
+
         if ((state.transition() || !state.active()) &&
             !DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg))
             return;
 
-        if (type == EVT_NODE_JOINED && node.isLocal())
-            lastAffVer = null;
-
         if ((!CU.clientNode(node) && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT)) ||
             DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg)) {
             synchronized (mux) {
-                assert lastAffVer == null || topVer.compareTo(lastAffVer) > 0 : "lastAffVer=" + lastAffVer + ", topVer=" + topVer;
+                assert lastAffVer == null || topVer.compareTo(lastAffVer) > 0 :
+                    "lastAffVer=" + lastAffVer + ", topVer=" + topVer + ", customMsg=" + customMsg;
 
                 lastAffVer = topVer;
             }
