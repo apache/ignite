@@ -109,7 +109,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     private final AtomicReference<GridChangeGlobalStateFuture> stateChangeFut = new AtomicReference<>();
 
     /** */
-    private final ConcurrentMap<UUID, GridFutureAdapter<Void>> transitionFuts = new ConcurrentHashMap<>();
+    private final ConcurrentMap<UUID, GridFutureAdapter<Boolean>> transitionFuts = new ConcurrentHashMap<>();
 
     /** Future initialized if node joins when cluster state change is in progress. */
     private TransitionOnJoinWaitFuture joinFut;
@@ -184,28 +184,23 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
             if (transitionRes != null)
                 return transitionRes;
-            else {
-                if (waitForTransition) {
-                    GridFutureAdapter<Void> fut = transitionFuts.get(globalState.transitionRequestId());
 
-                    if (fut != null) {
-                        try {
-                            fut.get();
-                        }
-                        catch (IgniteCheckedException ex) {
-                            throw new IgniteException(ex);
-                        }
+            GridFutureAdapter<Boolean> fut = transitionFuts.get(globalState.transitionRequestId());
+
+            if (fut != null) {
+                if (fut.isDone() || waitForTransition) {
+                    try {
+                        transitionRes = fut.get();
                     }
-
-                    transitionRes = globalState.transitionResult();
-
-                    assert transitionRes != null;
-
-                    return transitionRes;
+                    catch (IgniteCheckedException ex) {
+                        throw new IgniteException(ex);
+                    }
                 }
-                else
-                    return false;
             }
+            assert !(transitionRes == null && waitForTransition) : "Forgot to set result in future.";
+
+            // Use null as false
+            return transitionRes == true;
         }
         else
             return globalState.active();
@@ -379,6 +374,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** {@inheritDoc} */
     @Override public void onStateFinishMessage(ChangeGlobalStateFinishMessage msg) {
         UUID transitionRequestId = globalState.transitionRequestId();
+        DiscoveryDataClusterState state = globalState;
 
         if (msg.requestId().equals(transitionRequestId)) {
             log.info("Received state change finish message: " + msg.clusterActive());
@@ -394,10 +390,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             if (joinFut != null)
                 joinFut.onDone(false);
 
-            GridFutureAdapter<Void> transitionFut = transitionFuts.remove(transitionRequestId);
+            GridFutureAdapter<Boolean> transitionFut = transitionFuts.remove(transitionRequestId);
 
             if (transitionFut != null)
-                transitionFut.onDone();
+                transitionFut.onDone(msg.requestId().equals(transitionRequestId) ? msg.clusterActive() : null);
         }
         else
             U.warn(log, "Received state finish message with unexpected ID: " + msg);
@@ -434,11 +430,11 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             else {
                 final GridChangeGlobalStateFuture stateFut = changeStateFuture(msg);
 
-                GridFutureAdapter<Void> transitionFut = transitionFuts.get(state.transitionRequestId());
+                GridFutureAdapter<Boolean> transitionFut = transitionFuts.get(state.transitionRequestId());
 
                 if (stateFut != null && transitionFut != null) {
-                    transitionFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                        @Override public void apply(IgniteInternalFuture<Void> fut) {
+                    transitionFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                        @Override public void apply(IgniteInternalFuture<Boolean> fut) {
                             try {
                                 fut.get();
 
@@ -485,7 +481,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 BaselineTopologyHistoryItem bltHistItem = BaselineTopologyHistoryItem.fromBaseline(
                     globalState.baselineTopology());
 
-                transitionFuts.put(msg.requestId(), new GridFutureAdapter<Void>());
+                transitionFuts.put(msg.requestId(), new GridFutureAdapter<>());
 
                 Boolean activate = null;
 
@@ -498,7 +494,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                     msg.activate() ? msg.baselineTopology() : globalState.baselineTopology(),
                     msg.requestId(),
                     topVer,
-                    nodeIds, activate);
+                    nodeIds,
+                    activate);
 
                 AffinityTopologyVersion stateChangeTopVer = topVer.nextMinorVersion();
 
@@ -706,7 +703,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             DiscoveryDataClusterState state = stateDiscoData.globalState;
 
             if (state.transition())
-                transitionFuts.put(state.transitionRequestId(), new GridFutureAdapter<Void>());
+                transitionFuts.put(state.transitionRequestId(), new GridFutureAdapter<>());
 
             globalState = state;
 
@@ -1129,7 +1126,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 if (req.activate())
                     onFinalActivate(req);
 
-                globalState = globalState.setTransitionResult(req.requestId(), req.activate());
+                globalState = globalState.withTransitionResult(req.requestId(), req.activate());
             }
 
             sendChangeGlobalStateResponse(req.requestId(), req.initiatorNodeId(), null);

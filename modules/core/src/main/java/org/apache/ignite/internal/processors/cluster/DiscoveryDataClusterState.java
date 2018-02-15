@@ -152,7 +152,7 @@ public final class DiscoveryDataClusterState implements Serializable {
      * @param reqId Request ID.
      * @param active New cluster state.
      */
-    public DiscoveryDataClusterState setTransitionResult(UUID reqId, boolean active) {
+    public DiscoveryDataClusterState withTransitionResult(UUID reqId, boolean active) {
         if (reqId.equals(transitionReqId))
             return new DiscoveryDataClusterState(this.prevState, this.active, this.baselineTopology,
                 this.transitionReqId, this.transitionTopVer, this.transitionNodes, active);
