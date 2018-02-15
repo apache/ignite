@@ -74,5 +74,4 @@ public class AuthenticationProcessorPersistEnabledTest extends AuthenticationPro
             AuthorizationContext.clear();
         }
     }
-
 }
