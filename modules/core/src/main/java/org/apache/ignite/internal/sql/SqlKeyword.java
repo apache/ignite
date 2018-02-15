@@ -96,9 +96,6 @@ public class SqlKeyword {
     /** Keyword: FLOAT8. */
     public static final String FLOAT8 = "FLOAT8";
 
-    /** Keyword: FLUSH. */
-    public static final String FLUSH = "FLUSH";
-
     /** Keyword: FORMAT. */
     public static final String FORMAT = "FORMAT";
 

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jdbc2;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.Properties;
 import org.apache.ignite.IgniteJdbcDriver;
@@ -28,8 +29,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteJdbcDriver.CFG_URL_PREFIX;
@@ -107,6 +110,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param allowOverwrite Allow overwriting of existing keys.
+     * @param flushTimeout Stream flush timeout.
      * @return Connection to use for the test.
      * @throws Exception if failed.
      */
@@ -182,5 +186,38 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         // i should point to i at all times as we've turned overwrites on above.
         for (int i = 1; i <= 100; i++)
             assertEquals(i, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
+    }
+
+    /** */
+    public void testOnlyInsertsAllowed() {
+        assertStatementForbidden("CREATE TABLE PUBLIC.X (x int primary key, y int)");
+
+        assertStatementForbidden("SELECT * from Integer");
+
+        assertStatementForbidden("Insert into Integer(_key, _val) (select _key + 1, _val + 1 from Integer)");
+
+        assertStatementForbidden("DELETE from Integer");
+
+        assertStatementForbidden("UPDATE Integer SET _val = 0");
+
+        assertStatementForbidden("alter table Integer add column y int");
+    }
+
+    /**
+     * @param sql Statement to check.
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    protected void assertStatementForbidden(String sql) {
+        GridTestUtils.assertThrows(null, new IgniteCallable<Object>() {
+            @Override public Object call() throws Exception {
+                try (Connection c = createStreamedConnection(false)) {
+                    try (PreparedStatement s = c.prepareStatement(sql)) {
+                        s.execute();
+                    }
+                }
+
+                return null;
+            }
+        }, SQLException.class,"Only tuple based INSERT statements are supported in streaming mode");
     }
 }

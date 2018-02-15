@@ -385,7 +385,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public boolean isInsertStatement(PreparedStatement nativeStmt) {
+        @Override public boolean isStreamableInsertStatement(PreparedStatement nativeStmt) {
             return false;
         }
 

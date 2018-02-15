@@ -293,7 +293,7 @@ public class GridSqlQueryParser {
     private static final Getter<Insert, List<Expression[]>> INSERT_ROWS = getter(Insert.class, "list");
 
     /** */
-    private static final Getter<Insert, Query> INSERT_QUERY = getter(Insert.class, "query");
+    public static final Getter<Insert, Query> INSERT_QUERY = getter(Insert.class, "query");
 
     /** */
     private static final Getter<Insert, Boolean> INSERT_DIRECT = getter(Insert.class, "insertFromSelect");

@@ -192,15 +192,4 @@ public class SqlClientContext implements AutoCloseable {
         for (IgniteDataStreamer<?, ?> s : streamers.values())
             U.close(s, log);
     }
-
-    /**
-     * Flush all open {@link IgniteDataStreamer}s.
-     */
-    public void flushOpenStreamers() {
-        if (streamers == null)
-            return;
-
-        for (IgniteDataStreamer<?, ?> s : streamers.values())
-            s.flush();
-    }
 }

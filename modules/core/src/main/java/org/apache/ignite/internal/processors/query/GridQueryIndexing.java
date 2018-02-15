@@ -339,12 +339,12 @@ public interface GridQueryIndexing {
     public String schema(String cacheName);
 
     /**
-     * Check if passed statement is insert statemtn.
+     * Check if passed statement is insert statement eligible for streaming.
      *
      * @param nativeStmt Native statement.
-     * @return {@code True} if insert.
+     * @return {@code True} if streamable insert.
      */
-    public boolean isInsertStatement(PreparedStatement nativeStmt);
+    public boolean isStreamableInsertStatement(PreparedStatement nativeStmt);
 
     /**
      * Return row cache cleaner.

@@ -104,6 +104,9 @@ public class JdbcThinConnection implements Connection {
     /** Batch for streaming. */
     private List<JdbcQuery> streamBatch;
 
+    /** Last added query to recognize batches. */
+    private String lastStreamQry;
+
     /**
      * Creates new connection.
      *
@@ -157,13 +160,20 @@ public class JdbcThinConnection implements Connection {
      * @param sql Query.
      * @param args Arguments.
      */
-    public synchronized void addBatch(String sql, List<Object> args) throws SQLException {
-        JdbcQuery q  = new JdbcQuery(sql, args != null ? args.toArray() : null);
+    synchronized void addBatch(String sql, List<Object> args) throws SQLException {
+        boolean newQry = (args == null || !F.eq(lastStreamQry, sql));
+
+        // Providing null as SQL here allows for recognizing subbatches on server and handling them more efficiently.
+        JdbcQuery q  = new JdbcQuery(newQry ? sql : null, args != null ? args.toArray() : null);
 
         if (streamBatch == null)
             streamBatch = new ArrayList<>(connProps.getStreamBatchSize());
 
         streamBatch.add(q);
+
+        // Null args means "addBatch(String)" was called on non-prepared Statement,
+        // we don't want to remember its query string.
+        lastStreamQry = (args != null ? sql : null);
 
         if (streamBatch.size() == connProps.getStreamBatchSize())
             executeBatch();
@@ -176,6 +186,8 @@ public class JdbcThinConnection implements Connection {
         JdbcBatchExecuteResult res = sendRequest(new JdbcBatchExecuteRequest(schema, streamBatch));
 
         streamBatch = null;
+
+        lastStreamQry = null;
 
         if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
             throw new BatchUpdateException(res.errorMessage(), IgniteQueryErrorCode.codeToSqlState(res.errorCode()),

@@ -208,8 +208,6 @@ public class DdlStatementsProcessor {
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-            ctx.query().flushAllSqlStreams();
-
             if (fut != null)
                 fut.get();
 

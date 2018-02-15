@@ -36,6 +36,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * Tests for streaming via thin driver.
  */
 public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
+    /** */
+    private int batchSize = 17;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        batchSize = 17;
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         try (Connection c = createOrdinaryConnection()) {
@@ -49,7 +59,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
     @Override protected Connection createStreamedConnection(boolean allowOverwrite, long flushFreq) throws Exception {
         Connection res = JdbcThinAbstractSelfTest.connect(grid(0), "streaming=true&streamingFlushFrequency="
             + flushFreq + "&" + "streamingAllowOverwrite=" + allowOverwrite + "&streamingPerNodeBufferSize=1000&"
-            + "streamingBatchSize=17");
+            + "streamingBatchSize=" + batchSize);
 
         res.setSchema('"' + DEFAULT_CACHE_NAME + '"');
 
@@ -72,7 +82,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
             ignite(0).cache(DEFAULT_CACHE_NAME).put(i, i * 100);
 
         try (Connection conn = createStreamedConnection(false)) {
-            assertStreamingState(true);
+            assertStreamingOn();
 
             try (PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?), " +
                 "(?, ?)")) {
@@ -103,89 +113,6 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
     /**
      * @throws SQLException if failed.
      */
-    public void testStreamingOffToOn() throws SQLException {
-        try (Connection conn = createOrdinaryConnection()) {
-            assertStreamingState(false);
-
-            execute(conn, "SET STREAMING 1");
-
-            assertStreamingState(true);
-        }
-    }
-
-    /**
-     * @throws SQLException if failed.
-     */
-    public void testStreamingOnToOff() throws Exception {
-        try (Connection conn = createStreamedConnection(false)) {
-            assertStreamingState(true);
-
-            execute(conn, "SET STREAMING off");
-
-            assertStreamingState(false);
-        }
-    }
-
-    /**
-     * @throws SQLException if failed.
-     */
-    public void testFlush() throws Exception {
-        try (Connection conn = createStreamedConnection(false, 10000)) {
-            assertStreamingState(true);
-
-            try (PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)")) {
-                for (int i = 1; i <= 100; i++) {
-                    stmt.setInt(1, i);
-                    stmt.setInt(2, i);
-
-                    stmt.executeUpdate();
-                }
-            }
-
-            assertCacheEmpty();
-
-            execute(conn, "flush streamer");
-
-            // Now let's check it's all there.
-            for (int i = 1; i <= 100; i++)
-                assertEquals(i, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
-
-        }
-    }
-
-    /**
-     * @throws SQLException if failed.
-     */
-    public void testFlushByDdl() throws Exception {
-        try (Connection conn = createStreamedConnection(false, 10000)) {
-            assertStreamingState(true);
-
-            try (PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)")) {
-                for (int i = 1; i <= 100; i++) {
-                    stmt.setInt(1, i);
-                    stmt.setInt(2, i);
-
-                    stmt.executeUpdate();
-                }
-            }
-
-            assertCacheEmpty();
-
-            // DDL statement issued from a different connection must flush stream on first connection.
-            try (Connection anotherConn = createOrdinaryConnection()) {
-                execute(anotherConn, "CREATE TABLE PUBLIC.T(x int primary key, y int)");
-            }
-
-            // Now let's check it's all there.
-            for (int i = 1; i <= 100; i++)
-                assertEquals(i, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
-
-        }
-    }
-
-    /**
-     * @throws SQLException if failed.
-     */
     public void testSimultaneousStreaming() throws Exception {
         try (Connection anotherConn = createOrdinaryConnection()) {
             execute(anotherConn, "CREATE TABLE PUBLIC.T(x int primary key, y int) WITH " +
@@ -196,21 +123,35 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
         U.sleep(500);
 
         try (Connection conn = createStreamedConnection(false, 10000)) {
-            assertStreamingState(true);
+            assertStreamingOn();
 
             PreparedStatement firstStmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)");
 
             PreparedStatement secondStmt = conn.prepareStatement("insert into PUBLIC.T(x, y) values (?, ?)");
 
             try {
-                for (int i = 1; i <= 50; i++) {
+                for (int i = 1; i <= 10; i++) {
                     firstStmt.setInt(1, i);
                     firstStmt.setInt(2, i);
 
                     firstStmt.executeUpdate();
                 }
 
-                for (int i = 51; i <= 100; i++) {
+                for (int i = 51; i <= 67; i++) {
+                    secondStmt.setInt(1, i);
+                    secondStmt.setInt(2, i);
+
+                    secondStmt.executeUpdate();
+                }
+
+                for (int i = 11; i <= 50; i++) {
+                    firstStmt.setInt(1, i);
+                    firstStmt.setInt(2, i);
+
+                    firstStmt.executeUpdate();
+                }
+
+                for (int i = 68; i <= 100; i++) {
                     secondStmt.setInt(1, i);
                     secondStmt.setInt(2, i);
 
@@ -279,11 +220,17 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
     /**
      * Check that streaming state on target node is as expected.
-     * @param on Expected streaming state.
      */
-    private void assertStreamingState(boolean on) {
+    private void assertStreamingOn() {
         SqlClientContext cliCtx = sqlClientContext();
 
-        assertEquals(on, cliCtx.isStream());
+        assertTrue(cliCtx.isStream());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void assertStatementForbidden(String sql) {
+        batchSize = 1;
+
+        super.assertStatementForbidden(sql);
     }
 }

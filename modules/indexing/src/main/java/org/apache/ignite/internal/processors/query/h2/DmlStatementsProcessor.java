@@ -395,75 +395,74 @@ public class DmlStatementsProcessor {
     @SuppressWarnings({"unchecked", "ConstantConditions"})
     long streamUpdateQuery(String schemaName, IgniteDataStreamer streamer, PreparedStatement stmt, final Object[] args)
         throws IgniteCheckedException {
+        if (!idx.isStreamableInsertStatement(stmt))
+            throw new IgniteSQLException("Only tuple based INSERT statements are supported " +
+                "in streaming mode", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
         assert p != null;
 
         final UpdatePlan plan = getPlanForStatement(schemaName, null, p, null, true, null);
 
-        if (plan.isStreamable()) {
-            assert plan.isLocalSubquery();
+        assert plan.isLocalSubquery();
 
-            final GridCacheContext cctx = plan.cacheContext();
+        final GridCacheContext cctx = plan.cacheContext();
 
-            QueryCursorImpl<List<?>> cur;
+        QueryCursorImpl<List<?>> cur;
 
-            final ArrayList<List<?>> data = new ArrayList<>(plan.rowCount());
+        final ArrayList<List<?>> data = new ArrayList<>(plan.rowCount());
 
-            QueryCursorImpl<List<?>> stepCur = new QueryCursorImpl<>(new Iterable<List<?>>() {
-                @Override public Iterator<List<?>> iterator() {
-                    try {
-                        Iterator<List<?>> it;
+        QueryCursorImpl<List<?>> stepCur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+            @Override public Iterator<List<?>> iterator() {
+                try {
+                    Iterator<List<?>> it;
 
-                        if (!F.isEmpty(plan.selectQuery())) {
-                            GridQueryFieldsResult res = idx.queryLocalSqlFields(idx.schema(cctx.name()),
-                                plan.selectQuery(), F.asList(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)),
-                                null, false, 0, null);
+                    if (!F.isEmpty(plan.selectQuery())) {
+                        GridQueryFieldsResult res = idx.queryLocalSqlFields(idx.schema(cctx.name()),
+                            plan.selectQuery(), F.asList(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)),
+                            null, false, 0, null);
 
-                            it = res.iterator();
-                        }
-                        else
-                            it = plan.createRows(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)).iterator();
-
-                        return new GridQueryCacheObjectsIterator(it, idx.objectContext(), cctx.keepBinary());
+                        it = res.iterator();
                     }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
+                    else
+                        it = plan.createRows(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)).iterator();
+
+                    return new GridQueryCacheObjectsIterator(it, idx.objectContext(), cctx.keepBinary());
                 }
-            }, null);
-
-            data.addAll(stepCur.getAll());
-
-            cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
-                @Override public Iterator<List<?>> iterator() {
-                    return data.iterator();
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
                 }
-            }, null);
-
-            if (plan.rowCount() == 1) {
-                IgniteBiTuple t = plan.processRow(cur.iterator().next());
-
-                streamer.addData(t.getKey(), t.getValue());
-
-                return 1;
             }
+        }, null);
 
-            Map<Object, Object> rows = new LinkedHashMap<>(plan.rowCount());
+        data.addAll(stepCur.getAll());
 
-            for (List<?> row : cur) {
-                final IgniteBiTuple t = plan.processRow(row);
-
-                rows.put(t.getKey(), t.getValue());
+        cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+            @Override public Iterator<List<?>> iterator() {
+                return data.iterator();
             }
+        }, null);
 
-            streamer.addData(rows);
+        if (plan.rowCount() == 1) {
+            IgniteBiTuple t = plan.processRow(cur.iterator().next());
 
-            return rows.size();
+            streamer.addData(t.getKey(), t.getValue());
+
+            return 1;
         }
-        else
-            throw new IgniteSQLException("Only tuple based INSERT statements are supported in streaming mode",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
+        Map<Object, Object> rows = new LinkedHashMap<>(plan.rowCount());
+
+        for (List<?> row : cur) {
+            final IgniteBiTuple t = plan.processRow(row);
+
+            rows.put(t.getKey(), t.getValue());
+        }
+
+        streamer.addData(rows);
+
+        return rows.size();
     }
 
     /**

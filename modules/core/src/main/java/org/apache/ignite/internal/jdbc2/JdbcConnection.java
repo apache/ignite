@@ -612,8 +612,8 @@ public class JdbcConnection implements Connection {
 
             PreparedStatement nativeStmt = prepareNativeStatement(sql);
 
-            if (!idx.isInsertStatement(nativeStmt)) {
-                throw new SQLException("Only INSERT operations are supported in streaming mode",
+            if (!idx.isStreamableInsertStatement(nativeStmt)) {
+                throw new SQLException("Only tuple based INSERT statements are supported in streaming mode",
                     SqlStateCode.INTERNAL_ERROR,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
             }
