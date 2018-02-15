@@ -22,6 +22,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -46,7 +47,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.PUBLIC_POOL;
 
@@ -219,7 +219,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
 
         final Integer topic = 1;
 
-        final Map<IgniteUuid, CountDownLatch> map = new ConcurrentHashMap8<>();
+        final Map<IgniteUuid, CountDownLatch> map = new ConcurrentHashMap<>();
 
         rcv.addMessageListener(
             topic,
@@ -319,7 +319,7 @@ public class GridIoManagerBenchmark0 extends GridCommonAbstractTest {
 
         final String topic = "test-topic";
 
-        final Map<IgniteUuid, CountDownLatch> latches = new ConcurrentHashMap8<>();
+        final Map<IgniteUuid, CountDownLatch> latches = new ConcurrentHashMap<>();
 
         rcv.addMessageListener(
             topic,

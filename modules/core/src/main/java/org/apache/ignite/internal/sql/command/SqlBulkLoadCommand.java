@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
+import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
@@ -83,7 +84,12 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @param lex The lexer.
      */
     private void parseFileName(SqlLexer lex) {
-        locFileName = parseIdentifier(lex);
+        if (lex.lookAhead().tokenType() != SqlLexerTokenType.QUOTED)
+            throw errorUnexpectedToken(lex.lookAhead(), "[quoted file name]");
+
+        lex.shift();
+
+        locFileName = lex.token();
     }
 
     /**
