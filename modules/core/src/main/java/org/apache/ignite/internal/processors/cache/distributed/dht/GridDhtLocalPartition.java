@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.GridQueryRowCacheCleaner;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -55,7 +56,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
@@ -197,6 +197,16 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         try {
             store = grp.offheap().createCacheDataStore(id);
+
+            // Inject row cache cleaner on store creation
+            // Used in case the cache with enabled SqlOnheapCache is single cache at the cache group
+            if (ctx.kernalContext().query().moduleEnabled()) {
+                GridQueryRowCacheCleaner cleaner = ctx.kernalContext().query().getIndexing()
+                    .rowCacheCleaner(grp.groupId());
+
+                if (store != null && cleaner != null)
+                    store.setRowCacheCleaner(cleaner);
+            }
         }
         catch (IgniteCheckedException e) {
             // TODO ignite-db
@@ -208,7 +218,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Entries map.
      */
     private ConcurrentMap<KeyCacheObject, GridCacheMapEntry> createEntriesMap() {
-        return new ConcurrentHashMap8<>(Math.max(10, GridCacheAdapter.DFLT_START_CACHE_SIZE / grp.affinity().partitions()),
+        return new ConcurrentHashMap<>(Math.max(10, GridCacheAdapter.DFLT_START_CACHE_SIZE / grp.affinity().partitions()),
             0.75f,
             Runtime.getRuntime().availableProcessors() * 2);
     }
@@ -500,7 +510,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code true} if cas succeeds.
      */
     private boolean casState(long state, GridDhtPartitionState toState) {
-        if (grp.persistenceEnabled()) {
+        if (grp.persistenceEnabled() && grp.walEnabled()) {
             synchronized (this) {
                 boolean update = this.state.compareAndSet(state, setPartState(state, toState));
 
@@ -892,7 +902,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                             if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
                                 removeEntry(cached);
 
-                                if (rec) {
+                                if (rec && !hld.cctx.config().isEventsDisabled()) {
                                     hld.cctx.events().addEvent(cached.partition(),
                                         cached.key(),
                                         ctx.localNodeId(),

@@ -90,13 +90,13 @@ onmessage = function(e) {
     if (cluster.discovery.kind === 'Kubernetes')
         zip.file(`${metaPath}/ignite-service.yaml`, kubernetesConfig(cluster));
 
-    zip.file(`${metaPath}/${serverXml}`, spring.igniteConfiguration(cfg).asString());
-    zip.file(`${metaPath}/${clientXml}`, spring.igniteConfiguration(clientCfg, clientNearCaches).asString());
+    zip.file(`${metaPath}/${serverXml}`, spring.igniteConfiguration(cfg, targetVer).asString());
+    zip.file(`${metaPath}/${clientXml}`, spring.igniteConfiguration(clientCfg, targetVer, clientNearCaches).asString());
 
     const cfgPath = `${srcPath}/config`;
 
-    zip.file(`${cfgPath}/ServerConfigurationFactory.java`, java.igniteConfiguration(cfg, 'config', 'ServerConfigurationFactory').asString());
-    zip.file(`${cfgPath}/ClientConfigurationFactory.java`, java.igniteConfiguration(clientCfg, 'config', 'ClientConfigurationFactory', clientNearCaches).asString());
+    zip.file(`${cfgPath}/ServerConfigurationFactory.java`, java.igniteConfiguration(cfg, targetVer, 'config', 'ServerConfigurationFactory').asString());
+    zip.file(`${cfgPath}/ClientConfigurationFactory.java`, java.igniteConfiguration(clientCfg, targetVer, 'config', 'ClientConfigurationFactory', clientNearCaches).asString());
 
     if (java.isDemoConfigured(cluster, demo)) {
         zip.file(`${srcPath}/demo/DemoStartup.java`, java.nodeStartup(cluster, 'demo.DemoStartup',

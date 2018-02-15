@@ -25,10 +25,10 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  */
 public final class UpdateResult {
     /** Result to return for operations that affected 1 item - mostly to be used for fast updates and deletes. */
-    final static UpdateResult ONE = new UpdateResult(1, X.EMPTY_OBJECT_ARRAY);
+    public static final UpdateResult ONE = new UpdateResult(1, X.EMPTY_OBJECT_ARRAY);
 
     /** Result to return for operations that affected 0 items - mostly to be used for fast updates and deletes. */
-    final static UpdateResult ZERO = new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
+    public static final UpdateResult ZERO = new UpdateResult(0, X.EMPTY_OBJECT_ARRAY);
 
     /** Number of processed items. */
     private final long cnt;

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -31,7 +32,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Synchronization structure for asynchronous waiting for near tx finish responses based on per-node per-thread
@@ -45,7 +45,7 @@ public class GridCacheTxFinishSync<K, V> {
     private IgniteLogger log;
 
     /** Nodes map. */
-    private ConcurrentMap<Long, ThreadFinishSync> threadMap = new ConcurrentHashMap8<>();
+    private ConcurrentMap<Long, ThreadFinishSync> threadMap = new ConcurrentHashMap<>();
 
     /**
      * @param cctx Cache context.
@@ -126,7 +126,7 @@ public class GridCacheTxFinishSync<K, V> {
         private long threadId;
 
         /** Thread map. */
-        private final Map<UUID, TxFinishSync> nodeMap = new ConcurrentHashMap8<>();
+        private final Map<UUID, TxFinishSync> nodeMap = new ConcurrentHashMap<>();
 
         /**
          * @param threadId Thread ID.

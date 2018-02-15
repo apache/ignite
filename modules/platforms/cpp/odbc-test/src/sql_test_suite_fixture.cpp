@@ -110,6 +110,10 @@ namespace ignite
 
         ret = SQLFetch(stmt);
         BOOST_CHECK(ret == SQL_NO_DATA);
+
+        ret = SQLFreeStmt(stmt, SQL_CLOSE);
+        if (!SQL_SUCCEEDED(ret))
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
     }
 
     template<>

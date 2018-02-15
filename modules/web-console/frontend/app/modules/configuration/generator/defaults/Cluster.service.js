@@ -395,6 +395,21 @@ const DFLT_CLUSTER = {
         socketReceiveBufferSize: 0,
         tcpNoDelay: true,
         maxOpenCursorsPerConnection: 128
+    },
+    clientConnectorConfiguration: {
+        port: 10800,
+        portRange: 100,
+        socketSendBufferSize: 0,
+        socketReceiveBufferSize: 0,
+        tcpNoDelay: true,
+        maxOpenCursorsPerConnection: 128,
+        idleTimeout: 0,
+        jdbcEnabled: true,
+        odbcEnabled: true,
+        thinClientEnabled: true,
+        sslEnabled: false,
+        useIgniteSslContextFactory: true,
+        sslClientAuth: false
     }
 };
 

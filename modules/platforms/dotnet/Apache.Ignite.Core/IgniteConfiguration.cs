@@ -24,13 +24,13 @@ namespace Apache.Ignite.Core
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Linq;
-    using System.Text;
     using System.Xml;
     using System.Xml.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Cluster.Ssl;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication;
     using Apache.Ignite.Core.Communication.Tcp;
@@ -43,6 +43,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Events;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cluster.Ssl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
@@ -498,6 +499,9 @@ namespace Apache.Ignite.Core
                 writer.WriteBoolean(false);
             }
 
+            // SSL Context factory.
+            SslFactorySerializer.Write(writer, SslContextFactory);
+
             // Plugins (should be last).
             if (PluginConfigurations != null)
             {
@@ -718,6 +722,9 @@ namespace Apache.Ignite.Core
             {
                 DataStorageConfiguration = new DataStorageConfiguration(r);
             }
+
+            // SSL context factory.
+            SslContextFactory = SslFactorySerializer.Read(r);
         }
 
         /// <summary>
@@ -1096,7 +1103,7 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Gets or sets the user attributes for this node.
         /// <para />
-        /// These attributes can be retrieved later via <see cref="IClusterNode.GetAttributes"/>.
+        /// These attributes can be retrieved later via <see cref="IBaselineNode.Attributes"/>.
         /// Environment variables are added to node attributes automatically.
         /// NOTE: attribute names starting with "org.apache.ignite" are reserved for internal use.
         /// </summary>
@@ -1153,9 +1160,6 @@ namespace Apache.Ignite.Core
         /// <param name="rootElementName">Name of the root element.</param>
         public void ToXml(XmlWriter writer, string rootElementName)
         {
-            IgniteArgumentCheck.NotNull(writer, "writer");
-            IgniteArgumentCheck.NotNullOrEmpty(rootElementName, "rootElementName");
-
             IgniteConfigurationXmlSerializer.Serialize(this, writer, rootElementName);
         }
 
@@ -1164,19 +1168,7 @@ namespace Apache.Ignite.Core
         /// </summary>
         public string ToXml()
         {
-            var sb = new StringBuilder();
-
-            var settings = new XmlWriterSettings
-            {
-                Indent = true
-            };
-
-            using (var xmlWriter = XmlWriter.Create(sb, settings))
-            {
-                ToXml(xmlWriter, "igniteConfiguration");
-            }
-
-            return sb.ToString();
+            return IgniteConfigurationXmlSerializer.Serialize(this, "igniteConfiguration");
         }
 
         /// <summary>
@@ -1186,9 +1178,7 @@ namespace Apache.Ignite.Core
         /// <returns>Deserialized instance.</returns>
         public static IgniteConfiguration FromXml(XmlReader reader)
         {
-            IgniteArgumentCheck.NotNull(reader, "reader");
-
-            return IgniteConfigurationXmlSerializer.Deserialize(reader);
+            return IgniteConfigurationXmlSerializer.Deserialize<IgniteConfiguration>(reader);
         }
 
         /// <summary>
@@ -1196,20 +1186,9 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="xml">Xml string.</param>
         /// <returns>Deserialized instance.</returns>
-        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
-        [SuppressMessage("Microsoft.Usage", "CA2202: Do not call Dispose more than one time on an object")]
         public static IgniteConfiguration FromXml(string xml)
         {
-            IgniteArgumentCheck.NotNullOrEmpty(xml, "xml");
-
-            using (var stringReader = new StringReader(xml))
-            using (var xmlReader = XmlReader.Create(stringReader))
-            {
-                // Skip XML header.
-                xmlReader.MoveToContent();
-
-                return FromXml(xmlReader);
-            }
+            return IgniteConfigurationXmlSerializer.Deserialize<IgniteConfiguration>(xml);
         }
 
         /// <summary>
@@ -1269,6 +1248,14 @@ namespace Apache.Ignite.Core
         /// Gets or sets the data storage configuration.
         /// </summary>
         public DataStorageConfiguration DataStorageConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the SSL context factory that will be used for creating a secure socket layer b/w nodes.
+        /// <para />
+        /// Default is null (no SSL).
+        /// <para />
+        /// </summary>
+        public ISslContextFactory SslContextFactory { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating how user assemblies should be loaded on remote nodes.
@@ -1406,7 +1393,7 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Gets or sets a value indicating whether grid should be active on start.
-        /// See also <see cref="IIgnite.IsActive"/> and <see cref="IIgnite.SetActive"/>.
+        /// See also <see cref="ICluster.IsActive"/> and <see cref="ICluster.SetActive"/>.
         /// <para />
         /// This property is ignored when <see cref="DataStorageConfiguration"/> is present:
         /// cluster is always inactive on start when Ignite Persistence is enabled.

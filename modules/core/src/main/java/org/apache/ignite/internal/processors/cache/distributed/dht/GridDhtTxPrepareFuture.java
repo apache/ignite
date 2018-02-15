@@ -347,6 +347,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
             ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
+            cctx.database().checkpointReadLock();
+
             try {
                 if ((txEntry.op() == CREATE || txEntry.op() == UPDATE) &&
                     txEntry.conflictExpireTime() == CU.EXPIRE_TIME_CALCULATE) {
@@ -508,6 +510,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
             catch (GridCacheEntryRemovedException e) {
                 assert false : "Got entry removed exception while holding transactional lock on entry [e=" + e + ", cached=" + cached + ']';
+            }
+            finally {
+                cctx.database().checkpointReadUnlock();
             }
         }
     }
@@ -717,6 +722,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     CIX1<IgniteInternalFuture<IgniteInternalTx>> resClo =
                         new CIX1<IgniteInternalFuture<IgniteInternalTx>>() {
                             @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> fut) {
+                                if(res.error() == null && fut.error() != null)
+                                    res.error(fut.error());
+
                                 if (REPLIED_UPD.compareAndSet(GridDhtTxPrepareFuture.this, 0, 1))
                                     sendPrepareResponse(res);
                             }
@@ -1819,6 +1827,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
 
                         GridDrType drType = cacheCtx.isDrEnabled() ? GridDrType.DR_PRELOAD : GridDrType.DR_NONE;
 
+                        cctx.database().checkpointReadLock();
+
                         try {
                             if (entry.initialValue(info.value(),
                                 info.version(),
@@ -1849,6 +1859,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             if (log.isDebugEnabled())
                                 log.debug("Failed to set entry initial value (entry is obsolete, " +
                                     "will retry): " + entry);
+                        }
+                        finally {
+                            cctx.database().checkpointReadUnlock();
                         }
                     }
                 }

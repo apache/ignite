@@ -23,6 +23,7 @@ import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.StringTokenizer;
@@ -35,7 +36,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
-import sun.misc.BASE64Encoder;
 
 /**
  * Abstract protocol adapter.
@@ -106,11 +106,9 @@ public abstract class GridRestProtocolAdapter implements GridRestProtocol {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-1");
 
-            BASE64Encoder enc = new BASE64Encoder();
-
             md.update(s.getBytes(UTF_8));
 
-            String compHash = enc.encode(md.digest());
+            String compHash = Base64.getEncoder().encodeToString(md.digest());
 
             return hash.equalsIgnoreCase(compHash);
         }

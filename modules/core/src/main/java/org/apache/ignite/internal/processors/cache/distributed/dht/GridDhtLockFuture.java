@@ -28,6 +28,7 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -73,7 +74,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_LOADED;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
@@ -119,7 +119,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
     /** DHT mappings. */
     private Map<ClusterNode, List<GridDhtCacheEntry>> dhtMap =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Future ID. */
     private IgniteUuid futId;
@@ -200,7 +200,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         boolean read,
         boolean needReturnVal,
         long timeout,
-        final GridDhtTxLocalAdapter tx,
+        GridDhtTxLocalAdapter tx,
         long threadId,
         long createTtl,
         long accessTtl,
@@ -932,7 +932,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                 }
                             }
                             catch (GridCacheEntryRemovedException ex) {
-                                // Entry can be removed by async tx rollback on force/timeout.
+                                assert false : "Entry cannot become obsolete when DHT local candidate is added " +
+                                    "[e=" + e + ", ex=" + ex + ']';
                             }
 
                             // Skip entry if it is not new and is not present in updated mapping.

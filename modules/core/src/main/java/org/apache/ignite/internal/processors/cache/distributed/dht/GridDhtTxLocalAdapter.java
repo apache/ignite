@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -60,7 +59,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
@@ -76,8 +75,6 @@ import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
  * Replicated user transaction.
  */
 public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
-    public static final AtomicInteger lockAllCnt = new AtomicInteger();
-
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -89,10 +86,10 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         AtomicReferenceFieldUpdater.newUpdater(GridDhtTxLocalAdapter.class, IgniteInternalFuture.class, "lockFut");
 
     /** Near mappings. */
-    protected Map<UUID, GridDistributedTxMapping> nearMap = new ConcurrentHashMap8<>();
+    protected Map<UUID, GridDistributedTxMapping> nearMap = new ConcurrentHashMap<>();
 
     /** DHT mappings. */
-    protected Map<UUID, GridDistributedTxMapping> dhtMap = new ConcurrentHashMap8<>();
+    protected Map<UUID, GridDistributedTxMapping> dhtMap = new ConcurrentHashMap<>();
 
     /** Mapped flag. */
     protected volatile boolean mapped;
@@ -492,13 +489,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             IgniteTxEntry existing = entry(e.txKey());
 
             if (existing != null) {
-                // Must keep NOOP operation if received READ because it means that the lock was sent to a backup node.
-                if (e.op() == READ) {
-                    if (existing.op() != NOOP)
-                        existing.op(e.op());
-                }
-                else
-                    existing.op(e.op()); // Absolutely must set operation, as default is DELETE.
+                existing.op(e.op()); // Absolutely must set operation, as default is DELETE.
 
                 existing.value(e.value(), e.hasWriteValue(), e.hasReadValue());
                 existing.entryProcessors(e.entryProcessors());
@@ -726,8 +717,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             CU.empty0(),
             skipStore,
             keepBinary);
-
-        lockAllCnt.incrementAndGet();
 
         return new GridEmbeddedFuture<>(
             fut,

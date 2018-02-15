@@ -30,9 +30,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-#if !NETCOREAPP2_0
     using Apache.Ignite.Core.Impl.Cache;
-#endif
     using Apache.Ignite.Core.Tests.Query;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
@@ -2225,7 +2223,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             }
         }
 
-#if !NETCOREAPP2_0
         /// <summary>
         /// Test skip-store semantics.
         /// </summary>
@@ -2252,7 +2249,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Ensure other flags are preserved.
             Assert.IsTrue(((CacheImpl<int, int>) cache.WithKeepBinary<int, int>().WithSkipStore()).IsKeepBinary);
         }
-#endif
 
         [Test]
         public void TestRebalance()
@@ -2262,78 +2258,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             var task = cache.Rebalance();
 
             task.Wait();
-        }
-
-        [Test]
-        public void TestCreate()
-        {
-            // Create a cache with random name
-            var randomName = "template" + Guid.NewGuid();
-
-            // Can't get non-existent cache with Cache method
-            Assert.Throws<ArgumentException>(() => GetIgnite(0).GetCache<int, int>(randomName));
-            Assert.IsFalse(GetIgnite(0).GetCacheNames().Contains(randomName));
-
-            var cache = GetIgnite(0).CreateCache<int, int>(randomName);
-            Assert.IsTrue(GetIgnite(0).GetCacheNames().Contains(randomName));
-
-            cache.Put(1, 10);
-
-            Assert.AreEqual(10, cache.Get(1));
-
-            // Can't create again
-            Assert.Throws<IgniteException>(() => GetIgnite(0).CreateCache<int, int>(randomName));
-
-            var cache0 = GetIgnite(0).GetCache<int, int>(randomName);
-
-            Assert.AreEqual(10, cache0.Get(1));
-        }
-
-        [Test]
-        public void TestGetOrCreate()
-        {
-            // Create a cache with random name
-            var randomName = "template" + Guid.NewGuid();
-
-            // Can't get non-existent cache with Cache method
-            Assert.Throws<ArgumentException>(() => GetIgnite(0).GetCache<int, int>(randomName));
-
-            var cache = GetIgnite(0).GetOrCreateCache<int, int>(randomName);
-
-            cache.Put(1, 10);
-
-            Assert.AreEqual(10, cache.Get(1));
-
-            var cache0 = GetIgnite(0).GetOrCreateCache<int, int>(randomName);
-
-            Assert.AreEqual(10, cache0.Get(1));
-
-            var cache1 = GetIgnite(0).GetCache<int, int>(randomName);
-
-            Assert.AreEqual(10, cache1.Get(1));
-        }
-
-        [Test]
-        public void TestDestroy()
-        {
-            var cacheName = "template" + Guid.NewGuid();
-
-            var ignite = GetIgnite(0);
-
-            var cache = ignite.CreateCache<int, int>(cacheName);
-
-            Assert.IsNotNull(ignite.GetCache<int, int>(cacheName));
-            Assert.IsTrue(GetIgnite(0).GetCacheNames().Contains(cacheName));
-
-            ignite.DestroyCache(cache.Name);
-
-            Assert.IsFalse(GetIgnite(0).GetCacheNames().Contains(cacheName));
-
-            var ex = Assert.Throws<ArgumentException>(() => ignite.GetCache<int, int>(cacheName));
-
-            Assert.IsTrue(ex.Message.StartsWith("Cache doesn't exist"));
-
-            Assert.Throws<InvalidOperationException>(() => cache.Get(1));
         }
 
         [Test]

@@ -35,6 +35,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.compute.ComputeTask;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -292,28 +293,27 @@ final class GridUriDeploymentFileProcessor {
     static void cleanupUnit(ClassLoader clsLdr, IgniteLogger log) {
         assert clsLdr != null;
         assert log != null;
+        assert clsLdr instanceof URLClassLoader;
 
-        if (clsLdr instanceof URLClassLoader) {
-            URLClassLoader clsLdr0 = (URLClassLoader)clsLdr;
+        URLClassLoader clsLdr0 = (URLClassLoader)clsLdr;
 
-            U.close(clsLdr0, log);
+        U.close(clsLdr0, log);
 
-            try {
-                URL url = clsLdr0.getURLs()[0];
+        try {
+            URL url = IgniteUtils.classLoaderUrls(clsLdr)[0];
 
-                File dir = new File(url.toURI());
+            File dir = new File(url.toURI());
 
-                U.delete(dir);
+            U.delete(dir);
 
-                if (dir.getName().startsWith("dirzip_")) {
-                    File jarFile = new File(dir.getParentFile(), dir.getName().substring(7));
+            if (dir.getName().startsWith("dirzip_")) {
+                File jarFile = new File(dir.getParentFile(), dir.getName().substring(7));
 
-                    U.delete(jarFile);
-                }
+                U.delete(jarFile);
             }
-            catch (Exception e) {
-                U.error(log, "Failed to cleanup unit [clsLdr=" + clsLdr + ']', e);
-            }
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to cleanup unit [clsLdr=" + clsLdr + ']', e);
         }
     }
 

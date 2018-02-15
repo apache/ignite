@@ -17,14 +17,16 @@
 
 'use strict';
 
+const express = require('express');
+
 // Fire me up!
 
 module.exports = {
     implements: 'routes/configurations',
-    inject: ['require(lodash)', 'require(express)', 'mongo', 'services/configurations']
+    inject: ['mongo', 'services/configurations']
 };
 
-module.exports.factory = function(_, express, mongo, configurationsService) {
+module.exports.factory = function(mongo, configurationsService) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
         /**

@@ -273,9 +273,9 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
 
         byRegion.keySet().forEach(k -> {
             LabeledVectorDouble sp = byRegion.get(k).get(0);
-            Tracer.showAscii(sp.vector());
-            X.println("Predicted value and label [pred=" + mdl.predict(sp.vector()) + ", label=" + sp.doubleLabel() + "]");
-            assert mdl.predict(sp.vector()) == sp.doubleLabel();
+            Tracer.showAscii(sp.features());
+            X.println("Predicted value and label [pred=" + mdl.apply(sp.features()) + ", label=" + sp.doubleLabel() + "]");
+            assert mdl.apply(sp.features()) == sp.doubleLabel();
         });
     }
 

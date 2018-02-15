@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_LOG_TX_RECORDS;
@@ -46,16 +47,16 @@ public class TxRollbackAsyncWithPersistenceTest extends TxRollbackAsyncTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
+        cleanPersistenceDir();
 
-        GridTestUtils.deleteDbFiles();
+        super.beforeTest();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 }
 

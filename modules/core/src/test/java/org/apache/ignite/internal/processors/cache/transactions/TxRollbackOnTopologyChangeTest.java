@@ -28,6 +28,7 @@ import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
@@ -70,8 +71,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
-import org.apache.log4j.Level;
-import org.jsr166.LongAdder8;
 
 import static java.lang.Thread.sleep;
 import static java.util.Collections.synchronizedList;
@@ -693,9 +692,9 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
         final TransactionConcurrency[] TC_VALS = TransactionConcurrency.values();
         final TransactionIsolation[] TI_VALS = TransactionIsolation.values();
 
-        final LongAdder8 completed = new LongAdder8();
-        final LongAdder8 failed = new LongAdder8();
-        final LongAdder8 rolledBack = new LongAdder8();
+        final LongAdder completed = new LongAdder();
+        final LongAdder failed = new LongAdder();
+        final LongAdder rolledBack = new LongAdder();
 
         IgniteInternalFuture<?> txFut = multithreadedAsync(new Runnable() {
             @Override public void run() {

@@ -26,10 +26,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -84,9 +86,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedHashMap;
-import org.jsr166.LongAdder8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JOBS_HISTORY_SIZE;
@@ -126,7 +126,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
     /** */
     private final ConcurrentMap<IgniteUuid, GridJobWorker> cancelledJobs =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** */
     private final Collection<IgniteUuid> heldJobs = new GridConcurrentHashSet<>();
@@ -156,19 +156,19 @@ public class GridJobProcessor extends GridProcessorAdapter {
     private final GridLocalEventListener discoLsnr;
 
     /** Needed for statistics. */
-    private final LongAdder8 canceledJobsCnt = new LongAdder8();
+    private final LongAdder canceledJobsCnt = new LongAdder();
 
     /** Needed for statistics. */
-    private final LongAdder8 finishedJobsCnt = new LongAdder8();
+    private final LongAdder finishedJobsCnt = new LongAdder();
 
     /** Needed for statistics. */
-    private final LongAdder8 startedJobsCnt = new LongAdder8();
+    private final LongAdder startedJobsCnt = new LongAdder();
 
     /** Needed for statistics. */
-    private final LongAdder8 rejectedJobsCnt = new LongAdder8();
+    private final LongAdder rejectedJobsCnt = new LongAdder();
 
     /** Total job execution time (unaccounted for in metrics). */
-    private final LongAdder8 finishedJobsTime = new LongAdder8();
+    private final LongAdder finishedJobsTime = new LongAdder();
 
     /** Maximum job execution time for finished jobs. */
     private final GridAtomicLong maxFinishedJobsTime = new GridAtomicLong();
@@ -224,7 +224,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
 
         metricsUpdateFreq = ctx.config().getMetricsUpdateFrequency();
 
-        activeJobs = jobAlwaysActivate ? new ConcurrentHashMap8<IgniteUuid, GridJobWorker>() :
+        activeJobs = jobAlwaysActivate ? new ConcurrentHashMap<IgniteUuid, GridJobWorker>() :
             new JobsMap(1024, 0.75f, 256);
 
         passiveJobs = jobAlwaysActivate ? null : new JobsMap(1024, 0.75f, 256);
@@ -1043,6 +1043,13 @@ public class GridJobProcessor extends GridProcessorAdapter {
                                     U.resolveClassLoader(dep.classLoader(), ctx.config()));
                         }
 
+                        IgnitePredicate<ClusterNode> topologyPred = req.getTopologyPredicate();
+
+                        if (topologyPred == null && req.getTopologyPredicateBytes() != null) {
+                            topologyPred = U.unmarshal(marsh, req.getTopologyPredicateBytes(),
+                                U.resolveClassLoader(dep.classLoader(), ctx.config()));
+                        }
+
                         // Note that we unmarshal session/job attributes here with proper class loader.
                         GridTaskSessionImpl taskSes = ctx.session().createTaskSession(
                             req.getSessionId(),
@@ -1051,6 +1058,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
                             dep,
                             req.getTaskClassName(),
                             req.topology(),
+                            topologyPred,
                             req.getStartTaskTime(),
                             endTime,
                             siblings,
