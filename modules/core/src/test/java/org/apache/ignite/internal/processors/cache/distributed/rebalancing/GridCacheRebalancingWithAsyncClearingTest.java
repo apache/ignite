@@ -184,7 +184,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
     }
 
     /**
-     * Test that partitions belong to affinity in state RENTING or EVICTED to affinity are correctly rebalanced.
+     * Test that partitions belong to affinity in state RENTING or EVICTED are correctly rebalanced.
      *
      * @throws Exception If failed.
      */

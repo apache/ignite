@@ -35,7 +35,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -255,7 +254,7 @@ public class GridDhtPartitionDemander {
     /**
      * Initiates new rebalance process from given {@code assignments}.
      * If previous rebalance is not finished method cancels it.
-     * In case of delayed rebalance method schedules
+     * In case of delayed rebalance method schedules new with configured delay.
      *
      * @param assignments Assignments.
      * @param force {@code True} if dummy reassign.
