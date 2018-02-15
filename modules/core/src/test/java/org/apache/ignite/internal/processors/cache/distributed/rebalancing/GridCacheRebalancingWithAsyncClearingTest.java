@@ -110,7 +110,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
             log.info("Writing initial data...");
 
             ds.allowOverwrite(true);
-            for (int k = 0; k < keysCount; k++) {
+            for (int k = 1; k <= keysCount; k++) {
                 ds.addData(k, k);
 
                 if (k % 50_000 == 0)
@@ -128,7 +128,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
             log.info("Writing external data...");
 
             ds.allowOverwrite(true);
-            for (int k = 0; k < keysCount; k++) {
+            for (int k = 1; k <= keysCount; k++) {
                 ds.addData(k, 2 * k);
 
                 if (k % 50_000 == 0)
