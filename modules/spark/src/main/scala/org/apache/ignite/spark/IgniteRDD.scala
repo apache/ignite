@@ -336,7 +336,7 @@ class IgniteRDD[K, V] (
 }
 
 object IgniteRDD {
-    val DECIMAL = DecimalType(DecimalType.MAX_PRECISION, 3) //TODO: How to know precision and scale directly from Ignite.
+    private[spark] val DECIMAL = DecimalType(DecimalType.MAX_PRECISION, 3)
 
     /**
       * Gets Spark data type based on type name.
