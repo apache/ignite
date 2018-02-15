@@ -151,39 +151,25 @@ public class SqlEscapeSeqParser {
     private void acceptValueChar(char c, boolean endOfInput) {
         int inputLen = input.length();
 
-        if (state == State.PROCESSING) {
-            if (radix != SINGLE_CHAR_RADIX) {
-                if (endOfInput || !isValidDigit(c)) {
-                    assert inputLen < maxLen;
+        if (state == State.PROCESSING && radix != SINGLE_CHAR_RADIX &&
+            (endOfInput || !isValidDigit(c))) {
+            assert inputLen < maxLen;
 
-                    if (inputLen >= minLen && isValidUnicodeInput())
-                        state = State.FINISHED_CHAR_REJECTED;
-                    else
-                        state = State.ERROR;
+            state = inputLen >= minLen && isValidUnicodeInput() ? State.FINISHED_CHAR_REJECTED : State.ERROR;
 
-                    return;
-                }
-            }
+            return;
         }
 
         if (inputLen >= maxLen || !isValidInput(c)) {
-            if (isValidUnicodeInput())
-                state = State.FINISHED_CHAR_REJECTED;
-            else
-                state = State.ERROR;
+            state = isValidUnicodeInput() ? State.FINISHED_CHAR_REJECTED : State.ERROR;
 
             return;
         }
 
         input.append(c);
 
-        if (input.length() >= maxLen) {
-
-            if (isValidUnicodeInput())
-                state = State.FINISHED_CHAR_ACCEPTED;
-            else
-                state = State.ERROR;
-        }
+        if (input.length() >= maxLen)
+            state = isValidUnicodeInput() ? State.FINISHED_CHAR_ACCEPTED : State.ERROR;
     }
 
     /**

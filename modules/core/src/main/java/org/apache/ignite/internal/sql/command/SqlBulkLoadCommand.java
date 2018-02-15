@@ -30,6 +30,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.lang.IgniteBiInClosure;
 
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
@@ -172,7 +173,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
                     String arg = parseStrWithEscapeSeq(lex);
 
-                    format.lineSeparator(F.isEmpty(arg) ? null : Pattern.compile(arg));
+                    format.lineSeparator(F.isEmpty(arg) ? null : arg);
 
                     break;
                 }
@@ -182,7 +183,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
                     String arg = parseStrWithEscapeSeq(lex);
 
-                    format.fieldSeparator(F.isEmpty(arg) ? null : Pattern.compile(arg));
+                    format.fieldSeparator(F.isEmpty(arg) ? null : arg);
 
                     break;
                 }
@@ -202,7 +203,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
                     String arg = parseStrWithEscapeSeq(lex);
 
-                    format.commentChars(F.isEmpty(arg) ? null : Pattern.compile(arg));
+                    format.commentChars(F.isEmpty(arg) ? null : arg);
 
                     break;
                 }

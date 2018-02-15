@@ -17,10 +17,9 @@
 
 package org.apache.ignite.internal.processors.bulkload;
 
+import java.util.regex.Pattern;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import java.util.regex.Pattern;
 
 /** Options for bulk load CSV format parser. */
 public class BulkLoadCsvFormat extends BulkLoadFormat {
@@ -63,16 +62,16 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
     public static final String NAME = "CSV";
 
     /** Line separator pattern. */
-    @Nullable private Pattern lineSeparator;
+    @Nullable private String lineSeparator;
 
     /** Field separator pattern. */
-    @Nullable private Pattern fieldSeparator;
+    @Nullable private String fieldSeparator;
 
     /** Set of quote characters. */
     @Nullable private String quoteChars;
 
     /** Line comment start pattern. */
-    @Nullable private Pattern commentChars;
+    @Nullable private String commentChars;
 
     /** Set of escape start characters. */
     @Nullable private String escapeChars;
@@ -100,7 +99,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The line separator pattern.
      */
-    @Nullable public Pattern lineSeparator() {
+    @Nullable public String lineSeparator() {
         return lineSeparator;
     }
 
@@ -109,7 +108,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @param lineSeparator The line separator pattern.
      */
-    public void lineSeparator(@Nullable Pattern lineSeparator) {
+    public void lineSeparator(@Nullable String lineSeparator) {
         this.lineSeparator = lineSeparator;
     }
 
@@ -118,7 +117,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The field separator pattern.
      */
-    @Nullable public Pattern fieldSeparator() {
+    @Nullable public String fieldSeparator() {
         return fieldSeparator;
     }
 
@@ -127,7 +126,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @param fieldSeparator The field separator pattern.
      */
-    public void fieldSeparator(@Nullable Pattern fieldSeparator) {
+    public void fieldSeparator(@Nullable String fieldSeparator) {
         this.fieldSeparator = fieldSeparator;
     }
 
@@ -154,7 +153,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The line comment start pattern.
      */
-    @Nullable public Pattern commentChars() {
+    @Nullable public String commentChars() {
         return commentChars;
     }
 
@@ -163,7 +162,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @param commentChars The line comment start pattern.
      */
-    public void commentChars(@Nullable Pattern commentChars) {
+    public void commentChars(@Nullable String commentChars) {
         this.commentChars = commentChars;
     }
 
