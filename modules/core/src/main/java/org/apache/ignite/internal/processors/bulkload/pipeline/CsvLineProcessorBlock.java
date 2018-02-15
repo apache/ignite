@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.bulkload.pipeline;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.NotNull;
+
 import org.apache.ignite.internal.sql.SqlEscapeSeqParser;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;

@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
  */
 public class LineSplitterBlock extends PipelineBlock<char[], String> {
     /** Line separator pattern */
-    private final Pattern delimiter;
+    private final Pattern delim;
 
     /** Leftover characters from the previous invocation of {@link #accept(char[], boolean)}. */
     private StringBuilder leftover = new StringBuilder();
@@ -38,10 +38,10 @@ public class LineSplitterBlock extends PipelineBlock<char[], String> {
     /**
      * Creates line splitter block.
      *
-     * @param delimiter The line separator pattern.
+     * @param delim The line separator pattern.
      */
-    public LineSplitterBlock(Pattern delimiter) {
-        this.delimiter = delimiter;
+    public LineSplitterBlock(Pattern delim) {
+        this.delim = delim;
     }
 
     /** {@inheritDoc} */
@@ -49,13 +49,13 @@ public class LineSplitterBlock extends PipelineBlock<char[], String> {
         leftover.append(chars);
 
         String input = leftover.toString();
-        Matcher matcher = delimiter.matcher(input);
+        Matcher matcher = delim.matcher(input);
 
         int lastPos = 0;
         while (matcher.find()) {
             String outStr = input.substring(lastPos, matcher.start());
 
-            if (outStr.length() > 0)
+            if (!outStr.isEmpty())
                 nextBlock.accept(outStr, false);
 
             lastPos = matcher.end();

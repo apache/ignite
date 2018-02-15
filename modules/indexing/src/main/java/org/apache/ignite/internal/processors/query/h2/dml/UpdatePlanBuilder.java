@@ -422,12 +422,6 @@ public final class UpdatePlanBuilder {
             throw new IgniteSQLException("Row descriptor undefined for table '" + tbl.getName() + "'",
                 IgniteQueryErrorCode.NULL_TABLE_DESCRIPTOR);
 
-        int keyColIdx = -1;
-        int valColIdx = -1;
-
-        boolean hasKeyProps = false;
-        boolean hasValProps = false;
-
         GridCacheContext<?, ?> cctx = desc.context();
 
         List<String> cols = cmd.columns();
@@ -438,6 +432,12 @@ public final class UpdatePlanBuilder {
         String[] colNames = new String[cols.size()];
 
         int[] colTypes = new int[cols.size()];
+
+        int keyColIdx = -1;
+        int valColIdx = -1;
+
+        boolean hasKeyProps = false;
+        boolean hasValProps = false;
 
         for (int i = 0; i < cols.size(); i++) {
             String colName = cols.get(i);

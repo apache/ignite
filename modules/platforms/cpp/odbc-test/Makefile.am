@@ -65,6 +65,7 @@ ignite_odbc_tests_SOURCES = \
     src/meta_queries_test.cpp \
     src/utility_test.cpp \
     src/queries_test.cpp \
+    src/queries_ssl_test.cpp \
     src/test_utils.cpp \
     src/sql_test_suite_fixture.cpp \
     src/sql_string_functions_test.cpp \

@@ -60,6 +60,7 @@ public class BulkLoadCsvParser extends BulkLoadParser {
         if (fmt.escapeChars() == null)
             fmt.escapeChars(BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS);
 
+
         inputBlock.append(new LineSplitterBlock(fmt.lineSeparator()))
             .append(new CsvLineProcessorBlock(fmt.fieldSeparator(), fmt.quoteChars(),
                 fmt.commentChars(), fmt.escapeChars()))

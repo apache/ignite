@@ -984,13 +984,12 @@ public class DmlStatementsProcessor {
      * @param sql The SQL command text to execute.
      * @param cmd The command to execute.
      * @return The cursor returned by the statement.
-     * @throws IgniteCheckedException If failed.
+     * @throws IgniteSQLException If failed.
      */
-    public FieldsQueryCursor<List<?>> runDmlStatement(String sql, SqlCommand cmd) throws IgniteCheckedException {
+    public FieldsQueryCursor<List<?>> runNativeDmlStatement(String sql, SqlCommand cmd) {
         try {
-            if (cmd instanceof SqlBulkLoadCommand) {
+            if (cmd instanceof SqlBulkLoadCommand)
                 return processBulkLoadCommand((SqlBulkLoadCommand)cmd);
-            }
             else
                 throw new IgniteSQLException("Unsupported DML operation: " + sql,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -1017,9 +1016,16 @@ public class DmlStatementsProcessor {
 
         GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
-        if (tbl == null)
+        if (tbl == null) {
+            idx.kernalContext().cache().createMissingQueryCaches();
+
+            tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+        }
+
+        if (tbl == null) {
             throw new IgniteSQLException("Table does not exist: " + cmd.tableName(),
                 IgniteQueryErrorCode.TABLE_NOT_FOUND);
+        }
 
         UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
 
@@ -1166,7 +1172,7 @@ public class DmlStatementsProcessor {
          *
          * @param plan The update plan to use.
          */
-        public BulkLoadDataConverter(UpdatePlan plan) {
+        private BulkLoadDataConverter(UpdatePlan plan) {
             this.plan = plan;
         }
 

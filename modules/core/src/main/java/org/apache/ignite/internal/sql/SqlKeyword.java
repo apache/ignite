@@ -57,6 +57,9 @@ public class SqlKeyword {
     /** Keyword: CHARACTER. */
     public static final String CHARACTER = "CHARACTER";
 
+    /** Keyword: COPY. */
+    public static final String COPY = "COPY";
+
     /** Keyword: COMMENT. */
     public static final String COMMENT = "COMMENT";
 
@@ -252,7 +255,7 @@ public class SqlKeyword {
         try {
             for (Field field : SqlKeyword.class.getDeclaredFields()) {
                 if (F.eq(String.class, field.getType())) {
-                    String val = (String)field.get(null);
+                    String val = (String) field.get(null);
 
                     KEYWORDS.add(val);
                 }

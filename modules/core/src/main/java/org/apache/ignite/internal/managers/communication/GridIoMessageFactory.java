@@ -159,14 +159,14 @@ import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage;
 import org.apache.ignite.spi.communication.tcp.messages.HandshakeMessage2;
 import org.apache.ignite.spi.communication.tcp.messages.NodeIdMessage;
 import org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Message factory implementation.
  */
 public class GridIoMessageFactory implements MessageFactory {
     /** Custom messages registry. Used for test purposes. */
-    private static final Map<Short, IgniteOutClosure<Message>> CUSTOM = new ConcurrentHashMap8<>();
+    private static final Map<Short, IgniteOutClosure<Message>> CUSTOM = new ConcurrentHashMap<>();
 
     /** Extensions. */
     private final MessageFactory[] ext;

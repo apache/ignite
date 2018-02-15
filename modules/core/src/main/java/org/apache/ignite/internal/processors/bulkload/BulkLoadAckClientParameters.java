@@ -50,7 +50,7 @@ public class BulkLoadAckClientParameters {
      * Creates a bulk load parameters.
      *
      * @param locFileName File name to send from client to server.
-     * @param batchSize Batch size (Number of bytes in a portion of a file to send in one Jdbc request/response).
+     * @param batchSize Batch size (Number of bytes in a portion of a file to send in one JDBC request/response).
      */
     public BulkLoadAckClientParameters(@NotNull String locFileName, int batchSize) {
         this.locFileName = locFileName;
@@ -62,7 +62,7 @@ public class BulkLoadAckClientParameters {
      *
      * @return The local name of file to send.
      */
-    public @NotNull String localFileName() {
+    @NotNull public String localFileName() {
         return locFileName;
     }
 
@@ -92,7 +92,6 @@ public class BulkLoadAckClientParameters {
      * @return The string with the error message.
      */
     public static String batchSizeErrorMsg(int sz) {
-        return "Batch size should be within [" +
-            BulkLoadAckClientParameters.MIN_BATCH_SIZE + ".." + BulkLoadAckClientParameters.MAX_BATCH_SIZE + "]: " + sz;
+        return "Batch size should be within [" + MIN_BATCH_SIZE + ".." + MAX_BATCH_SIZE + "]: " + sz;
     }
 }

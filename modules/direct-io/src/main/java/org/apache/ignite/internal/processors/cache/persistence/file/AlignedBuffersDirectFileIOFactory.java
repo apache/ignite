@@ -22,13 +22,13 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.OpenOption;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
-import org.jsr166.ConcurrentHashMap8;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
@@ -65,7 +65,7 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
      * Managed aligned buffers. This collection is used to free buffers, an for checking if buffer is known to be
      * already aligned.
      */
-    private final ConcurrentHashMap8<Long, Thread> managedAlignedBuffers = new ConcurrentHashMap8<>();
+    private final ConcurrentHashMap<Long, Thread> managedAlignedBuffers = new ConcurrentHashMap<>();
 
     /**
      * Creates direct native IO factory.
@@ -171,7 +171,7 @@ public class AlignedBuffersDirectFileIOFactory implements FileIOFactory {
      *
      * @return map address->thread.
      */
-    ConcurrentHashMap8<Long, Thread> managedAlignedBuffers() {
+    ConcurrentHashMap<Long, Thread> managedAlignedBuffers() {
         return managedAlignedBuffers;
     }
 }

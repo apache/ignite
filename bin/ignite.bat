@@ -42,7 +42,7 @@ if exist "%JAVA_HOME%\bin\java.exe" goto checkJdkVersion
 goto error_finish
 
 :checkJdkVersion
-"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"java version .9\..*" /c:"java version .1\.8\..*" > nul
+"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"version .9\..*" /c:"version .1\.8\..*" > nul
 if %ERRORLEVEL% equ 0 goto checkIgniteHome1
     echo %0, ERROR:
     echo The version of JAVA installed in %JAVA_HOME% is incorrect.
@@ -169,8 +169,7 @@ if %ERRORLEVEL% equ 0 (
 ::
 :: Uncomment the following GC settings if you see spikes in your throughput due to Garbage Collection.
 ::
-:: set JVM_OPTS=%JVM_OPTS% -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+UseTLAB -XX:NewSize=128m -XX:MaxNewSize=128m
-:: set JVM_OPTS=%JVM_OPTS% -XX:MaxTenuringThreshold=0 -XX:SurvivorRatio=1024 -XX:+UseCMSInitiatingOccupancyOnly -XX:CMSInitiatingOccupancyFraction=60
+:: set JVM_OPTS=%JVM_OPTS% -XX:+UseG1GC
 
 ::
 :: Uncomment if you get StackOverflowError.
@@ -216,7 +215,7 @@ if "%MAIN_CLASS%" == "" set MAIN_CLASS=org.apache.ignite.startup.cmdline.Command
 ::
 :: Final JVM_OPTS for Java 9 compatibility
 ::
-"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"java version .9\..*" > nul && set JVM_OPTS=--add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/sun.nio.ch=ALL-UNNAMED --add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-modules java.xml.bind %JVM_OPTS%
+"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"version .9\..*" > nul && set JVM_OPTS=--add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/sun.nio.ch=ALL-UNNAMED --add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-modules java.xml.bind %JVM_OPTS%
 
 if "%INTERACTIVE%" == "1" (
     "%JAVA_HOME%\bin\java.exe" %JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% %JMX_MON% ^

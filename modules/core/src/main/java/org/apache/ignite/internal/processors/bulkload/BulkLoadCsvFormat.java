@@ -71,7 +71,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The line separator pattern.
      */
-    public @Nullable Pattern lineSeparator() {
+    @Nullable public Pattern lineSeparator() {
         return lineSeparator;
     }
 
@@ -89,7 +89,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The field separator pattern.
      */
-    public @Nullable Pattern fieldSeparator() {
+    @Nullable public Pattern fieldSeparator() {
         return fieldSeparator;
     }
 
@@ -107,7 +107,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The quote characters.
      */
-    public @Nullable String quoteChars() {
+    @Nullable public String quoteChars() {
         return quoteChars;
     }
 
@@ -125,7 +125,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The line comment start pattern.
      */
-    public @Nullable Pattern commentChars() {
+    @Nullable public Pattern commentChars() {
         return commentChars;
     }
 
@@ -143,7 +143,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
      *
      * @return The escape characters.
      */
-    public @Nullable String escapeChars() {
+    @Nullable public String escapeChars() {
         return escapeChars;
     }
 

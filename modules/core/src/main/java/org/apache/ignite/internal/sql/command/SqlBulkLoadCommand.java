@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
 import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.internal.processors.bulkload.BulkLoadCsvFormat;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadFormat;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.sql.SqlEscapeSeqParser;
@@ -31,7 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
@@ -89,7 +88,12 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @param lex The lexer.
      */
     private void parseFileName(SqlLexer lex) {
-        locFileName = parseIdentifier(lex);
+        if (lex.lookAhead().tokenType() != SqlLexerTokenType.QUOTED)
+            throw errorUnexpectedToken(lex.lookAhead(), "[quoted file name]");
+
+        lex.shift();
+
+        locFileName = lex.token();
     }
 
     /**
@@ -139,24 +143,19 @@ public class SqlBulkLoadCommand implements SqlCommand {
 
         String name = parseIdentifier(lex);
 
-        try {
-            BulkLoadFormat fmt = BulkLoadFormat.createFormatFor(name);
+        switch (name.toUpperCase()) {
+            case BulkLoadCsvFormat.NAME:
+                BulkLoadCsvFormat fmt = new BulkLoadCsvFormat();
 
-            switch (fmt.name()) {
-                case BulkLoadCsvFormat.NAME:
-                    parseCsvOptions(lex, (BulkLoadCsvFormat) fmt);
+                parseCsvOptions(lex, (BulkLoadCsvFormat) fmt);
 
-                    break;
+                inputFormat = fmt;
 
-                default:
-                    throw new IgniteIllegalStateException("Format handling is not implemented: " + fmt.name());
-            }
+                break;
 
-            inputFormat = fmt;
-        }
-        catch (IgniteCheckedException e) {
-            throw error(lex, "Unknown format name: " + name + ". Currently supported formats are: "
-                + BulkLoadFormat.formatNames());
+            default:
+                throw error(lex, "Unknown format name: " + name +
+                    ". Currently supported format is " + BulkLoadCsvFormat.NAME);
         }
     }
 
@@ -277,13 +276,13 @@ public class SqlBulkLoadCommand implements SqlCommand {
      *
      * @return schemaName.
      */
-    public String schemaName() {
+    @Override public String schemaName() {
         return tblQName.schemaName();
     }
 
     /** {@inheritDoc} */
     @Override public void schemaName(String schemaName) {
-        this.tblQName.schemaName(schemaName);
+        tblQName.schemaName(schemaName);
     }
 
     /**
@@ -301,7 +300,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @param tblName The table name.
      */
     public void tableName(String tblName) {
-        this.tblQName.name(tblName);
+        tblQName.name(tblName);
     }
 
     /**

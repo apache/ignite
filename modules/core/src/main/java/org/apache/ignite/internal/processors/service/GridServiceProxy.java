@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -52,7 +53,6 @@ import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
-import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_IO_POLICY;
 
@@ -294,7 +294,7 @@ public class GridServiceProxy<T> implements Serializable {
 
         // Optimization if projection is the whole grid.
         if (prj.predicate() == F.<ClusterNode>alwaysTrue()) {
-            int idx = ThreadLocalRandom8.current().nextInt(snapshot.size());
+            int idx = ThreadLocalRandom.current().nextInt(snapshot.size());
 
             int i = 0;
 
@@ -330,7 +330,7 @@ public class GridServiceProxy<T> implements Serializable {
             if (nodeList.isEmpty())
                 return null;
 
-            int idx = ThreadLocalRandom8.current().nextInt(nodeList.size());
+            int idx = ThreadLocalRandom.current().nextInt(nodeList.size());
 
             return nodeList.get(idx);
         }

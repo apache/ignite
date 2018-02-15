@@ -33,7 +33,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class JdbcBulkLoadAckResult extends JdbcResult {
     /** Query ID for matching this command on server in further {@link JdbcBulkLoadBatchRequest} commands. */
-    private long queryId;
+    private long qryId;
 
     /**
      * Bulk load parameters, which are parsed on the server side and sent to client to specify
@@ -45,20 +45,20 @@ public class JdbcBulkLoadAckResult extends JdbcResult {
     public JdbcBulkLoadAckResult() {
         super(BULK_LOAD_ACK);
 
-        queryId = 0;
+        qryId = 0;
         params = null;
     }
 
     /**
      * Constructs a request from server (in form of reply) to send files from client to server.
      *
-     * @param queryId Query ID to send in further {@link JdbcBulkLoadBatchRequest}s.
+     * @param qryId Query ID to send in further {@link JdbcBulkLoadBatchRequest}s.
      * @param params Various parameters for sending batches from client side.
      */
-    public JdbcBulkLoadAckResult(long queryId, BulkLoadAckClientParameters params) {
+    public JdbcBulkLoadAckResult(long qryId, BulkLoadAckClientParameters params) {
         super(BULK_LOAD_ACK);
 
-        this.queryId = queryId;
+        this.qryId = qryId;
         this.params = params;
     }
 
@@ -68,7 +68,7 @@ public class JdbcBulkLoadAckResult extends JdbcResult {
      * @return Query ID.
      */
     public long queryId() {
-        return queryId;
+        return qryId;
     }
 
     /**
@@ -84,7 +84,7 @@ public class JdbcBulkLoadAckResult extends JdbcResult {
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
-        writer.writeLong(queryId);
+        writer.writeLong(qryId);
         writer.writeString(params.localFileName());
         writer.writeInt(params.batchSize());
     }
@@ -93,7 +93,7 @@ public class JdbcBulkLoadAckResult extends JdbcResult {
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
-        queryId = reader.readLong();
+        qryId = reader.readLong();
 
         String locFileName = reader.readString();
         int batchSize = reader.readInt();

@@ -33,7 +33,7 @@ public class StrListAppenderBlock extends PipelineBlock<String[], Object> {
      * Creates the block. List can be configured using {@link #output(List)} method.
      */
     public StrListAppenderBlock() {
-        this.output = null;
+        output = null;
     }
 
     /**
