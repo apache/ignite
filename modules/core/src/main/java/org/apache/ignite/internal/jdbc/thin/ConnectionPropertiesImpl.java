@@ -169,6 +169,11 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "streamingFlushFrequency", "Buffer size per cluster node during streaming",
         0, false, 0, Long.MAX_VALUE);
 
+    /** Buffer size per cluster node during streaming. */
+    private IntegerProperty streamBatchSize = new IntegerProperty(
+        "streamingBatchSize", "Batch size for streaming (number of commands to accumulate internally " +
+        "before actually sending over the wire)", 10, false, 1, Integer.MAX_VALUE);
+
     /** Properties array. */
     private final ConnectionProperty [] props = {
         host, port,
@@ -178,7 +183,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
         sslTrustAll, sslFactory,
-        stream, streamAllowOverwrite, streamParOps, streamBufSize, streamFlushFreq
+        stream, streamAllowOverwrite, streamParOps, streamBufSize, streamFlushFreq, streamBatchSize
     };
 
     /** {@inheritDoc} */
@@ -432,33 +437,43 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public int streamParallelOperations() {
+    @Override public int getStreamParallelOperations() {
         return streamParOps.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void streamParallelOperations(int val) throws SQLException {
+    @Override public void setStreamParallelOperations(int val) throws SQLException {
         streamParOps.setValue(val);
     }
 
     /** {@inheritDoc} */
-    @Override public int streamBufferSize() {
+    @Override public int getStreamBufferSize() {
         return streamBufSize.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void streamBufferSize(int val) throws SQLException {
+    @Override public void setStreamBufferSize(int val) throws SQLException {
         streamBufSize.setValue(val);
     }
 
     /** {@inheritDoc} */
-    @Override public long streamFlushFrequency() {
+    @Override public long getStreamFlushFrequency() {
         return streamFlushFreq.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void streamFlushFrequency(long val) throws SQLException {
+    @Override public void setStreamFlushFrequency(long val) throws SQLException {
         streamFlushFreq.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getStreamBatchSize() {
+        return streamBatchSize.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setStreamBatchSize(int val) throws SQLException {
+        streamBatchSize.setValue(val);
     }
 
     /**

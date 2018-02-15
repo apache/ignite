@@ -376,14 +376,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Flush streamers on all currently open client contexts.
      */
-    public void flushAllSqlStreams() {
-        for (SqlClientContext cliCtx : cliCtxs)
-            cliCtx.flushOpenStreamers();
-    }
-
-    /**
-     * Flush streamers on all currently open client contexts.
-     */
     private void closeAllSqlStreams() {
         for (SqlClientContext cliCtx : cliCtxs)
             U.close(cliCtx, log);

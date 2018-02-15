@@ -22,22 +22,16 @@ import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
-import org.apache.ignite.internal.sql.command.SqlFlushStreamerCommand;
-import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
-import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.sql.SqlKeyword.ALTER;
 import static org.apache.ignite.internal.sql.SqlKeyword.COPY;
 import static org.apache.ignite.internal.sql.SqlKeyword.CREATE;
 import static org.apache.ignite.internal.sql.SqlKeyword.DROP;
-import static org.apache.ignite.internal.sql.SqlKeyword.FLUSH;
 import static org.apache.ignite.internal.sql.SqlKeyword.HASH;
 import static org.apache.ignite.internal.sql.SqlKeyword.INDEX;
 import static org.apache.ignite.internal.sql.SqlKeyword.PRIMARY;
-import static org.apache.ignite.internal.sql.SqlKeyword.SET;
 import static org.apache.ignite.internal.sql.SqlKeyword.SPATIAL;
-import static org.apache.ignite.internal.sql.SqlKeyword.STREAMING;
 import static org.apache.ignite.internal.sql.SqlKeyword.TABLE;
 import static org.apache.ignite.internal.sql.SqlKeyword.UNIQUE;
 import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
@@ -120,16 +114,6 @@ public class SqlParser {
                             cmd = processAlter();
 
                             break;
-
-                        case SET:
-                            cmd = processSet();
-
-                            break;
-
-                        case FLUSH:
-                            cmd = processFlush();
-
-                            break;
                     }
 
                     if (cmd != null) {
@@ -140,7 +124,7 @@ public class SqlParser {
                         return cmd;
                     }
                     else
-                        throw errorUnexpectedToken(lex, CREATE, DROP, ALTER, COPY, SET, FLUSH);
+                        throw errorUnexpectedToken(lex, CREATE, DROP, ALTER, COPY);
 
                 case QUOTED:
                 case MINUS:
@@ -152,38 +136,6 @@ public class SqlParser {
                     throw errorUnexpectedToken(lex);
             }
         }
-    }
-
-    /**
-     * Process FLUSH keyword.
-     *
-     * @return Command.
-     */
-    private SqlCommand processFlush() {
-        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
-            switch (lex.token()) {
-                case SqlKeyword.STREAMER:
-                    return new SqlFlushStreamerCommand().parse(lex);
-            }
-        }
-
-        throw SqlParserUtils.errorUnexpectedToken(lex, SqlKeyword.STREAMER);
-    }
-
-    /**
-     * Process SET keyword.
-     *
-     * @return Command.
-     */
-    private SqlCommand processSet() {
-        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
-            switch (lex.token()) {
-                case STREAMING:
-                    return new SqlSetStreamingCommand().parse(lex);
-            }
-        }
-
-        throw errorUnexpectedToken(lex, STREAMING);
     }
 
     /**

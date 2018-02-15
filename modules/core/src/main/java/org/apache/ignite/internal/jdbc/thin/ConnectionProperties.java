@@ -375,33 +375,46 @@ public interface ConnectionProperties {
     /**
      * @return Number of parallel operations per node during streaming connection param.
      */
-    public int streamParallelOperations();
+    public int getStreamParallelOperations();
 
     /**
      * @param streamParallelOperations Number of parallel operations per node during streaming connection param.
      * @throws SQLException if value check failed.
      */
-    public void streamParallelOperations(int streamParallelOperations) throws SQLException;
+    public void setStreamParallelOperations(int streamParallelOperations) throws SQLException;
 
     /**
      * @return Buffer size during streaming connection param.
      */
-    public int streamBufferSize();
+    public int getStreamBufferSize();
 
     /**
      * @param streamBufSize Buffer size during streaming connection param.
      * @throws SQLException if value check failed.
      */
-    public void streamBufferSize(int streamBufSize) throws SQLException;
+    public void setStreamBufferSize(int streamBufSize) throws SQLException;
 
     /**
      * @return Flush timeout during streaming connection param.
      */
-    public long streamFlushFrequency();
+    public long getStreamFlushFrequency();
 
     /**
-     * @param streamFlushFrequency Flush timeout during streaming connection param.
+     * @param streamFlushFreq Flush timeout during streaming connection param.
      * @throws SQLException if value check failed.
      */
-    public void streamFlushFrequency(long streamFlushFrequency) throws SQLException;
+    public void setStreamFlushFrequency(long streamFlushFreq) throws SQLException;
+
+    /**
+     * @return Batch size for streaming (number of commands to accumulate internally before actually
+     * sending over the wire).
+     */
+    public int getStreamBatchSize();
+
+    /**
+     * @param streamBatchSize Batch size for streaming (number of commands to accumulate internally before actually
+     * sending over the wire).
+     * @throws SQLException if value check failed.
+     */
+    public void setStreamBatchSize(int streamBatchSize) throws SQLException;
 }

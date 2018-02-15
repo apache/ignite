@@ -127,8 +127,6 @@ import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
-import org.apache.ignite.internal.sql.command.SqlFlushStreamerCommand;
-import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -1032,23 +1030,19 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         final Connection conn = connectionForSchema(schemaName);
 
-        // SET/FLUSH return 0 anyway, anything else will throw an exception in streaming mode.
-        if (tryQueryDistributedSqlFieldsNative(schemaName, qry, cliCtx) != null)
-            return 0L;
-
         final PreparedStatement stmt = prepareStatementAndCaches(conn, qry);
 
         if (GridSqlQueryParser.checkMultipleStatements(stmt))
             throw new IgniteSQLException("Multiple statements queries are not supported for streaming mode.",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
+        if (!isStreamableInsertStatement(stmt))
+            throw new IgniteSQLException("Only tuple based INSERT statements are supported " +
+                "in streaming mode", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
         UpdatePlan plan = dmlProc.getPlanForStatement(schemaName, conn, p, null, true, null);
-
-        if (!plan.isStreamable())
-            throw new IgniteSQLException("Only tuple based INSERT statements and SET/FLUSH are supported " +
-                "in streaming mode", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         IgniteDataStreamer<?, ?> streamer = cliCtx.streamerForCache(plan.cacheContext().name());
 
@@ -1079,13 +1073,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             throw new IgniteSQLException("Multiple statements queries are not supported for streaming mode.",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
+        if (!isStreamableInsertStatement(stmt))
+            throw new IgniteSQLException("Only tuple based INSERT statements are supported " +
+                "in streaming mode", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
         UpdatePlan plan = dmlProc.getPlanForStatement(schemaName, conn, p, null, true, null);
-
-        if (!plan.isStreamable())
-            throw new IgniteSQLException("Only tuple based INSERT statements and SET/FLUSH are supported " +
-                "in streaming mode", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         IgniteDataStreamer<?, ?> streamer = cliCtx.streamerForCache(plan.cacheContext().name());
 
@@ -1536,11 +1530,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      *
      * @param schemaName Schema name.
      * @param sql Query.
-     * @param cliCtx Client context, or {@code null} if not applicable.
      * @return Result or {@code null} if cannot parse/process this query.
      */
-    private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, String sql,
-        @Nullable SqlClientContext cliCtx) {
+    private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, String sql) {
         // Heuristic check for fast return.
         if (!INTERNAL_CMD_RE.matcher(sql.trim()).find())
             return null;
@@ -1564,8 +1556,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             // SET STREAMING
             // FLUSH STREAMER
             if (!(cmd instanceof SqlCreateIndexCommand || cmd instanceof SqlDropIndexCommand ||
-                cmd instanceof SqlAlterTableCommand || cmd instanceof SqlSetStreamingCommand ||
-                cmd instanceof SqlFlushStreamerCommand || cmd instanceof SqlBulkLoadCommand))
+                cmd instanceof SqlAlterTableCommand || cmd instanceof SqlBulkLoadCommand))
                 return null;
         }
         catch (Exception e) {
@@ -1591,29 +1582,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             return Collections.singletonList(cursor);
         }
-        else if (cmd instanceof SqlSetStreamingCommand) {
-            if (cliCtx != null) {
-                if (((SqlSetStreamingCommand) cmd).isTurnOn())
-                    cliCtx.enableStreaming();
-                else
-                    cliCtx.disableStreaming();
-            }
-
-            return Collections.singletonList(DdlStatementsProcessor.zeroCursor());
-        }
-        else if (cmd instanceof SqlFlushStreamerCommand) {
-            if (cliCtx != null)
-                cliCtx.flushOpenStreamers();
-
-            return Collections.singletonList(DdlStatementsProcessor.zeroCursor());
-        }
         else {
-            if (cliCtx != null && cliCtx.isStream()) {
-                // We should not allow DDL statements in streaming mode.
-                throw new IgniteSQLException("Only tuple based INSERT statements and SET/FLUSH are supported " +
-                    "in streaming mode", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-            }
-
             try {
                 FieldsQueryCursor<List<?>> cursor = ddlProc.runDdlStatement(sql, cmd);
 
@@ -1645,7 +1614,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @SuppressWarnings("StringEquality")
     @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
         SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, GridQueryCancel cancel) {
-        List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry.getSql(), cliCtx);
+        List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry.getSql());
 
         if (res != null)
             return res;
@@ -1778,8 +1747,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 if (loc)
                     throw new IgniteSQLException("DDL statements are not supported for LOCAL caches",
                         IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-                ctx.query().flushAllSqlStreams();
 
                 try {
                     return Collections.singletonList(ddlProc.runDdlStatement(sqlQry, prepared));
@@ -2408,10 +2375,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isInsertStatement(PreparedStatement nativeStmt) {
+    @Override public boolean isStreamableInsertStatement(PreparedStatement nativeStmt) {
         Prepared prep = GridSqlQueryParser.prepared(nativeStmt);
 
-        return prep instanceof Insert;
+        return prep instanceof Insert && GridSqlQueryParser.INSERT_QUERY.get((Insert)prep) == null;
     }
 
     /** {@inheritDoc} */

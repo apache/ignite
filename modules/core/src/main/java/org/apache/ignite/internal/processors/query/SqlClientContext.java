@@ -17,9 +17,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
-import java.util.Iterator;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
@@ -63,7 +62,7 @@ public class SqlClientContext implements AutoCloseable {
     private final long streamFlushTimeout;
 
     /** Streamers for various caches. */
-    private AtomicReference<ConcurrentHashMap<String, IgniteDataStreamer<?, ?>>> streamers;
+    private final Map<String, IgniteDataStreamer<?, ?>> streamers;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -95,48 +94,11 @@ public class SqlClientContext implements AutoCloseable {
         this.streamNodeBufSize = streamNodeBufSize;
         this.streamFlushTimeout = streamFlushTimeout;
 
-        streamers = new AtomicReference<>(stream ? new ConcurrentHashMap<>() : null);
+        streamers = stream ? new HashMap<>() : null;
 
         log = ctx.log(SqlClientContext.class.getName());
 
         ctx.query().registerClientContext(this);
-    }
-
-    /**
-     * Turn on streaming on this client context.
-     */
-    public void enableStreaming() {
-        ConcurrentHashMap<String, IgniteDataStreamer<?, ?>> curStreamers = streamers.get();
-
-        if (curStreamers != null)
-            return;
-
-        streamers.compareAndSet(null, new ConcurrentHashMap<>());
-    }
-
-    /**
-     * Turn off streaming on this client context - with closing all open streamers, if any.
-     */
-    public void disableStreaming() {
-        ConcurrentHashMap<String, IgniteDataStreamer<?, ?>> curStreamers = streamers.get();
-
-        if (curStreamers == null)
-            return;
-
-        if (!streamers.compareAndSet(curStreamers, null)) {
-            // Only one of simultaneous commands to disable streaming gets to process the map.
-            return;
-        }
-
-        Iterator<IgniteDataStreamer<?, ?>> it = curStreamers.values().iterator();
-
-        while (it.hasNext()) {
-            IgniteDataStreamer<?, ?> streamer = it.next();
-
-            U.close(streamer, log);
-
-            it.remove();
-        }
     }
 
     /**
@@ -178,7 +140,7 @@ public class SqlClientContext implements AutoCloseable {
      * @return Streaming state flag (on or off).
      */
     public boolean isStream() {
-        return streamers.get() != null;
+        return streamers != null;
     }
 
     /**
@@ -186,7 +148,7 @@ public class SqlClientContext implements AutoCloseable {
      * @return Streamer for given cache.
      */
     public IgniteDataStreamer<?, ?> streamerForCache(String cacheName) {
-        ConcurrentHashMap<String, IgniteDataStreamer<?, ?>> curStreamers = streamers.get();
+        Map<String, IgniteDataStreamer<?, ?>> curStreamers = streamers;
 
         if (curStreamers == null)
             return null;
@@ -224,25 +186,10 @@ public class SqlClientContext implements AutoCloseable {
     @Override public void close() throws Exception {
         ctx.query().unregisterClientContext(this);
 
-        ConcurrentHashMap<String, IgniteDataStreamer<?, ?>> curStreamers = streamers.get();
-
-        if (curStreamers == null)
+        if (streamers == null)
             return;
 
-        for (IgniteDataStreamer<?, ?> s : curStreamers.values())
+        for (IgniteDataStreamer<?, ?> s : streamers.values())
             U.close(s, log);
-    }
-
-    /**
-     * Flush all open {@link IgniteDataStreamer}s.
-     */
-    public void flushOpenStreamers() {
-        ConcurrentHashMap<String, IgniteDataStreamer<?, ?>> curStreamers = streamers.get();
-
-        if (curStreamers == null)
-            return;
-
-        for (IgniteDataStreamer<?, ?> s : curStreamers.values())
-            s.flush();
     }
 }
