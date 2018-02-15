@@ -26,7 +26,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
  * Message indicating that user operation is finished locally on the node.
- * Server nodes send this message to coordinator when user operation is finished.
+ * Server nodes send this message to coordinator when the user operation is finished.
  */
 public class UserManagementOperationFinishedMessage implements Message {
     /** */

@@ -30,7 +30,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- * Tests for authenticated an non authenticated connection.
+ * Tests for authenticated an non authenticated JDBC thin connection.
  */
 @SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelfTest {
@@ -80,44 +80,44 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
      * @throws Exception If failed.
      */
     public void testConnection() throws Exception {
-        checkConnection("jdbc:ignite:thin://127.0.0.1", "ignite", "ignite");
-        checkConnection("jdbc:ignite:thin://127.0.0.1", "another_user", "passwd");
-        checkConnection("jdbc:ignite:thin://127.0.0.1?user=ignite&password=ignite", null, null);
-        checkConnection("jdbc:ignite:thin://127.0.0.1?user=another_user&password=passwd", null, null);
+        checkConnection(URL, "ignite", "ignite");
+        checkConnection(URL, "another_user", "passwd");
+        checkConnection(URL + "?user=ignite&password=ignite", null, null);
+        checkConnection(URL + "?user=another_user&password=passwd", null, null);
     }
 
     /**
      */
     public void testInvalidUserPassword() {
         String err = "Unauthenticated sessions are prohibited";
-        checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", null, null, err);
+        checkInvalidUserPassword(URL, null, null, err);
 
         err = "The user name or password is incorrect";
-        checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", "ignite", null, err);
-        checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", "another_user", null, err);
-        checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", "ignite", "", err);
-        checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", "ignite", "password", err);
-        checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", "another_user", "ignite", err);
-        checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", "another_user", "password", err);
-        checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", "another_user", "password", err);
+        checkInvalidUserPassword(URL, "ignite", null, err);
+        checkInvalidUserPassword(URL, "another_user", null, err);
+        checkInvalidUserPassword(URL, "ignite", "", err);
+        checkInvalidUserPassword(URL, "ignite", "password", err);
+        checkInvalidUserPassword(URL, "another_user", "ignite", err);
+        checkInvalidUserPassword(URL, "another_user", "password", err);
+        checkInvalidUserPassword(URL, "another_user", "password", err);
     }
 
     /**
      * @throws SQLException On failed.
      */
     public void testUserSqlOnAuthorized() throws SQLException {
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1", "ignite", "ignite")) {
+        try (Connection conn = DriverManager.getConnection(URL, "ignite", "ignite")) {
             conn.createStatement().execute("CREATE USER test WITH PASSWORD 'test'");
 
-            checkConnection("jdbc:ignite:thin://127.0.0.1", "TEST", "test");
+            checkConnection(URL, "TEST", "test");
 
             conn.createStatement().execute("ALTER USER test WITH PASSWORD 'newpasswd'");
 
-            checkConnection("jdbc:ignite:thin://127.0.0.1", "TEST", "newpasswd");
+            checkConnection(URL, "TEST", "newpasswd");
 
             conn.createStatement().execute("DROP USER test");
 
-            checkInvalidUserPassword("jdbc:ignite:thin://127.0.0.1", "TEST", "newpasswd",
+            checkInvalidUserPassword(URL, "TEST", "newpasswd",
                 "The user name or password is incorrect");
         }
     }
@@ -126,7 +126,7 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
      * @throws SQLException On error.
      */
     public void testUserSqlWithNotIgniteUser() throws SQLException {
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1", "another_user", "passwd")) {
+        try (Connection conn = DriverManager.getConnection(URL, "another_user", "passwd")) {
             String err = "User management operations are not allowed for user";
 
             checkUnauthorizedOperation(conn, "CREATE USER test WITH PASSWORD 'test'", err);
@@ -136,7 +136,7 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
 
             conn.createStatement().execute("ALTER USER \"another_user\" WITH PASSWORD 'newpasswd'");
 
-            checkConnection("jdbc:ignite:thin://127.0.0.1", "another_user", "newpasswd");
+            checkConnection(URL, "another_user", "newpasswd");
         }
     }
 

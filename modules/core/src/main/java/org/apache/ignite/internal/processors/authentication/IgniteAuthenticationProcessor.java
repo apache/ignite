@@ -1037,6 +1037,20 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             }
         }
 
+        /**
+         * @return Worker submitted flag.
+         */
+        boolean workerSubmitted() {
+            return workerSubmitted;
+        }
+
+        /**
+         * @param val Worker submitted flag.
+         */
+        void workerSubmitted(boolean val) {
+            workerSubmitted = val;
+        }
+
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
             boolean done = super.onDone(res, err);
@@ -1110,20 +1124,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             if (receivedFinish.containsAll(requiredFinish))
                 onFinishOperation(opId, err);
         }
-
-        /**
-         * @return Worker submitted flag.
-         */
-        public boolean workerSubmitted() {
-            return workerSubmitted;
-        }
-
-        /**
-         * @param val Worker submitted flag.
-         */
-        public void workerSubmitted(boolean val) {
-            workerSubmitted = val;
-        }
     }
 
     /**
@@ -1156,7 +1156,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
             waitActivate();
 
-            UserManagementOperationFinishedMessage msg0 = null;
+            UserManagementOperationFinishedMessage msg0;
 
             if (sharedCtx != null)
                 sharedCtx.database().checkpointReadLock();
@@ -1169,16 +1169,13 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             catch (Throwable e) {
                 msg0 = new UserManagementOperationFinishedMessage(op.id(), e.toString());
             }
-            finally {
-                assert msg0 != null;
 
-                if (sharedCtx != null)
-                    sharedCtx.database().checkpointReadUnlock();
+            if (sharedCtx != null)
+                sharedCtx.database().checkpointReadUnlock();
 
-                curOpFinishMsg = msg0;
+            curOpFinishMsg = msg0;
 
-                sendFinish(curOpFinishMsg);
-            }
+            sendFinish(curOpFinishMsg);
 
             try {
                 fut.get();

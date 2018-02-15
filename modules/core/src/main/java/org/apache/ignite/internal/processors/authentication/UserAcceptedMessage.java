@@ -28,7 +28,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Is sent as an acknowledgement for end (with success or error) of user management operation
+ * Is sent as an acknowledgement for end (with success or error) of user management operation on the cluster
  * (see {@link UserProposedMessage} and {@link UserManagementOperation}).
  */
 public class UserAcceptedMessage implements DiscoveryCustomMessage {

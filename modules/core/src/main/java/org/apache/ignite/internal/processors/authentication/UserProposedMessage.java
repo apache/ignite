@@ -27,7 +27,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Node sends this message when it wants to propose user operation (add / update / remove).
+ * A node sends this message when it wants to propose user operation (add / update / remove).
  *
  * After sending this message to the cluster sending node gets blocked until operation acknowledgement is received.
  *

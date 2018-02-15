@@ -486,7 +486,7 @@ public class IgniteConfiguration {
     /** Client connector configuration. */
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
-    /** Authentication enabled. */
+    /** User authentication enabled. */
     private boolean authEnabled;
 
     /**
@@ -2933,7 +2933,7 @@ public class IgniteConfiguration {
 
     /**
      * Returns {@code true} if user authentication is enabled for cluster. Otherwise returns {@code false}.
-     * Default value is false: authentication is disabled.
+     * Default value is false; authentication is disabled.
      *
      * @return {@code true} if user authentication is enabled for cluster. Otherwise returns {@code false}.
      */
