@@ -1350,11 +1350,15 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         /** Flag indicates that clearing callback was registered on the current future. */
         private volatile boolean clearingCallbackRegistered;
 
+        /** Flag indicates that future with all callbacks was finished. */
+        private volatile boolean finished;
+
         /**
          * Constructor.
          */
         ClearFuture() {
             onDone();
+            finished = true;
         }
 
         /**
@@ -1430,9 +1434,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                         store.setRowCacheCleaner(cleaner);
                 }
             } catch (IgniteCheckedException e) {
-                synchronized (this) {
-                    onDone(e);
-                }
+                finish(e);
             }
         }
 
@@ -1445,6 +1447,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
             synchronized (this) {
                 onDone();
+                finished = true;
             }
         }
 
@@ -1456,6 +1459,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
         public void finish(Throwable t) {
             synchronized (this) {
                 onDone(t);
+                finished = true;
             }
         }
 
@@ -1469,7 +1473,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
          */
         public boolean initialize(boolean updateSeq, boolean evictionRequested) {
             // In case of running clearing just try to add missing callbacks to avoid extra synchronization.
-            if (!isDone()) {
+            if (!finished) {
                 if (evictionRequested)
                     registerEvictionCallback(updateSeq);
                 else
@@ -1484,6 +1488,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                 if (done) {
                     reset();
 
+                    finished = false;
                     evictionCallbackRegistered = false;
                     clearingCallbackRegistered = false;
                 }
