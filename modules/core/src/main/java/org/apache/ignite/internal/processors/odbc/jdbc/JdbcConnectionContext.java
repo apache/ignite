@@ -118,24 +118,16 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
             skipReducerOnUpdate = reader.readBoolean();
 
         boolean stream = false;
-
         boolean streamAllowOverwrites = false;
-
         int streamParOps = 0;
-
         int streamBufSize = 0;
-
         long streamFlushFreq = 0;
 
         if (ver.compareTo(VER_2_5_0) >= 0) {
             stream = reader.readBoolean();
-
             streamAllowOverwrites = reader.readBoolean();
-
             streamParOps = reader.readInt();
-
             streamBufSize = reader.readInt();
-
             streamFlushFreq = reader.readLong();
         }
 
