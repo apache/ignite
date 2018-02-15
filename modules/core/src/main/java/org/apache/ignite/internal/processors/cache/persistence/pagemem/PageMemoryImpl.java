@@ -251,6 +251,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** Memory metrics to track dirty pages count and page replace rate. */
     private DataRegionMetricsImpl memMetrics;
+    private boolean readPageOutsideSegmentLock = true;
 
     /**
      * @param directMemoryProvider Memory allocator to use.
@@ -651,6 +652,8 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         seg.writeLock().lock();
 
+        long lockedPageAbsPtr = -1;
+        boolean readPageFromStore = false;
         try {
             // Double-check.
             long relPtr = seg.loadedPages.get(
@@ -691,23 +694,27 @@ public class PageMemoryImpl implements PageMemoryEx {
                 long pageAddr = absPtr + PAGE_OVERHEAD;
 
                 if (!restore) {
-                    try {
-                        ByteBuffer buf = wrapPointer(pageAddr, pageSize());
+                    if (delayedPageReplacementTracker != null)
+                        delayedPageReplacementTracker.waitUnlock(fullId);
 
-                        if (delayedPageReplacementTracker != null)
-                            delayedPageReplacementTracker.waitUnlock(fullId);
+                    if (readPageOutsideSegmentLock)
+                        readPageFromStore = true;
+                    else {
+                        try {
+                            ByteBuffer buf = wrapPointer(pageAddr, pageSize());
 
-                        storeMgr.read(cacheId, pageId, buf);
-                    }
-                    catch (IgniteDataIntegrityViolationException ignore) {
-                        U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
-                            "restore using existing WAL) [fullPageId=" + fullId + ']');
+                            storeMgr.read(cacheId, pageId, buf);
+                        }
+                        catch (IgniteDataIntegrityViolationException ignore) {
+                            U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
+                                "restore using existing WAL) [fullPageId=" + fullId + ']');
 
-                        tryToRestorePage(fullId, absPtr);
+                            tryToRestorePage(fullId, absPtr);
 
-                        seg.acquirePage(absPtr);
+                            seg.acquirePage(absPtr);
 
-                        return absPtr;
+                            return absPtr;
+                        }
                     }
                 }
                 else {
@@ -718,6 +725,14 @@ public class PageMemoryImpl implements PageMemoryEx {
                 }
 
                 rwLock.init(absPtr + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
+
+                if(readPageFromStore) {
+                    boolean locked = rwLock.writeLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+
+                    assert locked: "Page ID " + fullId + " expected to be locked";
+
+                    lockedPageAbsPtr = absPtr;
+                }
             }
             else if (relPtr == OUTDATED_REL_PTR) {
                 assert PageIdUtils.pageIndex(pageId) == 0 : fullId;
@@ -752,6 +767,26 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             if (delayedWriter != null)
                 delayedWriter.finishReplacement();
+
+
+            if(readPageFromStore) {
+                assert lockedPageAbsPtr != -1 : "Page ID " + fullId + " expected to have valid addres " + lockedPageAbsPtr;
+
+                try {
+                    long pageAddr = lockedPageAbsPtr + PAGE_OVERHEAD;
+                    ByteBuffer buf = wrapPointer(pageAddr, pageSize());
+
+                    storeMgr.read(cacheId, pageId, buf);
+                }
+                catch (IgniteDataIntegrityViolationException ignore) {
+                    U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
+                        "restore using existing WAL) [fullPageId=" + fullId + ']');
+
+                    tryToRestorePage(fullId, lockedPageAbsPtr);
+                } finally {
+                    rwLock.writeUnlock(lockedPageAbsPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+                }
+            }
         }
     }
 

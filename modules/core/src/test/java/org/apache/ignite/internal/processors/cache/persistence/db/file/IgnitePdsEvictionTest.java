@@ -130,7 +130,9 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private void writeData(final IgniteEx ignite, final PageMemory memory, final int cacheId) throws Exception {
-        final int size = PAGES_NUM;
+        final int pagesNum = getPagesNum();
+
+        final int size = pagesNum;
 
         final List<FullPageId> pageIds = new ArrayList<>(size);
 
@@ -157,11 +159,11 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
         System.out.println("Allocated pages: " + pageIds.size());
 
         // Write data. (Causes evictions.)
-        final int part = PAGES_NUM / NUMBER_OF_SEGMENTS;
+        final int part = pagesNum / NUMBER_OF_SEGMENTS;
 
         final Collection<IgniteInternalFuture> futs = new ArrayList<>();
 
-        for (int i = 0; i < PAGES_NUM; i += part)
+        for (int i = 0; i < pagesNum; i += part)
             futs.add(runWriteInThread(ignite, i, i + part, memory, pageIds));
 
         for (final IgniteInternalFuture fut : futs)
@@ -172,13 +174,20 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
         // Read data. (Causes evictions.)
         futs.clear();
 
-        for (int i = 0; i < PAGES_NUM; i += part)
+        for (int i = 0; i < pagesNum; i += part)
             futs.add(runReadInThread(ignite, i, i + part, memory, pageIds));
 
         for (final IgniteInternalFuture fut : futs)
             fut.get();
 
         System.out.println("Read pages: " + pageIds.size());
+    }
+
+    /**
+     * @return num of pages to operate in test.
+     */
+    protected int getPagesNum() {
+        return PAGES_NUM;
     }
 
     /**

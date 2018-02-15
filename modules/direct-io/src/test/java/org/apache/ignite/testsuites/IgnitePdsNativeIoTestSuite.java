@@ -17,6 +17,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsEvictionTest;
 import org.apache.ignite.internal.processors.cache.persistence.file.IgniteNativeIoWithNoPersistenceTest;
 
 /**
@@ -32,6 +33,9 @@ public class IgnitePdsNativeIoTestSuite extends TestSuite {
         IgnitePdsTestSuite.addRealPageStoreTests(suite);
 
         suite.addTestSuite(IgniteNativeIoWithNoPersistenceTest.class);
+
+        //todo remove
+        suite.addTestSuite(IgnitePdsEvictionTest2.class);
 
         return suite;
     }
