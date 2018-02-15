@@ -663,6 +663,17 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return {@code true} if future has been reinitialized.
      */
     private boolean prepareClearFuture(boolean updateSeq, boolean evictionRequested) {
+        // In case of running clearing just try to add missing callbacks to avoid extra synchronization.
+        if (!clearFuture.isDone()) {
+            if (evictionRequested && !evictionCallbackRegistered) {
+                registerEvictionCallback(updateSeq);
+            } else if (!evictionRequested) {
+                registerClearingCallback();
+            }
+
+            return false;
+        }
+
         synchronized (clearFuture) {
             boolean done = clearFuture.isDone();
 
@@ -672,23 +683,43 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             }
 
             if (evictionRequested && !evictionCallbackRegistered) {
-                // Initiates partition eviction and destroy.
-                evictionCallbackRegistered = true;
-
-                clearFuture.listen(f -> {
-                    if (clearFuture.isFailed()) {
-                        rent.onDone(clearFuture.error());
-                    } else if (clearFuture.isDone()) {
-                        finishEviction(updateSeq);
-                    }
-                });
+                registerEvictionCallback(updateSeq);
             }
-            else {
-                // Reset clear flag after clearing is finished.
-                clearFuture.listen(f -> clear = false);
+            else if (!evictionRequested) {
+                registerClearingCallback();
             }
 
             return done;
+        }
+    }
+
+    /**
+     * Registers eviction callback on {@link #clearFuture}.
+     *
+     * @param updateSeq If {@code true} update topology sequence after successful eviction.
+     */
+    private void registerEvictionCallback(boolean updateSeq) {
+        synchronized (clearFuture) {
+            evictionCallbackRegistered = true;
+
+            // Initiates partition eviction and destroy.
+            clearFuture.listen(f -> {
+                if (clearFuture.isFailed()) {
+                    rent.onDone(clearFuture.error());
+                } else if (clearFuture.isDone()) {
+                    finishEviction(updateSeq);
+                }
+            });
+        }
+    }
+
+    /**
+     * Registers clearing callback (resets clear flag) on {@link #clearFuture}.
+     */
+    private void registerClearingCallback() {
+        synchronized (clearFuture) {
+            // Reset clear flag after clearing is finished.
+            clearFuture.listen(f -> clear = false);
         }
     }
 
