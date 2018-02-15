@@ -161,7 +161,6 @@ import org.h2.tools.Server;
 import org.h2.util.JdbcUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_DEBUG_CONSOLE_PORT;
@@ -256,13 +255,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private Marshaller marshaller;
 
     /** Collection of schemaNames and registered tables. */
-    private final ConcurrentMap<String, H2Schema> schemas = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<String, H2Schema> schemas = new ConcurrentHashMap<>();
 
     /** */
     private String dbUrl = "jdbc:h2:mem:";
 
     /** */
-    private final ConcurrentMap<Thread, Connection> conns = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Thread, Connection> conns = new ConcurrentHashMap<>();
 
     /** */
     private GridMapQueryExecutor mapQryExec;
@@ -271,7 +270,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private GridReduceQueryExecutor rdcQryExec;
 
     /** Cache name -> schema name */
-    private final Map<String, String> cacheName2schema = new ConcurrentHashMap8<>();
+    private final Map<String, String> cacheName2schema = new ConcurrentHashMap<>();
 
     /** */
     private AtomicLong qryIdGen;
@@ -283,7 +282,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private final Object schemaMux = new Object();
 
     /** */
-    private final ConcurrentMap<Long, GridRunningQueryInfo> runs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Long, GridRunningQueryInfo> runs = new ConcurrentHashMap<>();
 
     /** Row cache. */
     private final H2RowCacheRegistry rowCache = new H2RowCacheRegistry();
@@ -343,7 +342,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private DdlStatementsProcessor ddlProc;
 
     /** */
-    private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<QueryTable, GridH2Table> dataTables = new ConcurrentHashMap<>();
 
     /** Statement cache. */
     private final ConcurrentHashMap<Thread, H2StatementCache> stmtCache = new ConcurrentHashMap<>();

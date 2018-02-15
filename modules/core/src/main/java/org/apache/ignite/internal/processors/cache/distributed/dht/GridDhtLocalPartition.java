@@ -59,7 +59,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
@@ -235,7 +234,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @return Entries map.
      */
     private ConcurrentMap<KeyCacheObject, GridCacheMapEntry> createEntriesMap() {
-        return new ConcurrentHashMap8<>(Math.max(10, GridCacheAdapter.DFLT_START_CACHE_SIZE / grp.affinity().partitions()),
+        return new ConcurrentHashMap<>(Math.max(10, GridCacheAdapter.DFLT_START_CACHE_SIZE / grp.affinity().partitions()),
             0.75f,
             Runtime.getRuntime().availableProcessors() * 2);
     }
