@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.hadoop.impl.v2;
 
 import java.security.PrivilegedExceptionAction;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
