@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * A {@link PipelineBlock}, which splits input stream of char[] into lines using the specified {@link Pattern}
@@ -68,5 +69,10 @@ public class LineSplitterBlock extends PipelineBlock<char[], String> {
             nextBlock.accept(leftover.toString(), true);
             leftover.setLength(0);
         }
+    }
+
+    // FIXME SHQ
+    @Override protected IgniteBiTuple<Integer, String> handleError(char[] input, int pos, String errorMsg) {
+        return new IgniteBiTuple<>(pos + 1, "");
     }
 }
