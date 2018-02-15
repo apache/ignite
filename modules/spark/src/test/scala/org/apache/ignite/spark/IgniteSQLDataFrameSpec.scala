@@ -32,193 +32,243 @@ class IgniteSQLDataFrameSpec extends AbstractDataFrameSpec {
 
     describe("DataFrame for a Ignite SQL table") {
         it("Should correct filter with EqualTo Clause") {
-            val res = spark.sqlContext.sql("SELECT name FROM person WHERE id = 2")
+            val res = spark.sqlContext.sql("SELECT name FROM person WHERE id = 2").rdd
 
-            val data = Tuple1("Jane Roe")
+            res.count should equal(1)
 
-            checkQueryData(res, data)
+            val persons = res.collect
+
+            persons(0).getAs[String]("name") should equal("Jane Roe")
         }
 
         it("Should correct filter with EqualToNullSafe Clause") {
-            val res = spark.sqlContext.sql("SELECT id FROM person WHERE name = 'Jane Roe'")
+            val res = spark.sqlContext.sql("SELECT id FROM person WHERE name = 'Jane Roe'").rdd
 
-            val data = Tuple1(2)
+            res.count should equal(1)
 
-            checkQueryData(res, data)
+            val persons = res.collect
+
+            persons(0).getAs[Long]("id") should equal(2)
         }
 
         it("Should correct filter with GreaterThen Clause") {
-            val res = spark.sqlContext.sql("SELECT id, name FROM person WHERE id > 3")
+            val res = spark.sqlContext.sql("SELECT id, name FROM person WHERE id > 3").rdd
 
-            val data = (
-                (4, "Richard Miles"),
-                (5, null))
+            res.count should equal(2)
 
-            checkQueryData(res, data)
+            val persons = res.collect.sortBy(_.getAs[Long]("id"))
+
+            persons(0).getAs[String]("name") should equal("Richard Miles")
+            persons(1).getAs[String]("name") should equal(null)
         }
 
         it("Should correct filter with GreaterThenOrEqual Clause") {
-            val res = spark.sqlContext.sql("SELECT id, name FROM person WHERE id >= 3")
+            val res = spark.sqlContext.sql("SELECT id, name FROM person WHERE id >= 3").rdd
 
-            val data = (
-                (3, "Mary Major"),
-                (4, "Richard Miles"),
-                (5, null))
+            res.count should equal(3)
 
-            checkQueryData(res, data)
+            val persons = res.collect.sortBy(_.getAs[Long]("id"))
+
+            persons(0).getAs[String]("name") should equal("Mary Major")
+            persons(1).getAs[String]("name") should equal("Richard Miles")
+            persons(2).getAs[String]("name") should equal(null)
         }
 
         it("Should correct filter with LessThan Clause") {
-            val res = spark.sqlContext.sql("SELECT name FROM person WHERE id < 2")
+            val res = spark.sqlContext.sql("SELECT name FROM person WHERE id < 2").rdd
 
-            val data = Tuple1("John Doe")
+            res.count should equal(1)
 
-            checkQueryData(res, data)
+            val persons = res.collect
+
+            persons(0).getAs[String]("name") should equal("John Doe")
         }
 
         it("Should correct filter with LessThanOrEqual Clause") {
-            val res = spark.sqlContext.sql("SELECT id, name FROM person WHERE id <= 2")
+            val res = spark.sqlContext.sql("SELECT id, name FROM person WHERE id <= 2").rdd
 
-            val data = (
-                (1, "John Doe"),
-                (2, "Jane Roe"))
+            res.count should equal(2)
 
-            checkQueryData(res, data)
+            val persons = res.collect.sortBy(_.getAs[Long]("id"))
+
+            persons(0).getAs[String]("name") should equal("John Doe")
+            persons(1).getAs[String]("name") should equal("Jane Roe")
         }
 
         it("Should correct filter with In Clause") {
             val res = spark.sqlContext.sql(
-                "SELECT id FROM person WHERE name in ('Jane Roe', 'Richard Miles', 'Unknown Person')")
+                "SELECT id FROM person WHERE name in ('Jane Roe', 'Richard Miles', 'Unknown Person')").rdd
 
-            val data = (2, 4)
+            res.count should equal(2)
 
-            checkQueryData(res, data)
+            val persons = res.collect.sortBy(_.getAs[Long]("id"))
+
+            persons(0).getAs[Long]("id") should equal(2L)
+            persons(1).getAs[Long]("id") should equal(4L)
         }
 
         it("Should correct filter with IsNull Clause") {
-            val res = spark.sqlContext.sql("SELECT id FROM person WHERE name IS NULL")
+            val res = spark.sqlContext.sql(
+                "SELECT id FROM person WHERE name IS NULL").rdd
 
-            val data = Tuple1(5)
+            res.count should equal(1)
 
-            checkQueryData(res, data)
+            val persons = res.collect
+
+            persons(0).getAs[Long]("id") should equal(5L)
         }
 
         it("Should correct filter with IsNotNull Clause") {
-            val res = spark.sqlContext.sql("SELECT id FROM person WHERE name IS NOT NULL")
+            val res = spark.sqlContext.sql(
+                "SELECT id FROM person WHERE name IS NOT NULL").rdd
 
-            val data = (1, 2, 3, 4)
+            res.count should equal(4)
 
-            checkQueryData(res, data)
+            res.collect.map(r ⇒ r.getAs[Long]("id")).sorted should equal(Array(1, 2, 3, 4))
+
         }
 
         it("Should correct filter with And Clause") {
-            val res = spark.sqlContext.sql("SELECT id, name FROM person WHERE id <= 4 AND name = 'Jane Roe'")
+            val res = spark.sqlContext.sql("SELECT id, name FROM person WHERE id <= 4 AND name = 'Jane Roe'").rdd
 
-            val data = Tuple1(
-                (2, "Jane Roe")
-            )
+            res.count should equal(1)
 
-            checkQueryData(res, data)
+            val persons = res.collect.sortBy(_.getAs[Long]("id"))
+
+            persons(0).getAs[Long]("id") should equal(2)
+            persons(0).getAs[String]("name") should equal("Jane Roe")
         }
 
         it("Should correct filter with Or Clause") {
-            val res = spark.sqlContext.sql("SELECT id, name FROM person WHERE id = 2 OR name = 'John Doe'")
+            val res = spark.sqlContext.sql("SELECT id, name FROM person WHERE id = 2 OR name = 'John Doe'").rdd
 
-            val data = (
-                (1, "John Doe"),
-                (2, "Jane Roe"))
+            res.count should equal(2)
 
-            checkQueryData(res, data)
+            val persons = res.collect.sortBy(_.getAs[Long]("id"))
+
+            persons(0).getAs[Long]("id") should equal(1)
+            persons(0).getAs[String]("name") should equal("John Doe")
+
+            persons(1).getAs[Long]("id") should equal(2)
+            persons(1).getAs[String]("name") should equal("Jane Roe")
         }
 
         it("Should correct filter with Not Clause") {
-            val res = spark.sqlContext.sql("SELECT id FROM person WHERE NOT(name is null)")
+            val res = spark.sqlContext.sql("SELECT id FROM person WHERE NOT(name is null)").rdd
 
-            val data = (1, 2, 3, 4)
+            res.count should equal(4)
 
-            checkQueryData(res, data)
+            res.collect.map(r ⇒ r.getAs[Long]("id")).sorted should equal(Array(1, 2, 3, 4))
         }
 
         it("Should correct filter with StringStartsWith Clause") {
-            val res = spark.sqlContext.sql("SELECT id, name FROM person WHERE name LIKE 'J%'")
+            val res = spark.sqlContext.sql("SELECT id, name FROM person WHERE name LIKE 'J%'").rdd
 
-            val data = (
-                (1, "John Doe"),
-                (2, "Jane Roe"))
+            res.count should equal(2)
 
-            checkQueryData(res, data)
+            val persons = res.collect.sortBy(_.getAs[Long]("id"))
+
+            persons(0).getAs[Long]("id") should equal(1)
+            persons(0).getAs[String]("name") should equal("John Doe")
+
+            persons(1).getAs[Long]("id") should equal(2)
+            persons(1).getAs[String]("name") should equal("Jane Roe")
         }
 
         it("Should correct filter with StringEndsWith Clause") {
-            val res = spark.sqlContext.sql("SELECT id, name FROM person WHERE name LIKE '%e'")
+            val res = spark.sqlContext.sql("SELECT id, name FROM person WHERE name LIKE '%e'").rdd
 
-            val data = (
-                (1, "John Doe"),
-                (2, "Jane Roe"))
+            res.count should equal(2)
 
-            checkQueryData(res, data)
+            val persons = res.collect.sortBy(_.getAs[Long]("id"))
+
+            persons(0).getAs[Long]("id") should equal(1)
+            persons(0).getAs[String]("name") should equal("John Doe")
+
+            persons(1).getAs[Long]("id") should equal(2)
+            persons(1).getAs[String]("name") should equal("Jane Roe")
         }
 
         it("Should correct filter with StringContains Clause") {
-            val res = spark.sqlContext.sql("SELECT id, name FROM person WHERE name LIKE '%M%'")
+            val res = spark.sqlContext.sql("SELECT id, name FROM person WHERE name LIKE '%M%'").rdd
 
-            val data = (
-                (3, "Mary Major"),
-                (4, "Richard Miles"))
+            res.count should equal(2)
 
-            checkQueryData(res, data)
+            val persons = res.collect.sortBy(_.getAs[Long]("id"))
+
+            persons(0).getAs[Long]("id") should equal(3)
+            persons(0).getAs[String]("name") should equal("Mary Major")
+
+            persons(1).getAs[Long]("id") should equal(4)
+            persons(1).getAs[String]("name") should equal("Richard Miles")
         }
 
         it("Should correct calculate MAX aggregate function") {
-            val res = spark.sqlContext.sql("SELECT max(id) FROM person")
+            val res = spark.sqlContext.sql("SELECT max(id) FROM person").rdd
 
-            val data = Tuple1(5)
+            res.count should equal(1)
 
-            checkQueryData(res, data)
+            val persons = res.collect
+
+            persons(0).getAs[Long]("max(id)") should equal(5)
         }
 
         it("Should correct calculate MIN aggregate function") {
-            val res = spark.sqlContext.sql("SELECT min(id) FROM person")
+            val res = spark.sqlContext.sql("SELECT min(id) FROM person").rdd
 
-            val data = Tuple1(1)
+            res.count should equal(1)
 
-            checkQueryData(res, data)
+            val persons = res.collect
+
+            persons(0).getAs[Long]("min(id)") should equal(1)
         }
 
         it("Should correct calculate AVG aggregate function") {
-            val res = spark.sqlContext.sql("SELECT avg(id) FROM person WHERE id = 1 OR id = 2")
+            val res = spark.sqlContext.sql("SELECT avg(id) FROM person WHERE id = 1 OR id = 2").rdd
 
-            val data = Tuple1(1.5D)
+            res.count should equal(1)
 
-            checkQueryData(res, data)
+            val persons = res.collect
+
+            persons(0).getAs[Double]("avg(id)") should equal(1.5D)
         }
 
         it("Should correct calculate COUNT(*) aggregate function") {
-            val res = spark.sqlContext.sql("SELECT count(*) FROM person")
+            val res = spark.sqlContext.sql("SELECT count(*) FROM person").rdd
 
-            val data = Tuple1(5)
+            res.count should equal(1)
 
-            checkQueryData(res, data)
+            val persons = res.collect
+
+            persons(0).getAs[Long]("count(1)") should equal(5)
         }
 
         it("Should correct execute GROUP BY query") {
-            val res = spark.sqlContext.sql("SELECT city_id, count(1) FROM person GROUP BY city_id")
+            val res = spark.sqlContext.sql("SELECT count(1), city_id FROM person GROUP BY city_id").rdd
 
-            val data = (
-                (1, 1),
-                (2, 3),
-                (3, 1)
-            )
+            res.count should equal(3)
 
-            checkQueryData(res, data)
+            val persons = res.collect.sortBy(_.getAs[Long]("city_id"))
+
+            persons(0).getAs[Long]("city_id") should equal(1)
+            persons(0).getAs[Long]("count(1)") should equal(1)
+
+            persons(1).getAs[Long]("city_id") should equal(2)
+            persons(1).getAs[Long]("count(1)") should equal(3)
+
+            persons(2).getAs[Long]("city_id") should equal(3)
+            persons(2).getAs[Long]("count(1)") should equal(1)
         }
 
         it("Should correct execute GROUP BY with HAVING query") {
-            val res = spark.sqlContext.sql("SELECT city_id, count(1) FROM person GROUP BY city_id HAVING count(1) > 1")
+            val res = spark.sqlContext.sql("SELECT count(1), city_id FROM person GROUP BY city_id HAVING count(1) > 1").rdd
 
-            val data = Tuple1((2, 3))
+            res.count should equal(1)
 
-            checkQueryData(res, data)
+            val persons = res.collect.sortBy(_.getAs[Long]("city_id"))
+
+            persons(0).getAs[Long]("city_id") should equal(2)
+            persons(0).getAs[Long]("count(1)") should equal(3)
         }
     }
 

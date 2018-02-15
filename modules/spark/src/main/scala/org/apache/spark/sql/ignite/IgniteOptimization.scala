@@ -33,15 +33,15 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 object IgniteOptimization extends Rule[LogicalPlan] with Logging {
     /** @inheritdoc */
     override def apply(plan: LogicalPlan): LogicalPlan = {
-        println()
-        println("== Plan Before Ignite Operator Push Down ==")
-        println(plan)
+        logDebug("")
+        logDebug("== Plan Before Ignite Operator Push Down ==")
+        logDebug(plan.toString())
 
         val transformed = fixAmbiguousOutput(pushDownOperators(plan))
 
-        println()
-        println("== Plan After Ignite Operator Push Down ==")
-        println(transformed)
+        logDebug("")
+        logDebug("== Plan After Ignite Operator Push Down ==")
+        logDebug(transformed.toString())
 
         makeIgniteAccRelation(transformed)
     }
@@ -55,8 +55,8 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
     private def pushDownOperators(plan: LogicalPlan): LogicalPlan = {
         val aliasIndexIterator = Stream.from(1).iterator
 
-        //Flag to indicate that some step was skipped due to unsupported expression
-        //When it true we has to skip entire transformation of higher level Nodes
+        //Flag to indicate that some step was skipped due to unsupported expression.
+        //When it true we has to skip entire transformation of higher level Nodes.
         var stepSkipped = true
 
         //Applying optimization rules from bottom to up tree nodes.
@@ -85,78 +85,45 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                     tableExpression = None,
                     outputExpressions = output.map(attr ⇒ attr.withQualifier(Some(igniteSqlRelation.tableName))))
 
-            case project: Project if !stepSkipped ⇒
-                if (exprsAllowed(project.projectList)) {
-                    project.child match {
-                        case acc: SelectAccumulator ⇒
-                            acc.withOutputExpressions(
-                                substituteExpressions(project.projectList, acc.outputExpressions))
+            case project: Project if !stepSkipped && exprsAllowed(project.projectList) ⇒
+                //Project layer just changes output of current query.
+                project.child match {
+                    case acc: SelectAccumulator ⇒
+                        acc.withOutputExpressions(
+                            substituteExpressions(project.projectList, acc.outputExpressions))
 
-                        case _ ⇒
-                            throw new IgniteException("stepSkipped == true but child is not SelectAccumulator")
-                    }
-                }
-                else {
-                    stepSkipped = true
-
-                    project
+                    case _ ⇒
+                        throw new IgniteException("stepSkipped == true but child is not SelectAccumulator")
                 }
 
-            case sort: Sort if !stepSkipped ⇒
-                if (isSortPushDownAllowed(sort.order, sort.global)) {
-                    sort.child match {
-                        case acc: QueryAccumulator ⇒
-                            acc.withOrderBy(sort.order)
+            case sort: Sort if !stepSkipped && isSortPushDownAllowed(sort.order, sort.global) ⇒
+                sort.child match {
+                    case acc: QueryAccumulator ⇒
+                        acc.withOrderBy(sort.order)
 
-                        case _ ⇒
-                            throw new IgniteException("stepSkipped == true but child is not SelectAccumulator")
-                    }
-                }
-                else {
-                    stepSkipped = true
-
-                    sort
+                    case _ ⇒
+                        throw new IgniteException("stepSkipped == true but child is not SelectAccumulator")
                 }
 
-            case filter: Filter if !stepSkipped ⇒
-                if (exprsAllowed(filter.condition)) {
-                    filter.child match {
-                        case acc: SelectAccumulator ⇒
-                            if (hasAggregateInside(filter.condition) || acc.groupBy.isDefined)
-                                acc.withHaving(acc.having.getOrElse(Nil) :+ filter.condition)
-                            else
-                                acc.withWhere(acc.where.getOrElse(Nil) :+ filter.condition)
+            case filter: Filter if !stepSkipped && exprsAllowed(filter.condition) ⇒
 
-                        case _ ⇒
-                            throw new IgniteException("stepSkipped == true but child is not SelectAccumulator")
-                    }
-                }
-                else {
-                    stepSkipped = true
+                filter.child match {
+                    case acc: SelectAccumulator ⇒
+                        if (hasAggregateInside(filter.condition) || acc.groupBy.isDefined)
+                            acc.withHaving(acc.having.getOrElse(Nil) :+ filter.condition)
+                        else
+                            acc.withWhere(acc.where.getOrElse(Nil) :+ filter.condition)
 
-                    filter
+                    case _ ⇒
+                        throw new IgniteException("stepSkipped == true but child is not SelectAccumulator")
                 }
 
-            case agg: Aggregate if !stepSkipped ⇒
-                if (exprsAllowed(agg.groupingExpressions) && exprsAllowed(agg.aggregateExpressions)) {
-                    agg.child match {
-                        case acc: SelectAccumulator ⇒
-                            if (acc.groupBy.isDefined) {
-                                val tableAlias = acc.igniteQueryContext.uniqueTableAlias
+            case agg: Aggregate
+                if !stepSkipped && exprsAllowed(agg.groupingExpressions) && exprsAllowed(agg.aggregateExpressions) ⇒
 
-                                accumulator.SingleTableSQLAccumulator(
-                                    igniteQueryContext = acc.igniteQueryContext,
-                                    table = None,
-                                    tableExpression = Some((acc, tableAlias)),
-                                    outputExpressions = agg.aggregateExpressions)
-                            }
-                            else
-                                acc
-                                    .withGroupBy(agg.groupingExpressions)
-                                    .withOutputExpressions(
-                                        substituteExpressions(agg.aggregateExpressions, acc.outputExpressions))
-
-                        case acc: QueryAccumulator ⇒
+                agg.child match {
+                    case acc: SelectAccumulator ⇒
+                        if (acc.groupBy.isDefined) {
                             val tableAlias = acc.igniteQueryContext.uniqueTableAlias
 
                             accumulator.SingleTableSQLAccumulator(
@@ -164,106 +131,90 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                                 table = None,
                                 tableExpression = Some((acc, tableAlias)),
                                 outputExpressions = agg.aggregateExpressions)
-
-                        case _ ⇒
-                            throw new IgniteException("stepSkipped == true but child is not SelectAccumulator")
-                    }
-                }
-                else {
-                    stepSkipped = true
-
-                    agg
-                }
-
-            case limit: LocalLimit if !stepSkipped ⇒
-                if (exprsAllowed(limit.limitExpr)) {
-                    limit.child match {
-                        case acc: SelectAccumulator ⇒
-                            acc.withLocalLimit(limit.limitExpr)
-
-                        case _ ⇒
-                            throw new IgniteException("stepSkipped == true but child is not SelectAccumulator")
-                    }
-                }
-                else {
-                    stepSkipped = true
-
-                    limit
-                }
-
-            case limit: GlobalLimit if !stepSkipped ⇒
-                if (exprsAllowed(limit.limitExpr)) {
-                    limit.child.transformUp {
-                        case acc: SelectAccumulator ⇒
-                            acc.withLimit(limit.limitExpr)
-
-                        case _ ⇒
-                            throw new IgniteException("stepSkipped == true but child is not SelectAccumulator")
-                    }
-                }
-                else {
-                    stepSkipped = true
-
-                    limit
-                }
-
-            case union: Union if !stepSkipped ⇒
-                if (isAllChildrenOptimized(union.children)) {
-                    val first = union.children.head.asInstanceOf[QueryAccumulator]
-
-                    val subQueries = union.children.map(_.asInstanceOf[QueryAccumulator])
-
-                    UnionSQLAccumulator(
-                        first.igniteQueryContext,
-                        subQueries,
-                        subQueries.head.output)
-                }
-                else {
-                    stepSkipped = true
-
-                    union
-                }
-
-            case join: Join if !stepSkipped ⇒
-                if (isAllChildrenOptimized(Seq(join.left, join.right)) && join.condition.forall(exprsAllowed)) {
-                    val left = join.left.asInstanceOf[QueryAccumulator]
-
-                    val (leftOutput, leftAlias) =
-                        if (!isSimpleTableAcc(left)) {
-                            val tableAlias = left.igniteQueryContext.uniqueTableAlias
-
-                            (left.output, Some(tableAlias))
                         }
                         else
-                            (left.output, None)
+                            acc
+                                .withGroupBy(agg.groupingExpressions)
+                                .withOutputExpressions(
+                                    substituteExpressions(agg.aggregateExpressions, acc.outputExpressions))
 
-                    val right = join.right.asInstanceOf[QueryAccumulator]
+                    case acc: QueryAccumulator ⇒
+                        val tableAlias = acc.igniteQueryContext.uniqueTableAlias
 
-                    val (rightOutput, rightAlias) =
-                        if (!isSimpleTableAcc(right) ||
-                            leftAlias.getOrElse(left.qualifier) == right.qualifier) {
-                            val tableAlias = right.igniteQueryContext.uniqueTableAlias
+                        accumulator.SingleTableSQLAccumulator(
+                            igniteQueryContext = acc.igniteQueryContext,
+                            table = None,
+                            tableExpression = Some((acc, tableAlias)),
+                            outputExpressions = agg.aggregateExpressions)
 
-                            (right.output, Some(tableAlias))
-                        }
-                        else
-                            (right.output, None)
-
-                    JoinSQLAccumulator(
-                        left.igniteQueryContext,
-                        left,
-                        right,
-                        join.joinType,
-                        leftOutput ++ rightOutput,
-                        join.condition,
-                        leftAlias,
-                        rightAlias)
+                    case _ ⇒
+                        throw new IgniteException("stepSkipped == true but child is not SelectAccumulator")
                 }
-                else {
-                    stepSkipped = true
 
-                    join
+            case limit: LocalLimit if !stepSkipped && exprsAllowed(limit.limitExpr) ⇒
+                limit.child match {
+                    case acc: SelectAccumulator ⇒
+                        acc.withLocalLimit(limit.limitExpr)
+
+                    case _ ⇒
+                        throw new IgniteException("stepSkipped == true but child is not SelectAccumulator")
                 }
+
+            case limit: GlobalLimit if !stepSkipped && exprsAllowed(limit.limitExpr) ⇒
+                limit.child.transformUp {
+                    case acc: SelectAccumulator ⇒
+                        acc.withLimit(limit.limitExpr)
+
+                    case _ ⇒
+                        throw new IgniteException("stepSkipped == true but child is not SelectAccumulator")
+                }
+
+            case union: Union if !stepSkipped && isAllChildrenOptimized(union.children) ⇒
+                val first = union.children.head.asInstanceOf[QueryAccumulator]
+
+                val subQueries = union.children.map(_.asInstanceOf[QueryAccumulator])
+
+                UnionSQLAccumulator(
+                    first.igniteQueryContext,
+                    subQueries,
+                    subQueries.head.output)
+
+            case join: Join
+                if !stepSkipped && isAllChildrenOptimized(Seq(join.left, join.right)) &&
+                    join.condition.forall(exprsAllowed) ⇒
+
+                val left = join.left.asInstanceOf[QueryAccumulator]
+
+                val (leftOutput, leftAlias) =
+                    if (!isSimpleTableAcc(left)) {
+                        val tableAlias = left.igniteQueryContext.uniqueTableAlias
+
+                        (left.output, Some(tableAlias))
+                    }
+                    else
+                        (left.output, None)
+
+                val right = join.right.asInstanceOf[QueryAccumulator]
+
+                val (rightOutput, rightAlias) =
+                    if (!isSimpleTableAcc(right) ||
+                        leftAlias.getOrElse(left.qualifier) == right.qualifier) {
+                        val tableAlias = right.igniteQueryContext.uniqueTableAlias
+
+                        (right.output, Some(tableAlias))
+                    }
+                    else
+                        (right.output, None)
+
+                JoinSQLAccumulator(
+                    left.igniteQueryContext,
+                    left,
+                    right,
+                    join.joinType,
+                    leftOutput ++ rightOutput,
+                    join.condition,
+                    leftAlias,
+                    rightAlias)
 
             case unknown ⇒
                 stepSkipped = true
@@ -308,7 +259,8 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                 case leftJoin: JoinSQLAccumulator ⇒
                     val fixedChildOutput = fixAmbiguousOutput(acc.left.outputExpressions, acc.igniteQueryContext)
 
-                    val newOutput = substituteExpressions(acc.outputExpressions, fixedChildOutput, changeOnlyName = true)
+                    val newOutput =
+                        substituteExpressions(acc.outputExpressions, fixedChildOutput, changeOnlyName = true)
 
                     acc.copy(
                         outputExpressions = newOutput,
@@ -333,7 +285,8 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
 
             val fixed = leftFixed.right match {
                 case rightJoin: JoinSQLAccumulator ⇒
-                    val fixedChildOutput = fixAmbiguousOutput(leftFixed.outputExpressions, leftFixed.igniteQueryContext)
+                    val fixedChildOutput =
+                        fixAmbiguousOutput(leftFixed.outputExpressions, leftFixed.igniteQueryContext)
 
                     val newOutput = substituteExpressions(leftFixed.outputExpressions, fixedChildOutput)
 
@@ -472,10 +425,12 @@ object IgniteOptimization extends Rule[LogicalPlan] with Logging {
                     }
 
                 case None ⇒
-                    expr.withNewChildren(substituteExpressions(expr.children, substitution, changeOnlyName)).asInstanceOf[T]
+                    expr.withNewChildren(
+                        substituteExpressions(expr.children, substitution, changeOnlyName)).asInstanceOf[T]
             }
 
         case _ ⇒
-            expr.withNewChildren(substituteExpressions(expr.children, substitution, changeOnlyName)).asInstanceOf[T]
+            expr.withNewChildren(
+                substituteExpressions(expr.children, substitution, changeOnlyName)).asInstanceOf[T]
     }
 }

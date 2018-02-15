@@ -27,7 +27,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
   *
   * See <a href="http://www.h2database.com/html/grammar.html#select">select syntax of H2</a>.
   */
-case class SingleTableSQLAccumulator(
+private[apache] case class SingleTableSQLAccumulator(
     igniteQueryContext: IgniteQueryContext,
     table: Option[String],
     tableExpression: Option[(QueryAccumulator, String)],

@@ -24,7 +24,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 /**
   * Generic query info accumulator interface.
   */
-trait QueryAccumulator extends LogicalPlan {
+private[apache] trait QueryAccumulator extends LogicalPlan {
     /**
       * @return Ignite query context.
       */

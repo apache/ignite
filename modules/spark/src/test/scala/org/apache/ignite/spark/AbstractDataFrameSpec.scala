@@ -131,7 +131,6 @@ abstract class AbstractDataFrameSpec extends FunSpec with Matchers with BeforeAn
         (implicit ord: T ⇒ Ordered[T]): Unit =
         checkQueryData(res, expectedRes, _.getAs[T](0))
 
-    //TODO: all tests should use this checker
     def checkQueryData[Ordered](res: DataFrame, expectedRes: Product, sorter: Row => Ordered)
         (implicit ord: Ordering[Ordered]): Unit = {
         val data = res.rdd.collect.sortBy(sorter)

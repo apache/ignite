@@ -26,7 +26,7 @@ import org.apache.spark.sql.catalyst.plans.{Inner, JoinType, LeftOuter, RightOut
 /**
   * Accumulator to store information about join query.
   */
-case class JoinSQLAccumulator(
+private[apache] case class JoinSQLAccumulator(
     igniteQueryContext: IgniteQueryContext,
     left: QueryAccumulator,
     right: QueryAccumulator,

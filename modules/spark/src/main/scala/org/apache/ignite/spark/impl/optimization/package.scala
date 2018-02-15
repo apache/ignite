@@ -32,12 +32,12 @@ package object optimization {
     /**
       * Constant to store alias in column metadata.
       */
-    val ALIAS: String = "alias"
+    private[optimization] val ALIAS: String = "alias"
 
     /**
       * All `SupportedExpression` implementations.
       */
-    val SUPPORTED_EXPRESSIONS: List[SupportedExpressions] = List (
+    private val SUPPORTED_EXPRESSIONS: List[SupportedExpressions] = List (
         SimpleExpressions,
         SystemExpressions,
         AggregateExpressions,
@@ -170,7 +170,6 @@ package object optimization {
         }
     }
 
-    /* TODO: add support of H2 datatype TIME, CHAR, UUID, GEOMETRY */
     /**
       * @param dataType Spark data type.
       * @return SQL data type.

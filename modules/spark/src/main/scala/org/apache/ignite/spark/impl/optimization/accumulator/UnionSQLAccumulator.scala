@@ -23,7 +23,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, NamedExpression, So
 /**
   * Accumulator to store info about UNION query.
   */
-case class UnionSQLAccumulator(
+private[apache] case class UnionSQLAccumulator(
     igniteQueryContext: IgniteQueryContext,
     children: Seq[QueryAccumulator],
     outputExpressions: Seq[NamedExpression],

@@ -22,7 +22,7 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 /**
   * Generic interface for a SELECT query.
   */
-trait SelectAccumulator extends QueryAccumulator {
+private[apache] trait SelectAccumulator extends QueryAccumulator {
     /**
       * @return Expression for HAVING part of query.
       */

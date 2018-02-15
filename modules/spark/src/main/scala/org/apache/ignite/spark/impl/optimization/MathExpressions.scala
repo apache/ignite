@@ -182,7 +182,6 @@ private[optimization] object MathExpressions extends SupportedExpressions {
             Some(s"BITXOR(${childToString(left)}, ${childToString(right)})")
 
         case Ceil(child) ⇒
-            //TODO: Fix it for a decimal!
             Some(s"CAST(CEIL(${childToString(child)}) AS LONG)")
 
         case ToDegrees(child) ⇒
@@ -192,7 +191,6 @@ private[optimization] object MathExpressions extends SupportedExpressions {
             Some(s"EXP(${childToString(child)})")
 
         case Floor(child) ⇒
-            //TODO: Fix it for a decimal!
             Some(s"CAST(FLOOR(${childToString(child)}) AS LONG)")
 
         case Log(child) ⇒

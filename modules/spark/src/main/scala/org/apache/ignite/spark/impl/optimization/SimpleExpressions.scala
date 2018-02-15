@@ -37,8 +37,8 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
 
             case TimestampType ⇒
                 l.value match {
-                    //Internal representation of TimestampType is Long
-                    //So we converting from internal spark representation to CAST call
+                    //Internal representation of TimestampType is Long.
+                    //So we converting from internal spark representation to CAST call.
                     case date: Long ⇒
                         Some(s"CAST('${timestampFormat.get.format(DateTimeUtils.toJavaTimestamp(date))}' AS TIMESTAMP)")
 
@@ -48,8 +48,8 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
 
             case DateType ⇒
                 l.value match {
-                    //Internal representation of DateType is Int
-                    //So we converting from internal spark representation to CAST call
+                    //Internal representation of DateType is Int.
+                    //So we converting from internal spark representation to CAST call.
                     case days: Integer ⇒
                         val date = new java.util.Date(DateTimeUtils.daysToMillis(days))
 
@@ -85,10 +85,9 @@ private[optimization] object SimpleExpressions extends SupportedExpressions {
                 Some(childToString(child))
 
         case Cast(child, dataType, _) ⇒
-            //TODO add timezoneId check. It has to be equal to default time zone?
             Some(s"CAST(${childToString(child)} AS ${toSqlType(dataType)})")
 
-        case SortOrder(child, direction, nullOrdering, _) ⇒
+        case SortOrder(child, direction, _, _) ⇒
             Some(s"${childToString(child)}${if(direction==Descending) " DESC" else ""}")
 
         case _ ⇒
