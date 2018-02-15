@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.examples.BasicExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.BasicExamplesSelfTest;
 import org.apache.ignite.examples.CacheClientBinaryExampleTest;
+import org.apache.ignite.examples.CacheContinuousQueryExamplesSelfTest;
 import org.apache.ignite.examples.CacheExamplesMultiNodeSelfTest;
 import org.apache.ignite.examples.CacheExamplesSelfTest;
 import org.apache.ignite.examples.CheckpointExamplesSelfTest;
@@ -80,6 +81,7 @@ public class IgniteExamplesSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgfsExamplesSelfTest.class));
         suite.addTest(new TestSuite(CheckpointExamplesSelfTest.class));
         suite.addTest(new TestSuite(ClusterGroupExampleSelfTest.class));
+        suite.addTest(new TestSuite(CacheContinuousQueryExamplesSelfTest.class));
 
         // Multi-node.
         suite.addTest(new TestSuite(CacheExamplesMultiNodeSelfTest.class));

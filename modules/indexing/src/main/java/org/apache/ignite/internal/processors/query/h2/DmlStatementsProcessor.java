@@ -1012,9 +1012,16 @@ public class DmlStatementsProcessor {
 
         GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
-        if (tbl == null)
+        if (tbl == null) {
+            idx.kernalContext().cache().createMissingQueryCaches();
+
+            tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+        }
+
+        if (tbl == null) {
             throw new IgniteSQLException("Table does not exist: " + cmd.tableName(),
                 IgniteQueryErrorCode.TABLE_NOT_FOUND);
+        }
 
         UpdatePlan plan = UpdatePlanBuilder.planForBulkLoad(cmd, tbl);
 
