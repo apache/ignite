@@ -31,10 +31,10 @@ import org.jetbrains.annotations.NotNull;
  */
 public class CsvParserBlock extends PipelineBlock<char[], List<Object>> {
     /** Leftover characters from the previous invocation of {@link #accept(char[], boolean)}. */
-    private StringBuilder leftover;
+    private final StringBuilder leftover;
 
     /** Current parsed fields from the beginning of the line. */
-    private List<Object> fields;
+    private final List<Object> fields;
 
     /**
      * Creates line splitter block.

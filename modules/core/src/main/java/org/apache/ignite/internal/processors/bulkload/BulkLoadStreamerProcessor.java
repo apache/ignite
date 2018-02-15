@@ -54,7 +54,7 @@ public class BulkLoadStreamerProcessor extends BulkLoadProcessor {
     private final ExecutorService threadPool;
 
     /** List of started convert+stream threads. */
-    private List<Future<Integer>> futures;
+    private final List<Future<Integer>> futures;
 
     /**
      * Creates bulk load processor.
