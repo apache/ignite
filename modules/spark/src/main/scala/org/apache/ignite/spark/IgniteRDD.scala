@@ -336,6 +336,9 @@ class IgniteRDD[K, V] (
 }
 
 object IgniteRDD {
+    /**
+      * Default decimal type.
+      */
     private[spark] val DECIMAL = DecimalType(DecimalType.MAX_PRECISION, 3)
 
     /**

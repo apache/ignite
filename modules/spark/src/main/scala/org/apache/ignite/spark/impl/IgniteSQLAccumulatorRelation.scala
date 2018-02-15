@@ -67,7 +67,7 @@ class IgniteSQLAccumulatorRelation[K, V](val acc: QueryAccumulator)
       */
     private def calcPartitions: Array[Partition] =
         //If accumulator stores some complex query(join, aggregation, limit, order, etc.)
-        //We has to load data from Ignite as a single Spark partition.
+        //we has to load data from Ignite as a single Spark partition.
         if (!isSimpleTableAcc(acc)){
             val aff = acc.igniteQueryContext.igniteContext.ignite().affinity(acc.igniteQueryContext.cacheName)
 
