@@ -19,6 +19,7 @@ package org.apache.ignite.yardstick.upload;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -63,10 +64,10 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     protected abstract void warmup() throws Exception;
 
     /** create empty table */
-    protected void setupData(){
-        SqlFieldsQuery qry = new SqlFieldsQuery(queries.createTable());
-        GridQueryProcessor qProc = ((IgniteEx)ignite()).context().query();
-        qProc.querySqlFields(qry, false);
+    protected void setupData() throws Exception{
+        try (PreparedStatement create = conn.get().prepareStatement(queries.createTable())) {
+            create.executeUpdate();
+        }
 
     }
 
