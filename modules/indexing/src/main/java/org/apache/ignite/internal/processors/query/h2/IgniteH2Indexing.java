@@ -151,7 +151,6 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.Prepared;
-import org.h2.command.dml.Insert;
 import org.h2.command.dml.NoOperation;
 import org.h2.engine.Session;
 import org.h2.engine.SysProperties;
@@ -2375,9 +2374,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public boolean isStreamableInsertStatement(PreparedStatement nativeStmt) {
-        Prepared prep = GridSqlQueryParser.prepared(nativeStmt);
-
-        return prep instanceof Insert && GridSqlQueryParser.INSERT_QUERY.get((Insert)prep) == null;
+        return GridSqlQueryParser.isStreamableInsertStatement(nativeStmt);
     }
 
     /** {@inheritDoc} */

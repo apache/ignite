@@ -293,7 +293,7 @@ public class GridSqlQueryParser {
     private static final Getter<Insert, List<Expression[]>> INSERT_ROWS = getter(Insert.class, "list");
 
     /** */
-    public static final Getter<Insert, Query> INSERT_QUERY = getter(Insert.class, "query");
+    private static final Getter<Insert, Query> INSERT_QUERY = getter(Insert.class, "query");
 
     /** */
     private static final Getter<Insert, Boolean> INSERT_DIRECT = getter(Insert.class, "insertFromSelect");
@@ -1990,6 +1990,18 @@ public class GridSqlQueryParser {
 
         throw new IgniteException("Unsupported expression: " + expression + " [type=" +
             expression.getClass().getSimpleName() + ']');
+    }
+
+    /**
+     * Check if passed statement is insert statement eligible for streaming.
+     *
+     * @param nativeStmt Native statement.
+     * @return {@code True} if streamable insert.
+     */
+    public static boolean isStreamableInsertStatement(PreparedStatement nativeStmt) {
+        Prepared prep = prepared(nativeStmt);
+
+        return prep instanceof Insert && INSERT_QUERY.get((Insert)prep) == null;
     }
 
     /**
