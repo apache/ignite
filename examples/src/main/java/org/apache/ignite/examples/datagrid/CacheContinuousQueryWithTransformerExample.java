@@ -112,7 +112,6 @@ public class CacheContinuousQueryWithTransformerExample {
      *
      * @param cache Organization cache.
      */
-    @SuppressWarnings("TypeMayBeWeakened")
     private static void populateCache(IgniteCache<Integer, Organization> cache) {
         Map<Integer, Organization> data = new HashMap<>();
 
