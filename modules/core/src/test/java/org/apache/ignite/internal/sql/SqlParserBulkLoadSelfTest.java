@@ -23,6 +23,8 @@ package org.apache.ignite.internal.sql;
 public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
     /**
      * Tests for COPY command.
+     *
+     * @throws Exception If any of sub-tests was failed.
      */
     public void testCopy() {
         assertParseError(null,
@@ -58,12 +60,8 @@ public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
         // FORMAT
 
         assertParseError(null,
-            "copy from \"any.file\" into Person (_key, age, firstName, lastName) ",
+            "copy from \"any.file\" into Person (_key, age, firstName, lastName)",
             "Unexpected end of command (expected: \"FORMAT\")");
-
-        assertParseError(null,
-            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format ",
-            "Unexpected end of command (expected: \"[identifier]\")");
 
         assertParseError(null,
             "copy from \"any.file\" into Person (_key, age, firstName, lastName) format lsd",
@@ -103,17 +101,5 @@ public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
         assertParseError(null,
             "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv charset ",
             "Unexpected end of command (expected: \"[identifier]\")");
-
-        assertParseError(null,
-            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv charset nonexistent",
-            "Charset is not supported: 'NONEXISTENT'");
-
-        assertParseError(null,
-            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv charset \"\"",
-            "Unknown charset name: ''");
-
-        assertParseError(null,
-            "copy from \"any.file\" into Person (_key, age, firstName, lastName) format csv charset \"8^)\"",
-            "Unknown charset name: '8^)'");
     }
 }
