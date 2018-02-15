@@ -117,7 +117,6 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
-import static org.apache.ignite.configuration.WALMode.DEFAULT;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
 import static org.apache.ignite.internal.pagemem.wal.record.WALRecord.RecordType.SWITCH_SEGMENT_RECORD;
 import static org.apache.ignite.internal.processors.cache.persistence.wal.SegmentedRingByteBuffer.BufferMode.DIRECT;
@@ -213,7 +212,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     private static final int BUF_SIZE = 1024 * 1024;
 
     /** Use mapped byte buffer. */
-    private final boolean mmap;
+    private final boolean mmap = IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, true);
 
     /** {@link FileWriteHandle#written} atomic field updater. */
     private static final AtomicLongFieldUpdater<FileWriteHandle> WRITTEN_UPD =
@@ -347,8 +346,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         ioFactory = new RandomAccessFileIOFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         evt = ctx.event();
-
-        mmap = mode != DEFAULT && IgniteSystemProperties.getBoolean(IGNITE_WAL_MMAP, true);
     }
 
     /** For test purposes only. */
