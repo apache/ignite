@@ -35,7 +35,7 @@ import org.apache.ignite.thread.IgniteThread;
  *
  * @see LinearRegressionQRTrainer
  */
-public class DistributedLinearRegressionExampleWithQRTrainer {
+public class DistributedLinearRegressionWithQRTrainerExample {
     /** */
     private static final double[][] data = {
         {8, 78, 284, 9.100000381, 109},

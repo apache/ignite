@@ -15,28 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
-
-import java.lang.reflect.Method;
-
 /**
- * Implementation of {@link Base64Encoder} interface for Java 7 and earlier.
- *
- * @deprecated Use {@code jaba.util.Base64} instead.
+ * <!-- Package description. -->
+ * Contains iterative algorithms for solving linear systems.
  */
-@Deprecated
-public class LegacyBase64Encoder implements Base64Encoder {
-    /** {@inheritDoc} */
-    @Override public String encode(byte[] msg) {
-        try {
-            Class<?> encoderCls = Class.forName("sun.misc.BASE64Encoder");
-
-            Method mtd = encoderCls.getMethod("encode", byte[].class);
-
-            return (String)mtd.invoke(encoderCls.newInstance(), (Object)msg);
-        }
-        catch (ReflectiveOperationException e) {
-            throw new RuntimeException("Failed to encode message to BASE64", e);
-        }
-    }
-}
+package org.apache.ignite.ml.math.isolve;

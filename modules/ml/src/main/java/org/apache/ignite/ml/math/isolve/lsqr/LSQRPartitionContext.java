@@ -15,23 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm;
+package org.apache.ignite.ml.math.isolve.lsqr;
 
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
+import java.io.Serializable;
 
 /**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
+ * Partition context of the LSQR algorithm.
  */
-public class LocalLinearSVMClassificationSCDATrainerTest extends GenericLinearSVMTrainerTest {
+public class LSQRPartitionContext implements Serializable {
     /** */
-    public LocalLinearSVMClassificationSCDATrainerTest() {
-        super(
-            new SVMLinearBinaryClassificationTrainer()
-                .withLambda(0.2)
-                .withAmountOfIterations(10)
-                .withAmountOfLocIterations(20),
-            false,
-            1e-2);
+    private static final long serialVersionUID = -8159608186899430315L;
+
+    /** Part of U vector. */
+    private double[] u;
+
+    /** */
+    public double[] getU() {
+        return u;
+    }
+
+    /** */
+    public void setU(double[] u) {
+        this.u = u;
     }
 }
