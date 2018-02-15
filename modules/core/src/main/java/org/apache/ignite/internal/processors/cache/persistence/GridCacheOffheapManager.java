@@ -581,6 +581,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @throws IgniteCheckedException If failed.
      */
     public CacheDataStore recreateCacheDataStore(CacheDataStore store) throws IgniteCheckedException {
+        long updCounter = store.updateCounter();
+        long initUpdCounter = store.initialUpdateCounter();
+
         int p = store.partId();
 
         PageMemoryEx pageMemory = (PageMemoryEx)grp.dataRegion().pageMemory();
@@ -595,8 +598,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         try {
             store0 = createCacheDataStore0(p);
-            store0.updateCounter(store.updateCounter());
-            store0.updateInitialCounter(store.initialUpdateCounter());
+            store0.updateCounter(updCounter);
+            store0.updateInitialCounter(initUpdCounter);
 
             partDataStores.put(p, store0);
         }
