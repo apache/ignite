@@ -374,7 +374,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
     /** {@inheritDoc} */
     @Override public void onStateFinishMessage(ChangeGlobalStateFinishMessage msg) {
         UUID transitionRequestId = globalState.transitionRequestId();
-        DiscoveryDataClusterState state = globalState;
 
         if (msg.requestId().equals(transitionRequestId)) {
             log.info("Received state change finish message: " + msg.clusterActive());
