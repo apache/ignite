@@ -47,7 +47,6 @@ import org.apache.ignite.marshaller.MarshallerContext;
 
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.HANDLE;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.JDK;
-import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.JDK_MARSH;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.NULL;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.classDescriptor;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.getBoolean;
@@ -185,7 +184,7 @@ class OptimizedObjectOutputStream extends ObjectOutputStream {
                 writeByte(JDK);
 
                 try {
-                    JDK_MARSH.marshal(obj, this);
+                    ctx.jdkMarshaller().marshal(obj, this);
                 }
                 catch (IgniteCheckedException e) {
                     IOException ioEx = e.getCause(IOException.class);

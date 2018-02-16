@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 
 <!--
   Licensed to the Apache Software Foundation (ASF) under one or more
@@ -156,4 +156,7 @@
                                         metricsRateTimeInterval="00:00:03" metricsSubIntervalCount="6"
                                         swapPath="swap2" checkpointPageBufferSize="8" />
     </dataStorageConfiguration>
+    <sslContextFactory type='SslContextFactory' protocol='SSL'
+                       keyStoreFilePath='KeyStore/server.jks' keyStorePassword='123456' 
+                       trustStoreFilePath='KeyStore/trust.jks' trustStorePassword='123456'/>
 </igniteConfiguration>

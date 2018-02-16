@@ -25,26 +25,41 @@ import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFun
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
-import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
 
 /** Multilayer perceptron group update training data. */
 public class MLPGroupUpdateTrainingData<U> {
-    /** */
-    private final ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator;
-    /** */
+    /** {@link ParameterUpdateCalculator}. */
+    private final ParameterUpdateCalculator<? super MultilayerPerceptron, U> updateCalculator;
+
+    /**
+     * Count of steps which should be done by each of parallel trainings before sending it's update for combining with
+     * other parallel trainings updates.
+     */
     private final int stepsCnt;
-    /** */
+
+    /**
+     * Function used to reduce updates in one training (for example, sum all sequential gradient updates to get one
+     * gradient update).
+     */
     private final IgniteFunction<List<U>, U> updateReducer;
-    /** */
+
+    /**
+     * Supplier of batches in the form of (inputs, groundTruths).
+     */
     private final IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier;
-    /** */
+
+    /**
+     * Loss function.
+     */
     private final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
-    /** */
+
+    /** Error tolerance. */
     private final double tolerance;
 
     /** Construct multilayer perceptron group update training data with all parameters provided. */
     public MLPGroupUpdateTrainingData(
-        ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator, int stepsCnt,
+        ParameterUpdateCalculator<? super MultilayerPerceptron, U> updateCalculator, int stepsCnt,
         IgniteFunction<List<U>, U> updateReducer,
         IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier,
         IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss, double tolerance) {
@@ -57,7 +72,7 @@ public class MLPGroupUpdateTrainingData<U> {
     }
 
     /** Get update calculator. */
-    public ParameterUpdateCalculator<MultilayerPerceptron, U> updateCalculator() {
+    public ParameterUpdateCalculator<? super MultilayerPerceptron, U> updateCalculator() {
         return updateCalculator;
     }
 

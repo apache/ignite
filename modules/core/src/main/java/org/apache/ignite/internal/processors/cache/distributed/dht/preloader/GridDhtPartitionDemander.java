@@ -272,7 +272,7 @@ public class GridDhtPartitionDemander {
 
         long delay = grp.config().getRebalanceDelay();
 
-        if (delay == 0 || force) {
+        if ((delay == 0 || force) && assigns != null) {
             final RebalanceFuture oldFut = rebalanceFut;
 
             final RebalanceFuture fut = new RebalanceFuture(grp, assigns, log, cnt);
@@ -907,7 +907,7 @@ public class GridDhtPartitionDemander {
             this.log = log;
             this.updateSeq = updateSeq;
 
-            ctx= grp.shared();
+            ctx = grp.shared();
         }
 
         /**
@@ -1064,7 +1064,9 @@ public class GridDhtPartitionDemander {
 
                 if (parts.isEmpty()) {
                     U.log(log, "Completed " + ((remaining.size() == 1 ? "(final) " : "") +
-                        "rebalancing [fromNode=" + nodeId + ", topology=" + topologyVersion() +
+                        "rebalancing [fromNode=" + nodeId +
+                        ", cacheOrGroup=" + grp.cacheOrGroupName() +
+                        ", topology=" + topologyVersion() +
                         ", time=" + (U.currentTimeMillis() - t.get1()) + " ms]"));
 
                     remaining.remove(nodeId);

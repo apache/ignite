@@ -21,11 +21,12 @@ import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
-import org.apache.ignite.ml.nn.LossFunctions;
+import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
-import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
-import org.apache.ignite.ml.nn.updaters.RPropParameterUpdate;
-import org.apache.ignite.ml.nn.updaters.RPropUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
+import org.apache.ignite.ml.trainers.local.LocalBatchTrainer;
 
 /**
  * Local batch trainer for MLP.
@@ -60,7 +61,7 @@ public class MLPLocalBatchTrainer<P>
      */
     public MLPLocalBatchTrainer(
         IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
-        IgniteSupplier<ParameterUpdateCalculator<MultilayerPerceptron, P>> updaterSupplier,
+        IgniteSupplier<ParameterUpdateCalculator<? super MultilayerPerceptron, P>> updaterSupplier,
         double errorThreshold, int maxIterations) {
         super(loss, updaterSupplier, errorThreshold, maxIterations);
     }
@@ -71,7 +72,7 @@ public class MLPLocalBatchTrainer<P>
      * @return MLPLocalBatchTrainer with default parameters.
      */
     public static MLPLocalBatchTrainer<RPropParameterUpdate> getDefault() {
-        return new MLPLocalBatchTrainer<>(DEFAULT_LOSS, () -> new RPropUpdateCalculator<>(), DEFAULT_ERROR_THRESHOLD,
+        return new MLPLocalBatchTrainer<>(DEFAULT_LOSS, () -> new RPropUpdateCalculator(), DEFAULT_ERROR_THRESHOLD,
             DEFAULT_MAX_ITERATIONS);
     }
 }

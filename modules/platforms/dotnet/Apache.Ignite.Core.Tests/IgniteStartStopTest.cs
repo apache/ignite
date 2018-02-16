@@ -337,6 +337,8 @@ namespace Apache.Ignite.Core.Tests
                 "-jvmClasspath=" + TestUtils.CreateTestClasspath(),
                 "-springConfigUrl=" + Path.GetFullPath(cfg.SpringConfigUrl),
                 "-J-Xms512m", "-J-Xmx512m");
+            
+            Assert.IsTrue(proc.Alive);
 
             var cts = new CancellationTokenSource();
             var token = cts.Token;

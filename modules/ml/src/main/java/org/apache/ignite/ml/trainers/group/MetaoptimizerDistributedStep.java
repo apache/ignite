@@ -27,8 +27,17 @@ import org.apache.ignite.ml.trainers.group.chain.EntryAndContext;
 import org.apache.ignite.ml.trainers.group.chain.HasTrainingUUID;
 
 /**
- * Distributed step
- * TODO: IGNITE-7350: add full description.
+ * Distributed step based on {@link Metaoptimizer}.
+ *
+ * @param <L> Type of local context.
+ * @param <K> Type of data in {@link GroupTrainerCacheKey}.
+ * @param <V> Type of values of cache on which training is done.
+ * @param <G> Type of distributed context.
+ * @param <I> Type of data to which data returned by distributed initialization is mapped (see {@link Metaoptimizer}).
+ * @param <O> Type of data to which data returned by data processor is mapped (see {@link Metaoptimizer}).
+ * @param <X> Type of data which is processed in training loop step (see {@link Metaoptimizer}).
+ * @param <Y> Type of data returned by training loop step data processor (see {@link Metaoptimizer}).
+ * @param <D> Type of data returned by initialization (see {@link Metaoptimizer}).
  */
 class MetaoptimizerDistributedStep<L extends HasTrainingUUID, K, V, G, I extends Serializable, O extends Serializable,
     X, Y, D extends Serializable> implements DistributedEntryProcessingStep<L, K, V, G, I, O> {
