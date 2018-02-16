@@ -579,7 +579,7 @@ namespace Apache.Ignite.Core.Tests.Services
             const string javaSvcName = "javaService";
 
             // Deploy Java service
-            Grid1.GetCompute()
+            Grid1.GetCluster().ForLocal().GetCompute()
                 .ExecuteJavaTask<object>("org.apache.ignite.platform.PlatformDeployServiceTask", javaSvcName);
 
             // Verify decriptor
