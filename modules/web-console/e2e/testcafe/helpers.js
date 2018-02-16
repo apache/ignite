@@ -33,4 +33,12 @@ const baseURL = process.env.APP_URL || 'http://localhost:9001/'
  */
 const pageURL = (relativePath = '') => `${baseURL}${relativePath}`
 
-module.exports = { mouseenterTrigger, pageURL };
+const getLocationPathname = ClientFunction(() => Promise.resolve(location.pathname))
+
+/**
+ * Fake visibility predicate, use with selector.filter method
+ * @param {Element} node
+ */
+const isVisible = (node) => !!node.getBoundingClientRect().width
+
+module.exports = { mouseenterTrigger, pageURL, getLocationPathname, isVisible };
