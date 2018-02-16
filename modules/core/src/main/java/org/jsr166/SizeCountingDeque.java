@@ -152,7 +152,8 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
     @Override public E pollFirst() {
         E res = deque.pollFirst();
 
-        cntr.dec();
+        if (res != null)
+            cntr.dec();
 
         return res;
     }
@@ -161,7 +162,8 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
     @Override public E pollLast() {
         E res = deque.pollFirst();
 
-        cntr.dec();
+        if (res != null)
+            cntr.dec();
 
         return res;
     }
@@ -238,7 +240,8 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
     @Override public E poll() {
         E res = deque.poll();
 
-        cntr.dec();
+        if (res != null)
+            cntr.dec();
 
         return res;
     }
@@ -323,8 +326,9 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        while (pollFirst() != null)
-            cntr.dec();
+        while (pollFirst() != null) {
+            // No-op.
+        }
     }
 
     /** {@inheritDoc} */
