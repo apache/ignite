@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.IgniteClientConnectAfterCommunicationFailureTest;
 import org.apache.ignite.internal.IgniteClientReconnectApiExceptionTest;
 import org.apache.ignite.internal.IgniteClientReconnectAtomicsTest;
 import org.apache.ignite.internal.IgniteClientReconnectBinaryContexTest;
@@ -43,6 +44,7 @@ public class IgniteClientReconnectTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Client Reconnect Test Suite");
 
+        suite.addTestSuite(IgniteClientConnectAfterCommunicationFailureTest.class);
         suite.addTestSuite(IgniteClientReconnectStopTest.class);
         suite.addTestSuite(IgniteClientReconnectApiExceptionTest.class);
         suite.addTestSuite(IgniteClientReconnectDiscoveryStateTest.class);

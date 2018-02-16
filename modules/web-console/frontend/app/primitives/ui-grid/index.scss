@@ -157,6 +157,7 @@
             .ui-grid-filter-container {
                 padding-left: 20px;
                 padding-right: 20px;
+                font-weight: normal;
             }
 
             .ng-hide + .ui-grid-header-cell-row .ui-grid-header-cell {
@@ -401,6 +402,7 @@
                             .ui-grid-column-resizer {
                                 right: -1px;
                                 opacity: 0;
+                                z-index: 1000;
                             }
                         }
                     }
@@ -501,6 +503,10 @@
             content: '';
         }
     }
+
+    .ui-grid-selection-row-header-buttons::before {
+        opacity: 1;
+    }
 }
 
 .ui-grid--ignite.ui-grid-disabled-group-selection {
@@ -514,6 +520,7 @@
     }
 }
 
+// Obsoleted, use grid-no-data.
 .ui-grid--ignite.no-data {
     position: relative;
 

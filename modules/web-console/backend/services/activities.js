@@ -17,19 +17,20 @@
 
 'use strict';
 
+const _ = require('lodash');
+
 // Fire me up!
 
 module.exports = {
     implements: 'services/activities',
-    inject: ['require(lodash)', 'mongo']
+    inject: ['mongo']
 };
 
 /**
- * @param _
  * @param mongo
  * @returns {ActivitiesService}
  */
-module.exports.factory = (_, mongo) => {
+module.exports.factory = (mongo) => {
     class ActivitiesService {
         /**
          * Update page activities.

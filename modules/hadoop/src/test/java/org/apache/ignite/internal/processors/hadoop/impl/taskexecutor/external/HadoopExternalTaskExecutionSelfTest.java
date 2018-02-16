@@ -117,7 +117,7 @@ public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest 
         job.setJarByClass(getClass());
 
         IgniteInternalFuture<?> fut = grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 1),
-            createJobInfo(job.getConfiguration()));
+            createJobInfo(job.getConfiguration(), null));
 
         fut.get();
     }
@@ -153,7 +153,7 @@ public class HadoopExternalTaskExecutionSelfTest extends HadoopAbstractSelfTest 
         job.setJarByClass(getClass());
 
         IgniteInternalFuture<?> fut = grid(0).hadoop().submit(new HadoopJobId(UUID.randomUUID(), 1),
-            createJobInfo(job.getConfiguration()));
+            createJobInfo(job.getConfiguration(), null));
 
         try {
             fut.get();

@@ -38,9 +38,10 @@ import org.apache.ignite.plugin.PluginNotFoundException;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.DisposableBean;
-import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.event.ContextRefreshedEvent;
 
 /**
  * Ignite Spring bean allows to bypass {@link Ignition} methods.
@@ -48,9 +49,20 @@ import org.springframework.context.ApplicationContextAware;
  * Spring configuration file directly without invoking static
  * {@link Ignition} methods. This class can be wired directly from
  * Spring and can be referenced from within other Spring beans.
- * By virtue of implementing {@link DisposableBean} and {@link InitializingBean}
+ * By virtue of implementing {@link DisposableBean} and {@link SmartInitializingSingleton}
  * interfaces, {@code IgniteSpringBean} automatically starts and stops underlying
  * grid instance.
+ *
+ * <p>
+ * A note should be taken that Ignite instance is started after all other
+ * Spring beans have been initialized and right before Spring context is refreshed.
+ * That implies that it's not valid to reference IgniteSpringBean from
+ * any kind of Spring bean init methods like {@link javax.annotation.PostConstruct}.
+ * If it's required to reference IgniteSpringBean for other bean
+ * initialization purposes, it should be done from a {@link ContextRefreshedEvent}
+ * listener method declared in that bean.
+ * </p>
+ *
  * <p>
  * <h1 class="header">Spring Configuration Example</h1>
  * Here is a typical example of describing it in Spring file:
@@ -79,7 +91,7 @@ import org.springframework.context.ApplicationContextAware;
  * </pre>
  * <p>
  */
-public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBean,
+public class IgniteSpringBean implements Ignite, DisposableBean, SmartInitializingSingleton,
     ApplicationContextAware, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
@@ -145,7 +157,6 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
 
     /** {@inheritDoc} */
     @Override public void destroy() throws Exception {
-        // If there were some errors when afterPropertiesSet() was called.
         if (g != null) {
             // Do not cancel started tasks, wait for them.
             G.stop(g.name(), false);
@@ -153,11 +164,16 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
-    @Override public void afterPropertiesSet() throws Exception {
+    @Override public void afterSingletonsInstantiated() {
         if (cfg == null)
             cfg = new IgniteConfiguration();
 
-        g = IgniteSpring.start(cfg, appCtx);
+        try {
+            g = IgniteSpring.start(cfg, appCtx);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException("Failed to start IgniteSpringBean", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -620,7 +636,9 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     protected void checkIgnite() throws IllegalStateException {
         if (g == null) {
             throw new IllegalStateException("Ignite is in invalid state to perform this operation. " +
-                "It either not started yet or has already being or have stopped " +
+                "It either not started yet or has already being or have stopped.\n" +
+                "Make sure that IgniteSpringBean is not referenced from any kind of Spring bean init methods " +
+                "like @PostConstruct}.\n" +
                 "[ignite=" + g + ", cfg=" + cfg + ']');
         }
     }
