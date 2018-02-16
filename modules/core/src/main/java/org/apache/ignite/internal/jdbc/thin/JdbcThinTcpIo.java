@@ -157,14 +157,21 @@ public class JdbcThinTcpIo {
             }
         }
 
-        if ((inaccessibleAddrs != null) && (inaccessibleAddrs.size() == addrs.length)) {
+        if ((inaccessibleAddrs != null) && (inaccessibleAddrs.size() == addrs.length) && (exceptions != null)) {
+            if (exceptions.size() == 1) {
+                Exception ex = exceptions.get(0);
+
+                if (ex instanceof SQLException)
+                    throw (SQLException)ex;
+                else if (ex instanceof IOException)
+                    throw (IOException)ex;
+            }
+
             SQLException e = new SQLException("Failed to connect to server [host=" + connProps.getHost() + ", addresses=" +
                     inaccessibleAddrs + ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
 
-            if (exceptions != null) {
-                for (Exception ex : exceptions)
-                    e.addSuppressed(ex);
-            }
+            for (Exception ex : exceptions)
+                e.addSuppressed(ex);
 
             throw e;
         }
