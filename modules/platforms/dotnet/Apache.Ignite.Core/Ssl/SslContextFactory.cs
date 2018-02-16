@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Cluster.Ssl
+namespace Apache.Ignite.Core.Ssl
 {
     using System;
     using System.Diagnostics;
