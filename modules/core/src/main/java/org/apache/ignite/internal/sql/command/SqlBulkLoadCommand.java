@@ -53,8 +53,8 @@ public class SqlBulkLoadCommand implements SqlCommand {
     /** File format. */
     private BulkLoadFormat inputFormat;
 
-    /** Batch size (size of portion of a file sent in each sub-request). */
-    private Integer batchSize;
+    /** Packet size (size of portion of a file sent in each sub-request). */
+    private Integer packetSize;
 
     /**
      * Parses the command.
@@ -168,15 +168,15 @@ public class SqlBulkLoadCommand implements SqlCommand {
     private void parseParameters(SqlLexer lex) {
         while (lex.lookAhead().tokenType() == SqlLexerTokenType.DEFAULT) {
             switch (lex.lookAhead().token()) {
-                case SqlKeyword.BATCH_SIZE:
+                case SqlKeyword.PACKET_SIZE:
                     lex.shift();
 
-                    int sz = parseInt(lex);
+                    int size = parseInt(lex);
 
-                    if (!BulkLoadAckClientParameters.isValidBatchSize(sz))
-                        throw error(lex, BulkLoadAckClientParameters.batchSizeErrorMsg(sz));
+                    if (!BulkLoadAckClientParameters.isValidPacketSize(size))
+                        throw error(lex, BulkLoadAckClientParameters.packetSizeErrorMesssage(size));
 
-                    batchSize = sz;
+                    packetSize = size;
 
                     break;
 
@@ -255,21 +255,21 @@ public class SqlBulkLoadCommand implements SqlCommand {
     }
 
     /**
-     * Returns the batch size.
+     * Returns the packet size.
      *
-     * @return The batch size.
+     * @return The packet size.
      */
-    public Integer batchSize() {
-        return batchSize;
+    public Integer packetSize() {
+        return packetSize;
     }
 
     /**
-     * Sets the batch size.
+     * Sets the packet size.
      *
-     * @param batchSize The batch size.
+     * @param packetSize The packet size.
      */
-    public void batchSize(int batchSize) {
-        this.batchSize = batchSize;
+    public void packetSize(int packetSize) {
+        this.packetSize = packetSize;
     }
 
     /** {@inheritDoc} */
