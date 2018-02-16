@@ -39,7 +39,7 @@ RUN curl https://dist.apache.org/repos/dist/release/ignite/${IGNITE_VERSION}/apa
 # Copy sh files and set permission
 COPY ./run.sh $IGNITE_HOME/
 
-RUN chmod +x $IGNITE_HOME/run.sh
+RUN chmod +x $IGNITE_HOME/run.sh && chgrp -R 0 $IGNITE_HOME && chmod -R g=u $IGNITE_HOME
 
 CMD $IGNITE_HOME/run.sh
 
