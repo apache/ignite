@@ -319,7 +319,7 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
 
     /** {@inheritDoc} */
     @Override public void clear() {
-        while (peekFirst() != null)
+        while (pollFirst() != null)
             cntr.dec();
     }
 
