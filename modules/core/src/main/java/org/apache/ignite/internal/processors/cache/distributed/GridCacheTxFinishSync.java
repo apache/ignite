@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -61,13 +62,13 @@ public class GridCacheTxFinishSync<K, V> {
      * @param nodeId Node ID request being sent to.
      * @param threadId Thread ID started transaction.
      */
-    public void onFinishSend(UUID nodeId, long threadId) {
+    public void onFinishSend(UUID nodeId, long threadId, GridCacheVersion ver) {
         ThreadFinishSync threadSync = threadMap.get(threadId);
 
         if (threadSync == null)
             threadSync = F.addIfAbsent(threadMap, threadId, new ThreadFinishSync(threadId));
 
-        threadSync.onSend(nodeId);
+        threadSync.onSend(nodeId, ver);
     }
 
     /**
@@ -137,7 +138,7 @@ public class GridCacheTxFinishSync<K, V> {
         /**
          * @param nodeId Node ID request being sent to.
          */
-        public void onSend(UUID nodeId) {
+        public void onSend(UUID nodeId, GridCacheVersion ver) {
             TxFinishSync sync = nodeMap.get(nodeId);
 
             if (sync == null) {
@@ -160,7 +161,7 @@ public class GridCacheTxFinishSync<K, V> {
                 }
             }
 
-            sync.onSend();
+            sync.onSend(ver);
         }
 
         /**
@@ -241,13 +242,13 @@ public class GridCacheTxFinishSync<K, V> {
          * Callback invoked before sending finish request to remote nodes.
          * Will synchronously wait for previous finish response.
          */
-        public void onSend() {
+        public void onSend(GridCacheVersion ver) {
             synchronized (this) {
                 if (log.isTraceEnabled())
                     log.trace("Moved transaction synchronizer to waiting state [nodeId=" + nodeId +
-                        ", threadId=" + threadId + ']');
+                        ", threadId=" + threadId + ", ver=" + ver + ']');
 
-                assert cnt == 0 || nodeLeft;
+                assert cnt == 0 || nodeLeft : "nodeId=" + nodeId + ", threadId=" + threadId + ", ver=" + ver + ", cnt=" + cnt;
 
                 if (nodeLeft)
                     return;

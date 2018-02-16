@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -46,7 +47,9 @@ import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -75,6 +78,13 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** */
+    protected static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>();
+
+    /** Lock future updater. */
+    private static final AtomicReferenceFieldUpdater<GridDhtTxLocalAdapter, IgniteInternalFuture> LOCK_FUT_UPD =
+        AtomicReferenceFieldUpdater.newUpdater(GridDhtTxLocalAdapter.class, IgniteInternalFuture.class, "lockFut");
+
     /** Near mappings. */
     protected Map<UUID, GridDistributedTxMapping> nearMap = new ConcurrentHashMap<>();
 
@@ -95,6 +105,11 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
     /** Nodes where transactions were started on lock step. */
     private Set<ClusterNode> lockTxNodes;
+
+    /** Lock future. Not null while lock future is not completed. */
+    @SuppressWarnings("UnusedDeclaration")
+    @GridToStringExclude
+    protected volatile IgniteInternalFuture<Boolean> lockFut;
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -823,6 +838,47 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      */
     public final boolean commitOnPrepare() {
         return onePhaseCommit() && !near() && !nearOnOriginatingNode;
+    }
+
+    /**
+     * Atomically updates lock future.
+     *
+     * @param oldFut Old future.
+     * @param newFut New future.
+     *
+     * @return {@code true} If future was changed.
+     */
+    public boolean updateLockFuture(IgniteInternalFuture<Boolean> oldFut, IgniteInternalFuture<Boolean> newFut) {
+        return LOCK_FUT_UPD.compareAndSet(this, oldFut, newFut);
+    }
+
+    /**
+     *
+     * @return {@code True} if tx is ro
+     */
+    public boolean isRollingBack() {
+        return lockFut == ROLLBACK_FUT;
+    }
+
+    /**
+     * Prepare async rollback.
+     *
+     * @return Current lock future or null if it's safe to roll back.
+     */
+    public IgniteInternalFuture<Boolean> prepareAsyncRollback() {
+        IgniteInternalFuture<Boolean> fut;
+
+        while(true) {
+            fut = lockFut;
+
+            if (fut != null)
+                break;
+
+            if (updateLockFuture(null, ROLLBACK_FUT))
+                return null;
+        }
+
+        return fut == ROLLBACK_FUT ? null : fut;
     }
 
     /**

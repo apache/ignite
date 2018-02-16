@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -48,6 +49,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -64,6 +66,8 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
 public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMappedVersion {
     /** */
     private static final long serialVersionUID = 0L;
+
+    public static final AtomicInteger finishCntr = new AtomicInteger();
 
     /** */
     private UUID nearNodeId;
@@ -399,9 +403,11 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             fut.onError(e);
         }
         catch (IgniteCheckedException e) {
+            log.error("Failed to prepare transaction: " + this, e);
+
             setRollbackOnly();
 
-            fut.onError(new IgniteTxRollbackCheckedException("Failed to prepare transaction: " + this, e));
+            fut.onError(new IgniteTxRollbackCheckedException("Failed to prepare transaction: " + CU.txString(this), e));
         }
 
         return chainOnePhasePrepare(fut);
@@ -413,11 +419,20 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
      * @param fut Finish future.
      */
     private void finishTx(boolean commit, @Nullable IgniteInternalFuture prepFut, GridDhtTxFinishFuture fut) {
+        finishCntr.incrementAndGet();
+
         assert prepFut == null || prepFut.isDone();
 
         boolean primarySync = syncMode() == PRIMARY_SYNC;
 
         IgniteCheckedException err = null;
+
+        if (!commit) {
+            final IgniteInternalFuture<Boolean> lockFut = prepareAsyncRollback();
+
+            if (lockFut != null)
+                ((GridDhtLockFuture)lockFut).onError(rollbackException());
+        }
 
         if (!commit && prepFut != null) {
             try {

@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -58,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -67,6 +69,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.NotNull;
@@ -249,6 +252,33 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
         if (log == null) {
             msgLog = cctx.shared().txLockMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridDhtLockFuture.class);
+        }
+
+        if (tx != null) {
+            while(true) {
+                IgniteInternalFuture<Boolean> fut = tx.lockFut;
+
+                if (fut != null) {
+                    if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT)
+                        onError(tx.rollbackException());
+                    else
+                        fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                            @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                                try {
+                                    fut.get();
+                                }
+                                catch (IgniteCheckedException e) {
+                                    onError(e);
+                                }
+                            }
+                        });
+
+                    return;
+                }
+
+                if (tx.updateLockFuture(null, this))
+                    return;
+            }
         }
     }
 
@@ -724,6 +754,9 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             cctx.tm().txContext(tx);
 
             set = cctx.tm().setTxTopologyHint(tx.topologyVersionSnapshot());
+
+            if (success)
+                tx.updateLockFuture(this, null);
         }
 
         try {

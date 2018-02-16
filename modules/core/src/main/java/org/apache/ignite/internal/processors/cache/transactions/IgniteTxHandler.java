@@ -885,7 +885,7 @@ public class IgniteTxHandler {
                 req.threadId(),
                 req.futureId(),
                 req.miniId(),
-                new IgniteCheckedException("Transaction has been already completed."));
+                new IgniteTxRollbackCheckedException("Transaction has been already completed or not started yet."));
 
             try {
                 ctx.io().send(nodeId, res, req.policy());
@@ -1012,7 +1012,7 @@ public class IgniteTxHandler {
 
             if (tx != null)
                 try {
-                    return tx.rollbackNearTxLocalAsync();
+                    return tx.rollbackNearTxLocalAsync(); // TODO FIXME recursive call to rollbackNearTxLocalAsync.
                 }
                 catch (Throwable e1) {
                     e.addSuppressed(e1);

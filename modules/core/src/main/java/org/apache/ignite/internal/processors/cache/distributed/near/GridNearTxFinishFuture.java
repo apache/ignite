@@ -42,6 +42,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -55,6 +57,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
@@ -399,9 +402,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      *
      * @param commit Commit flag.
      * @param clearThreadMap If {@code true} removes {@link GridNearTxLocal} from thread map.
+     * @param onTimeout If {@code true} called from timeout handler.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    public void finish(boolean commit, boolean clearThreadMap) {
+    public void finish(final boolean commit, final boolean clearThreadMap, final boolean onTimeout) {
         if (tx.onNeedCheckBackup()) {
             assert tx.onePhaseCommit();
 
@@ -414,6 +418,41 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             return;
         }
 
+        // Handle possible concurrent locking in case of asynchronous rollback.
+        if (!commit && !clearThreadMap) {
+            IgniteInternalFuture<Boolean> lockFut = tx.prepareAsyncRollback();
+
+            if (lockFut != null) {
+                if (onTimeout) {
+                    // Wait for lock future completion. This allows deadlock detection to kick in.
+                    lockFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                        @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                            doFinish(false, false);
+                        }
+                    });
+
+                    return;
+                }
+                else {
+                    // Abort lock futures.
+                    if (lockFut instanceof GridDhtColocatedLockFuture)
+                        ((GridDhtColocatedLockFuture)lockFut).onRollback(tx.rollbackException());
+                    else if (lockFut instanceof GridNearLockFuture)
+                        ((GridNearLockFuture)lockFut).onRollback(tx.rollbackException());
+                }
+            }
+        }
+
+        doFinish(commit, clearThreadMap);
+    }
+
+    /**
+     * Finishes a transaction.
+     *
+     * @param commit Commit.
+     * @param clearThreadMap Clear thread map.
+     */
+    private void doFinish(boolean commit, boolean clearThreadMap) {
         try {
             if (tx.localFinish(commit, clearThreadMap) || (!commit && tx.state() == UNKNOWN)) {
                 if ((tx.onePhaseCommit() && needFinishOnePhase(commit)) || (!tx.onePhaseCommit() && mappings != null)) {
@@ -423,11 +462,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                         if (mapping != null) {
                             assert !hasFutures() : futures();
 
-                            finish(1, mapping, commit);
+                            finish(1, mapping, commit, !clearThreadMap);
                         }
                     }
                     else
-                        finish(mappings.mappings(), commit);
+                        finish(mappings.mappings(), commit, !clearThreadMap);
                 }
 
                 markInitialized();
@@ -680,14 +719,14 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param mappings Mappings.
      * @param commit Commit flag.
      */
-    private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit) {
+    private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit, boolean useCompletedVer) {
         assert !hasFutures() : futures();
 
         int miniId = 0;
 
         // Create mini futures.
         for (GridDistributedTxMapping m : mappings)
-            finish(++miniId, m, commit);
+            finish(++miniId, m, commit, useCompletedVer);
     }
 
     /**
@@ -695,10 +734,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param m Mapping.
      * @param commit Commit flag.
      */
-    private void finish(int miniId, GridDistributedTxMapping m, boolean commit) {
+    private void finish(int miniId, GridDistributedTxMapping m, boolean commit, boolean useCompletedVer) {
         ClusterNode n = m.primary();
 
-        assert !m.empty() : m;
+        assert !m.empty() : m + " " + tx.state();
 
         CacheWriteSynchronizationMode syncMode = tx.syncMode();
 
@@ -706,7 +745,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             syncMode = FULL_SYNC;
 
         // Version to be added in completed versions on primary node.
-        GridCacheVersion completedVer = !commit && tx.timeout() > 0 ? tx.xidVersion() : null;
+        GridCacheVersion completedVer = !commit && useCompletedVer ? tx.xidVersion() : null;
 
         GridNearTxFinishRequest req = new GridNearTxFinishRequest(
             futId,
@@ -747,7 +786,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             add(fut); // Append new future.
 
             if (tx.pessimistic())
-                cctx.tm().beforeFinishRemote(n.id(), tx.threadId());
+                cctx.tm().beforeFinishRemote(n.id(), tx.threadId(), tx.xidVersion());
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
@@ -1000,7 +1039,14 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
          */
         void onNearFinishResponse(GridNearTxFinishResponse res) {
             if (res.error() != null)
-                onDone(res.error());
+                if (res.error() instanceof IgniteTxRollbackCheckedException) {
+                    if (log.isDebugEnabled())
+                        log.debug("Transaction was rolled back: " + tx);
+
+                    onDone(tx);
+                }
+                else
+                    onDone(res.error());
             else
                 onDone(tx);
         }

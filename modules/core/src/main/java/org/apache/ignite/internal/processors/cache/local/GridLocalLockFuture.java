@@ -36,12 +36,15 @@ import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
+import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -145,6 +148,11 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridLocalLockFuture.class);
+
+        if (tx != null && tx instanceof GridNearTxLocal && !((GridNearTxLocal)tx).updateLockFuture(null, this)) {
+            onError(new IgniteTxRollbackCheckedException("Failed to acquire lock because transaction " +
+                "has started to roll back [tx=" + CU.txString(tx) + ']'));
+        }
     }
 
     /**
@@ -436,6 +444,9 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
         if (!success)
             undoLocks();
 
+        if (tx != null && tx instanceof GridNearTxLocal)
+            ((GridNearTxLocal)tx).updateLockFuture(this, null);
+
         if (onDone(success, err)) {
             if (log.isDebugEnabled())
                 log.debug("Completing future: " + this);
@@ -498,7 +509,7 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
                             if (deadlock != null)
                                 ERR_UPD.compareAndSet(GridLocalLockFuture.this, null,
                                         new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
-                                                "transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']',
+                                                "transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
                                                 new TransactionDeadlockException(deadlock.toString(cctx.shared()))));
                         }
                         catch (IgniteCheckedException e) {

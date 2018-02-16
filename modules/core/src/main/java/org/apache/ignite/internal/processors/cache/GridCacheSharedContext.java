@@ -69,9 +69,11 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
+import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY;
+import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 
 /**
  * Shared context.
@@ -982,7 +984,16 @@ public class GridCacheSharedContext<K, V> {
     public IgniteInternalFuture rollbackTxAsync(GridNearTxLocal tx) throws IgniteCheckedException {
         tx.txState().awaitLastFuture(this);
 
-        return tx.rollbackNearTxLocalAsync();
+        final GridNearTxLocal locTx = txMgr.userTx();
+
+        // {@code True) if rolling back from tx control thread.
+        boolean clearThreadMap = locTx == tx;
+
+        // Mark for rollback if async op.
+        if (!clearThreadMap)
+            tx.state(MARKED_ROLLBACK);
+
+        return tx.rollbackNearTxLocalAsync(clearThreadMap, false);
     }
 
     /**

@@ -92,6 +92,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRA
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_PRIMARY;
+import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
@@ -1251,12 +1252,14 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @throws IgniteCheckedException If transaction check failed.
      */
     protected void checkValid() throws IgniteCheckedException {
+        boolean marked = false;
+
         if (local() && !dht() && remainingTime() == -1)
-            state(MARKED_ROLLBACK, true);
+            marked = state(MARKED_ROLLBACK, true);
 
         if (isRollbackOnly()) {
             if (remainingTime() == -1)
-                throw new IgniteTxTimeoutCheckedException("Cache transaction timed out: " + this);
+                throw new IgniteTxTimeoutCheckedException("Cache transaction timed out: " + CU.txString(this));
 
             TransactionState state = state();
 
@@ -1268,7 +1271,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 throw new IgniteTxHeuristicCheckedException("Cache transaction is in unknown state " +
                     "(remote transactions will be invalidated): " + this);
 
-            throw new IgniteCheckedException("Cache transaction marked as rollback-only: " + this);
+            throw marked ? new IgniteCheckedException("Cache transaction marked as rollback-only: " + this)
+                : new IgniteTxRollbackCheckedException("Cache transaction marked as rollback-only: " + this);
         }
     }
 
@@ -1312,12 +1316,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         IgniteTxKey key = entry.txKey();
 
         checkInternal(key);
-
-        TransactionState state = state();
-
-        assert state == TransactionState.ACTIVE || remainingTime() == -1 :
-            "Invalid tx state for adding entry [op=" + op + ", val=" + val + ", entry=" + entry + ", filter=" +
-                Arrays.toString(filter) + ", txCtx=" + cctx.tm().txContextVersion() + ", tx=" + this + ']';
 
         IgniteTxEntry old = entry(key);
 
@@ -1638,7 +1636,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 final GridClosureException ex = new GridClosureException(
                     new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
-                        "for transaction [timeout=" + timeout() + ", tx=" + this + ']', deadlockErr)
+                        "for transaction [timeout=" + timeout() + ", tx=" + CU.txString(IgniteTxLocalAdapter.this) +
+                        ']', deadlockErr)
                 );
 
                 if (commit && commitAfterLock())
@@ -1670,6 +1669,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 }
 
                 rollback = false;
+
+                state(ACTIVE);
 
                 return new GridFinishedFuture<>(r);
             }
@@ -1719,11 +1720,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 if (!locked)
                     throw new GridClosureException(new IgniteTxTimeoutCheckedException("Failed to acquire lock " +
                         "within provided timeout for transaction [timeout=" + timeout() +
-                        ", tx=" + IgniteTxLocalAdapter.this + ']'));
+                        ", tx=" + CU.txString(IgniteTxLocalAdapter.this) + ']'));
 
                 IgniteInternalFuture<T> fut = postLock();
 
                 rollback = false;
+
+                state(ACTIVE);
 
                 return fut;
             }
