@@ -403,8 +403,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             fut.onError(e);
         }
         catch (IgniteCheckedException e) {
-            log.error("Failed to prepare transaction: " + this, e);
-
             setRollbackOnly();
 
             fut.onError(new IgniteTxRollbackCheckedException("Failed to prepare transaction: " + CU.txString(this), e));
@@ -419,8 +417,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
      * @param fut Finish future.
      */
     private void finishTx(boolean commit, @Nullable IgniteInternalFuture prepFut, GridDhtTxFinishFuture fut) {
-        finishCntr.incrementAndGet();
-
         assert prepFut == null || prepFut.isDone();
 
         boolean primarySync = syncMode() == PRIMARY_SYNC;

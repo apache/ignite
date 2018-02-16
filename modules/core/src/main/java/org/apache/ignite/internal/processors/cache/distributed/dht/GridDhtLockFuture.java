@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
+import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -261,7 +262,10 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                 if (fut != null) {
                     if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT)
                         onError(tx.rollbackException());
-                    else
+                    else {
+                        // Wait for collocated lock future
+                        assert fut instanceof GridDhtColocatedLockFuture : fut;
+
                         fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                             @Override public void apply(IgniteInternalFuture<Boolean> fut) {
                                 try {
@@ -272,6 +276,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                                 }
                             }
                         });
+                    }
 
                     return;
                 }
@@ -756,7 +761,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
             set = cctx.tm().setTxTopologyHint(tx.topologyVersionSnapshot());
 
             if (success)
-                tx.updateLockFuture(this, null);
+                tx.clearLockFuture();
         }
 
         try {

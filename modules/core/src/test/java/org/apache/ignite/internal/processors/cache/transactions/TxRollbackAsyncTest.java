@@ -188,11 +188,11 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testRollbackSync() throws Exception {
+    public void testRollbackSimple() throws Exception {
         startClient();
 
         for (Ignite ignite : G.allGrids()) {
-            testRollbackSync0(ignite);
+            testRollbackSimple0(ignite);
 
             ignite.cache(CACHE_NAME).clear();
         }
@@ -201,7 +201,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private void testRollbackSync0(Ignite near) throws Exception {
+    private void testRollbackSimple0(Ignite near) throws Exception {
         // Normal rollback after put.
         Transaction tx = near.transactions().txStart(PESSIMISTIC, READ_COMMITTED);
 

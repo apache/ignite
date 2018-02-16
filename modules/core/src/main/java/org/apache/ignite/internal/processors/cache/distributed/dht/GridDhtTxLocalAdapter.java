@@ -78,7 +78,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** Async rollback marker for lock futures. */
     protected static final IgniteInternalFuture<Boolean> ROLLBACK_FUT = new GridFutureAdapter<>();
 
     /** Lock future updater. */
@@ -106,7 +106,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** Nodes where transactions were started on lock step. */
     private Set<ClusterNode> lockTxNodes;
 
-    /** Lock future. Not null while lock future is not completed. */
+    /** Lock future what is currently in progress. */
     @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
     protected volatile IgniteInternalFuture<Boolean> lockFut;
@@ -853,11 +853,12 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
-     *
-     * @return {@code True} if tx is ro
+     * Clears lock future.
      */
-    public boolean isRollingBack() {
-        return lockFut == ROLLBACK_FUT;
+    public void clearLockFuture() {
+        assert lockFut != null : lockFut;
+
+        lockFut = null;
     }
 
     /**
