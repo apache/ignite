@@ -220,7 +220,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
 
                 return null;
             }
-        }, SQLException.class, "Property cannot be lower then 0 [name=socketReceiveBuffer, value=-1]");
+        }, SQLException.class, "Property cannot be lower than 0 [name=socketReceiveBuffer, value=-1]");
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -231,7 +231,7 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
 
                 return null;
             }
-        }, SQLException.class, "Property cannot be lower then 0 [name=socketSendBuffer, value=-1]");
+        }, SQLException.class, "Property cannot be lower than 0 [name=socketSendBuffer, value=-1]");
     }
 
     /**
