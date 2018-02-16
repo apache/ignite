@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCache
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataRegionMetricsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsEvictionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsPageReplacementTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreePageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreeReuseListPageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IndexStoragePageMemoryImplTest;
@@ -78,7 +78,7 @@ public class IgnitePdsTestSuite extends TestSuite {
      */
     public static void addRealPageStoreTestsLongRunning(TestSuite suite) {
         // Basic PageMemory tests.
-        suite.addTestSuite(IgnitePdsEvictionTest.class);
+        suite.addTestSuite(IgnitePdsPageReplacementTest.class);
     }
 
     /**
