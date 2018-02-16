@@ -1005,8 +1005,8 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException If something failed.
      */
     public FieldsQueryCursor<List<?>> processBulkLoadCommand(SqlBulkLoadCommand cmd) throws IgniteCheckedException {
-        if (cmd.batchSize() == null)
-            cmd.batchSize(BulkLoadAckClientParameters.DEFAULT_BATCH_SIZE);
+        if (cmd.packetSize() == null)
+            cmd.packetSize(BulkLoadAckClientParameters.DFLT_PACKET_SIZE);
 
         GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
 
@@ -1035,7 +1035,7 @@ public class DmlStatementsProcessor {
 
         BulkLoadProcessor processor = new BulkLoadProcessor(inputParser, dataConverter, outputWriter);
 
-        BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.batchSize());
+        BulkLoadAckClientParameters params = new BulkLoadAckClientParameters(cmd.localFileName(), cmd.packetSize());
 
         return new BulkLoadContextCursor(processor, params);
     }
