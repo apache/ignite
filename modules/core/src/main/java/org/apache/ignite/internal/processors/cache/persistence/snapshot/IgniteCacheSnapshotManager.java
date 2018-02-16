@@ -49,6 +49,9 @@ public class IgniteCacheSnapshotManager<T extends SnapshotOperation> extends Gri
      * Try to start local snapshot operation if it's required by discovery event.
      *
      * @param discoveryEvent Discovery event.
+     * @param topVer topology version on the moment when this method was called
+     *
+     * @throws IgniteCheckedException if failed
      */
     @Nullable public IgniteInternalFuture tryStartLocalSnapshotOperation(
             @Nullable DiscoveryEvent discoveryEvent, AffinityTopologyVersion topVer
