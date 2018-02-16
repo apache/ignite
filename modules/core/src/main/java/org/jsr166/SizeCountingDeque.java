@@ -236,7 +236,11 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
 
     /** {@inheritDoc} */
     @Override public E poll() {
-        return deque.poll();
+        E res = deque.poll();
+
+        cntr.dec();
+
+        return res;
     }
 
     /** {@inheritDoc} */
