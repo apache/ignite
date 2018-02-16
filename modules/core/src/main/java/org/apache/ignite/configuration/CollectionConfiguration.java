@@ -55,6 +55,9 @@ public class CollectionConfiguration implements Serializable {
     /** Group name. */
     private String grpName;
 
+    /** If {@code True} then {@code IgniteSet} will use off-heap caching instead of on-heap for support iterator. */
+    private boolean offHeapCaching = false;
+
     /**
      * @return {@code True} if all items within the same collection will be collocated on the same node.
      */
@@ -175,6 +178,20 @@ public class CollectionConfiguration implements Serializable {
         this.grpName = grpName;
 
         return this;
+    }
+
+    /**
+     * @return {@code True} if off-heap caching is used instead of on-heap for {@code }IgniteSet}.
+     */
+    public boolean isOffHeapCaching() {
+        return offHeapCaching;
+    }
+
+    /**
+     * @param offHeapCaching Use off-heap caching instead of on-heap for {@code IgniteSet}.
+     */
+    public void setOffHeapCaching(boolean offHeapCaching) {
+        this.offHeapCaching = offHeapCaching;
     }
 
     /** {@inheritDoc} */

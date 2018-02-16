@@ -27,8 +27,10 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -63,6 +65,7 @@ import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.offheap.GridOffHeapSet;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -70,7 +73,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
@@ -106,8 +108,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     private final ConcurrentMap<IgniteUuid, GridCacheSetProxy> setsMap;
 
     /** Set keys used for set iteration. */
-    private ConcurrentMap<IgniteUuid, GridConcurrentHashSet<SetItemKey>> setDataMap =
-        new ConcurrentHashMap<>();
+    private final ConcurrentMap<IgniteUuid, Set<SetItemKey>> setDataMap = new ConcurrentHashMap<>();
 
     /** Queues map. */
     private final ConcurrentMap<IgniteUuid, GridCacheQueueProxy> queuesMap;
@@ -372,7 +373,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     public void onPartitionEvicted(int part) {
         GridCacheAffinityManager aff = cctx.affinity();
 
-        for (GridConcurrentHashSet<SetItemKey> set : setDataMap.values()) {
+        for (Set<SetItemKey> set : setDataMap.values()) {
             Iterator<SetItemKey> iter = set.iterator();
 
             while (iter.hasNext()) {
@@ -388,32 +389,36 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param name Set name.
      * @param colloc Collocated flag.
      * @param create Create flag.
+     * @param offHeapCaching {@code True} to use off-heap caching instead of on-heap.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable public <T> IgniteSet<T> set(final String name,
         boolean colloc,
-        final boolean create)
+        final boolean create,
+        final boolean offHeapCaching)
         throws IgniteCheckedException
     {
         // Non collocated mode enabled only for PARTITIONED cache.
         final boolean colloc0 =
             create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc);
 
-        return set0(name, colloc0, create);
+        return set0(name, colloc0, create, offHeapCaching);
     }
 
     /**
      * @param name Name of set.
      * @param collocated Collocation flag.
      * @param create If {@code true} set will be created in case it is not in cache.
+     * @param offHeapCaching {@code True} to use off-heap caching instead of on-heap.
      * @return Set.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("unchecked")
     @Nullable private <T> IgniteSet<T> set0(String name,
         boolean collocated,
-        boolean create)
+        boolean create,
+        boolean offHeapCaching)
         throws IgniteCheckedException
     {
         cctx.gate().enter();
@@ -426,7 +431,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
             if (create) {
-                hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);
+                hdr = new GridCacheSetHeader(randomSetUuid(offHeapCaching), collocated);
 
                 GridCacheSetHeader old = (GridCacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
 
@@ -457,6 +462,20 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * Generate IgniteSet idnetifier for specific configuration.
+     *
+     * @param offHeapCaching {@code True} to use off-heap caching instead of on-heap.
+     * @return identifier.
+     */
+    private IgniteUuid randomSetUuid(boolean offHeapCaching) {
+        IgniteUuid id0 = IgniteUuid.randomUuid();
+
+        assert id0.localId() > 0 : id0.localId();
+
+        return offHeapCaching ? new IgniteUuid(id0.globalId(), -id0.localId()) : id0;
+    }
+
+    /**
      * @param obj Object.
      * @return {@code True}
      */
@@ -468,7 +487,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param id Set ID.
      * @return Data for given set.
      */
-    @Nullable public GridConcurrentHashSet<SetItemKey> setData(IgniteUuid id) {
+    @Nullable public Set<SetItemKey> setData(IgniteUuid id) {
         return setDataMap.get(id);
     }
 
@@ -489,7 +508,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             cctx.preloader().syncFuture().get();
         }
 
-        GridConcurrentHashSet<SetItemKey> set = setDataMap.get(setId);
+        Set<SetItemKey> set = setDataMap.get(setId);
 
         if (set == null)
             return;
@@ -517,6 +536,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             retryRemoveAll(cache, keys);
 
         setDataMap.remove(setId);
+
+        set.clear();
     }
 
     /**
@@ -611,17 +632,22 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param rmv {@code True} if item was removed.
      */
     private void onSetItemUpdated(SetItemKey key, boolean rmv) {
-        GridConcurrentHashSet<SetItemKey> set = setDataMap.get(key.setId());
+        Set<SetItemKey> set = setDataMap.get(key.setId());
 
         if (set == null) {
             if (rmv)
                 return;
 
-            GridConcurrentHashSet<SetItemKey> old = setDataMap.putIfAbsent(key.setId(),
-                set = new GridConcurrentHashSet<>());
+            Set<SetItemKey> old = setDataMap.putIfAbsent(key.setId(),
+                set = key.setId().localId() < 0 ?
+                    new GridOffHeapSet<>(cctx.marshaller(), U.resolveClassLoader(cctx.gridConfig())) :
+                    new GridConcurrentHashSet<>());
 
-            if (old != null)
+            if (old != null) {
+                set.clear();
+
                 set = old;
+            }
         }
 
         if (rmv)

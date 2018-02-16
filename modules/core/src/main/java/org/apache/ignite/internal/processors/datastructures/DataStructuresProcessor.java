@@ -1470,7 +1470,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         return getCollection(new CX1<GridCacheContext, IgniteSet<T>>() {
             @Override public IgniteSet<T> applyx(GridCacheContext cctx) throws IgniteCheckedException {
-                return cctx.dataStructures().set(name, create && cfg.isCollocated(), create);
+                return cctx.dataStructures().set(name, create && cfg.isCollocated(), create,
+                    create && cfg.isOffHeapCaching());
             }
         }, cfg, name, grpName, SET, create);
     }

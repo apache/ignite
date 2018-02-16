@@ -73,6 +73,8 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     @Override protected CollectionConfiguration collectionConfiguration() {
         CollectionConfiguration colCfg = super.collectionConfiguration();
 
+        colCfg.setOffHeapCaching(true);
+
         if (colCfg.getCacheMode() == PARTITIONED)
             colCfg.setBackups(1);
 
