@@ -2373,6 +2373,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 boolean finish = cctx.exchange().mergeExchangesOnCoordinator(this);
 
+                updateTopologies(true);
+
                 if (!finish)
                     return;
             }
@@ -2968,6 +2970,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         return; // Node is stopping, no need to further process exchange.
                     }
+
+                    updateTopologies(false);
 
                     assert resTopVer.equals(exchCtx.events().topologyVersion()) :  "Unexpected result version [" +
                         "msgVer=" + resTopVer +
