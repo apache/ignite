@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
 
 /**
- *
+ * Abstract test class for Full API cache tests with presence of BaselineTopology.
  */
 public abstract class IgniteBaselineAbstractFullApiSelfTest extends GridCacheAbstractFullApiSelfTest {
     /** {@inheritDoc} */
