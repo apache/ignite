@@ -37,7 +37,8 @@ import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
- *
+ * Failover cache test with remove operations executed with presence of BaselineTopology
+ * when one random node from BLT is constantly restarted during the load.
  */
 public class IgniteStableBaselineCacheRemoveFailoverTest extends GridCacheAbstractRemoveFailureTest {
     /** */
