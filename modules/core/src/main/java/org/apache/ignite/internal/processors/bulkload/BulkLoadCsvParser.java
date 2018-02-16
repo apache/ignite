@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.bulkload;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.bulkload.pipeline.CharsetDecoderBlock;
 import org.apache.ignite.internal.processors.bulkload.pipeline.CsvLineProcessorBlock;
+import org.apache.ignite.internal.processors.bulkload.pipeline.CsvParserBlock;
 import org.apache.ignite.internal.processors.bulkload.pipeline.PipelineBlock;
 import org.apache.ignite.internal.processors.bulkload.pipeline.StrListAppenderBlock;
 import org.apache.ignite.internal.processors.bulkload.pipeline.LineSplitterBlock;
@@ -60,10 +61,13 @@ public class BulkLoadCsvParser extends BulkLoadParser {
         if (format.escapeChars() == null)
             format.escapeChars(BulkLoadCsvFormat.DEFAULT_ESCAPE_CHARS);
 
-        inputBlock.append(new LineSplitterBlock(format.lineSeparator()))
-            .append(new CsvLineProcessorBlock(format.fieldSeparator(), format.quoteChars(),
-                format.commentChars(), format.escapeChars(), format.flags()))
+//        inputBlock.append(new LineSplitterBlock(format.lineSeparator()))
+//            .append(new CsvLineProcessorBlock(format.fieldSeparator(), format.quoteChars(),
+//                format.commentChars(), format.escapeChars(), format.flags()))
+//            .append(collectorBlock);
+        inputBlock.append(new CsvParserBlock(format.lineSeparator(), ...))
             .append(collectorBlock);
+
     }
 
     /** {@inheritDoc} */

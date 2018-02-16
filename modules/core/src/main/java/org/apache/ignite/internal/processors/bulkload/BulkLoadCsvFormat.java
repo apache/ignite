@@ -24,10 +24,10 @@ import org.jetbrains.annotations.Nullable;
 /** Options for bulk load CSV format parser. */
 public class BulkLoadCsvFormat extends BulkLoadFormat {
     /** Line separator pattern. */
-    @NotNull public static final Pattern DEFAULT_LINE_SEPARATOR = Pattern.compile("[\r\n]+");
+    @NotNull public static final String DEFAULT_LINE_SEPARATOR = "\r\n";
 
     /** Field separator pattern. */
-    @NotNull public static final Pattern DEFAULT_FIELD_SEPARATOR = Pattern.compile(",");
+    @NotNull public static final String DEFAULT_FIELD_SEPARATOR = ",";
 
     /** Quote characters */
     @NotNull public static final String DEFAULT_QUOTE_CHARS = "\"";
@@ -36,7 +36,7 @@ public class BulkLoadCsvFormat extends BulkLoadFormat {
     @Nullable public static final String DEFAULT_ESCAPE_CHARS = null;
 
     /** Line comment start pattern. */
-    @Nullable public static final Pattern DEFAULT_COMMENT_CHARS = null;
+    @Nullable public static final String DEFAULT_COMMENT_CHARS = null;
 
     /**
      * When this flag is set, parser allows quotes to appear only in accordance with
