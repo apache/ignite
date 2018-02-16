@@ -58,6 +58,7 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.failure.IgniteFailureContext;
 import org.apache.ignite.failure.IgniteFailureType;
 import org.apache.ignite.failure.IgniteFailureProcessor;
 import org.apache.ignite.internal.GridComponent;
@@ -108,6 +109,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
+import org.apache.ignite.plugin.segmentation.SegmentationPolicy;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
@@ -2743,7 +2745,24 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 U.error(log, "Failed to disconnect discovery SPI.", e);
             }
 
-            IgniteFailureProcessor.INSTANCE.processFailure(ctx, IgniteFailureType.SEGMENTATION);
+            final IgniteFailureContext failureCtx = new IgniteFailureContext(ctx, IgniteFailureType.SEGMENTATION);
+
+            final SegmentationPolicy segPlc = ctx.config().getSegmentationPolicy();
+
+            switch (segPlc) {
+                case STOP:
+                    IgniteFailureProcessor.INSTANCE.stopNode(failureCtx);
+
+                    break;
+
+                case RESTART_JVM:
+                    IgniteFailureProcessor.INSTANCE.restartJvm(failureCtx);
+
+                    break;
+
+                default:
+                    assert segPlc == SegmentationPolicy.NOOP : "Unsupported segmentation policy value: " + segPlc;
+            }
         }
 
         /** {@inheritDoc} */

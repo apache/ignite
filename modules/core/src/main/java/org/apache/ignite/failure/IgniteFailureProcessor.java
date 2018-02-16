@@ -37,12 +37,12 @@ public class IgniteFailureProcessor {
     private final Object lock = new Object();
 
     /**
-     * @param ctx Context.
-     * @param type Type.
-     * @param cause Cause.
+     * @param failureCtx Failure context.
      */
-    public void processFailure(GridKernalContext ctx, IgniteFailureType type, Throwable cause) {
-        assert type != null;
+    public void processFailure(IgniteFailureContext failureCtx) {
+        assert failureCtx != null;
+
+        final GridKernalContext ctx = failureCtx.context();
 
         IgniteFailureHandler hnd = ctx.config().getIgniteFailureHandler();
 
@@ -55,26 +55,20 @@ public class IgniteFailureProcessor {
             if (ctx.invalidated())
                 return;
 
-            act = hnd.onFailure(ctx, type, cause);
+            act = hnd.onFailure(failureCtx);
 
             if (act != IgniteFailureAction.NOOP)
                 ctx.invalidate();
         }
 
-        final IgniteLogger log = ctx.log(getClass());
-
         switch (act) {
             case RESTART_JVM:
-                U.warn(log, "Restarting JVM on Ignite failure of type " + type);
-
-                restartJvm(ctx, type);
+                restartJvm(failureCtx);
 
                 break;
 
             case STOP:
-                U.warn(log, "Stopping local node on Ignite failure of type " + type);
-
-                stopNode(ctx, type);
+                stopNode(failureCtx);
 
                 break;
 
@@ -83,37 +77,45 @@ public class IgniteFailureProcessor {
         }
     }
 
-    /**
-     * @param ctx Context.
-     * @param type Type.
-     */
-    public void processFailure(GridKernalContext ctx, IgniteFailureType type) {
-        processFailure(ctx, type, null);
-    }
-
     /** Restarts JVM. */
-    private void restartJvm(final GridKernalContext ctx, final IgniteFailureType type) {
+    public void restartJvm(final IgniteFailureContext failureCtx) {
+        assert failureCtx != null;
+
         new Thread(
             new Runnable() {
                 @Override public void run() {
-                    ctx.failure(type);
+                    final GridKernalContext ctx = failureCtx.context();
+
+                    final IgniteLogger log = ctx.log(getClass());
+
+                    U.warn(log, "Restarting JVM on Ignite failure of type " + failureCtx.type());
+
+                    ctx.failure(failureCtx.type());
 
                     G.restart(true);
                 }
-            }
+            },
+            "node-restarter"
         ).start();
     }
 
     /** Stops local node. */
-    private void stopNode(final GridKernalContext ctx, final IgniteFailureType type) {
+    public void stopNode(final IgniteFailureContext failureCtx) {
         new Thread(
             new Runnable() {
                 @Override public void run() {
-                    ctx.failure(type);
+                    final GridKernalContext ctx = failureCtx.context();
+
+                    final IgniteLogger log = ctx.log(getClass());
+
+                    U.warn(log, "Stopping local node on Ignite failure of type " + failureCtx.type());
+
+                    ctx.failure(failureCtx.type());
 
                     IgnitionEx.stop(ctx.igniteInstanceName(), true, true, STOP_TIMEOUT_MS);
                 }
-            }
+            },
+            "node-stopper"
         ).start();
     }
 }

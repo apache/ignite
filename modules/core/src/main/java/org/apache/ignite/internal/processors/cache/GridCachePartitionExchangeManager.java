@@ -47,6 +47,7 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.failure.IgniteFailureContext;
 import org.apache.ignite.failure.IgniteFailureType;
 import org.apache.ignite.failure.IgniteFailureProcessor;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -2247,8 +2248,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 if (!stop) {
                     log.warning("Unexpected ExchangeWorker stopping!");
 
-                    IgniteFailureProcessor.INSTANCE.processFailure(cctx.kernalContext(),
-                        IgniteFailureType.EXCHANGE_WORKER_STOP);
+                    IgniteFailureProcessor.INSTANCE.processFailure(new IgniteFailureContext(
+                        cctx.kernalContext(), IgniteFailureType.EXCHANGE_WORKER_STOP));
                 }
             }
         }

@@ -29,9 +29,8 @@ public interface IgniteFailureHandler {
     public static final IgniteFailureHandler DFLT_HND = new DefaultIgniteFailureHandler();
 
     /**
-     * @param ctx Context.
-     * @param cause Cause.
+     * @param failureCtx Failure context.
      * @return IgniteFailureAction value.
      */
-    public IgniteFailureAction onFailure(GridKernalContext ctx, IgniteFailureType type, Throwable cause);
+    public IgniteFailureAction onFailure(IgniteFailureContext failureCtx);
 }

@@ -17,26 +17,21 @@
 
 package org.apache.ignite.failure;
 
-import org.apache.ignite.internal.GridKernalContext;
-
 /**
  * Default implementation of {@link IgniteFailureHandler}
  */
 public class DefaultIgniteFailureHandler implements IgniteFailureHandler {
     /** {@inheritDoc} */
-    @Override public IgniteFailureAction onFailure(GridKernalContext ctx, IgniteFailureType type, Throwable cause) {
-        switch (type) {
-            case SEGMENTATION:
-                return IgniteFailureAction.forSegmentation(ctx.config().getSegmentationPolicy());
-
-            case EXCHANGE_WORKER_STOP:
+    @Override public IgniteFailureAction onFailure(IgniteFailureContext failureCtx) {
+        switch (failureCtx.type()) {
+           case EXCHANGE_WORKER_STOP:
                 return IgniteFailureAction.STOP;
 
             case PERSISTENCE_ERROR:
                 return IgniteFailureAction.STOP;
 
             default:
-                assert false : "Unsupported Ignite failure type: " + type;
+                assert false : "Unsupported Ignite failure type: " + failureCtx.type();
 
                 return IgniteFailureAction.STOP;
         }
