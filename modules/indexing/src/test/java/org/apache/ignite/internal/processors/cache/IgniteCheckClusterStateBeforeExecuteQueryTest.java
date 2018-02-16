@@ -80,7 +80,7 @@ public class IgniteCheckClusterStateBeforeExecuteQueryTest extends GridCommonAbs
 
         assertThrows(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
-                ig.context().query().querySqlFieldsNoCache(new SqlFieldsQuery("SELECT 1"), false);
+                ig.context().query().querySqlFields(new SqlFieldsQuery("SELECT 1"), false);
 
                 return null;
             }
