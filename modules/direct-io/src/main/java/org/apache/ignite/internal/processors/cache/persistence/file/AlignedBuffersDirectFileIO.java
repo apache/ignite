@@ -29,13 +29,13 @@ import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  * Limited capabilities Direct IO, which enables file write and read using aligned buffers and O_DIRECT mode.
@@ -62,7 +62,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
     private ThreadLocal<ByteBuffer> tlbOnePageAligned;
 
     /** Managed aligned buffers. Used to check if buffer is applicable for direct IO our data should be copied. */
-    private ConcurrentHashMap8<Long, Thread> managedAlignedBuffers;
+    private ConcurrentHashMap<Long, Thread> managedAlignedBuffers;
 
     /** File descriptor. */
     private int fd = -1;
@@ -95,7 +95,7 @@ public class AlignedBuffersDirectFileIO implements FileIO {
         File file,
         OpenOption[] modes,
         ThreadLocal<ByteBuffer> tlbOnePageAligned,
-        ConcurrentHashMap8<Long, Thread> managedAlignedBuffers,
+        ConcurrentHashMap<Long, Thread> managedAlignedBuffers,
         IgniteLogger log)
         throws IOException {
         this.log = log;

@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.event.CacheEntryEvent;
@@ -78,7 +79,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -130,7 +130,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     private final AtomicConfiguration dfltAtomicCfg;
 
     /** Map of continuous query IDs. */
-    private final ConcurrentHashMap8<Integer, UUID> qryIdMap = new ConcurrentHashMap8<>();
+    private final ConcurrentHashMap<Integer, UUID> qryIdMap = new ConcurrentHashMap<>();
 
     /** Listener. */
     private final GridLocalEventListener lsnr = new GridLocalEventListener() {
@@ -164,7 +164,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public DataStructuresProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        dsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
+        dsMap = new ConcurrentHashMap<>(INITIAL_CAPACITY);
 
         dfltAtomicCfg = ctx.config().getAtomicConfiguration();
     }

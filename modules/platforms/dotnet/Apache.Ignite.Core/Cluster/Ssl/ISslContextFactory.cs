@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,28 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+namespace Apache.Ignite.Core.Cluster.Ssl
+{
+    /// <summary>
+    /// Interface for SSL Context Factory.
+    /// </summary>
+    public interface ISslContextFactory
+    {
+        /// <summary>
+        /// Path to key store file.
+        /// </summary>
+        string KeyStoreFilePath { get; set; }
 
-import java.lang.reflect.Method;
-
-/**
- * Implementation of {@link Base64Encoder} interface for Java 7 and earlier.
- *
- * @deprecated Use {@code jaba.util.Base64} instead.
- */
-@Deprecated
-public class LegacyBase64Encoder implements Base64Encoder {
-    /** {@inheritDoc} */
-    @Override public String encode(byte[] msg) {
-        try {
-            Class<?> encoderCls = Class.forName("sun.misc.BASE64Encoder");
-
-            Method mtd = encoderCls.getMethod("encode", byte[].class);
-
-            return (String)mtd.invoke(encoderCls.newInstance(), (Object)msg);
-        }
-        catch (ReflectiveOperationException e) {
-            throw new RuntimeException("Failed to encode message to BASE64", e);
-        }
+        /// <summary>
+        /// Key store password.
+        /// </summary>
+        string KeyStorePassword { get; set; }
     }
 }

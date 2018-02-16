@@ -29,7 +29,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Implementation for node-local storage.
@@ -43,7 +43,7 @@ import org.jsr166.ConcurrentHashMap8;
  * <p>
  * You can get an instance of {@code ClusterNodeLocalMapImpl} by calling {@link IgniteCluster#nodeLocalMap()} method.
  */
-public class ClusterNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> implements ConcurrentMap<K, V>,
+public class ClusterNodeLocalMapImpl<K, V> extends ConcurrentHashMap<K, V> implements ConcurrentMap<K, V>,
     Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
