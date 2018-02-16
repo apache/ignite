@@ -2053,8 +2053,8 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (!pageReplacementWarned) {
                 pageReplacementWarned = true;
 
-                U.warn(log, "Page evictions started, this will affect storage performance (consider increasing " +
-                    "DataRegionConfiguration#setMaxSize).");
+                U.warn(log, "Page replacements started, pages will be rotated with disk, " +
+                    "this will affect storage performance (consider increasing DataRegionConfiguration#setMaxSize).");
             }
 
             final ThreadLocalRandom rnd = ThreadLocalRandom.current();
