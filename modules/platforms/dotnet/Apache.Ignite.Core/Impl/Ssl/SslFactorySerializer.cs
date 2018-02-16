@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Cluster.Ssl
+namespace Apache.Ignite.Core.Impl.Ssl
 {
+    using System;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cluster.Ssl;
+    using Apache.Ignite.Core.Ssl;
 
     /// <summary>
     /// Serializer/deserializer for <see cref="ISslContextFactory"/>.
@@ -34,12 +35,18 @@ namespace Apache.Ignite.Core.Impl.Cluster.Ssl
             Debug.Assert(writer != null);
 
             var contextFactory = factory as SslContextFactory;
-
+            
             if (contextFactory != null)
             {
                 writer.WriteBoolean(true);
 
                 contextFactory.Write(writer);
+            }
+            else if (factory != null)
+            {
+                throw new NotSupportedException(
+                    string.Format("Unsupported {0}: {1}. Only predefined implementations are supported: {2}",
+                        typeof(ISslContextFactory).Name, factory.GetType(), typeof(SslContextFactory).Name));
             }
             else
             {

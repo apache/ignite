@@ -15,21 +15,18 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Cluster.Ssl
+namespace Apache.Ignite.Core.Ssl
 {
+    using System.Diagnostics.CodeAnalysis;
+
     /// <summary>
-    /// Interface for SSL Context Factory.
+    /// Represents an SSL Context Factory.
+    /// <para />
+    /// Only predefined implementation is supported for now: <see cref="SslContextFactory"/>.
     /// </summary>
+    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
     public interface ISslContextFactory
     {
-        /// <summary>
-        /// Path to key store file.
-        /// </summary>
-        string KeyStoreFilePath { get; set; }
-
-        /// <summary>
-        /// Key store password.
-        /// </summary>
-        string KeyStorePassword { get; set; }
+        // No-op.
     }
 }
