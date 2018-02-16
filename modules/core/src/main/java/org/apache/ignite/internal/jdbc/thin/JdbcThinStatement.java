@@ -193,7 +193,7 @@ public class JdbcThinStatement implements Statement {
      */
     private JdbcResult sendFile(JdbcBulkLoadAckResult cmdRes) throws SQLException {
         String fileName = cmdRes.params().localFileName();
-        int batchSize = cmdRes.params().batchSize();
+        int batchSize = cmdRes.params().packetSize();
 
         int batchNum = 0;
 
