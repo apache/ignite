@@ -21,13 +21,14 @@ import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.util.Properties;
 import java.util.logging.Logger;
 import javax.sql.DataSource;
 import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * JDBC result set metadata implementation.
+ * JDBC thin DataSource implementation.
  */
 public class JdbcThinDataSource extends ConnectionPropertiesImpl implements DataSource {
     /** */
@@ -44,12 +45,20 @@ public class JdbcThinDataSource extends ConnectionPropertiesImpl implements Data
 
     /** {@inheritDoc} */
     @Override public Connection getConnection() throws SQLException {
-        return IgniteJdbcThinDriver.register().connect(getUrl(), storeToProperties());
+        return getConnection(null, null);
     }
 
     /** {@inheritDoc} */
     @Override public Connection getConnection(String username, String pwd) throws SQLException {
-        return getConnection();
+        Properties props = storeToProperties();
+
+        if (!F.isEmpty(username))
+            props.put("user", username);
+
+        if (!F.isEmpty(pwd))
+            props.put("password", pwd);
+
+        return IgniteJdbcThinDriver.register().connect(getUrl(), props);
     }
 
     /** {@inheritDoc} */

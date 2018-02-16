@@ -34,7 +34,13 @@
             "stopNodes",
             "restartNodes"
         };
-        
+
+        /** Members that are missing on .NET side and should be added in future. */
+        private static readonly string[] MissingMembers =
+        {
+            "enableStatistics"  // IGNITE-7276
+        };
+
         /// <summary>
         /// Tests the API parity.
         /// </summary>
@@ -44,7 +50,7 @@
             ParityTest.CheckInterfaceParity(
                 @"modules\core\src\main\java\org\apache\ignite\IgniteCluster.java",
                 typeof(ICluster),
-                UnneededMembers);
+                UnneededMembers, MissingMembers);
         }
     }
 }

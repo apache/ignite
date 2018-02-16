@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.Random;
 import org.apache.ignite.IgniteException;
 
 /**
@@ -52,9 +53,49 @@ public class Utils {
             obj = in.readObject();
         }
         catch (IOException | ClassNotFoundException e) {
-            throw new IgniteException("Couldn't copy the object.");
+            throw new IgniteException("Couldn't copy the object.", e);
         }
 
         return (T)obj;
+    }
+
+    /**
+     * Select k distinct integers from range [0, n) with reservoir sampling:
+     * https://en.wikipedia.org/wiki/Reservoir_sampling.
+     *
+     * @param n Number specifying left end of range of integers to pick values from.
+     * @param k Count specifying how many integers should be picked.
+     * @param rand RNG.
+     * @return Array containing k distinct integers from range [0, n);
+     */
+    public static int[] selectKDistinct(int n, int k, Random rand) {
+        int i;
+        Random r = rand != null ? rand : new Random();
+
+        int res[] = new int[k];
+        for (i = 0; i < k; i++)
+            res[i] = i;
+
+        for (; i < n; i++) {
+            int j = r.nextInt(i + 1);
+
+            if (j < k)
+                res[j] = i;
+        }
+
+        return res;
+    }
+
+    /**
+     * Select k distinct integers from range [0, n) with reservoir sampling:
+     * https://en.wikipedia.org/wiki/Reservoir_sampling.
+     * Equivalent to {@code selectKDistinct(n, k, new Random())}.
+     *
+     * @param n Number specifying left end of range of integers to pick values from.
+     * @param k Count specifying how many integers should be picked.
+     * @return Array containing k distinct integers from range [0, n);
+     */
+    public static int[] selectKDistinct(int n, int k) {
+        return selectKDistinct(n, k, new Random());
     }
 }

@@ -1024,7 +1024,11 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         List<IgniteCache> caches = new ArrayList<>();
 
         for (int i = 0; i < CLIENTS; i++) {
-            Ignite client = startGrid(SRV_CNT + i);
+            int g = SRV_CNT + i;
+
+            IgniteEx client = startGrid(g);
+
+            info(">>>>> Started client: " + g);
 
             addListener(client, disconnectLatch, reconnectLatch);
 

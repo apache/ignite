@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -76,5 +76,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets a value indicating whether null values are allowed for this field.
         /// </summary>
         public bool NotNull { get; set; }
+
+        /// <summary>
+        /// Gets or sets the default value for the field (has effect when inserting with DML).
+        /// </summary>
+        public object DefaultValue { get; set; }
     }
 }

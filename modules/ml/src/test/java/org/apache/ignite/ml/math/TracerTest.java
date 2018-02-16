@@ -18,6 +18,7 @@
 package org.apache.ignite.ml.math;
 
 import java.awt.Color;
+import java.awt.Desktop;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,11 +27,11 @@ import java.util.Optional;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static java.nio.file.Files.createTempFile;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 /**
  * Tests for {@link Tracer}.
@@ -81,9 +82,7 @@ public class TracerTest {
         return mtx;
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testAsciiVectorTracer() {
         Vector vec = makeRandomVector(20);
@@ -93,9 +92,7 @@ public class TracerTest {
         Tracer.showAscii(vec, "%.3g");
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
     public void testAsciiMatrixTracer() {
         Matrix mtx = makeRandomMatrix(10, 10);
@@ -105,34 +102,28 @@ public class TracerTest {
         Tracer.showAscii(mtx, "%.3g");
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
-    @Ignore("Can not run on TeamCity yet, see IGNITE-5725")
     public void testHtmlVectorTracer() throws IOException {
         Vector vec1 = makeRandomVector(1000);
 
         // Default color mapping.
-        Tracer.showHtml(vec1);
+        verifyShowHtml(() -> Tracer.showHtml(vec1));
 
         // Custom color mapping.
-        Tracer.showHtml(vec1, COLOR_MAPPER);
+        verifyShowHtml(() -> Tracer.showHtml(vec1, COLOR_MAPPER));
 
         // Default color mapping with sorted vector.
-        Tracer.showHtml(vec1.sort());
+        verifyShowHtml(() -> Tracer.showHtml(vec1.copy().sort()));
     }
 
-    /**
-     *
-     */
+    /** */
     @Test
-    @Ignore("Can not run on TeamCity yet, see IGNITE-5725")
     public void testHtmlMatrixTracer() throws IOException {
         Matrix mtx1 = makeRandomMatrix(100, 100);
 
         // Custom color mapping.
-        Tracer.showHtml(mtx1, COLOR_MAPPER);
+        verifyShowHtml(() -> Tracer.showHtml(mtx1, COLOR_MAPPER));
 
         Matrix mtx2 = new DenseLocalOnHeapMatrix(100, 100);
 
@@ -140,7 +131,39 @@ public class TracerTest {
 
         mtx2.assign((x, y) -> (double)(x * y) / MAX);
 
-        Tracer.showHtml(mtx2);
+        verifyShowHtml(() -> Tracer.showHtml(mtx2));
+    }
+
+    /** */
+    @Test
+    public void testHtmlVectorTracerWithAsciiFallback() throws IOException {
+        Vector vec1 = makeRandomVector(1000);
+
+        // Default color mapping.
+        Tracer.showHtml(vec1, true);
+
+        // Custom color mapping.
+        Tracer.showHtml(vec1, COLOR_MAPPER, true);
+
+        // Default color mapping with sorted vector.
+        Tracer.showHtml(vec1.copy().sort(), true);
+    }
+
+    /** */
+    @Test
+    public void testHtmlMatrixTracerWithAsciiFallback() throws IOException {
+        Matrix mtx1 = makeRandomMatrix(100, 100);
+
+        // Custom color mapping.
+        Tracer.showHtml(mtx1, COLOR_MAPPER, true);
+
+        Matrix mtx2 = new DenseLocalOnHeapMatrix(100, 100);
+
+        double MAX = (double)(mtx2.rowSize() * mtx2.columnSize());
+
+        mtx2.assign((x, y) -> (double)(x * y) / MAX);
+
+        Tracer.showHtml(mtx2, true);
     }
 
     /** */
@@ -197,5 +220,27 @@ public class TracerTest {
             }
 
         Files.deleteIfExists(file);
+    }
+
+    /** */
+    private void verifyShowHtml(ShowHtml code) throws IOException {
+        final boolean browseSupported = Desktop.isDesktopSupported()
+            && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE);
+
+        try {
+            code.showHtml();
+            if (!browseSupported)
+                fail("Expected exception was not caught: " + UnsupportedOperationException.class.getSimpleName());
+        }
+        catch (UnsupportedOperationException uoe) {
+            if (browseSupported)
+                throw uoe;
+        }
+    }
+
+    /** */
+    @FunctionalInterface private interface ShowHtml {
+        /** */
+        void showHtml() throws IOException;
     }
 }

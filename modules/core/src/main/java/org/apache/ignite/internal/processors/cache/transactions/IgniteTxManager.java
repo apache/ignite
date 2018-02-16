@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -89,7 +90,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 import org.jsr166.ConcurrentLinkedHashMap;
 
@@ -163,7 +163,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentMap<GridCacheVersion, IgniteInternalTx> nearIdMap = newMap();
 
     /** Deadlock detection futures. */
-    private final ConcurrentMap<Long, TxDeadlockFuture> deadlockDetectFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Long, TxDeadlockFuture> deadlockDetectFuts = new ConcurrentHashMap<>();
 
     /** TX handler. */
     private IgniteTxHandler txHnd;
@@ -199,7 +199,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * to avoid future map resizings.
      */
     private final ConcurrentMap<GridCacheVersion, GridCacheVersion> mappedVers =
-        new ConcurrentHashMap8<>(5120);
+        new ConcurrentHashMap<>(5120);
 
     /** TxDeadlock detection. */
     private TxDeadlockDetection txDeadlockDetection;
@@ -1589,6 +1589,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             GridCacheContext cacheCtx = txEntry1.context();
 
             while (true) {
+                cctx.database().checkpointReadLock();
+
                 try {
                     GridCacheEntryEx entry1 = txEntry1.cached();
 
@@ -1610,7 +1612,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                             if (txEntry2 == txEntry1)
                                 break;
 
-                            txEntry2.cached().txUnlock(tx);
+                            txUnlock(tx, txEntry2);
                         }
 
                         return false;
@@ -1641,10 +1643,40 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     throw new IgniteCheckedException("Entry lock has been cancelled for transaction: " + tx);
                 }
+                finally {
+                    cctx.database().checkpointReadUnlock();
+                }
             }
         }
 
         return true;
+    }
+
+    /**
+     * @param tx Transaction.
+     * @param txEntry Entry to unlock.
+     */
+    private void txUnlock(IgniteInternalTx tx, IgniteTxEntry txEntry) {
+        while (true) {
+            try {
+                txEntry.cached().txUnlock(tx);
+
+                break;
+            }
+            catch (GridCacheEntryRemovedException ignored) {
+                if (log.isDebugEnabled())
+                    log.debug("Got removed entry in TM txUnlock(..) method (will retry): " + txEntry);
+
+                try {
+                    txEntry.cached(txEntry.context().cache().entryEx(txEntry.key(), tx.topologyVersion()));
+                }
+                catch (GridDhtInvalidPartitionException e) {
+                    tx.addInvalidPartition(txEntry.context(), e.partition());
+
+                    break;
+                }
+            }
+        }
     }
 
     /**

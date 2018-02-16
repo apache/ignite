@@ -28,10 +28,11 @@ import org.apache.ignite.ml.knn.models.KNNModelFormat;
 import org.apache.ignite.ml.knn.models.KNNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionModel;
-import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionModelFormat;
-import org.apache.ignite.ml.regressions.OLSMultipleLinearRegressionTrainer;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
+import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationModel;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -63,21 +64,61 @@ public class LocalModelsTest {
 
     /** */
     @Test
-    public void importExportOLSMultipleLinearRegressionModelTest() throws IOException {
+    public void importExportLinearRegressionModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
-            OLSMultipleLinearRegressionModel mdl = getAbstractMultipleLinearRegressionModel();
+            LinearRegressionModel model = new LinearRegressionModel(new DenseLocalOnHeapVector(new double[]{1, 2}), 3);
+            Exporter<LinearRegressionModel, String> exporter = new FileExporter<>();
+            model.saveModel(exporter, mdlFilePath);
 
-            Exporter<OLSMultipleLinearRegressionModelFormat, String> exporter = new FileExporter<>();
-
-            mdl.saveModel(exporter, mdlFilePath);
-
-            OLSMultipleLinearRegressionModelFormat load = exporter.load(mdlFilePath);
+            LinearRegressionModel load = exporter.load(mdlFilePath);
 
             Assert.assertNotNull(load);
+            Assert.assertEquals("", model, load);
 
-            OLSMultipleLinearRegressionModel importedMdl = load.getOLSMultipleLinearRegressionModel();
+            return null;
+        });
+    }
 
-            Assert.assertTrue("", mdl.equals(importedMdl));
+    /** */
+    @Test
+    public void importExportSVMBinaryClassificationModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+            SVMLinearBinaryClassificationModel mdl = new SVMLinearBinaryClassificationModel(new DenseLocalOnHeapVector(new double[]{1, 2}), 3);
+            Exporter<SVMLinearBinaryClassificationModel, String> exporter = new FileExporter<>();
+            mdl.saveModel(exporter, mdlFilePath);
+
+            SVMLinearBinaryClassificationModel load = exporter.load(mdlFilePath);
+
+            Assert.assertNotNull(load);
+            Assert.assertEquals("", mdl, load);
+
+            return null;
+        });
+    }
+
+
+    /** */
+    @Test
+    public void importExportSVMMulticlassClassificationModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+
+
+            SVMLinearBinaryClassificationModel binaryMdl1 = new SVMLinearBinaryClassificationModel(new DenseLocalOnHeapVector(new double[]{1, 2}), 3);
+            SVMLinearBinaryClassificationModel binaryMdl2 = new SVMLinearBinaryClassificationModel(new DenseLocalOnHeapVector(new double[]{2, 3}), 4);
+            SVMLinearBinaryClassificationModel binaryMdl3 = new SVMLinearBinaryClassificationModel(new DenseLocalOnHeapVector(new double[]{3, 4}), 5);
+
+            SVMLinearMultiClassClassificationModel mdl = new SVMLinearMultiClassClassificationModel();
+            mdl.add(1, binaryMdl1);
+            mdl.add(2, binaryMdl2);
+            mdl.add(3, binaryMdl3);
+
+            Exporter<SVMLinearMultiClassClassificationModel, String> exporter = new FileExporter<>();
+            mdl.saveModel(exporter, mdlFilePath);
+
+            SVMLinearMultiClassClassificationModel load = exporter.load(mdlFilePath);
+
+            Assert.assertNotNull(load);
+            Assert.assertEquals("", mdl, load);
 
             return null;
         });
@@ -111,24 +152,6 @@ public class LocalModelsTest {
         DenseLocalOnHeapMatrix points = new DenseLocalOnHeapMatrix(new double[][] {v1, v2});
 
         return clusterer.cluster(points, 1);
-    }
-
-    /** */
-    private OLSMultipleLinearRegressionModel getAbstractMultipleLinearRegressionModel() {
-        double[] data = new double[] {
-            0, 0, 0, 0, 0, 0, // IMPL NOTE values in this row are later replaced (with 1.0)
-            0, 2.0, 0, 0, 0, 0,
-            0, 0, 3.0, 0, 0, 0,
-            0, 0, 0, 4.0, 0, 0,
-            0, 0, 0, 0, 5.0, 0,
-            0, 0, 0, 0, 0, 6.0};
-
-        final int nobs = 6, nvars = 5;
-
-        OLSMultipleLinearRegressionTrainer trainer
-            = new OLSMultipleLinearRegressionTrainer(0, nobs, nvars, new DenseLocalOnHeapMatrix(1, 1));
-
-        return trainer.train(data);
     }
 
     /** */

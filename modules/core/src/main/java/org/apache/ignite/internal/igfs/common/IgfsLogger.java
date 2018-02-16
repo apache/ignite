@@ -36,7 +36,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
@@ -100,8 +100,8 @@ public final class IgfsLogger {
     private static final AtomicLong CNTR = new AtomicLong();
 
     /** Loggers. */
-    private static final ConcurrentHashMap8<String, IgfsLogger> loggers =
-        new ConcurrentHashMap8<>();
+    private static final ConcurrentHashMap<String, IgfsLogger> loggers =
+        new ConcurrentHashMap<>();
 
     /** Lock for atomic logger adds/removals. */
     private static final ReadWriteLock logLock = new ReentrantReadWriteLock();
