@@ -965,7 +965,9 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
             if (oldVal != null && cleanupQ) {
                 switch (qPlc) {
                     case PER_SEGMENT_Q_OPTIMIZED_RMV:
-                        segEntryQ.remove(e);
+                        segEntryQ.remove(e.queueElem);
+
+                        e.queueElem = null;
 
                         break;
 
@@ -978,7 +980,9 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
                     default:
                         assert qPlc == SINGLE_Q;
 
-                        entryQ.remove(e);
+                        entryQ.remove(e.queueElem);
+
+                        e.queueElem = null;
                 }
             }
 
