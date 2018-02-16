@@ -57,20 +57,13 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
     /** {@inheritDoc} */
     @Override protected Connection createStreamedConnection(boolean allowOverwrite, long flushFreq) throws Exception {
-        Connection res = JdbcThinAbstractSelfTest.connect(grid(0), "streaming=true&streamingFlushFrequency="
+        return JdbcThinAbstractSelfTest.connect(grid(0), "streaming=true&streamingFlushFrequency="
             + flushFreq + "&" + "streamingAllowOverwrite=" + allowOverwrite + "&streamingPerNodeBufferSize=1000&"
             + "streamingBatchSize=" + batchSize);
-
-        res.setSchema('"' + DEFAULT_CACHE_NAME + '"');
-
-        return res;
     }
 
-    /**
-     * @return Connection without streaming initially turned on.
-     * @throws SQLException if failed.
-     */
-    private Connection createOrdinaryConnection() throws SQLException {
+    /** {@inheritDoc} */
+    @Override protected Connection createOrdinaryConnection() throws SQLException {
         return JdbcThinAbstractSelfTest.connect(grid(0), null);
     }
 
@@ -79,18 +72,18 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
      */
     public void testStreamedBatchedInsert() throws Exception {
         for (int i = 10; i <= 100; i += 10)
-            ignite(0).cache(DEFAULT_CACHE_NAME).put(i, i * 100);
+            put(i, nameForId(i * 100));
 
         try (Connection conn = createStreamedConnection(false)) {
             assertStreamingOn();
 
-            try (PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?), " +
+            try (PreparedStatement stmt = conn.prepareStatement("insert into Person(\"id\", \"name\") values (?, ?), " +
                 "(?, ?)")) {
                 for (int i = 1; i <= 100; i+=2) {
                     stmt.setInt(1, i);
-                    stmt.setInt(2, i);
+                    stmt.setString(2, nameForId(i));
                     stmt.setInt(3, i + 1);
-                    stmt.setInt(4, i + 1);
+                    stmt.setString(4, nameForId(i + 1));
 
                     stmt.addBatch();
                 }
@@ -104,9 +97,9 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
         // Now let's check it's all there.
         for (int i = 1; i <= 100; i++) {
             if (i % 10 != 0)
-                assertEquals(i, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
+                assertEquals(nameForId(i), nameForIdInCache(i));
             else // All that divides by 10 evenly should point to numbers 100 times greater - see above
-                assertEquals(i * 100, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
+                assertEquals(nameForId(i * 100), nameForIdInCache(i));
         }
     }
 
@@ -125,14 +118,14 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
         try (Connection conn = createStreamedConnection(false, 10000)) {
             assertStreamingOn();
 
-            PreparedStatement firstStmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)");
+            PreparedStatement firstStmt = conn.prepareStatement("insert into Person(\"id\", \"name\") values (?, ?)");
 
             PreparedStatement secondStmt = conn.prepareStatement("insert into PUBLIC.T(x, y) values (?, ?)");
 
             try {
                 for (int i = 1; i <= 10; i++) {
                     firstStmt.setInt(1, i);
-                    firstStmt.setInt(2, i);
+                    firstStmt.setString(2, nameForId(i));
 
                     firstStmt.executeUpdate();
                 }
@@ -146,7 +139,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
                 for (int i = 11; i <= 50; i++) {
                     firstStmt.setInt(1, i);
-                    firstStmt.setInt(2, i);
+                    firstStmt.setString(2, nameForId(i));
 
                     firstStmt.executeUpdate();
                 }
@@ -166,7 +159,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
                 assertEquals(2, streamers.size());
 
-                assertEqualsCollections(new HashSet<>(Arrays.asList("default", "T")), streamers.keySet());
+                assertEqualsCollections(new HashSet<>(Arrays.asList("person", "T")), streamers.keySet());
             }
             finally {
                 U.closeQuiet(firstStmt);
@@ -181,10 +174,66 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
         // Now let's check it's all there.
         for (int i = 1; i <= 50; i++)
-            assertEquals(i, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
+            assertEquals(nameForId(i), nameForIdInCache(i));
 
         for (int i = 51; i <= 100; i++)
             assertEquals(i, grid(0).cache("T").get(i));
+    }
+
+    /**
+     *
+     */
+    public void testStreamingWithMixedStatementTypes() throws Exception {
+        String prepStmtStr = "insert into Person(\"id\", \"name\") values (?, ?)";
+
+        String stmtStr = "insert into Person(\"id\", \"name\") values (%d, '%s')";
+
+        try (Connection conn = createStreamedConnection(false, 10000)) {
+            assertStreamingOn();
+
+            PreparedStatement firstStmt = conn.prepareStatement(prepStmtStr);
+
+            Statement secondStmt = conn.createStatement();
+
+            try {
+                for (int i = 1; i <= 100; i++) {
+                    boolean usePrep = Math.random() > 0.5;
+
+                    boolean useBatch = Math.random() > 0.5;
+
+                    if (usePrep) {
+                        firstStmt.setInt(1, i);
+                        firstStmt.setString(2, nameForId(i));
+
+                        if (useBatch)
+                            firstStmt.addBatch();
+                        else
+                            firstStmt.execute();
+                    }
+                    else {
+                        String sql = String.format(stmtStr, i, nameForId(i));
+
+                        if (useBatch)
+                            secondStmt.addBatch(sql);
+                        else
+                            secondStmt.execute(sql);
+                    }
+                }
+            }
+            finally {
+                U.closeQuiet(firstStmt);
+
+                U.closeQuiet(secondStmt);
+            }
+        }
+
+        // Let's wait a little so that all data arrives to destination - we can't intercept streamers' flush
+        // on connection close in any way.
+        U.sleep(1000);
+
+        // Now let's check it's all there.
+        for (int i = 1; i <= 100; i++)
+            assertEquals(nameForId(i), nameForIdInCache(i));
     }
 
     /**
