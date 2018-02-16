@@ -268,8 +268,8 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
                     if (changed) {
                         cluster.update(top);
 
-                        _.forEach(tokens, (token) => {
-                            this._browsersHnd.clusterChanged(token, cluster);
+                        _.forEach(accounts, (account) => {
+                            this._browsersHnd.clusterChanged(account, cluster);
                         });
                     }
                 }
@@ -302,17 +302,27 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
         attach(srv, browsersHnd) {
             this._browsersHnd = browsersHnd;
 
-            if (this.io)
-                throw 'Agent server already started!';
-
-            this.io = socketio(srv, {path: '/agents'});
-
             this._collectSupportedAgents()
                 .then((supportedAgents) => {
                     this.currentAgent = _.get(supportedAgents, 'current');
 
+                    if (this.io)
+                        throw 'Agent server already started!';
+
+                    this.io = socketio(srv, {path: '/agents'});
+
                     this.io.on('connection', (sock) => {
+                        const sockId = sock.id;
+
+                        console.log('Connected agent with socketId: ', sockId);
+
+                        sock.on('disconnect', (reason) => {
+                            console.log(`Agent disconnected with [socketId=${sockId}, reason=${reason}]`);
+                        });
+
                         sock.on('agent:auth', ({ver, bt, tokens, disableDemo}, cb) => {
+                            console.log(`Received authentication request [socketId=${sockId}, tokens=${tokens}, ver=${ver}].`);
+
                             if (_.isEmpty(tokens))
                                 return cb('Tokens not set. Please reload agent archive or check settings');
 
@@ -336,6 +346,9 @@ module.exports.factory = function(settings, mongo, AgentSocket) {
                                 .catch(() => cb(`Invalid token(s): ${tokens.join(',')}. Please reload agent archive or check settings`));
                         });
                     });
+                })
+                .catch(() => {
+                    // No-op.
                 });
         }
 

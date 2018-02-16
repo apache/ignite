@@ -129,8 +129,8 @@ module.exports = {
                     .then((stat) => _.forEach(socks, (sock) => sock.emit('agents:stat', stat)));
             }
 
-            clusterChanged(token, cluster) {
-                const socks = this._browserSockets.get(token);
+            clusterChanged(account, cluster) {
+                const socks = this._browserSockets.get(account);
 
                 _.forEach(socks, (sock) => sock.emit('cluster:changed', cluster));
             }
