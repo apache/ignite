@@ -57,6 +57,7 @@ import org.apache.ignite.jdbc.thin.JdbcThinSchemaCaseTest;
 import org.apache.ignite.jdbc.thin.JdbcThinSelectAfterAlterTable;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinTcpIoTest;
 
 /**
  * JDBC driver test suite.
@@ -118,6 +119,7 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
 
         // New thin JDBC
         suite.addTest(new TestSuite(JdbcThinConnectionSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinTcpIoTest.class));
         suite.addTest(new TestSuite(JdbcThinPreparedStatementSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinResultSetSelfTest.class));
 

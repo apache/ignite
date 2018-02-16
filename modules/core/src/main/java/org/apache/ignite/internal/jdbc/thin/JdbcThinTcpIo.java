@@ -20,9 +20,13 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -133,7 +137,7 @@ public class JdbcThinTcpIo {
      * @param sockRcvBuf Socket receive buffer.
      * @param tcpNoDelay TCP no delay flag.
      */
-    JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder, boolean collocated,
+    public JdbcThinTcpIo(String host, int port, boolean distributedJoins, boolean enforceJoinOrder, boolean collocated,
         boolean replicatedOnly, boolean autoCloseServerCursor, boolean lazy, int sockSndBuf, int sockRcvBuf,
         boolean tcpNoDelay) {
         this.host = host;
@@ -154,6 +158,79 @@ public class JdbcThinTcpIo {
      * @throws IOException On IO error in handshake.
      */
     public void start() throws SQLException, IOException {
+        start(0);
+    }
+
+    /**
+     * @param timeout Socket connection timeout in ms.
+     * @throws SQLException On connection error or reject.
+     * @throws IOException On IO error in handshake.
+     */
+    public void start(int timeout) throws SQLException, IOException {
+        InetAddress[] addrs;
+
+        try {
+            addrs = getAllAddressesByHost(host);
+        }
+        catch (UnknownHostException exception) {
+            throw new SQLException("Failed to connect to server [host=" + host +
+                    ", port=" + port + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, exception);
+        }
+
+        List<String> inaccessibleAddrs = null;
+
+        List<Exception> exceptions = null;
+
+        for (InetAddress addr : addrs) {
+            try {
+                connect(addr, timeout);
+
+                break;
+            }
+            catch (IOException | SQLException exception) {
+                if (inaccessibleAddrs == null)
+                    inaccessibleAddrs = new ArrayList<>();
+
+                inaccessibleAddrs.add(addr.getHostAddress());
+
+                if (exceptions == null)
+                    exceptions = new ArrayList<>();
+
+                exceptions.add(exception);
+            }
+        }
+
+        if ((inaccessibleAddrs != null) && (inaccessibleAddrs.size() == addrs.length) && (exceptions != null)) {
+            if (exceptions.size() == 1) {
+                Exception ex = exceptions.get(0);
+
+                if (ex instanceof SQLException)
+                    throw (SQLException)ex;
+                else if (ex instanceof IOException)
+                    throw (IOException)ex;
+            }
+
+            SQLException e = new SQLException("Failed to connect to server [host=" + host + ", addresses=" +
+                    inaccessibleAddrs + ", port=" + port + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
+
+            for (Exception ex : exceptions)
+                e.addSuppressed(ex);
+
+            throw e;
+        }
+
+        handshake();
+    }
+
+    /**
+     * Connect to host.
+     *
+     * @param addr Address.
+     * @param timeout Socket connection timeout in ms.
+     * @throws IOException On IO error.
+     * @throws SQLException On connection reject.
+     */
+    private void connect(InetAddress addr, int timeout) throws IOException, SQLException {
         Socket sock = new Socket();
 
         if (sockSndBuf != 0)
@@ -165,7 +242,7 @@ public class JdbcThinTcpIo {
         sock.setTcpNoDelay(tcpNoDelay);
 
         try {
-            sock.connect(new InetSocketAddress(host, port));
+            sock.connect(new InetSocketAddress(addr, port), timeout);
 
             endpoint = new IpcClientTcpEndpoint(sock);
 
@@ -176,8 +253,17 @@ public class JdbcThinTcpIo {
             throw new SQLException("Failed to connect to server [host=" + host + ", port=" + port + ']',
                 SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
+    }
 
-        handshake();
+    /**
+     * Get all addresses by host name.
+     *
+     * @param host Host name.
+     * @return Addresses.
+     * @throws UnknownHostException If host is unavailable.
+     */
+    protected InetAddress[] getAllAddressesByHost(String host) throws UnknownHostException {
+        return InetAddress.getAllByName(host);
     }
 
     /**
