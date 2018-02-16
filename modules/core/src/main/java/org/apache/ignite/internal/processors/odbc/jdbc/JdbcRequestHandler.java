@@ -333,15 +333,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         long qryId = QRY_ID_GEN.getAndIncrement();
 
-        if (cliCtx.isStream()) {
-            if (req.expectedStatementType() == JdbcStatementType.SELECT_STATEMENT_TYPE)
-                return new JdbcResponse(IgniteQueryErrorCode.UNEXPECTED_OPERATION, "Usage of executeQuery on streamed" +
-                    " connections is forbidden, only commands INSERT, SET, and FLUSH are supported.");
-
-            long cnt = ctx.query().streamUpdateQuery(req.schemaName(), cliCtx, req.sqlQuery(), req.arguments());
-
-            return new JdbcResponse(new JdbcQueryExecuteResult(qryId, cnt));
-        }
+        assert !cliCtx.isStream();
 
         try {
             String sql = req.sqlQuery();

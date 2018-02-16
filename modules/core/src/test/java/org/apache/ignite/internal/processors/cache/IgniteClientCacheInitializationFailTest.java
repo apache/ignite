@@ -262,12 +262,6 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
         }
 
         /** {@inheritDoc} */
-        @Override public long streamUpdateQuery(String spaceName, String qry, @Nullable Object[] params,
-            SqlClientContext cliCtx) throws IgniteCheckedException {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
         @Override public <K, V> QueryCursor<Cache.Entry<K, V>> queryLocalSql(String schemaName, String cacheName,
             SqlQuery qry, IndexingQueryFilter filter, boolean keepBinary) throws IgniteCheckedException {
             return null;

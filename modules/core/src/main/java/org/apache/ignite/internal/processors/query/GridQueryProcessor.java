@@ -2134,33 +2134,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cliCtx Client context.
      * @param qry Query.
      * @param args Query arguments.
-     * @return Update counter.
-     */
-    public long streamUpdateQuery(final String schemaName, final SqlClientContext cliCtx,
-        final String qry, final Object[] args) {
-        if (!busyLock.enterBusy())
-            throw new IllegalStateException("Failed to execute query (grid is stopping).");
-
-        try {
-            return executeQuery(GridCacheQueryType.SQL_FIELDS, qry, null, new IgniteOutClosureX<Long>() {
-                @Override public Long applyx() throws IgniteCheckedException {
-                    return idx.streamUpdateQuery(schemaName, qry, args, cliCtx);
-                }
-            }, true);
-        }
-        catch (IgniteCheckedException e) {
-            throw new CacheException(e);
-        }
-        finally {
-            busyLock.leaveBusy();
-        }
-    }
-
-    /**
-     * @param schemaName Schema name.
-     * @param cliCtx Client context.
-     * @param qry Query.
-     * @param args Query arguments.
      * @return Update counters.
      */
     public List<Long> streamBatchedUpdateQuery(final String schemaName, final SqlClientContext cliCtx,

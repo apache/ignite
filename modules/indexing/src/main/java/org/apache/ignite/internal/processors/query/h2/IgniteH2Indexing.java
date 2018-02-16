@@ -78,7 +78,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
-import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.CacheQueryObjectValueContext;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -502,10 +501,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** {@inheritDoc} */
-    @Override public PreparedStatement prepareNativeStatement(String schemaName, String sql) throws SQLException {
+    @Override public PreparedStatement prepareNativeStatement(String schemaName, String sql) {
         Connection conn = connectionForSchema(schemaName);
 
-        return prepareStatement(conn, sql, true);
+        return prepareStatementAndCaches(conn, sql);
     }
 
     /**
@@ -1016,40 +1015,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         return dmlProc.streamUpdateQuery(schemaName, streamer, stmt, params);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long streamUpdateQuery(String schemaName, String qry,
-        @Nullable Object[] params, SqlClientContext cliCtx) throws IgniteCheckedException {
-        if (cliCtx == null || !cliCtx.isStream()) {
-            U.warn(log, "Connection is not in streaming mode.");
-
-            return 0L;
-        }
-
-        final Connection conn = connectionForSchema(schemaName);
-
-        final PreparedStatement stmt = prepareStatementAndCaches(conn, qry);
-
-        if (GridSqlQueryParser.checkMultipleStatements(stmt))
-            throw new IgniteSQLException("Multiple statements queries are not supported for streaming mode.",
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-        checkStatementStreamable(stmt);
-
-        Prepared p = GridSqlQueryParser.prepared(stmt);
-
-        UpdatePlan plan = dmlProc.getPlanForStatement(schemaName, conn, p, null, true, null);
-
-        IgniteDataStreamer<?, ?> streamer = cliCtx.streamerForCache(plan.cacheContext().name());
-
-        if (streamer != null)
-            return dmlProc.streamUpdateQuery(schemaName, streamer, stmt, params);
-        else {
-            U.warn(log, "Streaming has been turned off by concurrent command.");
-
-            return 0L;
-        }
     }
 
     /** {@inheritDoc} */
@@ -2372,7 +2337,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void checkStatementStreamable(PreparedStatement nativeStmt) {
         if (!GridSqlQueryParser.isStreamableInsertStatement(nativeStmt))
-            throw new IgniteSQLException("Only tuple based INSERT statements are supported in streaming mode",
+            throw new IgniteSQLException("Only tuple based INSERT statements are supported in streaming mode.",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 

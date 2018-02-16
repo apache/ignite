@@ -98,19 +98,6 @@ public interface GridQueryIndexing {
         IgniteDataStreamer<?, ?> streamer) throws IgniteCheckedException;
 
     /**
-     * Execute an INSERT statement using data streamer as receiver.
-     *
-     * @param schemaName Schema name.
-     * @param qry Query.
-     * @param params Query parameters.
-     * @param cliCtx Client connection context.
-     * @return Update counter.
-     * @throws IgniteCheckedException If failed.
-     */
-    public long streamUpdateQuery(String schemaName, String qry, @Nullable Object[] params, SqlClientContext cliCtx)
-        throws IgniteCheckedException;
-
-    /**
      * Execute a batched INSERT statement using data streamer as receiver.
      *
      * @param schemaName Schema name.
@@ -339,10 +326,9 @@ public interface GridQueryIndexing {
     public String schema(String cacheName);
 
     /**
-     * Check if passed statement is insert statement eligible for streaming.
+     * Check if passed statement is insert statement eligible for streaming, throw an {@link IgniteSQLException} if not.
      *
      * @param nativeStmt Native statement.
-     * @return {@code True} if streamable insert.
      */
     public void checkStatementStreamable(PreparedStatement nativeStmt);
 

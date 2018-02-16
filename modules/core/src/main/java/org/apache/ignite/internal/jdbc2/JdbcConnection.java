@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -612,7 +613,12 @@ public class JdbcConnection implements Connection {
 
             PreparedStatement nativeStmt = prepareNativeStatement(sql);
 
-            idx.checkStatementStreamable(nativeStmt);
+            try {
+                idx.checkStatementStreamable(nativeStmt);
+            }
+            catch (IgniteSQLException e) {
+                throw e.toJdbcException();
+            }
 
             IgniteDataStreamer streamer = ignite().dataStreamer(cacheName);
 

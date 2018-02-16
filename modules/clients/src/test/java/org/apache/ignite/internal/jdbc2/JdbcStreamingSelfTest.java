@@ -21,13 +21,18 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Collections;
 import java.util.Properties;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteJdbcDriver;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -46,6 +51,10 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     /** JDBC URL. */
     private static final String BASE_URL = CFG_URL_PREFIX +
         "cache=default@modules/clients/src/test/config/jdbc-config.xml";
+
+    /** Streaming URL. */
+    private static final String STREAMING_URL = CFG_URL_PREFIX +
+        "cache=person@modules/clients/src/test/config/jdbc-config.xml";
 
     /** */
     protected transient IgniteLogger log;
@@ -91,12 +100,35 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
         startGrids(2);
+
+        try (Connection c = createOrdinaryConnection()) {
+            try (Statement s = c.createStatement()) {
+                s.execute("CREATE TABLE PUBLIC.Person(\"id\" int primary key, \"name\" varchar) WITH " +
+                    "\"cache_name=person,value_type=Person\"");
+            }
+        }
+
+        U.sleep(1000);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
+    }
+
+    /**
+     * @return Connection without streaming initially turned on.
+     * @throws SQLException if failed.
+     */
+    protected Connection createOrdinaryConnection() throws SQLException {
+        Connection res = DriverManager.getConnection(BASE_URL, new Properties());
+
+        res.setSchema(QueryUtils.DFLT_SCHEMA);
+
+        return res;
     }
 
     /**
@@ -123,12 +155,16 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         if (allowOverwrite)
             props.setProperty(IgniteJdbcDriver.PROP_STREAMING_ALLOW_OVERWRITE, "true");
 
-        return DriverManager.getConnection(BASE_URL, props);
+        Connection res = DriverManager.getConnection(STREAMING_URL, props);
+
+        res.setSchema(QueryUtils.DFLT_SCHEMA);
+
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        ignite(0).cache(DEFAULT_CACHE_NAME).clear();
+        cache().clear();
 
         super.afterTest();
     }
@@ -138,13 +174,14 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
      */
     public void testStreamedInsert() throws Exception {
         for (int i = 10; i <= 100; i += 10)
-            ignite(0).cache(DEFAULT_CACHE_NAME).put(i, i * 100);
+            put(i, nameForId(i * 100));
 
         try (Connection conn = createStreamedConnection(false)) {
-            try (PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)")) {
+            try (PreparedStatement stmt = conn.prepareStatement("insert into PUBLIC.Person(\"id\", \"name\") " +
+                "values (?, ?)")) {
                 for (int i = 1; i <= 100; i++) {
                     stmt.setInt(1, i);
-                    stmt.setInt(2, i);
+                    stmt.setString(2, nameForId(i));
 
                     stmt.executeUpdate();
                 }
@@ -156,9 +193,39 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         // Now let's check it's all there.
         for (int i = 1; i <= 100; i++) {
             if (i % 10 != 0)
-                assertEquals(i, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
+                assertEquals(nameForId(i), nameForIdInCache(i));
             else // All that divides by 10 evenly should point to numbers 100 times greater - see above
-                assertEquals(i * 100, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
+                assertEquals(nameForId(i * 100), nameForIdInCache(i));
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testStreamedInsertWithoutColumnsList() throws Exception {
+        for (int i = 10; i <= 100; i += 10)
+            put(i, nameForId(i * 100));
+
+        try (Connection conn = createStreamedConnection(false)) {
+            try (PreparedStatement stmt = conn.prepareStatement("insert into PUBLIC.Person(\"id\", \"name\") " +
+                "values (?, ?)")) {
+                for (int i = 1; i <= 100; i++) {
+                    stmt.setInt(1, i);
+                    stmt.setString(2, nameForId(i));
+
+                    stmt.executeUpdate();
+                }
+            }
+        }
+
+        U.sleep(500);
+
+        // Now let's check it's all there.
+        for (int i = 1; i <= 100; i++) {
+            if (i % 10 != 0)
+                assertEquals(nameForId(i), nameForIdInCache(i));
+            else // All that divides by 10 evenly should point to numbers 100 times greater - see above
+                assertEquals(nameForId(i * 100), nameForIdInCache(i));
         }
     }
 
@@ -167,13 +234,14 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
      */
     public void testStreamedInsertWithOverwritesAllowed() throws Exception {
         for (int i = 10; i <= 100; i += 10)
-            ignite(0).cache(DEFAULT_CACHE_NAME).put(i, i * 100);
+            put(i, nameForId(i * 100));
 
         try (Connection conn = createStreamedConnection(true)) {
-            try (PreparedStatement stmt = conn.prepareStatement("insert into Integer(_key, _val) values (?, ?)")) {
+            try (PreparedStatement stmt = conn.prepareStatement("insert into PUBLIC.Person(\"id\", \"name\") " +
+                "values (?, ?)")) {
                 for (int i = 1; i <= 100; i++) {
                     stmt.setInt(1, i);
-                    stmt.setInt(2, i);
+                    stmt.setString(2, nameForId(i));
 
                     stmt.executeUpdate();
                 }
@@ -185,22 +253,23 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
         // Now let's check it's all there.
         // i should point to i at all times as we've turned overwrites on above.
         for (int i = 1; i <= 100; i++)
-            assertEquals(i, grid(0).cache(DEFAULT_CACHE_NAME).get(i));
+            assertEquals(nameForId(i), nameForIdInCache(i));
     }
 
     /** */
     public void testOnlyInsertsAllowed() {
         assertStatementForbidden("CREATE TABLE PUBLIC.X (x int primary key, y int)");
 
-        assertStatementForbidden("SELECT * from Integer");
+        assertStatementForbidden("SELECT * from Person");
 
-        assertStatementForbidden("Insert into Integer(_key, _val) (select _key + 1, _val + 1 from Integer)");
+        assertStatementForbidden("insert into PUBLIC.Person(\"id\", \"name\") " +
+            "(select \"id\" + 1, CONCAT(\"name\", '1') from Person)");
 
-        assertStatementForbidden("DELETE from Integer");
+        assertStatementForbidden("DELETE from Person");
 
-        assertStatementForbidden("UPDATE Integer SET _val = 0");
+        assertStatementForbidden("UPDATE Person SET \"name\" = 'name0'");
 
-        assertStatementForbidden("alter table Integer add column y int");
+        assertStatementForbidden("alter table Person add column y int");
     }
 
     /**
@@ -219,5 +288,44 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
                 return null;
             }
         }, SQLException.class,"Only tuple based INSERT statements are supported in streaming mode");
+    }
+
+    /**
+     * @return Person cache.
+     */
+    protected IgniteCache<Integer, Object> cache() {
+        return grid(0).cache("person");
+    }
+
+    /**
+     * @param id id of person to put.
+     * @param name name of person to put.
+     */
+    protected void put(int id, String name) {
+        BinaryObjectBuilder bldr = grid(0).binary().builder("Person");
+
+        bldr.setField("name", name);
+
+        cache().put(id, bldr.build());
+    }
+
+    /**
+     * @param id Person id.
+     * @return Default name for person w/given id.
+     */
+    protected String nameForId(int id) {
+        return "Person" + id;
+    }
+
+    /**
+     * @param id person id.
+     * @return Name for person with given id currently stored in cache.
+     */
+    protected String nameForIdInCache(int id) {
+        Object o = cache().withKeepBinary().get(id);
+
+        assertTrue(String.valueOf(o), o instanceof BinaryObject);
+
+        return ((BinaryObject)o).field("name");
     }
 }
