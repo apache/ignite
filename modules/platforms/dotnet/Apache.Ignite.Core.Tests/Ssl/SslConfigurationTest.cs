@@ -26,7 +26,7 @@ namespace Apache.Ignite.Core.Tests.Ssl
     /// SSL configuration tests.
     /// </summary>
     [Category(TestUtils.CategoryIntensive)]
-    public class SslConfigurationTest : TestBase
+    public class SslConfigurationTest
     {
         /** Test Password. */
         private const string Password = "123456";
@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Tests.Ssl
         /// <summary>
         /// Returns SSL Context factory for tests.
         /// </summary>
-        private SslContextFactory GetSslContextFactory()
+        private static SslContextFactory GetSslContextFactory()
         {
             return new SslContextFactory(KeyStoreFilePath, Password, TrustStoreFilePath, Password);
         }
