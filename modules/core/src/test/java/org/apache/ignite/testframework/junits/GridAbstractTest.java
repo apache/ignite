@@ -40,6 +40,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import junit.framework.TestCase;
@@ -539,6 +540,8 @@ public abstract class GridAbstractTest extends TestCase {
         // Will clean and re-create marshaller directory from scratch.
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
+
+        assert G.allGrids().isEmpty();
     }
 
     /**
@@ -548,7 +551,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected void afterTestsStopped() throws Exception {
-        // No-op.
+        stopAllGrids(false);
     }
 
     /** {@inheritDoc} */
@@ -1052,22 +1055,8 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected void stopAllGrids(boolean cancel) {
         try {
-            Collection<Ignite> clients = new ArrayList<>();
-            Collection<Ignite> srvs = new ArrayList<>();
-
-            for (Ignite g : G.allGrids()) {
-                if (g.configuration().getDiscoverySpi().isClientMode())
-                    clients.add(g);
-                else
-                    srvs.add(g);
-            }
-
-            for (Ignite g : clients)
-                stopGrid(g.name(), cancel, false);
-
-            for (Ignite g : srvs)
-                stopGrid(g.name(), cancel, false);
-
+            stopAllClients(cancel, false);
+            stopAllServers(cancel, false);
             assert G.allGrids().isEmpty();
         }
         finally {
@@ -1079,24 +1068,47 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cancel Cancel flag.
      */
     protected void stopAllClients(boolean cancel) {
-        List<Ignite> ignites = G.allGrids();
+        stopAllClients(cancel, true);
+    }
 
-        for (Ignite g : ignites) {
-            if (g.configuration().getDiscoverySpi().isClientMode())
-                stopGrid(g.name(), cancel);
-        }
+    /**
+     * @param cancel Cancel flag.
+     * @param awaitTop Await topology change flag.
+     */
+    protected void stopAllClients(boolean cancel, boolean awaitTop) {
+        stopFilteredGrids(
+            cancel,
+            awaitTop,
+            grid -> grid.configuration().getDiscoverySpi().isClientMode()
+        );
     }
 
     /**
      * @param cancel Cancel flag.
      */
     protected void stopAllServers(boolean cancel) {
-        List<Ignite> ignites = G.allGrids();
+        stopAllServers(cancel, true);
+    }
 
-        for (Ignite g : ignites) {
-            if (!g.configuration().getDiscoverySpi().isClientMode())
-                stopGrid(g.name(), cancel);
-        }
+    /**
+     * @param cancel Cancel flag.
+     * @param awaitTop Await topology change flag.
+     */
+    protected void stopAllServers(boolean cancel, boolean awaitTop) {
+        stopFilteredGrids(
+            cancel,
+            awaitTop,
+            grid -> !grid.configuration().getDiscoverySpi().isClientMode()
+        );
+    }
+
+    /**
+     * @param cancel Cancel flag.
+     * @param awaitTop Await topology change flag.
+     * @param cond stop grid's filtered by condition.
+     */
+    protected void stopFilteredGrids(boolean cancel, boolean awaitTop, Predicate<? super Ignite> cond) {
+        G.allGrids().stream().filter(cond).forEach(g -> stopGrid(g.name(), cancel, awaitTop));
     }
 
     /**
@@ -1640,9 +1652,6 @@ public abstract class GridAbstractTest extends TestCase {
                 counters.setReset(true);
 
                 afterTestsStopped();
-
-                if (startGrid)
-                    G.stop(getTestIgniteInstanceName(), true);
 
                 // Remove counters.
                 tests.remove(getClass());

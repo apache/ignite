@@ -130,8 +130,6 @@ public class IgnitePdsRebalancingOnNotStableTopologyTest extends GridCommonAbstr
 
         doneLatch.await(600, TimeUnit.SECONDS);
 
-        IgniteProcessProxy.killAll();
-
         stopAllGrids();
 
         //start cluster. it will cause memory restoration and reading WAL.
