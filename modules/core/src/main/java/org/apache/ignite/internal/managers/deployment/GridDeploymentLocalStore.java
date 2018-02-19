@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeTask;
@@ -45,7 +46,6 @@ import org.apache.ignite.spi.deployment.DeploymentListener;
 import org.apache.ignite.spi.deployment.DeploymentResource;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_CLASS_DEPLOYED;
@@ -61,7 +61,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
 class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     /** Deployment cache by class name. */
     private final ConcurrentMap<String, ConcurrentLinkedDeque8<GridDeployment>> cache =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Mutex. */
     private final Object mux = new Object();

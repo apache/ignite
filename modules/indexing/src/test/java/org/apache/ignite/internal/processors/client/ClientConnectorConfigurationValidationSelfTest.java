@@ -334,7 +334,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
 
                 return null;
             }
-        }, SQLException.class, "Failed to connect to Ignite cluster");
+        }, SQLException.class, "JDBC connection is not allowed, see ClientConnectorConfiguration.jdbcEnabled");
     }
 
     /**

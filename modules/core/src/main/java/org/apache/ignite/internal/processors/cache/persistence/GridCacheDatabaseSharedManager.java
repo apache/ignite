@@ -113,6 +113,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -168,7 +170,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  *
  */
 @SuppressWarnings({"unchecked", "NonPrivateFieldAccessedInSynchronizedContext"})
-public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager {
+public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager implements CheckpointWriteProgressSupplier {
     /** */
     public static final String IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC = "IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC";
 
@@ -359,7 +361,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Counter for fsynced checkpoint pages. Not null only if checkpoint is running. */
     private volatile AtomicInteger syncedPagesCntr = null;
 
-    /** Counter for evictted checkpoint pages. Not null only if checkpoint is running. */
+    /** Counter for evicted checkpoint pages. Not null only if checkpoint is running. */
     private volatile AtomicInteger evictedPagesCntr = null;
 
     /** Number of pages in current checkpoint at the beginning of checkpoint. */
@@ -978,28 +980,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             ),
             cctx,
             memCfg.getPageSize(),
-            new GridInClosure3X<FullPageId, ByteBuffer, Integer>() {
-                @Override public void applyx(
-                    FullPageId fullId,
-                    ByteBuffer pageBuf,
-                    Integer tag
-                ) throws IgniteCheckedException {
-                    // First of all, write page to disk.
-                    storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);
+            (fullId, pageBuf, tag) -> {
+                // First of all, write page to disk.
+                storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);
 
-                    // Only after write we can write page into snapshot.
-                    snapshotMgr.flushDirtyPageHandler(fullId, pageBuf, tag);
+                // Only after write we can write page into snapshot.
+                snapshotMgr.flushDirtyPageHandler(fullId, pageBuf, tag);
 
-                    AtomicInteger cntr = evictedPagesCntr;
+                AtomicInteger cntr = evictedPagesCntr;
 
-                    if (cntr != null)
-                        cntr.incrementAndGet();
-                }
+                if (cntr != null)
+                    cntr.incrementAndGet();
             },
             changeTracker,
             this,
             memMetrics,
-            plc
+            plc,
+            this
         );
 
         memMetrics.pageMemory(pageMem);
@@ -2095,54 +2092,56 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param partStates Partition to restore state.
      */
     public void applyUpdatesOnRecovery(
-        WALIterator it,
+        @Nullable WALIterator it,
         IgnitePredicate<IgniteBiTuple<WALPointer, WALRecord>> recPredicate,
         IgnitePredicate<DataEntry> entryPredicate,
         Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
     ) throws IgniteCheckedException {
-        while (it.hasNextX()) {
-            IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
+        if (it != null) {
+            while (it.hasNextX()) {
+                IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
 
-            WALRecord rec = next.get2();
+                WALRecord rec = next.get2();
 
-            if (!recPredicate.apply(next))
-                break;
+                if (!recPredicate.apply(next))
+                    break;
 
-            switch (rec.type()) {
-                case DATA_RECORD:
-                    checkpointReadLock();
+                switch (rec.type()) {
+                    case DATA_RECORD:
+                        checkpointReadLock();
 
-                    try {
-                        DataRecord dataRec = (DataRecord) rec;
+                        try {
+                            DataRecord dataRec = (DataRecord)rec;
 
-                        for (DataEntry dataEntry : dataRec.writeEntries()) {
-                            if (entryPredicate.apply(dataEntry)) {
-                                checkpointReadLock();
+                            for (DataEntry dataEntry : dataRec.writeEntries()) {
+                                if (entryPredicate.apply(dataEntry)) {
+                                    checkpointReadLock();
 
-                                try {
-                                    int cacheId = dataEntry.cacheId();
+                                    try {
+                                        int cacheId = dataEntry.cacheId();
 
-                                    GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+                                        GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-                                    if (cacheCtx != null)
-                                        applyUpdate(cacheCtx, dataEntry);
-                                    else if (log != null)
-                                        log.warning("Cache (cacheId=" + cacheId + ") is not started, can't apply updates.");
-                                }
-                                finally {
-                                    checkpointReadUnlock();
+                                        if (cacheCtx != null)
+                                            applyUpdate(cacheCtx, dataEntry);
+                                        else if (log != null)
+                                            log.warning("Cache (cacheId=" + cacheId + ") is not started, can't apply updates.");
+                                    }
+                                    finally {
+                                        checkpointReadUnlock();
+                                    }
                                 }
                             }
                         }
-                    }
-                    finally {
-                        checkpointReadUnlock();
-                    }
+                        finally {
+                            checkpointReadUnlock();
+                        }
 
-                    break;
+                        break;
 
-                default:
-                    // Skip other records.
+                    default:
+                        // Skip other records.
+                }
             }
         }
 
@@ -2364,6 +2363,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     updateState(part, restore.get1());
                 }
             }
+
+            // After partition states are restored, it is necessary to update internal data structures in topology.
+            grp.topology().afterStateRestored(grp.topology().lastTopologyChangeVersion());
         }
     }
 
@@ -2622,31 +2624,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    /**
-     * Counter for written checkpoint pages. Not null only if checkpoint is running.
-     */
-    public AtomicInteger writtenPagesCounter() {
+    /** {@inheritDoc} */
+    @Override public AtomicInteger writtenPagesCounter() {
         return writtenPagesCntr;
     }
 
-    /**
-     * @return Counter for fsynced checkpoint pages. Not null only if checkpoint is running.
-     */
-    public AtomicInteger syncedPagesCounter() {
+    /** {@inheritDoc} */
+    @Override public AtomicInteger syncedPagesCounter() {
         return syncedPagesCntr;
     }
 
-    /**
-     * @return Counter for evicted pages during current checkpoint. Not null only if checkpoint is running.
-     */
-    public AtomicInteger evictedPagesCntr() {
+    /** {@inheritDoc} */
+    @Override public AtomicInteger evictedPagesCntr() {
         return evictedPagesCntr;
     }
 
-    /**
-     * @return Number of pages in current checkpoint. If checkpoint is not running, returns 0.
-     */
-    public int currentCheckpointPagesCount() {
+    /** {@inheritDoc} */
+    @Override public int currentCheckpointPagesCount() {
         return currCheckpointPagesCnt;
     }
 

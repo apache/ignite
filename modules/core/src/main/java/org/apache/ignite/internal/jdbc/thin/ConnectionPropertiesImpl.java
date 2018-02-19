@@ -20,6 +20,7 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.io.Serializable;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Properties;
 import javax.naming.RefAddr;
 import javax.naming.Reference;
@@ -39,14 +40,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** Host name property. */
     private StringProperty host = new StringProperty(
-        "host", "Ignite node IP to connect", null, null, true, new PropertyValidator() {
-        private static final long serialVersionUID = 0L;
-
-        @Override public void validate(String host) throws SQLException {
-            if (F.isEmpty(host))
-                throw new SQLException("Host name is empty", SqlStateCode.CLIENT_CONNECTION_FAILED);
-        }
-    });
+        "host", "Ignite node IP to connect", null, null, true,
+        new EmptyStringValidator("Host name is empty"));
 
     /** Connection port property. */
     private IntegerProperty port = new IntegerProperty(
@@ -96,11 +91,99 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private BooleanProperty skipReducerOnUpdate = new BooleanProperty(
         "skipReducerOnUpdate", "Enable execution update queries on ignite server nodes", false, false);
 
+    /** SSL: Use SSL connection to Ignite node. */
+    private StringProperty sslMode = new StringProperty("sslMode",
+        "The SSL mode of the connection", SSL_MODE_DISABLE,
+        new String[] {SSL_MODE_DISABLE, SSL_MODE_REQUIRE}, false, null);
+
+    /** SSL: Client certificate key store url. */
+    private StringProperty sslProtocol = new StringProperty("sslProtocol",
+        "SSL protocol name", null,  null, false, null);
+
+    /** SSL: Key algorithm name. */
+    private StringProperty sslKeyAlgorithm = new StringProperty("sslKeyAlgorithm",
+        "SSL key algorithm name", "SunX509",  null, false, null);
+
+    /** SSL: Client certificate key store url. */
+    private StringProperty sslClientCertificateKeyStoreUrl =
+        new StringProperty("sslClientCertificateKeyStoreUrl",
+        "Client certificate key store URL",
+        null, null, false, null);
+
+    /** SSL: Client certificate key store password. */
+    private StringProperty sslClientCertificateKeyStorePassword =
+        new StringProperty("sslClientCertificateKeyStorePassword",
+        "Client certificate key store password",
+            null, null, false, null);
+
+    /** SSL: Client certificate key store type. */
+    private StringProperty sslClientCertificateKeyStoreType =
+        new StringProperty("sslClientCertificateKeyStoreType",
+        "Client certificate key store type",
+            null, null, false, null);
+
+    /** SSL: Trusted certificate key store url. */
+    private StringProperty sslTrustCertificateKeyStoreUrl =
+        new StringProperty("sslTrustCertificateKeyStoreUrl",
+        "Trusted certificate key store URL", null, null, false, null);
+
+    /** SSL Trusted certificate key store password. */
+    private StringProperty sslTrustCertificateKeyStorePassword =
+        new StringProperty("sslTrustCertificateKeyStorePassword",
+        "Trusted certificate key store password", null, null, false, null);
+
+    /** SSL: Trusted certificate key store type. */
+    private StringProperty sslTrustCertificateKeyStoreType =
+        new StringProperty("sslTrustCertificateKeyStoreType",
+        "Trusted certificate key store type",
+            null, null, false, null);
+
+    /** SSL: Trust all certificates. */
+    private BooleanProperty sslTrustAll = new BooleanProperty("sslTrustAll",
+        "Trust all certificates",false, false);
+
+    /** SSL: Custom class name that implements Factory&lt;SSLSocketFactory&gt;. */
+    private StringProperty sslFactory = new StringProperty("sslFactory",
+        "Custom class name that implements Factory<SSLSocketFactory>", null, null, false, null);
+
+    /** Turn on streaming mode on this connection. */
+    private BooleanProperty stream = new BooleanProperty(
+        "streaming", "Turn on streaming mode on this connection", false, false);
+
+    /** Turn on overwrite during streaming on this connection. */
+    private BooleanProperty streamAllowOverwrite = new BooleanProperty(
+        "streamingAllowOverwrite", "Turn on overwrite during streaming on this connection", false, false);
+
+    /** Number of parallel operations per cluster node during streaming. */
+    private IntegerProperty streamParOps = new IntegerProperty(
+        "streamingPerNodeParallelOperations", "Number of parallel operations per cluster node during streaming",
+        0, false, 0, Integer.MAX_VALUE);
+
+    /** Buffer size per cluster node during streaming. */
+    private IntegerProperty streamBufSize = new IntegerProperty(
+        "streamingPerNodeBufferSize", "Buffer size per cluster node during streaming",
+        0, false, 0, Integer.MAX_VALUE);
+
+    /** Buffer size per cluster node during streaming. */
+    private LongProperty streamFlushFreq = new LongProperty(
+        "streamingFlushFrequency", "Buffer size per cluster node during streaming",
+        0, false, 0, Long.MAX_VALUE);
+
+    /** Buffer size per cluster node during streaming. */
+    private IntegerProperty streamBatchSize = new IntegerProperty(
+        "streamingBatchSize", "Batch size for streaming (number of commands to accumulate internally " +
+        "before actually sending over the wire)", 10, false, 1, Integer.MAX_VALUE);
+
     /** Properties array. */
-    private final ConnectionProperty [] propsArray = {
+    private final ConnectionProperty [] props = {
         host, port,
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
-        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate
+        tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
+        sslMode, sslProtocol, sslKeyAlgorithm,
+        sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
+        sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
+        sslTrustAll, sslFactory,
+        stream, streamAllowOverwrite, streamParOps, streamBufSize, streamFlushFreq, streamBatchSize
     };
 
     /** {@inheritDoc} */
@@ -223,6 +306,176 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         skipReducerOnUpdate.setValue(val);
     }
 
+    /** {@inheritDoc} */
+    @Override public String getSslMode() {
+        return sslMode.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslMode(String mode) {
+        sslMode.setValue(mode);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslProtocol() {
+        return sslProtocol.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslProtocol(String sslProtocol) {
+        this.sslProtocol.setValue(sslProtocol);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslKeyAlgorithm() {
+        return sslKeyAlgorithm.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslKeyAlgorithm(String keyAlgorithm) {
+        sslKeyAlgorithm.setValue(keyAlgorithm);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslClientCertificateKeyStoreUrl() {
+        return sslClientCertificateKeyStoreUrl.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslClientCertificateKeyStoreUrl(String url) {
+        sslClientCertificateKeyStoreUrl.setValue(url);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslClientCertificateKeyStorePassword() {
+        return sslClientCertificateKeyStorePassword.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslClientCertificateKeyStorePassword(String passwd) {
+        sslClientCertificateKeyStorePassword.setValue(passwd);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslClientCertificateKeyStoreType() {
+        return sslClientCertificateKeyStoreType.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslClientCertificateKeyStoreType(String ksType) {
+        sslClientCertificateKeyStoreType.setValue(ksType);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslTrustCertificateKeyStoreUrl() {
+        return sslTrustCertificateKeyStoreUrl.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslTrustCertificateKeyStoreUrl(String url) {
+        sslTrustCertificateKeyStoreUrl.setValue(url);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslTrustCertificateKeyStorePassword() {
+        return sslTrustCertificateKeyStorePassword.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslTrustCertificateKeyStorePassword(String passwd) {
+        sslTrustCertificateKeyStorePassword.setValue(passwd);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslTrustCertificateKeyStoreType() {
+        return sslTrustCertificateKeyStoreType.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslTrustCertificateKeyStoreType(String ksType) {
+        sslTrustCertificateKeyStoreType.setValue(ksType);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isSslTrustAll() {
+        return sslTrustAll.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslTrustAll(boolean trustAll) {
+        this.sslTrustAll.setValue(trustAll);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getSslFactory() {
+        return sslFactory.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSslFactory(String sslFactory) {
+        this.sslFactory.setValue(sslFactory);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isStream() {
+        return stream.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setStream(boolean val) {
+        stream.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isStreamAllowOverwrite() {
+        return streamAllowOverwrite.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setStreamAllowOverwrite(boolean val) {
+        streamAllowOverwrite.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getStreamParallelOperations() {
+        return streamParOps.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setStreamParallelOperations(int val) throws SQLException {
+        streamParOps.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getStreamBufferSize() {
+        return streamBufSize.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setStreamBufferSize(int val) throws SQLException {
+        streamBufSize.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getStreamFlushFrequency() {
+        return streamFlushFreq.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setStreamFlushFrequency(long val) throws SQLException {
+        streamFlushFreq.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getStreamBatchSize() {
+        return streamBatchSize.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setStreamBatchSize(int val) throws SQLException {
+        streamBatchSize.setValue(val);
+    }
+
     /**
      * @param props Environment properties.
      * @throws SQLException On error.
@@ -230,7 +483,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     void init(Properties props) throws SQLException {
         Properties props0 = (Properties)props.clone();
 
-        for (ConnectionProperty aPropsArray : propsArray)
+        for (ConnectionProperty aPropsArray : this.props)
             aPropsArray.init(props0);
     }
 
@@ -238,10 +491,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
      * @return Driver's properties info array.
      */
     private DriverPropertyInfo[] getDriverPropertyInfo() {
-        DriverPropertyInfo[] dpis = new DriverPropertyInfo[propsArray.length];
+        DriverPropertyInfo[] dpis = new DriverPropertyInfo[props.length];
 
-        for (int i = 0; i < propsArray.length; ++i)
-            dpis[i] = propsArray[i].getDriverPropertyInfo();
+        for (int i = 0; i < props.length; ++i)
+            dpis[i] = props[i].getDriverPropertyInfo();
 
         return dpis;
     }
@@ -268,6 +521,30 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @throws SQLException On validation fails.
          */
         void validate(String val) throws SQLException;
+    }
+
+    /**
+     *
+     */
+    private static class EmptyStringValidator implements PropertyValidator {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Error message. */
+        private final String errMsg;
+
+        /**
+         * @param msg Error message.
+         */
+        private EmptyStringValidator(String msg) {
+            errMsg = msg;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void validate(String val) throws SQLException {
+            if (F.isEmpty(val))
+                throw new SQLException(errMsg, SqlStateCode.CLIENT_CONNECTION_FAILED);
+        }
     }
 
     /**
@@ -365,12 +642,33 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
                     SqlStateCode.CLIENT_CONNECTION_FAILED);
             }
 
+            checkChoices(strVal);
+
             if (validator != null)
                 validator.validate(strVal);
 
             props.remove(name);
 
             init(strVal);
+        }
+
+        /**
+         * @param strVal Checked value.
+         * @throws SQLException On check error.
+         */
+        protected void checkChoices(String strVal) throws SQLException {
+            if (strVal == null)
+                return;
+
+            if (choices != null) {
+                for (String ch : choices) {
+                    if (ch.equalsIgnoreCase(strVal))
+                        return;
+                }
+
+                throw new SQLException("Invalid property value. [name=" + name + ", val=" + strVal
+                    + ", choices=" + Arrays.toString(choices) + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
+            }
         }
 
         /**
@@ -513,7 +811,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
             else {
                 try {
                     setValue(parse(str));
-                } catch (NumberFormatException e) {
+                }
+                catch (NumberFormatException e) {
                     throw new SQLException("Failed to parse int property [name=" + name +
                         ", value=" + str + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
                 }
@@ -588,6 +887,38 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /**
      *
      */
+    private static class LongProperty extends NumberProperty {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * @param name Name.
+         * @param desc Description.
+         * @param dfltVal Default value.
+         * @param required {@code true} if the property is required.
+         * @param min Lower bound of allowed range.
+         * @param max Upper bound of allowed range.
+         */
+        LongProperty(String name, String desc, Number dfltVal, boolean required, long min, long max) {
+            super(name, desc, dfltVal, required, min, max);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Number parse(String str) throws NumberFormatException {
+            return Long.parseLong(str);
+        }
+
+        /**
+         * @return Property value.
+         */
+        long value() {
+            return val.longValue();
+        }
+    }
+
+    /**
+     *
+     */
     private static class StringProperty extends ConnectionProperty {
         /** */
         private static final long serialVersionUID = 0L;
@@ -626,7 +957,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         /** {@inheritDoc} */
         @Override void init(String str) throws SQLException {
-            val = str;
+            if (str == null)
+                val = (String)dfltVal;
+            else
+                val = str;
         }
 
         /** {@inheritDoc} */
