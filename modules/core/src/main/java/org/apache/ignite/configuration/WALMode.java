@@ -24,6 +24,11 @@ import org.jetbrains.annotations.Nullable;
  * WAL Mode. This enum defines crash recovery guarantees when Ignite persistence is enabled.
  */
 public enum WALMode {
+    /**
+     * FSYNC mode: full-sync disk writes. These writes survive power loss scenarios. When a control is returned
+     * from the transaction commit operation, the changes are guaranteed to be persisted to disk according to the
+     * transaction write synchronization mode.
+     */
     FSYNC,
 
     /**
@@ -49,6 +54,8 @@ public enum WALMode {
      * Default mode: full-sync disk writes. These writes survive power loss scenarios. When a control is returned
      * from the transaction commit operation, the changes are guaranteed to be persisted to disk according to the
      * transaction write synchronization mode.
+     * @deprecated This mode is no longer default and left here only for API compatibility. It is equivalent to the
+     * {@code FSYNC} mode.
      */
     @Deprecated DEFAULT;
 
