@@ -28,8 +28,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
-
 /**
  * Direct marshalling I/O stream.
  */
