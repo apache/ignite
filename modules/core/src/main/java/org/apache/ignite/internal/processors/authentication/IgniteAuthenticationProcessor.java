@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
@@ -73,10 +74,6 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.AUTH_PROC;
 
-// TODO: Do not send propose to clients
-
-// TODO: Do not send initial users to client on join
-
 /**
  *
  */
@@ -91,7 +88,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private final ConcurrentHashMap<IgniteUuid, UserOperationFinishFuture> opFinishFuts = new ConcurrentHashMap<>();
 
     /** Futures prepared user map. Authentication message ID -> public future. */
-    private final ConcurrentMap<IgniteUuid, GridFutureAdapter<Void>> authFuts = new ConcurrentHashMap<>();
+    private final ConcurrentMap<IgniteUuid, AuthenticateFuture> authFuts = new ConcurrentHashMap<>();
 
     /** Operation mutex. */
     private final Object mux = new Object();
@@ -296,26 +293,26 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         checkEnabled();
 
         if (F.isEmpty(login))
-            throw new IgniteAccessControlException("The user name or password is incorrect. [userName=" + login + ']');
+            throw new IgniteAccessControlException("The user name or password is incorrect [userName=" + login + ']');
 
         if (ctx.clientNode()) {
             while (true) {
-                try {
-                    GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
+                AuthenticateFuture fut = new AuthenticateFuture(coordinator().id());
 
-                    UserAuthenticateRequestMessage msg = new UserAuthenticateRequestMessage(login, passwd);
+                UserAuthenticateRequestMessage msg = new UserAuthenticateRequestMessage(login, passwd);
 
-                    authFuts.put(msg.id(), fut);
+                authFuts.put(msg.id(), fut);
 
-                    ctx.io().sendToGridTopic(coordinator(), GridTopic.TOPIC_AUTH, msg, GridIoPolicy.SYSTEM_POOL);
+                ctx.cluster(). discovery().aliveServerNodes()
 
-                    fut.get();
+                ctx.io().sendToGridTopic(coordinator(), GridTopic.TOPIC_AUTH, msg, GridIoPolicy.SYSTEM_POOL);
 
-                    return new AuthorizationContext(User.create(login));
-                }
-                catch (RetryOnCoordinatorLeftException e) {
-                    // No-op.
-                }
+                fut.get();
+
+                if (fut.retry())
+                    continue;
+
+                return new AuthorizationContext(User.create(login));
             }
         }
         else
@@ -407,7 +404,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void collectGridNodeData(DiscoveryDataBag dataBag) {
-        if (!isEnabled)
+        // 1. Collect users info only on coordinator
+        // 2. Doesn't collect users info to send on client node due to security reason.
+        if (!isEnabled || !F.eq(ctx.localNodeId(), coordinator().id()) || dataBag.isJoiningNodeClient())
             return;
 
         synchronized (mux) {
@@ -485,12 +484,12 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         usr = users.get(login);
 
         if (usr == null)
-            throw new IgniteAccessControlException("The user name or password is incorrect. [userName=" + login + ']');
+            throw new IgniteAccessControlException("The user name or password is incorrect [userName=" + login + ']');
 
         if (usr.authorize(passwd))
             return usr;
         else
-            throw new IgniteAccessControlException("The user name or password is incorrect. [userName=" + login + ']');
+            throw new IgniteAccessControlException("The user name or password is incorrect [userName=" + login + ']');
     }
 
     /**
@@ -688,12 +687,23 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                     f.onNodeLeft(nodeId);
             }
 
+            // Found all auth requests that were be sent to left node.
+            // Complete these futures with special exception to retry authentication.
+            for (Iterator<Map.Entry<IgniteUuid, AuthenticateFuture>> it = authFuts.entrySet().iterator();
+                it.hasNext(); ) {
+                AuthenticateFuture f = it.next().getValue();
+
+                if (F.eq(nodeId, f.nodeId())) {
+                    f.retry(true);
+
+                    f.onDone();
+
+                    it.remove();
+                }
+            }
+
             // Coordinator left
             if (F.eq(coordinator().id(), nodeId)) {
-                // TODO: Send auth requests to arbitrary sever node to relax coordinator
-                for (GridFutureAdapter<Void> f : authFuts.values())
-                    f.onDone(new RetryOnCoordinatorLeftException());
-
                 // Refresh info about coordinator node.
                 crdNode = null;
 
@@ -757,10 +767,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         try {
             User u = authenticateOnServer(msg.name(), msg.password());
 
-            respMsg = new UserAuthenticateResponseMessage(msg.id(), u, null);
+            respMsg = new UserAuthenticateResponseMessage(msg.id(), null);
         }
         catch (IgniteCheckedException e) {
-            respMsg = new UserAuthenticateResponseMessage(msg.id(), null, e.toString());
+            respMsg = new UserAuthenticateResponseMessage(msg.id(), e.toString());
 
             e.printStackTrace();
         }
@@ -780,17 +790,15 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         GridFutureAdapter<Void> fut = authFuts.get(msg.id());
 
         fut.onDone(null, !msg.success() ? new IgniteAccessControlException(msg.errorMessage()) : null);
+
+        authFuts.remove(msg.id());
     }
 
     /**
      * Local node joined to topology. Discovery cache is available but no discovery custom message are received.
      * Initial user set and initial user operation (received on join) are processed here.
-     *
-     * @param evt Disco event.
-     * @param cache Disco cache.
      */
-    // TODO: Remove unused.
-    public void onLocalJoin(DiscoveryEvent evt, DiscoCache cache) {
+    public void onLocalJoin() {
         if (coordinator() == null)
             return;
 
@@ -882,7 +890,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             ctx.io().sendToGridTopic(coordinator(), GridTopic.TOPIC_AUTH, msg, GridIoPolicy.SYSTEM_POOL);
         }
         catch (Exception e) {
-            U.error(log, "Failed to send UserManagementOperationFinishedMessage. [op=" + msg.operationId() +
+            U.error(log, "Failed to send UserManagementOperationFinishedMessage [op=" + msg.operationId() +
                 ", node=" + coordinator() + ", err=" + msg.errorMessage() + ']', e);
         }
     }
@@ -948,15 +956,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         @Override public String toString() {
             return S.toString(InitialUsersData.class, this);
         }
-    }
-
-    /**
-     * Thrown by authenticate futures when coordinator node left
-     * to resend authenticate message to the new coordinator.
-     */
-    private static class RetryOnCoordinatorLeftException extends IgniteCheckedException {
-        /** */
-        private static final long serialVersionUID = 0L;
     }
 
     /**i
@@ -1107,11 +1106,11 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             assert receivedFinish != null : "Process operation state on client";
 
             if (log.isDebugEnabled())
-                log.debug("User operation is failed. [nodeId=" + nodeId + ", err=" + errMsg + ']');
+                log.debug("User operation is failed [nodeId=" + nodeId + ", err=" + errMsg + ']');
 
             receivedFinish.add(nodeId);
 
-            UserManagementException e = new UserManagementException("Operation failed. [nodeId=" + nodeId
+            UserManagementException e = new UserManagementException("Operation failed [nodeId=" + nodeId
                 + ", opId=" + opId + ", err=" + errMsg + ']');
 
             if (err == null)
@@ -1128,6 +1127,45 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         private void checkOperationFinished() {
             if (receivedFinish.containsAll(requiredFinish))
                 onFinishOperation(opId, err);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class AuthenticateFuture extends GridFutureAdapter<Void> {
+        /** Node id. */
+        private final UUID nodeId;
+
+        /** Node id. */
+        private boolean retry;
+
+        /**
+         * @param nodeId ID of the node that processes authentication request.
+         */
+       AuthenticateFuture(UUID nodeId) {
+           this.nodeId = nodeId;
+       }
+
+        /**
+         * @return ID of the node that processes authentication request.
+         */
+        UUID nodeId() {
+            return nodeId;
+        }
+
+        /**
+         * @return {@code true} if need retry (aftyer node left).
+         */
+        boolean retry() {
+            return retry;
+        }
+
+        /**
+         * @param retry Set retry flag.
+         */
+        void retry(boolean retry) {
+            this.retry = retry;
         }
     }
 
@@ -1213,6 +1251,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             if (ctx.clientNode())
                 return;

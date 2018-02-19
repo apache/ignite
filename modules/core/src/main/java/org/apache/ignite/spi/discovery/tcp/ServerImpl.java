@@ -71,6 +71,8 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomOnlyForServerMessage;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
@@ -4165,6 +4167,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     DiscoveryDataPacket dataPacket = msg.gridDiscoveryData();
 
+                    dataPacket.joiningNodeClient(msg.client());
+
                     assert dataPacket != null : msg;
 
                     if (dataPacket.hasJoiningNodeData())
@@ -6500,6 +6504,22 @@ class ServerImpl extends TcpDiscoveryImpl {
          */
         void addMessage(TcpDiscoveryAbstractMessage msg, @Nullable byte[] msgBytes) {
             T2 t = new T2<>(msg, msgBytes);
+
+            // Don't send DiscoveryCustomOnlyForServerMessage to the clients
+            if (msg instanceof TcpDiscoveryCustomEventMessage) {
+                TcpDiscoveryCustomEventMessage msgCust = (TcpDiscoveryCustomEventMessage)msg;
+
+                try {
+                    CustomMessageWrapper custMsgWrp = (CustomMessageWrapper)msgCust.message(
+                        spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()));
+
+                    if (custMsgWrp.delegate() instanceof DiscoveryCustomOnlyForServerMessage)
+                        return;
+                }
+                catch (Throwable th) {
+                    U.error(log,"Cannot deserialize custom discovery event message", th);
+                }
+            }
 
             if (msg.highPriority())
                 queue.addFirst(t);

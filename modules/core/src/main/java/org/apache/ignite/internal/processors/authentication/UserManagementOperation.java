@@ -42,6 +42,7 @@ public class UserManagementOperation implements Serializable {
      * Constructor.
      */
     public UserManagementOperation() {
+        // No-op.
     }
 
     /**

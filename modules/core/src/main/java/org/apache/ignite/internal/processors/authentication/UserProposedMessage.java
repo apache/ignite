@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.authentication;
 
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomOnlyForServerMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -33,7 +34,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * {@link UserAcceptedMessage} is sent as an acknowledgement that operation is finished on the all nodes of the cluster.
  */
-public class UserProposedMessage implements DiscoveryCustomMessage {
+public class UserProposedMessage implements DiscoveryCustomOnlyForServerMessage {
     /** */
     private static final long serialVersionUID = 0L;
 

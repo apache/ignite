@@ -37,17 +37,18 @@ public class UserAuthenticateResponseMessage implements Message {
     /** Error message. */
     private String errMsg;
 
-    /** */
+    /**
+     *
+     */
     public UserAuthenticateResponseMessage() {
+        // No-op.
     }
 
     /**
      * @param id Request ID.
-     * @param usr User.
      * @param errMsg error message
      */
-    // TODO: Unused usr
-    public UserAuthenticateResponseMessage(IgniteUuid id, User usr, String errMsg) {
+    public UserAuthenticateResponseMessage(IgniteUuid id, String errMsg) {
         this.id = id;
         this.errMsg = errMsg;
     }

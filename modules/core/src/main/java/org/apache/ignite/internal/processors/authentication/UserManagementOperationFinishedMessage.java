@@ -38,8 +38,11 @@ public class UserManagementOperationFinishedMessage implements Message {
     /** Error message. */
     private String errorMsg;
 
-    /** */
+    /**
+     *
+     */
     public UserManagementOperationFinishedMessage() {
+        // No-op.
     }
 
     /**
