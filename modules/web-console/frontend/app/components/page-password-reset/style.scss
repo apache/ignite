@@ -15,15 +15,17 @@
  * limitations under the License.
  */
 
-// Sign in controller.
-export default [
-    '$scope', '$uiRouterGlobals', 'IgniteFocus', 'IgniteCountries', 'Auth',
-    ($scope, $uiRouterGlobals, Focus, Countries, Auth) => {
-        $scope.auth = Auth.auth;
-        $scope.forgotPassword = Auth.forgotPassword;
-        $scope.action = 'signin';
-        $scope.countries = Countries.getAll();
+page-password-reset {
+	display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
 
-        Focus.move('user_email');
+    footer {
+        display: flex;
+        justify-content: flex-end;
     }
-];
+
+    .btn-ignite + .btn-ignite {
+        margin-left: 10px;
+    }
+}

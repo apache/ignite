@@ -15,36 +15,16 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+// Sign in controller.
+export default class {
+    static $inject = ['$scope', '$uiRouterGlobals', 'IgniteFocus', 'IgniteCountries', 'Auth'];
 
-import templateUrl from 'views/reset.tpl.pug';
+    constructor($scope, $uiRouterGlobals, Focus, Countries, Auth) {
+        this.auth = Auth.auth;
+        this.forgotPassword = Auth.forgotPassword;
+        this.action = 'signin';
+        this.countries = Countries.getAll();
 
-angular
-.module('ignite-console.states.password', [
-    'ui.router'
-])
-.config(['$stateProvider', function($stateProvider) {
-    // set up the states
-    $stateProvider
-    .state('password', {
-        url: '/password',
-        abstract: true,
-        template: '<ui-view></ui-view>'
-    })
-    .state('password.reset', {
-        url: '/reset?{token}',
-        templateUrl,
-        unsaved: true,
-        tfMetaTags: {
-            title: 'Reset password'
-        }
-    })
-    .state('password.send', {
-        url: '/send',
-        templateUrl,
-        unsaved: true,
-        tfMetaTags: {
-            title: 'Password Send'
-        }
-    });
-}]);
+        Focus.move('user_email');
+    }
+}
