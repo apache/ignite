@@ -98,7 +98,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.persistence.wal.DefaultModeFileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FsyncModeFileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheLocalQueryManager;
@@ -2343,8 +2343,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             pageStoreMgr = new FilePageStoreManager(ctx);
 
-            if (ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.DEFAULT)
-                walMgr = new DefaultModeFileWriteAheadLogManager(ctx);
+            if (ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC)
+                walMgr = new FsyncModeFileWriteAheadLogManager(ctx);
             else
                 walMgr = new FileWriteAheadLogManager(ctx);
         }

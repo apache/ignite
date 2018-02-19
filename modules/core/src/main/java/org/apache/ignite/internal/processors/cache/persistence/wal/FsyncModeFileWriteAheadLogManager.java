@@ -60,7 +60,6 @@ import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.NodeInvalidator;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -108,7 +107,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VER
 /**
  * File WAL manager.
  */
-public class DefaultModeFileWriteAheadLogManager extends GridCacheSharedManagerAdapter implements IgniteWriteAheadLogManager {
+public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAdapter implements IgniteWriteAheadLogManager {
     /** */
     public static final FileDescriptor[] EMPTY_DESCRIPTORS = new FileDescriptor[0];
 
@@ -219,8 +218,8 @@ public class DefaultModeFileWriteAheadLogManager extends GridCacheSharedManagerA
     private final FileIOFactory ioFactory;
 
     /** Updater for {@link #currentHnd}, used for verify there are no concurrent update for current log segment handle */
-    private static final AtomicReferenceFieldUpdater<DefaultModeFileWriteAheadLogManager, FileWriteHandle> currentHndUpd =
-        AtomicReferenceFieldUpdater.newUpdater(DefaultModeFileWriteAheadLogManager.class, FileWriteHandle.class, "currentHnd");
+    private static final AtomicReferenceFieldUpdater<FsyncModeFileWriteAheadLogManager, FileWriteHandle> currentHndUpd =
+        AtomicReferenceFieldUpdater.newUpdater(FsyncModeFileWriteAheadLogManager.class, FileWriteHandle.class, "currentHnd");
 
     /**
      * Thread local byte buffer for saving serialized WAL records chain, see {@link FileWriteHandle#head}.
@@ -284,7 +283,7 @@ public class DefaultModeFileWriteAheadLogManager extends GridCacheSharedManagerA
     /**
      * @param ctx Kernal context.
      */
-    public DefaultModeFileWriteAheadLogManager(@NotNull final GridKernalContext ctx) {
+    public FsyncModeFileWriteAheadLogManager(@NotNull final GridKernalContext ctx) {
         igCfg = ctx.config();
 
         DataStorageConfiguration dsCfg = igCfg.getDataStorageConfiguration();
@@ -303,7 +302,7 @@ public class DefaultModeFileWriteAheadLogManager extends GridCacheSharedManagerA
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         evt = ctx.event();
 
-        assert mode == WALMode.DEFAULT : dsCfg;
+        assert mode == WALMode.FSYNC : dsCfg;
     }
 
     /** {@inheritDoc} */
@@ -445,7 +444,7 @@ public class DefaultModeFileWriteAheadLogManager extends GridCacheSharedManagerA
 
     /** {@inheritDoc} */
     @Override public boolean isFullSync() {
-        return mode == WALMode.DEFAULT;
+        return mode == WALMode.FSYNC;
     }
 
     /** {@inheritDoc} */
@@ -1056,7 +1055,7 @@ public class DefaultModeFileWriteAheadLogManager extends GridCacheSharedManagerA
         try (FileIO fileIO = ioFactory.create(file, CREATE, READ, WRITE)) {
             int left = dsCfg.getWalSegmentSize();
 
-            if (mode == WALMode.DEFAULT) {
+            if (mode == WALMode.FSYNC) {
                 while (left > 0) {
                     int toWrite = Math.min(FILL_BUF.length, left);
 
@@ -1472,7 +1471,7 @@ public class DefaultModeFileWriteAheadLogManager extends GridCacheSharedManagerA
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
-                if (mode == WALMode.DEFAULT) {
+                if (mode == WALMode.FSYNC) {
                     try (FileIO f0 = ioFactory.create(dstFile, CREATE, READ, WRITE)) {
                         f0.force();
                     }
@@ -1635,7 +1634,7 @@ public class DefaultModeFileWriteAheadLogManager extends GridCacheSharedManagerA
 
                     Files.move(tmpZip.toPath(), zip.toPath());
 
-                    if (mode == WALMode.DEFAULT) {
+                    if (mode == WALMode.FSYNC) {
                         try (FileIO f0 = ioFactory.create(zip, CREATE, READ, WRITE)) {
                             f0.force();
                         }
@@ -1830,7 +1829,7 @@ public class DefaultModeFileWriteAheadLogManager extends GridCacheSharedManagerA
                 if (checkFile.isDirectory())
                     throw new IgniteCheckedException("Failed to initialize WAL log segment (a directory with " +
                         "the same name already exists): " + checkFile.getAbsolutePath());
-                else if (checkFile.length() != dsCfg.getWalSegmentSize() && mode == WALMode.DEFAULT)
+                else if (checkFile.length() != dsCfg.getWalSegmentSize() && mode == WALMode.FSYNC)
                     throw new IgniteCheckedException("Failed to initialize WAL log segment " +
                         "(WAL segment size change is not supported):" + checkFile.getAbsolutePath());
             }
@@ -1910,7 +1909,7 @@ public class DefaultModeFileWriteAheadLogManager extends GridCacheSharedManagerA
         while (buffer.hasRemaining());
 
         // Flush
-        if (mode == WALMode.DEFAULT)
+        if (mode == WALMode.FSYNC)
             io.force();
 
         return io.position();
@@ -2243,7 +2242,7 @@ public class DefaultModeFileWriteAheadLogManager extends GridCacheSharedManagerA
                 assert fileIO.position() == 0 : "Serializer version can be written only at the begin of file " +
                     fileIO.position();
 
-                long updatedPosition = DefaultModeFileWriteAheadLogManager.writeSerializerVersion(fileIO, idx,
+                long updatedPosition = FsyncModeFileWriteAheadLogManager.writeSerializerVersion(fileIO, idx,
                     serializer.version(), mode);
 
                 written = updatedPosition;
@@ -2648,7 +2647,7 @@ public class DefaultModeFileWriteAheadLogManager extends GridCacheSharedManagerA
                         }
 
                         // Do the final fsync.
-                        if (mode == WALMode.DEFAULT) {
+                        if (mode == WALMode.FSYNC) {
                             fileIO.force();
 
                             lastFsyncPos = written;
@@ -2686,7 +2685,7 @@ public class DefaultModeFileWriteAheadLogManager extends GridCacheSharedManagerA
                     assert rec instanceof FakeRecord : "Expected head FakeRecord, actual head "
                     + (rec != null ? rec.getClass().getSimpleName() : "null");
 
-                    assert written == lastFsyncPos || mode != WALMode.DEFAULT :
+                    assert written == lastFsyncPos || mode != WALMode.FSYNC :
                     "fsync [written=" + written + ", lastFsync=" + lastFsyncPos + ']';
                 }
 
