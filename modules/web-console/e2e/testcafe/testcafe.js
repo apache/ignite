@@ -33,11 +33,11 @@ const BROWSERS = ['chromium:headless --no-sandbox']; // For example: ['chrome', 
 let testcafe = null;
 
 const resolveFixturesPaths = () => {
-    let fixturesPaths = glob.sync('./fixtures/*.js');
+    let fixturesPaths = glob.sync(' ./fixtures/**/*.js');
 
     if (process.env.IGNITE_MODULES) {
         const igniteModulesTestcafe = path.join(process.env.IGNITE_MODULES, 'e2e/testcafe');
-        const additionalFixturesPaths = glob.sync(path.join(igniteModulesTestcafe, 'fixtures', '*.js'));
+        const additionalFixturesPaths = glob.sync(path.join(igniteModulesTestcafe, 'fixtures', '**/*.js'));
         const relativePaths = new Set(additionalFixturesPaths.map((fixturePath) => path.relative(igniteModulesTestcafe, fixturePath)));
 
         fixturesPaths = fixturesPaths.filter((fixturePath) => !relativePaths.has(path.relative(process.cwd(), fixturePath))).concat(additionalFixturesPaths);

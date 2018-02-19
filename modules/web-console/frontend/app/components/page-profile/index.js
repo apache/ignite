@@ -16,7 +16,11 @@
  */
 
 import angular from 'angular';
+
 import component from './component';
+import template from 'views/base2.pug';
+
+import './style.scss';
 
 export default angular
     .module('ignite-console.page-profile', [
@@ -26,7 +30,14 @@ export default angular
         // set up the states
         $stateProvider.state('base.settings.profile', {
             url: '/profile',
-            component: 'pageProfile',
+            views: {
+                '@': {
+                    template
+                },
+                '@base.settings.profile': {
+                    component: 'pageProfile'
+                }
+            },
             permission: 'profile',
             tfMetaTags: {
                 title: 'User profile'
