@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.DelayQueue;
@@ -115,7 +116,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.stream.StreamReceiver;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -176,7 +176,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** Mapping. */
     @GridToStringInclude
-    private ConcurrentMap<UUID, Buffer> bufMappings = new ConcurrentHashMap8<>();
+    private ConcurrentMap<UUID, Buffer> bufMappings = new ConcurrentHashMap<>();
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr;
@@ -1408,7 +1408,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             this.node = node;
 
             locFuts = new GridConcurrentHashSet<>();
-            reqs = new ConcurrentHashMap8<>();
+            reqs = new ConcurrentHashMap<>();
 
             // Cache local node flag.
             isLocNode = node.equals(ctx.discovery().localNode());
@@ -2147,9 +2147,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         // No-op.
                     }
                     catch (IgniteCheckedException ex) {
-                        IgniteLogger log = cache.unwrap(Ignite.class).log();
-
-                        U.error(log, "Failed to set initial value for cache entry: " + e, ex);
+                        throw new IgniteException("Failed to set initial value for cache entry", ex);
                     }
                     finally {
                         cctx.shared().database().checkpointReadUnlock();

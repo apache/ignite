@@ -73,7 +73,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.resources.LoggerResource;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static javax.cache.event.EventType.CREATED;
 import static javax.cache.event.EventType.EXPIRED;
@@ -102,13 +102,13 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
     private static final long BACKUP_ACK_FREQ = 5000;
 
     /** Listeners. */
-    private final ConcurrentMap<UUID, CacheContinuousQueryListener> lsnrs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, CacheContinuousQueryListener> lsnrs = new ConcurrentHashMap<>();
 
     /** Listeners count. */
     private final AtomicInteger lsnrCnt = new AtomicInteger();
 
     /** Internal entries listeners. */
-    private final ConcurrentMap<UUID, CacheContinuousQueryListener> intLsnrs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, CacheContinuousQueryListener> intLsnrs = new ConcurrentHashMap<>();
 
     /** Internal listeners count. */
     private final AtomicInteger intLsnrCnt = new AtomicInteger();
@@ -118,7 +118,7 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
     /** JCache listeners. */
     private final ConcurrentMap<CacheEntryListenerConfiguration, JCacheQuery> jCacheLsnrs =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Ordered topic prefix. */
     private String topicPrefix;

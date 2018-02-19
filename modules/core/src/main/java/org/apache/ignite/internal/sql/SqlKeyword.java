@@ -46,8 +46,8 @@ public class SqlKeyword {
     /** Keyword: BOOL. */
     public static final String BOOL = "BOOL";
 
-    /** Keyword: BATCH_SIZE. */
-    public static final String BATCH_SIZE = "BATCH_SIZE";
+    /** Keyword: PACKET_SIZE. */
+    public static final String PACKET_SIZE = "PACKET_SIZE";
 
     /** Keyword: BOOLEAN. */
     public static final String BOOLEAN = "BOOLEAN";

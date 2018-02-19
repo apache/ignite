@@ -30,7 +30,7 @@ import org.apache.ignite.internal.util.offheap.GridOffHeapPartitionedMap;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Performance test for partitioned offheap hash map.
@@ -287,7 +287,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
      * @throws Exception If failed.
      */
     private void checkPutsConcurrentMap(int threadCnt, long duration) throws Exception {
-        final Map<GridByteArrayWrapper, byte[]> map = new ConcurrentHashMap8<>();
+        final Map<GridByteArrayWrapper, byte[]> map = new ConcurrentHashMap<>();
 
         final AtomicLong opCnt = new AtomicLong();
         final AtomicLong totalOpCnt = new AtomicLong();
@@ -342,7 +342,7 @@ public abstract class GridOffHeapPartitionedMapPerformanceAbstractTest extends G
      * @throws Exception If failed.
      */
     private void checkPutRemovesConcurrentMap(int threadCnt, long duration) throws Exception {
-        final Map<GridByteArrayWrapper, byte[]> map = new ConcurrentHashMap8<>();
+        final Map<GridByteArrayWrapper, byte[]> map = new ConcurrentHashMap<>();
 
         final AtomicLong opCnt = new AtomicLong();
         final AtomicLong totalOpCnt = new AtomicLong();
