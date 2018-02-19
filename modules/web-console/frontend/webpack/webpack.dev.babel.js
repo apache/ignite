@@ -79,7 +79,7 @@ export default merge(commonCfg, {
                 target: `http://localhost:${backendPort}`,
                 ws: true
             },
-            '/api/v1/*': {
+            '/api/*': {
                 target: `http://localhost:${backendPort}`
             }
         },
