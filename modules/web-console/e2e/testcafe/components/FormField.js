@@ -1,4 +1,5 @@
 import {Selector, t} from 'testcafe'
+import {AngularJSSelector} from 'testcafe-angular-selectors'
 
 export class FormField {
     static ROOT_SELECTOR = '.ignite-form-field'
@@ -6,8 +7,8 @@ export class FormField {
     static CONTROL_SELECTOR = '[ng-model]'
     static ERRORS_SELECTOR = '.ignite-form-field__errors'
 
-    constructor({id = '', label = ''} = {}) {
-        if (!id && !label) throw new Error('ID or label are required')
+    constructor({id = '', label = '', model = ''} = {}) {
+        if (!id && !label && !model) throw new Error('ID, label or model are required')
         if (id) {
             this._selector = Selector(`#${id}`).parent(FormField.ROOT_SELECTOR)
         } else if (label) {
@@ -18,6 +19,8 @@ export class FormField {
                     .map(el => el.parent(FormField.ROOT_SELECTOR))
                     .pop()
             })
+        } else if (model) {
+            this._selector = AngularJSSelector.byModel(model).parent(FormField.ROOT_SELECTOR)
         }
         this.label = this._selector.find(FormField.LABEL_SELECTOR)
         this.control = this._selector.find(FormField.CONTROL_SELECTOR)

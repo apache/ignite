@@ -11,6 +11,7 @@ import {confirmation} from '../../components/confirmation'
 import {successNotification} from '../../components/notifications'
 import * as models from '../../page-models/pageConfigurationAdvancedModels'
 import * as igfs from '../../page-models/pageConfigurationAdvancedIGFS'
+import {configureNavButton} from '../../components/topNavigation'
 
 const repeat = (times, fn) => [...Array(times).keys()].reduce((acc, i) => acc.then(()=>fn(i)), Promise.resolve())
 
@@ -23,7 +24,6 @@ fixture('Configuration overview')
     })
     .after(removeData)
 
-const configureNavButton = Selector('.wch-nav-item').withText('Configure')
 const overviewPage = new PageConfigurationOverview()
 const basicConfigPage = new PageConfigurationBasic()
 const advancedConfigPage = new PageConfigurationAdvancedCluster()

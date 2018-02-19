@@ -10,3 +10,13 @@ export const pageAdvancedConfiguration = {
         await t.click(this.saveButton)
     }
 }
+
+export class Panel {
+    constructor(title) {
+        this._selector = Selector('.pca-panel-heading-title').withText(title).parent('.pca-panel')
+        this.heading = this._selector.find('.pca-panel-heading')
+        this.body = this._selector.find('.pca-panel-collapse').addCustomDOMProperties({
+            isOpened: el => el.classList.contains('in')
+        })
+    }
+}
