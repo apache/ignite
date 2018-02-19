@@ -35,7 +35,7 @@ export default angular
         $stateProvider
         .state('signin', {
             url: '/signin',
-            template: '<page-sign-in></page-sign-in>',
+            component: 'pageSignIn',
             redirectTo: (trans) => {
                 return trans.injector().get('User').read()
                     .then(() => {
