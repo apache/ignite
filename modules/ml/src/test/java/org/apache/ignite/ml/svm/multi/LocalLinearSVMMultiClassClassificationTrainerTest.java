@@ -15,19 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+package org.apache.ignite.ml.svm.multi;
+
+import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
+import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationTrainer;
 
 /**
- * BASE64 encoder interface.
- *
- * @deprecated Temporary interface. Use {@code java.util.Base64} directly instead.
+ * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
  */
-@Deprecated
-public interface Base64Encoder {
-    /**
-     * Encodes given byte array.
-     *
-     * @return Encoded string.
-     */
-    public String encode(byte[] msg);
+public class LocalLinearSVMMultiClassClassificationTrainerTest extends GenericLinearSVMMultiClassClassificationTrainerTest {
+    /** */
+    public LocalLinearSVMMultiClassClassificationTrainerTest() {
+        super(
+            new SVMLinearMultiClassClassificationTrainer()
+                .withLambda(0.2)
+                .withAmountOfIterations(10)
+                .withAmountOfLocIterations(20),
+            false,
+            1e-2);
+    }
 }

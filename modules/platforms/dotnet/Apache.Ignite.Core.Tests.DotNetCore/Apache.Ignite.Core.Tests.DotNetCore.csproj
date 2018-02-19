@@ -130,6 +130,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesTestAsync.cs" Link="Services\ServicesTestAsync.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TaskExtensions.cs" Link="Common\TaskExtensions.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TestUtils.Common.cs" Link="Common\TestUtils.Common.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Ssl\SslConfigurationTest.cs" Link="Common\SslConfigurationTest.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -158,6 +159,15 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\spring-test.xml" Link="Config\spring-test.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\ssl.xml" Link="Config\ssl.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\KeyStore\server.jks" Link="Config\KeyStore\server.jks">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\KeyStore\trust.jks" Link="Config\KeyStore\trust.jks">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

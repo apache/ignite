@@ -15,28 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+page-sign-in {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
 
-import java.lang.reflect.Method;
+    font-family: Roboto;
 
-/**
- * Implementation of {@link Base64Encoder} interface for Java 7 and earlier.
- *
- * @deprecated Use {@code jaba.util.Base64} instead.
- */
-@Deprecated
-public class LegacyBase64Encoder implements Base64Encoder {
-    /** {@inheritDoc} */
-    @Override public String encode(byte[] msg) {
-        try {
-            Class<?> encoderCls = Class.forName("sun.misc.BASE64Encoder");
+    h3 {
+        font-size: 38px;
+        font-weight: 300;
+        margin: 30px 0 60px;
+    }
 
-            Method mtd = encoderCls.getMethod("encode", byte[].class);
+    section {
+        flex-grow: 1;
+        padding: 25px 0 60px;
 
-            return (String)mtd.invoke(encoderCls.newInstance(), (Object)msg);
-        }
-        catch (ReflectiveOperationException e) {
-            throw new RuntimeException("Failed to encode message to BASE64", e);
-        }
+        background-color: #ffffff;
+        color: #444444;
     }
 }

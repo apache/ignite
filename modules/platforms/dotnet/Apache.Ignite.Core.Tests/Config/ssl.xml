@@ -51,5 +51,15 @@
                 <property name="socketTimeout" value="300" />
             </bean>
         </property>
+
+        <!-- Ssl context. -->
+        <property name="sslContextFactory">
+            <bean class="org.apache.ignite.ssl.SslContextFactory">
+                <property name="keyStoreFilePath" value="Config/KeyStore/server.jks"/>
+                <property name="keyStorePassword" value="123456"/>
+                <property name="trustStoreFilePath" value="Config/KeyStore/trust.jks"/>
+                <property name="trustStorePassword" value="123456"/>
+            </bean>
+        </property>        
     </bean>
 </beans>

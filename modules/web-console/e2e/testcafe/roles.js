@@ -20,21 +20,18 @@ const { Selector } = require('testcafe');
 const { AngularJSSelector } = require('testcafe-angular-selectors');
 
 const igniteSignUp = async(t) => {
-    await t.navigateTo(`${process.env.APP_URL || 'http://localhost:9001/'}`);
-
-    await t.click(Selector('a').withText('Sign Up'));
+    await t.navigateTo(`${process.env.APP_URL || 'http://localhost:9001/'}signin`);
 
     await t
-        .click(Selector('#signup_email'))
-        .typeText(Selector('#signup_email'), 'a@a')
-        .typeText(AngularJSSelector.byModel('ui.password'), 'a')
+        .typeText(AngularJSSelector.byModel('ui_signup.email'), 'a@a')
+        .typeText(AngularJSSelector.byModel('ui_signup.password'), 'a')
         .typeText(AngularJSSelector.byModel('ui_exclude.confirm'), 'a')
-        .typeText(AngularJSSelector.byModel('ui.firstName'), 'John')
-        .typeText(AngularJSSelector.byModel('ui.lastName'), 'Doe')
-        .typeText(AngularJSSelector.byModel('ui.company'), 'DevNull LTD')
-        .click('#country')
+        .typeText(AngularJSSelector.byModel('ui_signup.firstName'), 'John')
+        .typeText(AngularJSSelector.byModel('ui_signup.lastName'), 'Doe')
+        .typeText(AngularJSSelector.byModel('ui_signup.company'), 'DevNull LTD')
+        .click('#countryInput')
         .click(Selector('span').withText('Brazil'))
-        .click('#signup');
+        .click('#signup_submit');
 
     // close modal window
     await t.click('.modal-header button.close');
@@ -42,12 +39,12 @@ const igniteSignUp = async(t) => {
 
 
 const igniteSignIn = async(t) => {
-    await t.navigateTo(`${process.env.APP_URL || 'http://localhost:9001/'}`);
+    await t.navigateTo(`${process.env.APP_URL || 'http://localhost:9001/'}signin`);
 
     await t
         .typeText(AngularJSSelector.byModel('ui.email'), 'a@a')
         .typeText(AngularJSSelector.byModel('ui.password'), 'a')
-        .click('#login');
+        .click('#signin_submit');
 
     // close modal window
     await t.click('.modal-header button.close');

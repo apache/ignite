@@ -25,7 +25,6 @@ import './modules/agent/agent.module';
 import './modules/nodes/nodes.module';
 import './modules/demo/Demo.module';
 
-import './modules/states/signin.state';
 import './modules/states/logout.state';
 import './modules/states/configuration.state';
 import './modules/states/admin.state';
@@ -131,7 +130,8 @@ import listEditable from './components/list-editable';
 import breadcrumbs from './components/breadcrumbs';
 import clusterSelector from './components/cluster-selector';
 import connectedClusters from './components/connected-clusters';
-import igniteFormField from './components/ignite-form-field';
+import pageSignIn from './components/page-signin';
+import pageLanding from './components/page-landing';
 
 import pageProfile from './components/page-profile';
 import pagePasswordChanged from './components/page-password-changed';
@@ -168,6 +168,7 @@ angular.module('ignite-console', [
     'ui.grid.selection',
     'ui.router',
     'ui.router.state.events',
+    'ui.carousel',
     // Base modules.
     'ignite-console.core',
     'ignite-console.ace',
@@ -180,7 +181,6 @@ angular.module('ignite-console', [
     'ignite-console.nodes',
     'ignite-console.demo',
     // States.
-    'ignite-console.states.login',
     'ignite-console.states.logout',
     'ignite-console.states.configuration',
     'ignite-console.states.admin',
@@ -221,7 +221,8 @@ angular.module('ignite-console', [
     igniteListOfRegisteredUsers.name,
     pageProfile.name,
     breadcrumbs.name,
-    igniteFormField.name,
+    pageSignIn.name,
+    pageLanding.name,
     pagePasswordChanged.name,
     pagePasswordReset.name,
     // Ignite modules.

@@ -15,11 +15,21 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+package org.apache.ignite.ml.svm.binary;
 
-import {ngMessages} from './ngMessages.directive';
-import './style.scss';
+import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
+import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
 
-export default angular
-    .module('ignite-console.ignite-form-field', [])
-    .directive('ngMessages', ngMessages);
+/**
+ * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
+ */
+public class DistributedLinearSVMBinaryClassificationTrainerTest extends GenericLinearSVMBinaryClassificationTrainerTest {
+    /** */
+    public DistributedLinearSVMBinaryClassificationTrainerTest() {
+        super(
+            new SVMLinearBinaryClassificationTrainer(),
+            true,
+            1e-2);
+    }
+}

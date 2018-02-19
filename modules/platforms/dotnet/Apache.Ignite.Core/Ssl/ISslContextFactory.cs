@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,23 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm;
+namespace Apache.Ignite.Core.Ssl
+{
+    using System.Diagnostics.CodeAnalysis;
 
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
-
-/**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
- */
-public class LocalLinearSVMClassificationSCDATrainerTest extends GenericLinearSVMTrainerTest {
-    /** */
-    public LocalLinearSVMClassificationSCDATrainerTest() {
-        super(
-            new SVMLinearBinaryClassificationTrainer()
-                .withLambda(0.2)
-                .withAmountOfIterations(10)
-                .withAmountOfLocIterations(20),
-            false,
-            1e-2);
+    /// <summary>
+    /// Represents an SSL Context Factory.
+    /// <para />
+    /// Only predefined implementation is supported for now: <see cref="SslContextFactory"/>.
+    /// </summary>
+    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
+    public interface ISslContextFactory
+    {
+        // No-op.
     }
 }

@@ -21,7 +21,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataPageEvictionMode;
@@ -30,7 +29,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.processors.cache.persistence.file.AsyncFileIOFactory;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -93,7 +91,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTestsStarted();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -102,7 +100,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /**
@@ -125,26 +123,25 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
 
 
         final IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
-        for (int i=0; i < maxKey; i++) {
+
+        for (int i=0; i < maxKey; i++)
             cache.put(i, payload);
-        }
 
         final AtomicReference<Throwable> fail = new AtomicReference<>();
 
 
         Runnable clo = new Runnable() {
-            @Override
-            public void run() {
+            @Override public void run() {
                 cache.get(ThreadLocalRandom.current().nextInt(maxKey / 5));
             }
         };
+
         for (int i = 0; i < workers.length; i++) {
             workers[i] = new Thread(clo);
             workers[i].setName("reader-" + i);
             workers[i].setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
                 @Override public void uncaughtException(Thread t, Throwable e) {
                     fail.compareAndSet(null, e);
-
                 }
             });
         }
@@ -167,9 +164,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
 
         Throwable t = fail.get();
 
-        assert t == null : t;
-
-
+        assertNull(t);
 
         int verifiedKeys = 0;
 
@@ -244,7 +239,7 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
 
         Throwable t = fail.get();
 
-        assert t == null : t;
+        assertNull(t);
 
         IgniteCache<Object, Object> cache = ignite.cache(CACHE_NAME);
 
@@ -262,12 +257,5 @@ public class IgnitePdsThreadInterruptionTest extends GridCommonAbstractTest {
         }
 
         log.info("Verified keys: " + verifiedKeys);
-    }
-
-    /**
-     * @throws IgniteCheckedException If fail.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
 }

@@ -184,7 +184,7 @@ public class AgentClusterDemo {
             System.setProperty(IGNITE_QUIET, "false");
             System.setProperty(IGNITE_UPDATE_NOTIFIER, "false");
 
-            System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "1");
+            System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "20");
             System.setProperty(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED, "true");
 
             final AtomicInteger basePort = new AtomicInteger(60700);

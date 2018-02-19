@@ -27,7 +27,7 @@ import org.apache.ignite.ml.math.Vector;
 /**
  * Base class for SVM linear classification model.
  */
-public class SVMLinearClassificationModel implements Model<Vector, Double>, Exportable<SVMLinearClassificationModel>, Serializable {
+public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>, Exportable<SVMLinearBinaryClassificationModel>, Serializable {
     /** Output label format. -1 and +1 for false value and raw distances from the separating hyperplane otherwise. */
     private boolean isKeepingRawLabels = false;
 
@@ -41,47 +41,51 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
     private double intercept;
 
     /** */
-    public SVMLinearClassificationModel(Vector weights, double intercept) {
+    public SVMLinearBinaryClassificationModel(Vector weights, double intercept) {
         this.weights = weights;
         this.intercept = intercept;
     }
 
     /**
      * Set up the output label format.
+     *
      * @param isKeepingRawLabels The parameter value.
      * @return Model with new isKeepingRawLabels parameter value.
      */
-    public SVMLinearClassificationModel withRawLabels(boolean isKeepingRawLabels) {
+    public SVMLinearBinaryClassificationModel withRawLabels(boolean isKeepingRawLabels) {
         this.isKeepingRawLabels = isKeepingRawLabels;
         return this;
     }
 
     /**
      * Set up the threshold.
+     *
      * @param threshold The parameter value.
      * @return Model with new threshold parameter value.
      */
-    public SVMLinearClassificationModel withThreshold(double threshold) {
+    public SVMLinearBinaryClassificationModel withThreshold(double threshold) {
         this.threshold = threshold;
         return this;
     }
 
     /**
      * Set up the weights.
+     *
      * @param weights The parameter value.
      * @return Model with new weights parameter value.
      */
-    public SVMLinearClassificationModel withWeights(Vector weights) {
+    public SVMLinearBinaryClassificationModel withWeights(Vector weights) {
         this.weights = weights;
         return this;
     }
 
     /**
      * Set up the intercept.
+     *
      * @param intercept The parameter value.
      * @return Model with new intercept parameter value.
      */
-    public SVMLinearClassificationModel withIntercept(double intercept) {
+    public SVMLinearBinaryClassificationModel withIntercept(double intercept) {
         this.intercept = intercept;
         return this;
     }
@@ -97,6 +101,7 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
 
     /**
      * Gets the output label format mode.
+     *
      * @return The parameter value.
      */
     public boolean isKeepingRawLabels() {
@@ -105,6 +110,7 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
 
     /**
      * Gets the threshold.
+     *
      * @return The parameter value.
      */
     public double threshold() {
@@ -113,6 +119,7 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
 
     /**
      * Gets the weights.
+     *
      * @return The parameter value.
      */
     public Vector weights() {
@@ -121,6 +128,7 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
 
     /**
      * Gets the intercept.
+     *
      * @return The parameter value.
      */
     public double intercept() {
@@ -128,7 +136,7 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
     }
 
     /** {@inheritDoc} */
-    @Override public <P> void saveModel(Exporter<SVMLinearClassificationModel, P> exporter, P path) {
+    @Override public <P> void saveModel(Exporter<SVMLinearBinaryClassificationModel, P> exporter, P path) {
         exporter.save(this, path);
     }
 
@@ -138,7 +146,7 @@ public class SVMLinearClassificationModel implements Model<Vector, Double>, Expo
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        SVMLinearClassificationModel mdl = (SVMLinearClassificationModel)o;
+        SVMLinearBinaryClassificationModel mdl = (SVMLinearBinaryClassificationModel)o;
         return Double.compare(mdl.intercept, intercept) == 0
             && Double.compare(mdl.threshold, threshold) == 0
             && Boolean.compare(mdl.isKeepingRawLabels, isKeepingRawLabels) == 0

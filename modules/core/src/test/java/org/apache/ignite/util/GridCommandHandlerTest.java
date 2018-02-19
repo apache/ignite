@@ -45,16 +45,9 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         return U.resolveWorkDirectory(U.defaultWorkDirectory(), folder, false);
     }
 
-    /**
-     * Delete all files created by database engine during test.
-     */
-    private void cleanupDbFiles() throws IgniteCheckedException {
-        deleteRecursively(folder("db"));
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        cleanupDbFiles();
+        cleanPersistenceDir();
 
         stopAllGrids();
     }
@@ -63,7 +56,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        cleanupDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
