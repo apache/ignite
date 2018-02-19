@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,21 +15,16 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Cluster.Ssl
-{
-    /// <summary>
-    /// Interface for SSL Context Factory.
-    /// </summary>
-    public interface ISslContextFactory
-    {
-        /// <summary>
-        /// Path to key store file.
-        /// </summary>
-        string KeyStoreFilePath { get; set; }
+// Sign in controller.
+export default class {
+    static $inject = ['$scope', '$uiRouterGlobals', 'IgniteFocus', 'IgniteCountries', 'Auth'];
 
-        /// <summary>
-        /// Key store password.
-        /// </summary>
-        string KeyStorePassword { get; set; }
+    constructor($scope, $uiRouterGlobals, Focus, Countries, Auth) {
+        this.auth = Auth.auth;
+        this.forgotPassword = Auth.forgotPassword;
+        this.action = 'signin';
+        this.countries = Countries.getAll();
+
+        Focus.move('user_email');
     }
 }

@@ -16,8 +16,8 @@
  */
 
 const { Selector } = require('testcafe');
-const { removeData, insertTestUser } = require('../envtools');
-const { signIn, signUp } = require('../roles');
+const { removeData, insertTestUser } = require('../../envtools');
+const { signIn } = require('../../roles');
 
 fixture('Checking user profile')
     .page `${process.env.APP_URL || 'http://localhost:9001/'}settings/profile`
@@ -37,38 +37,38 @@ test('Testing user data change', async(t) => {
 
     const newUserData = {
         firstName: {
-            selector: '#profile-firstname',
+            selector: '#firstNameInput',
             value: 'Richard'
         },
         lastName: {
-            selector: '#profile-lastname',
+            selector: '#lastNameInput',
             value: 'Roe'
         },
         email: {
-            selector: '#profile-email',
+            selector: '#emailInput',
             value: 'r.roe@mail.com'
         },
         company: {
-            selector: '#profile-company',
+            selector: '#companyInput',
             value: 'New Company'
         },
         country: {
-            selector: '#profile-country',
+            selector: '#countryInput',
             value: 'Israel'
         }
     };
 
     ['firstName', 'lastName', 'email', 'company'].forEach(async(item) => {
         await t
-           .click(newUserData[item].selector)
-           .pressKey('ctrl+a delete')
-           .typeText(newUserData[item].selector, newUserData[item].value);
+            .click(newUserData[item].selector)
+            .pressKey('ctrl+a delete')
+            .typeText(newUserData[item].selector, newUserData[item].value);
     });
 
     await t
         .click(newUserData.country.selector)
         .click(Selector('span').withText(newUserData.country.value))
-        .click(Selector('a').withText('Save'));
+        .click(Selector('button').withText('Save Changes'));
 
     await t.navigateTo(`${process.env.APP_URL || 'http://localhost:9001/'}settings/profile`);
 
@@ -81,33 +81,4 @@ test('Testing user data change', async(t) => {
     await t
         .expect(Selector(newUserData.country.selector).innerText)
         .eql(newUserData.country.value);
-});
-
-test('Testing secure token change', async(t) => {
-    await t.click(Selector('a').withAttribute('ng-click', 'toggleToken()'));
-
-    const currentToken = await Selector('#current-security-token').innerText;
-
-    await t
-        .click(Selector('i').withAttribute('ng-click', 'generateToken()'))
-        .expect(Selector('p').withText('Are you sure you want to change security token?').exists)
-        .ok()
-        .click('#confirm-btn-ok', {timeout: 5000});
-
-    await t
-        .expect(await Selector('#current-security-token').innerText)
-        .notEql(currentToken);
-});
-
-test('Testing password change', async(t) => {
-    await t.click(Selector('a').withAttribute('ng-click', 'togglePassword()'));
-
-    await t
-        .typeText('#profile_password', 'newPass')
-        .typeText('#profile_confirm', 'newPass')
-        .click(Selector('a').withText('Save'));
-
-    await t
-        .expect(Selector('span').withText('Profile saved.').exists)
-        .ok();
 });
