@@ -905,8 +905,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 }
                 else if (loc != null && state == RENTING && !showRenting) {
                     throw new GridDhtInvalidPartitionException(p, "Adding entry to partition that is concurrently " +
-                        "evicted [grp=" + grp.cacheOrGroupName() + ", part=" + p + ", shouldBeMoving=" +
-                        loc.reload() + ", belongs=" + belongs + ", topVer=" + topVer + ", curTopVer=" + this.readyTopVer + "]");
+                        "evicted [grp=" + grp.cacheOrGroupName() + ", part=" + p + ", shouldBeMoving="
+                        + ", belongs=" + belongs + ", topVer=" + topVer + ", curTopVer=" + this.readyTopVer + "]");
                 }
 
                 if (loc == null) {
@@ -1499,8 +1499,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                     // In other case just recreate it.
                                     else {
                                         assert locPart.state() == EVICTED;
-
-                                        locPart.awaitDestroy();
 
                                         createPartition(p);
                                     }
@@ -2165,8 +2163,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     // If all affinity nodes are owners, then evict partition from local node.
                     if (nodeIds.containsAll(F.nodeIds(affNodes))) {
-                        part.reload(false);
-
                         updateSeq = updateLocal(part.id(), RENTING, updateSeq, aff.topologyVersion());
 
                         changed = true;
@@ -2192,8 +2188,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 ClusterNode n = nodes.get(i);
 
                                 if (locId.equals(n.id())) {
-                                    part.reload(false);
-
                                     updateSeq = updateLocal(part.id(),
                                         RENTING,
                                         updateSeq,
@@ -2382,9 +2376,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                 assert part.state() == EVICTED;
 
                 long seq = updateSeq ? this.updateSeq.incrementAndGet() : this.updateSeq.get();
-
-                if (part.reload())
-                    part = createPartition(part.id());
 
                 assert lastTopChangeVer.initialized() : lastTopChangeVer;
 

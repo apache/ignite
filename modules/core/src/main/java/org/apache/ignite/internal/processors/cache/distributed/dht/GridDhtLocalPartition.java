@@ -160,9 +160,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * reservation is released. */
     private volatile boolean delayedRenting;
 
-    /** Set if partition must be re-created and preloaded after eviction. */
-    private volatile boolean reload;
-
     /** Set if partition must be cleared in MOVING state. */
     private volatile boolean clear;
 
@@ -605,20 +602,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
-     * @return {@code True} if partition should be re-created after it is cleared.
-     */
-    public boolean reload() {
-        return reload;
-    }
-
-    /**
-     * @param value {@code reload} flag value.
-     */
-    public void reload(boolean value) {
-        reload = value;
-    }
-
-    /**
      * Initiates partition eviction process.
      *
      * If partition has reservations, eviction will be delayed and continued after all reservations will be released.
@@ -830,9 +813,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      * @param lsnr Listener.
      */
     public void onClearFinished(IgniteInClosure<? super IgniteInternalFuture<?>> lsnr) {
-        synchronized (clearFuture) {
-            clearFuture.listen(lsnr);
-        }
+        clearFuture.listen(lsnr);
     }
 
     /**
@@ -1016,34 +997,27 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
                             true,
                             false);
 
-                        ctx.database().checkpointReadLock();
+                        if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
+                            removeEntry(cached);
 
-                        try {
-                            if (cached instanceof GridDhtCacheEntry && ((GridDhtCacheEntry)cached).clearInternal(clearVer, extras)) {
-                                removeEntry(cached);
-
-                                if (rec && !hld.cctx.config().isEventsDisabled()) {
-                                    hld.cctx.events().addEvent(cached.partition(),
-                                        cached.key(),
-                                        ctx.localNodeId(),
-                                        (IgniteUuid)null,
-                                        null,
-                                        EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-                                        null,
-                                        false,
-                                        cached.rawGet(),
-                                        cached.hasValue(),
-                                        null,
-                                        null,
-                                        null,
-                                        false);
-                                }
-
-                                cleared++;
+                            if (rec && !hld.cctx.config().isEventsDisabled()) {
+                                hld.cctx.events().addEvent(cached.partition(),
+                                    cached.key(),
+                                    ctx.localNodeId(),
+                                    (IgniteUuid)null,
+                                    null,
+                                    EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
+                                    null,
+                                    false,
+                                    cached.rawGet(),
+                                    cached.hasValue(),
+                                    null,
+                                    null,
+                                    null,
+                                    false);
                             }
-                        }
-                        finally {
-                            ctx.database().checkpointReadUnlock();
+
+                            cleared++;
                         }
                     }
                     catch (GridDhtInvalidPartitionException e) {
@@ -1404,8 +1378,13 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                 clearingCallbackRegistered = true;
 
-                // Reset clear flag after clearing is finished.
+                // Recreate cache data store in case of allowed fast eviction, and reset clear flag.
                 listen(f -> {
+                    if (f.error() == null) {
+                        if (state() == MOVING && clear && grp.allowFastEviction())
+                            recreateCacheDataStore();
+                    }
+
                     clear = false;
 
                     clearingCallbackRegistered = false;
@@ -1442,9 +1421,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
          * Successfully finishes the future.
          */
         public void finish() {
-            if (state() == MOVING && clear && grp.allowFastEviction())
-                recreateCacheDataStore();
-
             synchronized (this) {
                 onDone();
                 finished = true;

@@ -76,14 +76,15 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration ccfg1 = cacheConfiguration(cacheName);
-        ccfg1.setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE);
-        ccfg1.setBackups(2);
-        ccfg1.setRebalanceMode(CacheRebalanceMode.ASYNC);
-        ccfg1.setRebalanceBatchSize(16384 * 64);
-        ccfg1.setIndexedTypes(Integer.class, Integer.class);
-        ccfg1.setAffinity(new RendezvousAffinityFunction(false, 32));
-        ccfg1.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        cfg.setConsistentId(gridName);
+
+        CacheConfiguration ccfg1 = cacheConfiguration(cacheName)
+            .setPartitionLossPolicy(PartitionLossPolicy.READ_WRITE_SAFE)
+            .setBackups(2)
+            .setRebalanceMode(CacheRebalanceMode.ASYNC)
+            .setIndexedTypes(Integer.class, Integer.class)
+            .setAffinity(new RendezvousAffinityFunction(false, 32))
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         CacheConfiguration ccfg2 = cacheConfiguration("indexed");
         ccfg2.setBackups(1);
@@ -570,18 +571,6 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         }
     }
 
-    private void forceCheckpoint() throws Exception {
-        for (Ignite ignite : G.allGrids()) {
-            if (ignite.cluster().localNode().isClient())
-                continue;
-
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
-                    .cache().context().database();
-
-            dbMgr.waitForCheckpoint("test");
-        }
-    }
-
     /**
      * @throws Exception If failed
      */
@@ -590,7 +579,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         final Ignite ig = startGrids(4);
 
-        ig.active(true);
+        ig.cluster().active(true);
 
         int k = 0;
 
@@ -610,11 +599,11 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
                     // Clear checkpoint history to avoid rebalance from WAL.
                     forceCheckpoint();
                     forceCheckpoint();
-                    U.sleep(500); // Wait for data load
+                    U.sleep(500); // Wait for data load.
 
                     IgniteEx ig0 = startGrid(3);
 
-                    U.sleep(2000); // Wait for node join
+                    U.sleep(2000); // Wait for node join.
 
                     if (t0 % 2 == 1) {
                         stopGrid(2);

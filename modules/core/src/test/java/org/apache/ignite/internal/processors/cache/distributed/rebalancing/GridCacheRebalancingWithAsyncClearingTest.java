@@ -54,16 +54,18 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setConsistentId(igniteInstanceName)
-                .setDataStorageConfiguration(
-                        new DataStorageConfiguration()
-                                .setCheckpointFrequency(120_000)
-                                .setWalMode(WALMode.LOG_ONLY)
-                                .setDefaultDataRegionConfiguration(
-                                        new DataRegionConfiguration()
-                                                .setPersistenceEnabled(true)
-                                                .setMaxSize(100L * 1024 * 1024)))
-        .setCacheConfiguration(new CacheConfiguration(CACHE_NAME)
+        cfg.setConsistentId(igniteInstanceName);
+
+        cfg.setDataStorageConfiguration(
+                    new DataStorageConfiguration()
+                            .setWalMode(WALMode.LOG_ONLY)
+                            .setDefaultDataRegionConfiguration(
+                                    new DataRegionConfiguration()
+                                            .setPersistenceEnabled(true)
+                                            .setMaxSize(100L * 1024 * 1024))
+        );
+
+        cfg.setCacheConfiguration(new CacheConfiguration(CACHE_NAME)
                 .setBackups(2)
                 .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
                 .setIndexedTypes(Integer.class, Integer.class)
@@ -80,7 +82,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
 
         stopAllGrids();
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -89,7 +91,7 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
 
         stopAllGrids();
 
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        cleanPersistenceDir();
     }
 
     /**
@@ -141,7 +143,6 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         IgniteCache<Integer, Integer> cache = ig.cache(CACHE_NAME);
 
         forceCheckpoint();
-        forceCheckpoint();
 
         GridCachePartitionExchangeManager exchangeManager = ig.cachex(CACHE_NAME).context().shared().exchange();
 
@@ -173,7 +174,9 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
 
         startGrid(1);
 
-        cache.rebalance().get();
+        // Wait for rebalance on all nodes.
+        for (Ignite ignite : G.allGrids())
+            ignite.cache(CACHE_NAME).rebalance().get();
 
         // Check no data loss.
         for (int k = 1; k <= keysCount; k++) {
@@ -212,12 +215,12 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
         startGrid(3);
 
         // Trigger partition eviction from other nodes.
-        ignite.cluster().setBaselineTopology(ignite.cluster().topologyVersion());
+        resetBaselineTopology();
 
         stopGrid(3);
 
         // Trigger evicting partitions rebalancing.
-        ignite.cluster().setBaselineTopology(ignite.cluster().topologyVersion());
+        resetBaselineTopology();
 
         // Emulate stopping grid during partition eviction.
         stopGrid(1);
@@ -232,22 +235,6 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
             Integer value = (Integer) ignite.cache(CACHE_NAME).get(k);
             Assert.assertNotNull("Value for " + k + " is null", value);
             Assert.assertEquals("Check failed for " + k + " = " + value, k, (int) value);
-        }
-    }
-
-    /**
-     * Forces checkpoint on all available nodes.
-     * @throws Exception If failed.
-     */
-    private void forceCheckpoint() throws Exception {
-        for (Ignite ignite : G.allGrids()) {
-            if (ignite.cluster().localNode().isClient())
-                continue;
-
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
-                    .cache().context().database();
-
-            dbMgr.waitForCheckpoint("test");
         }
     }
 }
