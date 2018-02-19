@@ -116,7 +116,8 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
     @Override public boolean offerFirst(E e) {
         boolean res = deque.offerFirst(e);
 
-        cntr.inc();
+        if (res)
+            cntr.inc();
 
         return res;
     }
@@ -125,7 +126,8 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
     @Override public boolean offerLast(E e) {
         boolean res = deque.offerLast(e);
 
-        cntr.inc();
+        if (res)
+            cntr.inc();
 
         return res;
     }
