@@ -255,7 +255,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public long allocatePage(int cacheId, int partId, byte flags) {
-        memMetrics.incrementTotalAllocatedPages(true);
+        memMetrics.incrementTotalAllocatedPages();
 
         long relPtr = borrowFreePage();
         long absPtr = 0;

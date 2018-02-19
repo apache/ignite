@@ -280,7 +280,7 @@ public class DataRegionMetricsSelfTest extends GridCommonAbstractTest {
                 startLatch.await();
 
                 for (int i = 0; i < iterationsCnt; i++) {
-                    memMetrics.incrementTotalAllocatedPages(true);
+                    memMetrics.incrementTotalAllocatedPages();
 
                     sleep(delay);
                 }

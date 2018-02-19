@@ -233,7 +233,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     "metastorage"),
                 grpId,
                 1,
-                (delta, updateAllocationRate) -> {/* No-op */} );
+                delta -> {/* No-op */} );
 
             CacheStoreHolder old = idxCacheStores.put(grpId, holder);
 

@@ -25,7 +25,6 @@ public interface AllocatedPageTracker {
      * Increments totalAllocatedPages counter.
      *
      * @param delta Value to increment by.
-     * @param updateAllocationRate Whether to update allocation rate as well.
      */
-    public void updateTotalAllocatedPages(long delta, boolean updateAllocationRate);
+    public void updateTotalAllocatedPages(long delta);
 }
