@@ -402,8 +402,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             Assert.AreEqual(-1,
                 cache.GetConfiguration().QueryEntities.Single().Fields.Single(x => x.Name == "Id").DefaultValue);
 
-            cache.Query(new SqlFieldsQuery("insert into foo(_key, id, name) values (?, ?, ?)", 1, 2, "John")).GetAll();
-            cache.Query(new SqlFieldsQuery("insert into foo(_key, name) values (?, ?)", 3, "Mary")).GetAll();
+            cache.QueryFields(new SqlFieldsQuery("insert into foo(_key, id, name) values (?, ?, ?)", 1, 2, "John")).GetAll();
+            cache.QueryFields(new SqlFieldsQuery("insert into foo(_key, name) values (?, ?)", 3, "Mary")).GetAll();
 
             Assert.AreEqual(2, cache[1].Id);
             Assert.AreEqual(-1, cache[3].Id);
@@ -421,8 +421,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
 
             var cache2 = Ignition.GetIgnite().CreateCache<int, int>(cfg).WithKeepBinary<int, IBinaryObject>();
 
-            cache2.Query(new SqlFieldsQuery("insert into DefValTest(_key, name) values (?, ?)", 1, "John")).GetAll();
-            cache2.Query(new SqlFieldsQuery("insert into DefValTest(_key) values (?)", 2)).GetAll();
+            cache2.QueryFields(new SqlFieldsQuery("insert into DefValTest(_key, name) values (?, ?)", 1, "John")).GetAll();
+            cache2.QueryFields(new SqlFieldsQuery("insert into DefValTest(_key) values (?)", 2)).GetAll();
 
             Assert.AreEqual("John", cache2[1].GetField<string>("Name"));
             Assert.AreEqual("foo", cache2[2].GetField<string>("Name"));
