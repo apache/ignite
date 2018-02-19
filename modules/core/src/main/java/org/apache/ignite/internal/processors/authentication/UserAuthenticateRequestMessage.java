@@ -40,8 +40,11 @@ public class UserAuthenticateRequestMessage implements Message {
     /** Request ID. */
     private IgniteUuid id = IgniteUuid.randomUuid();
 
-    /** */
+    /**
+     *
+     */
     public UserAuthenticateRequestMessage() {
+        // No-op.
     }
 
     /**

@@ -73,7 +73,12 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.AUTH_PROC;
 
+// TODO: Do not send propose to clients
+
+// TODO: Do not send initial users to client on join
+
 /**
+ *
  */
 public class IgniteAuthenticationProcessor extends GridProcessorAdapter implements MetastorageLifecycleListener {
     /** Store user prefix. */
@@ -92,7 +97,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     private final Object mux = new Object();
 
     /** Active operations. Collects to send on joining node. */
-    private Map<IgniteUuid,  UserManagementOperation> activeOps =  Collections.synchronizedMap(new LinkedHashMap<>());
+    private Map<IgniteUuid, UserManagementOperation> activeOps =  Collections.synchronizedMap(new LinkedHashMap<>());
 
     /** User map. */
     private ConcurrentMap<String, User> users;
@@ -286,8 +291,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException On error.
      * @throws IgniteAccessControlException On authentication error.
      */
-    public AuthorizationContext authenticate(String login, String passwd)
-        throws IgniteAccessControlException, IgniteCheckedException {
+    public AuthorizationContext authenticate(String login, String passwd) throws IgniteCheckedException {
         checkActivate();
         checkEnabled();
 
@@ -560,7 +564,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         String userName = usr.name();
 
         if (users.containsKey(userName))
-            throw new UserManagementException("User already exists. [login=" + userName + ']');
+            throw new UserManagementException("User already exists [login=" + userName + ']');
 
         metastorage.write(STORE_USER_PREFIX + userName, usr);
 
@@ -581,7 +585,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         User usr = op.user();
 
         if (!users.containsKey(usr.name()))
-            throw new UserManagementException("User doesn't exist. [userName=" + usr.name() + ']');
+            throw new UserManagementException("User doesn't exist [userName=" + usr.name() + ']');
 
         metastorage.remove(STORE_USER_PREFIX + usr.name());
 
@@ -602,7 +606,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
         User usr = op.user();
 
         if (!users.containsKey(usr.name()))
-            throw new UserManagementException("User doesn't exist. [userName=" + usr.name() + ']');
+            throw new UserManagementException("User doesn't exist [userName=" + usr.name() + ']');
 
         metastorage.write(STORE_USER_PREFIX + usr.name(), usr);
 
@@ -686,6 +690,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
             // Coordinator left
             if (F.eq(coordinator().id(), nodeId)) {
+                // TODO: Send auth requests to arbitrary sever node to relax coordinator
                 for (GridFutureAdapter<Void> f : authFuts.values())
                     f.onDone(new RetryOnCoordinatorLeftException());
 
@@ -784,6 +789,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @param evt Disco event.
      * @param cache Disco cache.
      */
+    // TODO: Remove unused.
     public void onLocalJoin(DiscoveryEvent evt, DiscoCache cache) {
         if (coordinator() == null)
             return;
@@ -852,7 +858,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /**
      * Called on node activate.
      */
-    // TODO: This is invalid place.
     public void onActivate() {
         activateFut.onDone();
     }
