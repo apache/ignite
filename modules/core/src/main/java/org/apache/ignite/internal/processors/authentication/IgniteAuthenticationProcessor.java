@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -89,6 +90,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
     /** Futures prepared user map. Authentication message ID -> public future. */
     private final ConcurrentMap<IgniteUuid, AuthenticateFuture> authFuts = new ConcurrentHashMap<>();
+
+    private static final Random RND = new Random(System.currentTimeMillis());
 
     /** Operation mutex. */
     private final Object mux = new Object();
@@ -297,15 +300,22 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
         if (ctx.clientNode()) {
             while (true) {
-                AuthenticateFuture fut = new AuthenticateFuture(coordinator().id());
+                AuthenticateFuture fut;
 
-                UserAuthenticateRequestMessage msg = new UserAuthenticateRequestMessage(login, passwd);
+                synchronized (mux) {
+                    Collection<ClusterNode> aliveNodes = ctx.discovery().aliveServerNodes();
 
-                authFuts.put(msg.id(), fut);
+                    ClusterNode rndNode =
+                        aliveNodes.toArray(new ClusterNode[aliveNodes.size()])[RND.nextInt(aliveNodes.size())];
 
-                ctx.cluster(). discovery().aliveServerNodes()
+                    fut = new AuthenticateFuture(rndNode.id());
 
-                ctx.io().sendToGridTopic(coordinator(), GridTopic.TOPIC_AUTH, msg, GridIoPolicy.SYSTEM_POOL);
+                    UserAuthenticateRequestMessage msg = new UserAuthenticateRequestMessage(login, passwd);
+
+                    authFuts.put(msg.id(), fut);
+
+                    ctx.io().sendToGridTopic(rndNode, GridTopic.TOPIC_AUTH, msg, GridIoPolicy.SYSTEM_POOL);
+                }
 
                 fut.get();
 

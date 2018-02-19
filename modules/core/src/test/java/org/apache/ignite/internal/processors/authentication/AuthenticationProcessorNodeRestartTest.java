@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
+import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -46,6 +47,9 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
 
     /** Authorization context for default user. */
     protected AuthorizationContext actxDflt;
+
+    /** Random. */
+    private static final Random RND = new Random(System.currentTimeMillis());
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -154,7 +158,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testConcurrentAuthorizeNodeRestartCoordinator() throws Exception {
+    public void testConcurrentAuthorizeNodes() throws Exception {
         final int testUsersCnt = 10;
 
         AuthorizationContext.context(actxDflt);
@@ -162,7 +166,27 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
         for (int i = 0; i < testUsersCnt; ++i)
             grid(CLI_NODE).context().authentication().addUser("test" + i, "passwd_test" + i);
 
-        final IgniteInternalFuture restartFut = restartCoordinator();
+        final IgniteInternalFuture restartFut = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    for (int i = 0; i < RESTARTS; ++i) {
+                        int nodeIdx = RND.nextInt(NODES_COUNT - 1);
+
+                        stopGrid(nodeIdx);
+
+                        U.sleep(500);
+
+                        startGrid(nodeIdx);
+
+                        U.sleep(500);
+                    }
+                }
+                catch (Exception e) {
+                    e.printStackTrace(System.err);
+                    fail("Unexpected exception on server restart: " + e.getMessage());
+                }
+            }
+        });
 
         final AtomicInteger usrCnt = new AtomicInteger();
 
@@ -178,9 +202,17 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
                         assertNotNull(actx);
                     }
                 }
+                catch (IgniteCheckedException e) {
+                    // Skip exception if server down.
+                    if (!e.getMessage().contains("Failed to send message (node may have left the grid or "
+                        + "TCP connection cannot be established due to firewall issues)")) {
+                        e.printStackTrace();
+                        fail("Unexpected exception: " + e.getMessage());
+                    }
+                }
                 catch (Exception e) {
                     e.printStackTrace();
-                    fail("Unexpected exception");
+                    fail("Unexpected exception: " + e.getMessage());
                 }
             }
         }, testUsersCnt, "user-op");
