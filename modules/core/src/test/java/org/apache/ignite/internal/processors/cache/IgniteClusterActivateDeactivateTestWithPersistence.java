@@ -271,4 +271,31 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         checkNoCaches(SRVS);
     }
+
+    public void testActivateFromNodeWithoutAllCacheDescriptors() throws Exception {
+        startGrids(3);
+
+        Ignite node0 = grid(0);
+
+        node0.cluster().active(true);
+
+        stopGrid(2);
+
+        node0.cluster().setBaselineTopology(node0.cluster().nodes());
+
+        IgniteCache<Integer, Integer> cache = node0.createCache(DEFAULT_CACHE_NAME + 1);
+
+        for (Integer k = 0; k < 100; k++)
+            cache.put(k, k);
+
+        stopAllGrids();
+
+        startGrids(3);
+
+        Ignite node2 = grid(2);
+
+        node2.cluster().active(true);
+
+        awaitPartitionMapExchange();
+    }
 }
