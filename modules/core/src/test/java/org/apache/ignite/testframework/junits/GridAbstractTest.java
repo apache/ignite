@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -541,7 +542,7 @@ public abstract class GridAbstractTest extends TestCase {
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
 
-        assert G.allGrids().isEmpty();
+        assert G.allGrids().isEmpty() : "Not all grids stopped before tests execution";
     }
 
     /**
@@ -551,7 +552,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected void afterTestsStopped() throws Exception {
-        stopAllGrids(false);
+        stopAllGridsSilently();
     }
 
     /** {@inheritDoc} */
@@ -587,12 +588,6 @@ public abstract class GridAbstractTest extends TestCase {
         if (isFirstTest()) {
             info(">>> Starting test class: " + testClassDescription() + " <<<");
 
-            if (startGrid) {
-                IgniteConfiguration cfg = optimize(getConfiguration());
-
-                G.start(cfg);
-            }
-
             try {
                 List<Integer> jvmIds = IgniteNodeRunner.killAll();
 
@@ -615,6 +610,12 @@ public abstract class GridAbstractTest extends TestCase {
                 }
 
                 throw t;
+            }
+
+            if (startGrid) {
+                IgniteConfiguration cfg = optimize(getConfiguration());
+
+                G.start(cfg);
             }
         }
 
@@ -995,6 +996,28 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * @param idx Index of the grid to stop.
+     */
+    protected void stopAndCancelGrid(int idx) {
+        stopGrid(getTestIgniteInstanceName(idx), true);
+    }
+
+    /**
+     * @param idx Index of the grid to stop.
+     */
+    protected void stopGrid(int idx) {
+        stopGrid(getTestIgniteInstanceName(idx), false);
+    }
+
+    /**
+     * @param idx Index of the grid to stop.
+     * @param cancel Cancel flag.
+     */
+    protected void stopGrid(int idx, boolean cancel) {
+        stopGrid(getTestIgniteInstanceName(idx), cancel, false);
+    }
+
+    /**
      * @param igniteInstanceName Ignite instance name.
      */
     protected void stopGrid(@Nullable String igniteInstanceName) {
@@ -1005,7 +1028,6 @@ public abstract class GridAbstractTest extends TestCase {
      * @param igniteInstanceName Ignite instance name.
      * @param cancel Cancel flag.
      */
-    @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel) {
         stopGrid(igniteInstanceName, cancel, true);
     }
@@ -1015,8 +1037,23 @@ public abstract class GridAbstractTest extends TestCase {
      * @param cancel Cancel flag.
      * @param awaitTop Await topology change flag.
      */
-    @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop) {
+        try {
+            stopGridUnhandledEx(igniteInstanceName, cancel, awaitTop);
+        }
+        catch (Throwable t) {
+            error("Failed to stop grid [igniteInstanceName=" + igniteInstanceName + ", cancel=" + cancel + ']', t);
+        }
+    }
+
+    /**
+     * @param igniteInstanceName Ignite instance name.
+     * @param cancel Cancel flag.
+     * @param awaitTop Await topology change flag.
+     * @throws Throwable If grid stop fails
+     */
+    private void stopGridUnhandledEx(@Nullable String igniteInstanceName, boolean cancel,
+        boolean awaitTop) throws Throwable {
         try {
             Ignite ignite = grid(igniteInstanceName);
 
@@ -1036,16 +1073,38 @@ public abstract class GridAbstractTest extends TestCase {
         catch (IllegalStateException ignored) {
             // Ignore error if grid already stopped.
         }
-        catch (Throwable e) {
-            error("Failed to stop grid [igniteInstanceName=" + igniteInstanceName + ", cancel=" + cancel + ']', e);
-
+        catch (Throwable t) {
             stopGridErr = true;
+            throw t;
         }
     }
 
-    /**
-     *
-     */
+    /** Stop all grids and throw exception if some of them failed to stop */
+    private void stopAllGridsSilently() throws Exception {
+        final Map<String, Throwable> stopGridErrors = new HashMap<>();
+
+        for (Ignite g : G.allGrids()) {
+            String igniteInstanceName = g.name();
+
+            try {
+                stopGridUnhandledEx(igniteInstanceName, false, false);
+            } catch (Throwable t) {
+                stopGridErrors.put(igniteInstanceName, t);
+            }
+        }
+
+        if (stopGridErr) {
+            StringBuilder sb = new StringBuilder("[");
+
+            for (Map.Entry<String, Throwable> entry : stopGridErrors.entrySet())
+                sb.append("[name=").append(entry.getKey()).append(", err=").append(entry.getValue().getMessage())
+                    .append("], ");
+
+            throw new Exception("Failed to stop grids: " + sb.toString() + "].");
+        }
+    }
+
+    /** */
     protected void stopAllGrids() {
         stopAllGrids(true);
     }
@@ -1057,6 +1116,7 @@ public abstract class GridAbstractTest extends TestCase {
         try {
             stopAllClients(cancel, false);
             stopAllServers(cancel, false);
+
             assert G.allGrids().isEmpty();
         }
         finally {
@@ -1076,11 +1136,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param awaitTop Await topology change flag.
      */
     protected void stopAllClients(boolean cancel, boolean awaitTop) {
-        stopFilteredGrids(
-            cancel,
-            awaitTop,
-            grid -> grid.configuration().getDiscoverySpi().isClientMode()
-        );
+        stopFilteredGrids(cancel, awaitTop, grid -> grid.configuration().getDiscoverySpi().isClientMode());
     }
 
     /**
@@ -1095,17 +1151,13 @@ public abstract class GridAbstractTest extends TestCase {
      * @param awaitTop Await topology change flag.
      */
     protected void stopAllServers(boolean cancel, boolean awaitTop) {
-        stopFilteredGrids(
-            cancel,
-            awaitTop,
-            grid -> !grid.configuration().getDiscoverySpi().isClientMode()
-        );
+        stopFilteredGrids(cancel, awaitTop, grid -> !grid.configuration().getDiscoverySpi().isClientMode());
     }
 
     /**
      * @param cancel Cancel flag.
      * @param awaitTop Await topology change flag.
-     * @param cond stop grid's filtered by condition.
+     * @param cond stop grid's filtered by predicate.
      */
     protected void stopFilteredGrids(boolean cancel, boolean awaitTop, Predicate<? super Ignite> cond) {
         G.allGrids().stream().filter(cond).forEach(g -> stopGrid(g.name(), cancel, awaitTop));
@@ -1293,47 +1345,6 @@ public abstract class GridAbstractTest extends TestCase {
         cfg.setNodeId(UUID.randomUUID());
 
         return cfg;
-    }
-
-    /**
-     * @param idx Index of the grid to stop.
-     */
-    protected void stopGrid(int idx) {
-        stopGrid(getTestIgniteInstanceName(idx), false);
-    }
-
-    /**
-     * @param idx Grid index.
-     * @param cancel Cancel flag.
-     */
-    @SuppressWarnings("deprecation")
-    protected void stopGrid(int idx, boolean cancel) {
-        String igniteInstanceName = getTestIgniteInstanceName(idx);
-
-        try {
-            Ignite ignite = G.ignite(igniteInstanceName);
-
-            assert ignite != null : "Ignite returned null grid for name: " + igniteInstanceName;
-
-            info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
-
-            G.stop(igniteInstanceName, cancel);
-        }
-        catch (IllegalStateException ignored) {
-            // Ignore error if grid already stopped.
-        }
-        catch (Throwable e) {
-            error("Failed to stop grid [igniteInstanceName=" + igniteInstanceName + ", cancel=" + cancel + ']', e);
-
-            stopGridErr = true;
-        }
-    }
-
-    /**
-     * @param idx Index of the grid to stop.
-     */
-    protected void stopAndCancelGrid(int idx) {
-        stopGrid(getTestIgniteInstanceName(idx), true);
     }
 
     /**
