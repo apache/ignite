@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.UnzipFileIO;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.typedef.P2;
@@ -62,7 +63,7 @@ public abstract class AbstractWalRecordsIterator
     /**
      * Current WAL segment read file handle. To be filled by subclass advanceSegment
      */
-    private FileWriteAheadLogManager.ReadFileHandle currWalSegment;
+    private AbstractReadFileHandle currWalSegment;
 
     /** Logger */
     @NotNull protected final IgniteLogger log;
@@ -102,21 +103,6 @@ public abstract class AbstractWalRecordsIterator
         this.ioFactory = ioFactory;
 
         buf = new ByteBufferExpander(bufSize, ByteOrder.nativeOrder());
-    }
-
-    /**
-     * Scans provided folder for a WAL segment files
-     * @param walFilesDir directory to scan
-     * @return found WAL file descriptors
-     */
-    protected static FileWriteAheadLogManager.FileDescriptor[] loadFileDescriptors(@NotNull final File walFilesDir) throws IgniteCheckedException {
-        final File[] files = walFilesDir.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER);
-
-        if (files == null) {
-            throw new IgniteCheckedException("WAL files directory does not not denote a " +
-                "directory, or if an I/O error occurs: [" + walFilesDir.getAbsolutePath() + "]");
-        }
-        return FileWriteAheadLogManager.scan(files);
     }
 
     /** {@inheritDoc} */
@@ -188,8 +174,8 @@ public abstract class AbstractWalRecordsIterator
      * @return closed handle
      * @throws IgniteCheckedException if IO failed
      */
-    @Nullable protected FileWriteAheadLogManager.ReadFileHandle closeCurrentWalSegment() throws IgniteCheckedException {
-        final FileWriteAheadLogManager.ReadFileHandle walSegmentClosed = currWalSegment;
+    @Nullable protected AbstractReadFileHandle closeCurrentWalSegment() throws IgniteCheckedException {
+        final AbstractReadFileHandle walSegmentClosed = currWalSegment;
 
         if (walSegmentClosed != null) {
             walSegmentClosed.close();
@@ -206,8 +192,8 @@ public abstract class AbstractWalRecordsIterator
      * @param curWalSegment current open WAL segment or null if there is no open segment yet
      * @return new WAL segment to read or null for stop iteration
      */
-    protected abstract FileWriteAheadLogManager.ReadFileHandle advanceSegment(
-        @Nullable final FileWriteAheadLogManager.ReadFileHandle curWalSegment) throws IgniteCheckedException;
+    protected abstract AbstractReadFileHandle advanceSegment(
+        @Nullable final AbstractReadFileHandle curWalSegment) throws IgniteCheckedException;
 
     /**
      * Switches to new record
@@ -215,15 +201,15 @@ public abstract class AbstractWalRecordsIterator
      * @return next advanced record
      */
     private IgniteBiTuple<WALPointer, WALRecord> advanceRecord(
-        @Nullable final FileWriteAheadLogManager.ReadFileHandle hnd
+        @Nullable final AbstractReadFileHandle hnd
     ) throws IgniteCheckedException {
         if (hnd == null)
             return null;
 
-        FileWALPointer actualFilePtr = new FileWALPointer(hnd.idx, (int)hnd.in.position(), 0);
+        FileWALPointer actualFilePtr = new FileWALPointer(hnd.idx(), (int)hnd.in().position(), 0);
 
         try {
-            WALRecord rec = hnd.ser.readRecord(hnd.in, actualFilePtr);
+            WALRecord rec = hnd.ser().readRecord(hnd.in(), actualFilePtr);
 
             actualFilePtr.length(rec.size());
 
@@ -271,12 +257,12 @@ public abstract class AbstractWalRecordsIterator
      * @throws FileNotFoundException If segment file is missing.
      * @throws IgniteCheckedException If initialized failed due to another unexpected error.
      */
-    protected FileWriteAheadLogManager.ReadFileHandle initReadHandle(
-        @NotNull final FileWriteAheadLogManager.FileDescriptor desc,
+    protected AbstractReadFileHandle initReadHandle(
+        @NotNull final AbstractFileDescriptor desc,
         @Nullable final FileWALPointer start)
         throws IgniteCheckedException, FileNotFoundException {
         try {
-            FileIO fileIO = desc.isCompressed() ? new UnzipFileIO(desc.file) : ioFactory.create(desc.file);
+            FileIO fileIO = desc.isCompressed() ? new UnzipFileIO(desc.file()) : ioFactory.create(desc.file());
 
             try {
                 IgniteBiTuple<Integer, Boolean> tup = FileWriteAheadLogManager.readSerializerVersionAndCompactedFlag(fileIO);
@@ -290,7 +276,7 @@ public abstract class AbstractWalRecordsIterator
 
                 FileInput in = new FileInput(fileIO, buf);
 
-                if (start != null && desc.idx == start.index()) {
+                if (start != null && desc.idx() == start.index()) {
                     if (isCompacted) {
                         if (start.fileOffset() != 0)
                             serializerFactory.recordDeserializeFilter(new StartSeekingFilter(start));
@@ -303,8 +289,7 @@ public abstract class AbstractWalRecordsIterator
                     }
                 }
 
-                return new FileWriteAheadLogManager.ReadFileHandle(
-                    fileIO, desc.idx, serializerFactory.createSerializer(serVer), in);
+                return createReadFileHandle(fileIO, desc.idx(), serializerFactory.createSerializer(serVer), in);
             }
             catch (SegmentEofException | EOFException ignore) {
                 try {
@@ -332,9 +317,17 @@ public abstract class AbstractWalRecordsIterator
         }
         catch (IOException e) {
             throw new IgniteCheckedException(
-                "Failed to initialize WAL segment: " + desc.file.getAbsolutePath(), e);
+                "Failed to initialize WAL segment: " + desc.file().getAbsolutePath(), e);
         }
     }
+
+    /** */
+    protected abstract AbstractReadFileHandle createReadFileHandle(
+        FileIO fileIO,
+        long idx,
+        RecordSerializer ser,
+        FileInput in
+    );
 
     /**
      * Filter that drops all records until given start pointer is reached.
@@ -363,5 +356,35 @@ public abstract class AbstractWalRecordsIterator
 
             return startReached;
         }
+    }
+
+    /** */
+    protected interface AbstractReadFileHandle {
+        /** */
+        void close() throws IgniteCheckedException;
+
+        /** */
+        long idx();
+
+        /** */
+        FileInput in();
+
+        /** */
+        RecordSerializer ser();
+
+        /** */
+        boolean workDir();
+    }
+
+    /** */
+    protected interface AbstractFileDescriptor {
+        /** */
+        boolean isCompressed();
+
+        /** */
+        File file();
+
+        /** */
+        long idx();
     }
 }
