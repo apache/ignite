@@ -165,7 +165,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         MvccProcessor.coordinatorAssignClosure(null);
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -179,7 +179,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         MvccProcessor.coordinatorAssignClosure(null);
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         super.afterTest();
     }
