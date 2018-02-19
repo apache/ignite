@@ -183,6 +183,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private final boolean startClientCaches =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);
 
+    private final boolean walFsyncWithDedicatedWorker =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER, false);
+
     /** Shared cache context. */
     private GridCacheSharedContext<?, ?> sharedCtx;
 
@@ -2343,7 +2346,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             pageStoreMgr = new FilePageStoreManager(ctx);
 
-            if (ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC)
+            if (ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC && !walFsyncWithDedicatedWorker)
                 walMgr = new FsyncModeFileWriteAheadLogManager(ctx);
             else
                 walMgr = new FileWriteAheadLogManager(ctx);

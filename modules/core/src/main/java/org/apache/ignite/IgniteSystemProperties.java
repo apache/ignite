@@ -792,6 +792,12 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_DIRECT_IO_ENABLED = "IGNITE_DIRECT_IO_ENABLED";
 
+    /**
+     * When set to {@code true}, WAL implementation with dedicated worker will be used even in FSYNC mode.
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER = "IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER";
+
 
     /**
      * Enforces singleton.
