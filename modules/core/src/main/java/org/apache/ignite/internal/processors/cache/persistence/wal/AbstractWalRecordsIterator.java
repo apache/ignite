@@ -321,6 +321,7 @@ public abstract class AbstractWalRecordsIterator
         }
     }
 
+    /** */
     protected abstract AbstractReadFileHandle createReadFileHandle(
         FileIO fileIO,
         long idx,
@@ -357,23 +358,33 @@ public abstract class AbstractWalRecordsIterator
         }
     }
 
+    /** */
     protected interface AbstractReadFileHandle {
+        /** */
         void close() throws IgniteCheckedException;
 
+        /** */
         long idx();
 
+        /** */
         FileInput in();
 
+        /** */
         RecordSerializer ser();
 
+        /** */
         boolean workDir();
     }
 
+    /** */
     protected interface AbstractFileDescriptor {
+        /** */
         boolean isCompressed();
 
+        /** */
         File file();
 
+        /** */
         long idx();
     }
 }

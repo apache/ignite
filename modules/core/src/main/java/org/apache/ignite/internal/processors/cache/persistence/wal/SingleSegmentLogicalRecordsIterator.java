@@ -125,6 +125,7 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
             advanceC.apply(curRec.get2());
     }
 
+    /** {@inheritDoc} */
     @Override protected AbstractReadFileHandle createReadFileHandle(FileIO fileIO, long idx,
         RecordSerializer ser, FileInput in) {
         return new FileWriteAheadLogManager.ReadFileHandle(fileIO, idx, ser, in);

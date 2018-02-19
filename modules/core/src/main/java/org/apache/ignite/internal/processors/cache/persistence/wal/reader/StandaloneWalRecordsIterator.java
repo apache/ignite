@@ -382,6 +382,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         curWalSegmIdx = Integer.MAX_VALUE;
     }
 
+    /** {@inheritDoc} */
     @Override protected AbstractReadFileHandle createReadFileHandle(FileIO fileIO, long idx,
         RecordSerializer ser, FileInput in) {
         return new FileWriteAheadLogManager.ReadFileHandle(fileIO, idx, ser, in);

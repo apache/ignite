@@ -2060,14 +2060,17 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             return file.getAbsolutePath();
         }
 
+        /** {@inheritDoc} */
         @Override public boolean isCompressed() {
             return file.getName().endsWith(".zip");
         }
 
+        /** {@inheritDoc} */
         @Override public File file() {
             return file;
         }
 
+        /** {@inheritDoc} */
         @Override public long idx() {
             return idx;
         }
@@ -2139,18 +2142,22 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             }
         }
 
+        /** {@inheritDoc} */
         @Override public long idx() {
             return idx;
         }
 
+        /** {@inheritDoc} */
         @Override public FileInput in() {
             return in;
         }
 
+        /** {@inheritDoc} */
         @Override public RecordSerializer ser() {
             return ser;
         }
 
+        /** {@inheritDoc} */
         @Override public boolean workDir() {
             return workDir;
         }
@@ -3097,6 +3104,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 archiver.releaseWorkSegment(absIdx);
         }
 
+        /** {@inheritDoc} */
         @Override protected AbstractReadFileHandle createReadFileHandle(FileIO fileIO, long idx,
             RecordSerializer ser, FileInput in) {
             return new ReadFileHandle(fileIO, idx, ser, in);
