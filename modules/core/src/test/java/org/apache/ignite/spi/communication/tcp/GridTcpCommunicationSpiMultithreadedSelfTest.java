@@ -61,7 +61,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
-import org.jsr166.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.LongSizeCountingDeque;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 

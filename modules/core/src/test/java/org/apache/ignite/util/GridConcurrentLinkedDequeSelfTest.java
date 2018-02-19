@@ -21,11 +21,11 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.LongSizeCountingDeque;
 
 
 /**
- * Tests for {@link org.jsr166.LongSizeCountingDeque}.
+ * Tests for {@link LongSizeCountingDeque}.
  */
 public class GridConcurrentLinkedDequeSelfTest extends GridCommonAbstractTest {
     /**

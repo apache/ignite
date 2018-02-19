@@ -50,7 +50,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.LongSizeCountingDeque;
 
 /**
  * Tests synchronization performance vs. lock.

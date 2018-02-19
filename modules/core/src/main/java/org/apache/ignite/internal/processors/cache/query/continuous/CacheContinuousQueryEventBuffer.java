@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.LongSizeCountingDeque;
 
 /**
  *

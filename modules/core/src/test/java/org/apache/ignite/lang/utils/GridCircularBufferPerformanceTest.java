@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.LongSizeCountingDeque;
 
 /**
  *

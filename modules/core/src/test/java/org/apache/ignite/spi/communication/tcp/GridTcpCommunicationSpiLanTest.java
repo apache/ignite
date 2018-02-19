@@ -41,7 +41,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
-import org.jsr166.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.LongSizeCountingDeque;
 
 /**
  * Class for multithreaded {@link TcpCommunicationSpi} test.

@@ -52,7 +52,7 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
-import org.jsr166.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.LongSizeCountingDeque;
 
 import static javax.cache.Cache.Entry;
 

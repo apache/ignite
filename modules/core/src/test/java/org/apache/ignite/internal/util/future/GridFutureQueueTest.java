@@ -22,7 +22,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
-import org.jsr166.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.LongSizeCountingDeque;
 
 /**
  * Performance tests added to compare the same functionality in .Net.

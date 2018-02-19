@@ -21,7 +21,7 @@ import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteCallable;
-import org.jsr166.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.LongSizeCountingDeque;
 
 /**
  * Deque factory.

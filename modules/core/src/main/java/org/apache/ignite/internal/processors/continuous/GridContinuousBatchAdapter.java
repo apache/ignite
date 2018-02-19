@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.continuous;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import org.jsr166.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.LongSizeCountingDeque;
 
 /**
  * Continuous routine batch adapter.

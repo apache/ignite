@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.CacheEvictableEntryImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.LongSizeCountingDeque;
 
 /**
  * IGFS eviction policy which evicts particular blocks.

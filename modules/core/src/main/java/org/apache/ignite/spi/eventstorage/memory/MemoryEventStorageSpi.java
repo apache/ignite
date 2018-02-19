@@ -34,7 +34,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
-import org.jsr166.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.LongSizeCountingDeque;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 

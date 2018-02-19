@@ -25,10 +25,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.LongSizeCountingDeque;
 
 /**
- * Test for {@link org.jsr166.LongSizeCountingDeque} with concurrent backing deque.
+ * Test for {@link LongSizeCountingDeque} with concurrent backing deque.
  */
 public class GridConcurrentLinkedDequeMultiThreadedTest extends GridCommonAbstractTest {
     /** */

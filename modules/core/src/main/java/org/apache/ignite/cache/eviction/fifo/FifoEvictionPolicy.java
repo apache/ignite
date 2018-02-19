@@ -25,7 +25,7 @@ import org.apache.ignite.cache.eviction.AbstractEvictionPolicy;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
-import org.jsr166.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.LongSizeCountingDeque;
 
 /**
  * Eviction policy based on {@code First In First Out (FIFO)} algorithm and supports batch eviction.
