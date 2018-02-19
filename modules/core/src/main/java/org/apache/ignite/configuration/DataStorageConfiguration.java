@@ -120,7 +120,7 @@ public class DataStorageConfiguration implements Serializable {
     public static final int DFLT_WAL_SEGMENT_SIZE = 64 * 1024 * 1024;
 
     /** Default wal mode. */
-    public static final WALMode DFLT_WAL_MODE = WALMode.DEFAULT;
+    public static final WALMode DFLT_WAL_MODE = WALMode.LOG_ONLY;
 
     /** Default thread local buffer size. */
     public static final int DFLT_TLB_SIZE = 128 * 1024;
@@ -686,6 +686,9 @@ public class DataStorageConfiguration implements Serializable {
      * @param walMode Wal mode.
      */
     public DataStorageConfiguration setWalMode(WALMode walMode) {
+        if (walMode == WALMode.DEFAULT)
+            walMode = WALMode.FSYNC;
+
         this.walMode = walMode;
 
         return this;
@@ -755,7 +758,7 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Property that allows to trade latency for throughput in {@link WALMode#DEFAULT} mode.
+     * Property that allows to trade latency for throughput in {@link WALMode#FSYNC} mode.
      * It limits minimum time interval between WAL fsyncs. First thread that initiates WAL fsync will wait for
      * this number of nanoseconds, another threads will just wait fsync of first thread (similar to CyclicBarrier).
      * Total throughput should increase under load as total WAL fsync rate will be limited.
@@ -765,7 +768,7 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Sets property that allows to trade latency for throughput in {@link WALMode#DEFAULT} mode.
+     * Sets property that allows to trade latency for throughput in {@link WALMode#FSYNC} mode.
      * It limits minimum time interval between WAL fsyncs. First thread that initiates WAL fsync will wait for
      * this number of nanoseconds, another threads will just wait fsync of first thread (similar to CyclicBarrier).
      * Total throughput should increase under load as total WAL fsync rate will be limited.
@@ -845,7 +848,7 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * <b>Note:</b> setting this value with {@link WALMode#DEFAULT} may generate file size overhead for WAL segments in case
+     * <b>Note:</b> setting this value with {@link WALMode#FSYNC} may generate file size overhead for WAL segments in case
      * grid is used rarely.
      *
      * @param walAutoArchiveAfterInactivity time in millis to run auto archiving segment (even if incomplete) after last
