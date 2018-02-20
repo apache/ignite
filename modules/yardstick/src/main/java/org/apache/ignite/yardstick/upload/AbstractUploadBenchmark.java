@@ -49,6 +49,7 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
 
         init();
         warmup();
+        dropAndCreate();
     }
 
     /** Method to init benchmark fields */
@@ -64,11 +65,19 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     protected abstract void warmup() throws Exception;
 
     /** create empty table */
-    protected void setupData() throws Exception{
+    @Override protected void setupData() throws Exception{
+        dropAndCreate();
+    }
+
+    /** Drops and re-creates test table */
+    private void dropAndCreate() throws SQLException{
+        try (PreparedStatement drop = conn.get().prepareStatement(queries.dropTableIfExists())) {
+            drop.executeUpdate();
+        }
+
         try (PreparedStatement create = conn.get().prepareStatement(queries.createTable())) {
             create.executeUpdate();
         }
-
     }
 
     /** {@inheritDoc} */

@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class QueryFactory {
+    private final String dropTableIfExists = "DROP TABLE IF EXISTS test_upload;";
     private int valFieldsCnt = 10;
 
     private String createTable = newCreateTableQuery();
@@ -71,6 +72,11 @@ public class QueryFactory {
      */
     public String createTable() {
         return createTable;
+    }
+
+    /** Drops test table */
+    public String dropTableIfExists() {
+        return dropTableIfExists;
     }
 
     /**
