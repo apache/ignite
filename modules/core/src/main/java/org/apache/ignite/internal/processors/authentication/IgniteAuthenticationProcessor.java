@@ -305,8 +305,16 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 synchronized (mux) {
                     Collection<ClusterNode> aliveNodes = ctx.discovery().aliveServerNodes();
 
-                    ClusterNode rndNode =
-                        aliveNodes.toArray(new ClusterNode[aliveNodes.size()])[RND.nextInt(aliveNodes.size())];
+                    int rndIdx = RND.nextInt(aliveNodes.size()) + 1;
+
+                    int i = 0;
+                    ClusterNode rndNode = null;
+
+                    for (Iterator<ClusterNode> it = aliveNodes.iterator(); i < rndIdx && it.hasNext(); i++)
+                        rndNode = it.next();
+
+                    if (rndNode == null)
+                        assert rndNode != null;
 
                     fut = new AuthenticateFuture(rndNode.id());
 

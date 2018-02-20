@@ -158,7 +158,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     /**
      * @throws Exception If failed.
      */
-    public void testConcurrentAuthorizeNodes() throws Exception {
+    public void testConcurrentAuthorize() throws Exception {
         final int testUsersCnt = 10;
 
         AuthorizationContext.context(actxDflt);
