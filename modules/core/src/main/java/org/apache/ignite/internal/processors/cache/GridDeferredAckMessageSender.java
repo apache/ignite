@@ -26,7 +26,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 import org.jsr166.ConcurrentLinkedDeque8;
 
 /**
@@ -34,7 +34,7 @@ import org.jsr166.ConcurrentLinkedDeque8;
  */
 public abstract class GridDeferredAckMessageSender<T> {
     /** Deferred message buffers. */
-    private ConcurrentMap<UUID, DeferredAckMessageBuffer> deferredAckMsgBuffers = new ConcurrentHashMap8<>();
+    private ConcurrentMap<UUID, DeferredAckMessageBuffer> deferredAckMsgBuffers = new ConcurrentHashMap<>();
 
     /** Timeout processor. */
     private GridTimeoutProcessor time;

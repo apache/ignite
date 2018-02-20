@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,36 +15,18 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+namespace Apache.Ignite.Core.Ssl
+{
+    using System.Diagnostics.CodeAnalysis;
 
-import templateUrl from 'views/reset.tpl.pug';
-
-angular
-.module('ignite-console.states.password', [
-    'ui.router'
-])
-.config(['$stateProvider', function($stateProvider) {
-    // set up the states
-    $stateProvider
-    .state('password', {
-        url: '/password',
-        abstract: true,
-        template: '<ui-view></ui-view>'
-    })
-    .state('password.reset', {
-        url: '/reset?{token}',
-        templateUrl,
-        unsaved: true,
-        tfMetaTags: {
-            title: 'Reset password'
-        }
-    })
-    .state('password.send', {
-        url: '/send',
-        templateUrl,
-        unsaved: true,
-        tfMetaTags: {
-            title: 'Password Send'
-        }
-    });
-}]);
+    /// <summary>
+    /// Represents an SSL Context Factory.
+    /// <para />
+    /// Only predefined implementation is supported for now: <see cref="SslContextFactory"/>.
+    /// </summary>
+    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
+    public interface ISslContextFactory
+    {
+        // No-op.
+    }
+}

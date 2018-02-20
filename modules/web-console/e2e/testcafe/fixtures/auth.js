@@ -21,7 +21,7 @@ const { AngularJSSelector } = require('testcafe-angular-selectors');
 const { removeData, insertTestUser } = require('../envtools');
 
 fixture('Checking Ignite auth screen')
-    .page `${process.env.APP_URL || 'http://localhost:9001/'}`
+    .page `${process.env.APP_URL || 'http://localhost:9001/'}signin`
     .beforeEach(async(t) => {
         await removeData();
 
@@ -34,61 +34,59 @@ fixture('Checking Ignite auth screen')
 
 test('Testing Ignite signup validation and signup success', async(t) => {
     async function checkBtnDisabled() {
-        const btnDisabled = await t.expect(Selector('#signup').getAttribute('disabled')).ok();
+        const btnDisabled = await t.expect(Selector('#signup_submit').getAttribute('disabled')).ok();
 
         const btnNotWorks =  await t
-            .click('#signup')
+            .click('#signup_submit')
             .expect(Selector('title').innerText).eql('Apache Ignite - Management Tool and Configuration Wizard – Apache Ignite Web Console');
 
         return btnDisabled && btnNotWorks;
     }
 
-    await t.click(Selector('a').withText('Sign Up'));
-
     await t
-        .click(Selector('#signup_email'))
-        .typeText(Selector('#signup_email'), 'test@test.com');
+        .typeText(AngularJSSelector.byModel('ui_signup.email'), 'test@test.com');
     await checkBtnDisabled();
 
     await t
-        .typeText(AngularJSSelector.byModel('ui.password'), 'qwerty')
+        .typeText(AngularJSSelector.byModel('ui_signup.password'), 'qwerty')
         .typeText(AngularJSSelector.byModel('ui_exclude.confirm'), 'qwerty');
     await checkBtnDisabled();
 
     await t
-        .typeText(AngularJSSelector.byModel('ui.firstName'), 'John')
-        .typeText(AngularJSSelector.byModel('ui.lastName'), 'Doe');
+        .typeText(AngularJSSelector.byModel('ui_signup.firstName'), 'John')
+        .typeText(AngularJSSelector.byModel('ui_signup.lastName'), 'Doe');
     await checkBtnDisabled();
 
     await t
-        .typeText(AngularJSSelector.byModel('ui.company'), 'DevNull LTD');
+        .typeText(AngularJSSelector.byModel('ui_signup.company'), 'DevNull LTD');
     await checkBtnDisabled();
 
     await t
-        .click('#country')
+        .click('#countryInput')
         .click(Selector('span').withText('Brazil'));
 
-    // checking passwords confirm dismatch
+    // Checking passwords confirm dismatch.
     await t
         .click(AngularJSSelector.byModel('ui_exclude.confirm'))
         .pressKey('ctrl+a delete')
         .typeText(AngularJSSelector.byModel('ui_exclude.confirm'), 'ytrewq');
     await checkBtnDisabled();
+
     await t
         .click(AngularJSSelector.byModel('ui_exclude.confirm'))
         .pressKey('ctrl+a delete')
         .typeText(AngularJSSelector.byModel('ui_exclude.confirm'), 'qwerty');
 
-    await t.click('#signup')
+    await t.click('#signup_submit')
         .expect(Selector('title').innerText).eql('Basic Configuration – Apache Ignite Web Console');
 
 });
 
 test('Testing Ignite validation and successful sign in of existing user', async(t) => {
     async function checkSignInBtnDisabled() {
-        const btnDisabled = await t.expect(await Selector('#login').getAttribute('disabled')).ok();
+        const btnDisabled = await t.expect(await Selector('#signin_submit').getAttribute('disabled')).ok();
         const btnNotWorks =  await t
-            .click('#login')
+            .click('#signin_submit')
             .expect(Selector('title').innerText).eql('Apache Ignite - Management Tool and Configuration Wizard – Apache Ignite Web Console');
 
         return btnDisabled && btnNotWorks;
@@ -96,14 +94,14 @@ test('Testing Ignite validation and successful sign in of existing user', async(
 
     await insertTestUser();
 
-    // checking signin validation
+    // Checking signin validation.
     await t
         .typeText(AngularJSSelector.byModel('ui.email'), 'test@test.com');
     await checkSignInBtnDisabled();
 
     await t
         .typeText(AngularJSSelector.byModel('ui.password'), 'b')
-        .click('#login');
+        .click('#signin_submit');
     await t.expect(Selector('#popover-validation-message').withText('Invalid email or password').exists).ok();
 
     await t
@@ -112,7 +110,7 @@ test('Testing Ignite validation and successful sign in of existing user', async(
         .typeText(AngularJSSelector.byModel('ui.email'), 'testtest.com');
     await checkSignInBtnDisabled();
 
-    // checking regular sigin in
+    // Checking regular sigin in
     await t
         .click(AngularJSSelector.byModel('ui.email'))
         .pressKey('ctrl+a delete')
@@ -120,7 +118,7 @@ test('Testing Ignite validation and successful sign in of existing user', async(
         .click(AngularJSSelector.byModel('ui.password'))
         .pressKey('ctrl+a delete')
         .typeText(AngularJSSelector.byModel('ui.password'), 'a')
-        .click('#login')
+        .click('#signin_submit')
         .expect(Selector('title').innerText).eql('Basic Configuration – Apache Ignite Web Console');
 
 });
@@ -128,46 +126,43 @@ test('Testing Ignite validation and successful sign in of existing user', async(
 test('Forbid Ignite signing up of already existing user', async(t) => {
     await insertTestUser();
 
-    await t.click(Selector('a').withText('Sign Up'));
-
     await t
-        .click(Selector('#signup_email'))
-        .typeText(Selector('#signup_email'), 'a@a')
-        .typeText(AngularJSSelector.byModel('ui.password'), 'a')
+        .typeText(AngularJSSelector.byModel('ui_signup.email'), 'a@a')
+        .typeText(AngularJSSelector.byModel('ui_signup.password'), 'a')
         .typeText(AngularJSSelector.byModel('ui_exclude.confirm'), 'a')
-        .typeText(AngularJSSelector.byModel('ui.firstName'), 'John')
-        .typeText(AngularJSSelector.byModel('ui.lastName'), 'Doe')
-        .typeText(AngularJSSelector.byModel('ui.company'), 'DevNull LTD')
-        .click('#country')
+        .typeText(AngularJSSelector.byModel('ui_signup.firstName'), 'John')
+        .typeText(AngularJSSelector.byModel('ui_signup.lastName'), 'Doe')
+        .typeText(AngularJSSelector.byModel('ui_signup.company'), 'DevNull LTD')
+        .click('#countryInput')
         .click(Selector('span').withText('Brazil'))
-        .click('#signup');
+        .click('#signup_submit');
 
     await t.expect(Selector('#popover-validation-message').withText('A user with the given username is already registered').exists).ok();
 
 });
 
 test('Test Ignite password reset', async(t) => {
-    await t.click(Selector('#password-forgot-signin'));
+    await t.click(Selector('#forgot_show'));
 
-    // testing incorrect email
+    // Testing incorrect email.
     await t
-        .typeText('#forgot_email', 'testtest')
+        .typeText('#forgotEmailInput', 'testtest')
         .expect(await Selector('button').withText('Send it to me').getAttribute('disabled')).ok();
 
-    // testing handling unknown email password reset
+    // Testing handling unknown email password reset.
     await t
-        .click(Selector('#forgot_email'))
+        .click(Selector('#forgotEmailInput'))
         .pressKey('ctrl+a delete')
-        .typeText(Selector('#forgot_email'), 'nonexisting@mail.com')
+        .typeText(Selector('#forgotEmailInput'), 'nonexisting@mail.com')
         .click(Selector('button').withText('Send it to me'));
 
     await t.expect(Selector('#popover-validation-message').withText('Account with that email address does not exists!').exists).ok();
 
-    // testing regular password reset
+    // Testing regular password reset.
     await t
-        .click(Selector('#forgot_email'))
+        .click(Selector('#forgotEmailInput'))
         .pressKey('ctrl+a delete')
-        .typeText(Selector('#forgot_email'), 'a@a')
+        .typeText(Selector('#forgotEmailInput'), 'a@a')
         .click(Selector('button').withText('Send it to me'));
 
     await t.expect(Selector('#popover-validation-message').withText('Account with that email address does not exists!').exists).notOk();

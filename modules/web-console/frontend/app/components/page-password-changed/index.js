@@ -15,19 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util;
+import angular from 'angular';
 
-/**
- * BASE64 encoder interface.
- *
- * @deprecated Temporary interface. Use {@code java.util.Base64} directly instead.
- */
-@Deprecated
-public interface Base64Encoder {
-    /**
-     * Encodes given byte array.
-     *
-     * @return Encoded string.
-     */
-    public String encode(byte[] msg);
-}
+import template from './template.pug';
+import controller from './controller';
+
+import './style.scss';
+
+export default angular
+    .module('ignite-console.page-password-changed', [
+    ])
+    .component('pagePasswordChanged', {
+        template,
+        controller
+    })
+    .config(['$stateProvider', ($stateProvider) => {
+        $stateProvider.state('password.send', {
+            url: '/changed',
+            component: 'pagePasswordChanged',
+            tfMetaTags: {
+                title: 'Password send'
+            },
+            unsaved: true
+        });
+    }]);

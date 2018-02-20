@@ -122,7 +122,7 @@ abstract class AbstractDataFrameSpec extends FunSpec with Matchers with BeforeAn
 }
 
 object AbstractDataFrameSpec {
-    val TEST_CONFIG_FILE = "src/test/resources/ignite-spark-config.xml"
+    val TEST_CONFIG_FILE = "modules/spark/src/test/resources/ignite-spark-config.xml"
 
     val DEFAULT_CACHE = "cache1"
 
