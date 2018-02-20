@@ -21,7 +21,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCounter;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -38,7 +38,7 @@ public class MvccActiveQueriesMessage implements MvccMessage {
 
     /** */
     @GridDirectMap(keyType = Message.class, valueType = Integer.class)
-    private Map<MvccCounter, Integer> activeQrys;
+    private Map<MvccVersion, Integer> activeQrys;
 
     /**
      * Required by {@link GridIoMessageFactory}.
@@ -50,14 +50,14 @@ public class MvccActiveQueriesMessage implements MvccMessage {
     /**
      * @param activeQrys Active queries.
      */
-    public MvccActiveQueriesMessage(Map<MvccCounter, Integer> activeQrys) {
+    public MvccActiveQueriesMessage(Map<MvccVersion, Integer> activeQrys) {
         this.activeQrys = activeQrys;
     }
 
     /**
      * @return Active queries.
      */
-    @Nullable public Map<MvccCounter, Integer> activeQueries() {
+    @Nullable public Map<MvccVersion, Integer> activeQueries() {
         return activeQrys;
     }
 

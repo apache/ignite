@@ -605,7 +605,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         resolveTaskName(),
                                                         dhtVer,
                                                         txEntry.updateCounter(),
-                                                        mvccVersionForUpdate());
+                                                        mvccSnapshotForUpdate());
                                                 else {
                                                     assert val != null : txEntry;
 
@@ -630,7 +630,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                         resolveTaskName(),
                                                         dhtVer,
                                                         txEntry.updateCounter(),
-                                                        mvccVersionForUpdate());
+                                                        mvccSnapshotForUpdate());
 
                                                     if (updRes.loggedPointer() != null)
                                                         ptr = updRes.loggedPointer();
@@ -666,7 +666,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     resolveTaskName(),
                                                     dhtVer,
                                                     txEntry.updateCounter(),
-                                                    mvccVersionForUpdate());
+                                                    mvccSnapshotForUpdate());
 
                                                 if (updRes.loggedPointer() != null)
                                                     ptr = updRes.loggedPointer();

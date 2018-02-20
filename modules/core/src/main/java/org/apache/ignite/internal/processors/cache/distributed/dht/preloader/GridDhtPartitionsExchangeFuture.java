@@ -81,8 +81,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCounter;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -868,7 +868,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         if (exchCtx.newMvccCoordinator()) {
             assert mvccCrd != null;
 
-            Map<MvccCounter, Integer> activeQrys = new HashMap<>();
+            Map<MvccVersion, Integer> activeQrys = new HashMap<>();
 
             for (GridCacheFuture<?> fut : cctx.mvcc().activeFutures())
                 processMvccCoordinatorChange(mvccCrd, fut, activeQrys);
@@ -890,13 +890,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void processMvccCoordinatorChange(MvccCoordinator mvccCrd,
         Object nodeObj,
-        Map<MvccCounter, Integer> activeQrys)
+        Map<MvccVersion, Integer> activeQrys)
     {
         if (nodeObj instanceof MvccCoordinatorChangeAware) {
-            MvccVersion ver = ((MvccCoordinatorChangeAware)nodeObj).onMvccCoordinatorChange(mvccCrd);
+            MvccSnapshot ver = ((MvccCoordinatorChangeAware)nodeObj).onMvccCoordinatorChange(mvccCrd);
 
             if (ver != null ) {
-                MvccCounter cntr = new MvccCounter(ver.coordinatorVersion(), ver.counter());
+                MvccVersion cntr = new MvccVersion(ver.coordinatorVersion(), ver.counter());
 
                 Integer cnt = activeQrys.get(cntr);
 
@@ -1441,7 +1441,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         if (exchCtx.newMvccCoordinator() && cctx.coordinators().currentCoordinatorId().equals(node.id())) {
-            Map<UUID, Map<MvccCounter, Integer>> activeQueries = exchCtx.activeQueries();
+            Map<UUID, Map<MvccVersion, Integer>> activeQueries = exchCtx.activeQueries();
 
             msg.activeQueries(activeQueries != null ? activeQueries.get(cctx.localNodeId()) : null);
         }

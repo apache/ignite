@@ -55,7 +55,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -1094,14 +1094,14 @@ public class DmlStatementsProcessor {
      * @param cancel Query cancel object.
      * @param local {@code true} if should be executed locally.
      * @param topVer Topology version.
-     * @param mvccVer Mvcc version.
+     * @param mvccSnapshot MVCC snapshot.
      * @return Iterator upon updated values.
      * @throws IgniteCheckedException If failed.
      */
     public GridCloseableIterator<?> prepareDistributedUpdate(String schema, Connection conn,
         PreparedStatement stmt, SqlFieldsQuery qry,
         IndexingQueryFilter filter, GridQueryCancel cancel, boolean local,
-        AffinityTopologyVersion topVer, MvccVersion mvccVer) throws IgniteCheckedException {
+        AffinityTopologyVersion topVer, MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
 
         Prepared prepared = GridSqlQueryParser.prepared(stmt);
 
@@ -1139,12 +1139,12 @@ public class DmlStatementsProcessor {
                 .setTimeout(qry.getTimeout(), TimeUnit.MILLISECONDS);
 
             cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schema, newFieldsQry, true, true,
-                new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(), mvccVer), cancel).get(0);
+                new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(), mvccSnapshot), cancel).get(0);
         }
         else {
             final GridQueryFieldsResult res = idx.queryLocalSqlFields(schema, plan.selectQuery(),
                 F.asList(qry.getArgs()), filter, qry.isEnforceJoinOrder(), false, qry.getTimeout(), cancel,
-                new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(), mvccVer));
+                new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(), mvccSnapshot));
 
             cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {

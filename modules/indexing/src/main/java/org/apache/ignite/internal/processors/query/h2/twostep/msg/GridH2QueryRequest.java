@@ -31,7 +31,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
@@ -136,7 +136,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
     private String schemaName;
 
     /** */
-    private MvccVersion mvccVer;
+    private MvccSnapshot mvccSnapshot;
 
     /**
      * Required by {@link Externalizable}
@@ -162,22 +162,22 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
         params = req.params;
         paramsBytes = req.paramsBytes;
         schemaName = req.schemaName;
-        mvccVer = req.mvccVer;
+        mvccSnapshot = req.mvccSnapshot;
     }
 
     /**
-     * @return Mvcc version.
+     * @return MVCC snapshot.
      */
-    @Nullable public MvccVersion mvccVersion() {
-        return mvccVer;
+    @Nullable public MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
     }
 
     /**
-     * @param mvccVer Mvcc version.
+     * @param mvccSnapshot MVCC snapshot version.
      * @return {@code this}.
      */
-    public GridH2QueryRequest mvccVersion(MvccVersion mvccVer) {
-        this.mvccVer = mvccVer;
+    public GridH2QueryRequest mvccSnapshot(MvccSnapshot mvccSnapshot) {
+        this.mvccSnapshot = mvccSnapshot;
 
         return this;
     }
@@ -458,7 +458,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage("mvccVer", mvccVer))
+                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
 
                 writer.incrementState();
@@ -553,7 +553,7 @@ public class GridH2QueryRequest implements Message, GridCacheQueryMarshallable {
                 reader.incrementState();
 
             case 2:
-                mvccVer = reader.readMessage("mvccVer");
+                mvccSnapshot = reader.readMessage("mvccSnapshot");
 
                 if (!reader.isLastRead())
                     return false;

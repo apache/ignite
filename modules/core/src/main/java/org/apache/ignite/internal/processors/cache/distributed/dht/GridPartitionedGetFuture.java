@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -81,7 +81,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     private static IgniteLogger log;
 
     /** */
-    protected final MvccVersion mvccVer;
+    protected final MvccSnapshot mvccSnapshot;
 
     /** */
     private MvccQueryTracker mvccTracker;
@@ -100,7 +100,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
      * @param skipVals Skip values flag.
      * @param needVer If {@code true} returns values as tuples containing value and version.
      * @param keepCacheObjects Keep cache objects flag.
-     * @param mvccVer Mvcc version.
+     * @param mvccSnapshot Mvcc snapshot.
      */
     public GridPartitionedGetFuture(
         GridCacheContext<K, V> cctx,
@@ -115,7 +115,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
         boolean skipVals,
         boolean needVer,
         boolean keepCacheObjects,
-        @Nullable MvccVersion mvccVer
+        @Nullable MvccSnapshot mvccSnapshot
     ) {
         super(cctx,
             keys,
@@ -129,29 +129,29 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             needVer,
             keepCacheObjects,
             recovery);
-        assert mvccVer == null || cctx.mvccEnabled();
+        assert mvccSnapshot == null || cctx.mvccEnabled();
 
-        this.mvccVer = mvccVer;
+        this.mvccSnapshot = mvccSnapshot;
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridPartitionedGetFuture.class);
     }
 
     /**
-     * @return Mvcc version if mvcc is enabled for cache.
+     * @return Mvcc snapshot if mvcc is enabled for cache.
      */
-    @Nullable private MvccVersion mvccVersion() {
+    @Nullable private MvccSnapshot mvccSnapshot() {
         if (!cctx.mvccEnabled())
             return null;
 
-        if (mvccVer != null)
-            return mvccVer;
+        if (mvccSnapshot != null)
+            return mvccSnapshot;
 
-        MvccVersion ver = mvccTracker.mvccVersion();
+        MvccSnapshot snapshot = mvccTracker.snapshot();
 
-        assert ver != null : "[fut=" + this + ", mvccTracker=" + mvccTracker + "]";
+        assert snapshot != null : "[fut=" + this + ", mvccTracker=" + mvccTracker + "]";
 
-        return ver;
+        return snapshot;
     }
 
     /**
@@ -172,7 +172,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 canRemap ? cctx.affinity().affinityTopologyVersion() : cctx.shared().exchange().readyAffinityVersion();
         }
 
-        if (cctx.mvccEnabled() && mvccVer == null) {
+        if (cctx.mvccEnabled() && mvccSnapshot == null) {
             mvccTracker = new MvccQueryTracker(cctx, canRemap, this);
 
             trackable = true;
@@ -199,7 +199,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public MvccVersion onMvccCoordinatorChange(MvccCoordinator newCrd) {
+    @Nullable @Override public MvccSnapshot onMvccCoordinatorChange(MvccCoordinator newCrd) {
         if (mvccTracker != null)
             return mvccTracker.onMvccCoordinatorChange(newCrd);
 
@@ -368,7 +368,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         expiryPlc,
                         skipVals,
                         recovery,
-                        mvccVersion());
+                        mvccSnapshot());
 
                 final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -426,7 +426,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     skipVals,
                     cctx.deploymentEnabled(),
                     recovery,
-                    mvccVersion());
+                    mvccSnapshot());
 
                 add(fut); // Append new future.
 
@@ -540,7 +540,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
 
                 if (readNoEntry) {
                     CacheDataRow row = cctx.mvccEnabled() ?
-                        cctx.offheap().mvccRead(cctx, key, mvccVersion()) :
+                        cctx.offheap().mvccRead(cctx, key, mvccSnapshot()) :
                         cctx.offheap().read(cctx, key);
 
                     if (row != null) {
@@ -584,7 +584,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 taskName,
                                 expiryPlc,
                                 !deserializeBinary,
-                                mvccVersion(),
+                                mvccSnapshot(),
                                 null);
 
                             if (getRes != null) {
@@ -604,7 +604,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                                 taskName,
                                 expiryPlc,
                                 !deserializeBinary,
-                                mvccVersion());
+                                mvccSnapshot());
                         }
 
                         cache.context().evicts().touch(entry, topVer);

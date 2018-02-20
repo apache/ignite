@@ -17,21 +17,34 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
  *
  */
-public interface MvccResponseListener {
+public interface MvccSnapshot extends Message {
     /**
-     * @param crdId Coordinator node ID.
-     * @param res Version.
+     * @return Active transactions.
      */
-    public void onMvccResponse(UUID crdId, MvccVersion res);
+    public MvccLongList activeTransactions();
 
     /**
-     * @param e Error.
+     * @return Coordinator version.
      */
-    public void onMvccError(IgniteCheckedException e);
+    public long coordinatorVersion();
+
+    /**
+     * @return Cleanup version (all smaller versions are safe to remove).
+     */
+    public long cleanupVersion();
+
+    /**
+     * @return Counter.
+     */
+    public long counter();
+
+    /**
+     * @return Version without active transactions.
+     */
+    public MvccSnapshot withoutActiveTransactions();
 }

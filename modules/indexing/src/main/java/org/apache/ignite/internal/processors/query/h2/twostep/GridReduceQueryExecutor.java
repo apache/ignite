@@ -736,9 +736,9 @@ public class GridReduceQueryExecutor {
                 IgniteTxAdapter curTx = h2.activeTx();
 
                 if (curTx != null && curTx.mvccInfo() != null)
-                    req.mvccVersion(curTx.mvccInfo().version());
+                    req.mvccSnapshot(curTx.mvccInfo().snapshot());
                 else if (mvccTracker != null)
-                    req.mvccVersion(mvccTracker.mvccVersion());
+                    req.mvccSnapshot(mvccTracker.snapshot());
 
                 if (send(nodes, req, parts == null ? null : new ExplicitPartitionsSpecializer(qryMap), false)) {
                     awaitAllReplies(r, nodes, cancel);

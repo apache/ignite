@@ -106,9 +106,9 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearUnlockRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCounter;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionWithoutTxs;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQuery;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTx;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTxAndQuery;
@@ -116,9 +116,9 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTxAndQ
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccActiveQueriesMessage;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccFutureResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccNewQueryAckRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccQueryVersionRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxCounterRequest;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccVersionResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccQuerySnapshotRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccWaitTxsRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
@@ -898,7 +898,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 129:
-                msg = new MvccTxCounterRequest();
+                msg = new MvccTxSnapshotRequest();
 
                 break;
 
@@ -913,7 +913,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 133:
-                msg = new MvccQueryVersionRequest();
+                msg = new MvccQuerySnapshotRequest();
 
                 break;
 
@@ -923,7 +923,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 136:
-                msg = new MvccVersionResponse();
+                msg = new MvccSnapshotResponse();
 
                 break;
 
@@ -958,7 +958,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 143:
-                msg = new MvccCounter();
+                msg = new MvccVersion();
 
                 break;
 
@@ -968,7 +968,7 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 145:
-                msg = new MvccVersionWithoutTxs();
+                msg = new MvccSnapshotWithoutTxs();
 
                 break;
 

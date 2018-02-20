@@ -39,8 +39,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapp
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccFuture;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccResponseListener;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -62,7 +62,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARING;
 /**
  *
  */
-public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureAdapter implements MvccResponseListener {
+public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureAdapter implements MvccSnapshotResponseListener {
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -451,13 +451,13 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             assert !tx.onePhaseCommit();
 
             if (mvccCrd.nodeId().equals(cctx.localNodeId())) {
-                MvccVersion mvccVer = cctx.coordinators().requestTxCounterOnCoordinator(tx);
+                MvccSnapshot mvccSnapshot = cctx.coordinators().requestTxSnapshotOnCoordinator(tx);
 
-                onMvccResponse(cctx.localNodeId(), mvccVer);
+                onResponse(cctx.localNodeId(), mvccSnapshot);
             }
             else {
-                IgniteInternalFuture<MvccVersion> cntrFut =
-                    cctx.coordinators().requestTxCounter(mvccCrd, this, tx.nearXidVersion());
+                IgniteInternalFuture<MvccSnapshot> cntrFut =
+                    cctx.coordinators().requestTxSnapshot(mvccCrd, this, tx.nearXidVersion());
 
                 add((IgniteInternalFuture)cntrFut);
             }
@@ -467,12 +467,12 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     }
 
     /** {@inheritDoc} */
-    @Override public void onMvccResponse(UUID crdId, MvccVersion res) {
+    @Override public void onResponse(UUID crdId, MvccSnapshot res) {
         tx.mvccInfo(new MvccTxInfo(crdId, res));
     }
 
     /** {@inheritDoc} */
-    @Override public void onMvccError(IgniteCheckedException e) {
+    @Override public void onError(IgniteCheckedException e) {
         if (e instanceof ClusterTopologyCheckedException) {
             IgniteInternalFuture<?> fut = cctx.nextAffinityReadyFuture(tx.topologyVersion());
 

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccEmptyLongList;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccLongList;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -34,7 +34,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  * Entry information that gets passed over wire.
  */
-public class GridCacheEntryInfo implements Message, MvccVersion {
+public class GridCacheEntryInfo implements Message, MvccSnapshot {
     /** */
     private static final int SIZE_OVERHEAD = 3 * 8 /* reference */ + 4 /* int */ + 2 * 8 /* long */ + 32 /* version */;
 
@@ -88,7 +88,7 @@ public class GridCacheEntryInfo implements Message, MvccVersion {
     }
 
     /** {@inheritDoc} */
-    @Override public final MvccVersion withoutActiveTransactions() {
+    @Override public final MvccSnapshot withoutActiveTransactions() {
         return this;
     }
 

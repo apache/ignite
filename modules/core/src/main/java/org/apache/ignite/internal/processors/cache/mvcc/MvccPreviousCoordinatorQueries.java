@@ -37,7 +37,7 @@ class MvccPreviousCoordinatorQueries {
     private volatile boolean prevQueriesDone;
 
     /** */
-    private final ConcurrentHashMap<UUID, Map<MvccCounter, Integer>> activeQueries = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, Map<MvccVersion, Integer>> activeQueries = new ConcurrentHashMap<>();
 
     /** */
     private Set<UUID> rcvd;
@@ -53,7 +53,7 @@ class MvccPreviousCoordinatorQueries {
      * @param discoCache Discovery data.
      * @param mgr Discovery manager.
      */
-    void init(Map<UUID, Map<MvccCounter, Integer>> nodeQueries, DiscoCache discoCache, GridDiscoveryManager mgr) {
+    void init(Map<UUID, Map<MvccVersion, Integer>> nodeQueries, DiscoCache discoCache, GridDiscoveryManager mgr) {
         synchronized (this) {
             assert !initDone;
             assert waitNodes == null;
@@ -70,7 +70,7 @@ class MvccPreviousCoordinatorQueries {
             initDone = waitNodes.isEmpty();
 
             if (nodeQueries != null) {
-                for (Map.Entry<UUID, Map<MvccCounter, Integer>> e : nodeQueries.entrySet())
+                for (Map.Entry<UUID, Map<MvccVersion, Integer>> e : nodeQueries.entrySet())
                     addAwaitedActiveQueries(e.getKey(), e.getValue());
             }
 
@@ -90,16 +90,16 @@ class MvccPreviousCoordinatorQueries {
      * @param nodeId Node ID.
      * @param nodeQueries Active queries started on node.
      */
-    private void addAwaitedActiveQueries(UUID nodeId, Map<MvccCounter, Integer> nodeQueries) {
+    private void addAwaitedActiveQueries(UUID nodeId, Map<MvccVersion, Integer> nodeQueries) {
         if (F.isEmpty(nodeQueries) || prevQueriesDone)
             return;
 
-        Map<MvccCounter, Integer> queries = activeQueries.get(nodeId);
+        Map<MvccVersion, Integer> queries = activeQueries.get(nodeId);
 
         if (queries == null)
             activeQueries.put(nodeId, nodeQueries);
         else {
-            for (Map.Entry<MvccCounter, Integer> e : nodeQueries.entrySet()) {
+            for (Map.Entry<MvccVersion, Integer> e : nodeQueries.entrySet()) {
                 Integer qryCnt = queries.get(e.getKey());
 
                 int newQryCnt = (qryCnt == null ? 0 : qryCnt) + e.getValue();
@@ -123,7 +123,7 @@ class MvccPreviousCoordinatorQueries {
      * @param nodeId Node ID.
      * @param nodeQueries Active queries started on node.
      */
-    void addNodeActiveQueries(UUID nodeId, @Nullable Map<MvccCounter, Integer> nodeQueries) {
+    void addNodeActiveQueries(UUID nodeId, @Nullable Map<MvccVersion, Integer> nodeQueries) {
         synchronized (this) {
             if (initDone)
                 return;
@@ -166,9 +166,9 @@ class MvccPreviousCoordinatorQueries {
         assert cntr != MvccProcessor.MVCC_COUNTER_NA;
 
         synchronized (this) {
-            MvccCounter mvccCntr = new MvccCounter(crdVer, cntr);
+            MvccVersion mvccCntr = new MvccVersion(crdVer, cntr);
 
-            Map<MvccCounter, Integer> nodeQueries = activeQueries.get(nodeId);
+            Map<MvccVersion, Integer> nodeQueries = activeQueries.get(nodeId);
 
             if (nodeQueries == null)
                 activeQueries.put(nodeId, nodeQueries = new HashMap<>());

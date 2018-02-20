@@ -15,75 +15,53 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.internal.processors.cache.mvcc.msg;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- *
+ * Request to get MVCC snapshot for a query.
  */
-public class MvccCounter implements Message {
+public class MvccQuerySnapshotRequest implements MvccMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
-    private long crdVer;
-
-    /** */
-    private long cntr;
+    private long futId;
 
     /**
-     *
+     * Required by {@link GridIoMessageFactory}.
      */
-    public MvccCounter() {
+    public MvccQuerySnapshotRequest() {
         // No-op.
     }
 
     /**
-     * @param crdVer Coordinator version.
-     * @param cntr Counter.
+     * @param futId Future ID.
      */
-    public MvccCounter(long crdVer, long cntr) {
-        this.crdVer = crdVer;
-        this.cntr = cntr;
-    }
-
-    /**
-     * @return Coordinator version.
-     */
-    public long coordinatorVersion() {
-        return crdVer;
-    }
-
-    /**
-     * @return Counter.
-     */
-    public long counter() {
-        return cntr;
+    public MvccQuerySnapshotRequest(long futId) {
+        this.futId = futId;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        MvccCounter that = (MvccCounter) o;
-
-        return crdVer == that.crdVer && cntr == that.cntr;
+    @Override public boolean waitForCoordinatorInit() {
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int res = (int) (crdVer ^ (crdVer >>> 32));
-        res = 31 * res + (int) (cntr ^ (cntr >>> 32));
-        return res;
+    @Override public boolean processedFromNioThread() {
+        return true;
+    }
+
+    /**
+     * @return Future ID.
+     */
+    public long futureId() {
+        return futId;
     }
 
     /** {@inheritDoc} */
@@ -99,13 +77,7 @@ public class MvccCounter implements Message {
 
         switch (writer.state()) {
             case 0:
-                if (!writer.writeLong("cntr", cntr))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong("crdVer", crdVer))
+                if (!writer.writeLong("futId", futId))
                     return false;
 
                 writer.incrementState();
@@ -124,15 +96,7 @@ public class MvccCounter implements Message {
 
         switch (reader.state()) {
             case 0:
-                cntr = reader.readLong("cntr");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                crdVer = reader.readLong("crdVer");
+                futId = reader.readLong("futId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -141,17 +105,17 @@ public class MvccCounter implements Message {
 
         }
 
-        return reader.afterMessageRead(MvccCounter.class);
+        return reader.afterMessageRead(MvccQuerySnapshotRequest.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 143;
+        return 133;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 2;
+        return 1;
     }
 
     /** {@inheritDoc} */
@@ -161,6 +125,6 @@ public class MvccCounter implements Message {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MvccCounter.class, this);
+        return S.toString(MvccQuerySnapshotRequest.class, this);
     }
 }

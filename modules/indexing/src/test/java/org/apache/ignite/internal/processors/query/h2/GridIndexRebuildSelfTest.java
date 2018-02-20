@@ -34,7 +34,7 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.index.DynamicIndexAbstractSelfTest;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCounter;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
@@ -179,7 +179,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
                 int key  = row.key().value(icache.context().cacheObjectContext(), false);
 
                 if (mvccEnabled) {
-                    List<T2<Object, MvccCounter>> vers = store.mvccFindAllVersions(icache.context(), row.key());
+                    List<T2<Object, MvccVersion>> vers = store.mvccFindAllVersions(icache.context(), row.key());
 
                     if (!afterRebuild || key <= AMOUNT / 2)
                         assertEquals(key, vers.size());
@@ -208,7 +208,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      * @throws IgniteCheckedException if failed.
      */
     private static void lockVersion(IgniteEx node) throws IgniteCheckedException {
-        node.context().coordinators().requestQueryCounter(node.context().coordinators().currentCoordinator()).get();
+        node.context().coordinators().requestQuerySnapshot(node.context().coordinators().currentCoordinator()).get();
     }
 
     /**

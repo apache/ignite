@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -85,7 +85,7 @@ public class GridH2QueryContext {
     private GridH2CollocationModel qryCollocationMdl;
 
     /** */
-    private MvccVersion mvccVer;
+    private MvccSnapshot mvccSnapshot;
 
     /**
      * @param locNodeId Local node ID.
@@ -117,18 +117,18 @@ public class GridH2QueryContext {
     }
 
     /**
-     * @return Mvcc version.
+     * @return Mvcc snapshot.
      */
-    @Nullable public MvccVersion mvccVersion() {
-        return mvccVer;
+    @Nullable public MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
     }
 
     /**
-     * @param mvccVer Mvcc version.
+     * @param mvccSnapshot Mvcc snapshot.
      * @return {@code this}.
      */
-    public GridH2QueryContext mvccVersion(MvccVersion mvccVer) {
-        this.mvccVer = mvccVer;
+    public GridH2QueryContext mvccSnapshot(MvccSnapshot mvccSnapshot) {
+        this.mvccSnapshot = mvccSnapshot;
 
         return this;
     }

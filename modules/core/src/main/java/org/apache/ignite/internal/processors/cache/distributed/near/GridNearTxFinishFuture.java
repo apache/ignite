@@ -416,7 +416,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         if (qryTracker != null)
             qryTracker.onTxDone(mvccInfo, cctx, false);
         else if (mvccInfo != null)
-            cctx.coordinators().ackTxRollback(mvccInfo.coordinatorNodeId(), mvccInfo.version(), null);
+            cctx.coordinators().ackTxRollback(mvccInfo.coordinatorNodeId(), mvccInfo.snapshot(), null);
     }
 
     /** {@inheritDoc} */

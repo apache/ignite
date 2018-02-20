@@ -46,8 +46,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersion
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -126,7 +126,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private ClusterNode node;
 
     /** */
-    protected final MvccVersion mvccVer;
+    protected final MvccSnapshot mvccSnapshot;
 
     /** Post processing closure. */
     private volatile BackupPostProcessingClosure postProcessingClos;
@@ -159,10 +159,10 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         boolean needVer,
         boolean keepCacheObjects,
         boolean recovery,
-        @Nullable MvccVersion mvccVer
+        @Nullable MvccSnapshot mvccSnapshot
     ) {
         assert key != null;
-        assert mvccVer == null || cctx.mvccEnabled();
+        assert mvccSnapshot == null || cctx.mvccEnabled();
 
         AffinityTopologyVersion lockedTopVer = cctx.shared().lockedTopologyVersion(null);
 
@@ -187,7 +187,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         this.keepCacheObjects = keepCacheObjects;
         this.recovery = recovery;
         this.topVer = topVer;
-        this.mvccVer = mvccVer;
+        this.mvccSnapshot = mvccSnapshot;
 
         futId = IgniteUuid.randomUuid();
 
@@ -243,7 +243,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 expiryPlc,
                 skipVals,
                 recovery,
-                mvccVer);
+                mvccSnapshot);
 
             final Collection<Integer> invalidParts = fut.invalidPartitions();
 
@@ -314,7 +314,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 needVer,
                 cctx.deploymentEnabled(),
                 recovery,
-                mvccVer);
+                mvccSnapshot);
 
             try {
                 cctx.io().send(node, req, cctx.ioPolicy());
@@ -388,7 +388,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                 boolean skipEntry = readNoEntry;
 
                 if (readNoEntry) {
-                    CacheDataRow row = mvccVer != null ? cctx.offheap().mvccRead(cctx, key, mvccVer) :
+                    CacheDataRow row = mvccSnapshot != null ? cctx.offheap().mvccRead(cctx, key, mvccSnapshot) :
                         cctx.offheap().read(cctx, key);
 
                     if (row != null) {
@@ -432,7 +432,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 taskName,
                                 expiryPlc,
                                 true,
-                                mvccVer,
+                                mvccSnapshot,
                                 null);
 
                             if (res != null) {
@@ -452,7 +452,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
                                 taskName,
                                 expiryPlc,
                                 true,
-                                mvccVer);
+                                mvccSnapshot);
                         }
 
                         colocated.context().evicts().touch(entry, topVer);

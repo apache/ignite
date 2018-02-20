@@ -35,7 +35,7 @@ public class MvccTxInfo implements Message {
     private UUID crd;
 
     /** */
-    private MvccVersion mvccVer;
+    private MvccSnapshot mvccSnapshot;
 
     /**
      *
@@ -46,26 +46,26 @@ public class MvccTxInfo implements Message {
 
     /**
      * @param crd Coordinator node ID.
-     * @param mvccVer Mvcc version.
+     * @param mvccSnapshot MVCC snapshot.
      */
-    public MvccTxInfo(UUID crd, MvccVersion mvccVer) {
+    public MvccTxInfo(UUID crd, MvccSnapshot mvccSnapshot) {
         assert crd != null;
-        assert mvccVer != null;
+        assert mvccSnapshot != null;
 
         this.crd = crd;
-        this.mvccVer = mvccVer;
+        this.mvccSnapshot = mvccSnapshot;
     }
 
     /**
      * @return Instance with version without active transactions.
      */
     public MvccTxInfo withoutActiveTransactions() {
-        MvccVersion mvccVer0 = mvccVer.withoutActiveTransactions();
+        MvccSnapshot mvccSnapshot0 = mvccSnapshot.withoutActiveTransactions();
 
-        if (mvccVer0 == mvccVer)
+        if (mvccSnapshot0 == mvccSnapshot)
             return this;
 
-        return new MvccTxInfo(crd, mvccVer0);
+        return new MvccTxInfo(crd, mvccSnapshot0);
     }
 
     /**
@@ -78,8 +78,8 @@ public class MvccTxInfo implements Message {
     /**
      * @return Mvcc version.
      */
-    public MvccVersion version() {
-        return mvccVer;
+    public MvccSnapshot snapshot() {
+        return mvccSnapshot;
     }
 
     /** {@inheritDoc} */
@@ -101,7 +101,7 @@ public class MvccTxInfo implements Message {
                 writer.incrementState();
 
             case 1:
-                if (!writer.writeMessage("mvccVer", mvccVer))
+                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
 
                 writer.incrementState();
@@ -128,7 +128,7 @@ public class MvccTxInfo implements Message {
                 reader.incrementState();
 
             case 1:
-                mvccVer = reader.readMessage("mvccVer");
+                mvccSnapshot = reader.readMessage("mvccSnapshot");
 
                 if (!reader.isLastRead())
                     return false;

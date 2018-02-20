@@ -67,7 +67,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQuery;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTx;
-import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccVersionResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
@@ -1126,7 +1126,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             private AtomicInteger cntr = new AtomicInteger();
 
             @Override public void apply(ClusterNode node, Message msg) {
-                if (msg instanceof MvccVersionResponse) {
+                if (msg instanceof MvccSnapshotResponse) {
                     if (cntr.incrementAndGet() == 2) {
                         getLatch.countDown();
 
@@ -1274,7 +1274,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
             private boolean blocked;
 
             @Override public boolean apply(ClusterNode node, Message msg) {
-                if (!blocked && (msg instanceof MvccVersionResponse)) {
+                if (!blocked && (msg instanceof MvccSnapshotResponse)) {
                     blocked = true;
 
                     return true;
@@ -2593,7 +2593,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
         TestRecordingCommunicationSpi crdSpi = TestRecordingCommunicationSpi.spi(ignite(0));
 
-        crdSpi.blockMessages(MvccVersionResponse.class, client.name());
+        crdSpi.blockMessages(MvccSnapshotResponse.class, client.name());
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(new Callable() {
             @Override public Object call() throws Exception {
@@ -3543,7 +3543,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
             crdSpi.blockMessages(new IgniteBiPredicate<ClusterNode, Message>() {
                 @Override public boolean apply(ClusterNode node, Message msg) {
-                    return msg instanceof MvccVersionResponse;
+                    return msg instanceof MvccSnapshotResponse;
                 }
             });
 
@@ -4135,7 +4135,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
         MvccProcessor crd = cctx.kernalContext().coordinators();
 
         // Start query to prevent cleanup.
-        IgniteInternalFuture<MvccVersion> fut = crd.requestQueryCounter(crd.currentCoordinator());
+        IgniteInternalFuture<MvccSnapshot> fut = crd.requestQuerySnapshot(crd.currentCoordinator());
 
         fut.get();
 
@@ -4158,7 +4158,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
             KeyCacheObject key0 = cctx.toCacheKeyObject(key);
 
-            List<T2<Object, MvccCounter>> vers = cctx.offheap().mvccAllVersions(cctx, key0);
+            List<T2<Object, MvccVersion>> vers = cctx.offheap().mvccAllVersions(cctx, key0);
 
             assertEquals(10, vers.size());
 
@@ -4166,11 +4166,11 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
             checkRow(cctx, row, key0, vers.get(0).get1());
 
-            for (T2<Object, MvccCounter> ver : vers) {
-                MvccCounter cntr = ver.get2();
+            for (T2<Object, MvccVersion> ver : vers) {
+                MvccVersion cntr = ver.get2();
 
-                MvccVersion readVer =
-                    new MvccVersionWithoutTxs(cntr.coordinatorVersion(), cntr.counter(), 0);
+                MvccSnapshot readVer =
+                    new MvccSnapshotWithoutTxs(cntr.coordinatorVersion(), cntr.counter(), 0);
 
                 row = cctx.offheap().mvccRead(cctx, key0, readVer);
 
@@ -4187,10 +4187,10 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
                 key0,
                 vers.get(0).get1());
 
-            MvccVersionResponse ver = version(vers.get(0).get2().coordinatorVersion(), 100000);
+            MvccSnapshotResponse ver = version(vers.get(0).get2().coordinatorVersion(), 100000);
 
             for (int v = 0; v < vers.size(); v++) {
-                MvccCounter cntr = vers.get(v).get2();
+                MvccVersion cntr = vers.get(v).get2();
 
                 ver.addTx(cntr.counter());
 
@@ -4298,8 +4298,8 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @param cntr Counter.
      * @return Version.
      */
-    private MvccVersionResponse version(long crdVer, long cntr) {
-        return new MvccVersionResponse(crdVer, cntr, 0);
+    private MvccSnapshotResponse version(long crdVer, long cntr) {
+        return new MvccSnapshotResponse(crdVer, cntr, 0);
     }
 
     /**

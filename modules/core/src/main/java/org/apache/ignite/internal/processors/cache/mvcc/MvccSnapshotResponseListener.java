@@ -17,15 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import org.jetbrains.annotations.Nullable;
+import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
 
 /**
  *
  */
-public interface MvccCoordinatorChangeAware {
+public interface MvccSnapshotResponseListener {
     /**
-     * @param newCrd New coordinator.
-     * @return Version used by this query.
+     * @param crdId Coordinator node ID.
+     * @param res Version.
      */
-    @Nullable public MvccSnapshot onMvccCoordinatorChange(MvccCoordinator newCrd);
+    public void onResponse(UUID crdId, MvccSnapshot res);
+
+    /**
+     * @param e Error.
+     */
+    public void onError(IgniteCheckedException e);
 }

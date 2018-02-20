@@ -40,7 +40,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
@@ -410,7 +410,7 @@ public class H2TreeIndex extends GridH2IndexBase {
 
         IndexingQueryFilter f = qctx.filter();
         IndexingQueryCacheFilter p = f == null ? null : f.forCache(getTable().cacheName());
-        MvccVersion v =qctx.mvccVersion();
+        MvccSnapshot v =qctx.mvccSnapshot();
 
         assert !cctx.mvccEnabled() || v != null;
 

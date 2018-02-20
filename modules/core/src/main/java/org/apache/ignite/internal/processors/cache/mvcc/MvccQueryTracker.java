@@ -47,7 +47,7 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
     private MvccCoordinator mvccCrd;
 
     /** */
-    private volatile MvccVersion mvccVer;
+    private volatile MvccSnapshot mvccSnapshot;
 
     /** */
     @GridToStringExclude
@@ -79,13 +79,13 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
     /**
      * @param cctx Cache context.
      * @param mvccCrd Mvcc coordinator.
-     * @param mvccVer Mvcc version.
+     * @param mvccSnapshot Mvcc snapshot.
      */
-    public MvccQueryTracker(GridCacheContext cctx, MvccCoordinator mvccCrd, MvccVersion mvccVer) {
+    public MvccQueryTracker(GridCacheContext cctx, MvccCoordinator mvccCrd, MvccSnapshot mvccSnapshot) {
         assert cctx.mvccEnabled() : cctx.name();
 
         this.cctx = cctx;
-        this.mvccVer = mvccVer;
+        this.mvccSnapshot = mvccSnapshot;
         this.mvccCrd = mvccCrd;
 
         canRemap = false;
@@ -93,23 +93,23 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
     }
 
     /**
-     * @return Requested MVCC version.
+     * @return Requested MVCC snapshot.
      */
-    public MvccVersion mvccVersion() {
-        assert mvccVer != null : this;
+    public MvccSnapshot snapshot() {
+        assert mvccSnapshot != null : this;
 
-        return mvccVer;
+        return mvccSnapshot;
     }
 
     /** {@inheritDoc} */
-    @Override @Nullable public synchronized MvccVersion onMvccCoordinatorChange(MvccCoordinator newCrd) {
-        if (mvccVer != null) {
+    @Override @Nullable public synchronized MvccSnapshot onMvccCoordinatorChange(MvccCoordinator newCrd) {
+        if (mvccSnapshot != null) {
             assert mvccCrd != null : this;
 
             if (!mvccCrd.equals(newCrd)) {
                 mvccCrd = newCrd; // Need notify new coordinator.
 
-                return mvccVer;
+                return mvccSnapshot;
             }
             else
                 return null;
@@ -128,21 +128,21 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
             return;
 
         MvccCoordinator mvccCrd0 = null;
-        MvccVersion mvccVer0 = null;
+        MvccSnapshot mvccSnapshot0 = null;
 
         synchronized (this) {
-            if (mvccVer != null) {
+            if (mvccSnapshot != null) {
                 assert mvccCrd != null;
 
                 mvccCrd0 = mvccCrd;
-                mvccVer0 = mvccVer;
+                mvccSnapshot0 = mvccSnapshot;
 
-                mvccVer = null; // Mark as finished.
+                mvccSnapshot = null; // Mark as finished.
             }
         }
 
-        if (mvccVer0 != null)
-            cctx.shared().coordinators().ackQueryDone(mvccCrd0, mvccVer0);
+        if (mvccSnapshot0 != null)
+            cctx.shared().coordinators().ackQueryDone(mvccCrd0, mvccSnapshot0);
     }
 
     /**
@@ -153,32 +153,32 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
      */
     public IgniteInternalFuture<Void> onTxDone(@Nullable MvccTxInfo mvccInfo, GridCacheSharedContext ctx, boolean commit) {
         MvccCoordinator mvccCrd0 = null;
-        MvccVersion mvccVer0 = null;
+        MvccSnapshot mvccSnapshot0 = null;
 
         synchronized (this) {
-            if (mvccVer != null) {
+            if (mvccSnapshot != null) {
                 assert mvccCrd != null;
 
                 mvccCrd0 = mvccCrd;
-                mvccVer0 = mvccVer;
+                mvccSnapshot0 = mvccSnapshot;
 
-                mvccVer = null; // Mark as finished.
+                mvccSnapshot = null; // Mark as finished.
             }
         }
 
-        assert mvccVer0 == null || mvccInfo == null || mvccInfo.coordinatorNodeId().equals(mvccCrd0.nodeId());
+        assert mvccSnapshot0 == null || mvccInfo == null || mvccInfo.coordinatorNodeId().equals(mvccCrd0.nodeId());
 
-        if (mvccVer0 != null || mvccInfo != null) {
+        if (mvccSnapshot0 != null || mvccInfo != null) {
             if (mvccInfo == null) {
-                cctx.shared().coordinators().ackQueryDone(mvccCrd0, mvccVer0);
+                cctx.shared().coordinators().ackQueryDone(mvccCrd0, mvccSnapshot0);
 
                 return null;
             }
             else {
                 if (commit)
-                    return ctx.coordinators().ackTxCommit(mvccInfo.coordinatorNodeId(), mvccInfo.version(), mvccVer0);
+                    return ctx.coordinators().ackTxCommit(mvccInfo.coordinatorNodeId(), mvccInfo.snapshot(), mvccSnapshot0);
                 else
-                    ctx.coordinators().ackTxRollback(mvccInfo.coordinatorNodeId(), mvccInfo.version(), mvccVer0);
+                    ctx.coordinators().ackTxRollback(mvccInfo.coordinatorNodeId(), mvccInfo.snapshot(), mvccSnapshot0);
             }
         }
 
@@ -218,25 +218,25 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
             }
         }
 
-        IgniteInternalFuture<MvccVersion> cntrFut =
-            cctx.shared().coordinators().requestQueryCounter(mvccCrd0);
+        IgniteInternalFuture<MvccSnapshot> cntrFut =
+            cctx.shared().coordinators().requestQuerySnapshot(mvccCrd0);
 
-        cntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccVersion>>() {
-            @Override public void apply(IgniteInternalFuture<MvccVersion> fut) {
+        cntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccSnapshot>>() {
+            @Override public void apply(IgniteInternalFuture<MvccSnapshot> fut) {
                 try {
-                    MvccVersion rcvdVer = fut.get();
+                    MvccSnapshot rcvdSnapshot = fut.get();
 
-                    assert rcvdVer != null;
+                    assert rcvdSnapshot != null;
 
                     boolean needRemap = false;
 
                     synchronized (MvccQueryTracker.this) {
-                        assert mvccVer == null : "[this=" + MvccQueryTracker.this +
-                            ", ver=" + mvccVer +
-                            ", rcvdVer=" + rcvdVer + "]";
+                        assert mvccSnapshot == null : "[this=" + MvccQueryTracker.this +
+                            ", ver=" + mvccSnapshot +
+                            ", rcvdVer=" + rcvdSnapshot + "]";
 
                         if (mvccCrd != null) {
-                            mvccVer = rcvdVer;
+                            mvccSnapshot = rcvdSnapshot;
                         }
                         else
                             needRemap = true;

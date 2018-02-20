@@ -32,7 +32,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -231,7 +231,7 @@ public interface GridQueryIndexing {
      * @param pageSize Fetch page size.
      * @param timeout Timeout.
      * @param topVer Topology version.
-     * @param mvccVer Mvc version.
+     * @param mvccSnapshot MVCC snapshot.
      * @param cancel Query cancel object.
      * @return Cursor over entries which are going to be changed.
      * @throws IgniteCheckedException If failed.
@@ -239,7 +239,7 @@ public interface GridQueryIndexing {
     public GridCloseableIterator<?> prepareDistributedUpdate(GridCacheContext<?, ?> cctx, int[] ids, int[] parts,
         String schema, String qry, Object[] params, int flags,
         int pageSize, int timeout, AffinityTopologyVersion topVer,
-        MvccVersion mvccVer, GridQueryCancel cancel) throws IgniteCheckedException;
+        MvccSnapshot mvccSnapshot, GridQueryCancel cancel) throws IgniteCheckedException;
 
     /**
      * Registers type if it was not known before or updates it otherwise.
@@ -268,7 +268,7 @@ public interface GridQueryIndexing {
         GridQueryTypeDescriptor type,
         CacheDataRow row,
         CacheDataRow prevRow,
-        @Nullable MvccVersion newVer,
+        @Nullable MvccSnapshot newVer,
         boolean prevRowAvailable,
         boolean idxRebuild) throws IgniteCheckedException;
 

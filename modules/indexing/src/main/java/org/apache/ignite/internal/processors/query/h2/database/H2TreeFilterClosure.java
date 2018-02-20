@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.database;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
@@ -36,19 +36,19 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.unm
  */
 public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRow, GridH2Row> {
     /** */
-    private final MvccVersion mvccVer;
+    private final MvccSnapshot mvccSnapshot;
     /** */
     private final IndexingQueryCacheFilter filter;
 
     /**
      * @param filter Cache filter.
-     * @param mvccVer Mvcc version.
+     * @param mvccSnapshot MVCC snapshot.
      */
-    public H2TreeFilterClosure(IndexingQueryCacheFilter filter, MvccVersion mvccVer) {
-        assert filter != null || mvccVer != null;
+    public H2TreeFilterClosure(IndexingQueryCacheFilter filter, MvccSnapshot mvccSnapshot) {
+        assert filter != null || mvccSnapshot != null;
 
         this.filter = filter;
-        this.mvccVer = mvccVer;
+        this.mvccSnapshot = mvccSnapshot;
     }
 
     /** {@inheritDoc} */
@@ -56,7 +56,7 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRo
         long pageAddr, int idx)  throws IgniteCheckedException {
 
         return (filter  == null || applyFilter((H2RowLinkIO)io, pageAddr, idx))
-            && (mvccVer == null || applyMvcc((H2RowLinkIO)io, pageAddr, idx));
+            && (mvccSnapshot == null || applyMvcc((H2RowLinkIO)io, pageAddr, idx));
     }
 
     /**
@@ -85,16 +85,16 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRo
         assert unmaskCoordinatorVersion(rowCrdVer) == rowCrdVer : rowCrdVer;
         assert rowCrdVer > 0 : rowCrdVer;
 
-        int cmp = Long.compare(mvccVer.coordinatorVersion(), rowCrdVer);
+        int cmp = Long.compare(mvccSnapshot.coordinatorVersion(), rowCrdVer);
 
         if (cmp == 0) {
             long rowCntr = io.getMvccCounter(pageAddr, idx);
 
-            cmp = Long.compare(mvccVer.counter(), rowCntr);
+            cmp = Long.compare(mvccSnapshot.counter(), rowCntr);
 
             return cmp >= 0 &&
                 !newVersionAvailable(io, pageAddr, idx) &&
-                !mvccVer.activeTransactions().contains(rowCntr);
+                !mvccSnapshot.activeTransactions().contains(rowCntr);
         }
         else
             return cmp > 0;
@@ -112,14 +112,14 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRo
         if (newCrdVer == 0)
             return false;
 
-        int cmp = Long.compare(mvccVer.coordinatorVersion(), newCrdVer);
+        int cmp = Long.compare(mvccSnapshot.coordinatorVersion(), newCrdVer);
 
         if (cmp == 0) {
             long newCntr = rowIo.getNewMvccCounter(pageAddr, idx);
 
             assert assertMvccVersionValid(newCrdVer, newCntr);
 
-            return newCntr <= mvccVer.counter() && !mvccVer.activeTransactions().contains(newCntr);
+            return newCntr <= mvccSnapshot.counter() && !mvccSnapshot.activeTransactions().contains(newCntr);
         }
         else
             return cmp < 0;

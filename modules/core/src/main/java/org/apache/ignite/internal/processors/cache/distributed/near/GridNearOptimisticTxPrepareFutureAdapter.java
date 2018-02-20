@@ -27,8 +27,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccResponseListener;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -46,8 +46,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearTxPrepareFutureAdapter {
     /** */
-    private static final AtomicIntegerFieldUpdater<MvccVersionFuture> LOCK_CNT_UPD =
-        AtomicIntegerFieldUpdater.newUpdater(MvccVersionFuture.class, "lockCnt");
+    private static final AtomicIntegerFieldUpdater<MvccSnapshotFuture> LOCK_CNT_UPD =
+        AtomicIntegerFieldUpdater.newUpdater(MvccSnapshotFuture.class, "lockCnt");
 
     /** */
     @GridToStringExclude
@@ -55,7 +55,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
 
     /** */
     @GridToStringExclude
-    protected MvccVersionFuture mvccVerFut;
+    protected MvccSnapshotFuture mvccVerFut;
 
     /**
      * @param cctx Context.
@@ -196,7 +196,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
      */
     final void initMvccVersionFuture(MvccCoordinator mvccCrd, int lockCnt, boolean remap) {
         if (!remap) {
-            mvccVerFut = new MvccVersionFuture();
+            mvccVerFut = new MvccSnapshotFuture();
 
             mvccVerFut.init(mvccCrd, lockCnt);
 
@@ -279,7 +279,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
     /**
      *
      */
-    class MvccVersionFuture extends GridFutureAdapter implements MvccResponseListener,
+    class MvccSnapshotFuture extends GridFutureAdapter implements MvccSnapshotResponseListener,
         IgniteInClosure<IgniteInternalFuture<Void>> {
         /** */
         MvccCoordinator crd;
@@ -295,7 +295,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
             }
             catch (IgniteCheckedException e) {
                 if (log.isDebugEnabled())
-                    log.debug("MvccVersionFuture ignores key lock future failure: " + e);
+                    log.debug("MvccSnapshotFuture ignores key lock future failure: " + e);
             }
         }
 
@@ -322,23 +322,23 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
             assert remaining >= 0 : remaining;
 
             if (remaining == 0) {
-                // TODO IGNTIE-3478: add method to do not create one more future in requestTxCounter.
+                // TODO IGNTIE-3478: add method to do not create one more future in requestTxSnapshot.
                 if (cctx.localNodeId().equals(crd.nodeId()))
-                    onMvccResponse(crd.nodeId(), cctx.coordinators().requestTxCounterOnCoordinator(tx));
+                    onResponse(crd.nodeId(), cctx.coordinators().requestTxSnapshotOnCoordinator(tx));
                 else
-                    cctx.coordinators().requestTxCounter(crd, this, tx.nearXidVersion());
+                    cctx.coordinators().requestTxSnapshot(crd, this, tx.nearXidVersion());
             }
         }
 
         /** {@inheritDoc} */
-        @Override public void onMvccResponse(UUID crdId, MvccVersion res) {
+        @Override public void onResponse(UUID crdId, MvccSnapshot res) {
             tx.mvccInfo(new MvccTxInfo(crdId, res));
 
             onDone();
         }
 
         /** {@inheritDoc} */
-        @Override public void onMvccError(IgniteCheckedException e) {
+        @Override public void onError(IgniteCheckedException e) {
             if (e instanceof ClusterTopologyCheckedException) {
                 IgniteInternalFuture<?> fut = cctx.nextAffinityReadyFuture(tx.topologyVersion());
 
@@ -352,7 +352,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "MvccVersionFuture [crd=" + crd.nodeId() +
+            return "MvccSnapshotFuture [crd=" + crd.nodeId() +
                 ", lockCnt=" + lockCnt +
                 ", done=" + isDone() + ']';
         }

@@ -62,8 +62,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCach
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccResponseListener;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -108,7 +108,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
  */
 @SuppressWarnings("unchecked")
 public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<IgniteInternalTx, GridNearTxPrepareResponse>
-    implements GridCacheVersionedFuture<GridNearTxPrepareResponse>, IgniteDiagnosticAware, MvccResponseListener {
+    implements GridCacheVersionedFuture<GridNearTxPrepareResponse>, IgniteDiagnosticAware, MvccSnapshotResponseListener {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -1248,7 +1248,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
             }
 
-            IgniteInternalFuture<MvccVersion> waitCrdCntrFut = null;
+            IgniteInternalFuture<MvccSnapshot> waitCrdCntrFut = null;
 
             if (req.requestMvccCounter()) {
                 assert last;
@@ -1260,9 +1260,9 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 assert crd != null : tx.topologyVersion();
 
                 if (crd.nodeId().equals(cctx.localNodeId()))
-                    onMvccResponse(cctx.localNodeId(), cctx.coordinators().requestTxCounterOnCoordinator(tx));
+                    onResponse(cctx.localNodeId(), cctx.coordinators().requestTxSnapshotOnCoordinator(tx));
                 else {
-                    IgniteInternalFuture<MvccVersion> crdCntrFut = cctx.coordinators().requestTxCounter(crd,
+                    IgniteInternalFuture<MvccSnapshot> crdCntrFut = cctx.coordinators().requestTxSnapshot(crd,
                         this,
                         tx.nearXidVersion());
 
@@ -1294,8 +1294,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 if (waitCrdCntrFut != null) {
                     skipInit = true;
 
-                    waitCrdCntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccVersion>>() {
-                        @Override public void apply(IgniteInternalFuture<MvccVersion> fut) {
+                    waitCrdCntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccSnapshot>>() {
+                        @Override public void apply(IgniteInternalFuture<MvccSnapshot> fut) {
                             try {
                                 fut.get();
 
@@ -1332,12 +1332,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public void onMvccResponse(UUID crdId, MvccVersion res) {
+    @Override public void onResponse(UUID crdId, MvccSnapshot res) {
         tx.mvccInfo(new MvccTxInfo(crdId, res));
     }
 
     /** {@inheritDoc} */
-    @Override public void onMvccError(IgniteCheckedException e) {
+    @Override public void onError(IgniteCheckedException e) {
         // No-op
     }
 

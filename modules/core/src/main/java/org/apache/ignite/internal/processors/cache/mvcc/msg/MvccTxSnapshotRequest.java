@@ -19,32 +19,40 @@ package org.apache.ignite.internal.processors.cache.mvcc.msg;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
 /**
- *
+ * Request to get MVCC snapshot for a new transaction.
  */
-public class MvccQueryVersionRequest implements MvccMessage {
+public class MvccTxSnapshotRequest implements MvccMessage {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
     private long futId;
 
+    /** */
+    private GridCacheVersion txId;
+
     /**
      * Required by {@link GridIoMessageFactory}.
      */
-    public MvccQueryVersionRequest() {
+    public MvccTxSnapshotRequest() {
         // No-op.
     }
 
     /**
      * @param futId Future ID.
+     * @param txId Transaction ID.
      */
-    public MvccQueryVersionRequest(long futId) {
+    public MvccTxSnapshotRequest(long futId, GridCacheVersion txId) {
+        assert txId != null;
+
         this.futId = futId;
+        this.txId = txId;
     }
 
     /** {@inheritDoc} */
@@ -64,6 +72,13 @@ public class MvccQueryVersionRequest implements MvccMessage {
         return futId;
     }
 
+    /**
+     * @return Transaction ID.
+     */
+    public GridCacheVersion txId() {
+        return txId;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
@@ -78,6 +93,12 @@ public class MvccQueryVersionRequest implements MvccMessage {
         switch (writer.state()) {
             case 0:
                 if (!writer.writeLong("futId", futId))
+                    return false;
+
+                writer.incrementState();
+
+            case 1:
+                if (!writer.writeMessage("txId", txId))
                     return false;
 
                 writer.incrementState();
@@ -103,19 +124,27 @@ public class MvccQueryVersionRequest implements MvccMessage {
 
                 reader.incrementState();
 
+            case 1:
+                txId = reader.readMessage("txId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
-        return reader.afterMessageRead(MvccQueryVersionRequest.class);
+        return reader.afterMessageRead(MvccTxSnapshotRequest.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 133;
+        return 129;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 1;
+        return 2;
     }
 
     /** {@inheritDoc} */
@@ -125,6 +154,6 @@ public class MvccQueryVersionRequest implements MvccMessage {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MvccQueryVersionRequest.class, this);
+        return S.toString(MvccTxSnapshotRequest.class, this);
     }
 }

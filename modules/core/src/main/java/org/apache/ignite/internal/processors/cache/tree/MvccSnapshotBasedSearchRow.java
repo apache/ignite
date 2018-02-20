@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -32,11 +32,11 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.unm
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.versionForRemovedValue;
 
 /**
- *
+ * Search row which is based on specific MVCC snapshot and return only records visible to that snapshot.
  */
-public class MvccVersionBasedSearchRow extends SearchRow implements BPlusTree.TreeRowClosure<CacheSearchRow, CacheDataRow> {
+public class MvccSnapshotBasedSearchRow extends SearchRow implements BPlusTree.TreeRowClosure<CacheSearchRow, CacheDataRow> {
     /** */
-    private final MvccVersion ver;
+    private final MvccSnapshot snapshot;
 
     /** */
     private CacheDataRow resRow;
@@ -44,14 +44,14 @@ public class MvccVersionBasedSearchRow extends SearchRow implements BPlusTree.Tr
     /**
      * @param cacheId Cache ID.
      * @param key Key.
-     * @param ver Mvcc version.
+     * @param snapshot MVCC snapshot.
      */
-    public MvccVersionBasedSearchRow(int cacheId, KeyCacheObject key, MvccVersion ver) {
+    public MvccSnapshotBasedSearchRow(int cacheId, KeyCacheObject key, MvccSnapshot snapshot) {
         super(cacheId, key);
 
-        assert ver != null;
+        assert snapshot != null;
 
-        this.ver = ver;
+        this.snapshot = snapshot;
     }
 
     /**
@@ -73,11 +73,11 @@ public class MvccVersionBasedSearchRow extends SearchRow implements BPlusTree.Tr
 
         long crdVerMasked = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
 
-        if (ver.activeTransactions().size() > 0) {
+        if (snapshot.activeTransactions().size() > 0) {
             long rowCrdVer = unmaskCoordinatorVersion(crdVerMasked);
 
-            if (rowCrdVer == ver.coordinatorVersion())
-                visible = !ver.activeTransactions().contains(rowIo.getMvccCounter(pageAddr, idx));
+            if (rowCrdVer == snapshot.coordinatorVersion())
+                visible = !snapshot.activeTransactions().contains(rowIo.getMvccCounter(pageAddr, idx));
         }
 
         if (visible) {
@@ -94,16 +94,16 @@ public class MvccVersionBasedSearchRow extends SearchRow implements BPlusTree.Tr
 
     /** {@inheritDoc} */
     @Override public long mvccCoordinatorVersion() {
-        return ver.coordinatorVersion();
+        return snapshot.coordinatorVersion();
     }
 
     /** {@inheritDoc} */
     @Override public long mvccCounter() {
-        return ver.counter();
+        return snapshot.counter();
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MvccVersionBasedSearchRow.class, this);
+        return S.toString(MvccSnapshotBasedSearchRow.class, this);
     }
 }

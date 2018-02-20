@@ -53,7 +53,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsReservation;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -463,7 +463,7 @@ public class GridMapQueryExecutor {
                     req.timeout(),
                     params,
                     true,
-                    req.mvccVersion()); // Lazy = true.
+                    req.mvccSnapshot()); // Lazy = true.
             }
             else {
                 ctx.closure().callLocal(
@@ -486,7 +486,7 @@ public class GridMapQueryExecutor {
                                 req.timeout(),
                                 params,
                                 false,
-                                req.mvccVersion()); // Lazy = false.
+                                req.mvccSnapshot()); // Lazy = false.
 
                             return null;
                         }
@@ -511,7 +511,7 @@ public class GridMapQueryExecutor {
             req.timeout(),
             params,
             lazy,
-            req.mvccVersion());
+            req.mvccSnapshot());
     }
 
     /**
@@ -527,7 +527,7 @@ public class GridMapQueryExecutor {
      * @param pageSize Page size.
      * @param distributedJoinMode Query distributed join mode.
      * @param lazy Streaming flag.
-     * @param mvccVer Mvcc version.
+     * @param mvccSnapshot MVCC snapshot.
      */
     private void onQueryRequest0(
         final ClusterNode node,
@@ -546,7 +546,7 @@ public class GridMapQueryExecutor {
         final int timeout,
         final Object[] params,
         boolean lazy,
-        @Nullable final MvccVersion mvccVer
+        @Nullable final MvccSnapshot mvccSnapshot
     ) {
         if (lazy && MapQueryLazyWorker.currentWorker() == null) {
             // Lazy queries must be re-submitted to dedicated workers.
@@ -572,7 +572,7 @@ public class GridMapQueryExecutor {
                         timeout,
                         params,
                         true,
-                        mvccVer);
+                        mvccSnapshot);
                 }
             });
 
@@ -638,7 +638,7 @@ public class GridMapQueryExecutor {
                 .pageSize(pageSize)
                 .topologyVersion(topVer)
                 .reservations(reserved)
-                .mvccVersion(mvccVer);
+                .mvccSnapshot(mvccSnapshot);
 
             Connection conn = h2.connectionForSchema(schemaName);
 

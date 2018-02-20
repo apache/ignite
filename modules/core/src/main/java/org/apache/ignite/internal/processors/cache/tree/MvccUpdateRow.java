@@ -22,7 +22,7 @@ import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -54,7 +54,7 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
     private List<MvccCleanupRow> cleanupRows;
 
     /** */
-    private final MvccVersion mvccVer;
+    private final MvccSnapshot mvccVer;
 
     /** */
     private final boolean needOld;
@@ -77,7 +77,7 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
         CacheObject val,
         GridCacheVersion ver,
         long expireTime,
-        MvccVersion mvccVer,
+        MvccSnapshot mvccVer,
         boolean needOld,
         int part,
         int cacheId) {

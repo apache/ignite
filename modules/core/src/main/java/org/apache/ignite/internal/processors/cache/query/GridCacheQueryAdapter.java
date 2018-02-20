@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -137,7 +137,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     private int taskHash;
 
     /** */
-    private MvccVersion mvccVer;
+    private MvccSnapshot mvccSnapshot;
 
     /**
      * @param cctx Context.
@@ -226,7 +226,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * @param keepBinary Keep binary flag.
      * @param subjId Security subject ID.
      * @param taskHash Task hash.
-     * @param mvccVer Mvcc version.
+     * @param mvccSnapshot Mvcc version.
      */
     public GridCacheQueryAdapter(GridCacheContext<?, ?> cctx,
         GridCacheQueryType type,
@@ -245,7 +245,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         boolean keepBinary,
         UUID subjId,
         int taskHash,
-        MvccVersion mvccVer) {
+        MvccSnapshot mvccSnapshot) {
         this.cctx = cctx;
         this.type = type;
         this.log = log;
@@ -263,22 +263,14 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         this.keepBinary = keepBinary;
         this.subjId = subjId;
         this.taskHash = taskHash;
-        this.mvccVer = mvccVer;
+        this.mvccSnapshot = mvccSnapshot;
     }
 
     /**
-     * @param mvccVer Mvcc version.
+     * @return MVCC snapshot.
      */
-    void mvccVersion(MvccVersion mvccVer) {
-        this.mvccVer = mvccVer;
-    }
-
-    /**
-     * @return Mvcc version.
-     */
-    @Nullable
-    MvccVersion mvccVersion() {
-        return mvccVer;
+    @Nullable MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
     }
 
     /**
@@ -568,7 +560,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         MvccQueryTracker mvccTracker = null;
 
-        if (cctx.mvccEnabled() && mvccVer == null) {
+        if (cctx.mvccEnabled() && mvccSnapshot == null) {
             final GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
 
             mvccTracker = new MvccQueryTracker(cctx, false,
@@ -582,7 +574,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
             fut.get();
 
-            mvccVer = mvccTracker.mvccVersion();
+            mvccSnapshot = mvccTracker.snapshot();
         }
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());

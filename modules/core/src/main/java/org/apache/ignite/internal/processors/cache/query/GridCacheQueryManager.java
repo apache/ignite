@@ -77,7 +77,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridSetQueryPredicate;
@@ -383,7 +383,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param idxRebuild If index rebuild is in progress.
      * @throws IgniteCheckedException In case of error.
      */
-    public void store(CacheDataRow newRow, @Nullable MvccVersion mvccVer, @Nullable CacheDataRow prevRow,
+    public void store(CacheDataRow newRow, @Nullable MvccSnapshot mvccVer, @Nullable CacheDataRow prevRow,
         boolean prevRowAvailable, boolean idxRebuild) throws IgniteCheckedException {
         assert enabled();
         assert newRow != null && newRow.value() != null && newRow.link() != 0 : newRow;
@@ -418,7 +418,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param newVer Mvcc version for remove operation.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void remove(KeyCacheObject key, @Nullable CacheDataRow prevRow, @Nullable MvccVersion newVer)
+    public void remove(KeyCacheObject key, @Nullable CacheDataRow prevRow, @Nullable MvccSnapshot newVer)
         throws IgniteCheckedException {
         if (!QueryUtils.isEnabled(cctx.config()))
             return; // No-op.
@@ -801,7 +801,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param qry Query.
      * @param transformer Transformer.
      * @param locNode Local node.
-     * @param mvccCrd Non null mvcc coordinator node if need ack mvcc query as finished on iterator close.
      * @return Full-scan row iterator.
      * @throws IgniteCheckedException If failed to get iterator.
      */
@@ -809,7 +808,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private GridCloseableIterator scanIterator(final GridCacheQueryAdapter<?> qry, IgniteClosure transformer,
         boolean locNode)
         throws IgniteCheckedException {
-        assert !cctx.mvccEnabled() || qry.mvccVersion() != null;
+        assert !cctx.mvccEnabled() || qry.mvccSnapshot() != null;
 
         final IgniteBiPredicate<K, V> keyValFilter = qry.scanFilter();
 
@@ -848,12 +847,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 locPart = locPart0;
 
-                it = cctx.offheap().cachePartitionIterator(cctx.cacheId(), part, qry.mvccVersion());
+                it = cctx.offheap().cachePartitionIterator(cctx.cacheId(), part, qry.mvccSnapshot());
             }
             else {
                 locPart = null;
 
-                it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer, qry.mvccVersion());
+                it = cctx.offheap().cacheIterator(cctx.cacheId(), true, backups, topVer, qry.mvccSnapshot());
             }
 
             return new ScanQueryIterator(it, qry, topVer, locPart, keyValFilter, transformer, locNode, cctx, log);

@@ -29,7 +29,7 @@ import org.apache.ignite.internal.GridDirectMap;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCounter;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -104,7 +104,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
 
     /** */
     @GridDirectMap(keyType = Message.class, valueType = Integer.class)
-    private Map<MvccCounter, Integer> activeQrys;
+    private Map<MvccVersion, Integer> activeQrys;
 
     /**
      * Required by {@link Externalizable}.
@@ -132,14 +132,14 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /**
      * @return Active queries started with previous coordinator.
      */
-    Map<MvccCounter, Integer> activeQueries() {
+    Map<MvccVersion, Integer> activeQueries() {
         return activeQrys;
     }
 
     /**
      * @param activeQrys Active queries started with previous coordinator.
      */
-    void activeQueries(Map<MvccCounter, Integer> activeQrys) {
+    void activeQueries(Map<MvccVersion, Integer> activeQrys) {
         this.activeQrys = activeQrys;
     }
 

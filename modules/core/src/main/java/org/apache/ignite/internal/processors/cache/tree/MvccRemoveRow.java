@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.createVersionForRemovedValue;
@@ -36,7 +36,7 @@ public class MvccRemoveRow extends MvccUpdateRow {
      */
     public MvccRemoveRow(
         KeyCacheObject key,
-        MvccVersion mvccVer,
+        MvccSnapshot mvccVer,
         boolean needOld,
         int part,
         int cacheId) {

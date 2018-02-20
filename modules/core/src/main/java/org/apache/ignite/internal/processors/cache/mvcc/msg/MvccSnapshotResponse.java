@@ -15,10 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc;
+package org.apache.ignite.internal.processors.cache.mvcc.msg;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.managers.communication.GridIoMessageFactory;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -26,9 +31,12 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class MvccVersionWithoutTxs implements MvccVersion {
+public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLongList {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private long futId;
 
     /** */
     private long crdVer;
@@ -37,12 +45,19 @@ public class MvccVersionWithoutTxs implements MvccVersion {
     private long cntr;
 
     /** */
+    @GridDirectTransient
+    private int txsCnt;
+
+    /** */
+    private long[] txs;
+
+    /** */
     private long cleanupVer;
 
     /**
      * Required by {@link GridIoMessageFactory}.
      */
-    public MvccVersionWithoutTxs() {
+    public MvccSnapshotResponse() {
         // No-op.
     }
 
@@ -51,20 +66,79 @@ public class MvccVersionWithoutTxs implements MvccVersion {
      * @param cntr Counter.
      * @param cleanupVer Cleanup version.
      */
-    public MvccVersionWithoutTxs(long crdVer, long cntr, long cleanupVer) {
+    public MvccSnapshotResponse(long crdVer, long cntr, long cleanupVer) {
         this.crdVer = crdVer;
         this.cntr = cntr;
         this.cleanupVer = cleanupVer;
     }
 
-    /** {@inheritDoc} */
-    @Override public MvccLongList activeTransactions() {
-        return MvccEmptyLongList.INSTANCE;
+    /**
+     * @param crdVer Coordinator version.
+     * @param cntr Counter.
+     * @param cleanupVer Cleanup version.
+     * @param futId Future ID.
+     */
+    public void init(long futId, long crdVer, long cntr, long cleanupVer) {
+        this.futId = futId;
+        this.crdVer = crdVer;
+        this.cntr = cntr;
+        this.cleanupVer = cleanupVer;
+    }
+
+    /**
+     * @param txId Transaction counter.
+     */
+    public void addTx(long txId) {
+        if (txs == null)
+            txs = new long[4];
+        else if (txs.length == txsCnt)
+            txs = Arrays.copyOf(txs, txs.length << 1);
+
+        txs[txsCnt++] = txId;
+    }
+
+    /**
+     *
+     */
+    public void resetTransactionsCount() {
+        txsCnt = 0;
     }
 
     /** {@inheritDoc} */
-    @Override public long coordinatorVersion() {
-        return crdVer;
+    @Override public int size() {
+        return txsCnt;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long get(int i) {
+        return txs[i];
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean contains(long val) {
+        for (int i = 0; i < txsCnt; i++) {
+            if (txs[i] == val)
+                return true;
+        }
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean waitForCoordinatorInit() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean processedFromNioThread() {
+        return false;
+    }
+
+    /**
+     * @return Future ID.
+     */
+    public long futureId() {
+        return futId;
     }
 
     /** {@inheritDoc} */
@@ -73,13 +147,26 @@ public class MvccVersionWithoutTxs implements MvccVersion {
     }
 
     /** {@inheritDoc} */
-    @Override public long counter() {
+    public long counter() {
         return cntr;
     }
 
     /** {@inheritDoc} */
-    @Override public MvccVersion withoutActiveTransactions() {
+    @Override public MvccLongList activeTransactions() {
         return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MvccSnapshot withoutActiveTransactions() {
+        if (txsCnt > 0)
+            return new MvccSnapshotWithoutTxs(crdVer, cntr, cleanupVer);
+
+        return this;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long coordinatorVersion() {
+        return crdVer;
     }
 
     /** {@inheritDoc} */
@@ -108,6 +195,18 @@ public class MvccVersionWithoutTxs implements MvccVersion {
 
             case 2:
                 if (!writer.writeLong("crdVer", crdVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeLong("futId", futId))
+                    return false;
+
+                writer.incrementState();
+
+            case 4:
+                if (!writer.writeLongArray("txs", txs, txsCnt))
                     return false;
 
                 writer.incrementState();
@@ -149,19 +248,37 @@ public class MvccVersionWithoutTxs implements MvccVersion {
 
                 reader.incrementState();
 
+            case 3:
+                futId = reader.readLong("futId");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 4:
+                txs = reader.readLongArray("txs");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                txsCnt = txs != null ? txs.length : 0;
+
+                reader.incrementState();
+
         }
 
-        return reader.afterMessageRead(MvccVersionWithoutTxs.class);
+        return reader.afterMessageRead(MvccSnapshotResponse.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 145;
+        return 136;
     }
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 5;
     }
 
     /** {@inheritDoc} */
@@ -171,6 +288,6 @@ public class MvccVersionWithoutTxs implements MvccVersion {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MvccVersionWithoutTxs.class, this);
+        return S.toString(MvccSnapshotResponse.class, this);
     }
 }

@@ -24,7 +24,7 @@ import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -61,7 +61,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
     private GridCacheVersion lockVer;
 
     /** */
-    private MvccVersion mvccVer;
+    private MvccSnapshot mvccSnapshot;
 
     /** */
     private int[] cacheIds;
@@ -107,7 +107,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
      * @param subjId Subject id.
      * @param topVer Topology version.
      * @param lockVer Lock version.
-     * @param mvccVer Mvcc version.
+     * @param mvccSnapshot MVCC snspshot.
      * @param cacheIds Involved cache ids.
      * @param parts Partitions.
      * @param schema Schema name.
@@ -127,7 +127,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
         UUID subjId,
         AffinityTopologyVersion topVer,
         GridCacheVersion lockVer,
-        MvccVersion mvccVer,
+        MvccSnapshot mvccSnapshot,
         int[] cacheIds,
         int[] parts,
         String schema,
@@ -152,7 +152,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
         this.subjId = subjId;
         this.topVer = topVer;
         this.lockVer = lockVer;
-        this.mvccVer = mvccVer;
+        this.mvccSnapshot = mvccSnapshot;
         this.timeout = timeout;
         this.taskNameHash = taskNameHash;
         this.clientFirst = clientFirst;
@@ -201,10 +201,10 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
     }
 
     /**
-     * @return Mvcc version.
+     * @return MVCC snapshot.
      */
-    public MvccVersion mvccVersion() {
-        return mvccVer;
+    public MvccSnapshot mvccSnapshot() {
+        return mvccSnapshot;
     }
 
     /**
@@ -355,7 +355,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
                 writer.incrementState();
 
             case 9:
-                if (!writer.writeMessage("mvccVer", mvccVer))
+                if (!writer.writeMessage("mvccSnapshot", mvccSnapshot))
                     return false;
 
                 writer.incrementState();
@@ -485,7 +485,7 @@ public class GridNearTxQueryEnlistRequest extends GridCacheIdMessage {
                 reader.incrementState();
 
             case 9:
-                mvccVer = reader.readMessage("mvccVer");
+                mvccSnapshot = reader.readMessage("mvccSnapshot");
 
                 if (!reader.isLastRead())
                     return false;

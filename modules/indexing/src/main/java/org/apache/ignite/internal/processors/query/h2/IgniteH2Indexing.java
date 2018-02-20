@@ -75,9 +75,9 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccResponseListener;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
@@ -683,7 +683,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryTypeDescriptor type,
         CacheDataRow row,
         @Nullable CacheDataRow prevRow,
-        @Nullable MvccVersion newVer,
+        @Nullable MvccSnapshot newVer,
         boolean prevRowAvailable,
         boolean idxRebuild) throws IgniteCheckedException
     {
@@ -1050,7 +1050,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             final MvccQueryTracker mvccTracker0 = mvccTracker != null ? mvccTracker : mvccTracker(stmt, startTx);
 
             if (mvccTracker0 != null)
-                ctx.mvccVersion(mvccTracker0.mvccVersion());
+                ctx.mvccSnapshot(mvccTracker0.snapshot());
 
             return new GridQueryFieldsResultAdapter(meta, null) {
                 @Override public GridCloseableIterator<List<?>> iterator() throws IgniteCheckedException {
@@ -1402,7 +1402,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         MvccQueryTracker mvccTracker = mvccTracker(stmt, false);
 
         if (mvccTracker != null)
-            qctx.mvccVersion(mvccTracker.mvccVersion());
+            qctx.mvccSnapshot(mvccTracker.snapshot());
 
         GridH2QueryContext.set(qctx);
 
@@ -2262,7 +2262,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         int[] parts,
         String schema, String qry, Object[] params, int flags,
         int pageSize, int timeout, AffinityTopologyVersion topVer,
-        MvccVersion mvccVer, GridQueryCancel cancel) throws IgniteCheckedException {
+        MvccSnapshot mvccSnapshot, GridQueryCancel cancel) throws IgniteCheckedException {
 
         SqlFieldsQuery fldsQry = new SqlFieldsQuery(qry);
 
@@ -2296,7 +2296,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         PreparedStatement stmt = preparedStatementWithParams(conn, fldsQry.getSql(),
             F.asList(fldsQry.getArgs()), true);
 
-        return dmlProc.prepareDistributedUpdate(schema, conn, stmt, fldsQry, backupFilter(topVer, parts), cancel, local, topVer, mvccVer);
+        return dmlProc.prepareDistributedUpdate(schema, conn, stmt, fldsQry, backupFilter(topVer, parts), cancel, local, topVer, mvccSnapshot);
     }
 
     private boolean isFlagSet(int flags, int flag) {
@@ -3433,7 +3433,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param tx Transaction.
      * @throws IgniteCheckedException If failed.
      */
-    public MvccVersion requestMvccVersion(GridCacheContext cctx, GridNearTxLocal tx) throws IgniteCheckedException {
+    public MvccSnapshot requestMvccVersion(GridCacheContext cctx, GridNearTxLocal tx) throws IgniteCheckedException {
         tx.addActiveCache(cctx, false);
 
         if (tx.mvccInfo() == null) {
@@ -3443,12 +3443,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             assert crd != null : tx.topologyVersion();
 
             if (crd.nodeId().equals(cctx.localNodeId()))
-                tx.mvccInfo(new MvccTxInfo(cctx.localNodeId(), mvccProc.requestTxCounterOnCoordinator(tx)));
+                tx.mvccInfo(new MvccTxInfo(cctx.localNodeId(), mvccProc.requestTxSnapshotOnCoordinator(tx)));
             else
-                return mvccProc.requestTxCounter(crd, new MvccTxResponseListener(tx), tx.nearXidVersion()).get(); // TODO IGNITE-7388
+                return mvccProc.requestTxSnapshot(crd, new MvccTxSnapshotResponseListener(tx), tx.nearXidVersion()).get(); // TODO IGNITE-7388
         }
 
-        return tx.mvccInfo().version();
+        return tx.mvccInfo().snapshot();
     }
 
     /**
@@ -3459,24 +3459,24 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** */
-    private static class MvccTxResponseListener implements MvccResponseListener {
+    private static class MvccTxSnapshotResponseListener implements MvccSnapshotResponseListener {
         /** */
         private final GridNearTxLocal tx;
 
         /**
          * @param tx Transaction.
          */
-        MvccTxResponseListener(GridNearTxLocal tx) {
+        MvccTxSnapshotResponseListener(GridNearTxLocal tx) {
             this.tx = tx;
         }
 
         /** {@inheritDoc} */
-        @Override public void onMvccResponse(UUID crdId, MvccVersion res) {
+        @Override public void onResponse(UUID crdId, MvccSnapshot res) {
             tx.mvccInfo(new MvccTxInfo(crdId, res));
         }
 
         /** {@inheritDoc} */
-        @Override public void onMvccError(IgniteCheckedException e) {
+        @Override public void onError(IgniteCheckedException e) {
             // No-op.
         }
     }

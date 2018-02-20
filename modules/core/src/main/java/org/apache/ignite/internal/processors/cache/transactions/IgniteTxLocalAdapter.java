@@ -64,7 +64,6 @@ import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridLongList;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.GridTuple;
@@ -687,7 +686,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             resolveTaskName(),
                                             dhtVer,
                                             null,
-                                            mvccVersionForUpdate());
+                                            mvccSnapshotForUpdate());
 
                                         if (updRes.success()) {
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
@@ -723,7 +722,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 resolveTaskName(),
                                                 dhtVer,
                                                 null,
-                                                mvccVersionForUpdate());
+                                                mvccSnapshotForUpdate());
                                         }
                                     }
                                     else if (op == DELETE) {
@@ -745,7 +744,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             resolveTaskName(),
                                             dhtVer,
                                             null,
-                                            mvccVersionForUpdate());
+                                            mvccSnapshotForUpdate());
 
                                         if (updRes.success()) {
                                             txEntry.updateCounter(updRes.updatePartitionCounter());
@@ -777,7 +776,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                                 resolveTaskName(),
                                                 dhtVer,
                                                 null,
-                                                mvccVersionForUpdate());
+                                                mvccSnapshotForUpdate());
                                         }
                                     }
                                     else if (op == RELOAD) {
