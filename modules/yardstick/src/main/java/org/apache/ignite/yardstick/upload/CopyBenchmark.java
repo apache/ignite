@@ -84,7 +84,9 @@ public class CopyBenchmark extends AbstractUploadBenchmark {
                 }
             }
 
-            BenchmarkUtils.println("File generated (will be removed on exit)");
+            long sizeMb = f.length() / (1024L * 1024L);
+
+            BenchmarkUtils.println("File have been generated (" + sizeMb + "MiB). It will be removed on exit");
 
             return f.getAbsolutePath();
         }

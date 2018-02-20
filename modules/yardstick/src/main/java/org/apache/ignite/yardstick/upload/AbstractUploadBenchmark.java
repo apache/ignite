@@ -42,7 +42,7 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     QueryFactory queries = new QueryFactory();
 
     /** {@inheritDoc} */
-    public final void setUp(BenchmarkConfiguration cfg) throws Exception {
+    @Override public final void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
         INSERT_SIZE = args.range();
