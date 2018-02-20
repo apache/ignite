@@ -27,6 +27,9 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.util.Collection;
 import java.util.HashMap;
@@ -152,6 +155,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_PARTITIONED;
 import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_REPLICATED;
+import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
+import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
 
 /**
  * Tests for Jetty REST protocol.
@@ -2142,6 +2147,340 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     }
 
     /**
+     * @return Cache.
+     */
+    protected <K, V> IgniteCache<K, V> typedCache() {
+        return grid(0).cache("test_typed_access");
+    }
+
+    /**
+     * @param type Key and value type.
+     * @param k Key to put.
+     * @param v Value to put.
+     * @param status Expected operation status to check.
+     * @throws Exception If failed.
+     */
+    private void putTypedValue(String type, String k, String v, int status) throws Exception {
+        String ret = content("test_typed_access", GridRestCommand.CACHE_PUT,
+            "keyType", type,
+            "valueType", type,
+            "key", k,
+            "val", v
+        );
+
+        info("Command result: " + ret);
+
+        JsonNode json = JSON_MAPPER.readTree(ret);
+
+        assertEquals(status, json.get("successStatus").asInt());
+
+        if (status == STATUS_SUCCESS)
+            assertTrue(json.get("error").isNull());
+        else
+            assertTrue(json.get("error").asText().startsWith("Failed to convert value to specified type [type="));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTypedPut() throws Exception {
+        // Test boolean type.
+        putTypedValue("boolean", "true", "false", STATUS_SUCCESS);
+        putTypedValue("java.lang.Boolean", "false", "true", STATUS_SUCCESS);
+
+        IgniteCache<Boolean, Boolean> cBool = typedCache();
+
+        assertEquals(cBool.get(true), Boolean.FALSE);
+        assertEquals(cBool.get(false), Boolean.TRUE);
+
+        // Test byte type.
+        putTypedValue("byte", "64", "100", STATUS_SUCCESS);
+        putTypedValue("java.lang.Byte", "-25", "-127", STATUS_SUCCESS);
+        putTypedValue("byte", "65", "aaa", STATUS_FAILED);
+        putTypedValue("byte", "aaa", "64", STATUS_FAILED);
+        putTypedValue("byte", "aaa", "aaa", STATUS_FAILED);
+
+        IgniteCache<Byte, Byte> cByte = typedCache();
+
+        assertEquals(cByte.get(Byte.valueOf("64")), Byte.valueOf("100"));
+        assertEquals(cByte.get(Byte.valueOf("-25")), Byte.valueOf("-127"));
+
+        // Test short type.
+        putTypedValue("short", "1024", "4096", STATUS_SUCCESS);
+        putTypedValue("java.lang.Short", "-15000", "-16000", STATUS_SUCCESS);
+        putTypedValue("short", "1025", "bbb", STATUS_FAILED);
+        putTypedValue("short", "bbb", "5", STATUS_FAILED);
+        putTypedValue("short", "bbb", "bbb", STATUS_FAILED);
+
+        IgniteCache<Short, Short> cShort = typedCache();
+
+        assertEquals(cShort.get(Short.valueOf("1024")), Short.valueOf("4096"));
+        assertEquals(cShort.get(Short.valueOf("-15000")), Short.valueOf("-16000"));
+
+        // Test integer type.
+        putTypedValue("int", "65555", "128256", STATUS_SUCCESS);
+        putTypedValue("Integer", "74555", "200000", STATUS_SUCCESS);
+        putTypedValue("java.lang.Integer", "-200", "-100000", STATUS_SUCCESS);
+        putTypedValue("int", "0", "ccc", STATUS_FAILED);
+        putTypedValue("int", "ccc", "0", STATUS_FAILED);
+        putTypedValue("int", "ccc", "ccc", STATUS_FAILED);
+
+        IgniteCache<Integer, Integer> cInt = typedCache();
+
+        assertEquals(cInt.get(65555), Integer.valueOf(128256));
+        assertEquals(cInt.get(74555), Integer.valueOf(200000));
+        assertEquals(cInt.get(-200), Integer.valueOf(-100000));
+
+        // Test long type.
+        putTypedValue("long", "3000000", "400000", STATUS_SUCCESS);
+        putTypedValue("java.lang.Long", "-3000000", "-400000", STATUS_SUCCESS);
+        putTypedValue("long", "777", "ddd", STATUS_FAILED);
+        putTypedValue("long", "ddd", "777", STATUS_FAILED);
+        putTypedValue("long", "ddd", "ddd", STATUS_FAILED);
+
+        IgniteCache<Long, Long> cLong = typedCache();
+
+        assertEquals(cLong.get(3000000L), Long.valueOf(400000));
+        assertEquals(cLong.get(-3000000L), Long.valueOf(-400000));
+
+        // Test float type.
+        putTypedValue("float", "1.5", "2.5", STATUS_SUCCESS);
+        putTypedValue("java.lang.Float", "-7.5", "-8.5", STATUS_SUCCESS);
+        putTypedValue("float", "1.5", "hhh", STATUS_FAILED);
+        putTypedValue("float", "hhh", "1.5", STATUS_FAILED);
+        putTypedValue("float", "hhh", "hhh", STATUS_FAILED);
+
+        IgniteCache<Float, Float> cFloat = typedCache();
+
+        assertEquals(cFloat.get(1.5f), 2.5f);
+        assertEquals(cFloat.get(-7.5f), -8.5f);
+
+        // Test double type.
+        putTypedValue("double", "5.5", "75.5", STATUS_SUCCESS);
+        putTypedValue("java.lang.Double", "-155.5", "-255.5", STATUS_SUCCESS);
+        putTypedValue("double", "jjj", "75.5", STATUS_FAILED);
+        putTypedValue("double", "6.5", "jjj", STATUS_FAILED);
+        putTypedValue("double", "jjj", "jjj", STATUS_FAILED);
+
+        IgniteCache<Double, Double> cDouble = typedCache();
+
+        assertEquals(cDouble.get(5.5d), 75.5d);
+        assertEquals(cDouble.get(-155.5d), -255.5d);
+
+        // Test date type.
+        putTypedValue("date", "2018-02-18", "2017-01-01", STATUS_SUCCESS);
+        putTypedValue("java.sql.Date", "2018-01-01", "2017-02-02", STATUS_SUCCESS);
+        putTypedValue("date", "xxxx-yy-mm", "2017-01-01", STATUS_FAILED);
+        putTypedValue("date", "2018-03-18", "xxxx-yy-mm", STATUS_FAILED);
+        putTypedValue("date", "xxxx-yy-mm", "xxxx-yy-mm", STATUS_FAILED);
+
+        IgniteCache<Date, Date> cDate = typedCache();
+
+        assertEquals(cDate.get(Date.valueOf("2018-02-18")), Date.valueOf("2017-01-01"));
+        assertEquals(cDate.get(Date.valueOf("2018-01-01")), Date.valueOf("2017-02-02"));
+
+        // Test time type.
+        putTypedValue("Time", "01:01:01", "02:02:02", STATUS_SUCCESS);
+        putTypedValue("java.sql.Time", "03:03:03", "04:04:04", STATUS_SUCCESS);
+        putTypedValue("Time", "aa:bb:dd", "02:02:02", STATUS_FAILED);
+        putTypedValue("Time", "01:01:01", "zz:vv:pp", STATUS_FAILED);
+        putTypedValue("Time", "zz:zz:zz", "zz:zz:zz", STATUS_FAILED);
+
+        IgniteCache<Time, Time> cTime = typedCache();
+
+        assertEquals(cTime.get(Time.valueOf("01:01:01")), Time.valueOf("02:02:02"));
+        assertEquals(cTime.get(Time.valueOf("03:03:03")), Time.valueOf("04:04:04"));
+
+        // Test timestamp type.
+        putTypedValue("Timestamp", "2018-02-18%2001:01:01", "2017-01-01%2002:02:02", STATUS_SUCCESS);
+        putTypedValue("java.sql.timestamp", "2018-01-01%2001:01:01", "2018-05-05%2005:05:05", STATUS_SUCCESS);
+        putTypedValue("timestamp", "error", "2018-03-18%2001:01:01", STATUS_FAILED);
+        putTypedValue("timestamp", "2018-03-18%2001:01:01", "error", STATUS_FAILED);
+        putTypedValue("timestamp", "error", "error", STATUS_FAILED);
+
+        IgniteCache<Timestamp, Timestamp> cTimestamp = typedCache();
+
+        assertEquals(cTimestamp.get(Timestamp.valueOf("2018-02-18 01:01:01")), Timestamp.valueOf("2017-01-01 02:02:02"));
+        assertEquals(cTimestamp.get(Timestamp.valueOf("2018-01-01 01:01:01")), Timestamp.valueOf("2018-05-05 05:05:05"));
+
+        // Test UUID type.
+        UUID k1 = UUID.fromString("121f5ae8-148d-11e8-b642-0ed5f89f718b");
+        UUID v1 = UUID.fromString("64c6c225-b31c-4000-b136-ef14562ac785");
+        putTypedValue("UUID", k1.toString(), v1.toString(), STATUS_SUCCESS);
+        putTypedValue("UUID", "error", v1.toString(), STATUS_FAILED);
+        putTypedValue("UUID", k1.toString(), "error", STATUS_FAILED);
+        putTypedValue("UUID", "error", "error", STATUS_FAILED);
+
+        UUID k2 = UUID.randomUUID();
+        UUID v2 = UUID.randomUUID();
+        putTypedValue("java.util.UUID", k2.toString(), v2.toString(), STATUS_SUCCESS);
+
+        IgniteCache<UUID, UUID> cUUID = typedCache();
+
+        assertEquals(cUUID.get(k1), v1);
+        assertEquals(cUUID.get(k2), v2);
+
+        // Test IgniteUuid type.
+        IgniteUuid ik1 = IgniteUuid.randomUuid();
+        IgniteUuid iv1 = IgniteUuid.randomUuid();
+        putTypedValue("IgniteUuid", ik1.toString(), iv1.toString(), STATUS_SUCCESS);
+        putTypedValue("IgniteUuid", "error", iv1.toString(), STATUS_FAILED);
+        putTypedValue("IgniteUuid", ik1.toString(), "error", STATUS_FAILED);
+        putTypedValue("IgniteUuid", "error", "error", STATUS_FAILED);
+
+        IgniteUuid ik2 = IgniteUuid.randomUuid();
+        IgniteUuid iv2 = IgniteUuid.randomUuid();
+        putTypedValue("org.apache.ignite.lang.IgniteUuid", ik2.toString(), iv2.toString(), STATUS_SUCCESS);
+
+        IgniteCache<IgniteUuid, IgniteUuid> cIgniteUUID = typedCache();
+
+        assertEquals(cIgniteUUID.get(ik1), iv1);
+        assertEquals(cIgniteUUID.get(ik2), iv2);
+    }
+
+    /**
+     * @param keyType Key type.
+     * @param k Key value.
+     * @param exp Expected value to test.
+     * @throws Exception If failed.
+     */
+    private void getTypedValue(String keyType, String k, String exp) throws Exception {
+        String ret = content("test_typed_access", GridRestCommand.CACHE_GET,
+            "keyType", keyType,
+            "key", k
+        );
+
+        info("Command result: " + ret);
+
+        assertEquals(exp, jsonResponse(ret).asText());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTypedGet() throws Exception {
+        // Test boolean type.
+        IgniteCache<Boolean, Boolean> cBool = typedCache();
+
+        cBool.put(true, false);
+        cBool.put(false, true);
+
+        getTypedValue("boolean", "true", "false");
+        getTypedValue("java.lang.Boolean", "false", "true");
+
+        // Test byte type.
+        IgniteCache<Byte, Byte> cByte = typedCache();
+
+        cByte.put((byte)77, (byte)55);
+        cByte.put((byte)-88, (byte)-10);
+
+        getTypedValue("byte", "77", "55");
+        getTypedValue("java.lang.Byte", "-88", "-10");
+
+        // Test short type.
+        IgniteCache<Short, Short> cShort = typedCache();
+
+        cShort.put((short)2222, (short)3333);
+        cShort.put((short)-11111, (short)-12222);
+
+        getTypedValue("short", "2222", "3333");
+        getTypedValue("java.lang.Short", "-11111", "-12222");
+
+        // Test integer type.
+        IgniteCache<Integer, Integer> cInt = typedCache();
+        cInt.put(65555, 128256);
+        cInt.put(74555, 200000);
+        cInt.put(-200, -100000);
+
+        getTypedValue("int", "65555", "128256");
+        getTypedValue("Integer", "74555", "200000");
+        getTypedValue("java.lang.Integer", "-200", "-100000");
+
+        // Test long type.
+        IgniteCache<Long, Long> cLong = typedCache();
+
+        cLong.put(3333333L, 4444444L);
+        cLong.put(-3333333L, -4444444L);
+
+        getTypedValue("long", "3333333", "4444444");
+        getTypedValue("java.lang.Long", "-3333333", "-4444444");
+
+        // Test float type.
+        IgniteCache<Float, Float> cFloat = typedCache();
+
+        cFloat.put(11.5f, 21.5f);
+        cFloat.put(-71.5f, -81.5f);
+
+        getTypedValue("float", "11.5", "21.5");
+        getTypedValue("java.lang.Float", "-71.5", "-81.5");
+
+        // Test double type.
+        IgniteCache<Double, Double> cDouble = typedCache();
+
+        cDouble.put(58.5d, 758.5d);
+        cDouble.put(-1558.5d, -2558.5d);
+
+        getTypedValue("double", "58.5", "758.5");
+        getTypedValue("java.lang.Double", "-1558.5", "-2558.5");
+
+        // Test date type.
+        IgniteCache<Date, Date> cDate = typedCache();
+
+        cDate.put(Date.valueOf("2018-02-18"), Date.valueOf("2017-01-01"));
+        cDate.put(Date.valueOf("2018-01-01"), Date.valueOf("2017-02-02"));
+
+        getTypedValue("Date", "2018-02-18", "2017-01-01");
+        getTypedValue("java.sql.Date", "2018-01-01", "2017-02-02");
+
+        // Test time type.
+        IgniteCache<Time, Time> cTime = typedCache();
+
+        cTime.put(Time.valueOf("01:01:01"), Time.valueOf("02:02:02"));
+        cTime.put(Time.valueOf("03:03:03"), Time.valueOf("04:04:04"));
+
+        getTypedValue("Time", "01:01:01", "02:02:02");
+        getTypedValue("java.sql.Time", "03:03:03", "04:04:04");
+
+        // Test timestamp type.
+        IgniteCache<Timestamp, String> cTimestamp = typedCache();
+
+        cTimestamp.put(Timestamp.valueOf("2018-02-18 01:01:01"), "test1");
+        cTimestamp.put(Timestamp.valueOf("2018-01-01 01:01:01"), "test2");
+
+        getTypedValue("Timestamp", "2018-02-18%2001:01:01", "test1");
+        getTypedValue("java.sql.timestamp", "2018-01-01%2001:01:01", "test2");
+
+        // Test UUID type.
+        IgniteCache<UUID, UUID> cUUID = typedCache();
+
+        UUID k1 = UUID.fromString("121f5ae8-148d-11e8-b642-0ed5f89f718b");
+        UUID v1 = UUID.fromString("64c6c225-b31c-4000-b136-ef14562ac785");
+        cUUID.put(k1, v1);
+
+        UUID k2 = UUID.randomUUID();
+        UUID v2 = UUID.randomUUID();
+        cUUID.put(k2, v2);
+
+        getTypedValue("UUID", k1.toString(), v1.toString());
+        getTypedValue("java.util.UUID", k2.toString(), v2.toString());
+
+
+        // Test IgniteUuid type.
+        IgniteCache<IgniteUuid, IgniteUuid> cIgniteUUID = typedCache();
+
+        IgniteUuid ik1 = IgniteUuid.randomUuid();
+        IgniteUuid iv1 = IgniteUuid.randomUuid();
+        cIgniteUUID.put(ik1, iv1);
+
+        IgniteUuid ik2 = IgniteUuid.randomUuid();
+        IgniteUuid iv2 = IgniteUuid.randomUuid();
+        cIgniteUUID.put(ik2, iv2);
+
+        getTypedValue("IgniteUuid", ik1.toString(), iv1.toString());
+        getTypedValue("org.apache.ignite.lang.IgniteUuid", ik2.toString(), iv2.toString());
+    }
+
+    /**
      * @return Signature.
      * @throws Exception If failed.
      */
@@ -2171,6 +2510,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * Init cache.
      */
     protected void initCache() {
+        CacheConfiguration typedCache = new CacheConfiguration<>("test_typed_access");
+        ignite(0).getOrCreateCache(typedCache);
+
         CacheConfiguration<Integer, Organization> orgCacheCfg = new CacheConfiguration<>("organization");
 
         orgCacheCfg.setIndexedTypes(Integer.class, Organization.class);
