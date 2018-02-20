@@ -56,8 +56,6 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
 
         cfg.setConsistentId(igniteInstanceName);
 
-        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(new TcpDiscoveryVmIpFinder(true));
-
         cfg.setDataStorageConfiguration(
                     new DataStorageConfiguration()
                             .setWalMode(WALMode.LOG_ONLY)
