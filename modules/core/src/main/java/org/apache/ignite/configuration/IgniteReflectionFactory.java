@@ -279,8 +279,9 @@ public class IgniteReflectionFactory<T> implements Factory<T> {
 
     /**
      * @param obj Object to initialize with properties.
-     * @param methodName method name.
+     * @param mtdName Method name.
      * @param val Value to set.
+     * @param paramCls Value class.
      * @return {@code True} if property was set.
      */
     private boolean setWithMethod(T obj, String mtdName, Serializable val, Class paramCls) {

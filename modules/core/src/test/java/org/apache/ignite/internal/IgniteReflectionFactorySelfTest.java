@@ -41,6 +41,7 @@ public class IgniteReflectionFactorySelfTest extends TestCase {
         boolean expBooleanVal = true;
 
         Map<String, Serializable> props = new HashMap<>();
+
         props.put("byteField", expByteVal);
         props.put("shortField", expShortVal);
         props.put("intField", expIntVal);
@@ -51,6 +52,7 @@ public class IgniteReflectionFactorySelfTest extends TestCase {
         props.put("booleanField", expBooleanVal);
 
         IgniteReflectionFactory<TestClass> factory = new IgniteReflectionFactory<>(TestClass.class);
+
         factory.setProperties(props);
 
         TestClass instance = factory.create();
@@ -74,7 +76,7 @@ public class IgniteReflectionFactorySelfTest extends TestCase {
         /** */
         private short shortField;
         /** */
-        private int intField;
+        private int iField;
         /** */
         private long longField;
         /** */
@@ -82,88 +84,152 @@ public class IgniteReflectionFactorySelfTest extends TestCase {
         /** */
         private double doubleField;
         /** */
-        private char charField;
+        private char cField;
         /** */
         private boolean booleanField;
 
-        /** */
+        /**
+         * Returns byte field.
+         *
+         * @return Byte field.
+         */
         public byte getByteField() {
             return byteField;
         }
 
-        /** */
+        /**
+         * Sets byte field.
+         *
+         * @param byteField New field value.
+         */
         public void setByteField(byte byteField) {
             this.byteField = byteField;
         }
 
-        /** */
+        /**
+         * Returns short field.
+         *
+         * @return Short field.
+         */
         public short getShortField() {
             return shortField;
         }
 
-        /** */
+        /**
+         * Sets short field.
+         *
+         * @param shortField New field value.
+         */
         public void setShortField(short shortField) {
             this.shortField = shortField;
         }
 
-        /** */
+        /**
+         * Returns long field.
+         *
+         * @return Long field.
+         */
         public long getLongField() {
             return longField;
         }
 
-        /** */
+        /**
+         * Sets long field.
+         *
+         * @param longField New field value.
+         */
         public void setLongField(long longField) {
             this.longField = longField;
         }
 
-        /** */
+        /**
+         * Returns float field.
+         *
+         * @return Float field.
+         */
         public float getFloatField() {
             return floatField;
         }
 
-        /** */
+        /**
+         * Sets float field.
+         *
+         * @param floatField New field value.
+         */
         public void setFloatField(float floatField) {
             this.floatField = floatField;
         }
 
-        /** */
+        /**
+         * Returns double field.
+         *
+         * @return Double field.
+         */
         public double getDoubleField() {
             return doubleField;
         }
 
-        /** */
+        /**
+         * Sets double field.
+         *
+         * @param doubleField New field value.
+         */
         public void setDoubleField(double doubleField) {
             this.doubleField = doubleField;
         }
 
-        /** */
+        /**
+         * Returns char field.
+         *
+         * @return Char field.
+         */
         public char getCharField() {
-            return charField;
+            return cField;
         }
 
-        /** */
-        public void setCharField(char charField) {
-            this.charField = charField;
+        /**
+         * Sets char field.
+         *
+         * @param cField New field value.
+         */
+        public void setCharField(char cField) {
+            this.cField = cField;
         }
 
-        /** */
+        /**
+         * Returns boolean field.
+         *
+         * @return Boolean field.
+         */
         public boolean getBooleanField() {
             return booleanField;
         }
 
-        /** */
+        /**
+         * Sets boolean field.
+         *
+         * @param booleanField New field value.
+         */
         public void setBooleanField(boolean booleanField) {
             this.booleanField = booleanField;
         }
 
-        /** */
+        /**
+         * Returns int field.
+         *
+         * @return Int field.
+         */
         public int getIntField() {
-            return intField;
+            return iField;
         }
 
-        /** */
-        public void setIntField(int intField) {
-            this.intField = intField;
+        /**
+         * Sets int field.
+         *
+         * @param iField New field value.
+         */
+        public void setIntField(int iField) {
+            this.iField = iField;
         }
     }
 }
