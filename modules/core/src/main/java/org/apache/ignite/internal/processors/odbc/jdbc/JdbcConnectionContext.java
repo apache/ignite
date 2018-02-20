@@ -32,7 +32,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
- * ODBC Connection Context.
+ * JDBC Connection Context.
  */
 public class JdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.1.0. */
@@ -42,13 +42,16 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
     private static final ClientListenerProtocolVersion VER_2_1_5 = ClientListenerProtocolVersion.create(2, 1, 5);
 
     /** Version 2.3.1: added "multiple statements query" feature. */
-    public static final ClientListenerProtocolVersion VER_2_3_0 = ClientListenerProtocolVersion.create(2, 3, 0);
+    static final ClientListenerProtocolVersion VER_2_3_0 = ClientListenerProtocolVersion.create(2, 3, 0);
 
     /** Version 2.4.0: adds default values for columns feature. */
-    public static final ClientListenerProtocolVersion VER_2_4_0 = ClientListenerProtocolVersion.create(2, 4, 0);
+    static final ClientListenerProtocolVersion VER_2_4_0 = ClientListenerProtocolVersion.create(2, 4, 0);
+
+    /** Version 2.5.0: adds streaming via thin connection. */
+    static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
 
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_4_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_5_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -70,6 +73,7 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
 
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
+        SUPPORTED_VERS.add(VER_2_4_0);
         SUPPORTED_VERS.add(VER_2_3_0);
         SUPPORTED_VERS.add(VER_2_1_5);
         SUPPORTED_VERS.add(VER_2_1_0);
@@ -118,6 +122,20 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
         if (ver.compareTo(VER_2_3_0) >= 0)
             skipReducerOnUpdate = reader.readBoolean();
 
+        boolean stream = false;
+        boolean streamAllowOverwrites = false;
+        int streamParOps = 0;
+        int streamBufSize = 0;
+        long streamFlushFreq = 0;
+
+        if (ver.compareTo(VER_2_5_0) >= 0) {
+            stream = reader.readBoolean();
+            streamAllowOverwrites = reader.readBoolean();
+            streamParOps = reader.readInt();
+            streamBufSize = reader.readInt();
+            streamFlushFreq = reader.readLong();
+        }
+
         AuthorizationContext actx = null;
 
         try {
@@ -143,7 +161,8 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
         }
 
         handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder,
-            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, actx, ver);
+            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, stream, streamAllowOverwrites,
+            streamParOps, streamBufSize, streamFlushFreq, actx, ver);
 
         parser = new JdbcMessageParser(ctx);
     }

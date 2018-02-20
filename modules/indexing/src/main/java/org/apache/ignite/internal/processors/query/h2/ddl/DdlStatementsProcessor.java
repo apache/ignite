@@ -109,7 +109,7 @@ public class DdlStatementsProcessor {
      * @throws IgniteCheckedException On error.
      */
     @SuppressWarnings("unchecked")
-    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, SqlCommand cmd) throws IgniteCheckedException{
+    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, SqlCommand cmd) throws IgniteCheckedException {
         IgniteInternalFuture fut = null;
 
         try {
@@ -229,12 +229,7 @@ public class DdlStatementsProcessor {
             if (fut != null)
                 fut.get();
 
-            QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-                (Collections.singletonList(0L)), null, false);
-
-            resCur.fieldsMeta(UPDATE_RESULT_META);
-
-            return resCur;
+            return zeroCursor();
         }
         catch (SchemaOperationException e) {
             throw convert(e);
@@ -245,6 +240,19 @@ public class DdlStatementsProcessor {
         catch (Exception e) {
             throw new IgniteSQLException(e.getMessage(), e);
         }
+    }
+
+    /**
+     * @return Single-column, single-row cursor with 0 as number of updated records.
+     */
+    @SuppressWarnings("unchecked")
+    public static QueryCursorImpl<List<?>> zeroCursor() {
+        QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
+            (Collections.singletonList(0L)), null, false);
+
+        resCur.fieldsMeta(UPDATE_RESULT_META);
+
+        return resCur;
     }
 
     /**

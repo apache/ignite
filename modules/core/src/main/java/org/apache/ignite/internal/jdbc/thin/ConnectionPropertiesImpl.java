@@ -146,6 +146,34 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private StringProperty sslFactory = new StringProperty("sslFactory",
         "Custom class name that implements Factory<SSLSocketFactory>", null, null, false, null);
 
+    /** Turn on streaming mode on this connection. */
+    private BooleanProperty stream = new BooleanProperty(
+        "streaming", "Turn on streaming mode on this connection", false, false);
+
+    /** Turn on overwrite during streaming on this connection. */
+    private BooleanProperty streamAllowOverwrite = new BooleanProperty(
+        "streamingAllowOverwrite", "Turn on overwrite during streaming on this connection", false, false);
+
+    /** Number of parallel operations per cluster node during streaming. */
+    private IntegerProperty streamParOps = new IntegerProperty(
+        "streamingPerNodeParallelOperations", "Number of parallel operations per cluster node during streaming",
+        0, false, 0, Integer.MAX_VALUE);
+
+    /** Buffer size per cluster node during streaming. */
+    private IntegerProperty streamBufSize = new IntegerProperty(
+        "streamingPerNodeBufferSize", "Buffer size per cluster node during streaming",
+        0, false, 0, Integer.MAX_VALUE);
+
+    /** Buffer size per cluster node during streaming. */
+    private LongProperty streamFlushFreq = new LongProperty(
+        "streamingFlushFrequency", "Buffer size per cluster node during streaming",
+        0, false, 0, Long.MAX_VALUE);
+
+    /** Buffer size per cluster node during streaming. */
+    private IntegerProperty streamBatchSize = new IntegerProperty(
+        "streamingBatchSize", "Batch size for streaming (number of commands to accumulate internally " +
+        "before actually sending over the wire)", 10, false, 1, Integer.MAX_VALUE);
+
     /** User name to authenticate the client on the server side. */
     private StringProperty user = new StringProperty(
         "user", "User name to authenticate the client on the server side", null, null, false, null);
@@ -155,7 +183,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "password", "User's password", null, null, false, null);
 
     /** Properties array. */
-    private final ConnectionProperty [] propsArray = {
+    private final ConnectionProperty [] props = {
         host, port,
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
         tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
@@ -163,6 +191,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
         sslTrustAll, sslFactory,
+        stream, streamAllowOverwrite, streamParOps, streamBufSize, streamFlushFreq, streamBatchSize,
         user, passwd
     };
 
@@ -397,6 +426,66 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isStream() {
+        return stream.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setStream(boolean val) {
+        stream.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isStreamAllowOverwrite() {
+        return streamAllowOverwrite.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setStreamAllowOverwrite(boolean val) {
+        streamAllowOverwrite.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getStreamParallelOperations() {
+        return streamParOps.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setStreamParallelOperations(int val) throws SQLException {
+        streamParOps.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getStreamBufferSize() {
+        return streamBufSize.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setStreamBufferSize(int val) throws SQLException {
+        streamBufSize.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getStreamFlushFrequency() {
+        return streamFlushFreq.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setStreamFlushFrequency(long val) throws SQLException {
+        streamFlushFreq.setValue(val);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getStreamBatchSize() {
+        return streamBatchSize.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setStreamBatchSize(int val) throws SQLException {
+        streamBatchSize.setValue(val);
+    }
+
+    /** {@inheritDoc} */
     @Override public void setUsername(String name) {
         user.setValue(name);
     }
@@ -423,7 +512,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     void init(Properties props) throws SQLException {
         Properties props0 = (Properties)props.clone();
 
-        for (ConnectionProperty aPropsArray : propsArray)
+        for (ConnectionProperty aPropsArray : this.props)
             aPropsArray.init(props0);
     }
 
@@ -431,10 +520,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
      * @return Driver's properties info array.
      */
     private DriverPropertyInfo[] getDriverPropertyInfo() {
-        DriverPropertyInfo[] dpis = new DriverPropertyInfo[propsArray.length];
+        DriverPropertyInfo[] dpis = new DriverPropertyInfo[props.length];
 
-        for (int i = 0; i < propsArray.length; ++i)
-            dpis[i] = propsArray[i].getDriverPropertyInfo();
+        for (int i = 0; i < props.length; ++i)
+            dpis[i] = props[i].getDriverPropertyInfo();
 
         return dpis;
     }
@@ -751,7 +840,8 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
             else {
                 try {
                     setValue(parse(str));
-                } catch (NumberFormatException e) {
+                }
+                catch (NumberFormatException e) {
                     throw new SQLException("Failed to parse int property [name=" + name +
                         ", value=" + str + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
                 }
@@ -820,6 +910,38 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          */
         int value() {
             return val.intValue();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class LongProperty extends NumberProperty {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /**
+         * @param name Name.
+         * @param desc Description.
+         * @param dfltVal Default value.
+         * @param required {@code true} if the property is required.
+         * @param min Lower bound of allowed range.
+         * @param max Upper bound of allowed range.
+         */
+        LongProperty(String name, String desc, Number dfltVal, boolean required, long min, long max) {
+            super(name, desc, dfltVal, required, min, max);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Number parse(String str) throws NumberFormatException {
+            return Long.parseLong(str);
+        }
+
+        /**
+         * @return Property value.
+         */
+        long value() {
+            return val.longValue();
         }
     }
 
