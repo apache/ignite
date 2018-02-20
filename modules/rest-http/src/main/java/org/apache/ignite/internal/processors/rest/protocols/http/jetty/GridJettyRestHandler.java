@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -33,13 +31,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestProtocolHandler;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
@@ -55,8 +55,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.plugin.security.SecurityCredentials;
+
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEYS;
@@ -74,6 +77,24 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 public class GridJettyRestHandler extends AbstractHandler {
     /** Used to sent request charset. */
     private static final String CHARSET = StandardCharsets.UTF_8.name();
+
+    /** */
+    private static final String  CACHE_NAME_PARAM = "cacheName";
+
+    /** */
+    private static final String BACKUPS_PARAM = "backups";
+
+    /** */
+    private static final String CACHE_GROUP_PARAM = "cacheGroup";
+
+    /** */
+    private static final String DATA_REGION_PARAM = "dataRegion";
+
+    /** */
+    private static final String WRITE_SYNCHRONIZATION_MODE_PARAM = "writeSynchronizationMode";
+
+    /** */
+    private static final String  TEMPLATE_NAME_PARAM = "templateName";
 
     /** Logger. */
     private final IgniteLogger log;
@@ -261,7 +282,7 @@ public class GridJettyRestHandler extends AbstractHandler {
 
     /** {@inheritDoc} */
     @Override public void handle(String target, Request req, HttpServletRequest srvReq, HttpServletResponse res)
-        throws IOException, ServletException {
+        throws IOException {
         if (log.isDebugEnabled())
             log.debug("Handling request [target=" + target + ", req=" + req + ", srvReq=" + srvReq + ']');
 
@@ -400,11 +421,66 @@ public class GridJettyRestHandler extends AbstractHandler {
         GridRestRequest restReq;
 
         switch (cmd) {
-            case GET_OR_CREATE_CACHE:
+            case GET_OR_CREATE_CACHE: {
+                GridRestCacheRequest restReq0 = new GridRestCacheRequest();
+
+                restReq0.cacheName((String)params.get(CACHE_NAME_PARAM));
+
+                String templateName = (String)params.get(TEMPLATE_NAME_PARAM);
+
+                if (!F.isEmpty(templateName))
+                    restReq0.templateName(templateName);
+
+                String backups = (String)params.get(BACKUPS_PARAM);
+
+                CacheConfigurationOverride cfg = new CacheConfigurationOverride();
+
+                // Set cache backups.
+                if (!F.isEmpty(backups)) {
+                    try {
+                        cfg.backups(Integer.parseInt(backups));
+                    }
+                    catch (NumberFormatException e) {
+                        throw new IgniteCheckedException("Failed to parse number of cache backups: " + backups, e);
+                    }
+                }
+
+                // Set cache group name.
+                String cacheGroup = (String)params.get(CACHE_GROUP_PARAM);
+
+                if (!F.isEmpty(cacheGroup))
+                    cfg.cacheGroup(cacheGroup);
+
+                // Set cache data region name.
+                String dataRegion = (String)params.get(DATA_REGION_PARAM);
+
+                if (!F.isEmpty(dataRegion))
+                    cfg.dataRegion(dataRegion);
+
+                // Set cache write mode.
+                String wrtSyncMode = (String)params.get(WRITE_SYNCHRONIZATION_MODE_PARAM);
+
+                if (!F.isEmpty(wrtSyncMode)) {
+                    try {
+                        cfg.writeSynchronizationMode(CacheWriteSynchronizationMode.valueOf(wrtSyncMode));
+                    }
+                    catch (IllegalArgumentException e) {
+                        throw new IgniteCheckedException("Failed to parse cache write synchronization mode: " + wrtSyncMode, e);
+                    }
+                }
+
+                if (!cfg.isEmpty())
+                    restReq0.configuration(cfg);
+
+                restReq = restReq0;
+
+                break;
+            }
+
             case DESTROY_CACHE: {
                 GridRestCacheRequest restReq0 = new GridRestCacheRequest();
 
-                restReq0.cacheName((String)params.get("cacheName"));
+                restReq0.cacheName((String)params.get(CACHE_NAME_PARAM));
 
                 restReq = restReq0;
 
@@ -450,7 +526,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             case CACHE_PREPEND: {
                 GridRestCacheRequest restReq0 = new GridRestCacheRequest();
 
-                String cacheName = (String)params.get("cacheName");
+                String cacheName = (String)params.get(CACHE_NAME_PARAM);
 
                 restReq0.cacheName(F.isEmpty(cacheName) ? null : cacheName);
                 restReq0.key(params.get("key"));
@@ -579,7 +655,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                 if (distributedJoins != null)
                     restReq0.distributedJoins(Boolean.parseBoolean(distributedJoins));
 
-                restReq0.cacheName((String)params.get("cacheName"));
+                restReq0.cacheName((String)params.get(CACHE_NAME_PARAM));
 
                 if (cmd == EXECUTE_SQL_QUERY)
                     restReq0.queryType(RestQueryRequest.QueryType.SQL);
@@ -601,7 +677,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                 if (pageSize != null)
                     restReq0.pageSize(Integer.parseInt(pageSize));
 
-                restReq0.cacheName((String)params.get("cacheName"));
+                restReq0.cacheName((String)params.get(CACHE_NAME_PARAM));
 
                 restReq0.className((String)params.get("className"));
 
@@ -625,7 +701,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                 if (pageSize != null)
                     restReq0.pageSize(Integer.parseInt(pageSize));
 
-                restReq0.cacheName((String)params.get("cacheName"));
+                restReq0.cacheName((String)params.get(CACHE_NAME_PARAM));
 
                 restReq = restReq0;
 
@@ -640,7 +716,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                 if (qryId != null)
                     restReq0.queryId(Long.parseLong(qryId));
 
-                restReq0.cacheName((String)params.get("cacheName"));
+                restReq0.cacheName((String)params.get(CACHE_NAME_PARAM));
 
                 restReq = restReq0;
 
@@ -757,7 +833,8 @@ public class GridJettyRestHandler extends AbstractHandler {
     @Nullable private String parameter(Object obj) {
         if (obj instanceof String)
             return (String)obj;
-        else if (obj instanceof String[] && ((String[])obj).length > 0)
+
+        if (obj instanceof String[] && ((String[])obj).length > 0)
             return ((String[])obj)[0];
 
         return null;
