@@ -66,6 +66,9 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
+        // activate cluster if it is not auto activated
+        ignite().cluster().active(true);
+
         if (url == null) {
             if (args.jdbcUrl().startsWith(JdbcThinUtils.URL_PREFIX)) {
                 String addr = findThinAddress();
