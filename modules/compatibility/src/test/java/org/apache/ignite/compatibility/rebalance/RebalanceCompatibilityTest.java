@@ -23,7 +23,7 @@ public class RebalanceCompatibilityTest extends IgniteCompatibilityAbstractTest 
      */
     public void testRebalanceCompatibility() throws Exception {
         doTestNewSupplierOldDemander("2.3.0");
-        //doTestNewDemanderOldSupplier("2.3.0");
+        doTestNewDemanderOldSupplier("2.3.0");
     }
 
     /**
@@ -33,6 +33,8 @@ public class RebalanceCompatibilityTest extends IgniteCompatibilityAbstractTest 
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setConsistentId(igniteInstanceName);
+
+        cfg.setPeerClassLoadingEnabled(false);
 
         cfg.setCacheConfiguration(
                 new CacheConfiguration(CACHE_NAME)
@@ -59,6 +61,8 @@ public class RebalanceCompatibilityTest extends IgniteCompatibilityAbstractTest 
 
             IgniteEx oldGrid = startGrid(1, ver, (cfg) -> {
                 cfg.setLocalHost("127.0.0.1");
+
+                cfg.setPeerClassLoadingEnabled(false);
 
                 TcpDiscoverySpi disco = new TcpDiscoverySpi();
                 disco.setIpFinder(GridCacheAbstractFullApiSelfTest.LOCAL_IP_FINDER);
