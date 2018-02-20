@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.apache.ignite.compatibility.persistence.DummyPersistenceCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.FoldersReuseCompatibilityTest;
 import org.apache.ignite.compatibility.persistence.MigratingToWalV2SerializerWithCompactionTest;
+import org.apache.ignite.compatibility.rebalance.RebalanceCompatibilityTest;
 
 /**
  * Compatibility tests basic test suite.
@@ -38,6 +39,8 @@ public class IgniteCompatibilityBasicTestSuite {
         suite.addTestSuite(FoldersReuseCompatibilityTest.class);
 
         suite.addTestSuite(MigratingToWalV2SerializerWithCompactionTest.class);
+
+        suite.addTestSuite(RebalanceCompatibilityTest.class);
 
         return suite;
     }

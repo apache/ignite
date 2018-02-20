@@ -94,11 +94,13 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
 
         IgniteDhtDemandedPartitionsMap partMap = new IgniteDhtDemandedPartitionsMap();
 
-        for (Integer p : cp.partitions()) {
-            if (cp.isHistorical(p))
-                partMap.addHistorical(p, 0, cp.partitionCounter(p), cp.partitions().size());
-            else
-                partMap.addFull(p);
+        if (cp.partitions() != null) {
+            for (Integer p : cp.partitions()) {
+                if (cp.isHistorical(p))
+                    partMap.addHistorical(p, 0, cp.partitionCounter(p), cp.partitions().size());
+                else
+                    partMap.addFull(p);
+            }
         }
 
         partMap.historicalMap().trim();
