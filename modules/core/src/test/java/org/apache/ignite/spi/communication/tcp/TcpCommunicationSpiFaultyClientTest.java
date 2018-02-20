@@ -128,7 +128,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
 
         long expDelay = 0;
 
-        for (int i = 0; i < reconnectCnt && expDelay < maxConnectTimeout; i++)
+        for (int i = 1; i < reconnectCnt && expDelay < maxConnectTimeout; i++)
             expDelay += (connectTimeout << i);
 
         return expDelay;
@@ -147,7 +147,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
     public void testNoServerOnHostCustomFailureDetection() throws Exception {
         connectTimeout = 3000;
         maxConnectTimeout = 6000;
-        reconnectCnt = 2;
+        reconnectCnt = 3;
 
         testFailClient(null, computeExpectedDelay());
     }
@@ -165,7 +165,7 @@ public class TcpCommunicationSpiFaultyClientTest extends GridCommonAbstractTest 
     public void testNotAcceptedConnectionCustomFailureDetection() throws Exception {
         connectTimeout = 3000;
         maxConnectTimeout = 6000;
-        reconnectCnt = 2;
+        reconnectCnt = 3;
 
         testFailClient(new FakeServer(), computeExpectedDelay());
     }

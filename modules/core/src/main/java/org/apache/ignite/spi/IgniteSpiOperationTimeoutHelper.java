@@ -106,7 +106,7 @@ public class IgniteSpiOperationTimeoutHelper {
      * @param curTs Current time stamp.
      * @return Time to wait in millis.
      */
-    private long remainingTime(long curTs) {
+    public long remainingTime(long curTs) {
         return timeout - (curTs - lastOperStartTs);
     }
 }

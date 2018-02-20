@@ -59,7 +59,7 @@ public class TcpCommunicationSpiFreezingClientTest extends GridCommonAbstractTes
 
         spi.setConnectTimeout(3000);
         spi.setMaxConnectTimeout(6000);
-        spi.setReconnectCount(2);
+        spi.setReconnectCount(3);
         spi.setIdleConnectionTimeout(100);
         spi.setSharedMemoryPort(-1);
 

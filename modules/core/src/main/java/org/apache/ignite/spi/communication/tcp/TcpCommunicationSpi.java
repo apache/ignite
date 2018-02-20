@@ -3304,13 +3304,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         "[addr=" + addr + ", err=" + e.getMessage() + ']', e));
 
                     if (X.hasCause(e, ConnectException.class, HandshakeException.class, SocketTimeoutException.class) &&
-                        !failureDetThrReached && attempt <= reconCnt) {
-                        // Reconnect for the second time if connection was not established within current timeout chunk.
-                        attempt++;
+                        !failureDetThrReached && attempt < reconCnt) {
 
                         // Wait a bit before next retry to mitigate short network or node problems.
-                        long delay = failureDetectionTimeoutEnabled() ? failureDetectionTimeout() / reconCnt :
+                        long delay = failureDetectionTimeoutEnabled() ?
+                            timeoutHelper.remainingTime(U.currentTimeMillis()) / (reconCnt - attempt) :
                             connTimeout0 - (U.currentTimeMillis() - start);
+
+                        // Reconnect for the second time if connection was not established within current timeout chunk.
+                        attempt++;
 
                         if (delay > 0 && delay < 200) delay = 200;
 
