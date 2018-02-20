@@ -392,7 +392,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             GridFutureAdapter<Boolean> transitionFut = transitionFuts.remove(transitionRequestId);
 
             if (transitionFut != null)
-                transitionFut.onDone(msg.requestId().equals(transitionRequestId) ? msg.clusterActive() : null);
+                transitionFut.onDone(msg.clusterActive());
         }
         else
             U.warn(log, "Received state finish message with unexpected ID: " + msg);
