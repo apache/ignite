@@ -126,7 +126,7 @@ namespace Apache.Ignite.Core.Configuration
         /// <summary>
         /// Default value for <see cref="WalMode"/>.
         /// </summary>
-        public const WalMode DefaultWalMode = WalMode.Default;
+        public const WalMode DefaultWalMode = WalMode.LogOnly;
 
         /// <summary>
         /// Default value for <see cref="CheckpointWriteOrder"/>.
