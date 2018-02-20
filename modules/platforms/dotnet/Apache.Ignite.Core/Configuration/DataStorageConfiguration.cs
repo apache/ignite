@@ -182,6 +182,7 @@ namespace Apache.Ignite.Core.Configuration
             MetricsSubIntervalCount = DefaultMetricsSubIntervalCount;
             WalArchivePath = DefaultWalArchivePath;
             WalPath = DefaultWalPath;
+            WalMode = DefaultWalMode;
             CheckpointWriteOrder = DefaultCheckpointWriteOrder;
             WriteThrottlingEnabled = DefaultWriteThrottlingEnabled;
             WalCompactionEnabled = DefaultWalCompactionEnabled;
