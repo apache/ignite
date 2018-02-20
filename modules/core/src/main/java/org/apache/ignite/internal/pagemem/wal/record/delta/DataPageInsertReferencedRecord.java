@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.internal.pagemem.wal.record.delta;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -22,61 +21,65 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.AbstractDataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Insert into data page with explicit payload.
+ * Insert into data page with referenced payload.
  */
-public class DataPageInsertRecord extends PageDeltaRecord {
-    /** Actual fragment data. */
-    private byte[] payload;
+public class DataPageInsertReferencedRecord extends PageDeltaRecord implements WALReferenceAwareRecord {
+    /** WAL reference to {@link DataRecord}. */
+    private WALPointer reference;
+
+    /** Row associated with page data. */
+    private Storable row;
 
     /**
-     * Constructor.
-     *
      * @param grpId Cache group ID.
      * @param pageId Page ID.
-     * @param payload Record payload.
+     * @param reference WAL reference to {@link DataRecord}.
      */
-    public DataPageInsertRecord(
+    public DataPageInsertReferencedRecord(
             int grpId,
             long pageId,
-            byte[] payload
+            WALPointer reference
     ) {
         super(grpId, pageId);
 
-        this.payload = payload;
-    }
-
-    /**
-     * @return Insert record payload.
-     */
-    public byte[] payload() {
-        return payload;
+        this.reference = reference;
     }
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        assert payload != null;
+        assert row != null : "Row is not associated with record. Unable to apply it to PageMemory";
 
         AbstractDataPageIO<Storable> io = PageIO.getPageIO(pageAddr);
 
-        io.addRow(pageAddr, payload, pageMem.pageSize());
+        io.addRow(pageId(), pageAddr, row, io.getRowSize(row), pageMem.pageSize());
     }
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
-        return RecordType.DATA_PAGE_INSERT_RECORD;
+        return RecordType.DATA_PAGE_INSERT_REF_RECORD;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void row(Storable row) {
+        this.row = row;
+    }
+
+    /** {@inheritDoc} */
+    @Override public WALPointer reference() {
+        return reference;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(DataPageInsertRecord.class, this,
+        return S.toString(DataPageInsertReferencedRecord.class, this,
+                "reference", reference.toString(),
+                "row", row != null ? row.toString() : "null",
                 "super", super.toString());
     }
 }

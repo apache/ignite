@@ -1464,7 +1464,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
      */
     public void testRecoveryOnTransactionalAndPartitionedCache() throws Exception {
         IgniteEx ignite = (IgniteEx) startGrids(3);
-        ignite.active(true);
+        ignite.cluster().active(true);
 
         try {
             final String cacheName = "transactional";
@@ -1514,7 +1514,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             stopAllGrids();
 
             ignite = (IgniteEx) startGrids(3);
-            ignite.active(true);
+            ignite.cluster().active(true);
 
             cache = ignite.cache(cacheName);
 

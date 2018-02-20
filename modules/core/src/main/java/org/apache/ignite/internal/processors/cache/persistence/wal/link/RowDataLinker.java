@@ -90,18 +90,20 @@ public class RowDataLinker {
         };
     }
 
-    public void addDataRecord(DataRecord record, WALPointer pointer) throws IgniteCheckedException {
+    public RowDataHolder addDataRecord(DataRecord record, WALPointer pointer) throws IgniteCheckedException {
         // Create and cache linker with new DataRecord in case of CREATE or UPDATE operations.
-        if (record.operation() == GridCacheOperation.CREATE
-                || record.operation() == GridCacheOperation.UPDATE) {
-            rowDataCache.put(pointer, converter.convertFrom(record));
-        }
+        if (record.writeEntries().size() == 1
+                && (record.operation() == GridCacheOperation.CREATE || record.operation() == GridCacheOperation.UPDATE))
+            return rowDataCache.put(pointer, converter.convertFrom(record));
+
+        return null;
     }
 
-    public void addMetastorageDataRecord(MetastoreDataRecord record, WALPointer pointer) throws IgniteCheckedException {
-        if (record.value() != null) {
-            rowDataCache.put(pointer, converter.convertFrom(record));
-        }
+    public RowDataHolder addMetastorageDataRecord(MetastoreDataRecord record, WALPointer pointer) throws IgniteCheckedException {
+        if (record.value() != null)
+            return rowDataCache.put(pointer, converter.convertFrom(record));
+
+        return null;
     }
 
     /**
@@ -138,30 +140,22 @@ public class RowDataLinker {
             WALIterator iterator = wal.replay(lookupPointer);
             IgniteBiTuple<WALPointer, WALRecord> tuple = iterator.next();
 
-            if (!(tuple.getValue() instanceof DataRecord) && !(tuple.getValue() instanceof MetastoreDataRecord))
-                throw new IllegalStateException("Found unexpected WAL record " + tuple.getValue());
-
             if (!lookupPointer.equals(tuple.getKey()))
                 throw new IllegalStateException("DataRecord pointer is invalid " + tuple.getKey());
 
             if (tuple.getValue() instanceof DataRecord) {
                 DataRecord record = (DataRecord) tuple.getValue();
 
-                if (!(record.operation() == GridCacheOperation.CREATE || record.operation() == GridCacheOperation.UPDATE))
-                    throw new IllegalStateException("DataRecord operation is invalid " + record.operation());
-
-                holder = converter.convertFrom(record);
+                holder = addDataRecord(record, lookupPointer);
             }
             else if (tuple.getValue() instanceof MetastoreDataRecord) {
                 MetastoreDataRecord record = (MetastoreDataRecord) tuple.getValue();
 
-                if (record.value() == null)
-                    throw new IllegalStateException("MetastoreDataRecord is invalid " + record);
-
-                holder = converter.convertFrom(record);
+                holder = addMetastorageDataRecord(record, lookupPointer);
             }
 
-            rowDataCache.put(lookupPointer, holder);
+            if (holder == null)
+                throw new IllegalStateException("Invalid record " + tuple.getValue());
 
             return holder;
         }

@@ -28,41 +28,17 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Update existing record in data page.
+ * Update existing record in data page with explicit payload.
  */
-public class DataPageUpdateRecord extends PageDeltaRecord implements WALReferenceAwareRecord {
+public class DataPageUpdateRecord extends PageDeltaRecord {
     /** */
     private final int itemId;
-
-    /** WAL reference to {@link DataRecord}. */
-    private WALPointer reference;
 
     /** Actual data. */
     private byte[] payload;
 
-    /** Row associated with the page data. */
-    private Storable row;
-
     /**
-     * @param grpId Cache group ID.
-     * @param pageId Page ID.
-     * @param itemId Item ID.
-     * @param reference WAL reference to {@link DataRecord}.
-     */
-    public DataPageUpdateRecord(
-        int grpId,
-        long pageId,
-        int itemId,
-        WALPointer reference
-    ) {
-        super(grpId, pageId);
-
-        this.itemId = itemId;
-        this.reference = reference;
-    }
-
-    /**
-     * Old constructor for backward compatibility.
+     * Constructor.
      *
      * @param grpId Cache group ID.
      * @param pageId Page ID.
@@ -97,16 +73,11 @@ public class DataPageUpdateRecord extends PageDeltaRecord implements WALReferenc
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        assert payload != null || row != null;
+        assert payload != null;
 
         AbstractDataPageIO<Storable> io = PageIO.getPageIO(pageAddr);
 
-        if (payload != null) {
-            io.updateRow(pageAddr, itemId, pageMem.pageSize(), payload, null, 0);
-        }
-        else {
-            io.updateRow(pageAddr, itemId, pageMem.pageSize(), null, row, io.getRowSize(row));
-        }
+        io.updateRow(pageAddr, itemId, pageMem.pageSize(), payload, null, 0);
     }
 
     /** {@inheritDoc} */
@@ -115,19 +86,8 @@ public class DataPageUpdateRecord extends PageDeltaRecord implements WALReferenc
     }
 
     /** {@inheritDoc} */
-    @Override public void row(Storable row) {
-        this.row = row;
-    }
-
-    /** {@inheritDoc} */
-    @Override public WALPointer reference() {
-        return reference;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DataPageUpdateRecord.class, this,
-                "reference", reference.toString(),
                 "super", super.toString());
     }
 }

@@ -3579,7 +3579,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         throws IgniteCheckedException {
         assert cctx.transactional();
 
-        if (cctx.group().persistenceEnabled() && cctx.group().walEnabled()) {
+        if (tx.local() && cctx.group().persistenceEnabled() && cctx.group().walEnabled()) {
             GridCacheOperation op;
             if (val == null)
                 op = GridCacheOperation.DELETE;

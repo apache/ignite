@@ -30,48 +30,17 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Insert fragment (part of big object which is bigger than page size) to data page record.
+ * Insert fragment (part of big object which is bigger than page size) to data page record with explicit payload.
  */
-public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WALReferenceAwareRecord {
+public class DataPageInsertFragmentRecord extends PageDeltaRecord {
     /** Link to the last entry fragment. */
     private final long lastLink;
 
-    /** Fragment payload offset relatively to whole record payload. */
-    private int offset;
-
-    /** WAL reference to {@link DataRecord}. */
-    private WALPointer reference;
-
     /** Actual fragment data. */
-    @GridToStringExclude
-    @Nullable private byte[] payload;
-
-    /** Row associated with the current data fragment. */
-    @Nullable private Storable row;
+    private byte[] payload;
 
     /**
-     * @param grpId Cache group ID.
-     * @param pageId Page ID.
-     * @param offset Fragment data offset.
-     * @param lastLink Link to the last entry fragment.
-     * @param reference WAL reference to {@link DataRecord}.
-     */
-    public DataPageInsertFragmentRecord(
-        int grpId,
-        long pageId,
-        int offset,
-        long lastLink,
-        WALPointer reference
-    ) {
-        super(grpId, pageId);
-
-        this.lastLink = lastLink;
-        this.offset = offset;
-        this.reference = reference;
-    }
-
-    /**
-     * Old constructor for backward compatibility.
+     * Constructor.
      *
      * @param grpId Cache group ID.
      * @param pageId Page ID.
@@ -92,16 +61,11 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        assert payload != null || row != null : "Both explicit payload and row are null";
+        assert payload != null;
 
         AbstractDataPageIO<Storable> io = PageIO.getPageIO(pageAddr);
 
-        if (payload != null) {
-            io.addRowFragment(pageAddr, payload, lastLink, pageMem.pageSize());
-        }
-        else {
-            io.addRowFragment(pageMem, pageAddr, row, offset, io.getRowSize(row), pageMem.pageSize());
-        }
+        io.addRowFragment(pageAddr, payload, lastLink, pageMem.pageSize());
     }
 
     /** {@inheritDoc} */
@@ -123,27 +87,9 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord implements WAL
         return lastLink;
     }
 
-    /**
-     * @return Fragment payload offset relatively to whole record payload.
-     */
-    public int offset() {
-        return offset;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void row(Storable row) {
-        this.row = row;
-    }
-
-    /** {@inheritDoc} */
-    @Override public WALPointer reference() {
-        return reference;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DataPageInsertFragmentRecord.class, this,
-                "offset", offset,
                 "super", super.toString());
     }
 }

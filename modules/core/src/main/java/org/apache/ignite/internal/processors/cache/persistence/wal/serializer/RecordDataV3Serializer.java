@@ -1,3 +1,19 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.ignite.internal.processors.cache.persistence.wal.serializer;
 
 import java.io.IOException;
@@ -6,8 +22,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentReferencedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertReferencedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateReferencedRecord;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 
@@ -21,13 +40,13 @@ public class RecordDataV3Serializer implements RecordDataSerializer {
 
     @Override public int size(WALRecord record) throws IgniteCheckedException {
         switch (record.type()) {
-            case DATA_PAGE_INSERT_RECORD:
+            case DATA_PAGE_INSERT_REF_RECORD:
                 return 4 + 8 + FileWALPointer.size();
 
-            case DATA_PAGE_UPDATE_RECORD:
+            case DATA_PAGE_UPDATE_REF_RECORD:
                 return 4 + 8 + 4 + FileWALPointer.size();
 
-            case DATA_PAGE_INSERT_FRAGMENT_RECORD:
+            case DATA_PAGE_INSERT_FRAGMENT_REF_RECORD:
                 return 4 + 8 + 8 + 4 + FileWALPointer.size();
 
             default:
@@ -37,16 +56,16 @@ public class RecordDataV3Serializer implements RecordDataSerializer {
 
     @Override public WALRecord readRecord(WALRecord.RecordType type, ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
         switch (type) {
-            case DATA_PAGE_INSERT_RECORD: {
+            case DATA_PAGE_INSERT_REF_RECORD: {
                 int cacheId = in.readInt();
                 long pageId = in.readLong();
 
                 WALPointer reference = FileWALPointer.read(in);
 
-                return new DataPageInsertRecord(cacheId, pageId, reference);
+                return new DataPageInsertReferencedRecord(cacheId, pageId, reference);
             }
 
-            case DATA_PAGE_UPDATE_RECORD: {
+            case DATA_PAGE_UPDATE_REF_RECORD: {
                 int cacheId = in.readInt();
                 long pageId = in.readLong();
 
@@ -54,10 +73,10 @@ public class RecordDataV3Serializer implements RecordDataSerializer {
 
                 WALPointer reference = FileWALPointer.read(in);
 
-                return new DataPageUpdateRecord(cacheId, pageId, itemId, reference);
+                return new DataPageUpdateReferencedRecord(cacheId, pageId, itemId, reference);
             }
 
-            case DATA_PAGE_INSERT_FRAGMENT_RECORD: {
+            case DATA_PAGE_INSERT_FRAGMENT_REF_RECORD: {
                 int cacheId = in.readInt();
                 long pageId = in.readLong();
 
@@ -66,7 +85,7 @@ public class RecordDataV3Serializer implements RecordDataSerializer {
                 int offset = in.readInt();
                 WALPointer reference = FileWALPointer.read(in);
 
-                return new DataPageInsertFragmentRecord(cacheId, pageId, offset, lastLink, reference);
+                return new DataPageInsertFragmentReferencedRecord(cacheId, pageId, offset, lastLink, reference);
             }
 
             default:
@@ -76,8 +95,8 @@ public class RecordDataV3Serializer implements RecordDataSerializer {
 
     @Override public void writeRecord(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
         switch (record.type()) {
-            case DATA_PAGE_INSERT_RECORD:
-                DataPageInsertRecord diRec = (DataPageInsertRecord) record;
+            case DATA_PAGE_INSERT_REF_RECORD:
+                DataPageInsertReferencedRecord diRec = (DataPageInsertReferencedRecord) record;
 
                 buf.putInt(diRec.groupId());
                 buf.putLong(diRec.pageId());
@@ -86,8 +105,8 @@ public class RecordDataV3Serializer implements RecordDataSerializer {
 
                 break;
 
-            case DATA_PAGE_UPDATE_RECORD:
-                DataPageUpdateRecord uRec = (DataPageUpdateRecord) record;
+            case DATA_PAGE_UPDATE_REF_RECORD:
+                DataPageUpdateReferencedRecord uRec = (DataPageUpdateReferencedRecord) record;
 
                 buf.putInt(uRec.groupId());
                 buf.putLong(uRec.pageId());
@@ -98,8 +117,8 @@ public class RecordDataV3Serializer implements RecordDataSerializer {
 
                 break;
 
-            case DATA_PAGE_INSERT_FRAGMENT_RECORD:
-                final DataPageInsertFragmentRecord difRec = (DataPageInsertFragmentRecord) record;
+            case DATA_PAGE_INSERT_FRAGMENT_REF_RECORD:
+                final DataPageInsertFragmentReferencedRecord difRec = (DataPageInsertFragmentReferencedRecord) record;
 
                 buf.putInt(difRec.groupId());
                 buf.putLong(difRec.pageId());

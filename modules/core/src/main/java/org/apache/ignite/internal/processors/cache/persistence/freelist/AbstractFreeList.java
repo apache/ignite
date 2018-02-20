@@ -22,11 +22,15 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentReferencedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertReferencedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageRemoveRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateReferencedRecord;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
@@ -106,9 +110,19 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             evictionTracker.touchPage(pageId);
 
             if (updated && needWalDeltaRecord(pageId, page, walPlc)) {
-                assert row.reference() != null;
+                if (row.reference() != null)
+                    wal.log(new DataPageUpdateReferencedRecord(grpId, pageId, itemId, row.reference()));
+                else {
+                    byte[] payload = new byte[rowSize];
 
-                wal.log(new DataPageUpdateRecord(grpId, pageId, itemId, row.reference()));
+                    DataPagePayload data = io.readPayload(pageAddr, itemId, pageSize());
+
+                    assert data.payloadSize() == rowSize;
+
+                    PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
+
+                    wal.log(new DataPageUpdateRecord(grpId, pageId, itemId, payload));
+                }
             }
 
             return updated;
@@ -180,9 +194,19 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             io.addRow(pageId, pageAddr, row, rowSize, pageSize());
 
             if (needWalDeltaRecord(pageId, page, null)) {
-                assert row.reference() != null;
+                if (row.reference() != null)
+                    wal.log(new DataPageInsertReferencedRecord(grpId, pageId, row.reference()));
+                else {
+                    byte[] payload = new byte[rowSize];
 
-                wal.log(new DataPageInsertRecord(grpId, pageId, row.reference()));
+                    DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
+
+                    assert data.payloadSize() == rowSize;
+
+                    PageUtils.getBytes(pageAddr, data.offset(), payload, 0, rowSize);
+
+                    wal.log(new DataPageInsertRecord(grpId, pageId, payload));
+                }
             }
 
             return rowSize;
@@ -216,9 +240,17 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             assert payloadSize > 0 : payloadSize;
 
             if (needWalDeltaRecord(pageId, page, null)) {
-                assert row.reference() != null;
+                if (row.reference() != null)
+                    wal.log(new DataPageInsertFragmentReferencedRecord(grpId, pageId, written, lastLink, row.reference()));
+                else {
+                    byte[] payload = new byte[payloadSize];
 
-                wal.log(new DataPageInsertFragmentRecord(grpId, pageId, written, lastLink, row.reference()));
+                    DataPagePayload data = io.readPayload(pageAddr, PageIdUtils.itemId(row.link()), pageSize());
+
+                    PageUtils.getBytes(pageAddr, data.offset(), payload, 0, payloadSize);
+
+                    wal.log(new DataPageInsertFragmentRecord(grpId, pageId, lastLink, payload));
+                }
             }
 
             return written + payloadSize;

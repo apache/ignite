@@ -29,8 +29,6 @@ public class RowDataConverter {
     }
 
     public RowDataHolder convertFrom(DataRecord record) throws IgniteCheckedException {
-        assert record.writeEntries().size() == 1;
-
         DataEntry writeEntry = record.writeEntries().get(0);
 
         boolean storeCacheId = false;

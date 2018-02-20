@@ -175,7 +175,16 @@ public abstract class WALRecord {
         EXCHANGE,
 
         /** Baseline topology record. */
-        BASELINE_TOP_RECORD;
+        BASELINE_TOP_RECORD,
+
+        /** Delta records with referenced payload. */
+        DATA_PAGE_INSERT_REF_RECORD,
+
+        /** */
+        DATA_PAGE_INSERT_FRAGMENT_REF_RECORD,
+
+        /** */
+        DATA_PAGE_UPDATE_REF_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
