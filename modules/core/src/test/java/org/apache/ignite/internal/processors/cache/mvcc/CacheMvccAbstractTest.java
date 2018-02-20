@@ -802,7 +802,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             assertTrue("Txs on node [node=" + node.name() + ", txs=" + activeTxs.toString() + ']',
                 activeTxs.isEmpty());
 
-            Map cntrFuts = GridTestUtils.getFieldValue(crd, "verFuts");
+            Map cntrFuts = GridTestUtils.getFieldValue(crd, "snapshotFuts");
 
             assertTrue(cntrFuts.isEmpty());
 
