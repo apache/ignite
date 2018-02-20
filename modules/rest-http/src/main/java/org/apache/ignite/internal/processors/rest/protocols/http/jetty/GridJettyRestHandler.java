@@ -25,6 +25,9 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.sql.Date;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -54,6 +57,7 @@ import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 
 import org.eclipse.jetty.server.Request;
@@ -408,6 +412,81 @@ public class GridJettyRestHandler extends AbstractHandler {
     }
 
     /**
+     * @param type Optional value type.
+     * @param obj Object to convert.
+     * @return Converted value.
+     * @throws IgniteCheckedException If failed to convert.
+     */
+    private Object convert(String type, Object obj) throws IgniteCheckedException {
+        if (F.isEmpty(type) || obj == null)
+            return obj;
+
+        String s = (String)obj;
+
+        try {
+            switch (type.toLowerCase()) {
+                case "boolean":
+                case "java.lang.boolean":
+                    return Boolean.valueOf(s);
+
+                case "byte":
+                case "java.lang.byte":
+                    return Byte.valueOf(s);
+
+                case "short":
+                case "java.lang.short":
+                    return Short.valueOf(s);
+
+                case "int":
+                case "integer":
+                case "java.lang.integer":
+                    return Integer.valueOf(s);
+
+                case "long":
+                case "java.lang.long":
+                    return Long.valueOf(s);
+
+                case "float":
+                case "java.lang.float":
+                    return Float.valueOf(s);
+
+                case "double":
+                case "java.lang.double":
+                    return Double.valueOf(s);
+
+                case "date":
+                case "java.sql.date":
+                    return Date.valueOf(s);
+
+                case "time":
+                case "java.sql.time":
+                    return Time.valueOf(s);
+
+                case "timestamp":
+                case "java.sql.timestamp":
+                    return Timestamp.valueOf(s);
+
+                case "uuid":
+                case "java.util.uuid":
+                    return UUID.fromString(s);
+
+                case "igniteuuid":
+                case "org.apache.ignite.lang.igniteuuid":
+                    return IgniteUuid.fromString(s);
+
+                default:
+                    // No-op.
+            }
+        }
+        catch (Throwable e) {
+            throw new IgniteCheckedException("Failed to convert value to specified type [type=" + type +
+                ", val=" + s + ", reason=" + e.getClass().getName() + ": " + e.getMessage() + "]");
+        }
+
+        return obj;
+    }
+
+    /**
      * Creates REST request.
      *
      * @param cmd Command.
@@ -527,13 +606,16 @@ public class GridJettyRestHandler extends AbstractHandler {
                 GridRestCacheRequest restReq0 = new GridRestCacheRequest();
 
                 String cacheName = (String)params.get(CACHE_NAME_PARAM);
-
                 restReq0.cacheName(F.isEmpty(cacheName) ? null : cacheName);
-                restReq0.key(params.get("key"));
-                restReq0.value(params.get("val"));
-                restReq0.value2(params.get("val2"));
 
-                Object val1 = params.get("val1");
+                String keyType = (String)params.get("keyType");
+                String valType = (String)params.get("valueType");
+
+                restReq0.key(convert(keyType, params.get("key")));
+                restReq0.value(convert(valType, params.get("val")));
+                restReq0.value2(convert(valType, params.get("val2")));
+
+                Object val1 = convert(valType, params.get("val1"));
 
                 if (val1 != null)
                     restReq0.value(val1);
@@ -543,8 +625,8 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                 if (cmd == CACHE_GET_ALL || cmd == CACHE_PUT_ALL || cmd == CACHE_REMOVE_ALL ||
                     cmd == CACHE_CONTAINS_KEYS) {
-                    List<Object> keys = values("k", params);
-                    List<Object> vals = values("v", params);
+                    List<Object> keys = values(keyType, "k", params);
+                    List<Object> vals = values(valType, "v", params);
 
                     if (keys.size() < vals.size())
                         throw new IgniteCheckedException("Number of keys must be greater or equals to number of values.");
@@ -589,7 +671,7 @@ public class GridJettyRestHandler extends AbstractHandler {
                 restReq0.taskId((String)params.get("id"));
                 restReq0.taskName((String)params.get("name"));
 
-                restReq0.params(values("p", params));
+                restReq0.params(values(null, "p", params));
 
                 restReq0.async(Boolean.parseBoolean((String)params.get("async")));
 
@@ -641,7 +723,7 @@ public class GridJettyRestHandler extends AbstractHandler {
 
                 restReq0.sqlQuery((String)params.get("qry"));
 
-                restReq0.arguments(values("arg", params).toArray());
+                restReq0.arguments(values(null, "arg", params).toArray());
 
                 restReq0.typeName((String)params.get("type"));
 
@@ -774,11 +856,12 @@ public class GridJettyRestHandler extends AbstractHandler {
     /**
      * Gets values referenced by sequential keys, e.g. {@code key1...keyN}.
      *
+     * @param type Optional value type.
      * @param keyPrefix Key prefix, e.g. {@code key} for {@code key1...keyN}.
      * @param params Parameters map.
      * @return Values.
      */
-    protected List<Object> values(String keyPrefix, Map<String, Object> params) {
+    protected List<Object> values(String type, String keyPrefix, Map<String, Object> params) throws IgniteCheckedException {
         assert keyPrefix != null;
 
         List<Object> vals = new LinkedList<>();
@@ -787,7 +870,7 @@ public class GridJettyRestHandler extends AbstractHandler {
             String key = keyPrefix + i;
 
             if (params.containsKey(key))
-                vals.add(params.get(key));
+                vals.add(convert(type, params.get(key)));
             else
                 break;
         }
