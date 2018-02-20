@@ -52,7 +52,7 @@ public class BatchedInsertBenchmark extends AbstractUploadBenchmark {
 
 
     /** Sequence of single inserts */
-    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+    @Override public void upload() throws Exception {
         try (PreparedStatement insert = conn.get().prepareStatement(queries.insert())) {
             for (int id = 1; id <= INSERT_SIZE; id++) {
                 queries.setRandomInsertArgs(insert, id);
@@ -63,8 +63,6 @@ public class BatchedInsertBenchmark extends AbstractUploadBenchmark {
                     insert.executeBatch();
             }
         }
-
-        return true;
     }
 
 }

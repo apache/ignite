@@ -20,9 +20,7 @@ package org.apache.ignite.yardstick.upload;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
+import java.util.Map;
 import org.apache.ignite.yardstick.jdbc.AbstractJdbcBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
@@ -48,13 +46,25 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         INSERT_SIZE = args.range();
 
         init();
-        warmup();
+        warmup0();
         dropAndCreate();
     }
 
     /** Method to init benchmark fields */
     protected void init() {
         // No-op
+    }
+
+    /** Perform warmup keeping in mind wal optimization */
+    private void warmup0() throws Exception{
+        if (args.switchWal())
+            executeUpdate(queries.turnOffWal());
+
+        warmup();
+
+        if (args.switchWal())
+            executeUpdate(queries.turnOnWal());
+
     }
 
     /**
@@ -67,6 +77,20 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     /** create empty table */
     @Override protected void setupData() throws Exception{
         dropAndCreate();
+    }
+
+    protected abstract void upload() throws Exception;
+
+    @Override public final boolean test(Map<Object, Object> ctx) throws Exception {
+        if (args.switchWal())
+            executeUpdate(queries.turnOffWal());
+
+        upload();
+
+        if (args.switchWal())
+            executeUpdate(queries.turnOnWal());
+
+        return true;
     }
 
     /** Drops and re-creates test table */
@@ -87,13 +111,21 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
                 rs.next();
                 long size = rs.getLong(1);
 
-                BenchmarkUtils.println(cfg, "Test table `test_long' contains " + size + " rows");
+                BenchmarkUtils.println(cfg, "Test table contains " + size + " rows");
                 // todo assert size == threads * sqlRange
             }
         } catch (Exception ex){
             BenchmarkUtils.println(cfg, "Exception thrown at tear down: " + ex);
+        } finally {
+            super.tearDown();
         }
+    }
 
-        super.tearDown();
+
+    /** Facility method for executing update queries */
+    private int executeUpdate(String updQry) throws SQLException{
+        try(PreparedStatement update = conn.get().prepareStatement(updQry)){
+            return update.executeUpdate();
+        }
     }
 }

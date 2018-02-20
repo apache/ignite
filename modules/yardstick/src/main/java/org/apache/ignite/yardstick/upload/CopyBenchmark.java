@@ -107,12 +107,11 @@ public class CopyBenchmark extends AbstractUploadBenchmark {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+    @Override public void upload() throws Exception {
         try (PreparedStatement fromCsv = conn.get().prepareStatement(queries.copyFrom(realCsv))) {
             fromCsv.executeUpdate();
         }
 
         //TODO: assert count
-        return true;
     }
 }

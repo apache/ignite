@@ -262,6 +262,14 @@ public class IgniteBenchmarkArguments {
     @GridToStringInclude
     private int clientNodesAfterId = -1;
 
+    /** */
+    @Parameter(names = {"--switch-wal"},
+        arity = 1,
+        description = "Upload benchmark only: " +
+            "turn off Write Ahead Log before data uploading " +
+            "and turn it on again when upload is done")
+    private boolean switchWal = false;
+
     /**
      * @return {@code True} if need set {@link DataStorageConfiguration}.
      */
@@ -384,7 +392,7 @@ public class IgniteBenchmarkArguments {
     /**
      * @return {@code True} if flag for native benchmarking is set.
      */
-    public boolean isNative(){
+    public boolean isNative() {
         return ntv;
     }
 
@@ -653,6 +661,13 @@ public class IgniteBenchmarkArguments {
      */
     public int clientNodesAfterId() {
         return clientNodesAfterId;
+    }
+
+    /**
+     * @return Switch wal.
+     */
+    public boolean switchWal() {
+        return switchWal;
     }
 
     /** {@inheritDoc} */

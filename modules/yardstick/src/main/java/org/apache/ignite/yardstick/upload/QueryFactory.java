@@ -33,6 +33,10 @@ public class QueryFactory {
 
     private String deleteAll = "DELETE FROM test_upload WHERE id > 0";
 
+    private String turnOnWal = "ALTER TABLE test_upload LOGGING";
+
+    private String turnOffWal = "ALTER TABLE test_upload NOLOGGING";
+
     private String newCreateTableQuery() {
         StringBuilder create = new StringBuilder("CREATE TABLE test_upload (id LONG PRIMARY KEY");
 
@@ -87,11 +91,12 @@ public class QueryFactory {
     }
 
     /** */
-    public String count(){
+    public String count() {
         return count;
     }
 
-    public String deleteAll(){
+    /** */
+    public String deleteAll() {
         return deleteAll;
     }
 
@@ -99,7 +104,7 @@ public class QueryFactory {
      * @param csvFilePath path to csv file
      * @return sql query that inserts data from specified csv file
      */
-    public String copyFrom(String csvFilePath){
+    public String copyFrom(String csvFilePath) {
         return "COPY FROM \"" + csvFilePath + "\" INTO test_upload " + attributes() + " FORMAT CSV;";
     }
 
@@ -109,7 +114,7 @@ public class QueryFactory {
      *
      * @return attributes list of test table as part of sql statement
      */
-    private String attributes(){
+    private String attributes() {
         StringBuilder attrs = new StringBuilder("(id");
 
         for (int vi = 1; vi <= valFieldsCnt; vi++)
@@ -120,11 +125,11 @@ public class QueryFactory {
         return attrs.toString();
     }
 
-    public void setRandomInsertArgs(PreparedStatement stmt, long id) throws SQLException{
+    public void setRandomInsertArgs(PreparedStatement stmt, long id) throws SQLException {
         stmt.setLong(1, id);
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-        for (int vi = 1; vi <= valFieldsCnt ; vi++) {
+        for (int vi = 1; vi <= valFieldsCnt; vi++) {
             // vi is value index (among all values), but we also have "id" which is primary key
             // so index in query is value index shifted by 1
             int qryIdx = vi + 1;
@@ -163,4 +168,19 @@ public class QueryFactory {
 
         return line.toString();
     }
+
+    /**
+     * @return Turn on wal.
+     */
+    public String turnOnWal() {
+        return turnOnWal;
+    }
+
+    /**
+     * @return Turn offset wal.
+     */
+    public String turnOffWal() {
+        return turnOffWal;
+    }
+
 }
