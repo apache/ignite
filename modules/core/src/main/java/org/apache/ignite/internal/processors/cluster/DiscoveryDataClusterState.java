@@ -79,7 +79,8 @@ public final class DiscoveryDataClusterState implements Serializable {
      * @return State instance.
      */
     static DiscoveryDataClusterState createState(boolean active, @Nullable BaselineTopology baselineTopology) {
-        return new DiscoveryDataClusterState(null, active, baselineTopology, null, null, null, null);
+        return new DiscoveryDataClusterState(null, active, baselineTopology, null,
+            null, null, null);
     }
 
     /**
