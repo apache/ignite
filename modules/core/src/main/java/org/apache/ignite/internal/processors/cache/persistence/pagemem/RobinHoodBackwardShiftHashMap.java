@@ -155,7 +155,6 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     public void put(int grpId, long pageId, long val, int tag) {
         assert grpId != 0;
 
-        int probingMax = numBuckets;
         int idxInit = U.safeAbs(FullPageId.hashCode(grpId, pageId)) % numBuckets;
 
         int grpIdToInsert = grpId;
@@ -166,7 +165,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
         int swapCount = 0;
 
 
-        for (int i = 0; i < probingMax; i++) {
+        for (int i = 0; i < numBuckets; i++) {
             int idxCurr = (idxInit + i) % numBuckets;
 
             final long base = entryBase(idxCurr);
@@ -207,8 +206,6 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
                 valToInsert = curVal;
 
                 swapCount++;
-            } else {
-                //need to switch to next idx;
             }
         }
         // no free space left
