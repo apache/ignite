@@ -18,8 +18,10 @@ include /app/helpers/jade/mixins
 
 -var form = 'clientConnector'
 -var model = 'backupItem'
--var connectionModel = model + '.clientConnectorConfiguration'
--var connectionEnabled = connectionModel + '.enabled'
+-var connectionModel = `${model}.clientConnectorConfiguration`
+-var connectionEnabled = `${connectionModel}.enabled`
+-var sslEnabled = `${connectionEnabled} && ${connectionModel}.sslEnabled`
+-var sslFactoryEnabled = `${sslEnabled} && !${connectionModel}.useIgniteSslContextFactory`
 
 .panel.panel-default(ng-show='$ctrl.available("2.3.0")' ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
@@ -41,11 +43,11 @@ include /app/helpers/jade/mixins
                     +number('Port range:', `${connectionModel}.portRange`, '"ClientConnectorPortRange"', connectionEnabled, '100', '0', 'Port range')
                 .settings-row
                     +number('Socket send buffer size:', `${connectionModel}.socketSendBufferSize`, '"ClientConnectorSocketSendBufferSize"', connectionEnabled, '0', '0',
-                        'Socket send buffer size.<br/>\
+                        'Socket send buffer size<br/>\
                         When set to <b>0</b>, operation system default will be used')
                 .settings-row
                     +number('Socket receive buffer size:', `${connectionModel}.socketReceiveBufferSize`, '"ClientConnectorSocketReceiveBufferSize"', connectionEnabled, '0', '0',
-                        'Socket receive buffer size.<br/>\
+                        'Socket receive buffer size<br/>\
                         When set to <b>0</b>, operation system default will be used')
                 .settings-row
                     +number('Max connection cursors:', `${connectionModel}.maxOpenCursorsPerConnection`, '"ClientConnectorMaxOpenCursorsPerConnection"', connectionEnabled, '128', '0',
@@ -53,7 +55,30 @@ include /app/helpers/jade/mixins
                 .settings-row
                     +number('Pool size:', `${connectionModel}.threadPoolSize`, '"ClientConnectorThreadPoolSize"', connectionEnabled, 'max(8, availableProcessors)', '1',
                         'Size of thread pool that is in charge of processing SQL requests')
+                .settings-row(ng-if='$ctrl.available("2.4.0")')
+                    +number('Idle timeout:', `${connectionModel}.idleTimeout`, '"ClientConnectorIdleTimeout"', connectionEnabled, '0', '-1',
+                        'Idle timeout for client connections<br/>\
+                        Zero or negative means no timeout')
+                div(ng-if='$ctrl.available("2.5.0")')
+                    .settings-row
+                        +checkbox-enabled('Enable SSL', `${connectionModel}.sslEnabled`, '"ClientConnectorSslEnabled"', connectionEnabled, 'Enable secure socket layer on client connector')
+                    .settings-row
+                        +checkbox-enabled('Enable SSL client auth', `${connectionModel}.sslClientAuth`, '"ClientConnectorSslClientAuth"', sslEnabled, 'Flag indicating whether or not SSL client authentication is required')
+                    .settings-row
+                        +checkbox-enabled('Use Ignite SSL', `${connectionModel}.useIgniteSslContextFactory`, '"ClientConnectorUseIgniteSslContextFactory"', sslEnabled, 'Use SSL factory Ignite configuration')
+                    .settings-row
+                        +java-class('SSL factory:', `${connectionModel}.sslContextFactory`, '"ClientConnectorSslContextFactory"', sslFactoryEnabled, sslFactoryEnabled,
+                        'If SSL factory specified then replication will be performed through secure SSL channel created with this factory<br/>\
+                        If not present <b>isUseIgniteSslContextFactory()</b> flag will be evaluated<br/>\
+                        If set to <b>true</b> and <b>IgniteConfiguration#getSslContextFactory()</b> exists, then Ignite SSL context factory will be used to establish secure connection')
                 .settings-row
                     +checkbox-enabled('TCP_NODELAY option', `${connectionModel}.tcpNoDelay`, '"ClientConnectorTcpNoDelay"', connectionEnabled, 'Value for TCP_NODELAY socket option')
+                div(ng-if='$ctrl.available("2.4.0")')
+                    .settings-row
+                        +checkbox-enabled('JDBC Enabled', `${connectionModel}.jdbcEnabled`, '"ClientConnectorJdbcEnabled"', connectionEnabled, 'Access through JDBC is enabled')
+                    .settings-row
+                        +checkbox-enabled('ODBC Enabled', `${connectionModel}.odbcEnabled`, '"ClientConnectorOdbcEnabled"', connectionEnabled, 'Access through ODBC is enabled')
+                    .settings-row
+                        +checkbox-enabled('Thin client enabled', `${connectionModel}.thinClientEnabled`, '"ClientConnectorThinCliEnabled"', connectionEnabled, 'Access through thin client is enabled')
             .col-sm-6
                 +preview-xml-java(model, 'clusterClientConnector')

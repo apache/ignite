@@ -62,6 +62,7 @@ import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAlterColumn;
 import org.h2.command.ddl.CreateIndex;
@@ -105,7 +106,7 @@ public class DdlStatementsProcessor {
      * @throws IgniteCheckedException On error.
      */
     @SuppressWarnings("unchecked")
-    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, SqlCommand cmd) throws IgniteCheckedException{
+    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, SqlCommand cmd) throws IgniteCheckedException {
         IgniteInternalFuture fut;
 
         try {
@@ -210,12 +211,7 @@ public class DdlStatementsProcessor {
             if (fut != null)
                 fut.get();
 
-            QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-                (Collections.singletonList(0L)), null, false);
-
-            resCur.fieldsMeta(UPDATE_RESULT_META);
-
-            return resCur;
+            return zeroCursor();
         }
         catch (SchemaOperationException e) {
             throw convert(e);
@@ -226,6 +222,19 @@ public class DdlStatementsProcessor {
         catch (Exception e) {
             throw new IgniteSQLException(e.getMessage(), e);
         }
+    }
+
+    /**
+     * @return Single-column, single-row cursor with 0 as number of updated records.
+     */
+    @SuppressWarnings("unchecked")
+    public static QueryCursorImpl<List<?>> zeroCursor() {
+        QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
+            (Collections.singletonList(0L)), null, false);
+
+        resCur.fieldsMeta(UPDATE_RESULT_META);
+
+        return resCur;
     }
 
     /**
@@ -483,6 +492,7 @@ public class DdlStatementsProcessor {
             return resCur;
         }
         catch (SchemaOperationException e) {
+            U.error(null, "DDL operation failure", e);
             throw convert(e);
         }
         catch (IgniteSQLException e) {

@@ -56,6 +56,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -89,6 +90,7 @@ import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.local.atomic.GridLocalAtomicCache;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
+import org.apache.ignite.internal.processors.cache.persistence.DbCheckpointListener;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -97,6 +99,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FsyncModeFileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheDistributedQueryManager;
 import org.apache.ignite.internal.processors.cache.query.GridCacheLocalQueryManager;
@@ -180,6 +183,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     /** */
     private final boolean startClientCaches =
         IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_START_CACHES_ON_JOIN, false);
+
+    private final boolean walFsyncWithDedicatedWorker =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER, false);
 
     /** Shared cache context. */
     private GridCacheSharedContext<?, ?> sharedCtx;
@@ -2232,6 +2238,24 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
 
+            sharedCtx.database().checkpointReadLock();
+
+            try {
+                // Do not invoke checkpoint listeners for groups are going to be destroyed to prevent metadata corruption.
+                for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
+                    Integer groupId = action.descriptor().groupId();
+                    CacheGroupContext grp = cacheGrps.get(groupId);
+
+                    if (grp != null && grp.persistenceEnabled() && sharedCtx.database() instanceof GridCacheDatabaseSharedManager) {
+                        GridCacheDatabaseSharedManager mngr = (GridCacheDatabaseSharedManager) sharedCtx.database();
+                        mngr.removeCheckpointListener((DbCheckpointListener) grp.offheap());
+                    }
+                }
+            }
+            finally {
+                sharedCtx.database().checkpointReadUnlock();
+            }
+
             List<IgniteBiTuple<CacheGroupContext, Boolean>> stoppedGroups = new ArrayList<>();
 
             for (ExchangeActions.CacheGroupActionData action : exchActions.cacheGroupsToStop()) {
@@ -2341,7 +2365,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             pageStoreMgr = new FilePageStoreManager(ctx);
 
-            walMgr = new FileWriteAheadLogManager(ctx);
+            if (ctx.config().getDataStorageConfiguration().getWalMode() == WALMode.FSYNC && !walFsyncWithDedicatedWorker)
+                walMgr = new FsyncModeFileWriteAheadLogManager(ctx);
+            else
+                walMgr = new FileWriteAheadLogManager(ctx);
         }
         else
             dbMgr = new IgniteCacheDatabaseSharedManager();
@@ -2547,15 +2574,36 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when cache is deployed.
      */
     public IgniteInternalFuture<?> getOrCreateFromTemplate(String cacheName, boolean checkThreadTx) {
+        return getOrCreateFromTemplate(cacheName, cacheName, null, checkThreadTx);
+    }
+
+    /**
+     * Dynamically starts cache using template configuration.
+     *
+     * @param cacheName Cache name.
+     * @param templateName Cache template name.
+     * @param cfgOverride Cache config properties to override.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
+     * @return Future that will be completed when cache is deployed.
+     */
+    public IgniteInternalFuture<?> getOrCreateFromTemplate(String cacheName, String templateName,
+        CacheConfigurationOverride cfgOverride, boolean checkThreadTx) {
         assert cacheName != null;
 
         try {
             if (publicJCache(cacheName, false, checkThreadTx) != null) // Cache with given name already started.
                 return new GridFinishedFuture<>();
 
-            CacheConfiguration cfg = getOrCreateConfigFromTemplate(cacheName);
+            CacheConfiguration ccfg = F.isEmpty(templateName)
+                ?  getOrCreateConfigFromTemplate(cacheName)
+                :  getOrCreateConfigFromTemplate(templateName);
 
-            return dynamicStartCache(cfg, cacheName, null, false, true, checkThreadTx);
+            ccfg.setName(cacheName);
+
+            if (cfgOverride != null)
+                cfgOverride.apply(ccfg);
+
+            return dynamicStartCache(ccfg, cacheName, null, false, true, checkThreadTx);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -3056,6 +3104,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return fut;
     }
 
+    /**
+     * @param cacheName Cache name.
+     * @return Cache type.
+     */
     public CacheType cacheType(String cacheName ) {
         if (CU.isUtilityCache(cacheName))
             return CacheType.UTILITY;
