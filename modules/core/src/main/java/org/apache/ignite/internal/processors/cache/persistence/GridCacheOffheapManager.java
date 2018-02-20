@@ -801,6 +801,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         /** Partitions marked as done. */
         private final Set<Integer> doneParts = new HashSet<>();
 
+        /** Cache IDs. This collection is stored as field to avoid re-calculation on each iteration. */
+        private final Set<Integer> cacheIds;
+
         /** WAL iterator. */
         private WALIterator walIt;
 
@@ -818,6 +821,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             this.grp = grp;
             this.partMap = partMap;
             this.walIt = walIt;
+
+            cacheIds = grp.cacheIds();
 
             advance();
         }
@@ -895,7 +900,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     while (entryIt.hasNext()) {
                         DataEntry entry = entryIt.next();
 
-                        if (grp.cacheIds().contains(entry.cacheId())) {
+                        if (cacheIds.contains(entry.cacheId())) {
                             int idx = partMap.partitionIndex(entry.partitionId());
 
                             if (idx < 0)
