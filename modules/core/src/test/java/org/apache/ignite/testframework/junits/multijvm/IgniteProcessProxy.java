@@ -106,6 +106,9 @@ public class IgniteProcessProxy implements IgniteEx {
     /** Property that specify alternative {@code JAVA_HOME}. */
     private static final String TEST_MULTIJVM_JAVA_HOME = "test.multijvm.java.home";
 
+    /** Waiting milliseconds of the left of a node to topology. */
+    protected static final int NODE_LEFT_TIMEOUT = 30_000;
+
     /** Jvm process with ignite instance. */
     private final transient GridJavaProcess proc;
 
@@ -300,7 +303,6 @@ public class IgniteProcessProxy implements IgniteEx {
         final IgniteProcessProxy proxy = gridProxies.get(igniteInstanceName);
 
         if (proxy != null) {
-            // TODO non block stopping node
             final CountDownLatch rmtNodeStoppedLatch = new CountDownLatch(1);
             final UUID rmNodeId = proxy.id;
 
@@ -319,7 +321,7 @@ public class IgniteProcessProxy implements IgniteEx {
             proxy.remoteCompute().runAsync(new StopGridTask(igniteInstanceName, cancel));
 
             try {
-                assert rmtNodeStoppedLatch.await(30, TimeUnit.SECONDS) : "Remote node has not stopped [id=" + rmNodeId + ']';
+                assert rmtNodeStoppedLatch.await(NODE_LEFT_TIMEOUT, TimeUnit.MILLISECONDS) : "Remote node has not stopped [id=" + rmNodeId + ']';
             }
             catch (InterruptedException e) {
                 throw new IgniteException(e);
