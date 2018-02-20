@@ -128,7 +128,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, UserManagementException.class, "User already exists. [login=TEST]");
+            }, UserManagementException.class, "User already exists [login=TEST]");
         }
     }
 
@@ -147,7 +147,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, UserManagementException.class, "User doesn't exist. [userName=TEST]");
+            }, UserManagementException.class, "User doesn't exist [userName=TEST]");
 
             GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
                 @Override public Void call() throws Exception {
@@ -155,7 +155,7 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            }, UserManagementException.class, "User doesn't exist. [userName=TEST]");
+            }, UserManagementException.class, "User doesn't exist [userName=TEST]");
         }
     }
 
