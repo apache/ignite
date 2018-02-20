@@ -31,7 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class DataPageInsertReferencedRecord extends PageDeltaRecord implements WALReferenceAwareRecord {
     /** WAL reference to {@link DataRecord}. */
-    private WALPointer reference;
+    private final WALPointer reference;
 
     /** Row associated with page data. */
     private Storable row;

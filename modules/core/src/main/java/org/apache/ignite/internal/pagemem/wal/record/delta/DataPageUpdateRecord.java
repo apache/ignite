@@ -35,7 +35,7 @@ public class DataPageUpdateRecord extends PageDeltaRecord {
     private final int itemId;
 
     /** Actual data. */
-    private byte[] payload;
+    private final byte[] payload;
 
     /**
      * Constructor.

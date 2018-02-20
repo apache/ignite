@@ -35,10 +35,10 @@ public class DataPageInsertFragmentReferencedRecord extends PageDeltaRecord impl
     private final long lastLink;
 
     /** Fragment payload offset relatively to whole record payload. */
-    private int offset;
+    private final int offset;
 
     /** WAL reference to {@link DataRecord}. */
-    private WALPointer reference;
+    private final WALPointer reference;
 
     /** Row associated with the current data fragment. */
     private Storable row;

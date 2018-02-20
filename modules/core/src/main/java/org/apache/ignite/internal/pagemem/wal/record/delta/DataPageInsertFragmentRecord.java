@@ -37,7 +37,7 @@ public class DataPageInsertFragmentRecord extends PageDeltaRecord {
     private final long lastLink;
 
     /** Actual fragment data. */
-    private byte[] payload;
+    private final byte[] payload;
 
     /**
      * Constructor.

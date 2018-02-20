@@ -34,7 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class DataPageInsertRecord extends PageDeltaRecord {
     /** Actual fragment data. */
-    private byte[] payload;
+    private final byte[] payload;
 
     /**
      * Constructor.

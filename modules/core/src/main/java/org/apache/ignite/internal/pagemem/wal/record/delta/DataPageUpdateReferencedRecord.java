@@ -35,7 +35,7 @@ public class DataPageUpdateReferencedRecord extends PageDeltaRecord implements W
     private final int itemId;
 
     /** WAL reference to {@link DataRecord}. */
-    private WALPointer reference;
+    private final WALPointer reference;
 
     /** Row associated with the page data. */
     private Storable row;
