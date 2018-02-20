@@ -218,7 +218,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
      *
      */
     public void testRecoveringOnWALErrorWithoutMmap() throws Exception {
-        diskSpaceBytes = 2 * WAL_SEGMENT_SIZE;
+        diskSpaceBytes = WAL_SEGMENT_SIZE;
         System.setProperty(IGNITE_WAL_MMAP, "false");
         emulateRecoveringOnWALWritingError();
     }
