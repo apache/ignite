@@ -131,4 +131,29 @@ public class LSQROnHeapTest {
             assertArrayEquals(new double[]{72.26948107,  15.95144674,  24.07403921,  66.73038781}, res.getX(), 1e-6);
         }
     }
+
+    /** Tests solving least squares problem with damping. */
+    @Test
+    public void testSolveLeastSquaresWithDamping() throws Exception {
+        Map<Integer, double[]> data = new HashMap<>();
+        data.put(0, new double[] {3.0, -1.0, 2.0, 2.0});
+        data.put(1, new double[] {2.0, 1.0, 1.0, -1.0});
+        data.put(2, new double[] {1.0, 3.0, 0.0, -1.0});
+
+
+        DatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(data, 1);
+
+        try (LSQROnHeap<Integer, double[]> lsqr = new LSQROnHeap<>(
+                datasetBuilder,
+                new LinSysPartitionDataBuilderOnHeap<>(
+                        (k, v) -> Arrays.copyOf(v, v.length - 1),
+                        (k, v) -> v[3],
+                        3
+                )
+        )) {
+            LSQRResult res = lsqr.solve(0.5, 1e-8, 1e-8, 1e8, -1, false, null);
+
+            assertArrayEquals(new double[]{0.16891698,  -0.54467107,  0.2102844}, res.getX(), 1e-4);
+        }
+    }
 }
