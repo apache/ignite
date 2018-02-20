@@ -484,7 +484,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                 Boolean activate = null;
 
-                if (msg.forceChangeBaselineTopology() && msg.requestId().equals(msg.requestId()))
+                if (msg.forceChangeBaselineTopology())
                     activate = msg.activate();
 
                 globalState = DiscoveryDataClusterState.createTransitionState(
