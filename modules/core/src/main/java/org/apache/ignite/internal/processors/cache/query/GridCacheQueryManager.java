@@ -2943,7 +2943,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             statsEnabled = cctx.statisticsEnabled();
 
-            readEvt = locNode && cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ);
+            readEvt = cctx.gridEvents().isRecordable(EVT_CACHE_QUERY_OBJECT_READ) &&
+                    cctx.gridEvents().hasListener(EVT_CACHE_QUERY_OBJECT_READ);
 
             if(readEvt){
                 taskName = cctx.kernalContext().task().resolveTaskName(qry.taskHash());
