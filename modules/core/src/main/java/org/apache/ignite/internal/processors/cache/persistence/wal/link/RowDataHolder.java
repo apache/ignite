@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.wal.link;
 
 import org.apache.ignite.internal.pagemem.wal.record.WALReferenceAwareRecord;
-import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageInsertFragmentReferencedRecord;
 import org.apache.ignite.internal.processors.cache.persistence.Storable;
 
 /**
@@ -47,9 +47,8 @@ public class RowDataHolder {
      * @param record WAL record.
      */
     public void linkRow(WALReferenceAwareRecord record) {
-        if (record instanceof DataPageInsertFragmentRecord) {
-            row.link(((DataPageInsertFragmentRecord) record).lastLink());
-        }
+        if (record instanceof DataPageInsertFragmentReferencedRecord)
+            row.link(((DataPageInsertFragmentReferencedRecord) record).lastLink());
 
         record.row(row);
     }
