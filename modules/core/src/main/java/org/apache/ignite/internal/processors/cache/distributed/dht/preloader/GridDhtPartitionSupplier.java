@@ -464,11 +464,6 @@ class GridDhtPartitionSupplier {
         IgniteRebalanceIterator entryIt,
         Set<Integer> remainingParts,
         long rebalanceId) {
-        assert contextId.get3() != null;
-
-        AffinityTopologyVersion topVer = grp.affinity().lastVersion();
-        assert contextId.get3().compareTo(topVer) >= 0 : "Saving outdated context " + contextId + " " + topVer;
-
         synchronized (scMap) {
             assert scMap.get(contextId) == null;
 

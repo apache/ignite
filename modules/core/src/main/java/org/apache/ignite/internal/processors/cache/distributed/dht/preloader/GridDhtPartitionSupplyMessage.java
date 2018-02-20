@@ -328,8 +328,8 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
                 writer.incrementState();
 
             case 11:
-                // Keep 'updateSequence' name for compatibility.
-                if (!writer.writeLong("updateSequence", rebalanceId))
+                // Keep 'updateSeq' name for compatibility.
+                if (!writer.writeLong("updateSeq", rebalanceId))
                     return false;
 
                 writer.incrementState();
@@ -415,8 +415,8 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
                 reader.incrementState();
 
             case 11:
-                // Keep 'updateSequence' name for compatibility.
-                rebalanceId = reader.readLong("updateSequence");
+                // Keep 'updateSeq' name for compatibility.
+                rebalanceId = reader.readLong("updateSeq");
 
                 if (!reader.isLastRead())
                     return false;

@@ -40,7 +40,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     private static final long serialVersionUID = 0L;
 
     /** */
-    public static final IgniteProductVersion VERSION_SINCE = IgniteProductVersion.fromString("2.3.0");
+    public static final IgniteProductVersion VERSION_SINCE = IgniteProductVersion.fromString("2.4.0");
 
     /** Rebalance id. */
     private long rebalanceId;
@@ -208,7 +208,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
      * @return Converted message or {@code this} if conversion isn't necessary.
      */
     public GridCacheMessage convertIfNeeded(IgniteProductVersion target) {
-        if (target.compareTo(VERSION_SINCE) < 0)
+        if (target.compareTo(VERSION_SINCE) <= 0)
             return new GridDhtPartitionDemandLegacyMessage(this);
 
         return this;

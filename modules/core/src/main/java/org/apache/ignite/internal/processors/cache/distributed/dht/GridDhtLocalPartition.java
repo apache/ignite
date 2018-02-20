@@ -1380,11 +1380,6 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
                 // Recreate cache data store in case of allowed fast eviction, and reset clear flag.
                 listen(f -> {
-                    if (f.error() == null) {
-                        if (state() == MOVING && clear && grp.allowFastEviction())
-                            recreateCacheDataStore();
-                    }
-
                     clear = false;
 
                     clearingCallbackRegistered = false;
@@ -1421,6 +1416,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
          * Successfully finishes the future.
          */
         public void finish() {
+            if (state() == MOVING && clear && grp.allowFastEviction())
+                recreateCacheDataStore();
+
             synchronized (this) {
                 onDone();
                 finished = true;
