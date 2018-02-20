@@ -17,152 +17,19 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.nio.ByteBuffer;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageReader;
-import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-
 /**
  * MVCC version. This is unique version allowing to order all reads and writes within a cluster. Consists of two parts:
  * - coordinator version - number which increases on every coordinator change;
  * - counter - local coordinator counter which is increased on every update.
  */
-public class MvccVersion implements Message {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** Coordinator version. */
-    private long crdVer;
-
-    /** Local counter. */
-    private long cntr;
-
-    /**
-     * Constructor.
-     */
-    public MvccVersion() {
-        // No-op.
-    }
-
-    /**
-     * @param crdVer Coordinator version.
-     * @param cntr Counter.
-     */
-    public MvccVersion(long crdVer, long cntr) {
-        this.crdVer = crdVer;
-        this.cntr = cntr;
-    }
-
+public interface MvccVersion {
     /**
      * @return Coordinator version.
      */
-    public long coordinatorVersion() {
-        return crdVer;
-    }
+    public long coordinatorVersion();
 
     /**
      * @return Local counter.
      */
-    public long counter() {
-        return cntr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        MvccVersion that = (MvccVersion) o;
-
-        return crdVer == that.crdVer && cntr == that.cntr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int res = (int) (crdVer ^ (crdVer >>> 32));
-        res = 31 * res + (int) (cntr ^ (cntr >>> 32));
-        return res;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
-        writer.setBuffer(buf);
-
-        if (!writer.isHeaderWritten()) {
-            if (!writer.writeHeader(directType(), fieldsCount()))
-                return false;
-
-            writer.onHeaderWritten();
-        }
-
-        switch (writer.state()) {
-            case 0:
-                if (!writer.writeLong("cntr", cntr))
-                    return false;
-
-                writer.incrementState();
-
-            case 1:
-                if (!writer.writeLong("crdVer", crdVer))
-                    return false;
-
-                writer.incrementState();
-
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean readFrom(ByteBuffer buf, MessageReader reader) {
-        reader.setBuffer(buf);
-
-        if (!reader.beforeMessageRead())
-            return false;
-
-        switch (reader.state()) {
-            case 0:
-                cntr = reader.readLong("cntr");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-            case 1:
-                crdVer = reader.readLong("crdVer");
-
-                if (!reader.isLastRead())
-                    return false;
-
-                reader.incrementState();
-
-        }
-
-        return reader.afterMessageRead(MvccVersion.class);
-    }
-
-    /** {@inheritDoc} */
-    @Override public short directType() {
-        return 143;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 2;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onAckReceived() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(MvccVersion.class, this);
-    }
+    public long counter();
 }

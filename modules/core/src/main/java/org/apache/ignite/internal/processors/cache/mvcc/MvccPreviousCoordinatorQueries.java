@@ -166,7 +166,7 @@ class MvccPreviousCoordinatorQueries {
         assert cntr != MvccProcessor.MVCC_COUNTER_NA;
 
         synchronized (this) {
-            MvccVersion mvccCntr = new MvccVersion(crdVer, cntr);
+            MvccVersion mvccCntr = new MvccVersionImpl(crdVer, cntr);
 
             Map<MvccVersion, Integer> nodeQueries = activeQueries.get(nodeId);
 

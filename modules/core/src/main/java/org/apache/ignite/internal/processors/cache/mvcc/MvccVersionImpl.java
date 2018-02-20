@@ -15,53 +15,83 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.cache.mvcc;
 
-import java.nio.ByteBuffer;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
+import java.nio.ByteBuffer;
+
 /**
- *
+ * Base MVCC version implementation.
  */
-public class GridCacheMvccEntryInfo extends GridCacheEntryInfo {
+public class MvccVersionImpl implements MvccVersion, Message {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
-    private long mvccCrdVer;
+    /** Coordinator version. */
+    private long crdVer;
 
-    /** */
-    private long mvccCntr;
+    /** Local counter. */
+    private long cntr;
 
-    /** {@inheritDoc} */
-    @Override public void mvccVersion(long crdVer, long ctr) {
-        this.mvccCrdVer = crdVer;
-        this.mvccCntr = ctr;
+    /**
+     * Constructor.
+     */
+    public MvccVersionImpl() {
+        // No-op.
+    }
+
+    /**
+     * @param crdVer Coordinator version.
+     * @param cntr Counter.
+     */
+    public MvccVersionImpl(long crdVer, long cntr) {
+        this.crdVer = crdVer;
+        this.cntr = cntr;
+    }
+
+    /**
+     * @return Coordinator version.
+     */
+    public long coordinatorVersion() {
+        return crdVer;
+    }
+
+    /**
+     * @return Local counter.
+     */
+    public long counter() {
+        return cntr;
     }
 
     /** {@inheritDoc} */
-    @Override public long coordinatorVersion() {
-        return mvccCrdVer;
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        MvccVersionImpl that = (MvccVersionImpl) o;
+
+        return crdVer == that.crdVer && cntr == that.cntr;
     }
 
     /** {@inheritDoc} */
-    @Override public long counter() {
-        return mvccCntr;
-    }
+    @Override public int hashCode() {
+        int res = (int) (crdVer ^ (crdVer >>> 32));
 
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 8;
+        res = 31 * res + (int) (cntr ^ (cntr >>> 32));
+
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
-
-        if (!super.writeTo(buf, writer))
-            return false;
 
         if (!writer.isHeaderWritten()) {
             if (!writer.writeHeader(directType(), fieldsCount()))
@@ -71,14 +101,14 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo {
         }
 
         switch (writer.state()) {
-            case 6:
-                if (!writer.writeLong("mvccCntr", mvccCntr))
+            case 0:
+                if (!writer.writeLong("cntr", cntr))
                     return false;
 
                 writer.incrementState();
 
-            case 7:
-                if (!writer.writeLong("mvccCrdVer", mvccCrdVer))
+            case 1:
+                if (!writer.writeLong("crdVer", crdVer))
                     return false;
 
                 writer.incrementState();
@@ -95,20 +125,17 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo {
         if (!reader.beforeMessageRead())
             return false;
 
-        if (!super.readFrom(buf, reader))
-            return false;
-
         switch (reader.state()) {
-            case 6:
-                mvccCntr = reader.readLong("mvccCntr");
+            case 0:
+                cntr = reader.readLong("cntr");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
 
-            case 7:
-                mvccCrdVer = reader.readLong("mvccCrdVer");
+            case 1:
+                crdVer = reader.readLong("crdVer");
 
                 if (!reader.isLastRead())
                     return false;
@@ -117,16 +144,26 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo {
 
         }
 
-        return reader.afterMessageRead(GridCacheMvccEntryInfo.class);
+        return reader.afterMessageRead(MvccVersionImpl.class);
     }
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 138;
+        return 143;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 2;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridCacheMvccEntryInfo.class, this);
+        return S.toString(MvccVersionImpl.class, this);
     }
 }

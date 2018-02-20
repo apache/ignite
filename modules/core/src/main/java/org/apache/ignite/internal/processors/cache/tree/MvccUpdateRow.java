@@ -54,7 +54,7 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
     private List<MvccCleanupRow> cleanupRows;
 
     /** */
-    private final MvccSnapshot mvccVer;
+    private final MvccSnapshot mvccSnapshot;
 
     /** */
     private final boolean needOld;
@@ -67,7 +67,7 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
      * @param val Value.
      * @param ver Version.
      * @param expireTime Expire time.
-     * @param mvccVer Mvcc version.
+     * @param mvccSnapshot MVCC snapshot.
      * @param needOld {@code True} if need previous value.
      * @param part Partition.
      * @param cacheId Cache ID.
@@ -77,13 +77,13 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
         CacheObject val,
         GridCacheVersion ver,
         long expireTime,
-        MvccSnapshot mvccVer,
+        MvccSnapshot mvccSnapshot,
         boolean needOld,
         int part,
         int cacheId) {
         super(key, val, ver, part, expireTime, cacheId);
 
-        this.mvccVer = mvccVer;
+        this.mvccSnapshot = mvccSnapshot;
         this.needOld = needOld;
     }
 
@@ -128,11 +128,11 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
         int cmp = Long.compare(unmaskedCoordinatorVersion(), rowCrdVer);
 
         if (cmp == 0)
-            cmp = Long.compare(mvccVer.counter(), rowCntr);
+            cmp = Long.compare(mvccSnapshot.counter(), rowCntr);
 
         // Can be equals if execute update on backup and backup already rebalanced value updated on primary.
         assert cmp >= 0 : "[updCrd=" + unmaskedCoordinatorVersion() +
-            ", updCntr=" + mvccVer.counter() +
+            ", updCntr=" + mvccSnapshot.counter() +
             ", rowCrd=" + rowCrdVer +
             ", rowCntr=" + rowCntr + ']';
 
@@ -151,7 +151,7 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
         // Assert version grows.
         assert assertVersion(rowIo, pageAddr, idx);
 
-        boolean checkActive = mvccVer.activeTransactions().size() > 0;
+        boolean checkActive = mvccSnapshot.activeTransactions().size() > 0;
 
         boolean txActive = false;
 
@@ -164,7 +164,7 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
             int cmp = Long.compare(crdVer, rowCrdVer);
 
             if (cmp == 0)
-                cmp = Long.compare(mvccVer.counter(), rowIo.getMvccCounter(pageAddr, idx));
+                cmp = Long.compare(mvccSnapshot.counter(), rowIo.getMvccCounter(pageAddr, idx));
 
             if (cmp == 0)
                 res = UpdateResult.VERSION_FOUND;
@@ -184,7 +184,7 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
         if (checkActive && crdVer == rowCrdVer) {
             long rowMvccCntr = rowIo.getMvccCounter(pageAddr, idx);
 
-            if (mvccVer.activeTransactions().contains(rowMvccCntr)) {
+            if (mvccSnapshot.activeTransactions().contains(rowMvccCntr)) {
                 txActive = true;
 
                 if (activeTxs == null)
@@ -202,7 +202,7 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
             long rowCntr = rowIo.getMvccCounter(pageAddr, idx);
 
             if (crdVer == rowCrdVer)
-                cmp = Long.compare(mvccVer.cleanupVersion(), rowCntr);
+                cmp = Long.compare(mvccSnapshot.cleanupVersion(), rowCntr);
             else
                 cmp = 1;
 
@@ -212,7 +212,7 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
                     assert assertMvccVersionValid(rowCrdVer, rowCntr);
 
                     // Should not be possible to cleanup active tx.
-                    assert rowCrdVer != crdVer || !mvccVer.activeTransactions().contains(rowCntr);
+                    assert rowCrdVer != crdVer || !mvccSnapshot.activeTransactions().contains(rowCntr);
 
                     if (cleanupRows == null)
                         cleanupRows = new ArrayList<>();
@@ -231,17 +231,17 @@ public class MvccUpdateRow extends DataRow implements BPlusTree.TreeRowClosure<C
      * @return Coordinator version without flags.
      */
     protected long unmaskedCoordinatorVersion() {
-        return mvccVer.coordinatorVersion();
+        return mvccSnapshot.coordinatorVersion();
     }
 
     /** {@inheritDoc} */
     @Override public long mvccCoordinatorVersion() {
-        return mvccVer.coordinatorVersion();
+        return mvccSnapshot.coordinatorVersion();
     }
 
     /** {@inheritDoc} */
     @Override public long mvccCounter() {
-        return mvccVer.counter();
+        return mvccSnapshot.counter();
     }
 
     /** {@inheritDoc} */

@@ -1368,7 +1368,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             @Nullable CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            MvccSnapshot mvccVer)
+            MvccVersion mvccVer)
             throws IgniteCheckedException
         {
             CacheDataStore delegate = init0(false);
@@ -1448,18 +1448,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public CacheDataRow mvccFind(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot mvccVer)
+        @Override public CacheDataRow mvccFind(GridCacheContext cctx, KeyCacheObject key, MvccSnapshot snapshot)
             throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
             if (delegate != null)
-                return delegate.mvccFind(cctx, key, mvccVer);
+                return delegate.mvccFind(cctx, key, snapshot);
 
             return null;
         }
 
         /** {@inheritDoc} */
-        @Override public MvccSnapshot findMaxMvccVersion(GridCacheContext cctx, KeyCacheObject key)
+        @Override public MvccVersion findMaxMvccVersion(GridCacheContext cctx, KeyCacheObject key)
             throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
@@ -1491,12 +1491,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public GridCursor<? extends CacheDataRow> cursor(MvccSnapshot ver)
+        @Override public GridCursor<? extends CacheDataRow> cursor(MvccSnapshot mvccSnapshot)
             throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
             if (delegate != null)
-                return delegate.cursor(ver);
+                return delegate.cursor(mvccSnapshot);
 
             return EMPTY_CURSOR;
         }
@@ -1533,12 +1533,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             KeyCacheObject lower,
             KeyCacheObject upper,
             Object x,
-            MvccSnapshot mvccVer)
+            MvccSnapshot mvccSnapshot)
             throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
             if (delegate != null)
-                return delegate.cursor(cacheId, lower, upper, x, mvccVer);
+                return delegate.cursor(cacheId, lower, upper, x, mvccSnapshot);
 
             return EMPTY_CURSOR;
         }
@@ -1560,11 +1560,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         /** {@inheritDoc} */
         @Override public GridCursor<? extends CacheDataRow> cursor(int cacheId,
-            MvccSnapshot mvccVer) throws IgniteCheckedException {
+            MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
             CacheDataStore delegate = init0(true);
 
             if (delegate != null)
-                return delegate.cursor(cacheId, mvccVer);
+                return delegate.cursor(cacheId, mvccSnapshot);
 
             return EMPTY_CURSOR;
         }

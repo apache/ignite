@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.unm
  */
 public class MvccMaxVersionClosure extends SearchRow implements BPlusTree.TreeRowClosure<CacheSearchRow, CacheDataRow> {
     /** */
-    private MvccSnapshot res;
+    private MvccVersion res;
 
     /**
      * @param cacheId Cache ID.
@@ -48,7 +48,7 @@ public class MvccMaxVersionClosure extends SearchRow implements BPlusTree.TreeRo
     /**
      * @return Mvcc version of found row.
      */
-    @Nullable public MvccSnapshot mvccVersion() {
+    @Nullable public MvccVersion mvccVersion() {
         return res;
     }
 
@@ -60,17 +60,19 @@ public class MvccMaxVersionClosure extends SearchRow implements BPlusTree.TreeRo
     {
         RowLinkIO rowIo = (RowLinkIO)io;
 
-        res = new MvccSnapshotWithoutTxs(unmaskCoordinatorVersion(rowIo.getMvccCoordinatorVersion(pageAddr, idx)),
-            rowIo.getMvccCounter(pageAddr, idx), Long.MIN_VALUE);
+        res = new MvccVersionImpl(unmaskCoordinatorVersion(rowIo.getMvccCoordinatorVersion(pageAddr, idx)),
+            rowIo.getMvccCounter(pageAddr, idx));
 
         return false;  // Stop search.
     }
 
+    // TODO: What is going on here with versions?
     /** {@inheritDoc} */
     @Override public long mvccCoordinatorVersion() {
         return Long.MAX_VALUE;
     }
 
+    // TODO: What is going on here with versions?
     /** {@inheritDoc} */
     @Override public long mvccCounter() {
         return Long.MAX_VALUE;

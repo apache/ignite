@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinatorChangeAware;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -896,7 +897,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             MvccSnapshot ver = ((MvccCoordinatorChangeAware)nodeObj).onMvccCoordinatorChange(mvccCrd);
 
             if (ver != null ) {
-                MvccVersion cntr = new MvccVersion(ver.coordinatorVersion(), ver.counter());
+                MvccVersion cntr = new MvccVersionImpl(ver.coordinatorVersion(), ver.counter());
 
                 Integer cnt = activeQrys.get(cntr);
 

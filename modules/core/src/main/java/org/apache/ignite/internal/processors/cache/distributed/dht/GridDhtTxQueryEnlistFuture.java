@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLo
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxQueryEnlistResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccLongList;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -718,7 +719,7 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
      * @throws IgniteCheckedException If failed.
      */
     private boolean checkVersion(GridCacheEntryEx entry) throws IgniteCheckedException {
-        MvccSnapshot ver = cctx.offheap().findMaxMvccVersion(cctx, entry.key());
+        MvccVersion ver = cctx.offheap().findMaxMvccVersion(cctx, entry.key());
 
         if (ver == null)
             return true;

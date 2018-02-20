@@ -78,6 +78,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
@@ -683,7 +684,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryTypeDescriptor type,
         CacheDataRow row,
         @Nullable CacheDataRow prevRow,
-        @Nullable MvccSnapshot newVer,
+        @Nullable MvccVersion newVer,
         boolean prevRowAvailable,
         boolean idxRebuild) throws IgniteCheckedException
     {

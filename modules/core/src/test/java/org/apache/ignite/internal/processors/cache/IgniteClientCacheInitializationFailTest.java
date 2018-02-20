@@ -46,6 +46,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryIndexing;
@@ -335,7 +336,7 @@ public class IgniteClientCacheInitializationFailTest extends GridCommonAbstractT
 
         /** {@inheritDoc} */
         @Override public void store(GridCacheContext cctx, GridQueryTypeDescriptor type, CacheDataRow row,
-            CacheDataRow prevRow, @Nullable MvccSnapshot newVer, boolean prevRowAvailable,
+            CacheDataRow prevRow, @Nullable MvccVersion newVer, boolean prevRowAvailable,
             boolean idxRebuild) throws IgniteCheckedException {
             // No-op.
         }

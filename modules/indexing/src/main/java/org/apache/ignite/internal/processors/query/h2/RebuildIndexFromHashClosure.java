@@ -49,6 +49,7 @@ class RebuildIndexFromHashClosure implements SchemaIndexCacheVisitorClosure {
     }
 
     /** {@inheritDoc} */
+    // TODO: what is going on here?
     @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
         if (mvccEnabled && !F.eq(prevKey, row.key())) {
             prevKey = row.key();
@@ -62,9 +63,7 @@ class RebuildIndexFromHashClosure implements SchemaIndexCacheVisitorClosure {
         if (mvccEnabled) {
             mvccVer = new GridCacheMvccEntryInfo();
 
-            mvccVer.mvccCoordinatorVersion(row.mvccCoordinatorVersion());
-
-            mvccVer.mvccCounter(row.mvccCounter());
+            mvccVer.mvccVersion(row.mvccCoordinatorVersion(), row.mvccCounter());
         }
     }
 }

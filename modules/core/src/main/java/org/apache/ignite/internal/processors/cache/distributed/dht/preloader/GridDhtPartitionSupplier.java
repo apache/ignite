@@ -380,8 +380,7 @@ class GridDhtPartitionSupplier {
                             boolean rmvd = false;
 
                             if (grp.mvccEnabled()) {
-                                info.mvccCoordinatorVersion(row.mvccCoordinatorVersion());
-                                info.mvccCounter(row.mvccCounter());
+                                info.mvccVersion(row.mvccCoordinatorVersion(), row.mvccCounter());
 
                                 rmvd = versionForRemovedValue(row.mvccCoordinatorVersion());
                             }

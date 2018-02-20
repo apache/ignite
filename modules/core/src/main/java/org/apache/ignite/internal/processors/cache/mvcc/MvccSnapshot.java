@@ -20,28 +20,21 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
- *
+ * MVCC snapshot which holds the following information:
+ * - Current MVCC version which should be used for visibility checks
+ * - List of active transactions which should not be visible to current transaction
+ * - Cleanup version which is used to help vacuum process.
  */
-public interface MvccSnapshot extends Message {
+public interface MvccSnapshot extends MvccVersion, Message {
     /**
      * @return Active transactions.
      */
     public MvccLongList activeTransactions();
 
     /**
-     * @return Coordinator version.
-     */
-    public long coordinatorVersion();
-
-    /**
      * @return Cleanup version (all smaller versions are safe to remove).
      */
     public long cleanupVersion();
-
-    /**
-     * @return Counter.
-     */
-    public long counter();
 
     /**
      * @return Version without active transactions.

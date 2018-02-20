@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitor;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -268,7 +269,7 @@ public interface GridQueryIndexing {
         GridQueryTypeDescriptor type,
         CacheDataRow row,
         CacheDataRow prevRow,
-        @Nullable MvccSnapshot newVer,
+        @Nullable MvccVersion newVer,
         boolean prevRowAvailable,
         boolean idxRebuild) throws IgniteCheckedException;
 
