@@ -73,7 +73,20 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @throws IgniteException If failed to start iteration.
      * @throws StorageException If IO error occurred while reading WAL entries.
      */
-    public WALIterator replay(WALPointer start) throws IgniteCheckedException, StorageException;
+    public default WALIterator replay(WALPointer start) throws IgniteCheckedException, StorageException {
+        return replay(start, true);
+    }
+
+    /**
+     * Invoke this method to iterate over the written log entries.
+     *
+     * @param start Optional WAL pointer from which to start iteration.
+     * @param linkDeltaRecords If {@code true} link DataRecords payload to page delta records.
+     * @return Records iterator.
+     * @throws IgniteException If failed to start iteration.
+     * @throws StorageException If IO error occurred while reading WAL entries.
+     */
+    public WALIterator replay(WALPointer start, boolean linkDeltaRecords) throws IgniteCheckedException, StorageException;
 
     /**
      * Invoke this method to reserve WAL history since provided pointer and prevent it's deletion.

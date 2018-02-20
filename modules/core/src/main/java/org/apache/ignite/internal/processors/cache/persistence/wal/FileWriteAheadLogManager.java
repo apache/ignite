@@ -757,7 +757,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public WALIterator replay(WALPointer start) throws IgniteCheckedException, StorageException {
+    @Override public WALIterator replay(WALPointer start, boolean linkDeltaRecords) throws IgniteCheckedException, StorageException {
         assert start == null || start instanceof FileWALPointer : "Invalid start pointer: " + start;
 
         FileWriteHandle hnd = currentHandle();
@@ -768,17 +768,18 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             end = hnd.position();
 
         return new RecordsIterator(
-            cctx,
-            walWorkDir,
-            walArchiveDir,
-            (FileWALPointer)start,
-            end,
-            dsCfg,
-            new RecordSerializerFactoryImpl(cctx),
-            ioFactory,
-            archiver,
-            decompressor,
-            log
+                cctx,
+                walWorkDir,
+                walArchiveDir,
+                (FileWALPointer)start,
+                end,
+                dsCfg,
+                new RecordSerializerFactoryImpl(cctx),
+                ioFactory,
+                archiver,
+                decompressor,
+                log,
+                linkDeltaRecords
         );
     }
 
@@ -2875,13 +2876,15 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             FileIOFactory ioFactory,
             @Nullable FileArchiver archiver,
             FileDecompressor decompressor,
-            IgniteLogger log
+            IgniteLogger log,
+            boolean linkDeltaRecords
         ) throws IgniteCheckedException {
             super(log,
                 cctx,
                 serializerFactory,
                 ioFactory,
-                dsCfg.getWalRecordIteratorBufferSize());
+                dsCfg.getWalRecordIteratorBufferSize(),
+                linkDeltaRecords);
             this.walWorkDir = walWorkDir;
             this.walArchiveDir = walArchiveDir;
             this.dsCfg = dsCfg;

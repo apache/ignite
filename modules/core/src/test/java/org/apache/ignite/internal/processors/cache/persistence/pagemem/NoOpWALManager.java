@@ -57,7 +57,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public WALIterator replay(WALPointer start) throws IgniteCheckedException, StorageException {
+    @Override public WALIterator replay(WALPointer start, boolean linkDeltaRecords) throws IgniteCheckedException, StorageException {
         return null;
     }
 

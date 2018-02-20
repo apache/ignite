@@ -93,15 +93,25 @@ public class RowDataLinker {
     public RowDataHolder addDataRecord(DataRecord record, WALPointer pointer) throws IgniteCheckedException {
         // Create and cache linker with new DataRecord in case of CREATE or UPDATE operations.
         if (record.writeEntries().size() == 1
-                && (record.operation() == GridCacheOperation.CREATE || record.operation() == GridCacheOperation.UPDATE))
-            return rowDataCache.put(pointer, converter.convertFrom(record));
+                && (record.operation() == GridCacheOperation.CREATE || record.operation() == GridCacheOperation.UPDATE)) {
+            RowDataHolder holder = converter.convertFrom(record);
+
+            rowDataCache.put(pointer, holder);
+
+            return holder;
+        }
 
         return null;
     }
 
     public RowDataHolder addMetastorageDataRecord(MetastoreDataRecord record, WALPointer pointer) throws IgniteCheckedException {
-        if (record.value() != null)
-            return rowDataCache.put(pointer, converter.convertFrom(record));
+        if (record.value() != null) {
+            RowDataHolder holder = converter.convertFrom(record);
+
+            rowDataCache.put(pointer, holder);
+
+            return holder;
+        }
 
         return null;
     }
@@ -137,11 +147,9 @@ public class RowDataLinker {
 
         try {
             // Try to find record in WAL.
-            WALIterator iterator = wal.replay(lookupPointer);
+            // TODO: Maybe we can replay over several tuples and populate cache with then in batch mode?
+            WALIterator iterator = wal.replay(lookupPointer, false);
             IgniteBiTuple<WALPointer, WALRecord> tuple = iterator.next();
-
-            if (!lookupPointer.equals(tuple.getKey()))
-                throw new IllegalStateException("DataRecord pointer is invalid " + tuple.getKey());
 
             if (tuple.getValue() instanceof DataRecord) {
                 DataRecord record = (DataRecord) tuple.getValue();

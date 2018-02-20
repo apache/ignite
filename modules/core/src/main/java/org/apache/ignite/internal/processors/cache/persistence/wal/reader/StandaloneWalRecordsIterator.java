@@ -104,7 +104,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             sharedCtx,
             new RecordSerializerFactoryImpl(sharedCtx),
             ioFactory,
-            bufSize);
+            bufSize,
+            true);
         this.keepBinary = keepBinary;
         init(walFilesDir, false, null);
         advance();
@@ -133,7 +134,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
             sharedCtx,
             new RecordSerializerFactoryImpl(sharedCtx),
             ioFactory,
-            bufSize);
+            bufSize,
+            true);
 
         this.keepBinary = keepBinary;
         init(null, workDir, walFiles);

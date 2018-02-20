@@ -87,6 +87,9 @@ public abstract class AbstractWalRecordsIterator
     /** Utility buffer for reading records */
     private final ByteBufferExpander buf;
 
+    /** WAL version since linking delta records is available. */
+    private static final int LINKER_AVAILABLE_SINCE_VERSION = 3;
+
     /** Class to link {@link DataRecord) entries payload to {@link WALReferenceAwareRecord} records. */
     private final RowDataLinker linker;
 
@@ -102,7 +105,8 @@ public abstract class AbstractWalRecordsIterator
         @NotNull final GridCacheSharedContext sharedCtx,
         @NotNull final RecordSerializerFactory serializerFactory,
         @NotNull final FileIOFactory ioFactory,
-        final int bufSize
+        final int bufSize,
+        boolean linkDeltaRecords
     ) {
         this.log = log;
         this.sharedCtx = sharedCtx;
@@ -112,7 +116,10 @@ public abstract class AbstractWalRecordsIterator
         // Do not allocate direct buffer for iterator.
         this.buf = new ByteBufferExpander(bufSize, ByteOrder.nativeOrder());
 
-        this.linker = new RowDataLinker(sharedCtx);
+        if (linkDeltaRecords)
+            this.linker = new RowDataLinker(sharedCtx);
+        else
+            this.linker = null;
     }
 
     /**
@@ -146,11 +153,14 @@ public abstract class AbstractWalRecordsIterator
 
     /** {@inheritDoc} */
     @Override protected void onClose() throws IgniteCheckedException {
-        int walLookups = linker.walLookups();
-        if (walLookups > 0)
-            log.warning("The number DataRecord WAL lookups is " + walLookups +
-                    ". Try to increase " + IgniteSystemProperties.IGNITE_WAL_DATA_RECORDS_CACHE_SIZE_MB
-                    + " to reduce number of such lookups.");
+        if (linker != null) {
+            int walLookups = linker.walLookups();
+
+            if (walLookups > 0)
+                log.warning("The number DataRecord WAL lookups is " + walLookups +
+                        ". Try to increase " + IgniteSystemProperties.IGNITE_WAL_DATA_RECORDS_CACHE_SIZE_MB
+                        + " to reduce number of such lookups.");
+        }
 
         try {
             buf.close();
@@ -246,7 +256,7 @@ public abstract class AbstractWalRecordsIterator
 
             rec = postProcessRecord(rec);
 
-            if (hnd.ser.version() >= 3) {
+            if (linker != null && hnd.ser.version() >= LINKER_AVAILABLE_SINCE_VERSION) {
                 if (rec instanceof MetastoreDataRecord) {
                     linker.addMetastorageDataRecord((MetastoreDataRecord) rec, actualFilePtr);
                 }
