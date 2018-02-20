@@ -200,7 +200,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
             assert !(transitionRes == null && waitForTransition) : "Forgot to set result in future.";
 
             // Use null as false
-            return transitionRes == true;
+            return transitionRes == null ? false : transitionRes;
         }
         else
             return globalState.active();
