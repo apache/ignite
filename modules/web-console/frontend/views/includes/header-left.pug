@@ -18,7 +18,7 @@
     a(ui-sref='base.configuration.tabs' ui-sref-active='active')
         | Configure
 
-.wch-nav-item(ng-if='!$root.user.becomeUsed' ng-controller='notebookController')
+.wch-nav-item(ng-if='!$root.user.becomeUsed' ng-controller='notebookNavbarController')
     a(ng-if='IgniteDemoMode' ui-sref='base.sql.demo' ui-sref-active='active')
         | Queries
 

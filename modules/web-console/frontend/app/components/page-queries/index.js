@@ -22,14 +22,14 @@ import templateUrl from './template.tpl.pug';
 
 import NotebookData from './Notebook.data';
 import Notebook from './Notebook.service';
-import notebook from './notebook.controller';
-import controller from './controller';
+import notebookNavbarCtrl from './notebook.navbar.controller';
+import { NotebookCtrl } from './controller';
 
 export default angular.module('ignite-console.sql', [
     'ui.router'
 ])
 .component('pageQueries', {
-    controller,
+    controller: NotebookCtrl,
     templateUrl
 })
 .config(['$stateProvider', ($stateProvider) => {
@@ -59,4 +59,4 @@ export default angular.module('ignite-console.sql', [
 }])
 .service('IgniteNotebookData', NotebookData)
 .service('IgniteNotebook', Notebook)
-.controller('notebookController', notebook);
+.controller('notebookNavbarController', notebookNavbarCtrl);
