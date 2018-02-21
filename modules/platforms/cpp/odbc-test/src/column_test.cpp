@@ -165,7 +165,7 @@ BOOST_AUTO_TEST_CASE(TestColumnStringSeveral)
 
     ApplicationDataBuffer appBuf(type_traits::OdbcNativeType::AI_CHAR, &strBuf[0], strBuf.size(), &reslen);
 
-    BOOST_REQUIRE_EQUAL(column.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_SUCCESS);
+    BOOST_REQUIRE_EQUAL(column.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_VARLEN_DATA_TRUNCATED);
 
     BOOST_REQUIRE(column.IsValid());
 
@@ -175,7 +175,7 @@ BOOST_AUTO_TEST_CASE(TestColumnStringSeveral)
 
     res.append(strBuf.c_str());
 
-    BOOST_REQUIRE_EQUAL(column.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_SUCCESS);
+    BOOST_REQUIRE_EQUAL(column.ReadToBuffer(reader, appBuf), app::ConversionResult::AI_VARLEN_DATA_TRUNCATED);
 
     BOOST_REQUIRE(column.IsValid());
 
