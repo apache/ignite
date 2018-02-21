@@ -753,6 +753,8 @@ namespace ignite
 
         int64_t res = statement->AffectedRows();
 
+        LOG_MSG("Row count: " << res);
+
         if (rowCnt)
             *rowCnt = static_cast<SQLLEN>(res);
 
@@ -1357,7 +1359,7 @@ namespace ignite
     {
         using odbc::Connection;
 
-        LOG_MSG("SQLSetConnectAttr called");
+        LOG_MSG("SQLSetConnectAttr called(" << attr << ", " << value << ")");
 
         Connection *connection = reinterpret_cast<Connection*>(conn);
 

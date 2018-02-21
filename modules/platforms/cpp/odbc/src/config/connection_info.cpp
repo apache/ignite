@@ -914,6 +914,18 @@ namespace ignite
 
 #ifdef SQL_GETDATA_EXTENSIONS
                 // Bitmask enumerating extensions to SQLGetData.
+                // SQL_GD_ANY_COLUMN = SQLGetData can be called for any unbound column, including those before the last
+                //     bound column. Note that the columns must be called in order of ascending column number unless
+                //     SQL_GD_ANY_ORDER is also returned.
+                // SQL_GD_ANY_ORDER = SQLGetData can be called for unbound columns in any order. Note that SQLGetData
+                //     can be called only for columns after the last bound column unless SQL_GD_ANY_COLUMN is also
+                //     returned.
+                // SQL_GD_BLOCK = SQLGetData can be called for an unbound column in any row in a block (where the rowset
+                //     size is greater than 1) of data after positioning to that row with SQLSetPos.
+                // SQL_GD_BOUND = SQLGetData can be called for bound columns in addition to unbound columns. A driver
+                //     cannot return this value unless it also returns SQL_GD_ANY_COLUMN.
+                // SQL_GD_OUTPUT_PARAMS = SQLGetData can be called to return output parameter values. For more
+                //     information, see Retrieving Output.
                 intParams[SQL_GETDATA_EXTENSIONS] = SQL_GD_ANY_COLUMN | SQL_GD_ANY_ORDER | SQL_GD_BOUND;
 #endif // SQL_GETDATA_EXTENSIONS
 
@@ -2182,7 +2194,7 @@ namespace ignite
                 // SQL_FD_FETCH_ABSOLUTE (ODBC 1.0)
                 // SQL_FD_FETCH_RELATIVE (ODBC 1.0)
                 // SQL_FD_FETCH_BOOKMARK (ODBC 2.0)
-                intParams[SQL_FETCH_DIRECTION] = SQL_FD_FETCH_NEXT;
+                intParams[SQL_FETCH_DIRECTION] = SQL_FD_FETCH_NEXT | SQL_FD_FETCH_PRIOR;
 #endif // SQL_FETCH_DIRECTION
 
 #ifdef SQL_LOCK_TYPES
@@ -2258,18 +2270,6 @@ namespace ignite
                 intParams[SQL_STATIC_SENSITIVITY] = 0;
 #endif // SQL_STATIC_SENSITIVITY
 
-#ifdef SQL_DTC_TRANSITION_COST
-                // DEPRECATED. Included for backward-compatibility.
-                //
-                // The value returned by the driver contains any combination of the following bits:
-                // SQL_DTC_ENLIST_EXPENSIVE, when set, implies the zero to nonzero transition is significantly more
-                //    expensive than a transition from nonzero to another nonzero value (enlisting a previously enlisted
-                //    connection in its next transaction).
-                // SQL_DTC_UNENLIST_EXPENSIVE, when set, implies the nonzero to zero transition is significantly more
-                //    expensive than using a connection whose SQL_ATTR_ENLIST_IN_DTC attribute is already set to zero.
-                intParams[SQL_DTC_TRANSITION_COST] = 0;
-#endif // SQL_DTC_TRANSITION_COST
-
                 //
                 //======================= Short Params ========================
                 //
@@ -2277,7 +2277,7 @@ namespace ignite
 #ifdef SQL_MAX_CONCURRENT_ACTIVITIES
                 // The maximum number of active statements that the driver can  support for a connection. Zero mean no
                 // limit.
-                shortParams[SQL_MAX_CONCURRENT_ACTIVITIES] = 32;
+                shortParams[SQL_MAX_CONCURRENT_ACTIVITIES] = 0;
 #endif // SQL_MAX_CONCURRENT_ACTIVITIES
 
 #ifdef SQL_CURSOR_COMMIT_BEHAVIOR
@@ -2472,7 +2472,7 @@ namespace ignite
                 // names.
                 // An FIPS Entry level-conformant driver will return at least 18. An FIPS Intermediate level-conformant
                 // driver will return at least 128.
-                shortParams[SQL_MAX_IDENTIFIER_LEN] = 128;
+                shortParams[SQL_MAX_IDENTIFIER_LEN] = 0;
 #endif // SQL_MAX_IDENTIFIER_LEN
 
 #ifdef SQL_MAX_PROCEDURE_NAME_LEN

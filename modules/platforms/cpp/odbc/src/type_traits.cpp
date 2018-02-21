@@ -20,19 +20,13 @@
 #include "ignite/odbc/system/odbc_constants.h"
 #include "ignite/odbc/type_traits.h"
 
-namespace
-{
-    /** Default variable size data display size. */
-    enum { DEFAULT_VARDATA_SIZE = SQL_NO_TOTAL };
-}
-
 namespace ignite
 {
     namespace odbc
     {
         namespace type_traits
         {
-            const std::string SqlTypeName::VARCHAR("LONG VARCHAR");
+            const std::string SqlTypeName::VARCHAR("VARCHAR");
 
             const std::string SqlTypeName::SMALLINT("SMALLINT");
 
@@ -50,7 +44,7 @@ namespace ignite
 
             const std::string SqlTypeName::BIGINT("BIGINT");
 
-            const std::string SqlTypeName::BINARY("LONG VARBINARY");
+            const std::string SqlTypeName::BINARY("VARBINARY");
 
             const std::string SqlTypeName::DATE("DATE");
 
@@ -451,7 +445,7 @@ namespace ignite
                     case SQL_LONGVARCHAR:
                     case SQL_DECIMAL:
                     case SQL_NUMERIC:
-                        return DEFAULT_VARDATA_SIZE;
+                        return SQL_NO_TOTAL;
 
                     case SQL_BIT:
                         return 1;
@@ -488,7 +482,7 @@ namespace ignite
                         return 36;
 
                     default:
-                        return DEFAULT_VARDATA_SIZE;
+                        return SQL_NO_TOTAL;
                 }
             }
 
@@ -512,7 +506,7 @@ namespace ignite
                     case SQL_LONGVARCHAR:
                     case SQL_DECIMAL:
                     case SQL_NUMERIC:
-                        return DEFAULT_VARDATA_SIZE;
+                        return SQL_NO_TOTAL;
 
                     case SQL_BIT:
                         return 1;
@@ -549,7 +543,7 @@ namespace ignite
                         return 36;
 
                     default:
-                        return DEFAULT_VARDATA_SIZE;
+                        return SQL_NO_TOTAL;
                 }
             }
 
@@ -573,7 +567,7 @@ namespace ignite
                     case SQL_LONGVARCHAR:
                     case SQL_DECIMAL:
                     case SQL_NUMERIC:
-                        return DEFAULT_VARDATA_SIZE;
+                        return SQL_NO_TOTAL;
 
                     case SQL_BIT:
                     case SQL_TINYINT:
@@ -606,7 +600,7 @@ namespace ignite
                         return 16;
 
                     default:
-                        return DEFAULT_VARDATA_SIZE;
+                        return SQL_NO_TOTAL;
                 }
             }
 
