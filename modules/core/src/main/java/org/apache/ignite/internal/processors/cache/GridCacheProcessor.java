@@ -679,6 +679,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             addCacheOnJoinFromConfig(caches, templates);
 
+            Map<String, StoredCacheData> storedCfgs = ctx.cache().context().pageStore().readCacheConfigurations();
+
+            for (Map.Entry<String, StoredCacheData> e : storedCfgs.entrySet()) {
+                if (!caches.containsKey(e.getKey()))
+                    addCacheOnJoin(e.getValue().config(), e.getValue().sql(), caches, templates);
+            }
+
             CacheJoinNodeDiscoveryData discoData = new CacheJoinNodeDiscoveryData(
                 IgniteUuid.randomUuid(),
                 caches,
