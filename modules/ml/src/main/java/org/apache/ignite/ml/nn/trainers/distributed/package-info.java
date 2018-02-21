@@ -15,27 +15,8 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
-
-import template from './template.pug';
-import controller from './controller';
-
-import './style.scss';
-
-export default angular
-    .module('ignite-console.page-password-changed', [
-    ])
-    .component('pagePasswordChanged', {
-        template,
-        controller
-    })
-    .config(['$stateProvider', ($stateProvider) => {
-        $stateProvider.state('password.send', {
-            url: '/changed',
-            component: 'pagePasswordChanged',
-            tfMetaTags: {
-                title: 'Password send'
-            },
-            unsaved: true
-        });
-    }]);
+/**
+ * <!-- Package description. -->
+ * Contains multilayer perceptron distributed trainers.
+ */
+package org.apache.ignite.ml.nn.trainers.distributed;
