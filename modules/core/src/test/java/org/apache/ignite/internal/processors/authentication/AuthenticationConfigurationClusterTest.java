@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.authentication;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -53,6 +55,10 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
         cfg.setDiscoverySpi(spi);
 
         cfg.setAuthenticationEnabled(authEnabled);
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setPersistenceEnabled(true)));
 
         return cfg;
     }
@@ -167,5 +173,20 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
                 }
             }, IgniteException.class,
             "Can not perform the operation because the authentication is not enabled for the cluster");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testEnableAuthenticationWithoutPersistence() throws Exception {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    startGrid(configuration(0, true, false).setDataStorageConfiguration(null));
+
+                    return null;
+                }
+            },
+            IgniteCheckedException.class,
+            "qqq");
     }
 }

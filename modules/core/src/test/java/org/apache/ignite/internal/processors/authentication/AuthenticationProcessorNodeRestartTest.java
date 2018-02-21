@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.authentication;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -65,6 +67,10 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
         cfg.setDiscoverySpi(spi);
 
         cfg.setAuthenticationEnabled(true);
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setPersistenceEnabled(true)));
 
         return cfg;
     }

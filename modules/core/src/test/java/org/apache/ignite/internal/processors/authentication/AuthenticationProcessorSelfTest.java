@@ -22,6 +22,8 @@ import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -80,6 +82,11 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
 
         cfg.setAuthenticationEnabled(true);
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setPersistenceEnabled(true)));
+
 
         return cfg;
     }
@@ -443,6 +450,43 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                 }
             }
         }, 10, "user-op");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testUserPersistence() throws Exception {
+        AuthorizationContext.context(actxDflt);
+
+        try {
+            for (int i = 0; i < NODES_COUNT; ++i)
+                grid(i).context().authentication().addUser("test" + i , "passwd" + i);
+
+            grid(CLI_NODE).context().authentication().updateUser("ignite", "new_passwd");
+
+            stopAllGrids();
+
+            startGrids(NODES_COUNT);
+
+            for (int i = 0; i < NODES_COUNT; ++i) {
+                for (int usrIdx = 0; usrIdx < NODES_COUNT; ++usrIdx) {
+                    AuthorizationContext actx = grid(i).context().authentication()
+                        .authenticate("test" + usrIdx, "passwd" + usrIdx);
+
+                    assertNotNull(actx);
+                    assertEquals("test" + usrIdx, actx.userName());
+                }
+
+                AuthorizationContext actx = grid(i).context().authentication()
+                    .authenticate("ignite", "new_passwd");
+
+                assertNotNull(actx);
+                assertEquals("ignite", actx.userName());
+            }
+        }
+        finally {
+            AuthorizationContext.clear();
+        }
     }
 
     /**

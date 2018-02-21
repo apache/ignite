@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.evict.FairFifoPageEvictionTracker;
 import org.apache.ignite.internal.processors.cache.persistence.evict.NoOpPageEvictionTracker;
@@ -56,7 +55,6 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolde
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.F;
@@ -107,17 +105,12 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** Page size from memory configuration, may be set only for fake(standalone) IgniteCacheDataBaseSharedManager */
     private int pageSize;
 
-    /** On heap meta storage. */
-    private MetaStorageOnheap metaStorage;
-
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        GridKernalContext ctx = cctx.kernalContext();
-
-        if (ctx.clientNode() && ctx.config().getDataStorageConfiguration() == null)
+        if (cctx.kernalContext().clientNode() && cctx.kernalContext().config().getDataStorageConfiguration() == null)
             return;
 
-        DataStorageConfiguration memCfg = ctx.config().getDataStorageConfiguration();
+        DataStorageConfiguration memCfg = cctx.kernalContext().config().getDataStorageConfiguration();
 
         assert memCfg != null;
 
@@ -126,16 +119,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         pageSize = memCfg.getPageSize();
 
         initDataRegions(memCfg);
-
-        if (!GridCacheUtils.isPersistenceEnabled(ctx.config())) {
-            metaStorage = new MetaStorageOnheap();
-
-            for (MetastorageLifecycleListener lsnr : ctx.internalSubscriptionProcessor().getMetastorageSubscribers()) {
-                lsnr.onReadyForRead(metaStorage);
-
-                lsnr.onReadyForReadWrite(metaStorage);
-            }
-        }
     }
 
     /**

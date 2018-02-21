@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.authentication;
 
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -48,6 +50,11 @@ public class AuthenticationForceServerModeClientTest extends GridCommonAbstractT
 
             cfg.setCacheConfiguration();
         }
+
+        cfg.setDataStorageConfiguration(new DataStorageConfiguration()
+            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                .setPersistenceEnabled(true)));
+
 
         return cfg;
     }
