@@ -20,11 +20,16 @@ package org.apache.ignite.internal.processors.cluster;
 import java.io.Serializable;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -67,7 +72,7 @@ public final class DiscoveryDataClusterState implements Serializable {
      * Local flag for state transition active state result (global state is updated asynchronously by custom message),
      * {@code null} means that state change is not completed yet.
      */
-    @Nullable private transient final Boolean transitionRes;
+    @Nullable public transient final GridFutureAdapter<Boolean> transitionFut;
 
     /**
      * Previous cluster state if this state is a transition state and it was not received by a joining node.
@@ -97,12 +102,17 @@ public final class DiscoveryDataClusterState implements Serializable {
         UUID transitionReqId,
         AffinityTopologyVersion transitionTopVer,
         Set<UUID> transitionNodes,
-        Boolean transitionRes
+        @Nullable Boolean transitionRes
     ) {
         assert transitionReqId != null;
         assert transitionTopVer != null;
         assert !F.isEmpty(transitionNodes) : transitionNodes;
         assert prevState != null;
+
+        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<Boolean>();
+
+        if (transitionRes != null)
+            fut.onDone(transitionRes);
 
         return new DiscoveryDataClusterState(
             prevState,
@@ -111,7 +121,7 @@ public final class DiscoveryDataClusterState implements Serializable {
             transitionReqId,
             transitionTopVer,
             transitionNodes,
-            transitionRes);
+            fut);
     }
 
     /**
@@ -128,22 +138,41 @@ public final class DiscoveryDataClusterState implements Serializable {
         @Nullable UUID transitionReqId,
         @Nullable AffinityTopologyVersion transitionTopVer,
         @Nullable Set<UUID> transitionNodes,
-        @Nullable Boolean transitionRes
+        @Nullable GridFutureAdapter<Boolean> transitionFut
     ) {
+        assert (transitionReqId == null && transitionTopVer == null &&
+            transitionNodes == null && transitionFut == null)
+            ||
+            (transitionReqId != null && transitionTopVer != null &&
+                transitionNodes != null && transitionFut != null) :
+            (transitionReqId != null)+ " " +(transitionTopVer != null)+" "+
+                (transitionNodes != null)+ " " + (transitionFut != null);
+
         this.prevState = prevState;
         this.active = active;
         this.baselineTopology = baselineTopology;
         this.transitionReqId = transitionReqId;
         this.transitionTopVer = transitionTopVer;
         this.transitionNodes = transitionNodes;
-        this.transitionRes = transitionRes;
+        this.transitionFut = transitionFut;
     }
 
     /**
      * @return Local flag for state transition result (global state is updated asynchronously by custom message).
      */
-    @Nullable public Boolean transitionResult() {
-        return transitionRes;
+    public boolean transitionResult(boolean waitForTransition) {
+        assert transitionFut != null;
+
+        if (transitionFut.isDone() || waitForTransition) {
+            try {
+                return transitionFut.get();
+            }
+            catch (IgniteCheckedException ex) {
+                throw new IgniteException(ex);
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -153,12 +182,32 @@ public final class DiscoveryDataClusterState implements Serializable {
      * @param reqId Request ID.
      * @param active New cluster state.
      */
-    public DiscoveryDataClusterState withTransitionResult(UUID reqId, boolean active) {
-        if (reqId.equals(transitionReqId))
-            return new DiscoveryDataClusterState(this.prevState, this.active, this.baselineTopology,
-                this.transitionReqId, this.transitionTopVer, this.transitionNodes, active);
+    public void setTransitionResult(UUID reqId, boolean active) {
+        assert transitionFut != null;
 
-        return this;
+        if (reqId.equals(transitionReqId))
+            transitionFut.onDone(active);
+    }
+
+    /**
+     * Discovery cluster state is changed asynchronously by discovery message, this methods changes local status
+     * for public API calls.
+     *
+     * @param active New cluster state.
+     */
+    public void setTransitionResult(boolean active) {
+        assert transitionFut != null;
+
+        transitionFut.onDone(active);
+    }
+
+    /**
+     * @return Future for transitin result.
+     */
+    public void listen(IgniteInClosure<IgniteInternalFuture<Boolean>> c) {
+        assert transitionFut != null;
+
+        transitionFut.listen(c);
     }
 
     /**
