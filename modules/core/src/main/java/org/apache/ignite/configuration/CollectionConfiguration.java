@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -55,7 +56,7 @@ public class CollectionConfiguration implements Serializable {
     /** Group name. */
     private String grpName;
 
-    /** If {@code True} then {@code IgniteSet} will use off-heap caching instead of on-heap for support iterator. */
+    /** If {@code True} then {@link IgniteSet} will use off-heap caching instead of on-heap for support iterator. */
     private boolean offHeapCaching = false;
 
     /**
@@ -181,14 +182,14 @@ public class CollectionConfiguration implements Serializable {
     }
 
     /**
-     * @return {@code True} if off-heap caching is used instead of on-heap for {@code }IgniteSet}.
+     * @return {@code True} if off-heap caching is used instead of on-heap in {@link IgniteSet}.
      */
     public boolean isOffHeapCaching() {
         return offHeapCaching;
     }
 
     /**
-     * @param offHeapCaching Use off-heap caching instead of on-heap for {@code IgniteSet}.
+     * @param offHeapCaching {@code True} to use off-heap caching instead of on-heap in {@link IgniteSet}.
      */
     public void setOffHeapCaching(boolean offHeapCaching) {
         this.offHeapCaching = offHeapCaching;

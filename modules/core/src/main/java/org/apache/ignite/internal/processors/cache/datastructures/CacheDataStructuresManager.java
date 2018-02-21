@@ -38,6 +38,7 @@ import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
@@ -65,11 +66,14 @@ import org.apache.ignite.internal.processors.datastructures.SetItemKey;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.offheap.GridOffHeapSet;
+import org.apache.ignite.internal.util.offheap.GridOffHeapMap;
+import org.apache.ignite.internal.util.offheap.GridOffHeapMapFactory;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -468,11 +472,11 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @return identifier.
      */
     private IgniteUuid randomSetUuid(boolean offHeapCaching) {
-        IgniteUuid id0 = IgniteUuid.randomUuid();
+        IgniteUuid uuid = IgniteUuid.randomUuid();
 
-        assert id0.localId() > 0 : id0.localId();
+        assert uuid.localId() > 0 : uuid.localId();
 
-        return offHeapCaching ? new IgniteUuid(id0.globalId(), -id0.localId()) : id0;
+        return offHeapCaching ? new IgniteUuid(uuid.globalId(), -uuid.localId()) : uuid;
     }
 
     /**
@@ -537,7 +541,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         setDataMap.remove(setId);
 
-        set.clear();
+        if (set instanceof UnsafeMapToSetAdapter)
+            ((UnsafeMapToSetAdapter)set).destruct();
     }
 
     /**
@@ -640,11 +645,12 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             Set<SetItemKey> old = setDataMap.putIfAbsent(key.setId(),
                 set = key.setId().localId() < 0 ?
-                    new GridOffHeapSet<>(cctx.marshaller(), U.resolveClassLoader(cctx.gridConfig())) :
+                    new UnsafeMapToSetAdapter<>(cctx.marshaller(), U.resolveClassLoader(cctx.gridConfig())) :
                     new GridConcurrentHashSet<>());
 
             if (old != null) {
-                set.clear();
+                if (set instanceof UnsafeMapToSetAdapter)
+                    ((UnsafeMapToSetAdapter)set).destruct();
 
                 set = old;
             }
@@ -860,4 +866,165 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             return "RemoveSetCallable [setId=" + setId + ']';
         }
     }
+
+    /**
+     * Java {@code Set} implementation based on {@code GridOffHeapMap}.
+     */
+    @GridInternal
+    private static class UnsafeMapToSetAdapter<E> implements Set<E> {
+        /** */
+        private static final byte[] EMPTY_VAL = {};
+
+        /** */
+        private final ClassLoader clsLdr;
+
+        /** */
+        private final Marshaller marshaller;
+
+        /** Off-heap map delegate with default capacity */
+        private GridOffHeapMap delegate = GridOffHeapMapFactory.unsafeMap(0);
+
+        /**
+         * @param marshaller Marshaller that will be used for object serialization.
+         * @param clsLdr That will use marshaller for object deserialization.
+         */
+        UnsafeMapToSetAdapter(Marshaller marshaller, ClassLoader clsLdr) {
+            this.marshaller = marshaller;
+            this.clsLdr = clsLdr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int size() {
+            long size = delegate.totalSize();
+
+            if (size > Integer.MAX_VALUE)
+                return Integer.MAX_VALUE;
+
+            return (int) size;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isEmpty() {
+            return size() == 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean add(E key) {
+            return delegate.put(key.hashCode(), marshal(key), EMPTY_VAL);
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<E> iterator() {
+            return new BinaryIteratorAdapter();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean remove(Object obj) {
+            return delegate.removex(obj.hashCode(), marshal(obj));
+        }
+
+        /**
+         * Destruct this data structure and deallocate all memory.
+         */
+        void destruct() {
+            delegate.destruct();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean contains(Object obj) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Object[] toArray() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public <T> T[] toArray(@NotNull T[] a) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean containsAll(@NotNull Collection<?> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean addAll(@NotNull Collection<? extends E> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean retainAll(@NotNull Collection<?> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean removeAll(@NotNull Collection<?> c) {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void clear() {
+            throw new UnsupportedOperationException();
+        }
+
+        /**
+         * Marshal object to byte array.
+         *
+         * @param obj Object to marshal.
+         * @return Byte array.
+         * @throws IgniteException If marshalling failed.
+         */
+        private byte[] marshal(Object obj) {
+            try {
+                return marshaller.marshal(obj);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+        }
+
+        /**
+         * Unmarshal object from byte array using given class loader.
+         *
+         * @param arr Byte array.
+         * @return Unmarshalled object.
+         * @throws IgniteException If unmarshalling failed.
+         */
+        private E unmarshal(byte[] arr) {
+            try {
+                return marshaller.unmarshal(arr, clsLdr);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+        }
+
+        /**
+         * Iterator over off-heap map with deserialization.
+         */
+        private class BinaryIteratorAdapter implements Iterator<E> {
+
+            /** */
+            private final Iterator<IgniteBiTuple<byte[], byte[]>> iter = delegate.iterator();
+
+            /** {@inheritDoc} */
+            @Override public boolean hasNext() {
+                return iter.hasNext();
+            }
+
+            /** {@inheritDoc} */
+            @Override public E next() {
+                return unmarshal(iter.next().getKey());
+            }
+
+            /** {@inheritDoc} */
+            @Override public void remove() {
+                throw new UnsupportedOperationException();
+            }
+        }
+    }
+
 }
