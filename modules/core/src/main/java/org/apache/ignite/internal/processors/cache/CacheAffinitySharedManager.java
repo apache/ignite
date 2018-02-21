@@ -70,6 +70,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -160,17 +161,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         ClusterNode node,
         AffinityTopologyVersion topVer,
         DiscoveryDataClusterState state) {
+        if (type == EVT_NODE_JOINED && node.isLocal())
+            lastAffVer = null;
+
         if ((state.transition() || !state.active()) &&
             !DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg))
             return;
 
-        if (type == EVT_NODE_JOINED && node.isLocal())
-            lastAffVer = null;
-
         if ((!CU.clientNode(node) && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT)) ||
             DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg)) {
             synchronized (mux) {
-                assert lastAffVer == null || topVer.compareTo(lastAffVer) > 0;
+                assert lastAffVer == null || topVer.compareTo(lastAffVer) > 0 :
+                    "lastAffVer=" + lastAffVer + ", topVer=" + topVer + ", customMsg=" + customMsg;
 
                 lastAffVer = topVer;
             }

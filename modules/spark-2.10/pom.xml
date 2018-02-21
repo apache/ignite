@@ -303,10 +303,7 @@
 
         <testResources>
             <testResource>
-                <directory>../spark/src/test/scala</directory>
-                <excludes>
-                    <exclude>**/*.scala</exclude>
-                </excludes>
+                <directory>../spark/src/test/resources</directory>
             </testResource>
         </testResources>
 
@@ -314,6 +311,25 @@
             <plugin>
                 <groupId>net.alchim31.maven</groupId>
                 <artifactId>scala-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.scalatest</groupId>
+                <artifactId>scalatest-maven-plugin</artifactId>
+                <version>1.0</version>
+                <configuration>
+                    <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
+                    <junitxml>.</junitxml>
+                    <filereports>WDF IgniteScalaTestSuites.txt</filereports>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

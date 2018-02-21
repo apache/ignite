@@ -704,11 +704,17 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
                 try {
                     for (int i = PageIO.COMMON_HEADER_END; i < mem.pageSize(); i++) {
-                        assertEquals("Invalid state [pageId=" + fullId + ", pos=" + i + ']',
-                            state & 0xFF, PageUtils.getByte(pageAddr, i) & 0xFF);
+                        int expState = state & 0xFF;
+                        int pageState = PageUtils.getByte(pageAddr, i) & 0xFF;
+                        int walState = walData[i] & 0xFF;
 
-                        assertEquals("Invalid WAL state [pageId=" + fullId + ", pos=" + i + ']',
-                            state & 0xFF, walData[i] & 0xFF);
+                        if (expState != pageState)
+                            assertEquals("Invalid state [pageId=" + fullId + ", pos=" + i + ']',
+                                expState, pageState);
+
+                        if (expState != walState)
+                            assertEquals("Invalid WAL state [pageId=" + fullId + ", pos=" + i + ']',
+                                expState, walState);
                     }
                 }
                 finally {
