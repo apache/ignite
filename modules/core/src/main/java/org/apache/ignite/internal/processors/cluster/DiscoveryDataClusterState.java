@@ -72,7 +72,7 @@ public final class DiscoveryDataClusterState implements Serializable {
      * Local flag for state transition active state result (global state is updated asynchronously by custom message),
      * {@code null} means that state change is not completed yet.
      */
-    @Nullable public transient final GridFutureAdapter<Boolean> transitionFut;
+    @Nullable private transient final GridFutureAdapter<Boolean> transitionFut;
 
     /**
      * Previous cluster state if this state is a transition state and it was not received by a joining node.
@@ -145,8 +145,7 @@ public final class DiscoveryDataClusterState implements Serializable {
             ||
             (transitionReqId != null && transitionTopVer != null &&
                 transitionNodes != null && transitionFut != null) :
-            (transitionReqId != null)+ " " +(transitionTopVer != null)+" "+
-                (transitionNodes != null)+ " " + (transitionFut != null);
+            "The main invariant has broken.";
 
         this.prevState = prevState;
         this.active = active;
@@ -202,7 +201,7 @@ public final class DiscoveryDataClusterState implements Serializable {
     }
 
     /**
-     * @return Future for transitin result.
+     * Registers listener closure to be asynchronously notified whenever transition result completes.
      */
     public void listen(IgniteInClosure<IgniteInternalFuture<Boolean>> c) {
         assert transitionFut != null;

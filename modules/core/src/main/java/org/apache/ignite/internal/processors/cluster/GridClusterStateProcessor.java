@@ -393,22 +393,24 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (state.transition()) {
             final GridChangeGlobalStateFuture stateFut = changeStateFuture(msg);
 
-            if (stateFut != null && isApplicable(msg, state))
-                stateFut.onDone(concurrentStateChangeError(msg.activate()));
-            else {
-                state.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                    @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                        try {
-                            fut.get();
+            if (stateFut != null) {
+                if (isApplicable(msg, state))
+                    stateFut.onDone(concurrentStateChangeError(msg.activate()));
+                else {
+                    state.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                        @Override public void apply(IgniteInternalFuture<Boolean> fut) {
+                            try {
+                                fut.get();
 
-                            stateFut.onDone();
-                        }
-                        catch (Exception ex) {
-                            stateFut.onDone(ex);
-                        }
+                                stateFut.onDone();
+                            }
+                            catch (Exception ex) {
+                                stateFut.onDone(ex);
+                            }
 
-                    }
-                });
+                        }
+                    });
+                }
             }
         }
         else {
