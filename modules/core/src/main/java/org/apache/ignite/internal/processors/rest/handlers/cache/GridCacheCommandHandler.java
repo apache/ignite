@@ -39,7 +39,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMetrics;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
@@ -52,6 +51,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -78,7 +78,12 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
+import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_PARTITIONED;
+import static org.apache.ignite.internal.processors.query.QueryUtils.TEMPLATE_REPLICATED;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.ATOMIC_DECREMENT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.ATOMIC_INCREMENT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_ADD;
@@ -87,7 +92,6 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_C
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CLEAR;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEY;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEYS;
-import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_UPDATE_TLL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_AND_PUT;
@@ -106,6 +110,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_R
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REPLACE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_REPLACE_VALUE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_SIZE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_UPDATE_TLL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.DESTROY_CACHE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.GET_OR_CREATE_CACHE;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
@@ -217,11 +222,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
         return ctx.closure().callLocalSafe(new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 EntryProcessorResult<Boolean> res = cache.invoke(key, new EntryProcessor<Object, Object, Boolean>() {
-                    @Override
-                    public Boolean process(MutableEntry<Object, Object> entry,
+                    @Override public Boolean process(MutableEntry<Object, Object> entry,
                         Object... objects) throws EntryProcessorException {
                         try {
                             Object curVal = entry.getValue();
@@ -402,9 +405,29 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 }
 
                 case GET_OR_CREATE_CACHE: {
+                    String templateName = req0.templateName();
+
+                    if (F.isEmpty(templateName))
+                        templateName = TEMPLATE_PARTITIONED;
+
+                    CacheConfigurationOverride cfgOverride = req0.configuration();
+
+                    boolean dfltPartTemplate = F.isEmpty(templateName) || TEMPLATE_PARTITIONED.equalsIgnoreCase(templateName);
+                    boolean dfltReplTemplate = TEMPLATE_REPLICATED.equalsIgnoreCase(templateName);
+
+                    if (dfltPartTemplate || dfltReplTemplate) {
+                        if (cfgOverride == null)
+                            cfgOverride = new CacheConfigurationOverride();
+
+                        cfgOverride.mode(dfltPartTemplate ? PARTITIONED : REPLICATED);
+
+                        if (cfgOverride.writeSynchronizationMode() == null)
+                            cfgOverride.writeSynchronizationMode(FULL_SYNC);
+                    }
+
                     // Do not check thread tx here since there can be active system cache txs.
-                    fut = ((IgniteKernal)ctx.grid()).getOrCreateCacheAsync(cacheName, false).chain(
-                        new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
+                    fut = ((IgniteKernal)ctx.grid()).getOrCreateCacheAsync(cacheName, templateName, cfgOverride, false)
+                        .chain(new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
                             @Override public GridRestResponse applyx(IgniteInternalFuture<?> f)
                                 throws IgniteCheckedException {
                                 f.get();
@@ -800,7 +823,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     private boolean replicatedCacheAvailable(String cacheName) {
         GridCacheAdapter<Object, Object> cache = ctx.cache().internalCache(cacheName);
 
-        return cache != null && cache.configuration().getCacheMode() == CacheMode.REPLICATED;
+        return cache != null && cache.configuration().getCacheMode() == REPLICATED;
     }
 
     /**
@@ -1080,7 +1103,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         @Override public Collection<GridCacheSqlMetadata> execute() {
             String cacheName = null;
 
-            if (!ignite.active())
+            if (!ignite.cluster().active())
                 return Collections.emptyList();
 
             IgniteInternalCache<?, ?> cache = null;
@@ -1673,8 +1696,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return ctx.closure().callLocalSafe(new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     EntryProcessorResult<Boolean> res = c.invoke(key, new EntryProcessor<Object, Object, Boolean>() {
-                        @Override
-                        public Boolean process(MutableEntry<Object, Object> entry,
+                        @Override public Boolean process(MutableEntry<Object, Object> entry,
                             Object... objects) throws EntryProcessorException {
                             GridCacheEntryEx ex = ((CacheInvokeEntry)entry).entry();
 

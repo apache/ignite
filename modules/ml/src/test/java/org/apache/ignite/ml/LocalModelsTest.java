@@ -31,7 +31,8 @@ import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.structures.LabeledDataset;
-import org.apache.ignite.ml.svm.SVMLinearClassificationModel;
+import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
+import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationModel;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -80,13 +81,41 @@ public class LocalModelsTest {
 
     /** */
     @Test
-    public void importExportSVMClassificationModelTest() throws IOException {
+    public void importExportSVMBinaryClassificationModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
-            SVMLinearClassificationModel mdl = new SVMLinearClassificationModel(new DenseLocalOnHeapVector(new double[]{1, 2}), 3);
-            Exporter<SVMLinearClassificationModel, String> exporter = new FileExporter<>();
+            SVMLinearBinaryClassificationModel mdl = new SVMLinearBinaryClassificationModel(new DenseLocalOnHeapVector(new double[]{1, 2}), 3);
+            Exporter<SVMLinearBinaryClassificationModel, String> exporter = new FileExporter<>();
             mdl.saveModel(exporter, mdlFilePath);
 
-            SVMLinearClassificationModel load = exporter.load(mdlFilePath);
+            SVMLinearBinaryClassificationModel load = exporter.load(mdlFilePath);
+
+            Assert.assertNotNull(load);
+            Assert.assertEquals("", mdl, load);
+
+            return null;
+        });
+    }
+
+
+    /** */
+    @Test
+    public void importExportSVMMulticlassClassificationModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+
+
+            SVMLinearBinaryClassificationModel binaryMdl1 = new SVMLinearBinaryClassificationModel(new DenseLocalOnHeapVector(new double[]{1, 2}), 3);
+            SVMLinearBinaryClassificationModel binaryMdl2 = new SVMLinearBinaryClassificationModel(new DenseLocalOnHeapVector(new double[]{2, 3}), 4);
+            SVMLinearBinaryClassificationModel binaryMdl3 = new SVMLinearBinaryClassificationModel(new DenseLocalOnHeapVector(new double[]{3, 4}), 5);
+
+            SVMLinearMultiClassClassificationModel mdl = new SVMLinearMultiClassClassificationModel();
+            mdl.add(1, binaryMdl1);
+            mdl.add(2, binaryMdl2);
+            mdl.add(3, binaryMdl3);
+
+            Exporter<SVMLinearMultiClassClassificationModel, String> exporter = new FileExporter<>();
+            mdl.saveModel(exporter, mdlFilePath);
+
+            SVMLinearMultiClassClassificationModel load = exporter.load(mdlFilePath);
 
             Assert.assertNotNull(load);
             Assert.assertEquals("", mdl, load);
