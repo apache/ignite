@@ -45,6 +45,7 @@ import java.util.concurrent.locks.Lock;
 import com.google.common.base.Predicate;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -172,14 +173,16 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         rnd = null;
 
         try {
-            if (asyncRunFut != null && !asyncRunFut.isDone()) {
-                stop.set(true);
+            stop.set(true); //async fut can be initialized after.
 
+            if (asyncRunFut != null && !asyncRunFut.isDone()) {
                 try {
                     asyncRunFut.cancel();
                     asyncRunFut.get(60000);
+                } catch (IgniteFutureTimeoutCheckedException e) {
+                    log.error("B+Tree shutdown: timeout during waiting for async future: " + e);
                 }
-                catch (Throwable ex) {
+                catch (Throwable ignored) {
                     //Ignore
                 }
             }
@@ -2136,6 +2139,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     l.lock();
 
                     try {
+                        assertFalse("B+Tree shutdown: Stop flag should not be enabled: ", !stop.get());
+
                         if (op == 0) { // Put.
                             assertEquals(map.put(x, x), tree.put(x));
 
