@@ -32,7 +32,7 @@ namespace
 {
     // Just copy bytes currently.
     // Only works for ASCII character set.
-    ignite::odbc::app::ConversionResult::Type StringToWstring(const char* str, int64_t strLen, wchar_t* wstr, int64_t wstrLen)
+    ignite::odbc::app::ConversionResult::Type StringToWstring(const char* str, int64_t strLen, SQLWCHAR* wstr, int64_t wstrLen)
     {
         using namespace ignite::odbc;
 
