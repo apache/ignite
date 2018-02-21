@@ -46,7 +46,7 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
+    @Override protected void beforeTest() throws Exception {
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         assert ignite != null;
