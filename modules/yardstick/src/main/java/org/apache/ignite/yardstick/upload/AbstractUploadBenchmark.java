@@ -57,6 +57,8 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
 
     /** Perform warmup keeping in mind wal optimization */
     private void warmup0() throws Exception{
+        BenchmarkUtils.println(cfg, "Starting custom warmup");
+
         if (args.switchWal())
             executeUpdate(queries.turnOffWal());
 
@@ -64,6 +66,8 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
 
         if (args.switchWal())
             executeUpdate(queries.turnOnWal());
+
+        BenchmarkUtils.println(cfg, "Custom warmup finished");
 
     }
 
@@ -81,6 +85,7 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
 
     protected abstract void upload() throws Exception;
 
+    /** {@inheritDoc} */
     @Override public final boolean test(Map<Object, Object> ctx) throws Exception {
         if (args.switchWal())
             executeUpdate(queries.turnOffWal());
