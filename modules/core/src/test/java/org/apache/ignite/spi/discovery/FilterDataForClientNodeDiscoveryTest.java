@@ -23,7 +23,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.managers.discovery.CustomEventListener;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomOnlyForServerMessage;
+import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.lang.IgniteUuid;
@@ -73,7 +73,7 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
     /**
      * @throws Exception If failed.
      */
-    public void testCustomDiscoveryMessage() throws Exception {
+    public void testDiscoveryServerOnlyCustomMessage() throws Exception {
         startGrid(configuration(0, false));
         startGrid(configuration(1, false));
         startGrid(configuration(2, true));
@@ -88,6 +88,7 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
                 MessageForServer.class, new CustomEventListener<MessageForServer>() {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
                     MessageForServer msg) {
+
                     recvMsg[idx0] = true;
                 }
             });
@@ -100,10 +101,10 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
 
             Thread.sleep(500);
 
-            assertEquals(recvMsg[0], true);
-            assertEquals(recvMsg[1], true);
-            assertEquals(recvMsg[2], false);
-            assertEquals(recvMsg[3], false);
+            assertEquals(true, recvMsg[0]);
+            assertEquals(true, recvMsg[1]);
+            assertEquals(false, recvMsg[2]);
+            assertEquals(false, recvMsg[3]);
         }
     }
 
@@ -182,7 +183,7 @@ public class FilterDataForClientNodeDiscoveryTest extends GridCommonAbstractTest
     /**
      *
      */
-    private static class MessageForServer implements DiscoveryCustomOnlyForServerMessage {
+    private static class MessageForServer implements DiscoveryServerOnlyCustomMessage {
         /** */
         private static final long serialVersionUID = 0L;
 

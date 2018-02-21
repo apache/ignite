@@ -145,7 +145,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     public IgniteAuthenticationProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        isEnabled = ctx.config().isAuthenticationEnabled() && GridCacheUtils.isPersistenceEnabled(ctx.config());
+        isEnabled = ctx.config().isAuthenticationEnabled();
 
         ctx.internalSubscriptionProcessor().registerMetastorageListener(this);
     }
@@ -153,6 +153,13 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         super.start();
+
+        if (isEnabled && !GridCacheUtils.isPersistenceEnabled(ctx.config())) {
+            isEnabled = false;
+
+            throw new IgniteCheckedException("Authentication can be enabled only for cluster with enabled persistence."
+                + " Check the DataRegionConfiguration");
+        }
 
         ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_AUTHENTICATION_ENABLED, isEnabled);
 
@@ -207,9 +214,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             1,
             0,
             new LinkedBlockingQueue<>());
-
-        if (!GridCacheUtils.isPersistenceEnabled(ctx.config()))
-            activateFut.onDone();
     }
 
     /**

@@ -179,7 +179,7 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
      * @throws Exception If failed.
      */
     public void testEnableAuthenticationWithoutPersistence() throws Exception {
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
+        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
                     startGrid(configuration(0, true, false).setDataStorageConfiguration(null));
 
@@ -187,6 +187,6 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
                 }
             },
             IgniteCheckedException.class,
-            "qqq");
+            "Authentication can be enabled only for cluster with enabled persistence");
     }
 }
