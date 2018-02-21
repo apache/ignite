@@ -1203,7 +1203,7 @@ public class IgniteWalRecoveryTest extends GridCommonAbstractTest {
             ByteBuffer buf = ByteBuffer.allocateDirect(pageSize);
 
             // Now check that deltas can be correctly applied.
-            try (WALIterator it = sharedCtx.wal().replay(ptr)) {
+            try (WALIterator it = sharedCtx.wal().replay(ptr, true)) {
                 while (it.hasNext()) {
                     IgniteBiTuple<WALPointer, WALRecord> tup = it.next();
 

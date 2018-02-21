@@ -20,6 +20,9 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.lang.IgniteBiPredicate;
 
+/**
+ * Record V3 serializer.
+ */
 public class RecordV3Serializer extends RecordV2Serializer {
 
     /** {@inheritDoc} */

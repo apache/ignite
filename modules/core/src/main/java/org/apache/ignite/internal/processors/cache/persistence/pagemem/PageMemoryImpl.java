@@ -766,7 +766,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             ByteBuffer curPage = null;
             ByteBuffer lastValidPage = null;
 
-            try (WALIterator it = walMgr.replay(null)) {
+            try (WALIterator it = walMgr.replay(null, true)) {
                 for (IgniteBiTuple<WALPointer, WALRecord> tuple : it) {
                     switch (tuple.getValue().type()) {
                         case PAGE_RECORD:

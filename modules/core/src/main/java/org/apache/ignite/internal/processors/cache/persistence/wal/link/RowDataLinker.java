@@ -90,8 +90,15 @@ public class RowDataLinker {
         };
     }
 
+    /**
+     * Converts {@link DataRecord} to {@link RowDataHolder} and adds it to cache with {@code pointer} as key.
+     *
+     * @param record DataRecord.
+     * @param pointer WAL pointer associated with DataRecord.
+     * @return RowDataHolder converted from DataRecord or {@code null} if DataRecord is not convertable.
+     * @throws IgniteCheckedException If fail to convert DataRecord.
+     */
     public RowDataHolder addDataRecord(DataRecord record, WALPointer pointer) throws IgniteCheckedException {
-        // Create and cache linker with new DataRecord in case of CREATE or UPDATE operations.
         if (record.writeEntries().size() == 1
                 && (record.operation() == GridCacheOperation.CREATE || record.operation() == GridCacheOperation.UPDATE)) {
             RowDataHolder holder = converter.convertFrom(record);
@@ -104,6 +111,14 @@ public class RowDataLinker {
         return null;
     }
 
+    /**
+     * Converts {@link MetastoreDataRecord} to {@link RowDataHolder} and adds it to cache with {@code pointer} as key.
+     *
+     * @param record MetastorageDataRecord.
+     * @param pointer WAL pointer associated with MetastorageDataRecord.
+     * @return RowDataHolder converted from MetastorageDataRecord or {@code null} if MetastorageDataRecord is not convertable.
+     * @throws IgniteCheckedException If fail to convert MetastorageDataRecord.
+     */
     public RowDataHolder addMetastorageDataRecord(MetastoreDataRecord record, WALPointer pointer) throws IgniteCheckedException {
         if (record.value() != null) {
             RowDataHolder holder = converter.convertFrom(record);
@@ -117,9 +132,9 @@ public class RowDataLinker {
     }
 
     /**
-     * Link {@code byte[]} payload from {@link DataRecord} entry to {@link WALReferenceAwareRecord} record.
+     * Lookups {@link RowDataHolder} by record WAL reference and links data to given {@code record}.
      *
-     * @param record WAL record.
+     * @param record WAL record to link data.
      * @throws IgniteCheckedException If unable to link payload to record.
      */
     public void linkRow(WALReferenceAwareRecord record) throws IgniteCheckedException {
@@ -131,7 +146,7 @@ public class RowDataLinker {
     }
 
     /**
-     * Lookup {@link RowDataHolder} from cache or WAL associated with given {@code lookupPointer}.
+     * Lookups {@link RowDataHolder} from cache or WAL associated with given {@code lookupPointer}.
      *
      * @param lookupPointer Possible WAL reference to {@link DataRecord}.
      * @return {@link RowDataHolder} associated with given {@code lookupPointer}.
@@ -148,7 +163,7 @@ public class RowDataLinker {
         try {
             // Try to find record in WAL.
             // TODO: Maybe we can replay over several tuples and populate cache with then in batch mode?
-            WALIterator iterator = wal.replay(lookupPointer, false);
+            WALIterator iterator = wal.replay(lookupPointer);
             IgniteBiTuple<WALPointer, WALRecord> tuple = iterator.next();
 
             if (tuple.getValue() instanceof DataRecord) {

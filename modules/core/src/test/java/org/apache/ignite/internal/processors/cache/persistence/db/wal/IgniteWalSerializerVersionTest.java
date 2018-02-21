@@ -270,7 +270,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
 
         Iterator<Long> itToCheck = checker.getTimeStamps().iterator();
 
-        try (PartitionMetaStateRecordExcludeIterator it = new PartitionMetaStateRecordExcludeIterator(wal.replay(p))) {
+        try (PartitionMetaStateRecordExcludeIterator it = new PartitionMetaStateRecordExcludeIterator(wal.replay(p, true))) {
             while (it.hasNext()) {
                 IgniteBiTuple<WALPointer, WALRecord> tup0 = it.next();
 

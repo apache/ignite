@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache.persistence.wal.link;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -20,14 +37,29 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageI
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.SimpleDataPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
+/**
+ * Class to convert {@link DataRecord} and {@link MetastoreDataRecord} records to {@link RowDataHolder} entities.
+ */
 public class RowDataConverter {
-
+    /** Cache shared context. */
     private final GridCacheSharedContext sharedCtx;
 
+    /**
+     * Constructor.
+     *
+     * @param sharedCtx Cache shared context.
+     */
     public RowDataConverter(GridCacheSharedContext sharedCtx) {
         this.sharedCtx = sharedCtx;
     }
 
+    /**
+     * Converts given record to {@link RowDataHolder}.
+     *
+     * @param record DataRecord.
+     * @return RowDataHolder converted from {@code record}.
+     * @throws IgniteCheckedException If unable to convert.
+     */
     public RowDataHolder convertFrom(DataRecord record) throws IgniteCheckedException {
         DataEntry writeEntry = record.writeEntries().get(0);
 
@@ -40,6 +72,13 @@ public class RowDataConverter {
         return new RowDataHolder(row, DataPageIO.VERSIONS.latest().getRowSize(row));
     }
 
+    /**
+     * Converts given record to {@link RowDataHolder}.
+     *
+     * @param record MetastoreDataRecord.
+     * @return RowDataHolder converted from {@code record}.
+     * @throws IgniteCheckedException If unable to convert.
+     */
     public RowDataHolder convertFrom(MetastoreDataRecord record) throws IgniteCheckedException {
         assert record.value() != null;
 
@@ -49,9 +88,10 @@ public class RowDataConverter {
     }
 
     /**
-     * Create CacheDataRow adapter to calculate row row size and extract byte payload from it.
+     * Create CacheDataRow adapter to calculate row size and extract byte payload from it.
      *
      * @param entry WAL {@link DataRecord} row.
+     * @param storeCacheId {@code True} if cache id is stored to data pages.
      * @return CacheDataRow.
      */
     public static CacheDataRow wrap(DataEntry entry, boolean storeCacheId) {

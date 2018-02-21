@@ -30,14 +30,24 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageUpdateReferen
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferBackedDataInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 
+/**
+ * Record Data V3 Serializer.
+ * Class is needed to handle page delta records with reference to DataRecord.
+ */
 public class RecordDataV3Serializer implements RecordDataSerializer {
-
+    /** Delegate V2 data serializer. */
     private final RecordDataV2Serializer delegateSerializer;
 
+    /**
+     * Constructor.
+     *
+     * @param delegateSerializer Delegate V2 data serializer.
+     */
     public RecordDataV3Serializer(RecordDataV2Serializer delegateSerializer) {
         this.delegateSerializer = delegateSerializer;
     }
 
+    /** {@inheritDoc} */
     @Override public int size(WALRecord record) throws IgniteCheckedException {
         switch (record.type()) {
             case DATA_PAGE_INSERT_REF_RECORD:
@@ -54,6 +64,7 @@ public class RecordDataV3Serializer implements RecordDataSerializer {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public WALRecord readRecord(WALRecord.RecordType type, ByteBufferBackedDataInput in) throws IOException, IgniteCheckedException {
         switch (type) {
             case DATA_PAGE_INSERT_REF_RECORD: {
@@ -93,6 +104,7 @@ public class RecordDataV3Serializer implements RecordDataSerializer {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void writeRecord(WALRecord record, ByteBuffer buf) throws IgniteCheckedException {
         switch (record.type()) {
             case DATA_PAGE_INSERT_REF_RECORD:

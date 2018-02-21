@@ -1899,7 +1899,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         Collection<Integer> ignoreGrps = storeOnly ? Collections.emptySet() : initiallyWalDisabledGrps;
 
-        try (WALIterator it = cctx.wal().replay(status.endPtr)) {
+        try (WALIterator it = cctx.wal().replay(status.endPtr, true)) {
             while (it.hasNextX()) {
                 IgniteBiTuple<WALPointer, WALRecord> tup = it.nextX();
 

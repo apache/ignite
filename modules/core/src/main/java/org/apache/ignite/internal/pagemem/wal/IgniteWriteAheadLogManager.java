@@ -74,7 +74,7 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @throws StorageException If IO error occurred while reading WAL entries.
      */
     public default WALIterator replay(WALPointer start) throws IgniteCheckedException, StorageException {
-        return replay(start, true);
+        return replay(start, false);
     }
 
     /**
