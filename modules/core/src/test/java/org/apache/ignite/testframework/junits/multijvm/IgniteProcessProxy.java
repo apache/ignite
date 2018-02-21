@@ -20,11 +20,11 @@ package org.apache.ignite.testframework.junits.multijvm;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import javax.cache.CacheException;
 import org.apache.ignite.DataRegionMetrics;
@@ -896,9 +896,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            Executors.newSingleThreadExecutor().submit(() -> {
-                G.stop(igniteInstanceName, cancel);
-            });
+            CompletableFuture.runAsync(() -> G.stop(igniteInstanceName, cancel));
         }
     }
 
