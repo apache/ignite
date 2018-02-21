@@ -677,6 +677,7 @@ public class MvccProcessor extends GridProcessorAdapter {
     private MvccSnapshotResponse assignTxSnapshot(GridCacheVersion txId, long futId) {
         assert crdVer != 0;
 
+        // TODO: Race
         long nextCtr = mvccCntr.incrementAndGet();
 
         MvccSnapshotResponse res = new MvccSnapshotResponse();
