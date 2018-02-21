@@ -321,7 +321,8 @@ public class IgniteProcessProxy implements IgniteEx {
             proxy.remoteCompute().runAsync(new StopGridTask(igniteInstanceName, cancel));
 
             try {
-                assert rmtNodeStoppedLatch.await(NODE_LEFT_TIMEOUT, TimeUnit.MILLISECONDS) : "Remote node has not stopped [id=" + rmNodeId + ']';
+                assert rmtNodeStoppedLatch.await(NODE_LEFT_TIMEOUT, TimeUnit.MILLISECONDS) : "Remote node has not " +
+                    "stopped [id=" + rmNodeId + ']';
             }
             catch (InterruptedException e) {
                 throw new IgniteException(e);
