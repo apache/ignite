@@ -66,7 +66,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-            new DataRegionConfiguration().setMaxSize(100 * 1024 * 1024));
+            new DataRegionConfiguration().setMaxSize(100L * 1024 * 1024));
 
         cfg.setDataStorageConfiguration(memCfg);
 

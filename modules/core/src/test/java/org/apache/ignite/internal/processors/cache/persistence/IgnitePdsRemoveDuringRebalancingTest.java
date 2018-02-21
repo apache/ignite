@@ -63,7 +63,7 @@ public class IgnitePdsRemoveDuringRebalancingTest extends GridCommonAbstractTest
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
-                    .setMaxSize(100 * 1024 * 1024)
+                    .setMaxSize(100L * 1024 * 1024)
                     .setPersistenceEnabled(true)
                     .setSwapPath(DFLT_STORE_DIR))
             .setWalMode(WALMode.LOG_ONLY)

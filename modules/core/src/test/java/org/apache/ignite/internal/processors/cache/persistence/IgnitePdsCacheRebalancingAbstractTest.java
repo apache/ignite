@@ -120,8 +120,8 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
         DataRegionConfiguration memPlcCfg = new DataRegionConfiguration();
 
         memPlcCfg.setName("dfltDataRegion");
-        memPlcCfg.setMaxSize(150 * 1024 * 1024);
-        memPlcCfg.setInitialSize(100 * 1024 * 1024);
+        memPlcCfg.setMaxSize(150L * 1024 * 1024);
+        memPlcCfg.setInitialSize(100L * 1024 * 1024);
         memPlcCfg.setSwapPath("work/swap");
         memPlcCfg.setPersistenceEnabled(true);
 
@@ -139,12 +139,12 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 20 * 60 * 1000;
+        return 20L * 60 * 1000;
     }
 
     /** {@inheritDoc} */
     @Override protected long getPartitionMapExchangeTimeout() {
-        return 60 * 1000;
+        return 60L * 1000;
     }
 
     /**

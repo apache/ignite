@@ -37,10 +37,10 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
     private volatile DataStorageConfiguration memCfg;
 
     /** */
-    private static final long DFLT_MEM_PLC_SIZE = 10 * 1024 * 1024;
+    private static final long DFLT_MEM_PLC_SIZE = 10L * 1024 * 1024;
 
     /** */
-    private static final long BIG_MEM_PLC_SIZE = 1024 * 1024 * 1024;
+    private static final long BIG_MEM_PLC_SIZE = 1024L * 1024 * 1024;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -90,12 +90,12 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         DataRegionConfiguration dfltPlcCfg = new DataRegionConfiguration();
         dfltPlcCfg.setName("dfltPlc");
-        dfltPlcCfg.setInitialSize(10 * 1024 * 1024);
-        dfltPlcCfg.setMaxSize(10 * 1024 * 1024);
+        dfltPlcCfg.setInitialSize(10L * 1024 * 1024);
+        dfltPlcCfg.setMaxSize(10L * 1024 * 1024);
 
         DataRegionConfiguration bigPlcCfg = new DataRegionConfiguration();
         bigPlcCfg.setName("bigPlc");
-        bigPlcCfg.setMaxSize(1024 * 1024 * 1024);
+        bigPlcCfg.setMaxSize(1024L * 1024 * 1024);
 
         memCfg.setDataRegionConfigurations(bigPlcCfg);
         memCfg.setDefaultDataRegionConfiguration(dfltPlcCfg);

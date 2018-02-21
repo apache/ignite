@@ -78,10 +78,10 @@ public class MemoryConfiguration implements Serializable {
         DFLT_MEMORY_POLICY_INITIAL_SIZE);
 
     /** Default initial size of a memory chunk for the system cache (40 MB). */
-    private static final long DFLT_SYS_CACHE_INIT_SIZE = 40 * 1024 * 1024;
+    private static final long DFLT_SYS_CACHE_INIT_SIZE = 40L * 1024 * 1024;
 
     /** Default max size of a memory chunk for the system cache (100 MB). */
-    private static final long DFLT_SYS_CACHE_MAX_SIZE = 100 * 1024 * 1024;
+    private static final long DFLT_SYS_CACHE_MAX_SIZE = 100L * 1024 * 1024;
 
     /** Default memory page size. */
     public static final int DFLT_PAGE_SIZE = 4 * 1024;

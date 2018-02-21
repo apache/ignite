@@ -68,7 +68,7 @@ public class GridActivateExtensionTest extends GridCacheAbstractFullApiSelfTest 
         pCfg.setWalPath(testName + "/db/wal");
 
         pCfg.setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024).setPersistenceEnabled(true));
+                new DataRegionConfiguration().setMaxSize(200L * 1024 * 1024).setPersistenceEnabled(true));
 
         pCfg.setWalMode(WALMode.LOG_ONLY);
 

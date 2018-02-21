@@ -76,8 +76,8 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dbCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
-                .setMaxSize(400 * 1024 * 1024)
-                .setCheckpointPageBufferSize(200 * 1000 * 1000)
+                .setMaxSize(400L * 1024 * 1024)
+                .setCheckpointPageBufferSize(200L * 1000 * 1000)
                 .setName("dfltDataRegion")
                 .setMetricsEnabled(true)
                 .setPersistenceEnabled(true))
@@ -121,7 +121,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 6 * 60 * 1000;
+        return 6L * 60 * 1000;
     }
 
     /**
@@ -177,7 +177,7 @@ public class PagesWriteThrottleSmokeTest extends GridCommonAbstractTest {
                 @Override public void run() {
                     long startTs = System.currentTimeMillis();
 
-                    for (int i = 0; i < keyCnt * 10 && System.currentTimeMillis() - startTs < 3 * 60 * 1000; i++) {
+                    for (int i = 0; i < keyCnt * 10 && System.currentTimeMillis() - startTs < 3L * 60 * 1000; i++) {
                         if (!run.get())
                             break;
 

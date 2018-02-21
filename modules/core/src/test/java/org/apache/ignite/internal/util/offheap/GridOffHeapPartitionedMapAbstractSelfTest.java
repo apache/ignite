@@ -60,7 +60,7 @@ public abstract class GridOffHeapPartitionedMapAbstractSelfTest extends GridComm
     protected GridOffHeapEvictListener evictLsnr;
 
     /** */
-    protected long mem = 20 * 1024 * 1024;
+    protected long mem = 20L * 1024 * 1024;
 
     /** */
     protected int loadCnt = 100000;

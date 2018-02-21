@@ -65,7 +65,7 @@ public class OptimizedMarshallerIndexNameTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(300 * 1024 * 1024).setPersistenceEnabled(true))
+                new DataRegionConfiguration().setMaxSize(300L * 1024 * 1024).setPersistenceEnabled(true))
             .setStoragePath(workSubdir() + "/db")
             .setWalArchivePath(workSubdir() + "/db/wal/archive")
             .setWalPath(workSubdir() + "/db/wal")

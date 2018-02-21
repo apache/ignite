@@ -67,7 +67,7 @@ public class IgnitePdsCacheAssignmentNodeRestartsTest extends GridCommonAbstract
 
         cfg.setMemoryConfiguration(new MemoryConfiguration().setDefaultMemoryPolicyName("d").
             setPageSize(1024).setMemoryPolicies(new MemoryPolicyConfiguration().setName("d").
-            setInitialSize(50 * 1024 * 1024L).setMaxSize(50 * 1024 * 1024)));
+            setInitialSize(50L * 1024 * 1024L).setMaxSize(50L * 1024 * 1024)));
 
         cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration().setWalMode(WALMode.LOG_ONLY));
 

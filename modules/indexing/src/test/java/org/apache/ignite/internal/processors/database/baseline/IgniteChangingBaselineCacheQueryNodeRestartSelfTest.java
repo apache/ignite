@@ -42,7 +42,7 @@ public class IgniteChangingBaselineCacheQueryNodeRestartSelfTest extends IgniteC
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
                     new DataRegionConfiguration()
-                        .setMaxSize(200 * 1024 * 1024)
+                        .setMaxSize(200L * 1024 * 1024)
                         .setPersistenceEnabled(true)
                 )
         );
@@ -74,7 +74,7 @@ public class IgniteChangingBaselineCacheQueryNodeRestartSelfTest extends IgniteC
     @Override protected IgniteInternalFuture createRestartAction(final AtomicBoolean done, final AtomicInteger restartCnt) throws Exception {
         return multithreadedAsync(new Callable<Object>() {
             /** */
-            private final long baselineTopChangeInterval = 30 * 1000;
+            private final long baselineTopChangeInterval = 30L * 1000;
 
             /** */
             private final int logFreq = 50;
