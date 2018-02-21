@@ -18,33 +18,40 @@
 import angular from 'angular';
 
 import queriesNotebook from './components/queries-notebook';
+import pageQueriesCmp from './component';
 
 export default angular.module('ignite-console.sql', [
     'ui.router',
     queriesNotebook.name
 ])
-.config(['$stateProvider', ($stateProvider) => {
-    // set up the states
-    $stateProvider
-        .state('base.sql', {
-            url: '/queries',
-            abstract: true,
-            template: '<ui-view></ui-view>'
-        })
-        .state('base.sql.notebook', {
-            url: '/notebook/{noteId}',
-            component: 'queriesNotebook',
-            permission: 'query',
-            tfMetaTags: {
-                title: 'Query notebook'
-            }
-        })
-        .state('base.sql.demo', {
-            url: '/demo',
-            component: 'queriesNotebook',
-            permission: 'query',
-            tfMetaTags: {
-                title: 'SQL demo'
-            }
-        });
-}]);
+    .component('pageQueries', pageQueriesCmp)
+    .config(['$stateProvider', ($stateProvider) => {
+        // set up the states
+        $stateProvider
+            .state('base.sql', {
+                abstract: true,
+                template: '<ui-view></ui-view>'
+            })
+            .state('base.sql.tabs', {
+                url: '/queries',
+                template: '<page-queries></page-queries>',
+                redirectTo: 'base.sql.tabs.notebook',
+                permission: 'query'
+            })
+            .state('base.sql.tabs.notebook', {
+                url: '/notebook/{noteId}',
+                component: 'queriesNotebook',
+                permission: 'query',
+                tfMetaTags: {
+                    title: 'Query notebook'
+                }
+            })
+            .state('base.sql.tabs.demo', {
+                url: '/demo',
+                component: 'queriesNotebook',
+                permission: 'query',
+                tfMetaTags: {
+                    title: 'SQL demo'
+                }
+            });
+    }]);

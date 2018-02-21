@@ -15,19 +15,8 @@
  * limitations under the License.
  */
 
-import template from './template.pug';
-import controller from './controller';
-
-import './style.scss';
+import templateUrl from './template.tpl.pug';
 
 export default {
-    controller,
-    template,
-    bindings: {
-    },
-    transclude: {
-        noItems: '?listEditableNoItems',
-        itemView: '?listEditableItemView',
-        itemEdit: '?listEditableItemEdit'
-    }
+    templateUrl
 };

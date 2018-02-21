@@ -28,7 +28,7 @@ export default ['$scope', '$modal', '$state', 'IgniteMessages', 'IgniteNotebook'
                 .then((notebook) => {
                     nameModal.hide();
 
-                    $state.go('base.sql.notebook', {noteId: notebook._id});
+                    $state.go('base.sql.tabs.notebook', {noteId: notebook._id});
                 })
                 .catch(Messages.showError);
         };
@@ -53,7 +53,7 @@ export default ['$scope', '$modal', '$state', 'IgniteMessages', 'IgniteNotebook'
                             click: (item) => Notebook.remove(item)
                         },
                         text: notebook.name,
-                        sref: `base.sql.notebook({noteId:"${notebook._id}"})`
+                        sref: `base.sql.tabs.notebook({noteId:"${notebook._id}"})`
                     }));
                 });
             })

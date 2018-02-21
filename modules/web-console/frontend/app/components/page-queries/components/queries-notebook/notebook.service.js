@@ -65,7 +65,7 @@ export default class Notebook {
             .then((idx) => {
                 this.NotebookData.remove(notebook)
                     .then(() => {
-                        if (this.$state.includes('base.sql.notebook') && this.$state.params.noteId === notebook._id)
+                        if (this.$state.includes('base.sql.tabs.notebook') && this.$state.params.noteId === notebook._id)
                             return this._openNotebook(idx);
                     })
                     .catch(this.Messages.showError);
