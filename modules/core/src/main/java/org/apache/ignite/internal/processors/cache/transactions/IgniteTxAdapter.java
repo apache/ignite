@@ -1006,18 +1006,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @return {@code True} if state changed.
      */
     protected final boolean state(TransactionState state, boolean timedOut) {
-        return state(state, timedOut, null);
-    }
-
-    /**
-     *
-     * @param state State to set.
-     * @param timedOut Timeout flag.
-     * @param holder Holder to return previous state.
-     * @return {@code True} if state changed.
-     */
-    @SuppressWarnings({"TooBroadScope"})
-    protected boolean state(TransactionState state, boolean timedOut, @Nullable TransactionState[] holder) {
         boolean valid = false;
 
         TransactionState prev;
@@ -1028,9 +1016,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         synchronized (this) {
             prev = this.state;
-
-            if (holder != null)
-                holder[0] = prev;
 
             switch (state) {
                 case ACTIVE: {
@@ -1123,11 +1108,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 if (state != ACTIVE && state != SUSPENDED)
                     seal();
 
-                if (cctx.wal() != null && cctx.tm().logTxRecords()) {
+                if (cctx.wal() != null && cctx.tm().logTxRecords() && txNodes != null) {
                     // Log tx state change to WAL.
                     if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
-                        assert txNodes != null || state == ROLLED_BACK : "txNodes=" + txNodes + " state=" + state;
-
                         BaselineTopology baselineTop = cctx.kernalContext().state().clusterState().baselineTopology();
 
                         Map<Short, Collection<Short>> participatingNodes = consistentIdMapper

@@ -4146,9 +4146,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public void onTimeout() {
-        final TransactionState[] txState = new TransactionState[1];
-
-        if (state(MARKED_ROLLBACK, true, txState) || (state() == MARKED_ROLLBACK)) {
+        if (state(MARKED_ROLLBACK, true) || (state() == MARKED_ROLLBACK)) {
             cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                 @Override public void run() {
                     rollbackNearTxLocalAsync(false, true);
