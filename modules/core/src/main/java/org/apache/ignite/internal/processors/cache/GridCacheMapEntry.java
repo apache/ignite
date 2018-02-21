@@ -3579,7 +3579,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         throws IgniteCheckedException {
         assert cctx.transactional();
 
-        if (tx.local() && cctx.group().persistenceEnabled() && cctx.group().walEnabled()) {
+        // Write DataRecord only on primary tx node. On backup nodes we will write DataRecords in batch before commit.
+        if (cctx.group().persistenceEnabled() && cctx.group().walEnabled() && tx.local()) {
             GridCacheOperation op;
             if (val == null)
                 op = GridCacheOperation.DELETE;
