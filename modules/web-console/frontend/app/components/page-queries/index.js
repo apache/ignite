@@ -15,23 +15,14 @@
  * limitations under the License.
  */
 
-import './style.scss';
 import angular from 'angular';
 
-import templateUrl from './template.tpl.pug';
-
-import NotebookData from './Notebook.data';
-import Notebook from './Notebook.service';
-import notebookNavbarCtrl from './notebook.navbar.controller';
-import { NotebookCtrl } from './controller';
+import queriesNotebook from './components/queries-notebook';
 
 export default angular.module('ignite-console.sql', [
-    'ui.router'
+    'ui.router',
+    queriesNotebook.name
 ])
-.component('queriesNotebook', {
-    controller: NotebookCtrl,
-    templateUrl
-})
 .config(['$stateProvider', ($stateProvider) => {
     // set up the states
     $stateProvider
@@ -56,7 +47,4 @@ export default angular.module('ignite-console.sql', [
                 title: 'SQL demo'
             }
         });
-}])
-.service('IgniteNotebookData', NotebookData)
-.service('IgniteNotebook', Notebook)
-.controller('notebookNavbarController', notebookNavbarCtrl);
+}]);
