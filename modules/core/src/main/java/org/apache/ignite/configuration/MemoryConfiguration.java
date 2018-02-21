@@ -42,14 +42,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *     {@code
  *     <property name="memoryConfiguration">
  *         <bean class="org.apache.ignite.configuration.MemoryConfiguration">
- *             <property name="systemCacheInitialSize" value="#{100 * 1024 * 1024}"/>
+ *             <property name="systemCacheInitialSize" value="#{100L * 1024 * 1024}"/>
  *             <property name="defaultMemoryPolicyName" value="default_mem_plc"/>
  *
  *             <property name="memoryPolicies">
  *                 <list>
  *                     <bean class="org.apache.ignite.configuration.MemoryPolicyConfiguration">
  *                         <property name="name" value="default_mem_plc"/>
- *                         <property name="initialSize" value="#{5 * 1024 * 1024 * 1024}"/>
+ *                         <property name="initialSize" value="#{5L * 1024 * 1024 * 1024}"/>
  *                     </bean>
  *                 </list>
  *             </property>
@@ -129,7 +129,7 @@ public class MemoryConfiguration implements Serializable {
      * @return {@code this} for chaining.
      */
     public MemoryConfiguration setSystemCacheInitialSize(long sysCacheInitSize) {
-        A.ensure(sysCacheMaxSize > 0, "System cache initial size can not be less zero.");
+        A.ensure(sysCacheInitSize > 0, "System cache initial size can not be less zero.");
 
         this.sysCacheInitSize = sysCacheInitSize;
 
