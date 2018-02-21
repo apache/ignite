@@ -28,7 +28,7 @@ import { NotebookCtrl } from './controller';
 export default angular.module('ignite-console.sql', [
     'ui.router'
 ])
-.component('pageQueries', {
+.component('queriesNotebook', {
     controller: NotebookCtrl,
     templateUrl
 })
@@ -42,7 +42,7 @@ export default angular.module('ignite-console.sql', [
         })
         .state('base.sql.notebook', {
             url: '/notebook/{noteId}',
-            component: 'pageQueries',
+            component: 'queriesNotebook',
             permission: 'query',
             tfMetaTags: {
                 title: 'Query notebook'
@@ -50,7 +50,7 @@ export default angular.module('ignite-console.sql', [
         })
         .state('base.sql.demo', {
             url: '/demo',
-            component: 'pageQueries',
+            component: 'queriesNotebook',
             permission: 'query',
             tfMetaTags: {
                 title: 'SQL demo'
