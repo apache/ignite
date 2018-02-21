@@ -39,7 +39,7 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
      * @param ver Page format version.
      * @param itemSize Single item size on page.
      */
-    AbstractDataLeafIO(int type, int ver, int itemSize) {
+    public AbstractDataLeafIO(int type, int ver, int itemSize) {
         super(type, ver, itemSize);
     }
 
@@ -159,5 +159,5 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
     /**
      * @return {@code True} if mvcc version has to be stored.
      */
-    abstract boolean storeMvccVersion();
+    protected abstract boolean storeMvccVersion();
 }

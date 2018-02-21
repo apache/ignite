@@ -15,35 +15,51 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.tree;
+package org.apache.ignite.internal.processors.cache.tree.mvcc.data;
 
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.util.typedef.internal.S;
+
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.createVersionForRemovedValue;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.unmaskCoordinatorVersion;
 
 /**
  *
  */
-public class MvccKeyMinVersionBound extends SearchRow {
+public class MvccRemoveDataRow extends MvccUpdateDataRow {
     /**
-     * @param cacheId Cache ID.
      * @param key Key.
+     * @param mvccVer Mvcc version.
+     * @param part Partition.
+     * @param cacheId Cache ID.
      */
-    public MvccKeyMinVersionBound(int cacheId, KeyCacheObject key) {
-        super(cacheId, key);
+    public MvccRemoveDataRow(
+        KeyCacheObject key,
+        MvccSnapshot mvccVer,
+        boolean needOld,
+        int part,
+        int cacheId) {
+        super(key, null, null, 0L, mvccVer, needOld, part, cacheId);
     }
 
     /** {@inheritDoc} */
     @Override public long mvccCoordinatorVersion() {
-        return 1L;
+        return createVersionForRemovedValue(super.mvccCoordinatorVersion());
     }
 
     /** {@inheritDoc} */
-    @Override public long mvccCounter() {
-        return 1L;
+    @Override protected long unmaskedCoordinatorVersion() {
+        return unmaskCoordinatorVersion(super.mvccCoordinatorVersion());
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean removed() {
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MvccKeyMinVersionBound.class, this);
+        return S.toString(MvccRemoveDataRow.class, this, "super", super.toString());
     }
 }

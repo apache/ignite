@@ -33,14 +33,14 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHan
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageLockListener;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareDataLeafIO;
-import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareMvccDataInnerIO;
-import org.apache.ignite.internal.processors.cache.tree.CacheIdAwareMvccDataLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccCacheIdAwareDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.CacheIdAwarePendingEntryLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.DataInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.DataLeafIO;
-import org.apache.ignite.internal.processors.cache.tree.MvccDataInnerIO;
-import org.apache.ignite.internal.processors.cache.tree.MvccDataLeafIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataInnerIO;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataLeafIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntryInnerIO;
 import org.apache.ignite.internal.processors.cache.tree.PendingEntryLeafIO;
 import org.apache.ignite.internal.util.GridStringBuilder;
@@ -608,10 +608,10 @@ public abstract class PageIO {
                 return (Q)CacheIdAwareDataLeafIO.VERSIONS.forVersion(ver);
 
             case T_CACHE_ID_DATA_REF_MVCC_INNER:
-                return (Q)CacheIdAwareMvccDataInnerIO.VERSIONS.forVersion(ver);
+                return (Q) MvccCacheIdAwareDataInnerIO.VERSIONS.forVersion(ver);
 
             case T_CACHE_ID_DATA_REF_MVCC_LEAF:
-                return (Q)CacheIdAwareMvccDataLeafIO.VERSIONS.forVersion(ver);
+                return (Q) MvccCacheIdAwareDataLeafIO.VERSIONS.forVersion(ver);
 
             case T_DATA_REF_MVCC_INNER:
                 return (Q)MvccDataInnerIO.VERSIONS.forVersion(ver);

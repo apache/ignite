@@ -40,7 +40,7 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
      * @param canGetRow If we can get full row from this page.
      * @param itemSize Single item size on page.
      */
-    AbstractDataInnerIO(int type, int ver, boolean canGetRow, int itemSize) {
+    protected AbstractDataInnerIO(int type, int ver, boolean canGetRow, int itemSize) {
         super(type, ver, canGetRow, itemSize);
     }
 

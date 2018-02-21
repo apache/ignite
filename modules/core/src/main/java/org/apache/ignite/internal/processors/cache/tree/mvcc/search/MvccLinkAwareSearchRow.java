@@ -15,46 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.tree;
+package org.apache.ignite.internal.processors.cache.tree.mvcc.search;
 
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * MVCC search row which contains a link. Now used only for cleanup purposes.
  */
-public class MvccSearchRow extends SearchRow {
+public class MvccLinkAwareSearchRow extends MvccSearchRow {
     /** */
-    private long crdVer;
-
-    /** */
-    private long mvccCntr;
+    private final long link;
 
     /**
      * @param cacheId Cache ID.
      * @param key Key.
-     * @param crdVer Coordinator version.
+     * @param crdVer Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.
+     * @param link Link.
      */
-    public MvccSearchRow(int cacheId, KeyCacheObject key, long crdVer, long mvccCntr) {
-        super(cacheId, key);
+    public MvccLinkAwareSearchRow(int cacheId, KeyCacheObject key, long crdVer, long mvccCntr, long link) {
+        super(cacheId, key, crdVer, mvccCntr);
 
-        this.crdVer = crdVer;
-        this.mvccCntr = mvccCntr;
+        assert link != 0L;
+
+        this.link = link;
     }
 
     /** {@inheritDoc} */
-    @Override public long mvccCoordinatorVersion() {
-        return crdVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long mvccCounter() {
-        return mvccCntr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(MvccSearchRow.class, this);
+    @Override public long link() {
+        return link;
     }
 }

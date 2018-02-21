@@ -42,7 +42,7 @@ public class DataRow extends CacheDataRowAdapter {
      * @param part Partition.
      * @param rowData Required row data.
      */
-    DataRow(CacheGroupContext grp, int hash, long link, int part, RowData rowData) {
+    protected DataRow(CacheGroupContext grp, int hash, long link, int part, RowData rowData) {
         super(link);
 
         this.hash = hash;
@@ -57,6 +57,13 @@ public class DataRow extends CacheDataRowAdapter {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     *
+     */
+    public DataRow() {
+        super(0);
     }
 
     /**
@@ -77,13 +84,6 @@ public class DataRow extends CacheDataRowAdapter {
         this.part = part;
         this.expireTime = expireTime;
         this.cacheId = cacheId;
-    }
-
-    /**
-     *
-     */
-    DataRow() {
-        super(0);
     }
 
     /** {@inheritDoc} */

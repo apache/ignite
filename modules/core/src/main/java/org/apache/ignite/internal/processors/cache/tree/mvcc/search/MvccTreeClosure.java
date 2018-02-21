@@ -15,34 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.tree;
+package org.apache.ignite.internal.processors.cache.tree.mvcc.search;
 
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
+import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 
 /**
- * Row contains only link.
+ * Common interface for MVCC search row closures (no-op, only to have clear inheritance hierarchy).
  */
-public class MvccCleanupRow extends MvccSearchRow {
-    /** */
-    private final long link;
-
-    /**
-     * @param cacheId Cache ID.
-     * @param key Key.
-     * @param crdVer Mvcc coordinator version.
-     * @param mvccCntr Mvcc counter.
-     * @param link Link.
-     */
-    MvccCleanupRow(int cacheId, KeyCacheObject key, long crdVer, long mvccCntr, long link) {
-        super(cacheId, key, crdVer, mvccCntr);
-
-        assert link != 0L;
-
-        this.link = link;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long link() {
-        return link;
-    }
+public interface MvccTreeClosure extends BPlusTree.TreeRowClosure<CacheSearchRow, CacheDataRow> {
+    // No-op.
 }

@@ -11,37 +11,51 @@
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
+  See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.tree;
+package org.apache.ignite.internal.processors.cache.tree.mvcc.search;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccLongList;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.tree.RowLinkIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.unmaskCoordinatorVersion;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.versionForRemovedValue;
 
 /**
- *
+ * Search row which returns the first row visible for the given snapshot. Usage:
+ * - set this row as the upper bound
+ * - pass the same row as search closure.
  */
-public class MvccKeyMaxVersionBound extends SearchRow implements BPlusTree.TreeRowClosure<CacheSearchRow, CacheDataRow> {
-    /** */
+public class MvccSnapshotSearchRow extends MvccSearchRow implements MvccTreeClosure {
+    /** Active transactions. */
+    private final MvccLongList activeTxs;
+
+    /** Resulting row. */
     private CacheDataRow resRow;
 
     /**
+     * Constructor.
+     *
      * @param cacheId Cache ID.
      * @param key Key.
+     * @param snapshot Snapshot.
      */
-    public MvccKeyMaxVersionBound(int cacheId, KeyCacheObject key) {
-        super(cacheId, key);
+    public MvccSnapshotSearchRow(int cacheId, KeyCacheObject key, MvccSnapshot snapshot) {
+        super(cacheId, key, snapshot.coordinatorVersion(), snapshot.counter());
+
+        this.activeTxs = snapshot.activeTransactions();
     }
 
     /**
@@ -53,32 +67,35 @@ public class MvccKeyMaxVersionBound extends SearchRow implements BPlusTree.TreeR
 
     /** {@inheritDoc} */
     @Override public boolean apply(BPlusTree<CacheSearchRow, CacheDataRow> tree, BPlusIO<CacheSearchRow> io,
-        long pageAddr,
-        int idx)
-        throws IgniteCheckedException
-    {
+        long pageAddr, int idx) throws IgniteCheckedException {
+        boolean visible = true;
+
         RowLinkIO rowIo = (RowLinkIO)io;
 
-        if (versionForRemovedValue(rowIo.getMvccCoordinatorVersion(pageAddr, idx)))
-            resRow = null;
-        else
-            resRow = ((CacheDataTree)tree).getRow(io, pageAddr, idx, CacheDataRowAdapter.RowData.NO_KEY);
+        long rowCrdVerMasked = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
 
-        return false;  // Stop search.
-    }
+        if (activeTxs != null && activeTxs.size() > 0) {
+            long rowCrdVer = unmaskCoordinatorVersion(rowCrdVerMasked);
 
-    /** {@inheritDoc} */
-    @Override public long mvccCoordinatorVersion() {
-        return Long.MAX_VALUE;
-    }
+            // TODO: What is the purpose of this check?
+            if (rowCrdVer == crdVer)
+                visible = !activeTxs.contains(rowIo.getMvccCounter(pageAddr, idx));
+        }
 
-    /** {@inheritDoc} */
-    @Override public long mvccCounter() {
-        return Long.MAX_VALUE;
+        if (visible) {
+            if (versionForRemovedValue(rowCrdVerMasked))
+                resRow = null;
+            else
+                resRow = tree.getRow(io, pageAddr, idx, CacheDataRowAdapter.RowData.NO_KEY);
+
+            return false; // Stop search.
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(MvccKeyMaxVersionBound.class, this);
+        return S.toString(MvccSnapshotSearchRow.class, this);
     }
 }

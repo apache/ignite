@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.tree;
+package org.apache.ignite.internal.processors.cache.tree.mvcc.data;
 
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.tree.DataRow;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.assertMvccVersionValid;
@@ -66,7 +67,7 @@ public class MvccDataRow extends DataRow {
      * @param mvccCntr Mvcc counter.
      * @return Row.
      */
-    static MvccDataRow removedRowNoKey(
+    public static MvccDataRow removedRowNoKey(
         long link,
         int part,
         int cacheId,

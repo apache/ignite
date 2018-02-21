@@ -4681,7 +4681,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Data row.
      * @throws IgniteCheckedException If failed.
      */
-    protected abstract T getRow(BPlusIO<L> io, long pageAddr, int idx, Object x) throws IgniteCheckedException;
+    public abstract T getRow(BPlusIO<L> io, long pageAddr, int idx, Object x) throws IgniteCheckedException;
 
     /**
      *

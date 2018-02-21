@@ -15,50 +15,50 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.tree;
+package org.apache.ignite.internal.processors.cache.tree.mvcc.data;
 
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
-import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
 
 /**
  *
  */
-public final class MvccDataLeafIO extends AbstractDataLeafIO {
+public final class MvccCacheIdAwareDataLeafIO extends AbstractDataLeafIO {
     /** */
-    public static final IOVersions<MvccDataLeafIO> VERSIONS = new IOVersions<>(
-        new MvccDataLeafIO(1)
+    public static final IOVersions<MvccCacheIdAwareDataLeafIO> VERSIONS = new IOVersions<>(
+        new MvccCacheIdAwareDataLeafIO(1)
     );
 
     /**
      * @param ver Page format version.
      */
-    private MvccDataLeafIO(int ver) {
-        super(T_DATA_REF_MVCC_LEAF, ver, 28);
+    private MvccCacheIdAwareDataLeafIO(int ver) {
+        super(T_CACHE_ID_DATA_REF_MVCC_LEAF, ver, 32);
     }
 
     /** {@inheritDoc} */
-    @Override public int getCacheId(long pageAddr, int idx) {
-        return CU.UNDEFINED_CACHE_ID;
+    @Override public final int getCacheId(long pageAddr, int idx) {
+        return PageUtils.getInt(pageAddr, offset(idx) + 12);
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean storeCacheId() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override boolean storeMvccVersion() {
+    @Override protected final boolean storeCacheId() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public long getMvccCoordinatorVersion(long pageAddr, int idx) {
-        return PageUtils.getLong(pageAddr, offset(idx) + 12);
+    @Override protected final boolean storeMvccVersion() {
+        return true;
     }
 
     /** {@inheritDoc} */
-    @Override public long getMvccCounter(long pageAddr, int idx) {
-        return PageUtils.getLong(pageAddr, offset(idx) + 20);
+    @Override public final long getMvccCoordinatorVersion(long pageAddr, int idx) {
+        return PageUtils.getLong(pageAddr, offset(idx) + 16);
+    }
+
+    /** {@inheritDoc} */
+    @Override public final long getMvccCounter(long pageAddr, int idx) {
+        return PageUtils.getLong(pageAddr, offset(idx) + 24);
     }
 }

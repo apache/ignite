@@ -15,24 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.tree;
+package org.apache.ignite.internal.processors.cache.tree.mvcc.data;
 
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
+import org.apache.ignite.internal.processors.cache.tree.AbstractDataInnerIO;
 
 /**
  *
  */
-public final class CacheIdAwareMvccDataInnerIO extends AbstractDataInnerIO {
+public final class MvccCacheIdAwareDataInnerIO extends AbstractDataInnerIO {
     /** */
-    public static final IOVersions<CacheIdAwareMvccDataInnerIO> VERSIONS = new IOVersions<>(
-        new CacheIdAwareMvccDataInnerIO(1)
+    public static final IOVersions<MvccCacheIdAwareDataInnerIO> VERSIONS = new IOVersions<>(
+        new MvccCacheIdAwareDataInnerIO(1)
     );
 
     /**
      * @param ver Page format version.
      */
-    private CacheIdAwareMvccDataInnerIO(int ver) {
+    private MvccCacheIdAwareDataInnerIO(int ver) {
         super(T_CACHE_ID_DATA_REF_MVCC_INNER, ver, true, 32);
     }
 
