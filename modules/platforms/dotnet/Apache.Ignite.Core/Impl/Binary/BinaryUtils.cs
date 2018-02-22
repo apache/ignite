@@ -893,7 +893,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             // Write scale and negative flag.
             int scale = (vals[3] & 0x00FF0000) >> 16; 
 
-            stream.WriteInt(((vals[3] & 0x80000000) == 0x80000000) ? (int)((uint)scale | 0x80000000) : scale);
+            stream.WriteInt(scale);
+
+            Boolean neg = vals[3] < 0;
 
             if (idx == -1)
             {
@@ -923,13 +925,15 @@ namespace Apache.Ignite.Core.Impl.Binary
                             if ((part24 & 0x80) == 0x80)
                             {
                                 stream.WriteInt(len + 1);
+                                
+                                stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
 
-                                stream.WriteByte(ByteZero);
+                                neg = false;
                             }
                             else
                                 stream.WriteInt(len);
 
-                            stream.WriteByte((byte)part24);
+                            stream.WriteByte((byte)(neg ? ((sbyte)part24 | -0x80) : part24));
                             stream.WriteByte((byte)part16);
                             stream.WriteByte((byte)part8);
                             stream.WriteByte((byte)part0);
@@ -940,12 +944,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                             {
                                 stream.WriteInt(len);
 
-                                stream.WriteByte(ByteZero);
+                                stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
+
+                                neg = false;
                             }
                             else
                                 stream.WriteInt(len - 1);
-
-                            stream.WriteByte((byte)part16);
+                            
+                            stream.WriteByte((byte)(neg ? ((sbyte)part16 | -0x80) : part16));
                             stream.WriteByte((byte)part8);
                             stream.WriteByte((byte)part0);
                         }
@@ -955,12 +961,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                             {
                                 stream.WriteInt(len - 1);
 
-                                stream.WriteByte(ByteZero);
+                                stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
+
+                                neg = false;
                             }
                             else
                                 stream.WriteInt(len - 2);
-
-                            stream.WriteByte((byte)part8);
+                            
+                            stream.WriteByte((byte)(neg ? ((sbyte)part8 | -0x80) : part8));
                             stream.WriteByte((byte)part0);
                         }
                         else
@@ -969,12 +977,14 @@ namespace Apache.Ignite.Core.Impl.Binary
                             {
                                 stream.WriteInt(len - 2);
 
-                                stream.WriteByte(ByteZero);
+                                stream.WriteByte((byte)(neg ? -0x80 : ByteZero));
+
+                                neg = false;
                             }
                             else
                                 stream.WriteInt(len - 3);
 
-                            stream.WriteByte((byte)part0);
+                            stream.WriteByte((byte)(neg ? ((sbyte)part0 | -0x80) : part0));
                         }
                     }
                     else
@@ -997,18 +1007,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             int scale = stream.ReadInt();
 
-            bool neg;
+            bool neg = false;
 
-            if (scale < 0)
+            byte[] mag = ReadByteArray(stream);
+
+            if ((sbyte)mag[0] < 0)
             {
-                scale = scale & 0x7FFFFFFF;
+                mag[0] &= 0x7F;
 
                 neg = true;
             }
-            else
-                neg = false;
-
-            byte[] mag = ReadByteArray(stream);
 
             if (scale < 0 || scale > 28)
                 throw new BinaryObjectException("Decimal value scale overflow (must be between 0 and 28): " + scale);

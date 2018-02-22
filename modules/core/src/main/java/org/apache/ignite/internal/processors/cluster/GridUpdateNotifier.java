@@ -64,8 +64,8 @@ class GridUpdateNotifier {
     /** Sleep milliseconds time for worker thread. */
     private static final int WORKER_THREAD_SLEEP_TIME = 5000;
 
-    /** Url for request version. */
-    private final static String UPDATE_NOTIFIER_URL = "https://ignite.run/update_status_ignite-plain-text.php";
+    /** Default url for request Ignite updates. */
+    private final static String DEFAULT_IGNITE_UPDATES_URL = "https://ignite.run/update_status_ignite-plain-text.php";
 
     /** Grid version. */
     private final String ver;
@@ -103,22 +103,27 @@ class GridUpdateNotifier {
     /** Worker thread to process http request. */
     private final Thread workerThread;
 
+    /** Http client for getting Ignite updates */
+    private final HttpIgniteUpdatesChecker updatesChecker;
+
     /**
      * Creates new notifier with default values.
      *
-     * @param gridName gridName
+     * @param igniteInstanceName Ignite instance name.
      * @param ver Compound Ignite version.
      * @param gw Kernal gateway.
      * @param pluginProviders Kernal gateway.
      * @param reportOnlyNew Whether or not to report only new version.
+     * @param updatesChecker Service for getting Ignite updates
      * @throws IgniteCheckedException If failed.
      */
-    GridUpdateNotifier(String gridName, String ver, GridKernalGateway gw, Collection<PluginProvider> pluginProviders,
-        boolean reportOnlyNew) throws IgniteCheckedException {
+    GridUpdateNotifier(String igniteInstanceName, String ver, GridKernalGateway gw, Collection<PluginProvider> pluginProviders,
+                       boolean reportOnlyNew, HttpIgniteUpdatesChecker updatesChecker) throws IgniteCheckedException {
         try {
             this.ver = ver;
-            this.gridName = gridName == null ? "null" : gridName;
+            this.gridName = igniteInstanceName == null ? "null" : igniteInstanceName;
             this.gw = gw;
+            this.updatesChecker = updatesChecker;
 
             SB pluginsBuilder = new SB();
 
@@ -160,6 +165,14 @@ class GridUpdateNotifier {
     }
 
     /**
+     * Creates new notifier with default Ignite updates URL
+     */
+    GridUpdateNotifier(String igniteInstanceName, String ver, GridKernalGateway gw, Collection<PluginProvider> pluginProviders,
+                       boolean reportOnlyNew) throws IgniteCheckedException {
+        this(igniteInstanceName, ver, gw, pluginProviders, reportOnlyNew, new HttpIgniteUpdatesChecker(DEFAULT_IGNITE_UPDATES_URL, CHARSET));
+    }
+
+    /**
      * Gets system properties.
      *
      * @return System properties.
@@ -169,7 +182,7 @@ class GridUpdateNotifier {
             StringWriter sw = new StringWriter();
 
             try {
-                IgniteSystemProperties.snapshot().store(new PrintWriter(sw), "");
+                IgniteSystemProperties.safeSnapshot().store(new PrintWriter(sw), "");
             }
             catch (IOException ignore) {
                 return null;
@@ -313,34 +326,17 @@ class GridUpdateNotifier {
                     (!F.isEmpty(vmProps) ? "&vmProps=" + encode(vmProps, CHARSET) : "") +
                         pluginsVers;
 
-                URLConnection conn = new URL(UPDATE_NOTIFIER_URL).openConnection();
-
                 if (!isCancelled()) {
-                    conn.setDoOutput(true);
-                    conn.setRequestProperty("Accept-Charset", CHARSET);
-                    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset=" + CHARSET);
-
-                    conn.setConnectTimeout(3000);
-                    conn.setReadTimeout(3000);
-
                     try {
-                        try (OutputStream os = conn.getOutputStream()) {
-                            os.write(postParams.getBytes(CHARSET));
-                        }
+                        String updatesResponse = updatesChecker.getUpdates(postParams);
 
-                        try (InputStream in = conn.getInputStream()) {
-                            if (in == null)
-                                return;
+                        String[] lines = updatesResponse.split("\n");
 
-                            BufferedReader reader = new BufferedReader(new InputStreamReader(in, CHARSET));
-
-                            for (String line; (line = reader.readLine()) != null; ) {
-                                if (line.contains("version"))
-                                    latestVer = obtainVersionFrom(line);
-                                else if (line.contains("downloadUrl"))
-                                    downloadUrl = obtainDownloadUrlFrom(line);
-                            }
-
+                        for (String line : lines) {
+                            if (line.contains("version"))
+                                latestVer = obtainVersionFrom(line);
+                            else if (line.contains("downloadUrl"))
+                                downloadUrl = obtainDownloadUrlFrom(line);
                         }
                     }
                     catch (IOException e) {

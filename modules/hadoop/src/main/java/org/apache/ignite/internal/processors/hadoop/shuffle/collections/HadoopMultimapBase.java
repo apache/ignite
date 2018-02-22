@@ -40,6 +40,9 @@ import static org.apache.ignite.internal.processors.hadoop.HadoopJobProperty.get
  * Base class for all multimaps.
  */
 public abstract class HadoopMultimapBase implements HadoopMultimap {
+    /** Default offheap page size. */
+    private static final int DFLT_OFFHEAP_PAGE_SIZE = 1024 * 1024;
+
     /** */
     protected final GridUnsafeMemory mem;
 
@@ -59,7 +62,7 @@ public abstract class HadoopMultimapBase implements HadoopMultimap {
 
         this.mem = mem;
 
-        pageSize = get(jobInfo, SHUFFLE_OFFHEAP_PAGE_SIZE, 32 * 1024);
+        pageSize = get(jobInfo, SHUFFLE_OFFHEAP_PAGE_SIZE, DFLT_OFFHEAP_PAGE_SIZE);
     }
 
     /**

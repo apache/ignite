@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.hadoop.shuffle;
 
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.hadoop.HadoopComponent;
 import org.apache.ignite.internal.processors.hadoop.HadoopContext;
+import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
 import org.apache.ignite.internal.processors.hadoop.HadoopTaskContext;
@@ -38,6 +38,12 @@ import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.plugin.extensions.communication.Message;
+
+import java.util.Collection;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Shuffle.
@@ -49,9 +55,18 @@ public class HadoopShuffle extends HadoopComponent {
     /** */
     protected final GridUnsafeMemory mem = new GridUnsafeMemory(0);
 
+    /** Mutex for iternal synchronization. */
+    private final Object mux = new Object();
+
     /** {@inheritDoc} */
     @Override public void start(HadoopContext ctx) throws IgniteCheckedException {
         super.start(ctx);
+
+        ctx.kernalContext().io().addMessageListener(GridTopic.TOPIC_HADOOP_MSG, new GridMessageListener() {
+            @Override public void onMessage(UUID nodeId, Object msg, byte plc) {
+                onMessageReceived(nodeId, (HadoopMessage)msg);
+            }
+        });
 
         ctx.kernalContext().io().addUserMessageListener(GridTopic.TOPIC_HADOOP,
             new IgniteBiPredicate<UUID, Object>() {
@@ -89,8 +104,8 @@ public class HadoopShuffle extends HadoopComponent {
     private HadoopShuffleJob<UUID> newJob(HadoopJobId jobId) throws IgniteCheckedException {
         HadoopMapReducePlan plan = ctx.jobTracker().plan(jobId);
 
-        HadoopShuffleJob<UUID> job = new HadoopShuffleJob<>(ctx.localNodeId(), log,
-            ctx.jobTracker().job(jobId, null), mem, plan.reducers(), plan.reducers(ctx.localNodeId()));
+        HadoopShuffleJob<UUID> job = new HadoopShuffleJob<>(ctx.localNodeId(), log, ctx.jobTracker().job(jobId, null),
+            mem, plan.reducers(), plan.reducers(ctx.localNodeId()), localMappersCount(plan), true);
 
         UUID[] rdcAddrs = new UUID[plan.reducers()];
 
@@ -110,6 +125,18 @@ public class HadoopShuffle extends HadoopComponent {
     }
 
     /**
+     * Get number of local mappers.
+     *
+     * @param plan Plan.
+     * @return Number of local mappers.
+     */
+    private int localMappersCount(HadoopMapReducePlan plan) {
+        Collection<HadoopInputSplit> locMappers = plan.mappers(ctx.localNodeId());
+
+        return F.isEmpty(locMappers) ? 0 : locMappers.size();
+    }
+
+    /**
      * @param nodeId Node ID to send message to.
      * @param msg Message to send.
      * @throws IgniteCheckedException If send failed.
@@ -117,7 +144,10 @@ public class HadoopShuffle extends HadoopComponent {
     private void send0(UUID nodeId, Object msg) throws IgniteCheckedException {
         ClusterNode node = ctx.kernalContext().discovery().node(nodeId);
 
-        ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0);
+        if (msg instanceof Message)
+            ctx.kernalContext().io().send(node, GridTopic.TOPIC_HADOOP_MSG, (Message)msg, GridIoPolicy.PUBLIC_POOL);
+        else
+            ctx.kernalContext().io().sendUserMessage(F.asList(node), msg, GridTopic.TOPIC_HADOOP, false, 0);
     }
 
     /**
@@ -128,17 +158,23 @@ public class HadoopShuffle extends HadoopComponent {
         HadoopShuffleJob<UUID> res = jobs.get(jobId);
 
         if (res == null) {
-            res = newJob(jobId);
+            synchronized (mux) {
+                res = jobs.get(jobId);
 
-            HadoopShuffleJob<UUID> old = jobs.putIfAbsent(jobId, res);
+                if (res == null) {
+                    res = newJob(jobId);
 
-            if (old != null) {
-                res.close();
+                    HadoopShuffleJob<UUID> old = jobs.putIfAbsent(jobId, res);
 
-                res = old;
+                    if (old != null) {
+                        res.close();
+
+                        res = old;
+                    }
+                    else if (res.reducersInitialized())
+                        startSending(res);
+                }
             }
-            else if (res.reducersInitialized())
-                startSending(res);
         }
 
         return res;
@@ -151,8 +187,8 @@ public class HadoopShuffle extends HadoopComponent {
      */
     private void startSending(HadoopShuffleJob<UUID> shuffleJob) {
         shuffleJob.startSending(ctx.kernalContext().gridName(),
-            new IgniteInClosure2X<UUID, HadoopShuffleMessage>() {
-                @Override public void applyx(UUID dest, HadoopShuffleMessage msg) throws IgniteCheckedException {
+            new IgniteInClosure2X<UUID, HadoopMessage>() {
+                @Override public void applyx(UUID dest, HadoopMessage msg) throws IgniteCheckedException {
                     send0(dest, msg);
                 }
             }
@@ -167,37 +203,39 @@ public class HadoopShuffle extends HadoopComponent {
      * @return {@code True}.
      */
     public boolean onMessageReceived(UUID src, HadoopMessage msg) {
-        if (msg instanceof HadoopShuffleMessage) {
-            HadoopShuffleMessage m = (HadoopShuffleMessage)msg;
+        try {
+            if (msg instanceof HadoopShuffleMessage) {
+                HadoopShuffleMessage m = (HadoopShuffleMessage)msg;
 
-            try {
-                job(m.jobId()).onShuffleMessage(m);
+                job(m.jobId()).onShuffleMessage(src, m);
             }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Message handling failed.", e);
-            }
+            else if (msg instanceof HadoopDirectShuffleMessage) {
+                HadoopDirectShuffleMessage m = (HadoopDirectShuffleMessage)msg;
 
-            try {
-                // Reply with ack.
-                send0(src, new HadoopShuffleAck(m.id(), m.jobId()));
+                job(m.jobId()).onDirectShuffleMessage(src, m);
             }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Failed to reply back to shuffle message sender [snd=" + src + ", msg=" + msg + ']', e);
-            }
-        }
-        else if (msg instanceof HadoopShuffleAck) {
-            HadoopShuffleAck m = (HadoopShuffleAck)msg;
+            else if (msg instanceof HadoopShuffleAck) {
+                HadoopShuffleAck m = (HadoopShuffleAck)msg;
 
-            try {
                 job(m.jobId()).onShuffleAck(m);
             }
-            catch (IgniteCheckedException e) {
-                U.error(log, "Message handling failed.", e);
+            else if (msg instanceof HadoopShuffleFinishRequest) {
+                HadoopShuffleFinishRequest m = (HadoopShuffleFinishRequest)msg;
+
+                job(m.jobId()).onShuffleFinishRequest(src, m);
             }
+            else if (msg instanceof HadoopShuffleFinishResponse) {
+                HadoopShuffleFinishResponse m = (HadoopShuffleFinishResponse)msg;
+
+                job(m.jobId()).onShuffleFinishResponse(src);
+            }
+            else
+                throw new IllegalStateException("Unknown message type received to Hadoop shuffle [src=" + src +
+                    ", msg=" + msg + ']');
         }
-        else
-            throw new IllegalStateException("Unknown message type received to Hadoop shuffle [src=" + src +
-                ", msg=" + msg + ']');
+        catch (IgniteCheckedException e) {
+            U.error(log, "Message handling failed.", e);
+        }
 
         return true;
     }

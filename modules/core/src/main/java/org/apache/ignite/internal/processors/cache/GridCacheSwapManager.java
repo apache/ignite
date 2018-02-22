@@ -1430,14 +1430,6 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * Clears off-heap.
-     */
-    public void clearOffHeap() {
-        if (offheapEnabled)
-            initOffHeap();
-    }
-
-    /**
      * Clears swap.
      *
      * @throws IgniteCheckedException If failed.

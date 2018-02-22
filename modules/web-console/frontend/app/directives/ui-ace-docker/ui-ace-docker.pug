@@ -1,0 +1,31 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+mixin hard-link(ref, txt)
+    a(style='color:#ec1c24' href=ref target='_blank') #{txt}
+
+.panel-details-noborder
+    .details-row
+        p
+            +hard-link('https://docs.docker.com/engine/reference/builder/', 'Docker')
+            | &nbsp;file is a text file with instructions to create Docker image.<br/>
+            | To build image you have to store following Docker file with your Ignite XML configuration to the same directory.<br>
+            | Also you could use predefined&nbsp;
+            +hard-link('https://ignite.apache.org/download.html#docker', 'Apache Ignite docker image')
+            | . For more information about using Ignite with Docker please read&nbsp;
+            +hard-link('http://apacheignite.readme.io/docs/docker-deployment', 'documentation')
+            |.
+    .details-row(ng-if='ctrl.data' ignite-ace='{onLoad: onLoad, mode: "dockerfile"}' ng-model='ctrl.data')

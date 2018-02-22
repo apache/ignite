@@ -45,7 +45,7 @@ Session State Store Provider: stores session state data in a distributed in-memo
 More info: https://apacheignite-net.readme.io/
         </description>
         <releaseNotes></releaseNotes>
-        <copyright>Copyright 2016</copyright>
+        <copyright>Copyright 2017</copyright>
         <tags>OutputCacheProvider Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache</tags>
         <dependencies>
             <dependency id="Apache.Ignite" version="[$version$]" />

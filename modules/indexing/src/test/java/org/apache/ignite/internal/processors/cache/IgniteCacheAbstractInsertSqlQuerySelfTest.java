@@ -38,6 +38,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.IgniteCacheUpdateSqlQuerySelfTest.AllTypes;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -126,6 +127,8 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             createCaches();
         else
             createBinaryCaches();
+
+        ignite(0).createCache(cacheConfig("I2AT", true, false, Integer.class, AllTypes.class));
     }
 
     /**
@@ -151,7 +154,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             LinkedHashMap<String, String> flds = new LinkedHashMap<>();
 
             flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
+            flds.put("firstName", String.class.getName());
 
             s2p.setFields(flds);
 
@@ -172,7 +175,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             LinkedHashMap<String, String> flds = new LinkedHashMap<>();
 
             flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
+            flds.put("firstName", String.class.getName());
 
             i2p.setFields(flds);
 
@@ -194,7 +197,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             flds.put("key", Integer.class.getName());
             flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
+            flds.put("firstName", String.class.getName());
 
             k2p.setFields(flds);
 
@@ -216,7 +219,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
 
             flds.put("Id", Integer.class.getName());
             flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
+            flds.put("firstName", String.class.getName());
             flds.put("IntVal", Integer.class.getName());
 
             k22p.setFields(flds);
@@ -240,7 +243,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             flds.put("key", Integer.class.getName());
             flds.put("strKey", String.class.getName());
             flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
+            flds.put("firstName", String.class.getName());
 
             k32p.setFields(flds);
 
@@ -263,7 +266,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
             flds.put("key", Integer.class.getName());
             flds.put("strKey", String.class.getName());
             flds.put("id", Integer.class.getName());
-            flds.put("name", String.class.getName());
+            flds.put("firstName", String.class.getName());
 
             k42p.setFields(flds);
 
@@ -301,6 +304,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
         ignite(0).cache("K2P").clear();
         ignite(0).cache("K22P").clear();
         ignite(0).cache("I2I").clear();
+        ignite(0).cache("I2AT").clear();
 
         if (isBinaryMarshaller()) {
             ignite(0).cache("K32P").clear();
@@ -357,7 +361,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
      * @param idxTypes Indexed types.
      * @return Cache configuration.
      */
-    private static CacheConfiguration cacheConfig(String name, boolean partitioned, boolean escapeSql, Class<?>... idxTypes) {
+    static CacheConfiguration cacheConfig(String name, boolean partitioned, boolean escapeSql, Class<?>... idxTypes) {
         return new CacheConfiguration()
             .setName(name)
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
@@ -515,7 +519,7 @@ public abstract class IgniteCacheAbstractInsertSqlQuerySelfTest extends GridComm
         protected int id;
 
         /** */
-        @QuerySqlField
+        @QuerySqlField(name = "firstName")
         protected String name;
 
         /** {@inheritDoc} */

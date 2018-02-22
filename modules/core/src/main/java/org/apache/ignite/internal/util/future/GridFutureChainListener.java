@@ -17,15 +17,17 @@
 
 package org.apache.ignite.internal.util.future;
 
+import java.util.concurrent.Executor;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Future listener to fill chained future with converted result of the source future.
  */
-public class GridFutureChainListener<T, R> implements IgniteInClosure<IgniteInternalFuture<T>> {
+class GridFutureChainListener<T, R> implements IgniteInClosure<IgniteInternalFuture<T>> {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -35,21 +37,43 @@ public class GridFutureChainListener<T, R> implements IgniteInClosure<IgniteInte
     /** Done callback. */
     private final IgniteClosure<? super IgniteInternalFuture<T>, R> doneCb;
 
+    /** */
+    private Executor cbExec;
+
     /**
      * Constructs chain listener.
+     *
      *  @param fut Target future.
      * @param doneCb Done callback.
+     * @param cbExec Optional executor to run callback.
      */
     public GridFutureChainListener(
         GridFutureAdapter<R> fut,
-        IgniteClosure<? super IgniteInternalFuture<T>, R> doneCb
+        IgniteClosure<? super IgniteInternalFuture<T>, R> doneCb,
+        @Nullable Executor cbExec
     ) {
         this.fut = fut;
         this.doneCb = doneCb;
+        this.cbExec = cbExec;
     }
 
     /** {@inheritDoc} */
-    @Override public void apply(IgniteInternalFuture<T> t) {
+    @Override public void apply(final IgniteInternalFuture<T> t) {
+        if (cbExec != null) {
+            cbExec.execute(new Runnable() {
+                @Override public void run() {
+                    applyCallback(t);
+                }
+            });
+        }
+        else
+            applyCallback(t);
+    }
+
+    /**
+     * @param t Target future.
+     */
+    private void applyCallback(IgniteInternalFuture<T> t) {
         try {
             fut.onDone(doneCb.apply(t));
         }

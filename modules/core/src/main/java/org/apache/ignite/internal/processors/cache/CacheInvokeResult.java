@@ -36,7 +36,7 @@ public class CacheInvokeResult<T> implements EntryProcessorResult<T>, Externaliz
     private static final long serialVersionUID = 0L;
 
     /** */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     private T res;
 
     /** */

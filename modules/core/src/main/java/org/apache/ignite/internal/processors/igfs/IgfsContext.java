@@ -226,7 +226,7 @@ public class IgfsContext {
      */
     public void runInIgfsThreadPool(Runnable r) {
         try {
-            igfsSvc.submit(r);
+            igfsSvc.execute(r);
         }
         catch (RejectedExecutionException ignored) {
             // This exception will happen if network speed is too low and data comes faster

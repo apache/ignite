@@ -630,27 +630,8 @@ namespace ignite
         if (!statement)
             return SQL_INVALID_HANDLE;
 
-        if (ioType != SQL_PARAM_INPUT)
-            return SQL_ERROR;
-
-        if (!IsSqlTypeSupported(paramSqlType))
-            return SQL_ERROR;
-
-        IgniteSqlType driverType = ToDriverType(bufferType);
-
-        if (driverType == IGNITE_ODBC_C_TYPE_UNSUPPORTED)
-            return SQL_ERROR;
-
-        if (buffer)
-        {
-            ApplicationDataBuffer dataBuffer(driverType, buffer, bufferLen, resLen);
-
-            Parameter param(dataBuffer, paramSqlType, columnSize, decDigits);
-
-            statement->BindParameter(paramIdx, param);
-        }
-        else
-            statement->UnbindParameter(paramIdx);
+        statement->BindParameter(paramIdx, ioType, bufferType, paramSqlType,
+            columnSize, decDigits, buffer, bufferLen, resLen);
 
         return statement->GetDiagnosticRecords().GetReturnCode();
     }
@@ -929,7 +910,12 @@ namespace ignite
             return SQL_INVALID_HANDLE;
 
         if (paramCnt)
-            *paramCnt = static_cast<SQLSMALLINT>(statement->GetParametersNumber());
+        {
+            uint16_t paramNum = 0;
+            statement->GetParametersNumber(paramNum);
+
+            *paramCnt = static_cast<SQLSMALLINT>(paramNum);
+        }
 
         return statement->GetDiagnosticRecords().GetReturnCode();
     }

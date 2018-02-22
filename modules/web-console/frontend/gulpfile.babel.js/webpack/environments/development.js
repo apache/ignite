@@ -15,69 +15,47 @@
  * limitations under the License.
  */
 
-import path from 'path';
-import webpack from 'webpack';
+import {destDir} from '../../paths';
 
-import {destDir, rootDir, srcDir} from '../../paths';
-
-const devServerHost = 'localhost';
+const backendPort = 3000;
 const devServerPort = 9000;
-const devServerUrl = `http://${devServerHost}:${devServerPort}/`;
 
-export default () => {
-    const plugins = [
-        new webpack.HotModuleReplacementPlugin()
-    ];
-
-    return {
-        entry: {
-            webpack: `webpack-dev-server/client?${devServerUrl}`,
-            app: [path.join(srcDir, 'app.js'), 'webpack/hot/only-dev-server']
-        },
-        output: {
-            publicPath: devServerUrl
-        },
-        context: rootDir,
-        debug: true,
-        devtool: 'source-map',
-        watch: true,
-        devServer: {
-            compress: true,
-            historyApiFallback: true,
-            publicPath: '/',
-            contentBase: destDir,
-            info: true,
-            hot: true,
-            inline: true,
-            proxy: {
-                '/socket.io': {
-                    target: 'http://localhost:3000',
-                    changeOrigin: true,
-                    ws: true
-                },
-                '/agents': {
-                    target: 'http://localhost:3000',
-                    changeOrigin: true,
-                    ws: true
-                },
-                '/api/v1/*': {
-                    target: 'http://localhost:3000',
-                    changeOrigin: true,
-                    pathRewrite: {
-                        '^/api/v1': ''
-                    }
+export default {
+    devtool: 'source-map',
+    watch: true,
+    devServer: {
+        compress: true,
+        historyApiFallback: true,
+        contentBase: destDir,
+        // hot: true,
+        inline: true,
+        proxy: {
+            '/socket.io': {
+                target: `http://localhost:${backendPort}`,
+                changeOrigin: true,
+                ws: true
+            },
+            '/agents': {
+                target: `http://localhost:${backendPort}`,
+                changeOrigin: true,
+                ws: true
+            },
+            '/api/v1/*': {
+                target: `http://localhost:${backendPort}`,
+                changeOrigin: true,
+                pathRewrite: {
+                    '^/api/v1': ''
                 }
-            },
-            watchOptions: {
-                aggregateTimeout: 1000,
-                poll: 2000
-            },
-            stats: {
-                colors: true,
-                chunks: false
-            },
-            port: devServerPort
+            }
         },
-        plugins
-    };
+        watchOptions: {
+            aggregateTimeout: 1000,
+            poll: 2000
+        },
+        stats: {
+            colors: true,
+            chunks: false
+        },
+        port: devServerPort
+    }
 };

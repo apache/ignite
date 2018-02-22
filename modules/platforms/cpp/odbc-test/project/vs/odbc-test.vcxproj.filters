@@ -129,6 +129,9 @@
     <ClInclude Include="..\..\include\sql_test_suite_fixture.h">
       <Filter>Code</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\complex_type.h">
+      <Filter>Code\CacheTypes</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\config\queries-test.xml">

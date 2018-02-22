@@ -29,6 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -201,7 +202,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             FinishMiniFuture finishFut = null;
 
             synchronized (sync) {
-                for (int i = 0; i < futuresCount(); i++) {
+                int size = futuresCountNoLock();
+
+                for (int i = 0; i < size; i++) {
                     IgniteInternalFuture<IgniteInternalTx> fut = future(i);
 
                     if (fut.getClass() == FinishMiniFuture.class) {
@@ -296,33 +299,20 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             if (isDone())
                 return false;
 
+            boolean nodeStop = false;
+
             if (err != null) {
-                tx.commitError(err);
+                tx.setRollbackOnly();
 
-                boolean marked = tx.setRollbackOnly();
-
-                if (err instanceof IgniteTxRollbackCheckedException) {
-                    if (marked) {
-                        try {
-                            tx.rollback();
-                        }
-                        catch (IgniteCheckedException ex) {
-                            U.error(log, "Failed to automatically rollback transaction: " + tx, ex);
-                        }
-                    }
-                }
-                else if (tx.implicit() && tx.isSystemInvalidate()) { // Finish implicit transaction on heuristic error.
-                    try {
-                        tx.close();
-                    }
-                    catch (IgniteCheckedException ex) {
-                        U.error(log, "Failed to invalidate transaction: " + tx, ex);
-                    }
-                }
+                nodeStop = err instanceof NodeStoppingException;
             }
 
-            if (commit && tx.commitError() != null)
-                err = tx.commitError();
+            if (commit) {
+                if (tx.commitError() != null)
+                    err = tx.commitError();
+                else if (err != null)
+                    tx.commitError(err);
+            }
 
             if (initialized() || err != null) {
                 if (tx.needCheckBackup()) {
@@ -347,22 +337,30 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                     finishOnePhase(commit);
 
-                    tx.tmFinish(commit);
+                    try {
+                        tx.tmFinish(commit, nodeStop);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to finish tx: " + tx, e);
+
+                        if (err == null)
+                            err = e;
+                    }
                 }
 
                 if (super.onDone(tx0, err)) {
-                    if (error() instanceof IgniteTxHeuristicCheckedException) {
+                    if (error() instanceof IgniteTxHeuristicCheckedException && !nodeStop) {
                         AffinityTopologyVersion topVer = tx.topologyVersion();
 
                         for (IgniteTxEntry e : tx.writeMap().values()) {
                             GridCacheContext cacheCtx = e.context();
 
                             try {
-                                if (e.op() != NOOP && !cacheCtx.affinity().localNode(e.key(), topVer)) {
+                                if (e.op() != NOOP && !cacheCtx.affinity().keyLocalNode(e.key(), topVer)) {
                                     GridCacheEntryEx entry = cacheCtx.cache().peekEx(e.key());
 
                                     if (entry != null)
-                                        entry.invalidate(null, tx.xidVersion());
+                                        entry.invalidate(tx.xidVersion());
                                 }
                             }
                             catch (Throwable t) {

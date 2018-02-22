@@ -29,6 +29,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.net.InetSocketAddress;
 import java.sql.Timestamp;
 import java.util.AbstractQueue;
@@ -53,6 +54,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import junit.framework.Assert;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryCollectionFactory;
@@ -176,6 +178,35 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals((val = new BigDecimal(new BigInteger("-79228162514264337593543950336"))), marshalUnmarshal(val));
     }
+
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNegativeScaleDecimal() throws Exception {
+        BigDecimal val;
+
+        assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE, -1)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE, -2)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE, -3)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE, -4)), marshalUnmarshal(val));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNegativeScaleRoundingModeDecimal() throws Exception {
+        BigDecimal val;
+
+        assertEquals((val = BigDecimal.ZERO.setScale(-1, RoundingMode.HALF_UP)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Long.MAX_VALUE).setScale(-3, RoundingMode.HALF_DOWN)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Long.MIN_VALUE).setScale(-5, RoundingMode.HALF_EVEN)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Integer.MAX_VALUE).setScale(-8, RoundingMode.UP)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Integer.MIN_VALUE).setScale(-10, RoundingMode.DOWN)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Double.MAX_VALUE).setScale(-12, RoundingMode.CEILING)), marshalUnmarshal(val));
+        assertEquals((val = BigDecimal.valueOf(Double.MIN_VALUE).setScale(-15, RoundingMode.FLOOR)), marshalUnmarshal(val));
+    }
+
 
     /**
      * @throws Exception If failed.
@@ -3108,6 +3139,71 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertNotEquals(binObj02, binObj11);
     }
 
+
+    /**
+     * The test must be refactored after {@link IgniteSystemProperties#IGNITE_BINARY_SORT_OBJECT_FIELDS}
+     * is removed.
+     *
+     * @throws Exception If failed.
+     */
+    public void testFieldOrder() throws Exception {
+        if (BinaryUtils.FIELDS_SORTED_ORDER)
+            return;
+
+        BinaryMarshaller m = binaryMarshaller();
+
+        BinaryObjectImpl binObj = marshal(simpleObject(), m);
+
+        Collection<String> fieldsBin =  binObj.type().fieldNames();
+
+        Field[] fields = SimpleObject.class.getDeclaredFields();
+
+        assertEquals(fields.length, fieldsBin.size());
+
+        int i = 0;
+
+        for (String fieldName : fieldsBin) {
+            assertEquals(fields[i].getName(), fieldName);
+
+            ++i;
+        }
+    }
+
+    /**
+     * The test must be refactored after {@link IgniteSystemProperties#IGNITE_BINARY_SORT_OBJECT_FIELDS}
+     * is removed.
+     *
+     * @throws Exception If failed.
+     */
+    public void testFieldOrderByBuilder() throws Exception {
+        if (BinaryUtils.FIELDS_SORTED_ORDER)
+            return;
+
+        BinaryMarshaller m = binaryMarshaller();
+
+        BinaryObjectBuilder builder = new BinaryObjectBuilderImpl(binaryContext(m), "MyFakeClass");
+
+        String[] fieldNames = {"field9", "field8", "field0", "field1", "field2"};
+
+        for (String fieldName : fieldNames)
+            builder.setField(fieldName, 0);
+
+        BinaryObject binObj = builder.build();
+
+
+        Collection<String> fieldsBin =  binObj.type().fieldNames();
+
+        assertEquals(fieldNames.length, fieldsBin.size());
+
+        int i = 0;
+
+        for (String fieldName : fieldsBin) {
+            assertEquals(fieldNames[i], fieldName);
+
+            ++i;
+        }
+    }
+
     /**
      * @param obj Instance of the BinaryObjectImpl to offheap marshalling.
      * @param marsh Binary marshaller.
@@ -3346,7 +3442,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         long ptr = GridUnsafe.allocateMemory(arr.length);
 
-        GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF, null, ptr, arr.length);
+        GridUnsafe.copyHeapOffheap(arr, GridUnsafe.BYTE_ARR_OFF, ptr, arr.length);
 
         return ptr;
     }

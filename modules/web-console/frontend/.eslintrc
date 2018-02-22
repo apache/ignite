@@ -32,6 +32,7 @@ globals:
     $generatorOptional: true
     saveAs: true
     process: true
+    require: true
 
 rules:
     arrow-parens: [1, "always"]

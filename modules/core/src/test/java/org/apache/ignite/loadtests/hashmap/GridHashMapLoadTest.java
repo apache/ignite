@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
@@ -86,8 +87,12 @@ public class GridHashMapLoadTest extends GridCommonAbstractTest {
                     long timeout,
                     @Nullable GridCacheVersion serOrder,
                     GridCacheVersion serReadVer,
-                    boolean keepBinary) {
+                    boolean read) {
                     return false;
+                }
+
+                @Override protected void checkThreadChain(GridCacheMvccCandidate owner) {
+                    // No-op.
                 }
 
                 @Override public void txUnlock(IgniteInternalTx tx) {

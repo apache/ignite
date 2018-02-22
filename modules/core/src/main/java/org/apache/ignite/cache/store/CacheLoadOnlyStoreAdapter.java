@@ -153,14 +153,14 @@ public abstract class CacheLoadOnlyStoreAdapter<K, V, I> implements CacheStore<K
                 buf.add(iter.next());
 
                 if (buf.size() == batchSize) {
-                    exec.submit(new Worker(c, buf, args));
+                    exec.execute(new Worker(c, buf, args));
 
                     buf = new ArrayList<>(batchSize);
                 }
             }
 
             if (!buf.isEmpty())
-                exec.submit(new Worker(c, buf, args));
+                exec.execute(new Worker(c, buf, args));
         }
         catch (RejectedExecutionException ignored) {
             // Because of custom RejectedExecutionHandler.

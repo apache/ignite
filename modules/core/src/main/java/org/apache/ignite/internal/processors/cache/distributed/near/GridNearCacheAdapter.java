@@ -308,7 +308,7 @@ public abstract class GridNearCacheAdapter<K, V> extends GridDistributedCacheAda
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return nearEntries().size() + dht().size();
+        return dht().size();
     }
 
     /** {@inheritDoc} */

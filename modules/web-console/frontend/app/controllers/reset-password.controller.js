@@ -21,10 +21,10 @@ export default ['resetPassword', [
     ($scope, $modal, $http, $state, Messages, Focus) => {
         if ($state.params.token) {
             $http.post('/api/v1/password/validate/token', {token: $state.params.token})
-                .success((res) => {
-                    $scope.email = res.email;
-                    $scope.token = res.token;
-                    $scope.error = res.error;
+                .then(({data}) => {
+                    $scope.email = data.email;
+                    $scope.token = data.token;
+                    $scope.error = data.error;
 
                     if ($scope.token && !$scope.error)
                         Focus.move('user_password');
@@ -34,16 +34,16 @@ export default ['resetPassword', [
         // Try to reset user password for provided token.
         $scope.resetPassword = (reset_info) => {
             $http.post('/api/v1/password/reset', reset_info)
-                .success(() => {
+                .then(() => {
                     $state.go('signin');
 
                     Messages.showInfo('Password successfully changed');
                 })
-                .error((err, state) => {
+                .catch(({data, state}) => {
                     if (state === 503)
                         $state.go('signin');
 
-                    Messages.showError(err);
+                    Messages.showError(data);
                 });
         };
     }

@@ -45,7 +45,7 @@ public class CacheInvokeDirectResult implements Message {
     private CacheObject res;
 
     /** */
-    @GridToStringInclude
+    @GridToStringInclude(sensitive = true)
     @GridDirectTransient
     private Exception err;
 
@@ -105,11 +105,45 @@ public class CacheInvokeDirectResult implements Message {
     public void prepareMarshal(GridCacheContext ctx) throws IgniteCheckedException {
         key.prepareMarshal(ctx.cacheObjectContext());
 
-        if (err != null && errBytes == null)
-            errBytes = U.marshal(ctx.marshaller(), err);
+        marshalError(ctx);
 
-        if (res != null)
-            res.prepareMarshal(ctx.cacheObjectContext());
+        if (res != null) {
+            try {
+                res.prepareMarshal(ctx.cacheObjectContext());
+            }
+            catch (IgniteCheckedException e) {
+                if (err != null)
+                    err.addSuppressed(e);
+                else
+                    err = e;
+
+                errBytes = null;
+                res = null;
+
+                marshalError(ctx);
+            }
+        }
+    }
+
+    /**
+     * @param ctx Context.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void marshalError(GridCacheContext ctx) throws IgniteCheckedException {
+        if (err != null && errBytes == null) {
+            try {
+                errBytes = U.marshal(ctx.marshaller(), err);
+            }
+            catch (IgniteCheckedException e) {
+                // Try send exception even if it's unable to marshal.
+                IgniteCheckedException exc = new IgniteCheckedException(err.getMessage());
+
+                exc.setStackTrace(err.getStackTrace());
+                exc.addSuppressed(e);
+
+                errBytes = U.marshal(ctx.marshaller(), exc);
+            }
+        }
     }
 
     /**

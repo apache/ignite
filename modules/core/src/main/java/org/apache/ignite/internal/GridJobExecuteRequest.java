@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobSibling;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
@@ -138,6 +140,13 @@ public class GridJobExecuteRequest implements Message {
     private Collection<UUID> top;
 
     /** */
+    @GridDirectTransient
+    private IgnitePredicate<ClusterNode> topPred;
+
+    /** */
+    private byte[] topPredBytes;
+
+    /** */
     private int[] idsOfCaches;
 
     /** */
@@ -164,6 +173,8 @@ public class GridJobExecuteRequest implements Message {
      * @param startTaskTime Task execution start time.
      * @param timeout Task execution timeout.
      * @param top Topology.
+     * @param topPred Topology predicate.
+     * @param topPredBytes Marshalled topology predicate.
      * @param siblingsBytes Serialized collection of split siblings.
      * @param siblings Collection of split siblings.
      * @param sesAttrsBytes Map of session attributes.
@@ -194,6 +205,8 @@ public class GridJobExecuteRequest implements Message {
             long startTaskTime,
             long timeout,
             @Nullable Collection<UUID> top,
+            @Nullable IgnitePredicate<ClusterNode> topPred,
+            byte[] topPredBytes,
             byte[] siblingsBytes,
             Collection<ComputeJobSibling> siblings,
             byte[] sesAttrsBytes,
@@ -220,6 +233,7 @@ public class GridJobExecuteRequest implements Message {
         assert job != null || jobBytes != null;
         assert sesAttrs != null || sesAttrsBytes != null || !sesFullSup;
         assert jobAttrs != null || jobAttrsBytes != null;
+        assert top != null || topPred != null || topPredBytes != null;
         assert clsLdrId != null;
         assert userVer != null;
         assert depMode != null;
@@ -234,6 +248,9 @@ public class GridJobExecuteRequest implements Message {
         this.startTaskTime = startTaskTime;
         this.timeout = timeout;
         this.top = top;
+        this.topVer = topVer;
+        this.topPred = topPred;
+        this.topPredBytes = topPredBytes;
         this.siblingsBytes = siblingsBytes;
         this.siblings = siblings;
         this.sesAttrsBytes = sesAttrsBytes;
@@ -419,6 +436,21 @@ public class GridJobExecuteRequest implements Message {
     @Nullable public Collection<UUID> topology() {
         return top;
     }
+
+    /**
+     * @return Topology predicate.
+     */
+    public IgnitePredicate<ClusterNode> getTopologyPredicate() {
+        return topPred;
+    }
+
+    /**
+     * @return Marshalled topology predicate.
+     */
+    public byte[] getTopologyPredicateBytes() {
+        return topPredBytes;
+    }
+
     /**
      * @return {@code True} if session attributes are enabled.
      */
@@ -618,6 +650,12 @@ public class GridJobExecuteRequest implements Message {
 
             case 23:
                 if (!writer.writeString("userVer", userVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 24:
+                if (!writer.writeByteArray("topPredBytes", topPredBytes))
                     return false;
 
                 writer.incrementState();
@@ -831,6 +869,14 @@ public class GridJobExecuteRequest implements Message {
 
                 reader.incrementState();
 
+            case 24:
+                topPredBytes = reader.readByteArray("topPredBytes");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridJobExecuteRequest.class);
@@ -843,7 +889,7 @@ public class GridJobExecuteRequest implements Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 24;
+        return 25;
     }
 
     /** {@inheritDoc} */

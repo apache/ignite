@@ -34,7 +34,7 @@ public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
     protected IgniteLogger log;
 
     /** Starting flag. */
-    private final AtomicBoolean starting = new AtomicBoolean(false);
+    protected final AtomicBoolean starting = new AtomicBoolean(false);
 
     /** {@inheritDoc} */
     @Override public final void start(GridCacheContext<K, V> cctx) throws IgniteCheckedException {

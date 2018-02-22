@@ -51,6 +51,12 @@ public class GridNioSessionImpl implements GridNioSession {
     /** Received bytes counter. */
     private volatile long bytesRcvd;
 
+    /** Sent bytes since last NIO sessions balancing. */
+    private volatile long bytesSent0;
+
+    /** Received bytes since last NIO sessions balancing. */
+    private volatile long bytesRcvd0;
+
     /** Last send schedule timestamp. */
     private volatile long sndSchedTime;
 
@@ -99,12 +105,24 @@ public class GridNioSessionImpl implements GridNioSession {
         try {
             resetSendScheduleTime();
 
-            return chain().onSessionWrite(this, msg);
+            return chain().onSessionWrite(this, msg, true);
         }
         catch (IgniteCheckedException e) {
             close();
 
             return new GridNioFinishedFuture<Object>(e);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void sendNoFuture(Object msg) throws IgniteCheckedException {
+        try {
+            chain().onSessionWrite(this, msg, false);
+        }
+        catch (IgniteCheckedException e) {
+            close();
+
+            throw e;
         }
     }
 
@@ -161,6 +179,28 @@ public class GridNioSessionImpl implements GridNioSession {
     /** {@inheritDoc} */
     @Override public long bytesReceived() {
         return bytesRcvd;
+    }
+
+    /**
+     * @return Sent bytes since last NIO sessions balancing.
+     */
+    public long bytesSent0() {
+        return bytesSent0;
+    }
+
+    /**
+     * @return Received bytes since last NIO sessions balancing.
+     */
+    public long bytesReceived0() {
+        return bytesRcvd0;
+    }
+
+    /**
+     *
+     */
+    public void reset0() {
+        bytesSent0 = 0;
+        bytesRcvd0 = 0;
     }
 
     /** {@inheritDoc} */
@@ -240,6 +280,7 @@ public class GridNioSessionImpl implements GridNioSession {
      */
     public void bytesSent(int cnt) {
         bytesSent += cnt;
+        bytesSent0 += cnt;
 
         lastSndTime = U.currentTimeMillis();
     }
@@ -253,6 +294,7 @@ public class GridNioSessionImpl implements GridNioSession {
      */
     public void bytesReceived(int cnt) {
         bytesRcvd += cnt;
+        bytesRcvd0 += cnt;
 
         lastRcvTime = U.currentTimeMillis();
     }
@@ -296,13 +338,28 @@ public class GridNioSessionImpl implements GridNioSession {
     }
 
     /** {@inheritDoc} */
-    @Override public void recoveryDescriptor(GridNioRecoveryDescriptor recoveryDesc) {
+    @Override public void outRecoveryDescriptor(GridNioRecoveryDescriptor recoveryDesc) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public GridNioRecoveryDescriptor recoveryDescriptor() {
+    @Nullable @Override public GridNioRecoveryDescriptor outRecoveryDescriptor() {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void inRecoveryDescriptor(GridNioRecoveryDescriptor recoveryDesc) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridNioRecoveryDescriptor inRecoveryDescriptor() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void systemMessage(Object msg) {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */

@@ -22,11 +22,11 @@
 module.exports = {
     implements: 'routes',
     inject: ['routes/public', 'routes/admin', 'routes/profiles', 'routes/demo', 'routes/clusters', 'routes/domains',
-        'routes/caches', 'routes/igfss', 'routes/notebooks', 'routes/agents', 'routes/configurations']
+        'routes/caches', 'routes/igfss', 'routes/notebooks', 'routes/agents', 'routes/configurations', 'routes/activities']
 };
 
 module.exports.factory = function(publicRoute, adminRoute, profilesRoute, demoRoute,
-    clustersRoute, domainsRoute, cachesRoute, igfssRoute, notebooksRoute, agentsRoute, configurationsRoute) {
+    clustersRoute, domainsRoute, cachesRoute, igfssRoute, notebooksRoute, agentsRoute, configurationsRoute, activitiesRoute) {
     return {
         register: (app) => {
             const _mustAuthenticated = (req, res, next) => {
@@ -59,6 +59,7 @@ module.exports.factory = function(publicRoute, adminRoute, profilesRoute, demoRo
 
             app.use('/notebooks', _mustAuthenticated, notebooksRoute);
             app.use('/agent', _mustAuthenticated, agentsRoute);
+            app.use('/activities', _mustAuthenticated, activitiesRoute);
         }
     };
 };

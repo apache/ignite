@@ -321,6 +321,11 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
             }
         }, EVT_CACHE_ENTRY_EVICTED);
 
+        // Need to evict on stable topology, otherwise primary eviction
+        // may be ignored (GridCacheEvictionManager.onFutureCompleted()).
+        // Current eviction implementation doesn't have guarantees on successful eviction.
+        awaitPartitionMapExchange();
+
         // Evict on primary node.
         // Eviction of the last key should trigger queue processing.
         for (Integer key : keys)

@@ -46,7 +46,7 @@ public class BinaryFieldsOffheapSelfTest extends BinaryFieldsAbstractSelfTest {
 
         ptrs.add(ptr);
 
-        GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF, null, ptr, arr.length);
+        GridUnsafe.copyHeapOffheap(arr, GridUnsafe.BYTE_ARR_OFF, ptr, arr.length);
 
         return new BinaryObjectOffheapImpl(binaryContext(marsh), ptr, 0, arr.length);
     }

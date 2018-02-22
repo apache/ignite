@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-export default ['$scope', 'GeneratorDocker', function($scope, docker) {
+export default ['$scope', 'IgniteDockerGenerator', function($scope, docker) {
     const ctrl = this;
 
     // Watchers definition.

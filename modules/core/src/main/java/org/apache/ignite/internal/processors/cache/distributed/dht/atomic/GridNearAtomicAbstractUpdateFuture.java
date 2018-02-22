@@ -35,12 +35,15 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DELETE;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 
 /**
  * Base for near atomic update futures.
@@ -212,14 +215,18 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
             // Cannot remap.
             remapCnt = 1;
 
-            map(topVer);
+            GridCacheVersion futVer = addAtomicFuture(topVer);
+
+            if (futVer != null)
+                map(topVer, futVer);
         }
     }
 
     /**
      * @param topVer Topology version.
+     * @param futVer Future version
      */
-    protected abstract void map(AffinityTopologyVersion topVer);
+    protected abstract void map(AffinityTopologyVersion topVer, GridCacheVersion futVer);
 
     /**
      * Maps future on ready topology.
@@ -255,11 +262,34 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
      * @param req Request.
      */
     protected void mapSingle(UUID nodeId, GridNearAtomicAbstractUpdateRequest req) {
+        final boolean statsEnabled = cctx.config().isStatisticsEnabled();
+
+        final long start = (statsEnabled)? System.nanoTime() : 0L;
+
         if (cctx.localNodeId().equals(nodeId)) {
             cache.updateAllAsyncInternal(nodeId, req,
                 new CI2<GridNearAtomicAbstractUpdateRequest, GridNearAtomicUpdateResponse>() {
                     @Override public void apply(GridNearAtomicAbstractUpdateRequest req, GridNearAtomicUpdateResponse res) {
                         onResult(res.nodeId(), res, false);
+
+                        if (statsEnabled && res.error() == null) {
+                            boolean retVal = req.returnValue();
+
+                            long duration = System.nanoTime() - start;
+
+                            if (req.operation() == UPDATE) {
+                                if (retVal)
+                                    cache.metrics0().addPutAndGetTimeNanos(duration);
+                                else
+                                    cache.metrics0().addPutTimeNanos(duration);
+                            }
+                            else if (req.operation() == DELETE) {
+                                if (retVal)
+                                    cache.metrics0().addRemoveAndGetTimeNanos(duration);
+                                else
+                                    cache.metrics0().addRemoveTimeNanos(duration);
+                            }
+                        }
                     }
                 });
         }
@@ -302,7 +332,7 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
      * @param req Request.
      * @param e Error.
      */
-    protected void onSendError(GridNearAtomicAbstractUpdateRequest req, IgniteCheckedException e) {
+    protected final void onSendError(GridNearAtomicAbstractUpdateRequest req, IgniteCheckedException e) {
         synchronized (mux) {
             GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(cctx.cacheId(),
                 req.nodeId(),
@@ -313,5 +343,36 @@ public abstract class GridNearAtomicAbstractUpdateFuture extends GridFutureAdapt
 
             onResult(req.nodeId(), res, true);
         }
+    }
+
+    /**
+     * Adds future prevents topology change before operation complete.
+     * Should be invoked before topology lock released.
+     *
+     * @param topVer Topology version.
+     * @return Future version in case future added.
+     */
+    protected final GridCacheVersion addAtomicFuture(AffinityTopologyVersion topVer) {
+        GridCacheVersion futVer = cctx.versions().next(topVer);
+
+        synchronized (mux) {
+            assert this.futVer == null : this;
+            assert this.topVer == AffinityTopologyVersion.ZERO : this;
+
+            this.topVer = topVer;
+            this.futVer = futVer;
+        }
+
+        if (storeFuture() && !cctx.mvcc().addAtomicFuture(futVer, this))
+            return null;
+
+        return futVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(GridNearAtomicAbstractUpdateFuture.class, this,
+            "topLocked", topLocked, "remapCnt", remapCnt, "resCnt", resCnt, "err", err,
+            "parent", super.toString());
     }
 }

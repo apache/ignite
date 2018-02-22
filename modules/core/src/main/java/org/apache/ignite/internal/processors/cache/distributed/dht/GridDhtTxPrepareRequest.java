@@ -55,6 +55,9 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     /** */
     public static final int NEED_RETURN_VALUE_FLAG_MASK = 0x01;
 
+    /** */
+    public static final int STORE_USED_FLAG_MASK = 0x02;
+
     /** Max order. */
     private UUID nearNodeId;
 
@@ -124,8 +127,9 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      * @param txNodes Transaction nodes mapping.
      * @param nearXidVer Near transaction ID.
      * @param last {@code True} if this is last prepare request for node.
-     * @param retVal Need return value flag.
      * @param addDepInfo Deployment info flag.
+     * @param storeUsed Cache store used flag.
+     * @param retVal Need return value flag.
      */
     public GridDhtTxPrepareRequest(
         IgniteUuid futId,
@@ -142,6 +146,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         UUID subjId,
         int taskNameHash,
         boolean addDepInfo,
+        boolean storeUsed,
         boolean retVal) {
         super(tx, timeout, null, dhtWrites, txNodes, onePhaseCommit, addDepInfo);
 
@@ -157,6 +162,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
 
+        storeUsed(storeUsed);
         needReturnValue(retVal);
 
         invalidateNearEntries = new BitSet(dhtWrites == null ? 0 : dhtWrites.size());
@@ -179,6 +185,23 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
             flags = (byte)(flags | NEED_RETURN_VALUE_FLAG_MASK);
         else
             flags &= ~NEED_RETURN_VALUE_FLAG_MASK;
+    }
+
+    /**
+     * @return Flag indicating whether transaction use cache store.
+     */
+    public boolean storeUsed() {
+        return (flags & STORE_USED_FLAG_MASK) != 0;
+    }
+
+    /**
+     * @param storeUsed Store used value.
+     */
+    public void storeUsed(boolean storeUsed) {
+        if (storeUsed)
+            flags = (byte)(flags | STORE_USED_FLAG_MASK);
+        else
+            flags &= ~STORE_USED_FLAG_MASK;
     }
 
     /**

@@ -104,6 +104,7 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
     }
 
     /**
+     * @param backups Number of backups.
      * @throws Exception If failed.
      */
     public void testNullKeyForPartitionCalculation() throws Exception {
@@ -262,7 +263,6 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
             i++;
         }
     }
-
 
     /**
      * @param assignment Assignment to verify.

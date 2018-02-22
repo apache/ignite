@@ -151,7 +151,7 @@ public class HadoopChildProcessRunner {
                 job.initialize(true, nodeDesc.processId());
 
                 shuffleJob = new HadoopShuffleJob<>(comm.localProcessDescriptor(), log, job, mem,
-                    req.totalReducerCount(), req.localReducers());
+                    req.totalReducerCount(), req.localReducers(), 0, false);
 
                 initializeExecutors(req);
 
@@ -259,9 +259,9 @@ public class HadoopChildProcessRunner {
                 if (req.reducersAddresses() != null) {
                     if (shuffleJob.initializeReduceAddresses(req.reducersAddresses())) {
                         shuffleJob.startSending("external",
-                            new IgniteInClosure2X<HadoopProcessDescriptor, HadoopShuffleMessage>() {
-                                @Override public void applyx(HadoopProcessDescriptor dest,
-                                    HadoopShuffleMessage msg) throws IgniteCheckedException {
+                            new IgniteInClosure2X<HadoopProcessDescriptor, HadoopMessage>() {
+                                @Override public void applyx(HadoopProcessDescriptor dest, HadoopMessage msg)
+                                    throws IgniteCheckedException {
                                     comm.sendMessage(dest, msg);
                                 }
                             });
@@ -432,9 +432,7 @@ public class HadoopChildProcessRunner {
                         try {
                             HadoopShuffleMessage m = (HadoopShuffleMessage)msg;
 
-                            shuffleJob.onShuffleMessage(m);
-
-                            comm.sendMessage(desc, new HadoopShuffleAck(m.id(), m.jobId()));
+                            shuffleJob.onShuffleMessage(desc, m);
                         }
                         catch (IgniteCheckedException e) {
                             U.error(log, "Failed to process hadoop shuffle message [desc=" + desc + ", msg=" + msg + ']', e);

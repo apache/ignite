@@ -60,7 +60,7 @@ public abstract class BinaryPrimitives {
     public static byte[] readByteArray(byte[] arr, int off, int len) {
         byte[] arr0 = new byte[len];
 
-        GridUnsafe.copyMemory(arr, GridUnsafe.BYTE_ARR_OFF + off, arr0, GridUnsafe.BYTE_ARR_OFF, len);
+        System.arraycopy(arr, off, arr0, 0, len);
 
         return arr0;
     }
@@ -73,7 +73,7 @@ public abstract class BinaryPrimitives {
     public static byte[] readByteArray(long ptr, int off, int len) {
         byte[] arr0 = new byte[len];
 
-        GridUnsafe.copyMemory(null, ptr + off, arr0, GridUnsafe.BYTE_ARR_OFF, len);
+        GridUnsafe.copyOffheapHeap(ptr + off, arr0, GridUnsafe.BYTE_ARR_OFF, len);
 
         return arr0;
     }
@@ -215,7 +215,7 @@ public abstract class BinaryPrimitives {
     public static char[] readCharArray(long ptr, int off, int len) {
         char[] arr0 = new char[len];
 
-        GridUnsafe.copyMemory(null, ptr + off, arr0, GridUnsafe.CHAR_ARR_OFF, len << 1);
+        GridUnsafe.copyOffheapHeap(ptr + off, arr0, GridUnsafe.CHAR_ARR_OFF, len << 1);
 
         if (BIG_ENDIAN) {
             for (int i = 0; i < len; i++)

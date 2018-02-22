@@ -15,31 +15,27 @@
  * limitations under the License.
  */
 
+
 import webpack from 'webpack';
 
-import {destDir, rootDir} from '../../paths';
+import {destDir} from '../../paths';
 
-export default () => {
-    const plugins = [
-        new webpack.optimize.UglifyJsPlugin({
-            path: destDir,
-            minimize: true,
-            warnings: false,
-            sourceMap: false,
-            mangle: true
-        })
-    ];
+const plugins = [
+    new webpack.optimize.UglifyJsPlugin({
+        path: destDir,
+        minimize: true,
+        warnings: false,
+        sourceMap: false,
+        mangle: true
+    })
+];
 
-    return {
-        context: rootDir,
-        bail: true, // Cancel build on error.
-        debug: false,
-        devtool: 'cheap-source-map',
-        output: {
-            publicPath: '/',
-            filename: '[name].[chunkhash].js',
-            path: destDir
-        },
-        plugins
-    };
+export default {
+    bail: true, // Cancel build on error.
+    devtool: 'cheap-source-map',
+    output: {
+        publicPath: '/',
+        filename: '[name].[chunkhash].js'
+    },
+    plugins
 };

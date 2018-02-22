@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.compute;
 
+import java.util.concurrent.Executor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.binary.BinaryObject;
@@ -405,6 +406,11 @@ public class PlatformCompute extends PlatformAbstractTarget {
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture chain(IgniteClosure doneCb) {
+            throw new UnsupportedOperationException("Chain operation is not supported.");
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteInternalFuture chain(IgniteClosure doneCb, Executor exec) {
             throw new UnsupportedOperationException("Chain operation is not supported.");
         }
 

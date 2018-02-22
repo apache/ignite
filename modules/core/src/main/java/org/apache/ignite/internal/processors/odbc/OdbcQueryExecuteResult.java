@@ -41,7 +41,7 @@ public class OdbcQueryExecuteResult {
     /**
      * @return Query ID.
      */
-    public long getQueryId() {
+    public long queryId() {
         return queryId;
     }
 

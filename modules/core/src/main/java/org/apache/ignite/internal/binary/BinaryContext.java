@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.binary;
 
+import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -190,6 +192,9 @@ public class BinaryContext {
         sysClss.add(GridClosureProcessor.C2MLAV2.class.getName());
         sysClss.add(GridClosureProcessor.C4V2.class.getName());
         sysClss.add(GridClosureProcessor.C4MLAV2.class.getName());
+
+        // BinaryUtils.FIELDS_SORTED_ORDER support, since it uses TreeMap at BinaryMetadata.
+        sysClss.add(BinaryTreeMap.class.getName());
 
         if (BinaryUtils.wrapTrees()) {
             sysClss.add(TreeMap.class.getName());
@@ -603,6 +608,7 @@ public class BinaryContext {
 
     /**
      * @param cls Class.
+     * @param deserialize If {@code false}, metadata will be updated.
      * @return Class descriptor.
      * @throws BinaryObjectException In case of error.
      */
@@ -655,6 +661,7 @@ public class BinaryContext {
      * @param userType User type or not.
      * @param typeId Type ID.
      * @param ldr Class loader.
+     * @param deserialize If {@code false}, metadata will be updated.
      * @return Class descriptor.
      */
     public BinaryClassDescriptor descriptorForTypeId(
@@ -710,6 +717,7 @@ public class BinaryContext {
      * Creates and registers {@link BinaryClassDescriptor} for the given {@code class}.
      *
      * @param cls Class.
+     * @param deserialize If {@code false}, metadata will be updated.
      * @return Class descriptor.
      */
     private BinaryClassDescriptor registerClassDescriptor(Class<?> cls, boolean deserialize) {
@@ -750,6 +758,7 @@ public class BinaryContext {
      * Creates and registers {@link BinaryClassDescriptor} for the given user {@code class}.
      *
      * @param cls Class.
+     * @param deserialize If {@code false}, metadata will be updated.
      * @return Class descriptor.
      */
     private BinaryClassDescriptor registerUserClassDescriptor(Class<?> cls, boolean deserialize) {
@@ -922,7 +931,7 @@ public class BinaryContext {
      * @param typeId Type ID.
      * @return Instance of ID mapper.
      */
-    public BinaryInternalMapper userTypeMapper(int typeId) {
+    BinaryInternalMapper userTypeMapper(int typeId) {
         BinaryInternalMapper mapper = typeId2Mapper.get(typeId);
 
         return mapper != null ? mapper : SIMPLE_NAME_LOWER_CASE_MAPPER;
@@ -932,7 +941,7 @@ public class BinaryContext {
      * @param clsName Type name.
      * @return Instance of ID mapper.
      */
-    private BinaryInternalMapper userTypeMapper(String clsName) {
+    BinaryInternalMapper userTypeMapper(String clsName) {
         BinaryInternalMapper mapper = cls2Mappers.get(clsName);
 
         if (mapper != null)
@@ -1222,7 +1231,9 @@ public class BinaryContext {
      * @return Type identity.
      */
     public BinaryIdentityResolver identity(int typeId) {
-        return identities.get(typeId);
+        BinaryIdentityResolver rslvr = identities.get(typeId);
+
+        return rslvr != null ? rslvr : BinaryArrayIdentityResolver.instance();
     }
 
     /**
@@ -1294,6 +1305,20 @@ public class BinaryContext {
      */
     public void unregisterBinarySchemas() {
         schemas = null;
+    }
+
+    /**
+     * Unregisters the user types descriptors.
+     **/
+    public void unregisterUserTypeDescriptors() {
+        Iterator<Map.Entry<Class<?>, BinaryClassDescriptor>> it = descByCls.entrySet().iterator();
+
+        while (it.hasNext()) {
+            Map.Entry<Class<?>, BinaryClassDescriptor> e = it.next();
+
+            if (e.getValue().userType())
+                it.remove();
+        }
     }
 
     /**

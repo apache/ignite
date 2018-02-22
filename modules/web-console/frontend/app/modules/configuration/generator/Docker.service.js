@@ -18,7 +18,7 @@
 /**
  * Docker file generation entry point.
  */
-class GeneratorDocker {
+export default class IgniteDockerGenerator {
     /**
      * Generate from section.
      *
@@ -74,5 +74,3 @@ class GeneratorDocker {
         ].join('\n');
     }
 }
-
-export default ['GeneratorDocker', GeneratorDocker];

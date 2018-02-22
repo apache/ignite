@@ -23,19 +23,12 @@
 #include <map>
 #include <memory>
 
-#include <ignite/impl/interop/interop_output_stream.h>
-#include <ignite/impl/interop/interop_input_stream.h>
-#include <ignite/impl/binary/binary_writer_impl.h>
-
 #include "ignite/odbc/meta/column_meta.h"
-#include "ignite/odbc/meta/table_meta.h"
 #include "ignite/odbc/query/query.h"
 #include "ignite/odbc/app/application_data_buffer.h"
-#include "ignite/odbc/app/parameter.h"
+#include "ignite/odbc/app/parameter_set.h"
 #include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 #include "ignite/odbc/common_types.h"
-#include "ignite/odbc/cursor.h"
-#include "ignite/odbc/utility.h"
 
 namespace ignite
 {
@@ -96,14 +89,23 @@ namespace ignite
              * @return Columns number.
              */
             int32_t GetColumnNumber();
-
+            
             /**
              * Bind parameter.
              *
              * @param paramIdx Parameter index.
-             * @param param Parameter.
+             * @param ioType Type of the parameter (input/output).
+             * @param bufferType The data type of the parameter.
+             * @param paramSqlType The SQL data type of the parameter.
+             * @param columnSize  The size of the column or expression of the corresponding parameter marker.
+             * @param decDigits  The decimal digits of the column or expression of the corresponding parameter marker.
+             * @param buffer A pointer to a buffer for the parameter's data.
+             * @param bufferLen Length of the ParameterValuePtr buffer in bytes.
+             * @param resLen A pointer to a buffer for the parameter's length.
+             * @return Operation result.
              */
-            void BindParameter(uint16_t paramIdx, const app::Parameter& param);
+            void BindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType, int16_t paramSqlType,
+                SqlUlen columnSize, int16_t decDigits, void* buffer, SqlLen bufferLen, SqlLen* resLen);
 
             /**
              * Unbind specified parameter.
@@ -137,11 +139,11 @@ namespace ignite
             void GetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER *valueLen);
 
             /**
-             * Get number of binded parameters.
+             * Get number parameters required by the prepared statement.
              *
-             * @return Number of binded parameters.
+             * @param paramNum Number of parameters.
              */
-            uint16_t GetParametersNumber();
+            void GetParametersNumber(uint16_t& paramNum);
 
             /**
              * Set parameter binding offset pointer.
@@ -149,13 +151,6 @@ namespace ignite
              * @param ptr Parameter binding offset pointer.
              */
             void SetParamBindOffsetPtr(int* ptr);
-
-            /**
-             * Get parameter binding offset pointer.
-             *
-             * @return Parameter binding offset pointer.
-             */
-            int* GetParamBindOffsetPtr();
 
             /**
              * Get value of the column in the result set.
@@ -171,7 +166,7 @@ namespace ignite
              * @param query SQL query.
              */
             void PrepareSqlQuery(const std::string& query);
-            
+
             /**
              * Execute SQL query.
              *
@@ -366,10 +361,18 @@ namespace ignite
              * Bind parameter.
              *
              * @param paramIdx Parameter index.
-             * @param param Parameter.
+             * @param ioType Type of the parameter (input/output).
+             * @param bufferType The data type of the parameter.
+             * @param paramSqlType The SQL data type of the parameter.
+             * @param columnSize  The size of the column or expression of the corresponding parameter marker.
+             * @param decDigits  The decimal digits of the column or expression of the corresponding parameter marker.
+             * @param buffer A pointer to a buffer for the parameter's data.
+             * @param bufferLen Length of the ParameterValuePtr buffer in bytes.
+             * @param resLen A pointer to a buffer for the parameter's length.
              * @return Operation result.
              */
-            SqlResult InternalBindParameter(uint16_t paramIdx, const app::Parameter& param);
+            SqlResult InternalBindParameter(uint16_t paramIdx, int16_t ioType, int16_t bufferType, int16_t paramSqlType,
+                SqlUlen columnSize, int16_t decDigits, void* buffer, SqlLen bufferLen, SqlLen* resLen);
 
             /**
              * Set statement attribute.
@@ -395,6 +398,13 @@ namespace ignite
             SqlResult InternalGetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen);
 
             /**
+             * Get number parameters required by the prepared statement.
+             *
+             * @param paramNum Number of parameters.
+             */
+            SqlResult InternalGetParametersNumber(uint16_t& paramNum);
+
+            /**
              * Get value of the column in the result set.
              *
              * @param columnIdx Column index.
@@ -418,7 +428,7 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult InternalPrepareSqlQuery(const std::string& query);
-            
+
             /**
              * Execute SQL query.
              *
@@ -604,12 +614,6 @@ namespace ignite
             /** Column bindings. */
             app::ColumnBindingMap columnBindings;
 
-            /** Parameter bindings. */
-            app::ParameterBindingMap paramBindings;
-
-            /** Parameter meta. */
-            std::vector<int8_t> paramTypes;
-
             /** Underlying query. */
             std::auto_ptr<query::Query> currentQuery;
 
@@ -619,14 +623,10 @@ namespace ignite
             /** Array to store statuses of rows fetched by the last fetch. */
             uint16_t* rowStatuses;
 
-            /** Offset added to pointers to change binding of parameters. */
-            int* paramBindOffset;
-            
             /** Offset added to pointers to change binding of column data. */
             int* columnBindOffset;
 
-            /** Index of the parameter, which is currently being set. */
-            uint16_t currentParamIdx;
+            app::ParameterSet parameters;
         };
     }
 }

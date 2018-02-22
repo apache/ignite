@@ -113,6 +113,20 @@ public class DynamicCacheChangeBatch implements DiscoveryCustomMessage {
         return clientReconnect;
     }
 
+    /**
+     * @return {@code True} if request should trigger partition exchange.
+     */
+    public boolean exchangeNeeded() {
+        if (reqs != null) {
+            for (DynamicCacheChangeRequest req : reqs) {
+                if (req.exchangeNeeded())
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DynamicCacheChangeBatch.class, this);

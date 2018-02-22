@@ -34,6 +34,7 @@ import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.hadoop.HadoopJobId;
+import org.apache.ignite.internal.processors.hadoop.HadoopJobProperty;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount1;
 import org.apache.ignite.internal.processors.hadoop.impl.examples.HadoopWordCount2;
 
@@ -55,11 +56,27 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
     }
 
     /**
-     * Tests whole job execution with all phases in old and new versions of API with definition of custom
-     * Serialization, Partitioner and IO formats.
      * @throws Exception If fails.
      */
     public void testMultiReducerWholeMapReduceExecution() throws Exception {
+        checkMultiReducerWholeMapReduceExecution(false);
+    }
+
+    /**
+     * @throws Exception If fails.
+     */
+    public void testMultiReducerWholeMapReduceExecutionStriped() throws Exception {
+        checkMultiReducerWholeMapReduceExecution(true);
+    }
+
+    /**
+     * Tests whole job execution with all phases in old and new versions of API with definition of custom
+     * Serialization, Partitioner and IO formats.
+     *
+     * @param striped Whether output should be striped or not.
+     * @throws Exception If fails.
+     */
+    public void checkMultiReducerWholeMapReduceExecution(boolean striped) throws Exception {
         IgfsPath inDir = new IgfsPath(PATH_INPUT);
 
         igfs.mkdirs(inDir);
@@ -80,6 +97,11 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
             flags.put("outputFormatWasConfigured", false);
 
             JobConf jobConf = new JobConf();
+
+            if (striped)
+                jobConf.set(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), "true");
+            else
+                jobConf.set(HadoopJobProperty.SHUFFLE_MAPPER_STRIPED_OUTPUT.propertyName(), "false");
 
             jobConf.set(CommonConfigurationKeys.IO_SERIALIZATIONS_KEY, CustomSerialization.class.getName());
 

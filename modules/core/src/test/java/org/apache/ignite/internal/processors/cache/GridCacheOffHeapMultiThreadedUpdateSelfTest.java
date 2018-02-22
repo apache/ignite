@@ -115,10 +115,10 @@ public class GridCacheOffHeapMultiThreadedUpdateSelfTest extends GridCacheOffHea
         if (gridCount() > 1)
             testPutTx(keyForNode(1), PESSIMISTIC);
     }
-    
+
     /**
      * TODO: IGNITE-592.
-     *  
+     *
      * @throws Exception If failed.
      */
     public void testPutTxOptimistic() throws Exception {

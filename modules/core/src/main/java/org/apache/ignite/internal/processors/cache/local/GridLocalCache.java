@@ -19,12 +19,15 @@ package org.apache.ignite.internal.processors.cache.local;
 
 import java.io.Externalizable;
 import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -118,6 +121,7 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
         boolean retval,
         TransactionIsolation isolation,
         boolean invalidate,
+        long createTtl,
         long accessTtl) {
         return lockAllAsync(keys, timeout, tx, CU.empty0());
     }
@@ -232,5 +236,44 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
             if (log().isDebugEnabled())
                 log().debug("Explicitly removed future from map of futures: " + fut);
         }
+    }
+
+    /** {@inheritDoc} */
+    protected IgniteInternalFuture<Map<K, V>> getAllAsync(
+        @Nullable Collection<? extends K> keys,
+        boolean forcePrimary,
+        boolean skipTx,
+        @Nullable UUID subjId,
+        String taskName,
+        boolean deserializeBinary,
+        boolean skipVals,
+        boolean canRemap,
+        final boolean needVer
+    ) {
+        boolean statsEnabled = ctx.config().isStatisticsEnabled();
+
+        long start = statsEnabled ? System.nanoTime() : 0L;
+
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        subjId = ctx.subjectIdPerCall(subjId, opCtx);
+
+        IgniteInternalFuture<Map<K, V>> fut = getAllAsync(keys,
+            null,
+            opCtx == null || !opCtx.skipStore(),
+            !skipTx,
+            subjId,
+            taskName,
+            deserializeBinary,
+            forcePrimary,
+            skipVals ? null : expiryPolicy(opCtx != null ? opCtx.expiry() : null),
+            skipVals,
+            canRemap,
+            needVer);
+
+        if (statsEnabled)
+            fut.listen(new UpdateGetTimeStatClosure<Map<K, V>>(metrics0(), start));
+
+        return fut;
     }
 }

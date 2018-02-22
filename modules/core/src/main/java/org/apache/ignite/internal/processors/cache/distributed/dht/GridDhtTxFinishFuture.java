@@ -27,20 +27,20 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
-import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -93,9 +93,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
     /** Near mappings. */
     private Map<UUID, GridDistributedTxMapping> nearMap;
-
-    /** Trackable flag. */
-    private boolean trackable = true;
 
     /**
      * @param cctx Context.
@@ -151,46 +148,24 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
     /** {@inheritDoc} */
     @Override public boolean trackable() {
-        return trackable;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public void markNotTrackable() {
-        trackable = false;
+        assert false;
     }
 
     /**
      * @param e Error.
      */
-    public void onError(Throwable e) {
+    public void rollbackOnError(Throwable e) {
+        assert e != null;
+
         if (ERR_UPD.compareAndSet(this, null, e)) {
-            boolean marked = tx.setRollbackOnly();
+            tx.setRollbackOnly();
 
-            if (e instanceof IgniteTxRollbackCheckedException) {
-                if (marked) {
-                    try {
-                        tx.rollback();
-                    }
-                    catch (IgniteCheckedException ex) {
-                        U.error(log, "Failed to automatically rollback transaction: " + tx, ex);
-                    }
-                }
-            }
-            else if (tx.isSystemInvalidate()) { // Invalidate remote transactions on heuristic error.
-                finish();
-
-                try {
-                    get();
-                }
-                catch (IgniteTxHeuristicCheckedException ignore) {
-                    // Future should complete with GridCacheTxHeuristicException.
-                }
-                catch (IgniteCheckedException err) {
-                    U.error(log, "Failed to invalidate transaction: " + tx, err);
-                }
-            }
-
-            onComplete();
+            finish(false);
         }
     }
 
@@ -240,12 +215,23 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     /** {@inheritDoc} */
     @Override public boolean onDone(IgniteInternalTx tx, Throwable err) {
         if (initialized() || err != null) {
-            if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING))
-                this.tx.tmFinish(err == null);
-
             Throwable e = this.err;
 
-            if (e == null && commit)
+            if (this.tx.onePhaseCommit() && (this.tx.state() == COMMITTING)) {
+                try {
+                    boolean nodeStop = err != null && X.hasCause(err, NodeStoppingException.class);
+
+                    this.tx.tmFinish(err == null, nodeStop);
+                }
+                catch (IgniteCheckedException finishErr) {
+                    U.error(log, "Failed to finish tx: " + tx, e);
+
+                    if (e == null)
+                        e = finishErr;
+                }
+            }
+
+            if (commit && e == null)
                 e = this.tx.commitError();
 
             Throwable finishErr = e != null ? e : err;
@@ -255,7 +241,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     finishErr = this.tx.commitError();
 
                 if (this.tx.syncMode() != PRIMARY_SYNC)
-                    this.tx.sendFinishReply(commit, finishErr);
+                    this.tx.sendFinishReply(finishErr);
 
                 // Don't forget to clean up.
                 cctx.mvcc().removeFuture(futId);
@@ -284,13 +270,15 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
     /**
      * Initializes future.
+     *
+     * @param commit Commit flag.
      */
     @SuppressWarnings({"SimplifiableIfStatement", "IfMayBeConditional"})
-    public void finish() {
+    public void finish(boolean commit) {
         boolean sync;
 
         if (!F.isEmpty(dhtMap) || !F.isEmpty(nearMap))
-            sync = finish(dhtMap, nearMap);
+            sync = finish(commit, dhtMap, nearMap);
         else if (!commit && !F.isEmpty(tx.lockTransactionNodes()))
             sync = rollbackLockTransactions(tx.lockTransactionNodes());
         else
@@ -308,7 +296,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * @return {@code True} in case there is at least one synchronous {@code MiniFuture} to wait for.
      */
     private boolean rollbackLockTransactions(Collection<ClusterNode> nodes) {
-        assert !commit;
         assert !F.isEmpty(nodes);
 
         if (tx.onePhaseCommit())
@@ -337,7 +324,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 tx.commitVersion(),
                 tx.threadId(),
                 tx.isolation(),
-                commit,
+                false,
                 tx.isInvalidate(),
                 tx.system(),
                 tx.ioPolicy(),
@@ -390,11 +377,14 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     }
 
     /**
+     * @param commit Commit flag.
      * @param dhtMap DHT map.
      * @param nearMap Near map.
      * @return {@code True} in case there is at least one synchronous {@code MiniFuture} to wait for.
      */
-    private boolean finish(Map<UUID, GridDistributedTxMapping> dhtMap, Map<UUID, GridDistributedTxMapping> nearMap) {
+    private boolean finish(boolean commit,
+        Map<UUID, GridDistributedTxMapping> dhtMap,
+        Map<UUID, GridDistributedTxMapping> nearMap) {
         if (tx.onePhaseCommit())
             return false;
 

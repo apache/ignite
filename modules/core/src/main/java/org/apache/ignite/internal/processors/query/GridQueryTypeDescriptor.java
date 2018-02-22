@@ -32,6 +32,13 @@ public interface GridQueryTypeDescriptor {
     public String name();
 
     /**
+     * Gets table name for type.
+     *
+     * @return Table name.
+     */
+    public String tableName();
+
+    /**
      * Gets mapping from field name to its type.
      *
      * @return Fields that can be indexed, participate in queries and can be queried using method.

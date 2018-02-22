@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,8 +49,6 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import junit.framework.AssertionFailedError;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -64,6 +64,7 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -292,18 +293,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
 
             cacheCfgMap = null;
-        }
-
-        // We won't deploy service unless non-client node is configured.
-        for (int i = 0; i < gridCount(); i++) {
-            Boolean clientMode = grid(i).configuration().isClientMode();
-
-            if (clientMode != null && clientMode) // Can be null in multi jvm tests.
-                continue;
-
-            grid(0).services(grid(0).cluster()).deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
-
-            break;
         }
 
         for (int i = 0; i < gridCount(); i++)
@@ -2718,6 +2707,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testRemoveLoad() throws Exception {
+        if (memoryMode() == OFFHEAP_TIERED)
+            fail("https://ggsystems.atlassian.net/browse/GG-13126");
+
         int cnt = 10;
 
         Set<String> keys = new HashSet<>();
@@ -5521,6 +5513,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     public void testTransformResourceInjection() throws Exception {
+        ClusterGroup servers = grid(0).cluster().forServers();
+
+        if(F.isEmpty(servers.nodes()))
+            return;
+
+        grid(0).services( grid(0).cluster()).deployNodeSingleton(SERVICE_NAME1, new DummyServiceImpl());
+
         IgniteCache<String, Integer> cache = jcache();
         Ignite ignite = ignite(0);
 
@@ -5841,7 +5840,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             int size = 0;
 
             for (String key : keys) {
-                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx())) {
+                if (ctx.affinity().keyLocalNode(key, ctx.discovery().topologyVersionEx())) {
                     GridCacheEntryEx e =
                         ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
 
@@ -5877,7 +5876,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             int size = 0;
 
             for (String key : map.keySet())
-                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
+                if (ctx.affinity().keyLocalNode(key, ctx.discovery().topologyVersionEx()))
                     size++;
 
             assertEquals("Incorrect key size on cache #" + idx, size, ignite.cache(ctx.name()).localSize(ALL));
@@ -6120,7 +6119,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             int size = 0;
 
             for (String key : keys)
-                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
+                if (ctx.affinity().keyLocalNode(key, ctx.discovery().topologyVersionEx()))
                     size++;
 
             assertEquals("Incorrect key size on cache #" + idx, size, ignite.cache(null).localSize(ALL));

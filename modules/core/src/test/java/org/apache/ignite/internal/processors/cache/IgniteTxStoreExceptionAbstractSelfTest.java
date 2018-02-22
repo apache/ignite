@@ -357,6 +357,7 @@ public abstract class IgniteTxStoreExceptionAbstractSelfTest extends GridCacheAb
 
     /**
      * @param key Key.
+     * @param putBefore If {@code true} expects non-null values.
      * @throws Exception If failed.
      */
     private void checkValue(final Integer key, boolean putBefore) throws Exception {

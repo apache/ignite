@@ -40,7 +40,7 @@ const VALID_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-
  * Utility service for various check on java types.
  */
 export default class JavaTypes {
-    static $inject = ['igniteClusterDefaults', 'igniteCacheDefaults', 'igniteIgfsDefaults'];
+    static $inject = ['IgniteClusterDefaults', 'IgniteCacheDefaults', 'IgniteIGFSDefaults'];
 
     constructor(clusterDflts, cacheDflts, igfsDflts) {
         this.enumClasses = _.uniq(this._enumClassesAcc(_.merge(clusterDflts, cacheDflts, igfsDflts), []));
@@ -101,14 +101,9 @@ export default class JavaTypes {
      * @return {String} Class name.
      */
     shortClassName(clsName) {
-        if (this.isJavaPrimitive(clsName))
-            return clsName;
+        const dotIdx = clsName.lastIndexOf('.');
 
-        const fullClsName = this.fullClassName(clsName);
-
-        const dotIdx = fullClsName.lastIndexOf('.');
-
-        return dotIdx > 0 ? fullClsName.substr(dotIdx + 1) : fullClsName;
+        return dotIdx > 0 ? clsName.substr(dotIdx + 1) : clsName;
     }
 
     /**
@@ -163,7 +158,7 @@ export default class JavaTypes {
      * @param {String} clsName Class name to check.
      * @returns {boolean} 'true' if given class name is java primitive.
      */
-    isJavaPrimitive(clsName) {
+    isPrimitive(clsName) {
         return _.includes(JAVA_PRIMITIVES, clsName);
     }
 
