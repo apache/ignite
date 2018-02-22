@@ -767,6 +767,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                     U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
                         "restore using existing WAL) [fullPageId=" + fullId + ']');
 
+                    buf.rewind();
+
                     tryToRestorePage(fullId, buf);
                 }
                 finally {
@@ -822,9 +824,14 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /**
+     * Restores page from WAL page snapshot & delta records.
+     *
      * @param fullId Full page ID.
      * @param buf Destination byte buffer. Note: synchronization to provide ByteBuffer safety should be done outside
      * this method.
+     *
+     * @throws IgniteCheckedException If failed to start WAL iteration, if incorrect page type observed in data, etc.
+     * @throws AssertionError if it was not possible to restore page, page not found in WAL.
      */
     private void tryToRestorePage(FullPageId fullId, ByteBuffer buf) throws IgniteCheckedException {
         Long tmpAddr = null;
