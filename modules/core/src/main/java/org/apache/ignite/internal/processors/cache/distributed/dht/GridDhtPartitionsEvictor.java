@@ -23,13 +23,20 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.typedef.internal.GPC;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Class that serves asynchronous partition eviction process.
  */
 public class GridDhtPartitionsEvictor {
+    /** Show eviction progress frequency in ms. */
+    private static final int SHOW_EVICTION_PROGRESS_FREQ_MS = 2 * 60 * 1000; // 2 Minutes.
+
     /** */
     private final GridCacheSharedContext<?, ?> ctx;
+
+    /** */
+    private final CacheGroupContext grp;
 
     /** */
     private final IgniteLogger log;
@@ -48,9 +55,10 @@ public class GridDhtPartitionsEvictor {
     public GridDhtPartitionsEvictor(CacheGroupContext grp) {
         assert grp != null;
 
-        ctx = grp.shared();
+        this.grp = grp;
+        this.ctx = grp.shared();
 
-        log = ctx.logger(getClass());
+        this.log = ctx.logger(getClass());
     }
 
     /**
@@ -66,12 +74,23 @@ public class GridDhtPartitionsEvictor {
                 @Override public Boolean call() {
                     boolean locked = true;
 
+                    long nextShowProgressTime = U.currentTimeMillis() + SHOW_EVICTION_PROGRESS_FREQ_MS;
+
                     while (locked || !evictionQueue.isEmpty()) {
                         if (!locked && !evictionRunning.compareAndSet(false, true))
                             return false;
 
                         try {
                             for (GridDhtLocalPartition part : evictionQueue.values()) {
+                                // Show progress of currently evicting partitions.
+                                if (U.currentTimeMillis() >= nextShowProgressTime) {
+                                    if (log.isInfoEnabled())
+                                        log.info("Eviction in progress [grp=" + grp.cacheOrGroupName()
+                                                + ", remainingCnt=" + evictionQueue.size() + "]");
+
+                                    nextShowProgressTime = U.currentTimeMillis() + SHOW_EVICTION_PROGRESS_FREQ_MS;
+                                }
+
                                 try {
                                     boolean success = part.tryClear();
 

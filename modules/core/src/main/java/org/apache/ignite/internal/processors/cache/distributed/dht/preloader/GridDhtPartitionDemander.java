@@ -551,8 +551,12 @@ public class GridDhtPartitionDemander {
         final AtomicInteger clearingPartitions = new AtomicInteger(fullPartitions.size());
 
         for (int partId : fullPartitions) {
+            if (fut.isDone())
+                return;
+
             GridDhtLocalPartition part = grp.topology().localPartition(partId);
-            if (part != null && part.state() == MOVING && !fut.isDone()) {
+
+            if (part != null && part.state() == MOVING) {
                 part.onClearFinished(f -> {
                     // Cancel rebalance if partition clearing was failed.
                     if (f.error() != null) {
@@ -570,7 +574,6 @@ public class GridDhtPartitionDemander {
                             fut.cancel();
                         }
                     }
-                    // If all partitions are cleared send initial demand message.
                     else {
                         if (!fut.isDone()) {
                             int existed = clearingPartitions.decrementAndGet();
@@ -583,13 +586,15 @@ public class GridDhtPartitionDemander {
                                 }
                             }
 
-                            if (existed == 0) {
+                            // If all partitions are cleared send initial demand message.
+                            if (existed == 0)
                                 ctx.kernalContext().closure().runLocalSafe(initDemandRequestTask, true);
-                            }
                         }
                     }
                 });
             }
+            else
+                clearingPartitions.decrementAndGet();
         }
     }
 
