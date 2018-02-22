@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -70,6 +71,13 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
         super.afterTest();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
+    }
+
     /**
      * @throws Exception If failed.
      */
@@ -107,6 +115,8 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
 
         startGrid(configuration(1, false, client));
 
+        grid(0).cluster().active(true);
+
         AuthorizationContext actx = grid(1).context().authentication().authenticate("ignite", "ignite");
 
         assertNotNull(actx);
@@ -137,6 +147,8 @@ public class AuthenticationConfigurationClusterTest extends GridCommonAbstractTe
      */
     public void testDisabledAuthentication() throws Exception {
         startGrid(configuration(0, false, false));
+
+        grid(0).cluster().active(true);
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
