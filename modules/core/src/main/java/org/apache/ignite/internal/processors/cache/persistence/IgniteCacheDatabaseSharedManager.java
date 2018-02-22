@@ -274,7 +274,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (dfltMemPlcName == null)
             dfltMemPlcName = DFLT_MEM_PLC_DEFAULT_NAME;
 
-        MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(memPlcCfg, fillFactorProvider(memPlcName));
+        MemoryMetricsImpl memMetrics = new MemoryMetricsImpl(memPlcCfg, freeSpaceProvider(memPlcName),
+            memCfg.getPageSize());
 
         MemoryPolicy memPlc = initMemory(memCfg, memPlcCfg, memMetrics);
 
@@ -295,26 +296,21 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param memPlcName Memory policy name.
      * @return Closure.
      */
-    protected IgniteOutClosure<Float> fillFactorProvider(final String memPlcName) {
-        return new IgniteOutClosure<Float>() {
+    protected IgniteOutClosure<Long> freeSpaceProvider(final String memPlcName) {
+        return new IgniteOutClosure<Long>() {
             private FreeListImpl freeList;
 
-            @Override public Float apply() {
+            @Override public Long apply() {
                 if (freeList == null) {
                     FreeListImpl freeList0 = freeListMap.get(memPlcName);
 
                     if (freeList0 == null)
-                        return (float) 0;
+                        return 0L;
 
                     freeList = freeList0;
                 }
 
-                T2<Long, Long> fillFactor = freeList.fillFactor();
-
-                if (fillFactor.get2() == 0)
-                    return (float) 0;
-
-                return (float) fillFactor.get1() / fillFactor.get2();
+                return freeList.freeSpace();
             }
         };
     }

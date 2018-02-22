@@ -534,11 +534,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteOutClosure<Float> fillFactorProvider(final String memPlcName) {
-        return new IgniteOutClosure<Float>() {
-            @Override public Float apply() {
-                long loadSize = 0L;
-                long totalSize = 0L;
+    @Override protected IgniteOutClosure<Long> freeSpaceProvider(final String memPlcName) {
+        return new IgniteOutClosure<Long>() {
+            @Override public Long apply() {
+                long freeSpace = 0L;
 
                 for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
                     if (!grpCtx.memoryPolicy().config().getName().equals(memPlcName))
@@ -546,16 +545,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     assert grpCtx.offheap() instanceof GridCacheOffheapManager;
 
-                    T2<Long, Long> fillFactor = ((GridCacheOffheapManager)grpCtx.offheap()).fillFactor();
-
-                    loadSize += fillFactor.get1();
-                    totalSize += fillFactor.get2();
+                    freeSpace += ((GridCacheOffheapManager)grpCtx.offheap()).freeSpace();
                 }
 
-                if (totalSize == 0)
-                    return (float) 0;
-
-                return (float) loadSize / totalSize;
+                return freeSpace;
             }
         };
     }
