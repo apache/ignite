@@ -21,6 +21,7 @@ import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryArrayIdentityResolver;
 import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryIdMapper;
@@ -1230,7 +1231,9 @@ public class BinaryContext {
      * @return Type identity.
      */
     public BinaryIdentityResolver identity(int typeId) {
-        return identities.get(typeId);
+        BinaryIdentityResolver rslvr = identities.get(typeId);
+
+        return rslvr != null ? rslvr : BinaryArrayIdentityResolver.instance();
     }
 
     /**
