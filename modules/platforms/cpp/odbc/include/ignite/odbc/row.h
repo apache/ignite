@@ -62,7 +62,7 @@ namespace ignite
              *
              * @param columnIdx Column index.
              * @param dataBuf Application data buffer.
-             * @return Conversation result.
+             * @return Conversion result.
              */
             app::ConversionResult::Type ReadColumnToBuffer(uint16_t columnIdx, app::ApplicationDataBuffer& dataBuf);
 

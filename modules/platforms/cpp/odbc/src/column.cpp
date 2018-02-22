@@ -524,7 +524,7 @@ namespace ignite
                 }
 
                 default:
-                    return app::ConversionResult::AI_UNSUPPORTED_CONVERSATION;
+                    return app::ConversionResult::AI_UNSUPPORTED_CONVERSION;
             }
 
             return convRes;

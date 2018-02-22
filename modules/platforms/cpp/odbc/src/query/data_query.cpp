@@ -429,7 +429,7 @@ namespace ignite
                         return SqlResult::AI_SUCCESS_WITH_INFO;
                     }
 
-                    case app::ConversionResult::AI_UNSUPPORTED_CONVERSATION:
+                    case app::ConversionResult::AI_UNSUPPORTED_CONVERSION:
                     {
                         diag.AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
                             "Data conversion is not supported.", rowIdx, columnIdx);

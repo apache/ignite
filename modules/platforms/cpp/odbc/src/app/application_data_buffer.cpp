@@ -248,7 +248,7 @@ namespace ignite
                         break;
                 }
 
-                return ConversionResult::AI_UNSUPPORTED_CONVERSATION;
+                return ConversionResult::AI_UNSUPPORTED_CONVERSION;
             }
 
             template<typename Tbuf, typename Tin>
@@ -457,7 +457,7 @@ namespace ignite
                         break;
                 }
 
-                return ConversionResult::AI_UNSUPPORTED_CONVERSATION;
+                return ConversionResult::AI_UNSUPPORTED_CONVERSION;
             }
 
             ConversionResult::Type ApplicationDataBuffer::PutGuid(const Guid& value)
@@ -504,7 +504,7 @@ namespace ignite
                         break;
                 }
 
-                return ConversionResult::AI_UNSUPPORTED_CONVERSATION;
+                return ConversionResult::AI_UNSUPPORTED_CONVERSION;
             }
 
             ConversionResult::Type ApplicationDataBuffer::PutBinaryData(void *data, size_t len, int32_t& written)
@@ -557,7 +557,7 @@ namespace ignite
                         break;
                 }
                 
-                return ConversionResult::AI_UNSUPPORTED_CONVERSATION;
+                return ConversionResult::AI_UNSUPPORTED_CONVERSION;
             }
 
             ConversionResult::Type ApplicationDataBuffer::PutNull()
@@ -657,7 +657,7 @@ namespace ignite
                         break;
                 }
 
-                return ConversionResult::AI_UNSUPPORTED_CONVERSATION;
+                return ConversionResult::AI_UNSUPPORTED_CONVERSION;
             }
 
             ConversionResult::Type ApplicationDataBuffer::PutDate(const Date& value)
@@ -777,7 +777,7 @@ namespace ignite
                         break;
                 }
 
-                return ConversionResult::AI_UNSUPPORTED_CONVERSATION;
+                return ConversionResult::AI_UNSUPPORTED_CONVERSION;
             }
 
             ConversionResult::Type ApplicationDataBuffer::PutTimestamp(const Timestamp& value)
@@ -899,7 +899,7 @@ namespace ignite
                         break;
                 }
 
-                return ConversionResult::AI_UNSUPPORTED_CONVERSATION;
+                return ConversionResult::AI_UNSUPPORTED_CONVERSION;
             }
 
             ConversionResult::Type ApplicationDataBuffer::PutTime(const Time& value)
@@ -1008,7 +1008,7 @@ namespace ignite
                         break;
                 }
 
-                return ConversionResult::AI_UNSUPPORTED_CONVERSATION;
+                return ConversionResult::AI_UNSUPPORTED_CONVERSION;
             }
 
             std::string ApplicationDataBuffer::GetString(size_t maxLen) const

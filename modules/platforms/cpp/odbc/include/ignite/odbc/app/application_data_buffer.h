@@ -53,8 +53,8 @@ namespace ignite
                     /** Conversion successfull, but right-side variable length data truncation occurred. */
                     AI_VARLEN_DATA_TRUNCATED,
 
-                    /** Conversation is not supported. */
-                    AI_UNSUPPORTED_CONVERSATION,
+                    /** Conversion is not supported. */
+                    AI_UNSUPPORTED_CONVERSION,
 
                     /** Indicator buffer needed to complete the operation but it is NULL. */
                     AI_INDICATOR_NEEDED,
