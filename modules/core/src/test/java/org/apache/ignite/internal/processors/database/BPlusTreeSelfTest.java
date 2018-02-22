@@ -2146,7 +2146,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     l.lock();
 
                     try {
-                        assertFalse("B+Tree shutdown: Close should not be called: ", !closeCalled);
+                        assertTrue("B+Tree shutdown: Close should not be called: ", !closeCalled);
 
                         if (op == 0) { // Put.
                             assertEquals(map.put(x, x), tree.put(x));
