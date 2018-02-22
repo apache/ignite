@@ -46,6 +46,7 @@ const insertTestUser = ({userId = '000000000000000000000001', token = 'ppw4tPI3J
                     lastName: 'Doe',
                     company: 'TestCompany',
                     country: 'Canada',
+                    industry: 'Banking',
                     admin: true,
                     token,
                     attempts: 0,
