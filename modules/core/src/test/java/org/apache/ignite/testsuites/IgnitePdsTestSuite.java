@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCache
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataRegionMetricsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsEvictionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsPageReplacementTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreePageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreeReuseListPageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.FillFactorMetricTest;
@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.database.IgniteDbPutGetWithCacheSto
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeTinyPutGetTest;
 
-
 /**
  *
  */
@@ -53,11 +52,11 @@ public class IgnitePdsTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite");
 
         addRealPageStoreTests(suite);
+        addRealPageStoreTestsLongRunning(suite);
 
         // Basic PageMemory tests.
         suite.addTestSuite(PageMemoryImplNoLoadTest.class);
         suite.addTestSuite(IndexStoragePageMemoryImplTest.class);
-        suite.addTestSuite(IgnitePdsEvictionTest.class);
         suite.addTestSuite(PageMemoryImplTest.class);
 
         // BTree tests with store page memory.
@@ -76,13 +75,22 @@ public class IgnitePdsTestSuite extends TestSuite {
     }
 
     /**
+     * Fills {@code suite} with PDS test subset, which operates with real page store, but requires long time to
+     * execute.
+     *
+     * @param suite suite to add tests into.
+     */
+    public static void addRealPageStoreTestsLongRunning(TestSuite suite) {
+        // Basic PageMemory tests.
+        suite.addTestSuite(IgnitePdsPageReplacementTest.class);
+    }
+
+    /**
      * Fills {@code suite} with PDS test subset, which operates with real page store and does actual disk operations.
      *
      * @param suite suite to add tests into.
      */
     public static void addRealPageStoreTests(TestSuite suite) {
-        // Basic PageMemory tests.
-        suite.addTestSuite(IgnitePdsEvictionTest.class);
 
         // Checkpointing smoke-test.
         suite.addTestSuite(IgnitePdsCheckpointSimulationWithRealCpDisabledTest.class);
