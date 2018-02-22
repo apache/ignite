@@ -166,6 +166,8 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                         return null;
                     }
                 }, IgniteAccessControlException.class, "Default user cannot be removed");
+
+                assertNotNull(grid(nodeIdx).context().authentication().authenticate("ignite", "ignite"));
             }
         }
         finally {
