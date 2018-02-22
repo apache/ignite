@@ -15,19 +15,66 @@
  * limitations under the License.
  */
 
-export class NotebooksListCtrl {
-    static $inject = ['IgniteNotebook'];
+import headerTemplate from '../../../../../app/primitives/ui-grid-header/index.tpl.pug';
 
-    constructor(IgniteNotebook) {
-        Object.assign(this, { IgniteNotebook });
+export class NotebooksListCtrl {
+    static $inject = ['IgniteNotebook', '$scope'];
+
+    constructor(IgniteNotebook, $scope) {
+        Object.assign(this, { IgniteNotebook, $scope });
+
+        this.categories = [
+            { name: 'Name', visible: true, enableHiding: false },
+            { name: 'SQL Query', visible: true, enableHiding: false, enableFiltering: false },
+            { name: 'Scan Query', visible: true, enableHiding: false, enableFiltering: false }
+        ];
+
+        this.columnDefs = [
+            { name: 'name', displayName: 'Name', categoryDisplayName: 'Name', field: 'name', minWidth: 150, width: 550, filter: { placeholder: 'Filter by Name...' } },
+            { name: 'sqlQueryNum', displayName: 'SQL Query', categoryDisplayName: 'SQL Query', field: 'sqlQueryNum', minWidth: 150, width: 150 },
+            { name: 'scanQueryNum', displayName: 'Scan Query', categoryDisplayName: 'Scan Query', field: 'scanQueryNum', minWidth: 150, width: 150 }
+        ];
+
+        this.gridOptions = {
+            data: [],
+
+            categories: this.categories,
+            columnDefs: this.columnDefs,
+            headerTemplate,
+
+            rowHeight: 46,
+            selectWithCheckboxOnly: true,
+            suppressRemoveSort: false,
+            enableFiltering: true,
+            enableSelectAll: true,
+            enableRowSelection: false,
+            enableFullRowSelection: true,
+            enableColumnMenus: false,
+            noUnselect: false,
+            fastWatch: true,
+            onRegisterApi: (api) => {
+                this.gridApi = api;
+
+                this.$scope.$watch(() => this.gridApi.grid.getVisibleRows().length, (rows) => this._adjustHeight(rows));
+            }
+        };
     }
 
     async $onInit() {
-        this.notebooks = await this.loadAllNotebooks();
-        console.log(this.notebooks);
+        this.notebooks = await this._loadAllNotebooks();
+        this.gridOptions.data = this.notebooks;
     }
 
-    async loadAllNotebooks() {
+    _loadAllNotebooks() {
         return this.IgniteNotebook.read();
+    }
+
+    _adjustHeight(rows) {
+        // Add header height.
+        const height = Math.min(rows, 11) * 48 + 78;
+
+        this.gridApi.grid.element.css('height', height + 'px');
+
+        this.gridApi.core.handleWindowResize();
     }
 }
