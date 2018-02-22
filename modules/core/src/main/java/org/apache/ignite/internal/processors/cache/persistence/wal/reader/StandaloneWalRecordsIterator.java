@@ -42,6 +42,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.AbstractWalRecordsIterator;
 import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExpander;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
@@ -79,7 +80,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * <code>null</code> value means directory scan mode
      */
     @Nullable
-    private List<FileWriteAheadLogManager.FileDescriptor> walFileDescriptors;
+    private List<FileDescriptor> walFileDescriptors;
 
     /** Keep binary. This flag disables converting of non primitive types (BinaryObjects) */
     private boolean keepBinary;
@@ -154,7 +155,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final boolean workDir,
         @Nullable final File[] walFiles) throws IgniteCheckedException {
         if (walFilesDir != null) {
-            FileWriteAheadLogManager.FileDescriptor[] descs = FileWriteAheadLogManager.loadFileDescriptors(walFilesDir);
+            FileDescriptor[] descs = FileWriteAheadLogManager.loadFileDescriptors(walFilesDir);
             curWalSegmIdx = !F.isEmpty(descs) ? descs[0].getIdx() : 0;
             this.walFilesDir = walFilesDir;
         }
@@ -181,12 +182,12 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
      * @param allFiles files to scan.
      * @return list of file descriptors with checked header records, having correct file index is set
      */
-    private List<FileWriteAheadLogManager.FileDescriptor> scanIndexesFromFileHeaders(
+    private List<FileDescriptor> scanIndexesFromFileHeaders(
         @Nullable final File[] allFiles) {
         if (allFiles == null || allFiles.length == 0)
             return Collections.emptyList();
 
-        final List<FileWriteAheadLogManager.FileDescriptor> resultingDescs = new ArrayList<>();
+        final List<FileDescriptor> resultingDescs = new ArrayList<>();
 
         for (File file : allFiles) {
             if (file.length() < HEADER_RECORD_SIZE)
@@ -217,7 +218,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
                 continue; //filter out this segment
             }
 
-            resultingDescs.add(new FileWriteAheadLogManager.FileDescriptor(file, ptr.index()));
+            resultingDescs.add(new FileDescriptor(file, ptr.index()));
         }
         Collections.sort(resultingDescs);
 
@@ -233,17 +234,17 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
 
         curWalSegmIdx++;
         // curHandle.workDir is false
-        final FileWriteAheadLogManager.FileDescriptor fd;
+        final FileDescriptor fd;
 
         if (walFilesDir != null) {
             File segmentFile = new File(walFilesDir,
-                FileWriteAheadLogManager.FileDescriptor.fileName(curWalSegmIdx));
+                FileDescriptor.fileName(curWalSegmIdx));
 
             if (!segmentFile.exists())
                 segmentFile = new File(walFilesDir,
-                    FileWriteAheadLogManager.FileDescriptor.fileName(curWalSegmIdx) + ".zip");
+                    FileDescriptor.fileName(curWalSegmIdx) + ".zip");
 
-            fd = new FileWriteAheadLogManager.FileDescriptor(segmentFile);
+            fd = new FileDescriptor(segmentFile);
         }
         else {
             if (walFileDescriptors.isEmpty())

@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 
 /**
@@ -114,6 +115,11 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @return Total number of segments in the WAL archive.
      */
     public int walArchiveSegments();
+
+    /**
+     * @return Total size of segments in the WAL archive.
+     */
+    public FileDescriptor[] walArchiveFiles();
 
     /**
      * Checks if WAL segment is under lock or reserved

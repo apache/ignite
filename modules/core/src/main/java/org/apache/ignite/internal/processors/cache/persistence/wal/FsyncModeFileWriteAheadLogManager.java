@@ -91,7 +91,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -110,9 +109,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VER
 public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAdapter implements IgniteWriteAheadLogManager {
     /** */
     public static final FileDescriptor[] EMPTY_DESCRIPTORS = new FileDescriptor[0];
-
-    /** */
-    public static final String WAL_SEGMENT_FILE_EXT = ".wal";
 
     /** */
     private static final byte[] FILL_BUF = new byte[1024 * 1024];
@@ -168,11 +164,24 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     /** Latest serializer version to use. */
     private static final int LATEST_SERIALIZER_VERSION = 2;
 
+    /**
+     * Part number of wal archive size. Need for calculate max size of wall after last checkpoint. For example:
+     * If it equal to 4, checkpoint should be triggered when max size of wall after last checkpoint
+     * more than maxWallArchiveSize/4
+     */
+    private static final int CHECKPOINT_TRIGGER_BY_ARCHIVE_SIZE_DIVIDER = 4;
+
     /** */
     private final boolean alwaysWriteFullPages;
 
     /** WAL segment size in bytes */
     private final long maxWalSegmentSize;
+
+    /**
+     * Maximum number of allowed segments without checkpoint. If we have their more checkpoint should be triggered.
+     * It is simple way to calculate wal size without checkpoint instead fair wal size calculating.
+     */
+    private final long maxSegCountWithoutCheckpoint;
 
     /** */
     private final WALMode mode;
@@ -301,6 +310,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         ioFactory = dsCfg.getFileIOFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         evt = ctx.event();
+
+        int walArchiveMaxSize = dsCfg.getMaxWalArchiveSize() * 1024 * 1024;//MB to bytes
+
+        maxSegCountWithoutCheckpoint =
+            (walArchiveMaxSize / CHECKPOINT_TRIGGER_BY_ARCHIVE_SIZE_DIVIDER) / dsCfg.getWalSegmentSize();
 
         assert mode == WALMode.FSYNC : dsCfg;
     }
@@ -766,6 +780,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
+    public FileDescriptor[] walArchiveFiles() {
+        return scan(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean reserved(WALPointer ptr) {
         FileWALPointer fPtr = (FileWALPointer)ptr;
 
@@ -890,6 +909,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         if (hnd.close(true)) {
             FileWriteHandle next = initNextWriteHandle(cur.idx);
 
+            if (next.idx - lashCheckpointFileIdx() >= maxSegCountWithoutCheckpoint)
+                cctx.database().forceCheckpoint("too big size of wal without checkpoint");
+
             boolean swapped = currentHndUpd.compareAndSet(this, hnd, next);
 
             assert swapped : "Concurrent updates on rollover are not allowed";
@@ -904,6 +926,13 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             hnd.awaitNext();
 
         return currentHandle();
+    }
+
+    /** Give last checkpoint file idx */
+    private long lashCheckpointFileIdx() {
+        WALPointer lastCheckpointMark = cctx.database().lastCheckpointMarkWalPointer();
+
+        return lastCheckpointMark == null ? 0 : ((FileWALPointer)lastCheckpointMark).index();
     }
 
     /**
@@ -1954,126 +1983,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         buf.position(0);
 
         return buf;
-    }
-
-    /**
-     * WAL file descriptor.
-     */
-    public static class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRecordsIterator.AbstractFileDescriptor {
-        /** */
-        protected final File file;
-
-        /** Absolute WAL segment file index */
-        protected final long idx;
-
-        /**
-         * Creates file descriptor. Index is restored from file name
-         *
-         * @param file WAL segment file.
-         */
-        public FileDescriptor(@NotNull File file) {
-            this(file, null);
-        }
-
-        /**
-         * @param file WAL segment file.
-         * @param idx Absolute WAL segment file index. For null value index is restored from file name
-         */
-        public FileDescriptor(@NotNull File file, @Nullable Long idx) {
-            this.file = file;
-
-            String fileName = file.getName();
-
-            assert fileName.contains(WAL_SEGMENT_FILE_EXT);
-
-            this.idx = idx == null ? Long.parseLong(fileName.substring(0, 16)) : idx;
-        }
-
-        /**
-         * @param segment Segment index.
-         * @return Segment file name.
-         */
-        public static String fileName(long segment) {
-            SB b = new SB();
-
-            String segmentStr = Long.toString(segment);
-
-            for (int i = segmentStr.length(); i < 16; i++)
-                b.a('0');
-
-            b.a(segmentStr).a(WAL_SEGMENT_FILE_EXT);
-
-            return b.toString();
-        }
-
-        /**
-         * @param segment Segment number as integer.
-         * @return Segment number as aligned string.
-         */
-        private static String segmentNumber(long segment) {
-            SB b = new SB();
-
-            String segmentStr = Long.toString(segment);
-
-            for (int i = segmentStr.length(); i < 16; i++)
-                b.a('0');
-
-            b.a(segmentStr);
-
-            return b.toString();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int compareTo(FileDescriptor o) {
-            return Long.compare(idx, o.idx);
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (!(o instanceof FileDescriptor))
-                return false;
-
-            FileDescriptor that = (FileDescriptor)o;
-
-            return idx == that.idx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return (int)(idx ^ (idx >>> 32));
-        }
-
-        /**
-         * @return Absolute WAL segment file index
-         */
-        public long getIdx() {
-            return idx;
-        }
-
-        /**
-         * @return absolute pathname string of this file descriptor pathname.
-         */
-        public String getAbsolutePath() {
-            return file.getAbsolutePath();
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isCompressed() {
-            return file.getName().endsWith(".zip");
-        }
-
-        /** {@inheritDoc} */
-        @Override public File file() {
-            return file;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long idx() {
-            return idx;
-        }
     }
 
     /**

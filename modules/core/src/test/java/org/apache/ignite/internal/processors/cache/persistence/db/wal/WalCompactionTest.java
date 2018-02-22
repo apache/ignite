@@ -32,7 +32,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -133,7 +133,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         File walDir = new File(dbDir, "wal");
         File archiveDir = new File(walDir, "archive");
         File nodeArchiveDir = new File(archiveDir, nodeFolderName);
-        File walSegment = new File(nodeArchiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(0) + ".zip");
+        File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(0) + ".zip");
 
         assertTrue(walSegment.exists());
         assertTrue(walSegment.length() < WAL_SEGMENT_SIZE / 2); // Should be compressed at least in half.
@@ -245,7 +245,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
         File walDir = new File(dbDir, "wal");
         File archiveDir = new File(walDir, "archive");
         File nodeArchiveDir = new File(archiveDir, nodeFolderName);
-        File walSegment = new File(nodeArchiveDir, FileWriteAheadLogManager.FileDescriptor.fileName(0) + ".zip");
+        File walSegment = new File(nodeArchiveDir, FileDescriptor.fileName(0) + ".zip");
 
         assertTrue(walSegment.exists());
         assertTrue(walSegment.length() < WAL_SEGMENT_SIZE / 2); // Should be compressed at least in half.

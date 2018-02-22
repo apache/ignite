@@ -25,6 +25,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
@@ -134,5 +135,10 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     /** {@inheritDoc} */
     @Override public int walArchiveSegments() {
         return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public FileDescriptor[] walArchiveFiles() {
+        return new FileDescriptor[0];
     }
 }

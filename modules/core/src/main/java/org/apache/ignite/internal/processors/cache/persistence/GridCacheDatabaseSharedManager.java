@@ -59,6 +59,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import javax.management.ObjectName;
 import org.apache.ignite.DataStorageMetrics;
 import org.apache.ignite.IgniteCheckedException;
@@ -113,8 +114,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
@@ -130,6 +129,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileDescriptor;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -164,6 +164,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 
 /**
@@ -283,6 +284,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     };
 
+    /**
+     * Value on which should be divided maxWalArchiveSize to calculate threshold since which removing of old archive
+     * should be started
+     */
+    private static final int ALLOWED_WAL_ARCHIVE_SIZE_DIVIDER = 2;
+
     /** Checkpoint thread. Needs to be volatile because it is created in exchange worker. */
     private volatile Checkpointer checkpointer;
 
@@ -340,6 +347,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private final int maxCpHistMemSize;
 
+    /** Size of wal archive since which removing of old archive should be started */
+    private final long allowedThresholdWalArchiveSize;
+
     /** */
     private Map</*grpId*/Integer, Map</*partId*/Integer, T2</*updCntr*/Long, WALPointer>>> reservedForExchange;
 
@@ -395,6 +405,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             persistenceCfg.getMetricsRateTimeInterval(),
             persistenceCfg.getMetricsSubIntervalCount()
         );
+
+        long maxWalArchiveSize = persistenceCfg.getMaxWalArchiveSize() * 1024 * 1024;
+
+        allowedThresholdWalArchiveSize = maxWalArchiveSize / ALLOWED_WAL_ARCHIVE_SIZE_DIVIDER;
 
         metastorageLifecycleLsnrs = ctx.internalSubscriptionProcessor().getMetastorageSubscribers();
 
@@ -1758,6 +1772,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     public CheckpointHistory checkpointHistory() {
         return checkpointHist;
+    }
+
+    /** Return last checkpoint WAL pointer */
+    public WALPointer lastCheckpointMarkWalPointer() {
+        CheckpointEntry lastCheckpointEntry = checkpointHist.lastCheckpointEntry;
+
+        return lastCheckpointEntry == null ? null : lastCheckpointEntry.cpMark;
     }
 
     /**
@@ -3634,6 +3655,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private final NavigableMap<Long, CheckpointEntry> histMap = new ConcurrentSkipListMap<>();
 
+        /** Link to last checkpoint entry for fast access. Should be equal histMap.lastEntry() */
+        private volatile CheckpointEntry lastCheckpointEntry = null;
+
         /**
          * Load history form checkpoint directory.
          *
@@ -3666,9 +3690,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             if (ptr == null)
                                 continue;
 
-                            CheckpointEntry entry = createCheckPointEntry(cpTs, ptr, cpId, null, type);
-
-                            histMap.put(cpTs, entry);
+                            addCheckpointEntry(createCheckPointEntry(cpTs, ptr, cpId, null, type));
                         }
                     }
                 }
@@ -3703,7 +3725,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param entry Entry to ad.
          */
         private void addCheckpointEntry(CheckpointEntry entry) {
-            histMap.put(entry.checkpointTimestamp(), entry);
+            synchronized (this) {
+                histMap.put(entry.checkpointTimestamp(), entry);
+                lastCheckpointEntry = entry;
+            }
         }
 
         /**
@@ -3739,6 +3764,20 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * Clears checkpoint history.
          */
         private void onCheckpointFinished(Checkpoint chp) {
+            //if WalHistorySize was setted by user will use old way for removing checkpoints
+            if (persistenceCfg.getWalHistorySize() != DFLT_WAL_HISTORY_SIZE
+                && persistenceCfg.getWalHistorySize() != Integer.MAX_VALUE)
+                onWalHistorySizeCheckpointFinished(chp);
+            else
+                onMaxWalArchiveSizeCheckpointFinished(chp);
+        }
+
+        /**
+         * Clears checkpoint history by wal history size. It needs for backward compatibility
+         * @deprecated use {@link #onMaxWalArchiveSizeCheckpointFinished} instead.
+         */
+        @Deprecated
+        private void onWalHistorySizeCheckpointFinished(Checkpoint chp) {
             int deleted = 0;
 
             boolean dropWal = persistenceCfg.getWalHistorySize() != Integer.MAX_VALUE;
@@ -3771,6 +3810,90 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (!chp.cpPages.isEmpty())
                 cctx.wal().allowCompressionUntil(chp.cpEntry.checkpointMark());
+        }
+
+        /**
+         * Clears checkpoint history by archive size.
+         */
+        private void onMaxWalArchiveSizeCheckpointFinished(Checkpoint chp) {
+            if(persistenceCfg.getMaxWalArchiveSize() == Integer.MAX_VALUE){
+                finishCheckpoint(chp, 0);
+                return;
+            }
+
+            FileDescriptor[] archivedFiles = cctx.wal().walArchiveFiles();
+
+            Long totalArchiveSize = Stream.of(archivedFiles)
+                .map(desc -> desc.file().length())
+                .reduce(0L, Long::sum);
+
+            if(totalArchiveSize < allowedThresholdWalArchiveSize) {
+                finishCheckpoint(chp, 0);
+                return;
+            }
+
+            long absFileIdxForDel = calculateFileIdxToDelete(archivedFiles, totalArchiveSize);
+
+            WALPointer checkpointMarkToDel = calculateCheckpointMarkToDelete(chp, absFileIdxForDel);
+
+            if (checkpointMarkToDel == null) {
+                finishCheckpoint(chp, 0);
+                return;
+            }
+
+            onWalTruncated(checkpointMarkToDel);
+
+            //rechecking checkpoint to del because  perhaps didn't all checkpoints less than checkpointMarkToDel were deleted
+            checkpointMarkToDel = histMap.firstEntry().getValue().checkpointMark();
+
+            finishCheckpoint(chp, cctx.wal().truncate(null, checkpointMarkToDel));
+        }
+
+        /** Calculate checkpoint mark to which checkpoints can be deleted(not including this checkpoint) */
+        @Nullable private WALPointer calculateCheckpointMarkToDelete(Checkpoint chp, long absFileIdxForDel) {
+            long fileUntilDel = absFileIdxForDel + 1;
+
+            long checkpointFileIdx = absFileIdx(chp.cpEntry);
+
+            for (CheckpointEntry cpEntry : histMap.values()) {
+                long currFileIdx = absFileIdx(cpEntry);
+
+                if (checkpointFileIdx <= currFileIdx || fileUntilDel <= currFileIdx)
+                    return cpEntry.checkpointMark();
+            }
+
+            return null;
+        }
+
+        /** Calculate max allowed index of files to delete */
+        private long calculateFileIdxToDelete(FileDescriptor[] fileDescriptors, Long totalArchiveSize) {
+            long absFileIdxForDel = -1;
+            long sizeOfOldestArchivedFiles = 0;
+
+            for (FileDescriptor file : fileDescriptors) {
+                sizeOfOldestArchivedFiles += file.file().length();
+
+                if(totalArchiveSize - sizeOfOldestArchivedFiles < allowedThresholdWalArchiveSize){
+                    absFileIdxForDel = file.getIdx();
+
+                    break;
+                }
+            }
+
+            return absFileIdxForDel;
+        }
+
+        /** Do finish action for checkpoint */
+        private void finishCheckpoint(Checkpoint chp, int deleted) {
+            chp.walFilesDeleted = deleted;
+
+            if (!chp.cpPages.isEmpty())
+                cctx.wal().allowCompressionUntil(chp.cpEntry.checkpointMark());
+        }
+
+        /** Retrieve absolute file index by checkpoint entry */
+        private long absFileIdx(CheckpointEntry pointer) {
+            return ((FileWALPointer) pointer.checkpointMark()).index();
         }
 
         /**
