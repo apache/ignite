@@ -17,138 +17,250 @@
 
 package org.apache.ignite.examples.ml.knn.classification;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.UUID;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.examples.ExampleNodeStartup;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.knn.models.KNNModel;
-import org.apache.ignite.ml.knn.models.KNNStrategy;
-import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.structures.LabeledDataset;
-import org.apache.ignite.ml.structures.LabeledDatasetTestTrainPair;
-import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
-import org.apache.ignite.ml.structures.preprocessing.LabellingMachine;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
+import org.apache.ignite.ml.knn.classification.KNNModel;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * <p>
- * Example of using {@link KNNModel} with iris dataset.</p>
- * <p>
- * Note that in this example we cannot guarantee order in which nodes return results of intermediate
- * computations and therefore algorithm can return different results.</p>
- * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
- * <p>
- * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
- * with {@code examples/config/example-ignite.xml} configuration.</p>
+ * Run kNN mu;ti-class classification model over distributed dataset.
+ *
+ * @see LinearRegressionLSQRTrainer
  */
 public class KNNClassificationExample {
-    /** Separator. */
-    private static final String SEPARATOR = "\t";
+    /** */
+    private static final double[][] data = {
+        {1, 5.1, 3.5, 1.4, 0.2},
+        {1, 4.9, 3, 1.4, 0.2},
+        {1, 4.7, 3.2, 1.3, 0.2},
+        {1, 4.6, 3.1, 1.5, 0.2},
+        {1, 5, 3.6, 1.4, 0.2},
+        {1, 5.4, 3.9, 1.7, 0.4},
+        {1, 4.6, 3.4, 1.4, 0.3},
+        {1, 5, 3.4, 1.5, 0.2},
+        {1, 4.4, 2.9, 1.4, 0.2},
+        {1, 4.9, 3.1, 1.5, 0.1},
+        {1, 5.4, 3.7, 1.5, 0.2},
+        {1, 4.8, 3.4, 1.6, 0.2},
+        {1, 4.8, 3, 1.4, 0.1},
+        {1, 4.3, 3, 1.1, 0.1},
+        {1, 5.8, 4, 1.2, 0.2},
+        {1, 5.7, 4.4, 1.5, 0.4},
+        {1, 5.4, 3.9, 1.3, 0.4},
+        {1, 5.1, 3.5, 1.4, 0.3},
+        {1, 5.7, 3.8, 1.7, 0.3},
+        {1, 5.1, 3.8, 1.5, 0.3},
+        {1, 5.4, 3.4, 1.7, 0.2},
+        {1, 5.1, 3.7, 1.5, 0.4},
+        {1, 4.6, 3.6, 1, 0.2},
+        {1, 5.1, 3.3, 1.7, 0.5},
+        {1, 4.8, 3.4, 1.9, 0.2},
+        {1, 5, 3, 1.6, 0.2},
+        {1, 5, 3.4, 1.6, 0.4},
+        {1, 5.2, 3.5, 1.5, 0.2},
+        {1, 5.2, 3.4, 1.4, 0.2},
+        {1, 4.7, 3.2, 1.6, 0.2},
+        {1, 4.8, 3.1, 1.6, 0.2},
+        {1, 5.4, 3.4, 1.5, 0.4},
+        {1, 5.2, 4.1, 1.5, 0.1},
+        {1, 5.5, 4.2, 1.4, 0.2},
+        {1, 4.9, 3.1, 1.5, 0.1},
+        {1, 5, 3.2, 1.2, 0.2},
+        {1, 5.5, 3.5, 1.3, 0.2},
+        {1, 4.9, 3.1, 1.5, 0.1},
+        {1, 4.4, 3, 1.3, 0.2},
+        {1, 5.1, 3.4, 1.5, 0.2},
+        {1, 5, 3.5, 1.3, 0.3},
+        {1, 4.5, 2.3, 1.3, 0.3},
+        {1, 4.4, 3.2, 1.3, 0.2},
+        {1, 5, 3.5, 1.6, 0.6},
+        {1, 5.1, 3.8, 1.9, 0.4},
+        {1, 4.8, 3, 1.4, 0.3},
+        {1, 5.1, 3.8, 1.6, 0.2},
+        {1, 4.6, 3.2, 1.4, 0.2},
+        {1, 5.3, 3.7, 1.5, 0.2},
+        {1, 5, 3.3, 1.4, 0.2},
+        {2, 7, 3.2, 4.7, 1.4},
+        {2, 6.4, 3.2, 4.5, 1.5},
+        {2, 6.9, 3.1, 4.9, 1.5},
+        {2, 5.5, 2.3, 4, 1.3},
+        {2, 6.5, 2.8, 4.6, 1.5},
+        {2, 5.7, 2.8, 4.5, 1.3},
+        {2, 6.3, 3.3, 4.7, 1.6},
+        {2, 4.9, 2.4, 3.3, 1},
+        {2, 6.6, 2.9, 4.6, 1.3},
+        {2, 5.2, 2.7, 3.9, 1.4},
+        {2, 5, 2, 3.5, 1},
+        {2, 5.9, 3, 4.2, 1.5},
+        {2, 6, 2.2, 4, 1},
+        {2, 6.1, 2.9, 4.7, 1.4},
+        {2, 5.6, 2.9, 3.6, 1.3},
+        {2, 6.7, 3.1, 4.4, 1.4},
+        {2, 5.6, 3, 4.5, 1.5},
+        {2, 5.8, 2.7, 4.1, 1},
+        {2, 6.2, 2.2, 4.5, 1.5},
+        {2, 5.6, 2.5, 3.9, 1.1},
+        {2, 5.9, 3.2, 4.8, 1.8},
+        {2, 6.1, 2.8, 4, 1.3},
+        {2, 6.3, 2.5, 4.9, 1.5},
+        {2, 6.1, 2.8, 4.7, 1.2},
+        {2, 6.4, 2.9, 4.3, 1.3},
+        {2, 6.6, 3, 4.4, 1.4},
+        {2, 6.8, 2.8, 4.8, 1.4},
+        {2, 6.7, 3, 5, 1.7},
+        {2, 6, 2.9, 4.5, 1.5},
+        {2, 5.7, 2.6, 3.5, 1},
+        {2, 5.5, 2.4, 3.8, 1.1},
+        {2, 5.5, 2.4, 3.7, 1},
+        {2, 5.8, 2.7, 3.9, 1.2},
+        {2, 6, 2.7, 5.1, 1.6},
+        {2, 5.4, 3, 4.5, 1.5},
+        {2, 6, 3.4, 4.5, 1.6},
+        {2, 6.7, 3.1, 4.7, 1.5},
+        {2, 6.3, 2.3, 4.4, 1.3},
+        {2, 5.6, 3, 4.1, 1.3},
+        {2, 5.5, 2.5, 4, 1.3},
+        {2, 5.5, 2.6, 4.4, 1.2},
+        {2, 6.1, 3, 4.6, 1.4},
+        {2, 5.8, 2.6, 4, 1.2},
+        {2, 5, 2.3, 3.3, 1},
+        {2, 5.6, 2.7, 4.2, 1.3},
+        {2, 5.7, 3, 4.2, 1.2},
+        {2, 5.7, 2.9, 4.2, 1.3},
+        {2, 6.2, 2.9, 4.3, 1.3},
+        {2, 5.1, 2.5, 3, 1.1},
+        {2, 5.7, 2.8, 4.1, 1.3},
+        {3, 6.3, 3.3, 6, 2.5},
+        {3, 5.8, 2.7, 5.1, 1.9},
+        {3, 7.1, 3, 5.9, 2.1},
+        {3, 6.3, 2.9, 5.6, 1.8},
+        {3, 6.5, 3, 5.8, 2.2},
+        {3, 7.6, 3, 6.6, 2.1},
+        {3, 4.9, 2.5, 4.5, 1.7},
+        {3, 7.3, 2.9, 6.3, 1.8},
+        {3, 6.7, 2.5, 5.8, 1.8},
+        {3, 7.2, 3.6, 6.1, 2.5},
+        {3, 6.5, 3.2, 5.1, 2},
+        {3, 6.4, 2.7, 5.3, 1.9},
+        {3, 6.8, 3, 5.5, 2.1},
+        {3, 5.7, 2.5, 5, 2},
+        {3, 5.8, 2.8, 5.1, 2.4},
+        {3, 6.4, 3.2, 5.3, 2.3},
+        {3, 6.5, 3, 5.5, 1.8},
+        {3, 7.7, 3.8, 6.7, 2.2},
+        {3, 7.7, 2.6, 6.9, 2.3},
+        {3, 6, 2.2, 5, 1.5},
+        {3, 6.9, 3.2, 5.7, 2.3},
+        {3, 5.6, 2.8, 4.9, 2},
+        {3, 7.7, 2.8, 6.7, 2},
+        {3, 6.3, 2.7, 4.9, 1.8},
+        {3, 6.7, 3.3, 5.7, 2.1},
+        {3, 7.2, 3.2, 6, 1.8},
+        {3, 6.2, 2.8, 4.8, 1.8},
+        {3, 6.1, 3, 4.9, 1.8},
+        {3, 6.4, 2.8, 5.6, 2.1},
+        {3, 7.2, 3, 5.8, 1.6},
+        {3, 7.4, 2.8, 6.1, 1.9},
+        {3, 7.9, 3.8, 6.4, 2},
+        {3, 6.4, 2.8, 5.6, 2.2},
+        {3, 6.3, 2.8, 5.1, 1.5},
+        {3, 6.1, 2.6, 5.6, 1.4},
+        {3, 7.7, 3, 6.1, 2.3},
+        {3, 6.3, 3.4, 5.6, 2.4},
+        {3, 6.4, 3.1, 5.5, 1.8},
+        {3, 6, 3, 4.8, 1.8},
+        {3, 6.9, 3.1, 5.4, 2.1},
+        {3, 6.7, 3.1, 5.6, 2.4},
+        {3, 6.9, 3.1, 5.1, 2.3},
+        {3, 5.8, 2.7, 5.1, 1.9},
+        {3, 6.8, 3.2, 5.9, 2.3},
+        {3, 6.7, 3.3, 5.7, 2.5},
+        {3, 6.7, 3, 5.2, 2.3},
+        {3, 6.3, 2.5, 5, 1.9},
+        {3, 6.5, 3, 5.2, 2},
+        {3, 6.2, 3.4, 5.4, 2.3},
+        {3, 5.9, 3, 5.1, 1.8}
+    };
 
-    /** Path to the Iris dataset. */
-    private static final String KNN_IRIS_TXT = "examples/src/main/resources/datasets/iris.txt";
-
-    /**
-     * Executes example.
-     *
-     * @param args Command line arguments, none required.
-     */
+    /** Run example. */
     public static void main(String[] args) throws InterruptedException {
-        System.out.println(">>> kNN classification example started.");
+        System.out.println();
+        System.out.println(">>> kNN multi-class classification model over cached dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 KNNClassificationExample.class.getSimpleName(), () -> {
+                IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-                try {
-                    // Prepare path to read
-                    File file = IgniteUtils.resolveIgnitePath(KNN_IRIS_TXT);
-                    if (file == null)
-                        throw new RuntimeException("Can't find file: " + KNN_IRIS_TXT);
+                KNNModel<Integer, double[]> knnMdl = new KNNModel<>(
+                    new CacheBasedDatasetBuilder<>(ignite, dataCache),
+                    (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+                    (k, v) -> v[0],
+                    4
+                ).withK(10);
 
-                    Path path = file.toPath();
+                System.out.println(">>> ---------------------------------");
+                System.out.println(">>> | Prediction\t| Ground Truth\t|");
+                System.out.println(">>> ---------------------------------");
 
-                    // Read dataset from file
-                    LabeledDataset dataset = LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, true, false);
+                int amountOfErrors = 0;
+                int totalAmount = 0;
+                try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
+                    for (Cache.Entry<Integer, double[]> observation : observations) {
+                        double[] val = observation.getValue();
+                        double[] inputs = Arrays.copyOfRange(val, 1, val.length);
+                        double groundTruth = val[0];
 
-                    // Random splitting of iris data as 70% train and 30% test datasets
-                    LabeledDatasetTestTrainPair split = new LabeledDatasetTestTrainPair(dataset, 0.3);
+                        double prediction = knnMdl.apply(new DenseLocalOnHeapVector(inputs));
 
-                    System.out.println("\n>>> Amount of observations in train dataset " + split.train().rowSize());
-                    System.out.println("\n>>> Amount of observations in test dataset " + split.test().rowSize());
-
-                    LabeledDataset test = split.test();
-                    LabeledDataset train = split.train();
-
-                    KNNModel knnMdl = new KNNModel(5, new EuclideanDistance(), KNNStrategy.SIMPLE, train);
-
-                    // Clone labels
-                    final double[] labels = test.labels();
-
-                    // Save predicted classes to test dataset
-                    LabellingMachine.assignLabels(test, knnMdl);
-
-                    // Calculate amount of errors on test dataset
-                    int amountOfErrors = 0;
-                    for (int i = 0; i < test.rowSize(); i++) {
-                        if (test.label(i) != labels[i])
+                        totalAmount++;
+                        if(groundTruth != prediction)
                             amountOfErrors++;
+
+                        System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
                     }
+
+                    System.out.println(">>> ---------------------------------");
 
                     System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                    System.out.println("\n>>> Accuracy " + amountOfErrors / (double)test.rowSize());
-
-                    // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
-                    int[][] confusionMtx = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
-                    for (int i = 0; i < test.rowSize(); i++) {
-                        int idx1 = (int)test.label(i);
-                        int idx2 = (int)labels[i];
-                        confusionMtx[idx1 - 1][idx2 - 1]++;
-                    }
-                    System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
-
-                    // Calculate precision, recall and F-metric for each class
-                    for (int i = 0; i < 3; i++) {
-                        double precision = 0.0;
-                        for (int j = 0; j < 3; j++)
-                            precision += confusionMtx[i][j];
-                        precision = confusionMtx[i][i] / precision;
-
-                        double clsLb = (double)(i + 1);
-
-                        System.out.println("\n>>> Precision for class " + clsLb + " is " + precision);
-
-                        double recall = 0.0;
-                        for (int j = 0; j < 3; j++)
-                            recall += confusionMtx[j][i];
-                        recall = confusionMtx[i][i] / recall;
-                        System.out.println("\n>>> Recall for class " + clsLb + " is " + recall);
-
-                        double fScore = 2 * precision * recall / (precision + recall);
-                        System.out.println("\n>>> F-score for class " + clsLb + " is " + fScore);
-                    }
-
+                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
                 }
-                catch (IOException e) {
-                    e.printStackTrace();
-                    System.out.println("\n>>> Unexpected exception, check resources: " + e);
-                }
-                finally {
-                    System.out.println("\n>>> kNN classification example completed.");
-                }
-
             });
 
             igniteThread.start();
             igniteThread.join();
         }
+    }
+
+    /**
+     * Fills cache with data and returns it.
+     *
+     * @param ignite Ignite instance.
+     * @return Filled Ignite Cache.
+     */
+    private static IgniteCache<Integer, double[]> getTestCache(Ignite ignite) {
+        CacheConfiguration<Integer, double[]> cacheConfiguration = new CacheConfiguration<>();
+        cacheConfiguration.setName("TEST_" + UUID.randomUUID());
+        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
+
+        IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
+
+        for (int i = 0; i < data.length; i++)
+            cache.put(i, data[i]);
+
+        return cache;
     }
 }
