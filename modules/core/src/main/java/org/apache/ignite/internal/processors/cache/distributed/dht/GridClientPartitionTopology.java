@@ -206,7 +206,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         try {
             AffinityTopologyVersion exchTopVer = exchFut.initialVersion();
 
-            assert exchTopVer.compareTo(topVer) >= 0 : "Invalid topology version [grp=" + grpId +
+            assert exchTopVer.compareTo(topVer) > 0 : "Invalid topology version [grp=" + grpId +
                 ", topVer=" + topVer +
                 ", exchVer=" + exchTopVer + ']';
 
