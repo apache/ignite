@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePds
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsEvictionTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreePageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreeReuseListPageMemoryImplTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.FillFactorMetricTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.MetadataStoragePageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplNoLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplTest;
@@ -63,6 +64,9 @@ public class IgnitePdsTestSuite extends TestSuite {
         suite.addTestSuite(BPlusTreePageMemoryImplTest.class);
         suite.addTestSuite(BPlusTreeReuseListPageMemoryImplTest.class);
 
+
+        // Metrics
+        suite.addTestSuite(FillFactorMetricTest.class);
         // Basic API tests.
         suite.addTestSuite(IgniteDbSingleNodePutGetTest.class);
         suite.addTestSuite(IgniteDbMultiNodePutGetTest.class);
