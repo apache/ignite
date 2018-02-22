@@ -287,7 +287,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, SQLException.class,"Only tuple based INSERT statements are supported in streaming mode");
+        }, SQLException.class,"Streaming mode supports only INSERT commands without subqueries.");
     }
 
     /**

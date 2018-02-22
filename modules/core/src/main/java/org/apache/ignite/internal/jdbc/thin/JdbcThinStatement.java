@@ -138,7 +138,7 @@ public class JdbcThinStatement implements Statement {
 
         if (conn.isStream()) {
             if (stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE)
-                throw new SQLException("Only tuple based INSERT statements are supported in streaming mode.",
+                throw new SQLException("executeQuery() method is not allowed in streaming mode.",
                     SqlStateCode.INTERNAL_ERROR,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
