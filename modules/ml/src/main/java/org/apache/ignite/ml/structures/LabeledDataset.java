@@ -30,6 +30,13 @@ import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
  */
 public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> implements AutoCloseable {
     /**
+     * Default constructor (required by Externalizable).
+     */
+    public LabeledDataset() {
+        super();
+    }
+
+    /**
      * Creates new Labeled Dataset and initialized with empty data structure.
      *
      * @param rowSize Amount of instances. Should be > 0.

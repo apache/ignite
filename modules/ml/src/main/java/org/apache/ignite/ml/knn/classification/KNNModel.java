@@ -58,7 +58,7 @@ public class KNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNMode
     protected KNNStrategy stgy = KNNStrategy.SIMPLE;
 
     /** Dataset. */
-    private final Dataset<KNNPartitionContext, LabeledDataset<Double, LabeledVector>> dataset;
+    private Dataset<KNNPartitionContext, LabeledDataset<Double, LabeledVector>> dataset;
 
     /**
      * @param datasetBuilder
@@ -75,10 +75,12 @@ public class KNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNMode
             cols
         );
 
-        this.dataset = datasetBuilder.build(
-            (upstream, upstreamSize) -> new KNNPartitionContext(),
-            partDataBuilder
-        );
+        if (datasetBuilder != null) {
+            this.dataset = datasetBuilder.build(
+                (upstream, upstreamSize) -> new KNNPartitionContext(),
+                partDataBuilder
+            );
+        }
     }
 
     /** {@inheritDoc} */
