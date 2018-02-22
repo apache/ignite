@@ -1646,6 +1646,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     @Override public boolean apply(BPlusTree<Long, Long> tree, BPlusIO<Long> io, long pageAddr, int idx)
                         throws IgniteCheckedException {
 
+                        if(stop.get())
+                            return false; //avoid sleeping here
+
                         treeContents.add(io.getLookupRow(tree, pageAddr, idx));
 
                         final long endMs = System.currentTimeMillis() + 10;
