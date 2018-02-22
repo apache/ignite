@@ -357,7 +357,7 @@ public class ClientConnectorConfigurationValidationSelfTest extends GridCommonAb
                 checkJdbc(null, ClientConnectorConfiguration.DFLT_PORT);
                 return null;
             }
-        }, SQLException.class, "Failed to connect to Ignite cluster");
+        }, SQLException.class, "Failed to connect");
     }
 
     /**
