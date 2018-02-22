@@ -29,7 +29,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.IgniteFailureType;
+import org.apache.ignite.failure.IgniteFailureContext;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridKernalGateway;
@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.failure.IgniteFailureProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -452,13 +453,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         return null;
     }
 
-    /** {@inheritDoc}
-     * @param type*/
-    @Override public void failure(IgniteFailureType type) {
+    @Override public IgniteFailureContext invalidationCause() {
+        return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public IgniteFailureType failure() {
+    @Override public IgniteFailureProcessor failure() {
         return null;
     }
 
@@ -624,16 +623,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
                 return new PdsFolderSettings(new File("."), U.maskForFileName(""));
             }
         };
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean invalidated() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void invalidate() {
-
     }
 
     /** {@inheritDoc} */

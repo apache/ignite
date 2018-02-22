@@ -2924,14 +2924,16 @@ public class IgniteConfiguration {
     }
 
     /**
-     * Gets Ignite failure handler.
+     * Gets custom failure handler.
      */
     public IgniteFailureHandler getIgniteFailureHandler() {
         return igniteFailureHnd;
     }
 
     /**
-     * @param igniteFailureHnd Ignite failure handler.
+     * Sets custom failure handler.
+     *
+     * @param igniteFailureHnd Failure handler.
      * @return {@code this} for chaining.
      */
     public IgniteConfiguration setIgniteFailureHandler(IgniteFailureHandler igniteFailureHnd) {

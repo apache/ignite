@@ -15,10 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.failure;
+package org.apache.ignite.internal.failure;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.failure.IgniteFailureAction;
+import org.apache.ignite.failure.IgniteFailureContext;
+import org.apache.ignite.failure.IgniteFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -27,39 +31,40 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  *
  */
 public class IgniteFailureProcessor {
-    /** Instance. */
-    public static final IgniteFailureProcessor INSTANCE = new IgniteFailureProcessor();
+    /** Default failure handler. */
+    private static final IgniteFailureHandler DFLT_FAILURE_HND = new DefaultIgniteFailureHandler();
 
-    /** Stop timeout milliseconds. */
-    private static final long STOP_TIMEOUT_MS = 60 * 1000;
-
-    /** Lock. */
-    private final Object lock = new Object();
+    /** Context. */
+    private GridKernalContextImpl ctx;
 
     /**
+     * @param ctx Context.
+     */
+    public IgniteFailureProcessor(GridKernalContextImpl ctx) {
+        this.ctx = ctx;
+    }
+
+    /**
+     * Processes some failure.
+     * May cause node termination.
+     *
      * @param failureCtx Failure context.
      */
-    public void processFailure(IgniteFailureContext failureCtx) {
-        assert failureCtx != null;
-
-        final GridKernalContext ctx = failureCtx.context();
+    public synchronized void process(IgniteFailureContext failureCtx) {
+        if (ctx.invalidationCause() != null) // Node already terminating, no reason to process more errors.
+            return;
 
         IgniteFailureHandler hnd = ctx.config().getIgniteFailureHandler();
 
         if (hnd == null)
-            hnd = IgniteFailureHandler.DFLT_HND;
+            hnd = DFLT_FAILURE_HND;
 
-        final IgniteFailureAction act;
+        IgniteFailureAction act = hnd.onFailure(failureCtx);
 
-        synchronized (lock) {
-            if (ctx.invalidated())
-                return;
+        if (act == IgniteFailureAction.NOOP)
+            return;
 
-            act = hnd.onFailure(failureCtx);
-
-            if (act != IgniteFailureAction.NOOP)
-                ctx.invalidate();
-        }
+        ctx.invalidate(failureCtx);
 
         switch (act) {
             case RESTART_JVM:
@@ -73,24 +78,20 @@ public class IgniteFailureProcessor {
                 break;
 
             default:
-                assert act == IgniteFailureAction.NOOP : "Unsupported ignite failure action value: " + act;
+                throw new RuntimeException("Unsupported Ignite failure action: " + act);
         }
     }
 
-    /** Restarts JVM. */
+    /**
+     * Restarts JVM.
+     */
     public void restartJvm(final IgniteFailureContext failureCtx) {
-        assert failureCtx != null;
-
         new Thread(
             new Runnable() {
                 @Override public void run() {
-                    final GridKernalContext ctx = failureCtx.context();
-
                     final IgniteLogger log = ctx.log(getClass());
 
-                    U.warn(log, "Restarting JVM on Ignite failure of type " + failureCtx.type());
-
-                    ctx.failure(failureCtx.type());
+                    U.warn(log, "Restarting JVM on Ignite failure: " + failureCtx);
 
                     G.restart(true);
                 }
@@ -99,20 +100,18 @@ public class IgniteFailureProcessor {
         ).start();
     }
 
-    /** Stops local node. */
+    /**
+     * Stops local node.
+     */
     public void stopNode(final IgniteFailureContext failureCtx) {
         new Thread(
             new Runnable() {
                 @Override public void run() {
-                    final GridKernalContext ctx = failureCtx.context();
-
                     final IgniteLogger log = ctx.log(getClass());
 
-                    U.warn(log, "Stopping local node on Ignite failure of type " + failureCtx.type());
+                    U.warn(log, "Stopping local node on Ignite failure: " + failureCtx);
 
-                    ctx.failure(failureCtx.type());
-
-                    IgnitionEx.stop(ctx.igniteInstanceName(), true, true, STOP_TIMEOUT_MS);
+                    IgnitionEx.stop(ctx.igniteInstanceName(), true, true, 60 * 1000);
                 }
             },
             "node-stopper"

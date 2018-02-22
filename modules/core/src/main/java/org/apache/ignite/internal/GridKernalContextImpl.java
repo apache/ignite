@@ -37,7 +37,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.IgniteFailureType;
+import org.apache.ignite.failure.IgniteFailureContext;
+import org.apache.ignite.internal.failure.IgniteFailureProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -367,9 +368,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     private GridKernalGateway gw;
 
-    /** Failure type. */
-    private volatile IgniteFailureType failureType;
-
     /** Network segmented flag. */
     private volatile boolean segFlag;
 
@@ -391,9 +389,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     private GridInternalSubscriptionProcessor internalSubscriptionProc;
 
-    /** Node invalidation flag. */
-    private volatile boolean invalidated;
+    /** */
+    private IgniteFailureProcessor failureProcessor;
 
+    /** Failure context caused invalidation. */
+    private volatile IgniteFailureContext failureCtx;
     /**
      * No-arg constructor is required by externalization.
      */
@@ -475,6 +475,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.customExecSvcs = customExecSvcs;
 
         marshCtx = new MarshallerContextImpl(plugins, clsFilter);
+        failureProcessor = new IgniteFailureProcessor(this);
 
         try {
             spring = SPRING.create(false);
@@ -870,16 +871,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public void failure(IgniteFailureType type) {
-        this.failureType = type;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteFailureType failure() {
-        return failureType;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridPerformanceSuggestions performance() {
         return perf;
     }
@@ -1107,14 +1098,22 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return pdsFolderRslvr;
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean invalidated() {
-        return invalidated;
+    /**
+     * Invalidates context.
+     *
+     * @param ctx Invalidation context
+     */
+    public void invalidate(IgniteFailureContext ctx) {
+        this.failureCtx = ctx;
     }
 
     /** {@inheritDoc} */
-    @Override public void invalidate() {
-        invalidated = true;
+    @Override public IgniteFailureContext invalidationCause() {
+        return failureCtx;
+    }
+
+    @Override public IgniteFailureProcessor failure() {
+        return failureProcessor;
     }
 
     /** {@inheritDoc} */

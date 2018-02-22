@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -70,6 +71,7 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.failure.IgniteFailureContext;
 import org.apache.ignite.failure.IgniteFailureType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
@@ -114,7 +116,6 @@ import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.IgniteState.STOPPED;
@@ -2556,10 +2557,13 @@ public class IgnitionEx {
                     throw e;
             }
             finally {
-                final IgniteFailureType failure = grid0.context().failure();
+                final IgniteFailureContext failure = grid0.context().invalidationCause();
 
-                state = failure == null ? STOPPED :
-                    failure == IgniteFailureType.SEGMENTATION ? STOPPED_ON_SEGMENTATION : STOPPED_ON_FAILURE;
+                state = failure == null ?
+                    STOPPED :
+                    failure.type() == IgniteFailureType.SEGMENTATION ?
+                        STOPPED_ON_SEGMENTATION :
+                        STOPPED_ON_FAILURE;
 
                 grid = null;
 

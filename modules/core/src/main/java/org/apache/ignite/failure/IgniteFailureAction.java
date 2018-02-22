@@ -18,10 +18,10 @@
 package org.apache.ignite.failure;
 
 /**
- * Enumeration of Ignite failure actions.
+ * List of possible actions on some critical situation.
  */
 public enum IgniteFailureAction {
-    /** Restart jvm. */
+    /** Restart JVM. */
     RESTART_JVM,
 
     /** Stop. */

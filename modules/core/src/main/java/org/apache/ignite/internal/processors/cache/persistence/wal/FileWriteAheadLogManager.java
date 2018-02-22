@@ -66,7 +66,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.failure.IgniteFailureContext;
-import org.apache.ignite.failure.IgniteFailureProcessor;
 import org.apache.ignite.failure.IgniteFailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -685,8 +684,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         catch (IgniteCheckedException e) {
             U.error(log, "Unable to perform segment rollover: " + e.getMessage(), e);
 
-            IgniteFailureProcessor.INSTANCE.processFailure(
-                new IgniteFailureContext(cctx.kernalContext(), IgniteFailureType.PERSISTENCE_ERROR, e));
+            cctx.kernalContext().failure().process(new IgniteFailureContext(IgniteFailureType.CRITICAL_ERROR, e));
         }
     }
 
@@ -1241,8 +1239,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         catch (IOException e) {
             StorageException se = new StorageException("Unable to initialize WAL segment", e);
 
-            IgniteFailureProcessor.INSTANCE.processFailure(
-                new IgniteFailureContext(cctx.kernalContext(), IgniteFailureType.PERSISTENCE_ERROR, se));
+            cctx.kernalContext().failure().process(new IgniteFailureContext(IgniteFailureType.CRITICAL_ERROR, se));
 
             throw se;
         }
@@ -1391,7 +1388,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
      * @throws StorageException If node is no longer valid and we missed a WAL operation.
      */
     private void checkNode() throws StorageException {
-        if (cctx.kernalContext().invalidated())
+        if (cctx.kernalContext().invalidationCause() != null)
             throw new StorageException("Failed to perform WAL operation (environment was invalidated by a " +
                     "previous error)");
     }
@@ -1893,8 +1890,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 catch (IgniteCheckedException | IOException e) {
                     U.error(log, "Unexpected error during WAL compression", e);
 
-                    IgniteFailureProcessor.INSTANCE.processFailure(
-                        new IgniteFailureContext(cctx.kernalContext(), IgniteFailureType.PERSISTENCE_ERROR, e));
+                    cctx.kernalContext().failure().process(
+                        new IgniteFailureContext(IgniteFailureType.CRITICAL_ERROR, e));
                 }
                 catch (InterruptedException ignore) {
                     Thread.currentThread().interrupt();
@@ -2046,8 +2043,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                 catch (IOException e) {
                     U.error(log, "Unexpected error during WAL decompression", e);
 
-                    IgniteFailureProcessor.INSTANCE.processFailure(
-                        new IgniteFailureContext(cctx.kernalContext(), IgniteFailureType.PERSISTENCE_ERROR, e));
+                    cctx.kernalContext().failure().process(
+                        new IgniteFailureContext(IgniteFailureType.CRITICAL_ERROR, e));
                 }
             }
         }
@@ -2825,7 +2822,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             lock.lock();
 
             try {
-                assert cctx.kernalContext().invalidated() || written == lastFsyncPos || mode != WALMode.FSYNC :
+                assert cctx.kernalContext().invalidationCause() != null ||
+                    written == lastFsyncPos || mode != WALMode.FSYNC :
                     "fsync [written=" + written + ", lastFsync=" + lastFsyncPos + ", idx=" + idx + ']';
 
                 fileIO = null;
@@ -3292,8 +3290,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             Throwable err = walWriter.err;
 
             if (err != null)
-                IgniteFailureProcessor.INSTANCE.processFailure(
-                    new IgniteFailureContext(cctx.kernalContext(), IgniteFailureType.PERSISTENCE_ERROR, err));
+                cctx.kernalContext().failure().process(new IgniteFailureContext(IgniteFailureType.CRITICAL_ERROR, err));
 
             if (expPos == UNCONDITIONAL_FLUSH)
                 expPos = (currentHandle().buf.tail());
@@ -3382,8 +3379,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             catch (IOException e) {
                 StorageException se = new StorageException("Unable to write", e);
 
-                IgniteFailureProcessor.INSTANCE.processFailure(
-                    new IgniteFailureContext(cctx.kernalContext(), IgniteFailureType.PERSISTENCE_ERROR, se));
+                cctx.kernalContext().failure().process(new IgniteFailureContext(IgniteFailureType.CRITICAL_ERROR, se));
 
                 throw se;
             }

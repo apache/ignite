@@ -18,15 +18,15 @@
 package org.apache.ignite.failure;
 
 /**
- * Enumeration of Ignite failure types.
+ * Types of failures.
  */
 public enum IgniteFailureType {
     /** Segmentation. */
     SEGMENTATION,
 
-    /** Exchange worker stop. */
-    EXCHANGE_WORKER_STOP,
+    /** System worker crashed. */
+    SYSTEM_WORKER_CRASHED,
 
-    /** Persistence error. */
-    PERSISTENCE_ERROR,
+    /** Critical error. */
+    CRITICAL_ERROR
 }

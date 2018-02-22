@@ -15,7 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.failure;
+package org.apache.ignite.internal.failure;
+
+import org.apache.ignite.failure.IgniteFailureAction;
+import org.apache.ignite.failure.IgniteFailureContext;
+import org.apache.ignite.failure.IgniteFailureHandler;
 
 /**
  * Default implementation of {@link IgniteFailureHandler}
@@ -24,10 +28,10 @@ public class DefaultIgniteFailureHandler implements IgniteFailureHandler {
     /** {@inheritDoc} */
     @Override public IgniteFailureAction onFailure(IgniteFailureContext failureCtx) {
         switch (failureCtx.type()) {
-           case EXCHANGE_WORKER_STOP:
+            case SYSTEM_WORKER_CRASHED:
                 return IgniteFailureAction.STOP;
 
-            case PERSISTENCE_ERROR:
+            case CRITICAL_ERROR:
                 return IgniteFailureAction.STOP;
 
             default:

@@ -23,7 +23,8 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.IgniteFailureType;
+import org.apache.ignite.failure.IgniteFailureContext;
+import org.apache.ignite.internal.failure.IgniteFailureProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -422,18 +423,16 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public DataStructuresProcessor dataStructures();
 
     /**
-     * Sets Ignite failure type when node is stopped due to Ignite failure.
+     * Gets invalidation cause.
      *
-     * @param type Type.
+     * @return Cause.
      */
-    public void failure(IgniteFailureType type);
+    public IgniteFailureContext invalidationCause();
 
     /**
-     * Gets Ignite failure type.
-     *
-     * @return Ignite failure type, if it was happen, or {@code null} otherwise.
+     * Gets failure processor.
      */
-    public IgniteFailureType failure();
+    public IgniteFailureProcessor failure();
 
     /**
      * Print grid kernal memory stats (sizes of internal structures, etc.).
@@ -658,14 +657,4 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * @return subscription processor to manage internal-only (strict node-local) subscriptions between components.
      */
     public GridInternalSubscriptionProcessor internalSubscriptionProcessor();
-
-    /**
-     * @return {@code true} if node was invalidated, false in other case.
-     */
-    public boolean invalidated();
-
-    /**
-     * Invalidates node.
-     */
-    public void invalidate();
 }

@@ -18,19 +18,15 @@
 package org.apache.ignite.failure;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 
 /**
- * This interface provides facility to handle Ignite failures by custom user implementations,
+ * Provides facility to handle failures by custom user implementations,
  * which can be added by {@link IgniteConfiguration#setIgniteFailureHandler(IgniteFailureHandler)} method.
  */
 public interface IgniteFailureHandler {
-    /** Default handler. */
-    public static final IgniteFailureHandler DFLT_HND = new DefaultIgniteFailureHandler();
-
     /**
      * @param failureCtx Failure context.
-     * @return IgniteFailureAction value.
+     * @return Reaction to failure.
      */
     public IgniteFailureAction onFailure(IgniteFailureContext failureCtx);
 }

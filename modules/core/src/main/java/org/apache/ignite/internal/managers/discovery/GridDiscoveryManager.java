@@ -60,7 +60,6 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.IgniteFailureContext;
 import org.apache.ignite.failure.IgniteFailureType;
-import org.apache.ignite.failure.IgniteFailureProcessor;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -2739,6 +2738,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          *
          */
         private void onSegmentation() {
+            SegmentationPolicy segPlc = ctx.config().getSegmentationPolicy();
+
             // Always disconnect first.
             try {
                 getSpi().disconnect();
@@ -2747,18 +2748,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 U.error(log, "Failed to disconnect discovery SPI.", e);
             }
 
-            final IgniteFailureContext failureCtx = new IgniteFailureContext(ctx, IgniteFailureType.SEGMENTATION);
-
-            final SegmentationPolicy segPlc = ctx.config().getSegmentationPolicy();
-
             switch (segPlc) {
                 case STOP:
-                    IgniteFailureProcessor.INSTANCE.stopNode(failureCtx);
+                    ctx.failure().stopNode(new IgniteFailureContext(IgniteFailureType.SEGMENTATION, null));
 
                     break;
 
                 case RESTART_JVM:
-                    IgniteFailureProcessor.INSTANCE.restartJvm(failureCtx);
+                    ctx.failure().restartJvm(new IgniteFailureContext(IgniteFailureType.SEGMENTATION, null));
 
                     break;
 

@@ -76,7 +76,6 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.failure.IgniteFailureContext;
-import org.apache.ignite.failure.IgniteFailureProcessor;
 import org.apache.ignite.failure.IgniteFailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -2874,8 +2873,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             chp.progress.cpFinishFut.onDone(e);
 
                             // In case of writing error node should be invalidated and stopped.
-                            IgniteFailureProcessor.INSTANCE.processFailure(
-                                new IgniteFailureContext(cctx.kernalContext(), IgniteFailureType.PERSISTENCE_ERROR, e));
+                            cctx.kernalContext().failure().process(
+                                new IgniteFailureContext(IgniteFailureType.CRITICAL_ERROR, e));
 
                             return;
                         }
