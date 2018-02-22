@@ -69,8 +69,8 @@ public final class DiscoveryDataClusterState implements Serializable {
     @Nullable private final Set<UUID> transitionNodes;
 
     /**
-     * Local flag for state transition active state result (global state is updated asynchronously by custom message),
-     * {@code null} means that state change is not completed yet.
+     * Local future for state transition active state result (global state is updated asynchronously by custom message),
+     * {@code null} means state is not transition.
      */
     @Nullable private transient final GridFutureAdapter<Boolean> transitionFut;
 
