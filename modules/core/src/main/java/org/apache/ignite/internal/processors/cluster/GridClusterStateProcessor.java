@@ -449,14 +449,18 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
                 BaselineTopologyHistoryItem bltHistItem = BaselineTopologyHistoryItem.fromBaseline(
                     state.baselineTopology());
 
-                globalState = DiscoveryDataClusterState.createTransitionState(
+                state = DiscoveryDataClusterState.createTransitionState(
                     state,
                     msg.activate(),
                     msg.activate() ? msg.baselineTopology() : state.baselineTopology(),
                     msg.requestId(),
                     topVer,
-                    nodeIds,
-                    msg.forceChangeBaselineTopology() ? msg.activate() : null);
+                    nodeIds);
+
+                if (msg.forceChangeBaselineTopology())
+                    state.setTransitionResult(msg.activate());
+
+                globalState = state;
 
                 AffinityTopologyVersion stateChangeTopVer = topVer.nextMinorVersion();
 

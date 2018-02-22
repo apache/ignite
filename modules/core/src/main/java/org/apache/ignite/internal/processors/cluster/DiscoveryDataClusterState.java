@@ -101,8 +101,7 @@ public final class DiscoveryDataClusterState implements Serializable {
         @Nullable BaselineTopology baselineTopology,
         UUID transitionReqId,
         AffinityTopologyVersion transitionTopVer,
-        Set<UUID> transitionNodes,
-        @Nullable Boolean transitionRes
+        Set<UUID> transitionNodes
     ) {
         assert transitionReqId != null;
         assert transitionTopVer != null;
@@ -110,9 +109,6 @@ public final class DiscoveryDataClusterState implements Serializable {
         assert prevState != null;
 
         GridFutureAdapter<Boolean> fut = new GridFutureAdapter<Boolean>();
-
-        if (transitionRes != null)
-            fut.onDone(transitionRes);
 
         return new DiscoveryDataClusterState(
             prevState,
