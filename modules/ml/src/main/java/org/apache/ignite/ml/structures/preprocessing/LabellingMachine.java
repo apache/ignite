@@ -17,23 +17,23 @@
 
 package org.apache.ignite.ml.structures.preprocessing;
 
-import org.apache.ignite.ml.knn.models.KNNModel;
+import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.structures.LabeledDataset;
 
 /** Data pre-processing step which assigns labels to all observations according model. */
 public class LabellingMachine {
     /**
-     * Set labels to each observation according passed Model.
+     * Set labels to each observation according passed model.
      * <p>
      * NOTE: In-place operation.
      * </p>
      * @param ds The given labeled dataset.
-     * @param knnMdl The given kNN Model.
+     * @param mdl The given model.
      * @return Dataset with predicted labels.
      */
-    public static LabeledDataset assignLabels(LabeledDataset ds, KNNModel knnMdl) {
+    public static LabeledDataset assignLabels(LabeledDataset ds, Model mdl) {
         for (int i = 0; i < ds.rowSize(); i++) {
-            double predictedCls = knnMdl.apply(ds.getRow(i).features());
+            double predictedCls = (double) mdl.apply(ds.getRow(i).features());
             ds.setLabel(i, predictedCls);
         }
         return ds;

@@ -66,13 +66,13 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT 1").setSchema("PUBLIC");
 
-        List<List<?>> res = qryProc.querySqlFieldsNoCache(qry, true).getAll();
+        List<List<?>> res = qryProc.querySqlFields(qry, true).getAll();
 
         assertEquals(1, res.size());
         assertEquals(1, res.get(0).size());
         assertEquals(1, res.get(0).get(0));
 
-        Iterator<List<?>> iter = qryProc.querySqlFieldsNoCache(qry, true).iterator();
+        Iterator<List<?>> iter = qryProc.querySqlFields(qry, true).iterator();
 
         assertTrue(iter.hasNext());
 
@@ -98,13 +98,13 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
 
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT 1").setSchema(CACHE_PERSON);
 
-        List<List<?>> res = qryProc.querySqlFieldsNoCache(qry, true).getAll();
+        List<List<?>> res = qryProc.querySqlFields(qry, true).getAll();
 
         assertEquals(1, res.size());
         assertEquals(1, res.get(0).size());
         assertEquals(1, res.get(0).get(0));
 
-        Iterator<List<?>> iter = qryProc.querySqlFieldsNoCache(qry, true).iterator();
+        Iterator<List<?>> iter = qryProc.querySqlFields(qry, true).iterator();
 
         assertTrue(iter.hasNext());
 
@@ -236,7 +236,7 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
             @Override public void run() {
                 for (int i = 0; i < 100; i++) {
                     int idx = maxIdx.incrementAndGet();
-                    
+
                     String tbl = "Person" + idx;
 
                     IgniteCache<Long, Person> cache = registerQueryEntity(tbl, "PersonCache" + idx);
@@ -282,7 +282,7 @@ public class SqlSchemaSelfTest extends GridCommonAbstractTest {
     private void testQueryEntity(IgniteCache<Long, Person> cache, String tbl) {
         cache.put(1L, new Person("Vasya", 2));
 
-        assertEquals(1, node.context().query().querySqlFieldsNoCache(
+        assertEquals(1, node.context().query().querySqlFields(
             new SqlFieldsQuery(String.format("SELECT id, name, orgId FROM TEST.%s where (id = %d)", tbl, 1)), false
         ).getAll().size());
     }

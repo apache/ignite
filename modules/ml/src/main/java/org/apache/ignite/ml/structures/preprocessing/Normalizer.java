@@ -54,6 +54,8 @@ public class Normalizer {
 
         for (int j = 0; j < colSize; j++) {
             double div = maxs[j] - mins[j];
+            if(div == 0)
+                continue;
 
             for (int i = 0; i < rowSize; i++) {
                 double oldVal = data[i].features().get(j);

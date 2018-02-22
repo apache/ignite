@@ -38,6 +38,7 @@ public interface PageIdAllocator {
     /**
      * Allocates a page from the space for the given partition ID and the given flags.
      *
+     * @param cacheId Cache Group ID.
      * @param partId Partition ID.
      * @return Allocated page ID.
      */
@@ -46,7 +47,7 @@ public interface PageIdAllocator {
     /**
      * The given page is free now.
      *
-     * @param cacheId Cache ID.
+     * @param cacheId Cache Group ID.
      * @param pageId Page ID.
      */
     public boolean freePage(int cacheId, long pageId) throws IgniteCheckedException;

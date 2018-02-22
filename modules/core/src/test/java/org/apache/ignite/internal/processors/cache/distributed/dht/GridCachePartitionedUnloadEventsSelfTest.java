@@ -50,6 +50,9 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
     /** */
     private static final int EVENTS_COUNT = 40;
 
+    /** Default cache name with cache events disabled. */
+    private static final String DEFAULT_CACHE_NAME_EVTS_DISABLED = DEFAULT_CACHE_NAME + "EvtsDisabled";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -58,7 +61,14 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
         disco.setIpFinder(ipFinder);
         cfg.setDiscoverySpi(disco);
 
-        cfg.setCacheConfiguration(cacheConfiguration());
+        CacheConfiguration<?, ?> ccfg = cacheConfiguration();
+
+        CacheConfiguration<?, ?> ccfgEvtsDisabled = new CacheConfiguration<>(ccfg);
+
+        ccfgEvtsDisabled.setName(DEFAULT_CACHE_NAME_EVTS_DISABLED);
+        ccfgEvtsDisabled.setEventsDisabled(true);
+
+        cfg.setCacheConfiguration(ccfg, ccfgEvtsDisabled);
 
         return cfg;
     }
@@ -83,16 +93,21 @@ public class GridCachePartitionedUnloadEventsSelfTest extends GridCommonAbstract
 
         Collection<Integer> allKeys = new ArrayList<>(EVENTS_COUNT);
 
-        IgniteCache<Integer, String> cache = g1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, String> cache1 = g1.cache(DEFAULT_CACHE_NAME);
+        IgniteCache<Integer, String> cache2 = g1.cache(DEFAULT_CACHE_NAME_EVTS_DISABLED);
 
         for (int i = 0; i < EVENTS_COUNT; i++) {
-            cache.put(i, "val");
+            cache1.put(i, "val");
+
+            // Events should not be fired by this put.
+            cache2.put(i, "val");
+
             allKeys.add(i);
         }
 
         Ignite g2 = startGrid("g2");
 
-        awaitPartitionMapExchange();
+        awaitPartitionMapExchange(true, true, null);
 
         Map<ClusterNode, Collection<Object>> keysMap = g1.affinity(DEFAULT_CACHE_NAME).mapKeysToNodes(allKeys);
         Collection<Object> g2Keys = keysMap.get(g2.cluster().localNode());

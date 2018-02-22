@@ -90,7 +90,9 @@ public class MnistDistributed extends GridCommonAbstractTest {
         IgniteCache<Integer, LabeledVector<Vector, Vector>> labeledVectorsCache = LabeledVectorsCache.createNew(ignite);
         loadIntoCache(trainingMnistLst, labeledVectorsCache);
 
-        MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).withMaxGlobalSteps(35).withSyncRate(2);
+        MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).
+            withMaxGlobalSteps(35).
+            withSyncPeriod(2);
 
         MLPArchitecture arch = new MLPArchitecture(FEATURES_CNT).
             withAddedLayer(hiddenNeuronsCnt, true, Activators.SIGMOID).
@@ -105,6 +107,8 @@ public class MnistDistributed extends GridCommonAbstractTest {
 
         Tracer.showAscii(truth);
         Tracer.showAscii(predicted);
+
+        X.println("Accuracy: " + VectorUtils.zipWith(predicted, truth, (x, y) -> x.equals(y) ? 1.0 : 0.0).sum() / truth.size() * 100 + "%.");
     }
 
     /**

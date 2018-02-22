@@ -21,14 +21,12 @@ import java.lang.{Long ⇒ JLong}
 
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.internal.IgnitionEx
-import org.apache.ignite.spark.AbstractDataFrameSpec.{EMPLOYEE_CACHE_NAME, DEFAULT_CACHE, TEST_CONFIG_FILE}
+import org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath
+import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, EMPLOYEE_CACHE_NAME, TEST_CONFIG_FILE, enclose}
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.apache.spark.sql.types.{LongType, StringType}
 import org.junit.runner.RunWith
 import org.scalatest.junit.JUnitRunner
-import org.apache.ignite.spark.impl._
-
-import scala.collection.JavaConversions._
 
 /**
   * Tests to check Spark Catalog implementation.
@@ -108,7 +106,8 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
         }
 
         it("Should allow register tables based on other datasources") {
-            val citiesDataFrame = igniteSession.read.json("src/test/resources/cities.json")
+            val citiesDataFrame = igniteSession.read.json(
+                resolveIgnitePath("modules/spark/src/test/resources/cities.json").getAbsolutePath)
 
             citiesDataFrame.createOrReplaceTempView("JSON_CITIES")
 
@@ -152,9 +151,4 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
             .igniteConfigProvider(configProvider)
             .getOrCreate()
     }
-
-    /**
-      * Enclose some closure, so it doesn't on outer object(default scala behaviour) while serializing.
-      */
-    def enclose[E, R](enclosed: E)(func: E => R): R = func(enclosed)
 }

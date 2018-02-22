@@ -90,7 +90,7 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEit
                 String cacheName = arg.getCacheName();
 
                 if (F.isEmpty(cacheName))
-                    qryCursors = ignite.context().query().querySqlFieldsNoCache(qry, true, false);
+                    qryCursors = ignite.context().query().querySqlFields(qry, true, false);
                 else {
                     IgniteCache<Object, Object> c = ignite.cache(cacheName);
 
