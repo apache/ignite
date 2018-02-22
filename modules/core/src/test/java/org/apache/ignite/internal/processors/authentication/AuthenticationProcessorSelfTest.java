@@ -87,7 +87,6 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
             .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                 .setPersistenceEnabled(true)));
 
-
         return cfg;
     }
 
