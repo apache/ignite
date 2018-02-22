@@ -28,16 +28,10 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ml.math.matrix.SparseDistributedMatrixExample;
-import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
-import org.apache.ignite.ml.knn.models.KNNModel;
-import org.apache.ignite.ml.knn.models.KNNStrategy;
 import org.apache.ignite.ml.knn.models.NewKNNModel;
-import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainer;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.structures.newstructures.NewLabeledDataset;
 import org.apache.ignite.thread.IgniteThread;
@@ -47,7 +41,7 @@ import org.apache.ignite.thread.IgniteThread;
  *
  * @see LinearRegressionLSQRTrainer
  */
-public class NewKNNClassificationExample {
+public class NewKNNClassificationExample2 {
     /** */
     private static final double[][] data = {
         {1, 5.1, 3.5, 1.4, 0.2},
@@ -218,13 +212,13 @@ public class NewKNNClassificationExample {
 
                 System.out.println(">>> Perform the training to get the model.");
 
-           /*     NewLabeledDataset<Integer, double[], Double, LabeledVector> dataset = new NewLabeledDataset<>(
+                NewKNNModel<Integer, double[]> knnMdl = new NewKNNModel<>(
                     new CacheBasedDatasetBuilder<>(ignite, dataCache),
                     (k, v) -> Arrays.copyOfRange(v, 1, v.length),
                     (k, v) -> v[0],
-                    4);
-                NewKNNModel knnMdl = new NewKNNModel(dataset)
-                    .withK(7);
+                    4
+                ).withK(7);
+
 
 
                 System.out.println(">>> Linear regression model: " + knnMdl);
@@ -233,6 +227,8 @@ public class NewKNNClassificationExample {
                 System.out.println(">>> | Prediction\t| Ground Truth\t|");
                 System.out.println(">>> ---------------------------------");
 
+                int amountOfErrors = 0;
+                int totalAmount = 0;
                 try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
                     for (Cache.Entry<Integer, double[]> observation : observations) {
                         double[] val = observation.getValue();
@@ -241,11 +237,20 @@ public class NewKNNClassificationExample {
 
                         double prediction = knnMdl.apply(new DenseLocalOnHeapVector(inputs));
 
+                        totalAmount++;
+                        if(groundTruth != prediction)
+                            amountOfErrors++;
+
                         System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
                     }
+
+                    System.out.println(">>> ---------------------------------");
+
+                    System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
+                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
                 }
 
-                System.out.println(">>> ---------------------------------");*/
+
             });
 
             igniteThread.start();

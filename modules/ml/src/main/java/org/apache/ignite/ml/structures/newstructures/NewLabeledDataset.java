@@ -26,6 +26,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 import org.apache.ignite.ml.structures.Dataset;
+import org.apache.ignite.ml.structures.DatasetRow;
 import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
@@ -55,4 +56,10 @@ public class NewLabeledDataset<K, V, L, Row extends LabeledVector> {
     public double label(int idx) {
             return Double.NaN;
     }
+
+    /** */
+    public DatasetRow[] data() {
+        return null;
+    }
+
 }

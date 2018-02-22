@@ -36,6 +36,13 @@ public class EuclideanDistance implements DistanceMeasure {
         return MatrixUtil.localCopyOf(a).minus(b).kNorm(2.0);
     }
 
+    @Override public double compute(Vector a, double[] b) throws CardinalityException {
+        double res = 0.0;
+        for (int i = 0; i < b.length; i++)
+            res+= Math.abs(b[i] - a.get(i));
+        return Math.sqrt(res);
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         // No-op

@@ -36,6 +36,10 @@ public class ManhattanDistance implements DistanceMeasure {
         return MatrixUtil.localCopyOf(a).minus(b).kNorm(1.0);
     }
 
+    @Override public double compute(Vector a, double[] b) throws CardinalityException {
+        return 0;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         // No-op
