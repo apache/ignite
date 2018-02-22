@@ -97,4 +97,21 @@ public class BinaryTreeMap implements Binarylizable, Serializable {
     protected Object readResolve() throws ObjectStreamException {
         return map;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        BinaryTreeMap binaryTreeMap = (BinaryTreeMap)o;
+
+        return map != null ? map.equals(binaryTreeMap.map) : binaryTreeMap.map == null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return map != null ? map.hashCode() : 0;
+    }
 }

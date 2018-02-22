@@ -90,4 +90,21 @@ public class BinaryTreeSet implements Binarylizable {
     protected Object readResolve() throws ObjectStreamException {
         return set;
     }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+
+        BinaryTreeSet binaryTreeSet = (BinaryTreeSet)o;
+
+        return set != null ? set.equals(binaryTreeSet.set) : binaryTreeSet.set == null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return set != null ? set.hashCode() : 0;
+    }
 }
