@@ -156,14 +156,14 @@ namespace ignite
                 SqlResult::Type MakeRequestMoreResults();
 
                 /**
-                 * Process column converstation operation result.
+                 * Process column conversion operation result.
                  *
-                 * @param convRes Conversation result.
+                 * @param convRes Conversion result.
                  * @param rowIdx Row index.
                  * @param columnIdx Column index.
                  * @return General SQL result.
                  */
-                SqlResult::Type ProcessConversationResult(app::ConversionResult::Type convRes, int32_t rowIdx,
+                SqlResult::Type ProcessConversionResult(app::ConversionResult::Type convRes, int32_t rowIdx,
                     int32_t columnIdx);
 
                 /**

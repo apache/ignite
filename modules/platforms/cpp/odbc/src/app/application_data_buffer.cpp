@@ -225,7 +225,8 @@ namespace ignite
                         if (resLenPtr)
                             *resLenPtr = sizeof(value);
 
-                        return ConversionResult::AI_SUCCESS;
+                        return static_cast<size_t>(buflen) < sizeof(value) ?
+                            ConversionResult::AI_VARLEN_DATA_TRUNCATED : ConversionResult::AI_SUCCESS;
                     }
 
                     case OdbcNativeType::AI_TDATE:

@@ -114,7 +114,7 @@ namespace ignite
 
                     app::ConversionResult::Type convRes = row->ReadColumnToBuffer(i, it->second);
 
-                    SqlResult::Type result = ProcessConversationResult(convRes, 0, i);
+                    SqlResult::Type result = ProcessConversionResult(convRes, 0, i);
 
                     if (result == SqlResult::AI_ERROR)
                         return SqlResult::AI_ERROR;
@@ -144,7 +144,7 @@ namespace ignite
 
                 app::ConversionResult::Type convRes = row->ReadColumnToBuffer(columnIdx, buffer);
 
-                SqlResult::Type result = ProcessConversationResult(convRes, 0, columnIdx);
+                SqlResult::Type result = ProcessConversionResult(convRes, 0, columnIdx);
 
                 return result;
             }
@@ -390,7 +390,7 @@ namespace ignite
                 return SqlResult::AI_SUCCESS;
             }
 
-            SqlResult::Type DataQuery::ProcessConversationResult(app::ConversionResult::Type convRes, int32_t rowIdx,
+            SqlResult::Type DataQuery::ProcessConversionResult(app::ConversionResult::Type convRes, int32_t rowIdx,
                 int32_t columnIdx)
             {
                 switch (convRes)
@@ -424,7 +424,7 @@ namespace ignite
                     case app::ConversionResult::AI_INDICATOR_NEEDED:
                     {
                         diag.AddStatusRecord(SqlState::S22002_INDICATOR_NEEDED,
-                            "Indicator is needed but nnot suplied for the column buffer.", rowIdx, columnIdx);
+                            "Indicator is needed but not suplied for the column buffer.", rowIdx, columnIdx);
 
                         return SqlResult::AI_SUCCESS_WITH_INFO;
                     }
@@ -432,7 +432,7 @@ namespace ignite
                     case app::ConversionResult::AI_UNSUPPORTED_CONVERSATION:
                     {
                         diag.AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
-                            "Data conversation is not supported.", rowIdx, columnIdx);
+                            "Data conversion is not supported.", rowIdx, columnIdx);
 
                         return SqlResult::AI_SUCCESS_WITH_INFO;
                     }
