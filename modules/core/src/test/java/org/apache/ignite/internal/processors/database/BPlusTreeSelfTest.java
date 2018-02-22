@@ -130,6 +130,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /** Stop. */
     private final AtomicBoolean stop = new AtomicBoolean();
 
+
+    private volatile boolean closeCalled = false;
+
     /** Future. */
     private volatile GridCompoundFuture<?, ?> asyncRunFut;
 
@@ -143,6 +146,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         stop.set(false);
+        closeCalled = false;
 
         long seed = System.nanoTime();
 
@@ -173,7 +177,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         rnd = null;
 
         try {
-            stop.set(true); //async fut can be initialized after.
+            stop.set(true);
 
             if (asyncRunFut != null && !asyncRunFut.isDone()) {
                 try {
@@ -201,8 +205,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             }
 
             assertEquals(0, acquiredPages());
+        } catch (Throwable t) {
+            U.error(log, "BPlusTreeSelfTest.afterTest() problem found" , t);
         }
         finally {
+            closeCalled = true;
             pageMem.stop();
 
             MAX_PER_PAGE = 0;
@@ -2139,7 +2146,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                     l.lock();
 
                     try {
-                        assertFalse("B+Tree shutdown: Stop flag should not be enabled: ", !stop.get());
+                        assertFalse("B+Tree shutdown: Close should not be called: ", !closeCalled);
 
                         if (op == 0) { // Put.
                             assertEquals(map.put(x, x), tree.put(x));

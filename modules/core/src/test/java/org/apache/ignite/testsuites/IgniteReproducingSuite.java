@@ -39,7 +39,7 @@ public class IgniteReproducingSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Issue Reproducing Test Suite");
 
         //uncomment to add some test
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 5; i++)
             suite.addTestSuite(BPlusTreeFakeReuseSelfTest.class);
 
         return suite;
