@@ -15,20 +15,19 @@
  * limitations under the License.
  */
 
-import templateUrl from './template.tpl.pug';
-import { NotebookCtrl } from './controller';
+export class NotebooksListCtrl {
+    static $inject = ['IgniteNotebook'];
 
-// This controller is used in navbar with showing "Create notebook" modal dialog. Under deprecation.
-import notebookNavbarCtrl from './notebook.navbar.controller';
+    constructor(IgniteNotebook) {
+        Object.assign(this, { IgniteNotebook });
+    }
 
-import NotebookData from './notebook.data';
+    async $onInit() {
+        this.notebooks = await this.loadAllNotebooks();
+        console.log(this.notebooks);
+    }
 
-import './style.scss';
-
-export default angular.module('ignite-console.sql.notebook', [])
-    .component('queriesNotebook', {
-        controller: NotebookCtrl,
-        templateUrl
-    })
-    .service('IgniteNotebookData', NotebookData)
-    .controller('notebookNavbarController', notebookNavbarCtrl);
+    async loadAllNotebooks() {
+        return this.IgniteNotebook.read();
+    }
+}

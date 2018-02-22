@@ -19,25 +19,8 @@
         | Configure
 
 .wch-nav-item(ng-if='!$root.user.becomeUsed' ng-controller='notebookNavbarController')
-    a(ng-if='IgniteDemoMode' ui-sref='base.sql.demo' ui-sref-active='active')
+    a(ui-sref='base.sql.tabs' ui-sref-active='active')
         | Queries
-
-    div(ng-if='!IgniteDemoMode')
-        div(ng-if='!notebooks.length' ng-class='{active: $state.includes("base.sql")}')
-            a(ng-click='createNotebook()') Queries
-
-        div(ng-if='notebooks.length'
-            ng-click='$event.stopPropagation()'
-            ng-class='{active: $state.includes("base.sql")}'
-            bs-dropdown='notebooks'
-            data-placement='bottom-left'
-            data-trigger='hover focus'
-            data-container='self'
-            aria-haspopup='true'
-            aria-expanded='false'
-        )
-            span Queries
-                span.caret
 
 .wch-content(ignite-navbar)
     .wch-nav-item(ng-repeat='item in navbar.items')

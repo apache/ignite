@@ -17,26 +17,50 @@
 
 import angular from 'angular';
 
+import queriesNotebooksList from './components/queries-notebooks-list';
 import queriesNotebook from './components/queries-notebook';
 import pageQueriesCmp from './component';
 
+import template from 'views/base2.pug';
+
+import Notebook from './notebook.service';
+
 export default angular.module('ignite-console.sql', [
     'ui.router',
+    queriesNotebooksList.name,
     queriesNotebook.name
 ])
     .component('pageQueries', pageQueriesCmp)
+    .service('IgniteNotebook', Notebook)
     .config(['$stateProvider', ($stateProvider) => {
         // set up the states
         $stateProvider
             .state('base.sql', {
                 abstract: true,
-                template: '<ui-view></ui-view>'
+                views: {
+                    '@': {
+                        template
+                    },
+                    '@base.sql': {
+                        controller: 'snapshotsCtrl',
+                        controllerAs: '$ctrl',
+                        template: '<ui-view></ui-view>'
+                    }
+                }
             })
             .state('base.sql.tabs', {
                 url: '/queries',
                 template: '<page-queries></page-queries>',
-                redirectTo: 'base.sql.tabs.notebook',
+                redirectTo: 'base.sql.tabs.notebooks-list',
                 permission: 'query'
+            })
+            .state('base.sql.tabs.notebooks-list', {
+                url: '/notebooks',
+                component: 'queriesNotebooksList',
+                permission: 'query',
+                tfMetaTags: {
+                    title: 'Notebooks'
+                }
             })
             .state('base.sql.tabs.notebook', {
                 url: '/notebook/{noteId}',
