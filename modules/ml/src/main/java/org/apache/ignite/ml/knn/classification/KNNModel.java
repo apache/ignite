@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.models;
+package org.apache.ignite.ml.knn.classification;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -35,22 +34,20 @@ import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
+import org.apache.ignite.ml.knn.partitions.KNNPartitionContext;
+import org.apache.ignite.ml.knn.partitions.KNNPartitionDataBuilderOnHeap;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.functions.IgniteBinaryOperator;
-import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
+import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * kNN algorithm is a classification algorithm.
+ * kNN algorithm model to solve multi-class classification task.
  */
-public class NewKNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNModelFormat> {
-
-    private final Dataset<KNNPartitionContext, KNNPartitionDataOnHeap> dataset;
-
+public class KNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNModelFormat> {
     /** Amount of nearest neighbors. */
     protected int k = 5;
 
@@ -60,24 +57,19 @@ public class NewKNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNM
     /** kNN strategy. */
     protected KNNStrategy stgy = KNNStrategy.SIMPLE;
 
-    protected DatasetBuilder<K, V> datasetBuilder;
+    /** Dataset. */
+    private final Dataset<KNNPartitionContext, LabeledDataset<Double, LabeledVector>> dataset;
 
-    /** Extractor of X matrix row. */
-    protected IgniteBiFunction<K, V, double[]> featureExtractor;
+    /**
+     * @param datasetBuilder
+     * @param featureExtractor
+     * @param lbExtractor
+     * @param cols
+     */
+    public KNNModel(DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor, int cols) {
 
-    /** Extractor of Y vector value. */
-    protected IgniteBiFunction<K, V, Double> lbExtractor;
-    private int cols;
-
-
-    public NewKNNModel(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor, int cols){
-        this.datasetBuilder = datasetBuilder;
-        this.featureExtractor = featureExtractor;
-        this.lbExtractor = lbExtractor;
-        this.cols = cols;
-
-        PartitionDataBuilder<K, V, KNNPartitionContext, KNNPartitionDataOnHeap> partDataBuilder = new KNNPartitionDataBuilderOnHeap<>(
+        PartitionDataBuilder<K, V, KNNPartitionContext, LabeledDataset<Double, LabeledVector>> partDataBuilder = new KNNPartitionDataBuilderOnHeap<>(
             featureExtractor,
             lbExtractor,
             cols
@@ -98,9 +90,39 @@ public class NewKNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNM
 
     /** */
     @Override public <P> void saveModel(Exporter<KNNModelFormat, P> exporter, P path) {
-  /*      KNNModelFormat mdlData = new KNNModelFormat(k, distanceMeasure, training, stgy);
+        KNNModelFormat mdlData = new KNNModelFormat(k, distanceMeasure, stgy);
 
-        exporter.save(mdlData, path);*/
+        exporter.save(mdlData, path);
+    }
+
+    /**
+     * Set up parameter of the kNN model.
+     * @param k Amount of nearest neighbors.
+     * @return Model.
+     */
+    public KNNModel<K, V> withK(int k) {
+        this.k = k;
+        return this;
+    }
+
+    /**
+     * Set up parameter of the kNN model.
+     * @param stgy Strategy of calculations.
+     * @return Model.
+     */
+    public KNNModel<K, V> withStrategy(KNNStrategy stgy) {
+        this.stgy = stgy;
+        return this;
+    }
+
+    /**
+     * Set up parameter of the kNN model.
+     * @param distanceMeasure Distance measure.
+     * @return Model.
+     */
+    public KNNModel<K, V> withDistanceMeasure(DistanceMeasure distanceMeasure) {
+        this.distanceMeasure = distanceMeasure;
+        return this;
     }
 
     /**
@@ -111,12 +133,25 @@ public class NewKNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNM
      * @return K-nearest neighbors.
      */
     protected List<LabeledVector> findKNearestNeighbors(Vector v) {
-        List<LabeledVector> sosedi = dataset.compute(data -> {
+        List<LabeledVector> neighborsFromPartitions = dataset.compute(data -> {
             TreeMap<Double, Set<Integer>> distanceIdxPairs = getDistances(v, data);
             return Arrays.asList(getKClosestVectors(data, distanceIdxPairs));
         }, (a, b) -> a == null ? b : Stream.concat(a.stream(), b.stream()).collect(Collectors.toList()));
 
-        return sosedi;
+        LabeledDataset<Double, LabeledVector> neighborsToFilter = buildLabeledDatasetOnListOfVectors(neighborsFromPartitions);
+
+        return Arrays.asList(getKClosestVectors(neighborsToFilter, getDistances(v, neighborsToFilter)));
+    }
+
+
+    /** */
+    private LabeledDataset<Double, LabeledVector> buildLabeledDatasetOnListOfVectors(
+        List<LabeledVector> neighborsFromPartitions) {
+        LabeledVector[] arr = new LabeledVector[neighborsFromPartitions.size()];
+        for (int i = 0; i < arr.length; i++)
+            arr[i] = neighborsFromPartitions.get(i);
+
+        return new LabeledDataset<Double, LabeledVector>(arr);
     }
 
     /**
@@ -124,10 +159,9 @@ public class NewKNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNM
      *
      * @param trainingData The training data.
      * @param distanceIdxPairs The distance map.
-     * @param isCashedDistances Cache distances if true.
      * @return K-nearest neighbors.
      */
-    @NotNull private LabeledVector[] getKClosestVectors(KNNPartitionDataOnHeap trainingData,
+    @NotNull private LabeledVector[] getKClosestVectors(LabeledDataset<Double, LabeledVector> trainingData,
         TreeMap<Double, Set<Integer>> distanceIdxPairs) {
         LabeledVector[] res = new LabeledVector[k];
         int i = 0;
@@ -136,7 +170,7 @@ public class NewKNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNM
             double key = iter.next();
             Set<Integer> idxs = distanceIdxPairs.get(key);
             for (Integer idx : idxs) {
-                res[i] = new LabeledVector(new DenseLocalOnHeapVector(trainingData.getX()[idx]), trainingData.getY()[idx]);
+                res[i] = trainingData.getRow(idx);
                 i++;
                 if (i >= k)
                     break; // go to next while-loop iteration
@@ -153,13 +187,14 @@ public class NewKNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNM
      * @return Key - distanceMeasure from given features before features with idx stored in value. Value is presented
      * with Set because there can be a few vectors with the same distance.
      */
-    @NotNull private TreeMap<Double, Set<Integer>> getDistances(Vector v, KNNPartitionDataOnHeap trainingData) {
+    @NotNull private TreeMap<Double, Set<Integer>> getDistances(Vector v, LabeledDataset<Double, LabeledVector> trainingData) {
         TreeMap<Double, Set<Integer>> distanceIdxPairs = new TreeMap<>();
 
-        final double[][] x = trainingData.getX();
-        for (int i = 0; i < x.length; i++) {
-            if (x[i] != null) {
-                double distance = distanceMeasure.compute(v, x[i]);
+        for (int i = 0; i < trainingData.rowSize(); i++) {
+
+            LabeledVector labeledVector = trainingData.getRow(i);
+            if (labeledVector != null) {
+                double distance = distanceMeasure.compute(v, labeledVector.features());
                 putDistanceIdxPair(distanceIdxPairs, i, distance);
             }
         }
@@ -179,12 +214,11 @@ public class NewKNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNM
         }
     }
 
-    /** TODO: add additional sorting and choosing K most popular */
+    /** */
     private double classify(List<LabeledVector> neighbors, Vector v, KNNStrategy stgy) {
         Map<Double, Double> clsVotes = new HashMap<>();
 
-        for (int i = 0; i < neighbors.size(); i++) {
-            LabeledVector neighbor = neighbors.get(i);
+        for (LabeledVector neighbor : neighbors) {
             double clsLb = (double)neighbor.label();
 
             double distance = distanceMeasure.compute(v, neighbor.features());
@@ -222,7 +256,6 @@ public class NewKNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNM
         res = res * 37 + k;
         res = res * 37 + distanceMeasure.hashCode();
         res = res * 37 + stgy.hashCode();
-        //res = res * 37 + Arrays.hashCode(training.data());
 
         return res;
     }
@@ -235,24 +268,8 @@ public class NewKNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNM
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        NewKNNModel that = (NewKNNModel)obj;
+        KNNModel that = (KNNModel)obj;
 
         return k == that.k && distanceMeasure.equals(that.distanceMeasure) && stgy.equals(that.stgy);
-           // && Arrays.deepEquals(training.data(), that.training.data());
-    }
-
-    public NewKNNModel<K,V> withK(int k) {
-        this.k = k;
-        return this;
-    }
-
-    public NewKNNModel<K,V> withStrategy(KNNStrategy stgy) {
-        this.stgy = stgy;
-        return this;
-    }
-
-    public NewKNNModel<K,V> withDistanceMeasure(DistanceMeasure distanceMeasure) {
-        this.distanceMeasure = distanceMeasure;
-        return this;
     }
 }

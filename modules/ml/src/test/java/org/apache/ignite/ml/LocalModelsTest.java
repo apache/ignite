@@ -23,9 +23,9 @@ import java.nio.file.Path;
 import java.util.function.Function;
 import org.apache.ignite.ml.clustering.KMeansLocalClusterer;
 import org.apache.ignite.ml.clustering.KMeansModel;
-import org.apache.ignite.ml.knn.models.KNNModel;
-import org.apache.ignite.ml.knn.models.KNNModelFormat;
-import org.apache.ignite.ml.knn.models.KNNStrategy;
+import org.apache.ignite.ml.knn.classification.KNNModel;
+import org.apache.ignite.ml.knn.classification.KNNModelFormat;
+import org.apache.ignite.ml.knn.classification.KNNStrategy;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
@@ -158,19 +158,11 @@ public class LocalModelsTest {
     @Test
     public void importExportKNNModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
-            double[][] mtx =
-                new double[][] {
-                    {1.0, 1.0},
-                    {1.0, 2.0},
-                    {2.0, 1.0},
-                    {-1.0, -1.0},
-                    {-1.0, -2.0},
-                    {-2.0, -1.0}};
-            double[] lbs = new double[] {1.0, 1.0, 1.0, 2.0, 2.0, 2.0};
 
-            LabeledDataset training = new LabeledDataset(mtx, lbs);
-
-            KNNModel mdl = new KNNModel(3, new EuclideanDistance(), KNNStrategy.SIMPLE, training);
+            KNNModel mdl = new KNNModel(null, null, null, 0)
+                .withK(3)
+                .withDistanceMeasure(new EuclideanDistance())
+                .withStrategy(KNNStrategy.SIMPLE);
 
             Exporter<KNNModelFormat, String> exporter = new FileExporter<>();
             mdl.saveModel(exporter, mdlFilePath);
@@ -179,7 +171,10 @@ public class LocalModelsTest {
 
             Assert.assertNotNull(load);
 
-            KNNModel importedMdl = new KNNModel(load.getK(), load.getDistanceMeasure(), load.getStgy(), load.getTraining());
+            KNNModel importedMdl = new KNNModel(null, null, null, 0)
+                .withK(load.getK())
+                .withDistanceMeasure(load.getDistanceMeasure())
+                .withStrategy(load.getStgy());
 
             Assert.assertTrue("", mdl.equals(importedMdl));
 

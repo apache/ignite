@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.models;
+package org.apache.ignite.ml.knn.classification;
 
 /** This enum contains settings for kNN algorithm. */
 public enum KNNStrategy {

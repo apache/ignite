@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains main APIs for kNN regression algorithms.
+ * Contains main APIs for kNN classification algorithms.
  */
-package org.apache.ignite.ml.knn.regression;
+package org.apache.ignite.ml.knn.classification;

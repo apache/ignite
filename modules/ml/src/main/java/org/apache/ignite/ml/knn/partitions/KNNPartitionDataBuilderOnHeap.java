@@ -1,14 +1,22 @@
-package org.apache.ignite.ml.knn.models;
+package org.apache.ignite.ml.knn.partitions;
 
 import java.io.Serializable;
 import java.util.Iterator;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.math.isolve.LinSysPartitionDataOnHeap;
+import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.structures.LabeledVector;
 
+/**
+ * kNN partition data builder that builds {@link KNNPartitionDataOnHeap}.
+ *
+ * @param <K> Type of a key in <tt>upstream</tt> data.
+ * @param <V> Type of a value in <tt>upstream</tt> data.
+ * @param <C> Type of a partition <tt>context</tt>.
+ */
 public class KNNPartitionDataBuilderOnHeap<K, V, C extends Serializable>
-    implements PartitionDataBuilder<K, V, C, KNNPartitionDataOnHeap> {
+    implements PartitionDataBuilder<K, V, C, LabeledDataset<Double, LabeledVector>> {
     /** */
     private static final long serialVersionUID = -7820760153954269227L;
 
@@ -22,23 +30,24 @@ public class KNNPartitionDataBuilderOnHeap<K, V, C extends Serializable>
     private final int cols;
 
     /**
-     * Constructs a new instance of linear system partition data builder.
+     * Constructs a new instance of kNN partition data builder.
      *
      * @param xExtractor Extractor of X matrix row.
      * @param yExtractor Extractor of Y vector value.
      * @param cols Number of columns.
      */
     public KNNPartitionDataBuilderOnHeap(IgniteBiFunction<K, V, double[]> xExtractor,
-        IgniteBiFunction<K, V, Double> yExtractor, int cols) {
+        IgniteBiFunction<K, V, Double> yExtractor, int cols)
+    {
         this.xExtractor = xExtractor;
         this.yExtractor = yExtractor;
         this.cols = cols;
     }
 
     /** {@inheritDoc} */
-    @Override public KNNPartitionDataOnHeap build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
+    @Override public LabeledDataset<Double, LabeledVector> build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
         C ctx) {
-        // Prepares the matrix of features in flat column-major format.
+
         double[][] x = new double[Math.toIntExact(upstreamDataSize)][cols];
         double[] y = new double[Math.toIntExact(upstreamDataSize)];
 
@@ -56,6 +65,6 @@ public class KNNPartitionDataBuilderOnHeap<K, V, C extends Serializable>
             ptr++;
         }
 
-        return new KNNPartitionDataOnHeap(x, Math.toIntExact(upstreamDataSize), cols, y);
+        return new LabeledDataset<>(x, y);
     }
 }

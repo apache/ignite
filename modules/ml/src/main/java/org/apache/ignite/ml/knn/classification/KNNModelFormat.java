@@ -15,13 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.models;
+package org.apache.ignite.ml.knn.classification;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
-import org.apache.ignite.ml.structures.LabeledDataset;
-import org.apache.ignite.ml.structures.newstructures.NewLabeledDataset;
 
 /**
  * kNN model representation.
@@ -34,9 +31,6 @@ public class KNNModelFormat implements Serializable {
 
     /** Distance measure. */
     private DistanceMeasure distanceMeasure;
-
-    /** Training dataset */
-    private LabeledDataset training;
 
     /** kNN strategy. */
     private KNNStrategy stgy;
@@ -52,20 +46,14 @@ public class KNNModelFormat implements Serializable {
     }
 
     /** */
-    public LabeledDataset getTraining() {
-        return training;
-    }
-
-    /** */
     public KNNStrategy getStgy() {
         return stgy;
     }
 
     /** */
-    public KNNModelFormat(int k, DistanceMeasure measure, LabeledDataset training, KNNStrategy stgy) {
+    public KNNModelFormat(int k, DistanceMeasure measure, KNNStrategy stgy) {
         this.k = k;
         this.distanceMeasure = measure;
-        this.training = training;
         this.stgy = stgy;
     }
 
@@ -76,7 +64,6 @@ public class KNNModelFormat implements Serializable {
         res = res * 37 + k;
         res = res * 37 + distanceMeasure.hashCode();
         res = res * 37 + stgy.hashCode();
-        res = res * 37 + Arrays.hashCode(training.data());
 
         return res;
     }
@@ -91,7 +78,6 @@ public class KNNModelFormat implements Serializable {
 
         KNNModelFormat that = (KNNModelFormat)obj;
 
-        return k == that.k && distanceMeasure.equals(that.distanceMeasure) && stgy.equals(that.stgy)
-            && Arrays.deepEquals(training.data(), that.training.data());
+        return k == that.k && distanceMeasure.equals(that.distanceMeasure) && stgy.equals(that.stgy);
     }
 }

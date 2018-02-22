@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.structures;
 
+import java.util.List;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.NoDataException;
@@ -27,14 +28,7 @@ import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 /**
  * Class for set of labeled vectors.
  */
-public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
-    /**
-     * Default constructor (required by Externalizable).
-     */
-    public LabeledDataset() {
-        super();
-    }
-
+public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> implements AutoCloseable {
     /**
      * Creates new Labeled Dataset and initialized with empty data structure.
      *
@@ -70,6 +64,15 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
         initializeDataWithLabeledVectors();
     }
 
+    /**
+     * Creates new Labeled Dataset by given data.
+     *
+     * @param data Should be initialized with one vector at least.
+     */
+    public LabeledDataset(Row[] data) {
+        super(data);
+    }
+
     /** */
     private void initializeDataWithLabeledVectors() {
         data = (Row[])new LabeledVector[rowSize];
@@ -86,7 +89,6 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
     public LabeledDataset(Row[] data, int colSize) {
         super(data, colSize);
     }
-
 
     /**
      * Creates new local Labeled Dataset by matrix and vector of labels.
@@ -206,5 +208,9 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
             res.setLabel(i, this.label(i));
 
         return res;
+    }
+
+    @Override public void close() throws Exception {
+
     }
 }
