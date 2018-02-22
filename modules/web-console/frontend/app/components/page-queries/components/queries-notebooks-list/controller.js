@@ -23,18 +23,18 @@ export class NotebooksListCtrl {
     constructor(IgniteNotebook, $scope) {
         Object.assign(this, { IgniteNotebook, $scope });
 
-        const notebookNameTemplate = `<div class="ui-grid-cell-contents"><a ui-sref="base.sql.tabs.notebook({ noteId: row.entity._id })">{{ row.entity.name }}</a></div>`;
+        const notebookNameTemplate = `<a ui-sref="base.sql.tabs.notebook({ noteId: row.entity._id })">{{ row.entity.name }}</a>`;
 
         const categories = [
             { name: 'Name', visible: true, enableHiding: false },
-            { name: 'SQL Query', visible: true, enableHiding: false, enableFiltering: false },
-            { name: 'Scan Query', visible: true, enableHiding: false, enableFiltering: false }
+            { name: 'SQL Query', visible: true, enableHiding: false },
+            { name: 'Scan Query', visible: true, enableHiding: false }
         ];
 
         const columnDefs = [
-            { name: 'name', displayName: 'Name', categoryDisplayName: 'Name', field: 'name', cellTemplate: notebookNameTemplate, minWidth: 150, width: 550, filter: { placeholder: 'Filter by Name...' } },
-            { name: 'sqlQueryNum', displayName: 'SQL Query', categoryDisplayName: 'SQL Query', field: 'sqlQueryNum', minWidth: 150, width: 150 },
-            { name: 'scanQueryNum', displayName: 'Scan Query', categoryDisplayName: 'Scan Query', field: 'scanQueryNum', minWidth: 150, width: 150 }
+            { name: 'name', displayName: 'Name', categoryDisplayName: 'Name', field: 'name', cellTemplate: notebookNameTemplate, filter: { placeholder: 'Filter by Name...' } },
+            { name: 'sqlQueryNum', displayName: 'SQL Query', categoryDisplayName: 'SQL Query', field: 'sqlQueryNum', minWidth: 150, width: 150, enableFiltering: false },
+            { name: 'scanQueryNum', displayName: 'Scan Query', categoryDisplayName: 'Scan Query', field: 'scanQueryNum', minWidth: 150, width: 150, enableFiltering: false }
         ];
 
         this.gridOptions = {

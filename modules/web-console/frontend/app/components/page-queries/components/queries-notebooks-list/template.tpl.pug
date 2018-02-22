@@ -22,9 +22,10 @@
                 .ui-grid-settings--heading
                     span Notebooks
 
-        .grid.ui-grid--ignite(ui-grid='$ctrl.gridOptions' ui-grid-resize-columns ui-grid-selection ui-grid-hovering)
-        grid-no-data(grid-api='$ctrl.gridApi')
-            | You have no notebooks.
-            a.link-success(ng-click='$ctrl.createNotebook()') Create one?
-            grid-no-data-filtered
-                | Nothing to display. Check your filters.
+        .panel-collapse
+            .grid.ui-grid--ignite(ui-grid='$ctrl.gridOptions' ui-grid-tree-view ui-grid-resize-columns ui-grid-selection ui-grid-exporter ui-grid-pinning ui-grid-hovering)
+            grid-no-data(grid-api='$ctrl.gridApi')
+                | You have no notebooks.
+                a.link-success(ng-click='$ctrl.createNotebook()') Create one?
+                grid-no-data-filtered
+                    | Nothing to display. Check your filters.
