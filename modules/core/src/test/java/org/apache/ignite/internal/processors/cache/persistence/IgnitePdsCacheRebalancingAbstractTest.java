@@ -411,7 +411,7 @@ public abstract class IgnitePdsCacheRebalancingAbstractTest extends GridCommonAb
 
         Ignite ignite = startGrid(0);
 
-        ignite.active(true);
+        ignite.cluster().active(true);
 
         IgniteCache<Integer, TestValue> cache = ignite.cache(cacheName);
 
