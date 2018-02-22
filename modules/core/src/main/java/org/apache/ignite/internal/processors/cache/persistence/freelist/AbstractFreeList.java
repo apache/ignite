@@ -63,7 +63,10 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     /** */
     private static final int MIN_PAGE_FREE_SPACE = 8;
 
-    /** */
+    /**
+     * Step between buckets in free list, measured in powers of two.
+     * For example, for page size 4096 and 256 buckets, shift is 4 and step is 16 bytes.
+     */
     private final int shift;
 
     /** */
@@ -368,27 +371,22 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /**
-     * Calculates average fill factor over FreeListImpl instance.
+     * Calculates free space tracked by this FreeListImpl instance.
      *
-     * @return Tuple (numenator, denominator).
+     * @return Free space available for use, in bytes.
      */
-    public T2<Long, Long> fillFactor() {
-        long pageSize = pageSize();
-
-        long totalSize = 0;
-        long loadSize = 0;
+    public long freeSpace() {
+        long freeSpace = 0;
 
         for (int b = BUCKETS - 2; b > 0; b--) {
-            long bsize = pageSize - ((REUSE_BUCKET - b) << shift);
+            long perPageFreeSpace = b << shift;
 
             long pages = bucketsSize[b].longValue();
 
-            loadSize += pages * (pageSize - bsize);
-
-            totalSize += pages * pageSize;
+            freeSpace += pages * perPageFreeSpace;
         }
 
-        return totalSize == 0 ? new T2<>(0L, 0L) : new T2<>(loadSize, totalSize);
+        return freeSpace;
     }
 
     /** {@inheritDoc} */

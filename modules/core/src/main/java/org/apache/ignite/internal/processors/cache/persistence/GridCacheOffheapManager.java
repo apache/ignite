@@ -809,13 +809,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /**
-     * Calculates fill factor of all partition data stores.
+     * Calculates free space of all partition data stores - number of bytes available for use in allocated pages.
      *
      * @return Tuple (numenator, denominator).
      */
-    T2<Long, Long> fillFactor() {
-        long loadSize = 0;
-        long totalSize = 0;
+    long freeSpace() {
+        long freeSpace = 0;
 
         for (CacheDataStore store : partDataStores.values()) {
             assert store instanceof GridCacheDataStore;
@@ -825,13 +824,10 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             if (freeList == null)
                 continue;
 
-            T2<Long, Long> fillFactor = freeList.fillFactor();
-
-            loadSize += fillFactor.get1();
-            totalSize += fillFactor.get2();
+            freeSpace += freeList.freeSpace();
         }
 
-        return new T2<>(loadSize, totalSize);
+        return freeSpace;
     }
 
     /**

@@ -30,7 +30,7 @@ import org.jsr166.LongAdder8;
  */
 public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTracker {
     /** */
-    private final IgniteOutClosure<Float> fillFactorProvider;
+    private final IgniteOutClosure<Long> freeSpaceProvider;
 
     /** */
     private final LongAdder8 totalAllocatedPages = new LongAdder8();
@@ -83,9 +83,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
     /**
      * @param memPlcCfg DataRegionConfiguration.
      */
-    public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg, @Nullable IgniteOutClosure<Float> fillFactorProvider) {
+    public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg, @Nullable IgniteOutClosure<Long> freeSpaceProvider) {
         this.memPlcCfg = memPlcCfg;
-        this.fillFactorProvider = fillFactorProvider;
+        this.freeSpaceProvider = freeSpaceProvider;
 
         metricsEnabled = memPlcCfg.isMetricsEnabled();
 
@@ -142,10 +142,14 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
 
     /** {@inheritDoc} */
     @Override public float getPagesFillFactor() {
-        if (!metricsEnabled || fillFactorProvider == null)
+        if (!metricsEnabled || freeSpaceProvider == null)
             return 0;
 
-        return fillFactorProvider.apply();
+        long freeSpace = freeSpaceProvider.apply();
+
+        long totalAllocated = getPageSize() * totalAllocatedPages.longValue();
+
+        return (float) (totalAllocated - freeSpace) / totalAllocated;
     }
 
     /** {@inheritDoc} */
