@@ -56,7 +56,7 @@ namespace ignite
             mag()
         {
             assert(val != 0);
-            assert(len > 0);
+            assert(len >= 0);
             assert(sign == 1 || sign == 0 || sign == -1);
 
             if (bigEndian)
@@ -64,6 +64,13 @@ namespace ignite
                 int32_t firstNonZero = 0;
                 while (firstNonZero < len && val[firstNonZero] == 0)
                     ++firstNonZero;
+
+                if (firstNonZero == len)
+                {
+                    AssignInt64(0);
+
+                    return;
+                }
 
                 int32_t intLength = (len - firstNonZero + 3) / 4;
 
@@ -106,8 +113,16 @@ namespace ignite
             else
             {
                 int32_t firstNonZero = len - 1;
+
                 while (firstNonZero >= 0 && val[firstNonZero] == 0)
                     --firstNonZero;
+
+                if (firstNonZero == -1)
+                {
+                    AssignInt64(0);
+
+                    return;
+                }
 
                 int32_t intLength = (firstNonZero + 4) / 4;
 
@@ -268,6 +283,13 @@ namespace ignite
         void BigInteger::MagnitudeToBytes(common::FixedSizeArray<int8_t>& buffer) const
         {
             int32_t bytesNum = static_cast<int32_t>((GetBitLength() + 7) / 8);
+
+            if (bytesNum == 0)
+            {
+                buffer.Reset(1);
+
+                return;
+            }
 
             buffer.Reset(bytesNum);
 

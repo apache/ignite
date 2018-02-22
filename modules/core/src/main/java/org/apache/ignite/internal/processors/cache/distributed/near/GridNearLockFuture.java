@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -75,7 +76,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_READ;
@@ -238,7 +238,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridNearLockFuture.class);
 
-        valMap = new ConcurrentHashMap8<>();
+        valMap = new ConcurrentHashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -1315,7 +1315,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                                     inTx() ? tx.resolveTaskName() : null,
                                                     keepBinary);
 
-                                            if (cctx.cache().configuration().isStatisticsEnabled())
+                                            if (cctx.statisticsEnabled())
                                                 cctx.cache().metrics0().onRead(oldVal != null);
                                         }
 
@@ -1739,7 +1739,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
                                         inTx() ? tx.resolveTaskName() : null,
                                         keepBinary);
 
-                                if (cctx.cache().configuration().isStatisticsEnabled())
+                                if (cctx.statisticsEnabled())
                                     cctx.cache().metrics0().onRead(false);
                             }
 

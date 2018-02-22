@@ -581,10 +581,10 @@ namespace ignite
                 // Driver version. At a minimum, the version is of the form ##.##.####, where the first two digits are
                 // the major version, the next two digits are the minor version, and the last four digits are the
                 // release version.
-                strParams[SQL_DRIVER_VER] = "02.03.0000";
+                strParams[SQL_DRIVER_VER] = "02.04.0000";
 #endif // SQL_DRIVER_VER
 #ifdef SQL_DBMS_VER
-                strParams[SQL_DBMS_VER] = "02.03.0000";
+                strParams[SQL_DBMS_VER] = "02.04.0000";
 #endif // SQL_DBMS_VER
 
 #ifdef SQL_COLUMN_ALIAS
@@ -1273,7 +1273,7 @@ namespace ignite
                 //     resulting from the execution of the statement for the entire array of parameters. This is
                 //     conceptually equivalent to treating the statement together with the complete parameter array as
                 //     one atomic unit. Errors are handled the same as if one statement were executed.
-                intParams[SQL_PARAM_ARRAY_ROW_COUNTS] = SQL_PARC_NO_BATCH;
+                intParams[SQL_PARAM_ARRAY_ROW_COUNTS] = SQL_PARC_BATCH;
 #endif // SQL_PARAM_ARRAY_ROW_COUNTS
 
 #ifdef SQL_PARAM_ARRAY_SELECTS

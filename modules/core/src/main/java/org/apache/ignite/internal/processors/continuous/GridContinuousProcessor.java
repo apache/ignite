@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -84,7 +85,6 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -102,25 +102,25 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousMes
  */
 public class GridContinuousProcessor extends GridProcessorAdapter {
     /** Local infos. */
-    private final ConcurrentMap<UUID, LocalRoutineInfo> locInfos = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, LocalRoutineInfo> locInfos = new ConcurrentHashMap<>();
 
     /** Local infos. */
-    private final ConcurrentMap<UUID, Map<UUID, LocalRoutineInfo>> clientInfos = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, Map<UUID, LocalRoutineInfo>> clientInfos = new ConcurrentHashMap<>();
 
     /** Remote infos. */
-    private final ConcurrentMap<UUID, RemoteRoutineInfo> rmtInfos = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, RemoteRoutineInfo> rmtInfos = new ConcurrentHashMap<>();
 
     /** Start futures. */
-    private final ConcurrentMap<UUID, StartFuture> startFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, StartFuture> startFuts = new ConcurrentHashMap<>();
 
     /** Stop futures. */
-    private final ConcurrentMap<UUID, StopFuture> stopFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, StopFuture> stopFuts = new ConcurrentHashMap<>();
 
     /** Threads started by this processor. */
-    private final Map<UUID, IgniteThread> bufCheckThreads = new ConcurrentHashMap8<>();
+    private final Map<UUID, IgniteThread> bufCheckThreads = new ConcurrentHashMap<>();
 
     /** */
-    private final ConcurrentMap<IgniteUuid, SyncMessageAckFuture> syncMsgFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<IgniteUuid, SyncMessageAckFuture> syncMsgFuts = new ConcurrentHashMap<>();
 
     /** Stopped IDs. */
     private final Collection<UUID> stopped = new HashSet<>();
@@ -176,8 +176,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer,
                     ClusterNode snd,
                     StartRoutineDiscoveryMessage msg) {
-                    if (!snd.id().equals(ctx.localNodeId()) && !ctx.isStopping())
-                        processStartRequest(snd, msg);
+                    if (ctx.isStopping())
+                        return;
+
+                    processStartRequest(snd, msg);
                 }
             });
 
@@ -186,39 +188,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer,
                     ClusterNode snd,
                     StartRoutineAckDiscoveryMessage msg) {
-                    StartFuture fut = startFuts.remove(msg.routineId());
+                    if (ctx.isStopping())
+                        return;
 
-                    if (fut != null) {
-                        if (msg.errs().isEmpty()) {
-                            LocalRoutineInfo routine = locInfos.get(msg.routineId());
-
-                            // Update partition counters.
-                            if (routine != null && routine.handler().isQuery()) {
-                                Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode = msg.updateCountersPerNode();
-                                Map<Integer, T2<Long, Long>> cntrs = msg.updateCounters();
-
-                                GridCacheAdapter<Object, Object> interCache =
-                                    ctx.cache().internalCache(routine.handler().cacheName());
-
-                                GridCacheContext cctx = interCache != null ? interCache.context() : null;
-
-                                if (cctx != null && cntrsPerNode != null && !cctx.isLocal() && cctx.affinityNode())
-                                    cntrsPerNode.put(ctx.localNodeId(),
-                                        toCountersMap(cctx.topology().localUpdateCounters(false)));
-
-                                routine.handler().updateCounters(topVer, cntrsPerNode, cntrs);
-                            }
-
-                            fut.onRemoteRegistered();
-                        }
-                        else {
-                            IgniteCheckedException firstEx = F.first(msg.errs().values());
-
-                            fut.onDone(firstEx);
-
-                            stopRoutine(msg.routineId());
-                        }
-                    }
+                    processStartAckRequest(topVer, msg);
                 }
             });
 
@@ -227,16 +200,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer,
                     ClusterNode snd,
                     StopRoutineDiscoveryMessage msg) {
-                    if (!snd.id().equals(ctx.localNodeId())) {
-                        UUID routineId = msg.routineId();
+                    if (ctx.isStopping())
+                        return;
 
-                        unregisterRemote(routineId);
-                    }
-
-                    for (Map<UUID, LocalRoutineInfo> clientInfo : clientInfos.values()) {
-                        if (clientInfo.remove(msg.routineId()) != null)
-                            break;
-                    }
+                    processStopRequest(snd, msg);
                 }
             });
 
@@ -245,10 +212,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 @Override public void onCustomEvent(AffinityTopologyVersion topVer,
                     ClusterNode snd,
                     StopRoutineAckDiscoveryMessage msg) {
-                    StopFuture fut = stopFuts.remove(msg.routineId());
+                    if (ctx.isStopping())
+                        return;
 
-                    if (fut != null)
-                        fut.onDone();
+                    processStopAckRequest(msg);
                 }
             });
 
@@ -459,7 +426,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void onJoiningNodeDataReceived(JoiningNodeDiscoveryData data) {
         if (log.isDebugEnabled()) {
-            log.info("onJoiningNodeDataReceived [joining=" + data.joiningNodeId() +
+            log.debug("onJoiningNodeDataReceived [joining=" + data.joiningNodeId() +
                     ", loc=" + ctx.localNodeId() +
                     ", data=" + data.joiningNodeData() +
                     ']');
@@ -976,11 +943,82 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param msg Message.
+     */
+    private void processStopAckRequest(StopRoutineAckDiscoveryMessage msg) {
+        StopFuture fut = stopFuts.remove(msg.routineId());
+
+        if (fut != null)
+            fut.onDone();
+    }
+
+    /**
+     * @param snd Sender node.
+     * @param msg Message/
+     */
+    private void processStopRequest(ClusterNode snd, StopRoutineDiscoveryMessage msg) {
+        if (!snd.id().equals(ctx.localNodeId())) {
+            UUID routineId = msg.routineId();
+
+            unregisterRemote(routineId);
+        }
+
+        for (Map<UUID, LocalRoutineInfo> clientInfo : clientInfos.values()) {
+            if (clientInfo.remove(msg.routineId()) != null)
+                break;
+        }
+    }
+
+    /**
+     * @param topVer Topology version.
+     * @param msg Message.
+     */
+    private void processStartAckRequest(AffinityTopologyVersion topVer,
+        StartRoutineAckDiscoveryMessage msg) {
+        StartFuture fut = startFuts.remove(msg.routineId());
+
+        if (fut != null) {
+            if (msg.errs().isEmpty()) {
+                LocalRoutineInfo routine = locInfos.get(msg.routineId());
+
+                // Update partition counters.
+                if (routine != null && routine.handler().isQuery()) {
+                    Map<UUID, Map<Integer, T2<Long, Long>>> cntrsPerNode = msg.updateCountersPerNode();
+                    Map<Integer, T2<Long, Long>> cntrs = msg.updateCounters();
+
+                    GridCacheAdapter<Object, Object> interCache =
+                        ctx.cache().internalCache(routine.handler().cacheName());
+
+                    GridCacheContext cctx = interCache != null ? interCache.context() : null;
+
+                    if (cctx != null && cntrsPerNode != null && !cctx.isLocal() && cctx.affinityNode())
+                        cntrsPerNode.put(ctx.localNodeId(),
+                            toCountersMap(cctx.topology().localUpdateCounters(false)));
+
+                    routine.handler().updateCounters(topVer, cntrsPerNode, cntrs);
+                }
+
+                fut.onRemoteRegistered();
+            }
+            else {
+                IgniteCheckedException firstEx = F.first(msg.errs().values());
+
+                fut.onDone(firstEx);
+
+                stopRoutine(msg.routineId());
+            }
+        }
+    }
+
+    /**
      * @param node Sender.
      * @param req Start request.
      */
     private void processStartRequest(ClusterNode node, StartRoutineDiscoveryMessage req) {
         UUID routineId = req.routineId();
+        if (node.id().equals(ctx.localNodeId()))
+            return;
+
         StartRequestData data = req.startRequestData();
 
         GridContinuousHandler hnd = data.handler();

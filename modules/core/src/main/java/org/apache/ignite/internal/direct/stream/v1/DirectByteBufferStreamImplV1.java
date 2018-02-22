@@ -37,7 +37,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageFactory;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
-import sun.nio.ch.DirectBuffer;
 
 /**
  * Direct marshalling I/O stream (version 1).
@@ -275,7 +274,7 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
             this.buf = buf;
 
             heapArr = buf.isDirect() ? null : buf.array();
-            baseOff = buf.isDirect() ? ((DirectBuffer)buf).address() : GridUnsafe.BYTE_ARR_OFF;
+            baseOff = buf.isDirect() ? GridUnsafe.bufferAddress(buf) : GridUnsafe.BYTE_ARR_OFF;
         }
     }
 
@@ -431,6 +430,14 @@ public class DirectByteBufferStreamImplV1 implements DirectByteBufferStream {
     @Override public void writeLongArray(long[] val) {
         if (val != null)
             lastFinished = writeArray(val, GridUnsafe.LONG_ARR_OFF, val.length, val.length << 3);
+        else
+            writeInt(-1);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeLongArray(long[] val, int len) {
+        if (val != null)
+            lastFinished = writeArray(val, GridUnsafe.LONG_ARR_OFF, len, len << 3);
         else
             writeInt(-1);
     }

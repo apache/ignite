@@ -27,9 +27,9 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -40,9 +40,9 @@ import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.junit.Assert;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  *
@@ -57,9 +57,13 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
+        cfg.setConsistentId("NODE$" + gridName.charAt(gridName.length() - 1));
+
         DataStorageConfiguration memCfg = new DataStorageConfiguration()
             .setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setMaxSize(200 * 1024 * 1024).setPersistenceEnabled(true))
+                new DataRegionConfiguration()
+                    .setMaxSize(200 * 1024 * 1024)
+                    .setPersistenceEnabled(true))
             .setWalMode(WALMode.LOG_ONLY);
 
         cfg.setDataStorageConfiguration(memCfg);
@@ -81,7 +85,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
@@ -92,7 +96,7 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /**
@@ -104,9 +108,13 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         final int entryCnt = 10_000;
         final int initGridCnt = 4;
 
-        final IgniteEx ig0 = (IgniteEx)startGrids(initGridCnt);
+        final IgniteEx ig0 = (IgniteEx)startGrids(initGridCnt + 1);
 
         ig0.active(true);
+
+        stopGrid(initGridCnt);
+
+        Assert.assertEquals(5, ig0.context().state().clusterState().baselineTopology().consistentIds().size());
 
         long start = U.currentTimeMillis();
 
@@ -183,10 +191,10 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
                         FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
 
-                        Object archiver = GridTestUtils.getFieldValue(wal, "archiver");
+                        Object reservationStorage = GridTestUtils.getFieldValue(wal, "reservationStorage");
 
-                        synchronized (archiver) {
-                            Map reserved = GridTestUtils.getFieldValue(archiver, "reserved");
+                        synchronized (reservationStorage) {
+                            Map reserved = GridTestUtils.getFieldValue(reservationStorage, "reserved");
 
                             if (reserved.isEmpty())
                                 return false;
@@ -210,10 +218,10 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
                     FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
 
-                    Object archiver = GridTestUtils.getFieldValue(wal, "archiver");
+                    Object reservationStorage = GridTestUtils.getFieldValue(wal, "reservationStorage");
 
-                    synchronized (archiver) {
-                        Map reserved = GridTestUtils.getFieldValue(archiver, "reserved");
+                    synchronized (reservationStorage) {
+                        Map reserved = GridTestUtils.getFieldValue(reservationStorage, "reserved");
 
                         if (!reserved.isEmpty())
                             return false;
@@ -393,10 +401,10 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
                         FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
 
-                        Object archiver = GridTestUtils.getFieldValue(wal, "archiver");
+                        Object reservationStorage = GridTestUtils.getFieldValue(wal, "reservationStorage");
 
-                        synchronized (archiver) {
-                            Map reserved = GridTestUtils.getFieldValue(archiver, "reserved");
+                        synchronized (reservationStorage) {
+                            Map reserved = GridTestUtils.getFieldValue(reservationStorage, "reserved");
 
                             if (reserved.isEmpty())
                                 return false;
@@ -422,10 +430,10 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
                     FileWriteAheadLogManager wal = (FileWriteAheadLogManager)ig.context().cache().context().wal();
 
-                    Object archiver = GridTestUtils.getFieldValue(wal, "archiver");
+                    Object reservationStorage = GridTestUtils.getFieldValue(wal, "reservationStorage");
 
-                    synchronized (archiver) {
-                        Map reserved = GridTestUtils.getFieldValue(archiver, "reserved");
+                    synchronized (reservationStorage) {
+                        Map reserved = GridTestUtils.getFieldValue(reservationStorage, "reserved");
 
                         if (!reserved.isEmpty())
                             return false;
@@ -439,13 +447,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         assert released;
 
         awaitPartitionMapExchange();
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**

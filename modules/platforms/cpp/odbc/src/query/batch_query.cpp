@@ -27,8 +27,8 @@ namespace ignite
     {
         namespace query
         {
-            BatchQuery::BatchQuery(diagnostic::Diagnosable& diag, Connection& connection,
-                const std::string& sql, const app::ParameterSet& params) :
+            BatchQuery::BatchQuery(diagnostic::Diagnosable& diag, Connection& connection, const std::string& sql,
+                const app::ParameterSet& params, int32_t& timeout) :
                 Query(diag, QueryType::BATCH),
                 connection(connection),
                 sql(sql),
@@ -36,7 +36,8 @@ namespace ignite
                 resultMeta(),
                 rowsAffected(),
                 rowsAffectedIdx(0),
-                executed(false)
+                executed(false),
+                timeout(timeout)
             {
                 // No-op.
             }
@@ -71,7 +72,7 @@ namespace ignite
                     res = MakeRequestExecuteBatch(processed, processed + currentPageSize, lastPage);
 
                     processed += currentPageSize;
-                } while (res == SqlResult::AI_SUCCESS && processed < rowNum);
+                } while ((res == SqlResult::AI_SUCCESS || res == SqlResult::AI_SUCCESS_WITH_INFO) && processed < rowNum);
 
                 params.SetParamsProcessed(static_cast<SqlUlen>(rowsAffected.size()));
 
@@ -147,12 +148,22 @@ namespace ignite
             {
                 const std::string& schema = connection.GetSchema();
 
-                QueryExecuteBatchtRequest req(schema, sql, params, begin, end, last);
+                QueryExecuteBatchtRequest req(schema, sql, params, begin, end, last, timeout);
                 QueryExecuteBatchResponse rsp;
 
                 try
                 {
-                    connection.SyncMessage(req, rsp);
+                    // Setting connection timeout to 1 second more than query timeout itself.
+                    int32_t connectionTimeout = timeout ? timeout + 1 : 0;
+
+                    bool success = connection.SyncMessage(req, rsp, connectionTimeout);
+
+                    if (!success)
+                    {
+                        diag.AddStatusRecord(SqlState::SHYT00_TIMEOUT_EXPIRED, "Query timeout expired");
+
+                        return SqlResult::AI_ERROR;
+                    }
                 }
                 catch (const OdbcError& err)
                 {
@@ -176,7 +187,16 @@ namespace ignite
                     return SqlResult::AI_ERROR;
                 }
 
-                rowsAffected.insert(rowsAffected.end(), rsp.GetAffectedRows().begin(), rsp.GetAffectedRows().end());
+                const std::vector<int64_t>& rowsLastTime = rsp.GetAffectedRows();
+
+                for (size_t i = 0; i < rowsLastTime.size(); ++i)
+                {
+                    int64_t idx = static_cast<int64_t>(i + rowsAffected.size());
+
+                    params.SetParamStatus(idx, rowsLastTime[i] < 0 ? SQL_PARAM_ERROR : SQL_PARAM_SUCCESS);
+                }
+
+                rowsAffected.insert(rowsAffected.end(), rowsLastTime.begin(), rowsLastTime.end());
                 LOG_MSG("Affected rows list size: " << rowsAffected.size());
 
                 if (!rsp.GetErrorMessage().empty())

@@ -22,15 +22,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
-import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorEither;
@@ -87,22 +85,27 @@ public class VisorQueryTask extends VisorOneNodeTask<VisorQueryTaskArg, VisorEit
 
                 long start = U.currentTimeMillis();
 
-                FieldsQueryCursor<List<?>> qryCursor;
+                List<FieldsQueryCursor<List<?>>> qryCursors;
 
                 String cacheName = arg.getCacheName();
 
                 if (F.isEmpty(cacheName))
-                    qryCursor = ignite.context().query().querySqlFieldsNoCache(qry, true);
+                    qryCursors = ignite.context().query().querySqlFields(qry, true, false);
                 else {
                     IgniteCache<Object, Object> c = ignite.cache(cacheName);
 
                     if (c == null)
                         throw new SQLException("Fail to execute query. Cache not found: " + cacheName);
 
-                    qryCursor = c.withKeepBinary().query(qry);
+                    qryCursors = ((IgniteCacheProxy)c.withKeepBinary()).queryMultipleStatements(qry);
                 }
 
-                VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(qryCursor);
+                // In case of multiple statements leave opened only last cursor.
+                for (int i = 0; i < qryCursors.size() - 1; i++)
+                    U.closeQuiet(qryCursors.get(i));
+
+                // In case of multiple statements return last cursor as result.
+                VisorQueryCursor<List<?>> cur = new VisorQueryCursor<>(F.last(qryCursors));
 
                 Collection<GridQueryFieldMetadata> meta = cur.fieldsMeta();
 

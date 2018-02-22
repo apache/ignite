@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.binary;
 
+import com.google.common.collect.ImmutableList;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -96,7 +97,6 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.INSTANCE;
@@ -497,7 +497,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         testMap(new HashMap<Integer, String>());
         testMap(new LinkedHashMap<Integer, String>());
         testMap(new TreeMap<Integer, String>());
-        testMap(new ConcurrentHashMap8<Integer, String>());
+        testMap(new ConcurrentHashMap<Integer, String>());
         testMap(new ConcurrentHashMap<Integer, String>());
     }
 
@@ -940,7 +940,7 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testWriteReplace() throws Exception {
+    public void testWriteReplacePrivate() throws Exception {
         BinaryMarshaller marsh = binaryMarshaller(Collections.singleton(
             new BinaryTypeConfiguration(TestObject.class.getName())
         ));
@@ -952,6 +952,23 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         assertEquals(obj, po.deserialize());
 
         assertEquals(obj.val, ((BinaryObject)po.field("val")).deserialize());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWriteReplaceInheritable() throws Exception {
+        ImmutableList<String> obj = ImmutableList.of("This is a test");
+
+        BinaryMarshaller marsh = binaryMarshaller(Collections.singleton(
+            new BinaryTypeConfiguration(obj.getClass().getName())
+        ));
+
+        BinaryObject po = marshal(obj, marsh);
+
+        Object des = po.deserialize();
+
+        assertEquals(obj, des);
     }
 
     /**

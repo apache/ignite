@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Common
     /// <summary>
     /// IgniteHome resolver.
     /// </summary>
-    internal static class IgniteHome
+    public static class IgniteHome
     {
         /** Environment variable: IGNITE_HOME. */
         internal const string EnvIgniteHome = "IGNITE_HOME";
@@ -57,7 +57,9 @@ namespace Apache.Ignite.Core.Impl.Common
                 throw new IgniteException(string.Format("{0} is not valid: '{1}'", EnvIgniteHome, home));
 
             if (log != null)
-                log.Debug("IgniteHome resolved to '{0}'", home);
+            {
+                log.Debug("IGNITE_HOME resolved to: {0}", home);
+            }
 
             return home;
         }
@@ -110,14 +112,25 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             try
             {
-                return dir.Exists &&
-                       (dir.EnumerateDirectories().Count(x => x.Name == "examples" || x.Name == "bin") == 2 &&
-                        dir.EnumerateDirectories().Count(x => x.Name == "modules" || x.Name == "platforms") == 1)
-                       || // NuGet home
-                       (dir.EnumerateDirectories().Any(x => x.Name == "Libs") &&
-                        (dir.EnumerateFiles("Apache.Ignite.Core.dll").Any() ||
-                         dir.EnumerateFiles("Apache.Ignite.*.nupkg").Any() ||
-                         dir.EnumerateFiles("Apache.Ignite.nuspec").Any()));
+                if (!dir.Exists)
+                {
+                    return false;
+                }
+
+                // Binary release or NuGet home:
+                var libs = Path.Combine(dir.FullName, "libs");
+
+                if (Directory.Exists(libs) &&
+                    Directory.EnumerateFiles(libs, "ignite-core-*.jar", SearchOption.TopDirectoryOnly).Any())
+                {
+                    return true;
+                }
+
+                // Source release home:
+                var javaSrc = Path.Combine(dir.FullName,
+                    "modules", "core", "src", "main", "java", "org", "apache", "ignite");
+
+                return Directory.Exists(javaSrc);
             }
             catch (IOException)
             {

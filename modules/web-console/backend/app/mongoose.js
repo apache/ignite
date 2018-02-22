@@ -17,13 +17,11 @@
 
 'use strict';
 
+const mongoose = require('mongoose');
+
 // Fire me up!
 
 module.exports = {
     implements: 'mongoose',
-    inject: ['require(mongoose)']
-};
-
-module.exports.factory = (mongoose) => {
-    return mongoose;
+    factory: () => mongoose
 };

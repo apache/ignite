@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -53,10 +55,9 @@ import org.h2.table.TableBase;
 import org.h2.table.TableType;
 import org.h2.value.DataType;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.KEY_COL;
 
 /**
@@ -91,13 +92,13 @@ public class GridH2Table extends TableBase {
     private boolean destroyed;
 
     /** */
-    private final ConcurrentMap<Session, Boolean> sessions = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Session, Boolean> sessions = new ConcurrentHashMap<>();
 
     /** */
     private IndexColumn affKeyCol;
 
     /** */
-    private final LongAdder8 size = new LongAdder8();
+    private final LongAdder size = new LongAdder();
 
     /** */
     private final H2RowFactory rowFactory;
@@ -426,9 +427,10 @@ public class GridH2Table extends TableBase {
      *
      * @param row Row to be updated.
      * @param prevRow Previous row.
+     * @param prevRowAvailable Whether previous row is available.
      * @throws IgniteCheckedException If failed.
      */
-    public void update(CacheDataRow row, @Nullable CacheDataRow prevRow)
+    public void update(CacheDataRow row, @Nullable CacheDataRow prevRow, boolean prevRowAvailable)
         throws IgniteCheckedException {
         assert desc != null;
 
@@ -446,9 +448,15 @@ public class GridH2Table extends TableBase {
             try {
                 ensureNotDestroyed();
 
-                boolean replaced = pk().putx(row0);
+                boolean replaced;
 
-                assert (replaced && prevRow != null) || (!replaced && prevRow == null) : "Replaced: " + replaced;
+                if (prevRowAvailable)
+                    replaced = pk().putx(row0);
+                else {
+                    prevRow0 = (GridH2KeyValueRowOnheap)pk().put(row0);
+
+                    replaced = prevRow0 != null;
+                }
 
                 if (!replaced)
                     size.increment();
@@ -917,6 +925,63 @@ public class GridH2Table extends TableBase {
                 catch (ClassNotFoundException e) {
                     throw new IgniteSQLException("H2 data type not found for class: " + col.typeName(), e);
                 }
+            }
+
+            setColumns(newCols);
+
+            desc.refreshMetadataFromTypeDescriptor();
+
+            setModified();
+        }
+        finally {
+            unlock(true);
+        }
+    }
+
+    /**
+     *
+     * @param cols
+     * @param ifExists
+     */
+    public void dropColumns(List<String> cols, boolean ifExists) {
+        assert !ifExists || cols.size() == 1;
+
+        lock(true);
+
+        try {
+            int size = columns.length;
+
+            for (String name : cols) {
+                if (!doesColumnExist(name)) {
+                    if (ifExists && cols.size() == 1)
+                        return;
+                    else
+                        throw new IgniteSQLException("Column does not exist [tblName=" + getName() +
+                            ", colName=" + name + ']');
+                }
+
+                size --;
+            }
+
+            assert size > DEFAULT_COLUMNS_COUNT;
+
+            Column[] newCols = new Column[size];
+
+            int dst = 0;
+
+            for (int i = 0; i < columns.length; i++) {
+                Column column = columns[i];
+
+                for (String name : cols) {
+                    if (F.eq(name, column.getName())) {
+                        column = null;
+
+                        break;
+                    }
+                }
+
+                if (column != null)
+                    newCols[dst++] = column;
             }
 
             setColumns(newCols);

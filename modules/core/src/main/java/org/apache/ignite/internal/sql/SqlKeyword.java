@@ -27,6 +27,9 @@ import java.util.HashSet;
  * SQL keyword constants.
  */
 public class SqlKeyword {
+    /** Keyword: ALTER. */
+    public static final String ALTER = "ALTER";
+
     /** Keyword: ASC. */
     public static final String ASC = "ASC";
 
@@ -39,6 +42,9 @@ public class SqlKeyword {
     /** Keyword: BOOL. */
     public static final String BOOL = "BOOL";
 
+    /** Keyword: PACKET_SIZE. */
+    public static final String PACKET_SIZE = "PACKET_SIZE";
+
     /** Keyword: BOOLEAN. */
     public static final String BOOLEAN = "BOOLEAN";
 
@@ -50,6 +56,9 @@ public class SqlKeyword {
 
     /** Keyword: CHARACTER. */
     public static final String CHARACTER = "CHARACTER";
+
+    /** Keyword: COPY. */
+    public static final String COPY = "COPY";
 
     /** Keyword: CREATE. */
     public static final String CREATE = "CREATE";
@@ -87,6 +96,12 @@ public class SqlKeyword {
     /** Keyword: FLOAT8. */
     public static final String FLOAT8 = "FLOAT8";
 
+    /** Keyword: FORMAT. */
+    public static final String FORMAT = "FORMAT";
+
+    /** Keyword: FROM. */
+    public static final String FROM = "FROM";
+
     /** Keyword: FULLTEXT. */
     public static final String FULLTEXT = "FULLTEXT";
 
@@ -98,6 +113,9 @@ public class SqlKeyword {
 
     /** Keyword: INDEX. */
     public static final String INDEX = "INDEX";
+
+    /** Keyword: INLINE_SIZE. */
+    public static final String INLINE_SIZE = "INLINE_SIZE";
 
     /** Keyword: INT. */
     public static final String INT = "INT";
@@ -114,8 +132,14 @@ public class SqlKeyword {
     /** Keyword: INTEGER. */
     public static final String INTEGER = "INTEGER";
 
+    /** Keyword: INTO. */
+    public static final String INTO = "INTO";
+
     /** Keyword: KEY. */
     public static final String KEY = "KEY";
+
+    /** Keyword: LOGGING. */
+    public static final String LOGGING = "LOGGING";
 
     /** Keyword: LONGVARCHAR. */
     public static final String LONGVARCHAR = "LONGVARCHAR";
@@ -125,6 +149,9 @@ public class SqlKeyword {
 
     /** Keyword: NCHAR. */
     public static final String NCHAR = "NCHAR";
+
+    /** Keyword: NOLOGGING. */
+    public static final String NOLOGGING = "NOLOGGING";
 
     /** Keyword: NOT. */
     public static final String NOT = "NOT";
@@ -197,6 +224,9 @@ public class SqlKeyword {
 
     /** Keyword: YEAR. */
     public static final String YEAR = "YEAR";
+
+    /** Keyword: PARALLEL. */
+    public static final String PARALLEL = "PARALLEL";
 
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;

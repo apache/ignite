@@ -61,6 +61,8 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             File.WriteAllText(path, text);
 
+            Assert.IsTrue(File.Exists(path));
+
             return path;
         }
     }

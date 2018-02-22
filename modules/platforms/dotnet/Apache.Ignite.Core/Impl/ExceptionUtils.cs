@@ -126,9 +126,25 @@ namespace Apache.Ignite.Core.Impl
             BinaryReader reader = null, Exception innerException = null)
         {
             // Set JavaException as immediate inner.
-            innerException = new JavaException(clsName, msg, stackTrace, innerException);
+            var jex = new JavaException(clsName, msg, stackTrace, innerException);
 
+            return GetException(igniteInt, jex, reader);
+        }
+
+        /// <summary>
+        /// Creates exception according to native code class and message.
+        /// </summary>
+        /// <param name="igniteInt">The ignite.</param>
+        /// <param name="innerException">Java exception.</param>
+        /// <param name="reader">Error data reader.</param>
+        /// <returns>Exception.</returns>
+        public static Exception GetException(IIgniteInternal igniteInt, JavaException innerException,
+            BinaryReader reader = null)
+        {
             var ignite = igniteInt == null ? null : igniteInt.GetIgnite();
+
+            var msg = innerException.JavaMessage;
+            var clsName = innerException.JavaClassName;
 
             ExceptionFactory ctor;
 
@@ -157,7 +173,7 @@ namespace Apache.Ignite.Core.Impl
                     "variable?): " + msg, innerException);
 
             if (ClsCachePartialUpdateErr.Equals(clsName, StringComparison.OrdinalIgnoreCase))
-                return ProcessCachePartialUpdateException(igniteInt, msg, stackTrace, reader);
+                return ProcessCachePartialUpdateException(igniteInt, msg, innerException.Message, reader);
 
             // Predefined mapping not found - check plugins.
             if (igniteInt != null && igniteInt.PluginProcessor != null)
