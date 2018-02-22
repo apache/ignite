@@ -58,8 +58,8 @@
 
         <property name="memoryConfiguration">
             <bean class="org.apache.ignite.configuration.MemoryConfiguration">
-                <property name="systemCacheInitialSize" value="#{1024 * 1024}"/>
-                <property name="systemCacheMaxSize" value="#{1024 * 1024}"/>
+                <property name="systemCacheInitialSize" value="#{10 * 1024 * 1024}"/>
+                <property name="systemCacheMaxSize" value="#{10 * 1024 * 1024}"/>
                 <property name="defaultMemoryPolicyName" value="dfltPlc"/>
 
                 <property name="memoryPolicies">
