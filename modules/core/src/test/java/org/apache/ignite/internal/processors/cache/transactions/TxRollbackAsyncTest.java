@@ -664,7 +664,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Locks entry in tx.
+     * Locks entry in tx and delays commit until signalled.
      *
      * @param node Near node.
      * @param keyLocked Latch for notifying until key is locked.
@@ -683,11 +683,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 keyLocked.countDown();
 
-                if (waitCommit != null) {
-                    U.awaitQuiet(waitCommit);
+                U.awaitQuiet(waitCommit);
 
-                    tx.commit();
-                }
+                tx.commit();
             }
         }, 1, "tx-lock-thread");
     }

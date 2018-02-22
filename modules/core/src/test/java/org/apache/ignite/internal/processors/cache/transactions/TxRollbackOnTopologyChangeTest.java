@@ -17,15 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -35,14 +36,13 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionTimeoutException;
 
+import static java.lang.Thread.yield;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -74,6 +74,9 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
     private static final int CLNT_CNT = 2;
 
     /** */
+    private static final int TOTAL_CNT = SRV_CNT + CLNT_CNT;
+
+    /** */
     private static final int RESTART_CNT = 2;
 
     /** */
@@ -90,22 +93,18 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
-        boolean client = igniteInstanceName.startsWith("client");
+        cfg.setClientMode(getTestIgniteInstanceIndex(igniteInstanceName) < SRV_CNT);
 
-        cfg.setClientMode(client);
+        CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
 
-        if (!client) {
-            CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
+        if (nearCacheEnabled())
+            ccfg.setNearConfiguration(new NearCacheConfiguration());
 
-            if (nearCacheEnabled())
-                ccfg.setNearConfiguration(new NearCacheConfiguration());
+        ccfg.setAtomicityMode(TRANSACTIONAL);
+        ccfg.setBackups(2);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
-            ccfg.setAtomicityMode(TRANSACTIONAL);
-            ccfg.setBackups(2);
-            ccfg.setWriteSynchronizationMode(FULL_SYNC);
-
-            cfg.setCacheConfiguration(ccfg);
-        }
+        cfg.setCacheConfiguration(ccfg);
 
         return cfg;
     }
@@ -121,14 +120,7 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        startGrid(0);
-
-        startGridsMultiThreaded(1, SRV_CNT - 1);
-
-        for (int i = 0; i < CLNT_CNT; i++)
-            startClient(i);
-
-        awaitPartitionMapExchange();
+        startGridsMultiThreaded(TOTAL_CNT);
     }
 
     /** {@inheritDoc} */
@@ -150,22 +142,70 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
         log.info("Using seed: " + seed);
 
-        AtomicIntegerArray idx = new AtomicIntegerArray(SRV_CNT + CLNT_CNT);
+        AtomicIntegerArray idx = new AtomicIntegerArray(TOTAL_CNT);
+
+        final int cardinality = Runtime.getRuntime().availableProcessors() * 2;
+
+        for (int k = 0; k < cardinality; k++)
+            grid(0).cache(CACHE_NAME).put(k, (long)0);
+
+        final CyclicBarrier b = new CyclicBarrier(cardinality);
 
         final IgniteInternalFuture<?> txFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
-                while (!stop.get()) {
+                List<Integer> keys = new ArrayList<>();
 
+                for (int k = 0; k < cardinality; k++)
+                    keys.add(k);
+
+                while (!stop.get()) {
+                    final int nodeId = r.nextInt(TOTAL_CNT);
+
+                    if (idx.get(nodeId) == 0) {
+                        final IgniteEx grid = grid(nodeId);
+
+                        try(final Transaction tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+                            // Construct deadlock
+                            Collections.shuffle(keys);
+
+                            for (Integer key : keys)
+                                grid.cache(CACHE_NAME).get(key);
+
+                            U.awaitQuiet(b);
+
+                            // Should block.
+                            grid.cache(CACHE_NAME).get(r.nextInt(cardinality));
+
+                            fail("Deadlock expected");
+
+                            tx.commit();
+                        }
+                    }
                 }
             }
-        }, Runtime.getRuntime().availableProcessors() * 2, "tx-thread");
+        }, cardinality, "tx-thread");
 
-
-        final IgniteInternalFuture<?> rollbackFut = multithreadedAsync(new Runnable() {
-            @Override public void run() {
+        final IgniteInternalFuture<?> restartFut = multithreadedAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
                 while(!stop.get()) {
+                    final int nodeId = r.nextInt(TOTAL_CNT);
 
+                    if (!idx.compareAndSet(nodeId, 0, 1)) {
+                        yield();
+
+                        continue;
+                    }
+
+                    stopGrid(nodeId);
+
+                    doSleep(500 + r.nextInt(1000));
+
+                    startGrid(nodeId);
+
+                    idx.set(nodeId, 0);
                 }
+
+                return null;
             }
         }, RESTART_CNT, "tx-thread");
 
@@ -175,28 +215,9 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
         txFut.get();
 
-        rollbackFut.get();
+        restartFut.get();
 
         checkFutures();
-    }
-
-    /**
-     * @param idx Client index.
-     *
-     * @return Started client.
-     * @throws Exception If failed.
-     */
-    private Ignite startClient(int idx) throws Exception {
-        Ignite client = startGrid("client" + idx);
-
-        assertTrue(client.configuration().isClientMode());
-
-        if (nearCacheEnabled())
-            client.createNearCache(CACHE_NAME, new NearCacheConfiguration<>());
-        else
-            assertNotNull(client.cache(CACHE_NAME));
-
-        return client;
     }
 
     /**
