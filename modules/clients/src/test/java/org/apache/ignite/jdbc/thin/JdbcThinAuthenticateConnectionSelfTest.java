@@ -70,6 +70,8 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
 
         startGrids(2);
 
+        grid(0).cluster().active(true);
+
         AuthorizationContext.context(grid(0).context().authentication().authenticate("ignite", "ignite"));
 
         grid(0).context().authentication().addUser("another_user", "passwd");
