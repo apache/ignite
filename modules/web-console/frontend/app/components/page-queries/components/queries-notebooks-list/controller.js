@@ -23,14 +23,16 @@ export class NotebooksListCtrl {
     constructor(IgniteNotebook, $scope) {
         Object.assign(this, { IgniteNotebook, $scope });
 
-        this.categories = [
+        const notebookNameTemplate = `<div class="ui-grid-cell-contents"><a ui-sref="base.sql.tabs.notebook({ noteId: row.entity._id })">{{ row.entity.name }}</a></div>`;
+
+        const categories = [
             { name: 'Name', visible: true, enableHiding: false },
             { name: 'SQL Query', visible: true, enableHiding: false, enableFiltering: false },
             { name: 'Scan Query', visible: true, enableHiding: false, enableFiltering: false }
         ];
 
-        this.columnDefs = [
-            { name: 'name', displayName: 'Name', categoryDisplayName: 'Name', field: 'name', minWidth: 150, width: 550, filter: { placeholder: 'Filter by Name...' } },
+        const columnDefs = [
+            { name: 'name', displayName: 'Name', categoryDisplayName: 'Name', field: 'name', cellTemplate: notebookNameTemplate, minWidth: 150, width: 550, filter: { placeholder: 'Filter by Name...' } },
             { name: 'sqlQueryNum', displayName: 'SQL Query', categoryDisplayName: 'SQL Query', field: 'sqlQueryNum', minWidth: 150, width: 150 },
             { name: 'scanQueryNum', displayName: 'Scan Query', categoryDisplayName: 'Scan Query', field: 'scanQueryNum', minWidth: 150, width: 150 }
         ];
@@ -38,8 +40,8 @@ export class NotebooksListCtrl {
         this.gridOptions = {
             data: [],
 
-            categories: this.categories,
-            columnDefs: this.columnDefs,
+            categories,
+            columnDefs,
             headerTemplate,
 
             rowHeight: 46,
