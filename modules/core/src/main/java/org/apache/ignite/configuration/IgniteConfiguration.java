@@ -42,6 +42,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.IgniteFailureHandler;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -486,6 +487,9 @@ public class IgniteConfiguration {
     /** Client connector configuration. */
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
+    /** Ignite failure handler. */
+    private IgniteFailureHandler igniteFailureHnd;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -544,6 +548,7 @@ public class IgniteConfiguration {
         hadoopCfg = cfg.getHadoopConfiguration();
         igfsCfg = cfg.getFileSystemConfiguration();
         igfsPoolSize = cfg.getIgfsThreadPoolSize();
+        igniteFailureHnd = cfg.getIgniteFailureHandler();
         igniteHome = cfg.getIgniteHome();
         igniteInstanceName = cfg.getIgniteInstanceName();
         igniteWorkDir = cfg.getWorkDirectory();
@@ -2914,6 +2919,25 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setClientConnectorConfiguration(@Nullable ClientConnectorConfiguration cliConnCfg) {
         this.cliConnCfg = cliConnCfg;
+
+        return this;
+    }
+
+    /**
+     * Gets custom failure handler.
+     */
+    public IgniteFailureHandler getIgniteFailureHandler() {
+        return igniteFailureHnd;
+    }
+
+    /**
+     * Sets custom failure handler.
+     *
+     * @param igniteFailureHnd Failure handler.
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setIgniteFailureHandler(IgniteFailureHandler igniteFailureHnd) {
+        this.igniteFailureHnd = igniteFailureHnd;
 
         return this;
     }

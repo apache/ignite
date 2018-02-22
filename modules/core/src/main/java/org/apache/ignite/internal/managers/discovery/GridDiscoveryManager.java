@@ -58,6 +58,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.failure.IgniteFailureContext;
+import org.apache.ignite.failure.IgniteFailureType;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -92,7 +94,6 @@ import org.apache.ignite.internal.util.lang.GridTuple6;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -155,7 +156,6 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.SERVICE_PERMISSIONS_SINCE;
 import static org.apache.ignite.internal.processors.security.SecurityUtils.isSecurityCompatibilityMode;
-import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
 
 /**
  * Discovery SPI manager.
@@ -2373,32 +2373,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         cacheNodes.add(rich);
     }
 
-    /** Stops local node. */
-    private void stopNode() {
-        new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    ctx.markSegmented();
-
-                    G.stop(ctx.igniteInstanceName(), true);
-                }
-            }
-        ).start();
-    }
-
-    /** Restarts JVM. */
-    private void restartJvm() {
-        new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    ctx.markSegmented();
-
-                    G.restart(true);
-                }
-            }
-        ).start();
-    }
-
     /** Worker for network segment checks. */
     private class SegmentCheckWorker extends GridWorker {
         /** */
@@ -2775,22 +2749,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
 
             switch (segPlc) {
-                case RESTART_JVM:
-                    U.warn(log, "Restarting JVM according to configured segmentation policy.");
-
-                    restartJvm();
+                case STOP:
+                    ctx.failure().stopNode(new IgniteFailureContext(IgniteFailureType.SEGMENTATION, null));
 
                     break;
 
-                case STOP:
-                    U.warn(log, "Stopping local node according to configured segmentation policy.");
-
-                    stopNode();
+                case RESTART_JVM:
+                    ctx.failure().restartJvm(new IgniteFailureContext(IgniteFailureType.SEGMENTATION, null));
 
                     break;
 
                 default:
-                    assert segPlc == NOOP : "Unsupported segmentation policy value: " + segPlc;
+                    assert segPlc == SegmentationPolicy.NOOP : "Unsupported segmentation policy value: " + segPlc;
             }
         }
 
