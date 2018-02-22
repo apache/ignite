@@ -1094,8 +1094,8 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
                 DiscoveryDataClusterState state = globalState;
 
-                if (state.transition())
-                    state.setTransitionResult(req.requestId(), req.activate());
+                if (state.transition() && state.transitionRequestId().equals(req.requestId()))
+                    state.setTransitionResult(req.activate());
             }
 
             sendChangeGlobalStateResponse(req.requestId(), req.initiatorNodeId(), null);

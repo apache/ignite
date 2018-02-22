@@ -174,20 +174,6 @@ public final class DiscoveryDataClusterState implements Serializable {
      * Discovery cluster state is changed asynchronously by discovery message, this methods changes local status
      * for public API calls.
      *
-     * @param reqId Request ID.
-     * @param active New cluster state.
-     */
-    public void setTransitionResult(UUID reqId, boolean active) {
-        assert transitionFut != null;
-
-        if (reqId.equals(transitionReqId))
-            transitionFut.onDone(active);
-    }
-
-    /**
-     * Discovery cluster state is changed asynchronously by discovery message, this methods changes local status
-     * for public API calls.
-     *
      * @param active New cluster state.
      */
     public void setTransitionResult(boolean active) {
