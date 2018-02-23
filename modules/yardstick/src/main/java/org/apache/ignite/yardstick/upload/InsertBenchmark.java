@@ -17,6 +17,7 @@
 
 package org.apache.ignite.yardstick.upload;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -28,35 +29,10 @@ import org.apache.ignite.yardstick.jdbc.AbstractJdbcBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
-public class InsertBenchmark extends AbstractJdbcBenchmark {
-    /** Rows count to be inserted and deleted during warmup */
-    public static final int WARMUP_ROWS_CNT = 10_000;
-
-    /** Total inserts size */
-    public int INSERT_SIZE;
-
-    private QueryFactory queries = new QueryFactory();
-
+public class InsertBenchmark extends AbstractUploadBenchmark {
     /** {@inheritDoc} */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-
-        INSERT_SIZE = args.range();
-
-        warmup();
-    }
-
-    /** create empty table */
-    // todo: use args.range == 0 ?
-    @Override protected void setupData(){
-        SqlFieldsQuery qry = new SqlFieldsQuery(queries.createTable());
-        GridQueryProcessor qProc = ((IgniteEx)ignite()).context().query();
-        qProc.querySqlFields(qry, false);
-
-    }
-
-    private void warmup() throws SQLException {
-        try (PreparedStatement insert = conn.get().prepareStatement(queries.insert())) {
+    @Override public void warmup(Connection warmupConn) throws SQLException {
+        try (PreparedStatement insert = warmupConn.prepareStatement(queries.insert())) {
             for (int id = 1; id <= WARMUP_ROWS_CNT ; id++) {
                 queries.setRandomInsertArgs(insert, id);
 
@@ -64,41 +40,19 @@ public class InsertBenchmark extends AbstractJdbcBenchmark {
             }
         }
 
-        try(PreparedStatement delete = conn.get().prepareStatement(queries.deleteAll())){
-            // todo: Should we perform subsequent insert+delete in warmup?
-            delete.executeUpdate();
-        }
+        clearTable();
     }
 
 
     /** Sequence of single inserts */
-    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+    @Override public void upload (Connection uploadConn) throws Exception {
         for (int id = 1; id <= INSERT_SIZE; id++) {
-            try (PreparedStatement insert = conn.get().prepareStatement(queries.insert())) {
+            try (PreparedStatement insert = uploadConn.prepareStatement(queries.insert())) {
                 queries.setRandomInsertArgs(insert, id);
 
                 insert.executeUpdate();
             }
 
         }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void tearDown() throws Exception {
-        try(PreparedStatement count = conn.get().prepareStatement(queries.count())){
-            try (ResultSet rs = count.executeQuery()) {
-                rs.next();
-                long size = rs.getLong(1);
-
-                BenchmarkUtils.println(cfg, "Test table `test_long' contains " + size + " rows");
-                // todo assert size == threads * sqlRange
-            }
-        } catch (Exception ex){
-            BenchmarkUtils.println(cfg, "Exception thrown at tear down: " + ex);
-        }
-
-        super.tearDown();
     }
 }

@@ -17,10 +17,13 @@
 
 package org.apache.ignite.yardstick.upload;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.Map;
 
+/**
+ * Measures time of data upload using batched insert.
+ */
 public class BatchedInsertBenchmark extends AbstractUploadBenchmark {
     /** Number of inserts in batch */
     public int BATCH_SIZE;
@@ -31,38 +34,33 @@ public class BatchedInsertBenchmark extends AbstractUploadBenchmark {
     }
 
     /** {@inheritDoc} */
-    @Override protected void warmup() throws SQLException {
-        try (PreparedStatement insert = conn.get().prepareStatement(queries.insert())) {
-            for (int id = 1; id <= WARMUP_ROWS_CNT ; id++) {
+    @Override protected void warmup(Connection warmupConn) throws SQLException {
+        performBatchUpdate(warmupConn, WARMUP_ROWS_CNT);
+
+        clearTable();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void upload(Connection uploadConn) throws Exception {
+        performBatchUpdate(uploadConn, INSERT_SIZE);
+    }
+
+    /**
+     * Actually performs batched inserts, using specified connection.
+     *
+     * @param uploadConn Special connection for upload purposes.
+     * @param rowsCount Number of rows to insert.
+     */
+    private void performBatchUpdate(Connection uploadConn, long rowsCount) throws SQLException{
+        try (PreparedStatement insert = uploadConn.prepareStatement(queries.insert())) {
+            for (int id = 1; id <= rowsCount; id++) {
                 queries.setRandomInsertArgs(insert, id);
 
                 insert.addBatch();
 
-                if (id % BATCH_SIZE == 0 || id == WARMUP_ROWS_CNT)
-                    insert.executeBatch();
-
-            }
-        }
-
-        try(PreparedStatement delete = conn.get().prepareStatement(queries.deleteAll())){
-            // todo: Should we perform subsequent insert+delete in warmup?
-            delete.executeUpdate();
-        }
-    }
-
-
-    /** Sequence of single inserts */
-    @Override public void upload() throws Exception {
-        try (PreparedStatement insert = conn.get().prepareStatement(queries.insert())) {
-            for (int id = 1; id <= INSERT_SIZE; id++) {
-                queries.setRandomInsertArgs(insert, id);
-
-                insert.addBatch();
-
-                if (id % BATCH_SIZE == 0 || id == INSERT_SIZE)
+                if (id % BATCH_SIZE == 0 || id == rowsCount)
                     insert.executeBatch();
             }
         }
     }
-
 }

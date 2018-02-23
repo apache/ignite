@@ -19,6 +19,7 @@ package org.apache.ignite.yardstick.upload;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.util.Map;
 import org.yardstickframework.BenchmarkUtils;
@@ -96,22 +97,18 @@ public class CopyBenchmark extends AbstractUploadBenchmark {
     }
 
     /** {@inheritDoc} */
-    @Override protected void warmup() throws Exception {
-        try (PreparedStatement fromCsv = conn.get().prepareStatement(queries.copyFrom(warmupCsv))) {
+    @Override protected void warmup(Connection warmupConn) throws Exception {
+        try (PreparedStatement fromCsv = warmupConn.prepareStatement(queries.copyFrom(warmupCsv))) {
             fromCsv.executeUpdate();
         }
 
-        try (PreparedStatement clean = conn.get().prepareStatement(queries.deleteAll())) {
-            clean.executeUpdate();
-        }
+        clearTable();
     }
 
     /** {@inheritDoc} */
-    @Override public void upload() throws Exception {
-        try (PreparedStatement fromCsv = conn.get().prepareStatement(queries.copyFrom(realCsv))) {
+    @Override public void upload(Connection uploadConn) throws Exception {
+        try (PreparedStatement fromCsv = uploadConn.prepareStatement(queries.copyFrom(realCsv))) {
             fromCsv.executeUpdate();
         }
-
-        //TODO: assert count
     }
 }

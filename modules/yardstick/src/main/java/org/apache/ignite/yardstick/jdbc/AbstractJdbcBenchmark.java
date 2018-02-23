@@ -48,7 +48,7 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
     protected ThreadLocal<Connection> conn = new ThreadLocal<Connection>() {
         @Override protected Connection initialValue() {
             try {
-                Connection conn = connection();
+                Connection conn = connection(url);
 
                 synchronized (threadConnections) {
                     threadConnections.add(conn);
@@ -140,7 +140,7 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
      * @return JDBC connection.
      * @throws SQLException On error.
      */
-    private Connection connection() throws SQLException {
+    protected final Connection connection(String url) throws SQLException {
         println("JDBC connect to: " + url);
 
         Connection conn = DriverManager.getConnection(url);
@@ -166,5 +166,9 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
                 }
             }
         };
+    }
+
+    protected String url(){
+        return url;
     }
 }

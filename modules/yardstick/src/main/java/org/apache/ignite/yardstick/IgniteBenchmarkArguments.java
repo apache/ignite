@@ -270,6 +270,12 @@ public class IgniteBenchmarkArguments {
             "and turn it on again when upload is done")
     private boolean switchWal = false;
 
+    @Parameter(names = {"--sql-jdbc-params"},
+        description = "Upload benchmark only" +
+            "Additional url parameters for special jdbc connection that only uploads data. " +
+            "Format is url parameters (comma separated key=value) without leading ?")
+    private String uploadJdbcParams = "";
+
     /**
      * @return {@code True} if need set {@link DataStorageConfiguration}.
      */
@@ -668,6 +674,11 @@ public class IgniteBenchmarkArguments {
      */
     public boolean switchWal() {
         return switchWal;
+    }
+
+    /** @return parameters for jdbc url */
+    public String uploadJdbcParams(){
+        return uploadJdbcParams;
     }
 
     /** {@inheritDoc} */

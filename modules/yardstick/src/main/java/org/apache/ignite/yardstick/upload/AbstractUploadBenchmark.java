@@ -17,6 +17,7 @@
 
 package org.apache.ignite.yardstick.upload;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -62,7 +63,9 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         if (args.switchWal())
             executeUpdate(queries.turnOffWal());
 
-        warmup();
+        try (Connection warmupConn = uploadConnection()) {
+            warmup(warmupConn);
+        }
 
         if (args.switchWal())
             executeUpdate(queries.turnOnWal());
@@ -72,25 +75,27 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     }
 
     /**
-     * Method to warm up Benchmark server
+     * Method to warm up Benchmark server. <br/>
      * In upload benchmarks we need warmup action
-     * and real test action to be separated
+     * and real test action to be separated.
      */
-    protected abstract void warmup() throws Exception;
+    protected abstract void warmup(Connection warmupConn) throws Exception;
 
     /** create empty table */
     @Override protected void setupData() throws Exception{
         dropAndCreate();
     }
 
-    protected abstract void upload() throws Exception;
+    protected abstract void upload(Connection uploadConn) throws Exception;
 
     /** {@inheritDoc} */
     @Override public final boolean test(Map<Object, Object> ctx) throws Exception {
         if (args.switchWal())
             executeUpdate(queries.turnOffWal());
 
-        upload();
+        try (Connection uploadConn = uploadConnection()) {
+            upload(uploadConn);
+        }
 
         if (args.switchWal())
             executeUpdate(queries.turnOnWal());
@@ -99,7 +104,7 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     }
 
     /** Drops and re-creates test table */
-    private void dropAndCreate() throws SQLException{
+    protected final void dropAndCreate() throws SQLException{
         try (PreparedStatement drop = conn.get().prepareStatement(queries.dropTableIfExists())) {
             drop.executeUpdate();
         }
@@ -109,6 +114,10 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         }
     }
 
+    /** Clears all the data in the test table */
+    protected final void clearTable() throws SQLException {
+        executeUpdate(queries.deleteAll());
+    }
     /** {@inheritDoc} */
     public void tearDown() throws Exception {
         try(PreparedStatement count = conn.get().prepareStatement(queries.count())){
@@ -132,5 +141,19 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         try(PreparedStatement update = conn.get().prepareStatement(updQry)){
             return update.executeUpdate();
         }
+    }
+
+
+    /**
+     *  Creates new connection only for upload purpose
+     *  This connection is special, since it may have additional jdbc url parameters
+     */
+    private Connection uploadConnection() throws SQLException{
+        String params = args.uploadJdbcParams();
+
+        if (!params.isEmpty())
+            params = "?" + params;
+
+        return connection(url() + params);
     }
 }
