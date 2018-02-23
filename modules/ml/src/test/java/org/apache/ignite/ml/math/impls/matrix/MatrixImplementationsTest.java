@@ -927,6 +927,23 @@ public class MatrixImplementationsTest extends ExternalizeTest<Matrix> {
     }
 
     /** */
+    @Test
+    public void testGetRowCol() {
+        consumeSampleMatrix((m, desc) -> {
+            if (!(m instanceof RandomMatrix))
+                for (int i = 0; i < m.rowSize(); i++)
+                    for (int j = 0; j < m.columnSize(); j++)
+                        m.setX(i, j, i + j);
+
+            for (int i = 0; i < m.rowSize(); i++)
+                assertNotNull("Unexpected value for " + desc + " at row " + i, m.getRow(i));
+
+            for (int i = 0; i < m.columnSize(); i++)
+                assertNotNull("Unexpected value for " + desc + " at col " + i, m.getCol(i));
+        });
+    }
+
+    /** */
     private double[] fillArray(int len) {
         double[] newValues = new double[len];
 

@@ -38,9 +38,9 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.MemoryConfiguration;
-import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.store.PageStore;
@@ -48,17 +48,17 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
-import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
+import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeListImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -105,20 +105,20 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         else
             cfg.setCacheConfiguration(ccfg);
 
-        MemoryConfiguration dbCfg = new MemoryConfiguration();
+        DataStorageConfiguration dbCfg = new DataStorageConfiguration();
 
         dbCfg.setPageSize(pageSize);
 
-        cfg.setMemoryConfiguration(dbCfg);
+        dbCfg.setWalHistorySize(WAL_HIST_SIZE);
 
-        PersistentStoreConfiguration pCfg = new PersistentStoreConfiguration();
-
-        pCfg.setWalHistorySize(WAL_HIST_SIZE);
+        dbCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+            .setMaxSize(100 * 1024 * 1024)
+            .setPersistenceEnabled(true));
 
         if (checkpointFreq != null)
-            pCfg.setCheckpointingFrequency(checkpointFreq);
+            dbCfg.setCheckpointFrequency(checkpointFreq);
 
-        cfg.setPersistentStoreConfiguration(pCfg);
+        cfg.setDataStorageConfiguration(dbCfg);
 
         cfg.setMarshaller(null);
 
@@ -133,12 +133,12 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        cleanPersistenceDir();
     }
 
     /**
@@ -487,7 +487,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
 
             File[] cpFiles = cpDir.listFiles();
 
-            assertTrue(cpFiles.length <= WAL_HIST_SIZE * 2);
+            assertTrue(cpFiles.length <= WAL_HIST_SIZE * 2 + 1); // starts & ends + node_start
         }
         finally {
             stopAllGrids();
@@ -895,14 +895,14 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
         boolean foundTails = false;
 
         for (GridDhtLocalPartition part : parts) {
-            FreeListImpl freeList = GridTestUtils.getFieldValue(part.dataStore(), "freeList");
+            CacheFreeListImpl freeList = GridTestUtils.getFieldValue(part.dataStore(), "freeList");
 
             if (freeList == null)
                 // Lazy store.
                 continue;
 
             AtomicReferenceArray<PagesList.Stripe[]> buckets = GridTestUtils.getFieldValue(freeList,
-                FreeListImpl.class, "buckets");
+                AbstractFreeList.class, "buckets");
             //AtomicIntegerArray cnts = GridTestUtils.getFieldValue(freeList, PagesList.class, "cnts");
 
             assertNotNull(buckets);

@@ -123,6 +123,11 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
     }
 
     /** {@inheritDoc} */
+    @Override public int accessMode() {
+        return StorageConstants.RANDOM_ACCESS_MODE;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isArrayBased() {
         return false;
     }
@@ -205,7 +210,7 @@ public class DenseOffHeapMatrixStorage implements MatrixStorage {
 
     /** */
     private void allocateMemory(int rows, int cols) {
-        ptr = GridUnsafe.allocateMemory(rows * cols * Double.BYTES);
+        ptr = GridUnsafe.allocateMemory((long)rows * cols * Double.BYTES);
 
         ptrInitHash = Long.hashCode(ptr);
     }

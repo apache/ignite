@@ -27,6 +27,7 @@ nobase_include_HEADERS = \
 	ignite/common/reference_impl.h \
 	ignite/common/dynamic_size_array.h \
 	ignite/common/fixed_size_array.h \
+	ignite/common/lazy.h \
 	ignite/common/utils.h \
 	ignite/common/platform_utils.h \
 	ignite/common/shared_state.h \

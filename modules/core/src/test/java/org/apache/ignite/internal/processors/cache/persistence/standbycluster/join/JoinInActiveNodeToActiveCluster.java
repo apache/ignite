@@ -294,7 +294,7 @@ public class JoinInActiveNodeToActiveCluster extends AbstractNodeJoinTemplate {
 
                         Map<String, DynamicCacheDescriptor> desc = cacheDescriptors(ig);
 
-                        Assert.assertEquals(4, desc.size());
+                        Assert.assertEquals(3, desc.size());
 
                         if (!ig.context().discovery().localNode().isClient()) {
                             Assert.assertNotNull(ig.context().cache().cache(cache1));
@@ -307,7 +307,7 @@ public class JoinInActiveNodeToActiveCluster extends AbstractNodeJoinTemplate {
 
                         Map<String, GridCacheAdapter> caches = caches(ig);
 
-                        Assert.assertEquals(4, caches.size());
+                        Assert.assertEquals(3, caches.size());
                     }
                 }
             });

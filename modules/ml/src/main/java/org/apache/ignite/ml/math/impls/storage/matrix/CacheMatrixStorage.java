@@ -22,10 +22,10 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.ml.math.MatrixKeyMapper;
 import org.apache.ignite.ml.math.MatrixStorage;
 import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.ValueMapper;
+import org.apache.ignite.ml.math.distributed.MatrixKeyMapper;
+import org.apache.ignite.ml.math.distributed.ValueMapper;
 
 /**
  * Matrix storage based on arbitrary cache and key and value mapping functions.
@@ -115,6 +115,11 @@ public class CacheMatrixStorage<K, V> implements MatrixStorage {
     /** {@inheritDoc} */
     @Override public int storageMode() {
         return StorageConstants.ROW_STORAGE_MODE;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int accessMode() {
+        return StorageConstants.RANDOM_ACCESS_MODE;
     }
 
     /** {@inheritDoc} */

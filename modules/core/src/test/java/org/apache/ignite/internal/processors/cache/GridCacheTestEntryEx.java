@@ -27,11 +27,13 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionedEntryEx;
 import org.apache.ignite.internal.processors.dr.GridDrType;
+import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheFilter;
 import org.apache.ignite.internal.processors.query.schema.SchemaIndexCacheVisitorClosure;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple3;
@@ -457,7 +459,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return new GridCacheUpdateTxResult(true, rawPut(val, ttl));
+        return new GridCacheUpdateTxResult(true, rawPut(val, ttl), null);
     }
 
     /** {@inheritDoc} */
@@ -543,7 +545,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
         val = null;
 
-        return new GridCacheUpdateTxResult(true, old);
+        return new GridCacheUpdateTxResult(true, old, null);
     }
 
     /** @inheritDoc */
@@ -816,11 +818,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public void ensureIndexed() throws GridCacheEntryRemovedException, IgniteCheckedException {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public CacheObject unswap() throws IgniteCheckedException {
         return null;
     }
@@ -831,13 +828,18 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
+    @Override public CacheObject unswap(CacheDataRow row) throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean hasLockCandidate(long threadId) throws GridCacheEntryRemovedException {
         return localCandidate(threadId) != null;
     }
 
     /** {@inheritDoc} */
-    @Override public void updateIndex(SchemaIndexCacheVisitorClosure clo, long link) throws IgniteCheckedException,
-        GridCacheEntryRemovedException {
+    @Override public void updateIndex(SchemaIndexCacheFilter filter, SchemaIndexCacheVisitorClosure clo)
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
         // No-op.
     }
 
@@ -875,5 +877,20 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @Override public void onUnlock() {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void lockEntry() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unlockEntry() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean lockedByCurrentThread() {
+        return false;
     }
 }

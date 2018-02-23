@@ -56,7 +56,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
@@ -76,10 +76,10 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     private static final long serialVersionUID = 0L;
 
     /** Near mappings. */
-    protected Map<UUID, GridDistributedTxMapping> nearMap = new ConcurrentHashMap8<>();
+    protected Map<UUID, GridDistributedTxMapping> nearMap = new ConcurrentHashMap<>();
 
     /** DHT mappings. */
-    protected Map<UUID, GridDistributedTxMapping> dhtMap = new ConcurrentHashMap8<>();
+    protected Map<UUID, GridDistributedTxMapping> dhtMap = new ConcurrentHashMap<>();
 
     /** Mapped flag. */
     protected volatile boolean mapped;
@@ -474,13 +474,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             IgniteTxEntry existing = entry(e.txKey());
 
             if (existing != null) {
-                // Must keep NOOP operation if received READ because it means that the lock was sent to a backup node.
-                if (e.op() == READ) {
-                    if (existing.op() != NOOP)
-                        existing.op(e.op());
-                }
-                else
-                    existing.op(e.op()); // Absolutely must set operation, as default is DELETE.
+                existing.op(e.op()); // Absolutely must set operation, as default is DELETE.
 
                 existing.value(e.value(), e.hasWriteValue(), e.hasReadValue());
                 existing.entryProcessors(e.entryProcessors());
@@ -734,7 +728,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"CatchGenericClass", "ThrowableInstanceNeverThrown"})
-    @Override public boolean localFinish(boolean commit) throws IgniteCheckedException {
+    @Override public boolean localFinish(boolean commit, boolean clearThreadMap) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Finishing dht local tx [tx=" + this + ", commit=" + commit + "]");
 
@@ -773,7 +767,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             if (commit && !isRollbackOnly())
                 userCommit();
             else
-                userRollback();
+                userRollback(clearThreadMap);
         }
         catch (IgniteCheckedException e) {
             err = e;

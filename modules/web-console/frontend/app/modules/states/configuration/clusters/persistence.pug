@@ -20,7 +20,7 @@ include /app/helpers/jade/mixins
 -var model = 'backupItem.persistenceStoreConfiguration'
 -var enabled = model + '.enabled'
 
-.panel.panel-default(ng-show='$ctrl.available("2.1.0")' ng-form=form novalidate)
+.panel.panel-default(ng-show='$ctrl.available(["2.1.0", "2.3.0"])' ng-form=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
         label Persistence store
@@ -29,7 +29,7 @@ include /app/helpers/jade/mixins
         //- TODO IGNITE-5415 Add link to documentation.
         ignite-form-revert
     .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .panel-body(ng-if=`$ctrl.available("2.1.0") && ui.isPanelLoaded('${form}')`)
+        .panel-body(ng-if=`$ctrl.available(["2.1.0", "2.3.0"]) && ui.isPanelLoaded('${form}')`)
             .col-sm-6
                 .settings-row
                     +checkbox('Enabled', enabled, '"PersistenceEnabled"', 'Flag indicating whether to configure persistent configuration')

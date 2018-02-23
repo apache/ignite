@@ -60,13 +60,18 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.processors.cache.CacheObjectByteArrayImpl;
+import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
+import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectByteArrayImpl;
+import org.apache.ignite.internal.processors.cacheobject.UserCacheObjectImpl;
+import org.apache.ignite.internal.processors.cacheobject.UserKeyCacheObjectImpl;
 import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
@@ -642,7 +647,6 @@ public class BinaryUtils {
         return cls == HashMap.class ||
             cls == LinkedHashMap.class ||
             (!wrapTrees() && cls == TreeMap.class) ||
-            cls == ConcurrentHashMap8.class ||
             cls == ConcurrentHashMap.class;
     }
 
@@ -662,8 +666,6 @@ public class BinaryUtils {
             return U.newLinkedHashMap(((Map)map).size());
         else if (!wrapTrees() && cls == TreeMap.class)
             return new TreeMap<>(((TreeMap<Object, Object>)map).comparator());
-        else if (cls == ConcurrentHashMap8.class)
-            return new ConcurrentHashMap8<>(U.capacity(((Map)map).size()));
         else if (cls == ConcurrentHashMap.class)
             return new ConcurrentHashMap<>(U.capacity(((Map)map).size()));
 
@@ -682,8 +684,6 @@ public class BinaryUtils {
             return U.newLinkedHashMap(map.size());
         else if (map instanceof TreeMap)
             return new TreeMap<>(((TreeMap<Object, Object>)map).comparator());
-        else if (map instanceof ConcurrentHashMap8)
-            return new ConcurrentHashMap8<>(U.capacity(map.size()));
         else if (map instanceof ConcurrentHashMap)
             return new ConcurrentHashMap<>(U.capacity(map.size()));
 
@@ -704,6 +704,26 @@ public class BinaryUtils {
             cls == ArrayList.class ||
             cls == LinkedList.class ||
             cls == SINGLETON_LIST_CLS;
+    }
+
+    /**
+     * @param obj Object to check.
+     * @return True if this is an object of a known type.
+     */
+    public static boolean knownCacheObject(Object obj) {
+        if (obj == null)
+            return false;
+
+        Class<?> cls= obj.getClass();
+
+        return cls == KeyCacheObjectImpl.class ||
+            cls == BinaryObjectImpl.class ||
+            cls == CacheObjectImpl.class ||
+            cls == CacheObjectByteArrayImpl.class ||
+            cls == BinaryEnumObjectImpl.class ||
+            cls == UserKeyCacheObjectImpl.class ||
+            cls == UserCacheObjectImpl.class ||
+            cls == UserCacheObjectByteArrayImpl.class;
     }
 
     /**

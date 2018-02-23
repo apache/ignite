@@ -158,6 +158,12 @@ mixin td-ellipses-lbl(w, lbl)
                         .settings-row
                             +checkbox('Use primitive types for NOT NULL table columns', 'ui.usePrimitives', '"domainUsePrimitives"', 'Use primitive types like "int", "long", "double" for POJOs fields generation in case of NOT NULL columns')
                         .settings-row
+                            +checkbox('Generate query entity key fields', 'ui.generateKeyFields', '"generateKeyFields"',
+                                'Generate key fields for query entity.<br\>\
+                                We need this for the cases when no key-value classes\
+                                are present on cluster nodes, and we need to build/modify keys and values during SQL DML operations.\
+                                Thus, setting this parameter is not mandatory and should be based on particular use case.')
+                        .settings-row
                             +checkbox('Generate POJO classes', generatePojo, '"domainGeneratePojo"', 'If selected then POJO classes will be generated from database tables')
                         .settings-row(ng-show=generatePojo)
                             +checkbox('Generate aliases for query entity', 'ui.generateTypeAliases', '"domainGenerateTypeAliases"', 'Generate aliases for query entity if table name is invalid Java identifier')

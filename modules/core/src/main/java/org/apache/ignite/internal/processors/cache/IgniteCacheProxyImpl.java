@@ -36,6 +36,8 @@ import javax.cache.Cache;
 import javax.cache.CacheException;
 import javax.cache.configuration.CacheEntryListenerConfiguration;
 import javax.cache.configuration.Configuration;
+import javax.cache.configuration.Factory;
+import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.integration.CompletionListener;
 import javax.cache.processor.EntryProcessor;
@@ -46,11 +48,15 @@ import org.apache.ignite.IgniteCacheRestartingException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheEntry;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheManager;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.AbstractContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer;
+import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
@@ -62,6 +68,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.IgniteEx;
@@ -92,6 +99,7 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.NotNull;
@@ -105,6 +113,12 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     implements IgniteCacheProxy<K, V> {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /**
+     * Ignite version that introduce {@link ContinuousQueryWithTransformer} feature.
+     */
+    private static final IgniteProductVersion CONT_QRY_WITH_TRANSFORMER_SINCE =
+        IgniteProductVersion.fromString("2.5.0");
 
     /** Context. */
     private volatile GridCacheContext<K, V> ctx;
@@ -171,8 +185,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /**
      * @return Context.
      */
-    @Override
-    public GridCacheContext<K, V> context() {
+    @Override public GridCacheContext<K, V> context() {
         return ctx;
     }
 
@@ -279,8 +292,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         try {
             if (ctx.cache().isLocal())
                 return (IgniteFuture<Void>)createFuture(ctx.cache().localLoadCacheAsync(p, args));
-            else
-                return (IgniteFuture<Void>)createFuture(ctx.cache().globalLoadCacheAsync(p, args));
+
+            return (IgniteFuture<Void>)createFuture(ctx.cache().globalLoadCacheAsync(p, args));
         }
         catch (IgniteCheckedException | IgniteException e) {
             throw cacheException(e);
@@ -356,15 +369,13 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         @Nullable ClusterGroup grp)
         throws IgniteCheckedException {
 
-        final CacheQuery<R> qry;
-
         CacheOperationContext opCtxCall = ctx.operationContextPerCall();
 
         boolean isKeepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
 
         IgniteBiPredicate<K, V> p = scanQry.getFilter();
 
-        qry = ctx.queries().createScanQuery(p, transformer, scanQry.getPartition(), isKeepBinary);
+        final CacheQuery<R> qry = ctx.queries().createScanQuery(p, transformer, scanQry.getPartition(), isKeepBinary);
 
         if (scanQry.getPageSize() > 0)
             qry.pageSize(scanQry.getPageSize());
@@ -375,31 +386,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         final GridCloseableIterator<R> iter = ctx.kernalContext().query().executeQuery(GridCacheQueryType.SCAN,
             ctx.name(), ctx, new IgniteOutClosureX<GridCloseableIterator<R>>() {
                 @Override public GridCloseableIterator<R> applyx() throws IgniteCheckedException {
-                    final GridCloseableIterator iter0 = qry.executeScanQuery();
-
-                    final boolean needToConvert = transformer == null;
-
-                    return new GridCloseableIteratorAdapter<R>() {
-                        @Override protected R onNext() throws IgniteCheckedException {
-                            Object next = iter0.nextX();
-
-                            if (needToConvert) {
-                                Map.Entry<K, V> entry = (Map.Entry<K, V>)next;
-
-                                return (R)new CacheEntryImpl<>(entry.getKey(), entry.getValue());
-                            }
-
-                            return (R)next;
-                        }
-
-                        @Override protected boolean onHasNext() throws IgniteCheckedException {
-                            return iter0.hasNextX();
-                        }
-
-                        @Override protected void onClose() throws IgniteCheckedException {
-                            iter0.close();
-                        }
-                    };
+                    return qry.executeScanQuery();
                 }
             }, true);
 
@@ -525,22 +512,66 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @return Initial iteration cursor.
      */
     @SuppressWarnings("unchecked")
-    private QueryCursor<Cache.Entry<K, V>> queryContinuous(ContinuousQuery qry, boolean loc, boolean keepBinary) {
-        if (qry.getInitialQuery() instanceof ContinuousQuery)
+    private QueryCursor<Cache.Entry<K, V>> queryContinuous(AbstractContinuousQuery qry, boolean loc, boolean keepBinary) {
+        assert qry instanceof ContinuousQuery || qry instanceof ContinuousQueryWithTransformer;
+
+        if (qry.getInitialQuery() instanceof ContinuousQuery ||
+            qry.getInitialQuery() instanceof ContinuousQueryWithTransformer) {
             throw new IgniteException("Initial predicate for continuous query can't be an instance of another " +
                 "continuous query. Use SCAN or SQL query for initial iteration.");
+        }
 
-        if (qry.getLocalListener() == null)
-            throw new IgniteException("Mandatory local listener is not set for the query: " + qry);
+        CacheEntryUpdatedListener locLsnr = null;
 
-        if (qry.getRemoteFilter() != null && qry.getRemoteFilterFactory() != null)
-            throw new IgniteException("Should be used either RemoterFilter or RemoteFilterFactory.");
+        EventListener locTransLsnr = null;
+
+        CacheEntryEventSerializableFilter rmtFilter = null;
+
+        Factory<? extends IgniteClosure> rmtTransFactory = null;
+
+        if (qry instanceof ContinuousQuery) {
+            ContinuousQuery<K, V> qry0 = (ContinuousQuery<K, V>)qry;
+
+            if (qry0.getLocalListener() == null)
+                throw new IgniteException("Mandatory local listener is not set for the query: " + qry);
+
+            if (qry0.getRemoteFilter() != null && qry0.getRemoteFilterFactory() != null)
+                throw new IgniteException("Should be used either RemoterFilter or RemoteFilterFactory.");
+
+            locLsnr = qry0.getLocalListener();
+
+            rmtFilter = qry0.getRemoteFilter();
+        }
+        else {
+            ContinuousQueryWithTransformer<K, V, ?> qry0 = (ContinuousQueryWithTransformer<K, V, ?>)qry;
+
+            if (qry0.getLocalListener() == null)
+                throw new IgniteException("Mandatory local transformed event listener is not set for the query: " + qry);
+
+            if (qry0.getRemoteTransformerFactory() == null)
+                throw new IgniteException("Mandatory RemoteTransformerFactory is not set for the query: " + qry);
+
+            Collection<ClusterNode> nodes = context().grid().cluster().nodes();
+
+            for (ClusterNode node : nodes) {
+                if (node.version().compareTo(CONT_QRY_WITH_TRANSFORMER_SINCE) < 0) {
+                    throw new IgniteException("Can't start ContinuousQueryWithTransformer, " +
+                        "because some nodes in cluster doesn't support this feature: " + node);
+                }
+            }
+
+            locTransLsnr = qry0.getLocalListener();
+
+            rmtTransFactory = qry0.getRemoteTransformerFactory();
+        }
 
         try {
             final UUID routineId = ctx.continuousQueries().executeQuery(
-                qry.getLocalListener(),
-                qry.getRemoteFilter(),
+                locLsnr,
+                locTransLsnr,
+                rmtFilter,
                 qry.getRemoteFilterFactory(),
+                rmtTransFactory,
                 qry.getPageSize(),
                 qry.getTimeInterval(),
                 qry.isAutoUnsubscribe(),
@@ -585,6 +616,30 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
+    @Override public List<FieldsQueryCursor<List<?>>> queryMultipleStatements(SqlFieldsQuery qry) {
+        A.notNull(qry, "qry");
+        try {
+            ctx.checkSecurity(SecurityPermission.CACHE_READ);
+
+            validate(qry);
+
+            convertToBinary(qry);
+
+            CacheOperationContext opCtxCall = ctx.operationContextPerCall();
+
+            boolean keepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
+
+            return ctx.kernalContext().query().querySqlFields(ctx, qry, null, keepBinary, false);
+        }
+        catch (Exception e) {
+            if (e instanceof CacheException)
+                throw (CacheException)e;
+
+            throw new CacheException(e);
+        }
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public <R> QueryCursor<R> query(Query<R> qry) {
         A.notNull(qry, "qry");
@@ -599,15 +654,15 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
 
             boolean keepBinary = opCtxCall != null && opCtxCall.isKeepBinary();
 
-            if (qry instanceof ContinuousQuery)
-                return (QueryCursor<R>)queryContinuous((ContinuousQuery<K, V>)qry, qry.isLocal(), keepBinary);
+            if (qry instanceof ContinuousQuery || qry instanceof ContinuousQueryWithTransformer)
+                return (QueryCursor<R>)queryContinuous((AbstractContinuousQuery)qry, qry.isLocal(), keepBinary);
 
             if (qry instanceof SqlQuery)
                 return (QueryCursor<R>)ctx.kernalContext().query().querySql(ctx, (SqlQuery)qry, keepBinary);
 
             if (qry instanceof SqlFieldsQuery)
                 return (FieldsQueryCursor<R>)ctx.kernalContext().query().querySqlFields(ctx, (SqlFieldsQuery)qry,
-                    keepBinary);
+                    null, keepBinary, true).get(0);
 
             if (qry instanceof ScanQuery)
                 return query((ScanQuery)qry, null, projection(qry.isLocal()));
@@ -618,7 +673,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             if (e instanceof CacheException)
                 throw (CacheException)e;
 
-            throw new CacheException(e);
+            throw new CacheException(e.getMessage(), e);
         }
     }
 
@@ -691,8 +746,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      */
     private void validate(Query qry) {
         if (!QueryUtils.isEnabled(ctx.config()) && !(qry instanceof ScanQuery) &&
-            !(qry instanceof ContinuousQuery) && !(qry instanceof SpiQuery) && !(qry instanceof SqlQuery) &&
-            !(qry instanceof SqlFieldsQuery))
+            !(qry instanceof ContinuousQuery) && !(qry instanceof ContinuousQueryWithTransformer) &&
+            !(qry instanceof SpiQuery) && !(qry instanceof SqlQuery) && !(qry instanceof SqlFieldsQuery))
             throw new CacheException("Indexing is disabled for cache: " + ctx.cache().name() +
                     ". Use setIndexedTypes or setTypeMetadata methods on CacheConfiguration to enable.");
 
@@ -1606,15 +1661,22 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /**
-     * Creates projection that will operate with binary objects. <p> Projection returned by this method will force
-     * cache not to deserialize binary objects, so keys and values will be returned from cache API methods without
-     * changes. Therefore, signature of the projection can contain only following types: <ul> <li>{@code BinaryObject}
-     * for binary classes</li> <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
-     * <li>Arrays of primitives (byte[], int[], ...)</li> <li>{@link String} and array of {@link String}s</li>
-     * <li>{@link UUID} and array of {@link UUID}s</li> <li>{@link Date} and array of {@link Date}s</li> <li>{@link
-     * java.sql.Timestamp} and array of {@link java.sql.Timestamp}s</li> <li>Enums and array of enums</li> <li> Maps,
-     * collections and array of objects (but objects inside them will still be converted if they are binary) </li>
-     * </ul> <p> For example, if you use {@link Integer} as a key and {@code Value} class as a value (which will be
+     * Creates projection that will operate with binary objects.
+     * <p> Projection returned by this method will force cache not to deserialize binary objects,
+     * so keys and values will be returned from cache API methods without changes.
+     * Therefore, signature of the projection can contain only following types:
+     * <ul>
+     *     <li>{@code BinaryObject} for binary classes</li>
+     *     <li>All primitives (byte, int, ...) and there boxed versions (Byte, Integer, ...)</li>
+     *     <li>Arrays of primitives (byte[], int[], ...)</li>
+     *     <li>{@link String} and array of {@link String}s</li>
+     *     <li>{@link UUID} and array of {@link UUID}s</li>
+     *     <li>{@link Date} and array of {@link Date}s</li>
+     *     <li>{@link java.sql.Timestamp} and array of {@link java.sql.Timestamp}s</li>
+     *     <li>Enums and array of enums</li>
+     *     <li> Maps, collections and array of objects (but objects inside them will still be converted if they are binary) </li>
+     * </ul>
+     * <p> For example, if you use {@link Integer} as a key and {@code Value} class as a value (which will be
      * stored in binary format), you should acquire following projection to avoid deserialization:
      * <pre>
      * IgniteInternalCache<Integer, GridBinaryObject> prj = cache.keepBinary();
@@ -1628,9 +1690,8 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      *
      * @return Projection for binary objects.
      */
-    @Override
     @SuppressWarnings("unchecked")
-    public <K1, V1> IgniteCache<K1, V1> keepBinary() {
+    @Override public <K1, V1> IgniteCache<K1, V1> keepBinary() {
         throw new UnsupportedOperationException();
     }
 
@@ -1638,17 +1699,15 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
      * @param dataCenterId Data center ID.
      * @return Projection for data center id.
      */
-    @Override
     @SuppressWarnings("unchecked")
-    public IgniteCache<K, V> withDataCenterId(byte dataCenterId) {
+    @Override public IgniteCache<K, V> withDataCenterId(byte dataCenterId) {
         throw new UnsupportedOperationException();
     }
 
     /**
      * @return Cache with skip store enabled.
      */
-    @Override
-    public IgniteCache<K, V> skipStore() {
+    @Override public IgniteCache<K, V> skipStore() {
         throw new UnsupportedOperationException();
     }
 
@@ -1662,10 +1721,10 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     private RuntimeException cacheException(Exception e) {
         GridFutureAdapter<Void> restartFut = this.restartFut.get();
 
-        if (restartFut != null && !restartFut.isDone()) {
+        if (restartFut != null) {
             if (X.hasCause(e, CacheStoppedException.class) || X.hasSuppressed(e, CacheStoppedException.class))
                 throw new IgniteCacheRestartingException(new IgniteFutureImpl<>(restartFut), "Cache is restarting: " +
-                        ctx.name());
+                        ctx.name(), e);
         }
 
         if (e instanceof IgniteCheckedException)
@@ -1695,8 +1754,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /**
      * @return Internal proxy.
      */
-    @Override
-    public GridCacheProxyImpl<K, V> internalProxy() {
+    @Override public GridCacheProxyImpl<K, V> internalProxy() {
         return new GridCacheProxyImpl<>(ctx, delegate, ctx.operationContextPerCall());
     }
 
@@ -1717,6 +1775,16 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     /** {@inheritDoc} */
     @Override public Collection<Integer> lostPartitions() {
         return delegate.lostPartitions();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void enableStatistics(boolean enabled) {
+        try {
+            ctx.kernalContext().cache().enableStatistics(Collections.singleton(getName()), enabled);
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1750,22 +1818,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /**
-     * Gets value without waiting for toplogy changes.
-     *
-     * @param key Key.
-     * @return Value.
-     */
-    @Override
-    public V getTopologySafe(K key) {
-        try {
-            return delegate.getTopologySafe(key);
-        }
-        catch (IgniteCheckedException | IgniteException e) {
-            throw cacheException(e);
-        }
-    }
-
-    /**
      * Throws {@code IgniteCacheRestartingException} if proxy is restarting.
      */
     public void checkRestart() {
@@ -1787,17 +1839,17 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     public void restart() {
         GridFutureAdapter<Void> restartFut = new GridFutureAdapter<>();
 
-        final GridFutureAdapter<Void> currentFut = this.restartFut.get();
+        final GridFutureAdapter<Void> curFut = this.restartFut.get();
 
-        boolean changed = this.restartFut.compareAndSet(currentFut, restartFut);
+        boolean changed = this.restartFut.compareAndSet(curFut, restartFut);
 
-        if (changed && currentFut != null)
+        if (changed && curFut != null)
             restartFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                @Override public void apply(IgniteInternalFuture<Void> future) {
-                    if (future.error() != null)
-                        currentFut.onDone(future.error());
+                @Override public void apply(IgniteInternalFuture<Void> fut) {
+                    if (fut.error() != null)
+                        curFut.onDone(fut.error());
                     else
-                        currentFut.onDone();
+                        curFut.onDone();
                 }
             });
     }
@@ -1816,9 +1868,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         this.ctx = ctx;
         this.delegate = delegate;
 
-        restartFut.onDone();
-
         this.restartFut.compareAndSet(restartFut, null);
+
+        restartFut.onDone();
     }
 
     /** {@inheritDoc} */

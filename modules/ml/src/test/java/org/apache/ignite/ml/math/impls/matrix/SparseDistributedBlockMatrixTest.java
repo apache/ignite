@@ -23,17 +23,17 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
+import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.distributed.DistributedStorage;
+import org.apache.ignite.ml.math.distributed.keys.impl.MatrixBlockKey;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
-import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixKey;
 import org.apache.ignite.ml.math.impls.storage.matrix.BlockMatrixStorage;
+import org.apache.ignite.ml.math.impls.vector.SparseBlockDistributedVector;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
@@ -46,14 +46,19 @@ import static org.apache.ignite.ml.math.impls.MathTestConstants.UNEXPECTED_VAL;
 public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
+
     /** Precision. */
     private static final double PRECISION = 0.0;
+
     /** Grid instance. */
     private Ignite ignite;
+
     /** Matrix rows */
     private final int rows = MathTestConstants.STORAGE_SIZE;
+
     /** Matrix cols */
     private final int cols = MathTestConstants.STORAGE_SIZE;
+
     /** Matrix for tests */
     private SparseBlockDistributedMatrix cacheMatrix;
 
@@ -103,7 +108,7 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
                 double v = Math.random();
                 cacheMatrix.set(i, j, v);
 
-                assertEquals("Unexpected value for matrix element["+ i +" " + j + "]", v, cacheMatrix.get(i, j), PRECISION);
+                assertEquals("Unexpected value for matrix element[" + i + " " + j + "]", v, cacheMatrix.get(i, j), PRECISION);
             }
         }
     }
@@ -207,34 +212,44 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
 
         cacheMatrix = new SparseBlockDistributedMatrix(rows, cols);
 
-        try {
-            cacheMatrix.copy();
-            fail("UnsupportedOperationException expected.");
-        }
-        catch (UnsupportedOperationException e) {
-            return;
-        }
-        fail("UnsupportedOperationException expected.");
+        cacheMatrix.set(rows - 1, cols - 1, 1);
+
+        Matrix newMatrix = cacheMatrix.copy();
+        assert newMatrix.columnSize() == cols;
+        assert newMatrix.rowSize() == rows;
+        assert newMatrix.get(rows - 1, cols - 1) == 1;
+
+    }
+
+    /** Test cache behaviour for matrix with different blocks */
+    public void testCacheBehaviour() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+        cacheBehaviorLogic(rows);
+    }
+
+    /** Test cache behaviour for matrix with homogeneous blocks */
+    public void testCacheBehaviourWithHomogeneousBlocks() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+        int size = MatrixBlockEntry.MAX_BLOCK_SIZE * 3;
+        cacheBehaviorLogic(size);
     }
 
     /** */
-    public void testCacheBehaviour(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
-
-        SparseBlockDistributedMatrix cacheMatrix1 = new SparseBlockDistributedMatrix(rows, cols);
-        SparseBlockDistributedMatrix cacheMatrix2 = new SparseBlockDistributedMatrix(rows, cols);
+    private void cacheBehaviorLogic(int size) {
+        SparseBlockDistributedMatrix cacheMatrix1 = new SparseBlockDistributedMatrix(size, size);
+        SparseBlockDistributedMatrix cacheMatrix2 = new SparseBlockDistributedMatrix(size, size);
 
         initMtx(cacheMatrix1);
         initMtx(cacheMatrix2);
 
         Collection<String> cacheNames = ignite.cacheNames();
 
-        assert cacheNames.contains(BlockMatrixStorage.ML_BLOCK_CACHE_NAME);
+        assert cacheNames.contains(((DistributedStorage)cacheMatrix1.getStorage()).cacheName());
 
-        IgniteCache<BlockMatrixKey, Object> cache = ignite.getOrCreateCache(BlockMatrixStorage.ML_BLOCK_CACHE_NAME);
+        IgniteCache<MatrixBlockKey, Object> cache = ignite.getOrCreateCache(((DistributedStorage)cacheMatrix1.getStorage()).cacheName());
 
-        Set<BlockMatrixKey> keySet1 = buildKeySet(cacheMatrix1);
-        Set<BlockMatrixKey> keySet2 = buildKeySet(cacheMatrix2);
+        Set<MatrixBlockKey> keySet1 = buildKeySet(cacheMatrix1);
+        Set<MatrixBlockKey> keySet2 = buildKeySet(cacheMatrix2);
 
         assert cache.containsKeys(keySet1);
         assert cache.containsKeys(keySet2);
@@ -264,23 +279,31 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
 
         cacheMatrix = new SparseBlockDistributedMatrix(rows, cols);
 
-        try {
-            cacheMatrix.likeVector(1);
-            fail("UnsupportedOperationException expected.");
-        }
-        catch (UnsupportedOperationException e) {
-            return;
-        }
-        fail("UnsupportedOperationException expected.");
+        Vector v = cacheMatrix.likeVector(1);
+        assert v.size() == 1;
+        assert v instanceof SparseBlockDistributedVector;
+
     }
 
     /**
      * Simple test for two square matrices.
      */
-    public void testSquareMatrixTimes(){
-        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+    public void testSquareMatrixTimes() {
+        squareMatrixTimesLogic(rows);
+    }
 
-        int size = 100;
+    /**
+     * Simple test for two square matrices with size which is proportional to MAX_BLOCK_SIZE constant
+     */
+    public void testSquareMatrixTimesWithHomogeneousBlocks() {
+        int size = MatrixBlockEntry.MAX_BLOCK_SIZE * 3;
+
+        squareMatrixTimesLogic(size);
+    }
+
+    /** Build two square matrices, multiply them and check main diagonal elements */
+    private void squareMatrixTimesLogic(int size) {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         Matrix cacheMatrix1 = new SparseBlockDistributedMatrix(size, size);
         Matrix cacheMatrix2 = new SparseBlockDistributedMatrix(size, size);
@@ -292,22 +315,22 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
 
         Matrix res = cacheMatrix1.times(cacheMatrix2);
 
-        for(int i = 0; i < size; i++)
-            for(int j = 0; j < size; j++)
+        for (int i = 0; i < size; i++)
+            for (int j = 0; j < size; j++)
                 if (i == j)
-                    assertEquals(UNEXPECTED_VAL + " for "+ i +":"+ j, i * i, res.get(i, j), PRECISION);
+                    assertEquals(UNEXPECTED_VAL + " for " + i + ":" + j, i * i, res.get(i, j), PRECISION);
                 else
-                    assertEquals(UNEXPECTED_VAL + " for "+ i +":"+ j, 0, res.get(i, j), PRECISION);
+                    assertEquals(UNEXPECTED_VAL + " for " + i + ":" + j, 0, res.get(i, j), PRECISION);
     }
 
     /**
      *
      */
-    public void testNonSquareMatrixTimes(){
+    public void testNonSquareMatrixTimes() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        int size = BlockEntry.MAX_BLOCK_SIZE + 1;
-        int size2 = BlockEntry.MAX_BLOCK_SIZE * 2 + 1;
+        int size = MatrixBlockEntry.MAX_BLOCK_SIZE + 1;
+        int size2 = MatrixBlockEntry.MAX_BLOCK_SIZE * 2 + 1;
 
         Matrix cacheMatrix1 = new SparseBlockDistributedMatrix(size2, size);
         Matrix cacheMatrix2 = new SparseBlockDistributedMatrix(size, size2);
@@ -319,22 +342,22 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
 
         Matrix res = cacheMatrix1.times(cacheMatrix2);
 
-        for(int i = 0; i < size; i++)
-            for(int j = 0; j < size; j++)
+        for (int i = 0; i < size; i++)
+            for (int j = 0; j < size; j++)
                 if (i == j)
-                    assertEquals(UNEXPECTED_VAL + " for "+ i +":"+ j, i * i, res.get(i, j), PRECISION);
+                    assertEquals(UNEXPECTED_VAL + " for " + i + ":" + j, i * i, res.get(i, j), PRECISION);
                 else
-                    assertEquals(UNEXPECTED_VAL + " for "+ i +":"+ j, 0, res.get(i, j), PRECISION);
+                    assertEquals(UNEXPECTED_VAL + " for " + i + ":" + j, 0, res.get(i, j), PRECISION);
     }
 
     /**
      *
      */
-    public void testNonSquareMatrixTimes2(){
+    public void testNonSquareMatrixTimes2() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
-        int size = BlockEntry.MAX_BLOCK_SIZE + 1;
-        int size2 = BlockEntry.MAX_BLOCK_SIZE * 2 + 1;
+        int size = MatrixBlockEntry.MAX_BLOCK_SIZE + 1;
+        int size2 = MatrixBlockEntry.MAX_BLOCK_SIZE * 2 + 1;
 
         Matrix cacheMatrix1 = new SparseBlockDistributedMatrix(size, size2);
         Matrix cacheMatrix2 = new SparseBlockDistributedMatrix(size2, size);
@@ -346,12 +369,26 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
 
         Matrix res = cacheMatrix1.times(cacheMatrix2);
 
-        for(int i = 0; i < size; i++)
-            for(int j = 0; j < size; j++)
+        for (int i = 0; i < size; i++)
+            for (int j = 0; j < size; j++)
                 if (i == j)
-                    assertEquals(UNEXPECTED_VAL + " for "+ i +":"+ j, i * i, res.get(i, j), PRECISION);
+                    assertEquals(UNEXPECTED_VAL + " for " + i + ":" + j, i * i, res.get(i, j), PRECISION);
                 else
-                    assertEquals(UNEXPECTED_VAL + " for "+ i +":"+ j, 0, res.get(i, j), PRECISION);
+                    assertEquals(UNEXPECTED_VAL + " for " + i + ":" + j, 0, res.get(i, j), PRECISION);
+    }
+
+    /** */
+    public void testMatrixVectorTimes() {
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+
+        SparseBlockDistributedMatrix a = new SparseBlockDistributedMatrix(new double[][] {{2.0, 4.0, 0.0}, {-2.0, 1.0, 3.0}, {-1.0, 0.0, 1.0}});
+        SparseBlockDistributedVector b = new SparseBlockDistributedVector(new double[] {1.0, 2.0, -1.0});
+        SparseBlockDistributedVector res = new SparseBlockDistributedVector(new double[] {10, -3.0, -2.0});
+
+        Vector calculatedRes = a.times(b);
+
+        for (int i = 0; i < calculatedRes.size(); i++)
+            assertEquals(UNEXPECTED_VAL + " for " + i, res.get(i), calculatedRes.get(i), PRECISION);
     }
 
     /** */
@@ -362,18 +399,10 @@ public class SparseDistributedBlockMatrixTest extends GridCommonAbstractTest {
     }
 
     /** Build key set for SparseBlockDistributedMatrix. */
-    private Set<BlockMatrixKey> buildKeySet(SparseBlockDistributedMatrix m){
-        Set<BlockMatrixKey> set = new HashSet<>();
+    private Set<MatrixBlockKey> buildKeySet(SparseBlockDistributedMatrix m) {
 
         BlockMatrixStorage storage = (BlockMatrixStorage)m.getStorage();
 
-        IgniteUuid uuid = storage.getUUID();
-
-        long maxBlock = (rows / 32 + (rows % 32 > 0 ? 1 : 0)) * (cols / 32 + (cols % 32 > 0 ? 1 : 0));
-
-        for (long i = 0; i < maxBlock; i++)
-            set.add(new BlockMatrixKey(i,uuid,null));
-
-        return set;
+        return storage.getAllKeys();
     }
 }

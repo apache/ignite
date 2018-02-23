@@ -71,12 +71,14 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
 
                     return PageConfigure.onStateEnterRedirect(trans.to());
                 },
+                failState: 'signin',
                 tfMetaTags: {
                     title: 'Configuration'
                 }
             })
             .state('base.configuration.tabs.basic', {
                 url: '/basic',
+                permission: 'configuration',
                 template: '<page-configure-basic></page-configure-basic>',
                 tfMetaTags: {
                     title: 'Basic Configuration'

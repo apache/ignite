@@ -33,6 +33,7 @@ namespace ignite
 {
     namespace odbc
     {
+        class OdbcError;
         class Connection;
 
         namespace diagnostic
@@ -89,6 +90,13 @@ namespace ignite
                  * @param message Message.
                  */
                 virtual void AddStatusRecord(SqlState::Type  sqlState, const std::string& message);
+
+                /**
+                 * Add new status record.
+                 *
+                 * @param err Error.
+                 */
+                virtual void AddStatusRecord(const OdbcError& err);
 
             protected:
                 /**

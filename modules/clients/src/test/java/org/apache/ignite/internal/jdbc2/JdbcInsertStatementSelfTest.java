@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc2;
 
+import java.sql.BatchUpdateException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -26,6 +27,7 @@ import java.util.HashSet;
 import java.util.concurrent.Callable;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
@@ -162,16 +164,170 @@ public class JdbcInsertStatementSelfTest extends JdbcAbstractDmlStatementSelfTes
             }
         }, SQLException.class, null);
 
-        assertNotNull(reason.getCause());
-
-        reason = reason.getCause().getCause();
+        reason = reason.getCause();
 
         assertNotNull(reason);
 
-        assertEquals(IgniteSQLException.class, reason.getClass());
-
-        assertEquals("Failed to INSERT some keys because they are already in cache [keys=[p2]]", reason.getMessage());
+        assertTrue(reason.getMessage().contains(
+            "Failed to INSERT some keys because they are already in cache [keys=[p2]]"));
 
         assertEquals(3, jcache(0).withKeepBinary().getAll(new HashSet<>(Arrays.asList("p1", "p2", "p3"))).size());
+    }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    public void testBatch() throws SQLException {
+        formBatch(1, 2);
+        formBatch(3, 4);
+
+        int[] res = prepStmt.executeBatch();
+
+        assertTrue(Arrays.equals(new int[] {2, 2}, res));
+    }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    public void testSingleItemBatch() throws SQLException {
+        formBatch(1, 2);
+
+        int[] res = prepStmt.executeBatch();
+
+        assertTrue(Arrays.equals(new int[] {2}, res));
+    }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    public void testSingleItemBatchError() throws SQLException {
+        formBatch(1, 2);
+
+        prepStmt.executeBatch();
+
+        formBatch(1, 2); // Duplicate key
+
+        BatchUpdateException reason = (BatchUpdateException)
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return prepStmt.executeBatch();
+                }
+            },
+            BatchUpdateException.class,
+            "Failed to INSERT some keys because they are already in cache");
+
+        // Check update counts in the exception.
+        assertTrue(F.isEmpty(reason.getUpdateCounts()));
+    }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    public void testErrorAmidstBatch() throws SQLException {
+        formBatch(1, 2);
+        formBatch(3, 1); // Duplicate key
+
+        BatchUpdateException reason = (BatchUpdateException)
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    return prepStmt.executeBatch();
+                }
+            },
+            BatchUpdateException.class,
+            "Failed to INSERT some keys because they are already in cache");
+
+        // Check update counts in the exception.
+        int[] counts = reason.getUpdateCounts();
+
+        assertNotNull(counts);
+
+        assertEquals(1, counts.length);
+        assertEquals(2, counts[0]);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClearBatch() throws Exception {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws SQLException {
+                return prepStmt.executeBatch();
+            }
+        }, SQLException.class, "Batch is empty");
+
+        formBatch(1, 2);
+
+        prepStmt.clearBatch();
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws SQLException {
+                return prepStmt.executeBatch();
+            }
+        }, SQLException.class, "Batch is empty");
+    }
+
+    /**
+     * Form batch on prepared statement.
+     *
+     * @param id1 id for first row.
+     * @param id2 id for second row.
+     * @throws SQLException if failed.
+     */
+    private void formBatch(int id1, int id2) throws SQLException {
+        int[] ids = new int[] { id1, id2 };
+
+        int arg = 0;
+        for (int id: ids) {
+            String key = "p" + id;
+
+            switch (id) {
+                case 1:
+                    prepStmt.setString(arg + 1, key);
+                    prepStmt.setInt(arg + 2, 1);
+                    prepStmt.setString(arg + 3, "John");
+                    prepStmt.setString(arg + 4, "White");
+                    prepStmt.setInt(arg + 5, 25);
+                    prepStmt.setBytes(arg + 6, getBytes("White"));
+
+                    break;
+
+                case 2:
+                    prepStmt.setString(arg + 1, key);
+                    prepStmt.setInt(arg + 2, 2);
+                    prepStmt.setString(arg + 3, "Joe");
+                    prepStmt.setString(arg + 4, "Black");
+                    prepStmt.setInt(arg + 5, 35);
+                    prepStmt.setBytes(arg + 6, getBytes("Black"));
+
+                    break;
+
+                case 3:
+                    prepStmt.setString(arg + 1, key);
+                    prepStmt.setInt(arg + 2, 3);
+                    prepStmt.setString(arg + 3, "Mike");
+                    prepStmt.setString(arg + 4, "Green");
+                    prepStmt.setInt(arg + 5, 40);
+                    prepStmt.setBytes(arg + 6, getBytes("Green"));
+
+                    break;
+
+                case 4:
+                    prepStmt.setString(arg + 1, key);
+                    prepStmt.setInt(arg + 2, 4);
+                    prepStmt.setString(arg + 3, "Leah");
+                    prepStmt.setString(arg + 4, "Grey");
+                    prepStmt.setInt(arg + 5, 22);
+                    prepStmt.setBytes(arg + 6, getBytes("Grey"));
+
+                    break;
+
+                default:
+                    assert false;
+            }
+
+            arg += 6;
+        }
+
+        prepStmt.addBatch();
     }
 }

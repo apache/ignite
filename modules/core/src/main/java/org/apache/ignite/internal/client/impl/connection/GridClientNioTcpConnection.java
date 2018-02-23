@@ -158,9 +158,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
     /** Marshaller. */
     private final GridClientMarshaller marsh;
 
-    /** */
-    private final ThreadLocal<Boolean> keepBinariesMode;
-
     /**
      * Creates a client facade, tries to connect to remote server, in case of success starts reader thread.
      *
@@ -192,8 +189,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         GridClientMarshaller marsh,
         Byte marshId,
         GridClientTopology top,
-        Object cred,
-        ThreadLocal<Boolean> keepBinariesMode
+        Object cred
     ) throws IOException, GridClientException {
         super(clientId, srvAddr, sslCtx, top, cred);
 
@@ -202,7 +198,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         this.marsh = marsh;
         this.pingInterval = pingInterval;
         this.pingTimeout = pingTimeout;
-        this.keepBinariesMode = keepBinariesMode;
 
         SocketChannel ch = null;
         Socket sock = null;
@@ -235,7 +230,7 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                 meta.put(GridNioSslFilter.HANDSHAKE_FUT_META_KEY, sslHandshakeFut);
             }
 
-            ses = (GridNioSession)srv.createSession(ch, meta).get();
+            ses = (GridNioSession)srv.createSession(ch, meta, false, null).get();
 
             if (sslHandshakeFut != null)
                 sslHandshakeFut.get();
@@ -574,6 +569,8 @@ public class GridClientNioTcpConnection extends GridClientConnection {
                         fut.onDone(new GridClientAuthenticationException("Authentication failed on server " +
                             "(client has no credentials) [clientId=" + clientId +
                             ", srvAddr=" + serverAddress() + ", errMsg=" + resp.errorMessage() +']'));
+
+                        removePending(resp.requestId());
 
                         return;
                     }
@@ -1060,7 +1057,6 @@ public class GridClientNioTcpConnection extends GridClientConnection {
         private GridClientMessage pendingMsg;
 
         /** Flag indicating whether authentication retry was attempted for this request. */
-        @SuppressWarnings("RedundantFieldInitialization")
         private int authRetry = STATE_INITIAL;
 
         /**

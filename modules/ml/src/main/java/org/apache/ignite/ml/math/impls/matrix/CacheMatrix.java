@@ -19,13 +19,13 @@ package org.apache.ignite.ml.math.impls.matrix;
 
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.MatrixKeyMapper;
-import org.apache.ignite.ml.math.ValueMapper;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.distributed.CacheUtils;
+import org.apache.ignite.ml.math.distributed.MatrixKeyMapper;
+import org.apache.ignite.ml.math.distributed.ValueMapper;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.IgniteDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
-import org.apache.ignite.ml.math.impls.CacheUtils;
 import org.apache.ignite.ml.math.impls.storage.matrix.CacheMatrixStorage;
 
 /**

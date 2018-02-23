@@ -77,7 +77,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     private static final long serialVersionUID = 0L;
 
     /** Maximum number of partitions. */
-    public static final int MAX_PARTITIONS_COUNT = 0xFFFF;
+    public static final int MAX_PARTITIONS_COUNT = 65000;
 
     /** Default size of rebalance thread pool. */
     @Deprecated
@@ -181,13 +181,16 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default query parallelism. */
     public static final int DFLT_QUERY_PARALLELISM = 1;
 
+    /** Default value for events disabled flag. */
+    public static final boolean DFLT_EVENTS_DISABLED = false;
+
     /** Cache name. */
     private String name;
 
     /** Cache group name. */
     private String grpName;
 
-    /** Name of {@link MemoryPolicyConfiguration} for this cache */
+    /** Name of {@link DataRegionConfiguration} for this cache */
     private String memPlcName;
 
     /** Threshold for concurrent loading of keys from {@link CacheStore}. */
@@ -200,11 +203,18 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Rebalance timeout. */
     private long rebalanceTimeout = DFLT_REBALANCE_TIMEOUT;
 
-    /** Cache expiration policy. */
+    /** Cache eviction policy. */
+    @Deprecated
     private EvictionPolicy evictPlc;
+
+    /** Cache eviction policy factory. */
+    private Factory evictPlcFactory;
 
     /** */
     private boolean onheapCache;
+
+    /** Use on-heap cache for rows for SQL queries. */
+    private boolean sqlOnheapCache;
 
     /** Eviction filter. */
     private EvictionFilter<?, ?> evictFilter;
@@ -354,6 +364,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Cache key configuration. */
     private CacheKeyConfiguration[] keyCfg;
 
+    /** Events disabled. */
+    private boolean evtsDisabled = DFLT_EVENTS_DISABLED;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -395,6 +408,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         eagerTtl = cc.isEagerTtl();
         evictFilter = cc.getEvictionFilter();
         evictPlc = cc.getEvictionPolicy();
+        evictPlcFactory = cc.getEvictionPolicyFactory();
         expiryPolicyFactory = cc.getExpiryPolicyFactory();
         grpName = cc.getGroupName();
         indexedTypes = cc.getIndexedTypes();
@@ -407,7 +421,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         loadPrevVal = cc.isLoadPreviousValue();
         longQryWarnTimeout = cc.getLongQueryWarningTimeout();
         maxConcurrentAsyncOps = cc.getMaxConcurrentAsyncOperations();
-        memPlcName = cc.getMemoryPolicyName();
+        memPlcName = cc.getDataRegionName();
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
@@ -442,6 +456,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         writeBehindFlushSize = cc.getWriteBehindFlushSize();
         writeBehindFlushThreadCnt = cc.getWriteBehindFlushThreadCount();
         writeSync = cc.getWriteSynchronizationMode();
+        storeConcurrentLoadAllThreshold = cc.getStoreConcurrentLoadAllThreshold();
+        maxQryIterCnt = cc.getMaxQueryIteratorsCount();
+        sqlOnheapCache = cc.isSqlOnheapCacheEnabled();
+        evtsDisabled = cc.isEventsDisabled();
     }
 
     /**
@@ -453,7 +471,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Since underlying cache is shared, the following configuration properties should be the same within group:
      * {@link #setAffinity(AffinityFunction)}, {@link #setNodeFilter(IgnitePredicate)}, {@link #cacheMode},
      * {@link #setTopologyValidator(TopologyValidator)}, {@link #setPartitionLossPolicy(PartitionLossPolicy)},
-     * {@link #setMemoryPolicyName(String)}.
+     * {@link #setDataRegionName(String)}.
      *
      * Grouping caches reduces overall overhead, since internal data structures are shared.
      *
@@ -472,7 +490,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * Since underlying cache is shared, the following configuration properties should be the same within group:
      * {@link #setAffinity(AffinityFunction)}, {@link #setNodeFilter(IgnitePredicate)}, {@link #cacheMode},
      * {@link #setTopologyValidator(TopologyValidator)}, {@link #setPartitionLossPolicy(PartitionLossPolicy)},
-     * {@link #setMemoryPolicyName(String)}.
+     * {@link #setDataRegionName(String)}.
      *
      * Grouping caches reduces overall overhead, since internal data structures are shared.
      *
@@ -509,25 +527,41 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * @return {@link MemoryPolicyConfiguration} name.
+     * @return {@link DataRegionConfiguration} name.
      */
+    @Nullable public String getDataRegionName() {
+        return memPlcName;
+    }
+
+    /**
+     * @deprecated Use {@link #getDataRegionName()} (String)} instead.
+     */
+    @Deprecated
     public String getMemoryPolicyName() {
         return memPlcName;
     }
 
     /**
-     * Sets a name of {@link MemoryPolicyConfiguration} for this cache.
+     * Sets a name of {@link DataRegionConfiguration} for this cache.
      *
-     * @param memPlcName MemoryPolicyConfiguration name. Can be null (default MemoryPolicyConfiguration will be used)
+     * @param dataRegionName DataRegionConfiguration name. Can be null (default DataRegionConfiguration will be used)
      *                   but should not be empty.
      * @return {@code this} for chaining.
      */
-    public CacheConfiguration<K, V> setMemoryPolicyName(String memPlcName) {
-        A.ensure(memPlcName == null || !memPlcName.isEmpty(), "Name cannot be empty.");
+    public CacheConfiguration<K, V> setDataRegionName(@Nullable String dataRegionName) {
+        A.ensure(dataRegionName == null || !dataRegionName.isEmpty(), "Name cannot be empty.");
 
-        this.memPlcName = memPlcName;
+        this.memPlcName = dataRegionName;
 
         return this;
+    }
+
+    /**
+     * @deprecated Use {@link #setDataRegionName(String)} instead.
+     */
+    @Deprecated
+    public CacheConfiguration<K, V> setMemoryPolicyName(String memPlcName) {
+        return setDataRegionName(memPlcName);
     }
 
     /**
@@ -535,7 +569,10 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * which means that evictions are disabled for cache.
      *
      * @return Cache eviction policy or {@code null} if evictions should be disabled.
+     *
+     * @deprecated Use {@link #getEvictionPolicyFactory()} instead.
      */
+    @Deprecated
     @SuppressWarnings({"unchecked"})
     @Nullable public EvictionPolicy<K, V> getEvictionPolicy() {
         return evictPlc;
@@ -544,11 +581,39 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /**
      * Sets cache eviction policy.
      *
-     * @param evictPlc Cache expiration policy.
+     * @param evictPlc Cache eviction policy.
      * @return {@code this} for chaining.
+     *
+     * @deprecated Use {@link #setEvictionPolicyFactory(Factory)} instead.
      */
+    @Deprecated
     public CacheConfiguration<K, V> setEvictionPolicy(@Nullable EvictionPolicy evictPlc) {
         this.evictPlc = evictPlc;
+
+        return this;
+    }
+
+    /**
+     * Gets cache eviction policy factory. By default, returns {@code null}
+     * which means that evictions are disabled for cache.
+     *
+     * @return Cache eviction policy factory or {@code null} if evictions should be disabled
+     * or if {@link #getEvictionPolicy()} should be used instead.
+     */
+    @Nullable public Factory<EvictionPolicy<? super K, ? super V>> getEvictionPolicyFactory() {
+        return evictPlcFactory;
+    }
+
+    /**
+     * Sets cache eviction policy factory.
+     * Note: Eviction policy factory should be {@link Serializable}.
+     *
+     * @param evictPlcFactory Cache eviction policy factory.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setEvictionPolicyFactory(
+        @Nullable Factory<? extends EvictionPolicy<? super K, ? super V>> evictPlcFactory) {
+        this.evictPlcFactory = evictPlcFactory;
 
         return this;
     }
@@ -570,6 +635,31 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public CacheConfiguration<K, V> setOnheapCacheEnabled(boolean onheapCache) {
         this.onheapCache = onheapCache;
+
+        return this;
+    }
+
+    /**
+     * Gets whether SQL on-heap cache is enabled. When enabled, Ignite will cache SQL rows as they are accessed by
+     * query engine. Rows are invalidated and evicted from cache when relevant cache entry is either changed or
+     * evicted.
+     *
+     * @return Whether SQL onheap cache is enabled.
+     */
+    public boolean isSqlOnheapCacheEnabled() {
+        return sqlOnheapCache;
+    }
+
+    /**
+     * Sets whether SQL on-heap cache is enabled. When enabled, Ignite will cache SQL rows as they are accessed by
+     * query engine. Rows are invalidated and evicted from cache when relevant cache entry is either changed or
+     * evicted.
+     *
+     * @param sqlOnheapCache Whether SQL onheap cache is enabled.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setSqlOnheapCacheEnabled(boolean sqlOnheapCache) {
+        this.sqlOnheapCache = sqlOnheapCache;
 
         return this;
     }
@@ -646,7 +736,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * never be evicted.
      * <p>
      * If not provided, any entry may be evicted depending on
-     * {@link #getEvictionPolicy() eviction policy} configuration.
+     * {@link #getEvictionPolicyFactory()} eviction policy} configuration.
      *
      * @return Eviction filter or {@code null}.
      */
@@ -1533,9 +1623,13 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
-     * Gets flag indicating whether copy of of the value stored in cache should be created
-     * for cache operation implying return value. Also if this flag is set copies are created for values
+     * Gets the flag indicating whether a copy of the value stored in the on-heap cache
+     * (see {@link #isOnheapCacheEnabled()} should be created for a cache operation return the value.
+     *
+     * Also if this flag is set copies are created for values
      * passed to {@link CacheInterceptor} and to {@link CacheEntryProcessor}.
+     *
+     * If the on-heap cache is disabled then this flag is of no use.
      *
      * @return Copy on read flag.
      */
@@ -1653,8 +1747,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      * @return {@code this} for chaining.
      */
     public CacheConfiguration<K, V> setSqlSchema(String sqlSchema) {
-        A.ensure((sqlSchema != null), "Schema could not be null.");
-        A.ensure(!sqlSchema.isEmpty(), "Schema could not be empty.");
+        if (sqlSchema != null) {
+            A.ensure(!sqlSchema.isEmpty(), "Schema could not be empty.");
+        }
 
         this.sqlSchema = sqlSchema;
 
@@ -2019,7 +2114,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         return cfg;
     }
 
-
     /**
      * @param cls Class.
      * @return Masked class.
@@ -2091,6 +2185,27 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** {@inheritDoc} */
     @Override public CacheConfiguration<K, V> setStoreByValue(boolean isStoreByVal) {
         super.setStoreByValue(isStoreByVal);
+
+        return this;
+    }
+
+    /**
+     * Checks whether events are disabled for this cache.
+     *
+     * @return Events disabled flag.
+     */
+    public Boolean isEventsDisabled() {
+        return evtsDisabled;
+    }
+
+    /**
+     * Sets events disabled flag.
+     *
+     * @param evtsDisabled Events disabled flag.
+     * @return {@code this} for chaining.
+     */
+    public CacheConfiguration<K, V> setEventsDisabled(boolean evtsDisabled) {
+        this.evtsDisabled = evtsDisabled;
 
         return this;
     }

@@ -42,7 +42,6 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -51,7 +50,7 @@ import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -75,11 +74,11 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     private static final String TOPIC_PREFIX = "QUERY";
 
     /** {request ID -> thread} */
-    private ConcurrentMap<Long, Thread> threads = new ConcurrentHashMap8<>();
+    private ConcurrentMap<Long, Thread> threads = new ConcurrentHashMap<>();
 
     /** {request ID -> future} */
     private ConcurrentMap<Long, GridCacheDistributedQueryFuture<?, ?, ?>> futs =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Received requests to cancel. */
     private Collection<CancelMessageId> cancelIds =
@@ -632,7 +631,20 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
                 if (locIter != null && locIter.hasNextX())
                     cur = locIter.nextX();
 
-                return cur != null || (cur = fut.next()) != null;
+                return cur != null || (cur = convert(fut.next())) != null;
+            }
+
+            /**
+             * @param obj Entry to convert.
+             * @return Cache entry
+             */
+            private Object convert(Object obj) {
+                if(qry.transform() != null)
+                    return obj;
+
+                Map.Entry e = (Map.Entry)obj;
+
+                return e == null ? null : new CacheQueryEntry(e.getKey(), e.getValue());
             }
 
             @Override protected void onClose() throws IgniteCheckedException {

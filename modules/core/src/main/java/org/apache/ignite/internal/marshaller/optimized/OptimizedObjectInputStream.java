@@ -70,7 +70,6 @@ import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshalle
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.INT;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.INT_ARR;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.JDK;
-import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.JDK_MARSH;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.LINKED_HASH_MAP;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.LINKED_HASH_SET;
 import static org.apache.ignite.internal.marshaller.optimized.OptimizedMarshallerUtils.LINKED_LIST;
@@ -191,6 +190,28 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
     /** {@inheritDoc} */
     @Override public Object readObjectOverride() throws ClassNotFoundException, IOException {
+        Object oldObj = curObj;
+
+        OptimizedClassDescriptor.ClassFields oldFields = curFields;
+
+        try {
+            return readObject0();
+        }
+        finally {
+            curObj = oldObj;
+
+            curFields = oldFields;
+        }
+    }
+
+    /**
+     * Reads object from stream.
+     *
+     * @return Object.
+     * @throws ClassNotFoundException If class was not found.
+     * @throws IOException In case of error.
+     */
+    private Object readObject0() throws ClassNotFoundException, IOException {
         curObj = null;
         curFields = null;
 
@@ -205,7 +226,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
 
             case JDK:
                 try {
-                    return JDK_MARSH.unmarshal(this, clsLdr);
+                    return ctx.jdkMarshaller().unmarshal(this, clsLdr);
                 }
                 catch (IgniteCheckedException e) {
                     IOException ioEx = e.getCause(IOException.class);
@@ -316,7 +337,7 @@ class OptimizedObjectInputStream extends ObjectInputStream {
                 int typeId = readInt();
 
                 OptimizedClassDescriptor desc = typeId == 0 ?
-                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr), ctx, mapper):
+                    classDescriptor(clsMap, U.forName(readUTF(), clsLdr, ctx.classNameFilter()), ctx, mapper):
                     classDescriptor(clsMap, typeId, clsLdr, ctx, mapper);
 
                 curCls = desc.describedClass();

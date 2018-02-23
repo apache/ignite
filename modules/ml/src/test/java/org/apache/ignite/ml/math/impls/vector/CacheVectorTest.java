@@ -30,7 +30,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.math.IdentityValueMapper;
 import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.VectorKeyMapper;
+import org.apache.ignite.ml.math.distributed.VectorKeyMapper;
 import org.apache.ignite.ml.math.exceptions.UnsupportedOperationException;
 import org.apache.ignite.ml.math.functions.Functions;
 import org.apache.ignite.ml.math.impls.MathTestConstants;
@@ -143,19 +143,13 @@ public class CacheVectorTest extends GridCommonAbstractTest {
     }
 
     /** */
-    public void testSumNegative() {
+    public void testSumEmptyVector() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
 
         IdentityValueMapper valMapper = new IdentityValueMapper();
         CacheVector<Integer, Double> cacheVector = new CacheVector<>(size, getCache(), keyMapper, valMapper);
 
-        try {
-            double d = cacheVector.sum();
-            fail();
-        }
-        catch (NullPointerException e) {
-            // No-op.
-        }
+        cacheVector.sum();
     }
 
     /** */

@@ -37,7 +37,7 @@ import org.jsr166.ConcurrentLinkedDeque8;
  * Note that this implementation requires non-null values for local and remote
  * socket addresses.
  */
-class GridSelectorNioSessionImpl extends GridNioSessionImpl {
+class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKeyAttachment {
     /** Pending write requests. */
     private final ConcurrentLinkedDeque8<SessionWriteRequest> queue = new ConcurrentLinkedDeque8<>();
 
@@ -127,6 +127,16 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
 
             this.readBuf = readBuf;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasSession() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public GridSelectorNioSessionImpl session() {
+        return this;
     }
 
     /**
@@ -383,22 +393,6 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl {
     /** {@inheritDoc} */
     @Nullable @Override public GridNioRecoveryDescriptor inRecoveryDescriptor() {
         return inRecovery;
-    }
-
-    /** {@inheritDoc} */
-    @Override public <T> T addMeta(int key, @Nullable T val) {
-        if (!accepted() && val instanceof GridNioRecoveryDescriptor) {
-            outRecovery = (GridNioRecoveryDescriptor)val;
-
-            if (!outRecovery.pairedConnections())
-                inRecovery = outRecovery;
-
-            outRecovery.onConnected();
-
-            return null;
-        }
-        else
-            return super.addMeta(key, val);
     }
 
     /**

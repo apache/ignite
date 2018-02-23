@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl
     /// <summary>
     /// Native Ignite wrapper.
     /// </summary>
-    internal class Ignite : PlatformTargetAdapter, IIgnite, ICluster
+    internal class Ignite : PlatformTargetAdapter, ICluster, IIgniteInternal, IIgnite
     {
         /// <summary>
         /// Operation codes for PlatformProcessorImpl calls.
@@ -83,7 +83,14 @@ namespace Apache.Ignite.Core.Impl
             LoggerIsLevelEnabled = 19,
             LoggerLog = 20,
             GetBinaryProcessor = 21,
-            ReleaseStart = 22
+            ReleaseStart = 22,
+            AddCacheConfiguration = 23,
+            SetBaselineTopologyVersion = 24,
+            SetBaselineTopologyNodes = 25,
+            GetBaselineTopology = 26,
+            DisableWal = 27,
+            EnableWal = 28,
+            IsWalEnabled = 29
         }
 
         /** */
@@ -211,7 +218,6 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-
         public ICluster GetCluster()
         {
             return this;
@@ -379,7 +385,7 @@ namespace Apache.Ignite.Core.Impl
         /// Internal stop routine.
         /// </summary>
         /// <param name="cancel">Cancel flag.</param>
-        internal unsafe void Stop(bool cancel)
+        internal void Stop(bool cancel)
         {
             var jniTarget = _proc as PlatformJniTarget;
 
@@ -388,7 +394,7 @@ namespace Apache.Ignite.Core.Impl
                 throw new IgniteException("Ignition.Stop is not supported in thin client.");
             }
 
-            UU.IgnitionStop(jniTarget.Target.Context, Name, cancel);
+            UU.IgnitionStop(Name, cancel);
 
             _cbs.Cleanup();
         }
@@ -569,7 +575,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the data streamer.
         /// </summary>
-        internal IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName, bool keepBinary)
+        public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName, bool keepBinary)
         {
             var streamerTarget = DoOutOpObject((int) Op.GetDataStreamer, w =>
             {
@@ -578,6 +584,14 @@ namespace Apache.Ignite.Core.Impl
             });
 
             return new DataStreamerImpl<TK, TV>(streamerTarget, _marsh, cacheName, keepBinary);
+        }
+
+        /// <summary>
+        /// Gets the public Ignite interface.
+        /// </summary>
+        public IIgnite GetIgnite()
+        {
+            return this;
         }
 
         /** <inheritdoc /> */
@@ -745,6 +759,7 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+#pragma warning disable 618
         public ICollection<IMemoryMetrics> GetMemoryMetrics()
         {
             return _prj.GetMemoryMetrics();
@@ -757,6 +772,7 @@ namespace Apache.Ignite.Core.Impl
 
             return _prj.GetMemoryMetrics(memoryPolicyName);
         }
+#pragma warning restore 618
 
         /** <inheritdoc /> */
         public void SetActive(bool isActive)
@@ -771,9 +787,96 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public void SetBaselineTopology(long topologyVersion)
+        {
+            DoOutInOp((int) Op.SetBaselineTopologyVersion, topologyVersion);
+        }
+
+        /** <inheritdoc /> */
+        public void SetBaselineTopology(IEnumerable<IBaselineNode> nodes)
+        {
+            IgniteArgumentCheck.NotNull(nodes, "nodes");
+
+            DoOutOp((int) Op.SetBaselineTopologyNodes, w =>
+            {
+                var pos = w.Stream.Position;
+                w.WriteInt(0);
+                var cnt = 0;
+
+                foreach (var node in nodes)
+                {
+                    cnt++;
+                    BaselineNode.Write(w, node);
+                }
+
+                w.Stream.WriteInt(pos, cnt);
+            });
+        }
+
+        /** <inheritdoc /> */
+        public ICollection<IBaselineNode> GetBaselineTopology()
+        {
+            return DoInOp((int) Op.GetBaselineTopology,
+                s => Marshaller.StartUnmarshal(s).ReadCollectionRaw(r => (IBaselineNode) new BaselineNode(r)));
+        }
+
+        /** <inheritdoc /> */
+        public void DisableWal(string cacheName)
+        {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
+            DoOutOp((int) Op.DisableWal, w => w.WriteString(cacheName));
+        }
+
+        /** <inheritdoc /> */
+        public void EnableWal(string cacheName)
+        {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+            
+            DoOutOp((int) Op.EnableWal, w => w.WriteString(cacheName));
+        }
+
+        /** <inheritdoc /> */
+        public bool IsWalEnabled(string cacheName)
+        {
+            IgniteArgumentCheck.NotNull(cacheName, "cacheName");
+
+            return DoOutOp((int) Op.IsWalEnabled, w => w.WriteString(cacheName)) == True;
+        }
+
+        /** <inheritdoc /> */
+#pragma warning disable 618
         public IPersistentStoreMetrics GetPersistentStoreMetrics()
         {
             return _prj.GetPersistentStoreMetrics();
+        }
+#pragma warning restore 618
+
+        /** <inheritdoc /> */
+        public ICollection<IDataRegionMetrics> GetDataRegionMetrics()
+        {
+            return _prj.GetDataRegionMetrics();
+        }
+
+        /** <inheritdoc /> */
+        public IDataRegionMetrics GetDataRegionMetrics(string memoryPolicyName)
+        {
+            return _prj.GetDataRegionMetrics(memoryPolicyName);
+        }
+
+        /** <inheritdoc /> */
+        public IDataStorageMetrics GetDataStorageMetrics()
+        {
+            return _prj.GetDataStorageMetrics();
+        }
+
+        /** <inheritdoc /> */
+        public void AddCacheConfiguration(CacheConfiguration configuration)
+        {
+            IgniteArgumentCheck.NotNull(configuration, "configuration");
+
+            DoOutOp((int) Op.AddCacheConfiguration,
+                s => configuration.Write(BinaryUtils.Marshaller.StartMarshal(s)));
         }
 
         /// <summary>
@@ -797,7 +900,7 @@ namespace Apache.Ignite.Core.Impl
         /// Gets internal projection.
         /// </summary>
         /// <returns>Projection.</returns>
-        internal ClusterGroupImpl ClusterGroup
+        public ClusterGroupImpl ClusterGroup
         {
             get { return _prj; }
         }
@@ -805,7 +908,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the binary processor.
         /// </summary>
-        internal BinaryProcessor BinaryProcessor
+        public IBinaryProcessor BinaryProcessor
         {
             get { return _binaryProc; }
         }
@@ -813,7 +916,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Configuration.
         /// </summary>
-        internal IgniteConfiguration Configuration
+        public IgniteConfiguration Configuration
         {
             get { return _cfg; }
         }
@@ -889,7 +992,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets the plugin processor.
         /// </summary>
-        internal PluginProcessor PluginProcessor
+        public PluginProcessor PluginProcessor
         {
             get { return _pluginProcessor; }
         }

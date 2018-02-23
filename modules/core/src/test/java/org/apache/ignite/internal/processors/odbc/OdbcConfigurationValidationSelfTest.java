@@ -161,7 +161,6 @@ public class OdbcConfigurationValidationSelfTest extends GridCommonAbstractTest 
             NODE_IDX_GEN.incrementAndGet());
 
         cfg.setLocalHost("127.0.0.1");
-        cfg.setSqlConnectorConfiguration(null);
         cfg.setOdbcConfiguration(odbcCfg);
         cfg.setMarshaller(new BinaryMarshaller());
 

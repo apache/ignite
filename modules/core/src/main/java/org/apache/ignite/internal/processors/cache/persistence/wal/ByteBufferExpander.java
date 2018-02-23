@@ -54,9 +54,16 @@ public class ByteBufferExpander implements AutoCloseable {
      * @return ByteBuffer with requested size.
      */
     public ByteBuffer expand(int size) {
+        assert buf.capacity() < size;
+
+        int pos = buf.position();
+        int lim = buf.limit();
+
         ByteBuffer newBuf = GridUnsafe.reallocateBuffer(buf, size);
 
         newBuf.order(buf.order());
+        newBuf.position(pos);
+        newBuf.limit(lim);
 
         buf = newBuf;
 

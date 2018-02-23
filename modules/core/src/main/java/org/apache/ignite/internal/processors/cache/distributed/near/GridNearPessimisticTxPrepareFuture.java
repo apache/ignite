@@ -211,6 +211,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             tx.subjectId(),
             tx.taskNameHash(),
             false,
+            true,
             tx.activeCachesDeploymentEnabled());
 
         for (IgniteTxEntry txEntry : writes) {
@@ -407,7 +408,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             tx.state(PREPARED);
 
         if (super.onDone(tx, err)) {
-            cctx.mvcc().removeMvccFuture(this);
+            cctx.mvcc().removeVersionedFuture(this);
 
             return true;
         }

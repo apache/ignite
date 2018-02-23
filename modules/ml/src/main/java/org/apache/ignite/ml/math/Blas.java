@@ -43,7 +43,8 @@ public class Blas {
     /** F2J implementation of BLAS. */
     transient static private BLAS f2jBlas = new F2jBLAS();
 
-    /** Native implementation of BLAS. F2J implementation will be used as fallback if no native implementation is found
+    /**
+     * Native implementation of BLAS. F2J implementation will be used as fallback if no native implementation is found.
      */
     transient static private BLAS nativeBlas = BLAS.getInstance();
 
@@ -64,7 +65,7 @@ public class Blas {
             axpy(a, (SparseLocalVector)x, y.getStorage().data());
         else
             throw new MathIllegalArgumentException("Operation 'axpy' doesn't support this combination of parameters [x="
-                + x.getClass().getName() + ", y="+y.getClass().getName()+"].");
+                + x.getClass().getName() + ", y=" + y.getClass().getName() + "].");
     }
 
     /** */
@@ -83,7 +84,8 @@ public class Blas {
                 y[k] += x.getX(k);
                 k++;
             }
-        } else {
+        }
+        else {
             int k = 0;
 
             while (k < xSize) {
@@ -127,10 +129,10 @@ public class Blas {
                         yData[i] = x.getX(i);
                 }
             }
-        } else
+        }
+        else
             throw new IllegalArgumentException("Vector y must be array based in copy.");
     }
-
 
     /**
      * Performs in-place multiplication of vector x by a real scalar a. (x = a * x)
@@ -146,7 +148,8 @@ public class Blas {
 
             for (Integer i : indexes)
                 x.compute(i, (ind, v) -> v * a);
-        } else
+        }
+        else
             throw new IllegalArgumentException();
     }
 
@@ -179,7 +182,8 @@ public class Blas {
     }
 
     /**
-     * A := alpha * x * x^T + A
+     * A := alpha * x * x^T + A.
+     *
      * @param alpha a real scalar that will be multiplied to x * x^T^.
      * @param x the vector x that contains the n elements.
      * @param a the symmetric matrix A. Size of n x n.
@@ -266,20 +270,20 @@ public class Blas {
     /**
      * Currently we support only local onheap matrices for BLAS.
      */
-    private static void checkMatrixType(Matrix a, String op){
+    private static void checkMatrixType(Matrix a, String op) {
         if (a instanceof DenseLocalOffHeapMatrix || a instanceof SparseDistributedMatrix
             || a instanceof SparseBlockDistributedMatrix)
             throw new IllegalArgumentException("Operation doesn't support for matrix [class="
-                + a.getClass().getName() + ", operation="+op+"].");
+                + a.getClass().getName() + ", operation=" + op + "].");
     }
 
     /**
      * Currently we support only local onheap vectors for BLAS.
      */
-    private static void checkVectorType(Vector a, String op){
+    private static void checkVectorType(Vector a, String op) {
         if (a instanceof DenseLocalOffHeapVector || a instanceof SparseLocalOffHeapVector || a instanceof CacheVector)
             throw new IllegalArgumentException("Operation doesn't support for vector [class="
-                + a.getClass().getName() + ", operation="+op+"].");
+                + a.getClass().getName() + ", operation=" + op + "].");
     }
 
     /**
@@ -298,7 +302,7 @@ public class Blas {
             throw new CardinalityException(a.columnSize(), y.size());
 
         checkMatrixType(a, "gemv");
-        checkVectorType(x,"gemv");
+        checkVectorType(x, "gemv");
         checkVectorType(y, "gemv");
 
         if (alpha == 0.0 && beta == 1.0)
@@ -321,8 +325,9 @@ public class Blas {
 
     /**
      * M := alpha * M.
+     *
      * @param m Matrix M.
-     * @param alpha Aplha.
+     * @param alpha Alpha.
      */
     private static void scal(Matrix m, double alpha) {
         if (alpha != 1.0)
@@ -333,6 +338,7 @@ public class Blas {
 
     /**
      * v := alpha * v.
+     *
      * @param v Vector v.
      * @param alpha Aplha.
      */

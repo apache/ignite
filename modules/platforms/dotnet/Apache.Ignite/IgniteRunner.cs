@@ -22,9 +22,9 @@ namespace Apache.Ignite
     using System.Configuration;
     using System.Linq;
     using System.ServiceProcess;
+    using System.Threading;
     using Apache.Ignite.Config;
     using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Service;
 
     /// <summary>
@@ -97,9 +97,12 @@ namespace Apache.Ignite
                         IgniteService.DoInstall(allArgs);
                     else
                     {
-                        Ignition.Start(Configurator.GetConfiguration(allArgs));
+                        var ignite = Ignition.Start(Configurator.GetConfiguration(allArgs));
 
-                        IgniteManager.DestroyJvm();
+                        // Wait until stopped.
+                        var evt = new ManualResetEventSlim(false);
+                        ignite.Stopped += (s, a) => evt.Set();
+                        evt.Wait();
                     }
 
                     return;
@@ -134,7 +137,7 @@ namespace Apache.Ignite
             Console.WriteLine("\t-ConfigSectionName     name of the IgniteConfigurationSection in app.config to use.");
             Console.WriteLine("\t-ConfigFileName        path to the app.config file (if not provided Apache.Ignite.exe.config is used).");
             Console.WriteLine("\t-springConfigUrl       path to Spring configuration file.");
-            Console.WriteLine("\t-jvmDllPath            path to JVM library jvm.dll (if not provided JAVA_HOME environment variable is used).");
+            Console.WriteLine("\t-jvmDll                path to JVM library jvm.dll (if not provided JAVA_HOME environment variable is used).");
             Console.WriteLine("\t-jvmClasspath          classpath passed to JVM (enlist additional jar files here).");
             Console.WriteLine("\t-suppressWarnings      whether to print warnings.");
             Console.WriteLine("\t-J<javaOption>         JVM options passed to created JVM.");

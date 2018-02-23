@@ -648,11 +648,6 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
-    @Override public Object getTopologySafe(Object key) throws IgniteCheckedException {
-        return delegate.getTopologySafe(keyTransformer.transform(key));
-    }
-
-    /** {@inheritDoc} */
     @Override public Collection<Integer> lostPartitions() {
         return delegate.lostPartitions();
     }

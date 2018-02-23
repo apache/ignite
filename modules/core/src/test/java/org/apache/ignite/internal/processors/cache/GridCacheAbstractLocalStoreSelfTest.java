@@ -48,9 +48,12 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.store.CacheLocalStore;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -290,7 +293,7 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
      * @throws Exception If failed.
      */
     public void testBackupRestore() throws Exception {
-        Ignite ignite1 = startGrid(1);
+        final IgniteEx ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
 
         awaitPartitionMapExchange();
@@ -302,6 +305,18 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         grid(2).context().cache().context().exchange().affinityReadyFuture(waitTopVer).get();
 
         final String name = BACKUP_CACHE_2;
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                AffinityTopologyVersion topVer = ignite1.context().cache().context().cacheContext(CU.cacheId(name))
+                    .affinity().affinityTopologyVersion();
+
+                return topVer.topologyVersion() == 2 && topVer.minorTopologyVersion() == 1;
+
+//                return ignite1.affinity(name).primaryPartitions(ignite1.cluster().localNode()).length <
+//                    ignite1.affinity(name).partitions();
+            }
+        }, 10_000));
 
         int key1 = -1;
         int key2 = -1;

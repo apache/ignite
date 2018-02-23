@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.OFF;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.MAP;
@@ -42,7 +42,7 @@ public class GridH2QueryContext {
     private static final ThreadLocal<GridH2QueryContext> qctx = new ThreadLocal<>();
 
     /** */
-    private static final ConcurrentMap<Key, GridH2QueryContext> qctxs = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<Key, GridH2QueryContext> qctxs = new ConcurrentHashMap<>();
 
     /** */
     private final Key key;
@@ -380,6 +380,7 @@ public class GridH2QueryContext {
     /**
      * @param nodeStop Node is stopping.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void clearContext(boolean nodeStop) {
         cleared = true;
 
@@ -583,6 +584,9 @@ public class GridH2QueryContext {
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {
+            if (o == null || !(o instanceof SourceKey))
+                return false;
+
             SourceKey srcKey = (SourceKey)o;
 
             return batchLookupId == srcKey.batchLookupId && segmentId == srcKey.segmentId &&

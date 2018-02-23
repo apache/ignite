@@ -52,6 +52,11 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
 import javax.cache.configuration.Factory;
@@ -100,8 +105,6 @@ import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-import static org.springframework.util.FileSystemUtils.deleteRecursively;
 
 /**
  * Utility class for tests.
@@ -296,7 +299,7 @@ public final class GridTestUtils {
             call.call();
         }
         catch (Throwable e) {
-            if (cls != e.getClass()) {
+            if (cls != e.getClass() && !cls.isAssignableFrom(e.getClass())) {
                 if (e.getClass() == CacheException.class && e.getCause() != null && e.getCause().getClass() == cls)
                     e = e.getCause();
                 else {
@@ -449,6 +452,42 @@ public final class GridTestUtils {
         }
 
         throw new AssertionError("Exception has not been thrown.");
+    }
+
+    /**
+     * Asserts that the specified runnable completes within the specified timeout.
+     *
+     * @param msg Assertion message in case of timeout.
+     * @param timeout Timeout.
+     * @param timeUnit Timeout {@link TimeUnit}.
+     * @param runnable {@link Runnable} to check.
+     * @throws Exception In case of any exception distinct from {@link TimeoutException}.
+     */
+    public static void assertTimeout(String msg, long timeout, TimeUnit timeUnit, Runnable runnable) throws Exception {
+        ExecutorService executorSvc = Executors.newSingleThreadExecutor();
+        Future<?> fut = executorSvc.submit(runnable);
+
+        try {
+            fut.get(timeout, timeUnit);
+        }
+        catch (TimeoutException ignored) {
+            fail(msg, null);
+        }
+        finally {
+            executorSvc.shutdownNow();
+        }
+    }
+
+    /**
+     * Asserts that the specified runnable completes within the specified timeout.
+     *
+     * @param timeout Timeout.
+     * @param timeUnit Timeout {@link TimeUnit}.
+     * @param runnable {@link Runnable} to check.
+     * @throws Exception In case of any exception distinct from {@link TimeoutException}.
+     */
+    public static void assertTimeout(long timeout, TimeUnit timeUnit, Runnable runnable) throws Exception {
+        assertTimeout("Timeout occurred.", timeout, timeUnit, runnable);
     }
 
     /**
@@ -1700,6 +1739,26 @@ public final class GridTestUtils {
     }
 
     /**
+     * Creates test-purposed SSL context factory from specified key store and trust store.
+     *
+     * @param keyStore Key store name.
+     * @param trustStore Trust store name.
+     * @return SSL context factory used in test.
+     */
+    public static Factory<SSLContext> sslTrustedFactory(String keyStore, String trustStore) {
+        SslContextFactory factory = new SslContextFactory();
+
+        factory.setKeyStoreFilePath(U.resolveIgnitePath(GridTestProperties.getProperty(
+            "ssl.keystore." + keyStore + ".path")).getAbsolutePath());
+        factory.setKeyStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
+        factory.setTrustStoreFilePath(U.resolveIgnitePath(GridTestProperties.getProperty(
+            "ssl.keystore." + trustStore + ".path")).getAbsolutePath());
+        factory.setTrustStorePassword(GridTestProperties.getProperty("ssl.keystore.password").toCharArray());
+
+        return factory;
+    }
+
+    /**
      * @param o1 Object 1.
      * @param o2 Object 2.
      * @return Equals or not.
@@ -1906,9 +1965,11 @@ public final class GridTestUtils {
     }
 
     /**
-     * @throws Exception If failed.
+     * @param node Node.
+     * @param topVer Ready exchange version to wait for before trying to merge exchanges.
      */
-    public static void deleteDbFiles() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+    public static void mergeExchangeWaitVersion(Ignite node, long topVer) {
+        ((IgniteEx)node).context().cache().context().exchange().mergeExchangesTestWaitVersion(
+            new AffinityTopologyVersion(topVer, 0));
     }
 }

@@ -174,9 +174,13 @@ public class GridJavadocAntTask extends MatchingTask {
                 Jerry otherPackages =
                     doc.find("div.contentContainer table.overviewSummary caption span:contains('Other Packages')");
 
-                if (otherPackages.size() > 0)
+                if (otherPackages.size() > 0) {
+                    System.err.println("[ERROR]: 'Other Packages' section should not be present, but found: " +
+                        doc.html());
                     throw new IllegalArgumentException("'Other Packages' section should not be present, " +
-                        "all packages should have corresponding documentation groups: " + file);
+                        "all packages should have corresponding documentation groups: " + file + ";" +
+                        "Please add packages description to parent/pom.xml into <plugin>(maven-javadoc-plugin) / <configuration> / <groups>");
+                }
             }
             else if (!isViewHtml(file)) {
                 // Try to find a class description block.

@@ -71,6 +71,6 @@ public class SplitExistingPageRecord extends PageDeltaRecord {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(SplitExistingPageRecord.class, this, "fwId", U.hexLong(fwdId), "parent", super.toString());
+        return S.toString(SplitExistingPageRecord.class, this, "fwId", U.hexLong(fwdId), "super", super.toString());
     }
 }
