@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.Properties;
 import javax.naming.RefAddr;
 import javax.naming.Reference;
+
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;
@@ -164,15 +166,16 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "streamingPerNodeBufferSize", "Buffer size per cluster node during streaming",
         0, false, 0, Integer.MAX_VALUE);
 
-    /** Buffer size per cluster node during streaming. */
+    /** Server-size flush frequency during streaming. */
     private LongProperty streamFlushFreq = new LongProperty(
-        "streamingFlushFrequency", "Buffer size per cluster node during streaming",
+        "streamingFlushFrequency", "Server-size flush frequency during streaming",
         0, false, 0, Long.MAX_VALUE);
 
     /** Buffer size per cluster node during streaming. */
     private IntegerProperty streamBatchSize = new IntegerProperty(
         "streamingBatchSize", "Batch size for streaming (number of commands to accumulate internally " +
-        "before actually sending over the wire)", 10, false, 1, Integer.MAX_VALUE);
+        "before actually sending over the wire)", IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE * 4, false, 1,
+        Integer.MAX_VALUE);
 
     /** Properties array. */
     private final ConnectionProperty [] props = {
