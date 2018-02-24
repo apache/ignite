@@ -256,8 +256,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        stopAllClients(true);
-        stopAllServers(true);
+        stopAllGrids();
 
         nodeId = null;
         clientIpFinder = null;
@@ -265,8 +264,6 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         netTimeout = TcpDiscoverySpi.DFLT_NETWORK_TIMEOUT;
         clientFailureDetectionTimeout = 1000;
         longSockTimeouts = false;
-
-        assert G.allGrids().isEmpty();
     }
 
     /**

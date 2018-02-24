@@ -155,7 +155,7 @@ public class ClientReconnectAfterClusterRestartTest extends GridCommonAbstractTe
             streamer.addData(1L, obj);
             streamer.flush();
 
-            stopAllServers(false);
+            stopAllServers();
 
             Thread.sleep(2_000);
 

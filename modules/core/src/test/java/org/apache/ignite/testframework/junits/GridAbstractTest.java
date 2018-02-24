@@ -41,7 +41,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import junit.framework.TestCase;
@@ -1033,6 +1033,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * Stop grid and log exception
+     *
      * @param igniteInstanceName Ignite instance name.
      * @param cancel Cancel flag.
      * @param awaitTop Await topology change flag.
@@ -1047,6 +1049,8 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * Stop node ignoring already stopped
+     *
      * @param igniteInstanceName Ignite instance name.
      * @param cancel Cancel flag.
      * @param awaitTop Await topology change flag.
@@ -1079,7 +1083,7 @@ public abstract class GridAbstractTest extends TestCase {
         }
     }
 
-    /** Stop all grids and throw exception if some of them failed to stop */
+    /** Stop all grids and throw {@link Exception} if some of them failed to stop */
     private void stopAllGridsSilently() throws Exception {
         final Map<String, Throwable> stopGridErrors = new HashMap<>();
 
@@ -1094,28 +1098,32 @@ public abstract class GridAbstractTest extends TestCase {
         }
 
         if (stopGridErr) {
-            StringBuilder sb = new StringBuilder("[");
+            String message = stopGridErrors.entrySet().stream().map(Map.Entry::toString)
+                .collect(Collectors.joining(", ", "[", "]"));
 
-            for (Map.Entry<String, Throwable> entry : stopGridErrors.entrySet())
-                sb.append("[name=").append(entry.getKey()).append(", err=").append(entry.getValue().getMessage())
-                    .append("], ");
-
-            throw new Exception("Failed to stop grids: " + sb.toString() + "].");
+            throw new Exception("Failed to stop grids: [" + message + "].");
         }
     }
 
-    /** */
+    /** Stop all grid nodes with canceling all jobs currently active */
     protected void stopAllGrids() {
         stopAllGrids(true);
     }
 
     /**
+     * Stop all grids using {@link org.apache.ignite.spi.discovery.DiscoverySpi#isClientMode()} as condition for
+     * stopping client grid nodes before server grid nodes
+     *
      * @param cancel Cancel flag.
      */
     protected void stopAllGrids(boolean cancel) {
         try {
-            stopAllClients(cancel, false);
-            stopAllServers(cancel, false);
+            G.allGrids().stream()
+                .sorted((g1, g2) ->
+                    Boolean.compare(
+                        g1.configuration().getDiscoverySpi().isClientMode(),
+                        g2.configuration().getDiscoverySpi().isClientMode()))
+                .forEach(g -> stopGrid(g.name(), cancel, false));
 
             assert G.allGrids().isEmpty();
         }
@@ -1124,43 +1132,10 @@ public abstract class GridAbstractTest extends TestCase {
         }
     }
 
-    /**
-     * @param cancel Cancel flag.
-     */
-    protected void stopAllClients(boolean cancel) {
-        stopAllClients(cancel, true);
-    }
-
-    /**
-     * @param cancel Cancel flag.
-     * @param awaitTop Await topology change flag.
-     */
-    protected void stopAllClients(boolean cancel, boolean awaitTop) {
-        stopFilteredGrids(cancel, awaitTop, grid -> grid.configuration().getDiscoverySpi().isClientMode());
-    }
-
-    /**
-     * @param cancel Cancel flag.
-     */
-    protected void stopAllServers(boolean cancel) {
-        stopAllServers(cancel, true);
-    }
-
-    /**
-     * @param cancel Cancel flag.
-     * @param awaitTop Await topology change flag.
-     */
-    protected void stopAllServers(boolean cancel, boolean awaitTop) {
-        stopFilteredGrids(cancel, awaitTop, grid -> !grid.configuration().getDiscoverySpi().isClientMode());
-    }
-
-    /**
-     * @param cancel Cancel flag.
-     * @param awaitTop Await topology change flag.
-     * @param cond stop grid's filtered by predicate.
-     */
-    protected void stopFilteredGrids(boolean cancel, boolean awaitTop, Predicate<? super Ignite> cond) {
-        G.allGrids().stream().filter(cond).forEach(g -> stopGrid(g.name(), cancel, awaitTop));
+    /** Stop all server grid nodes */
+    protected void stopAllServers() {
+        G.allGrids().stream().filter(g -> !g.configuration().getDiscoverySpi().isClientMode())
+            .forEach(g -> stopGrid(g.name(), false, true));
     }
 
     /**
