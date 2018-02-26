@@ -166,7 +166,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     };
 
     /** Latest serializer version to use. */
-    private static final int LATEST_SERIALIZER_VERSION = 2;
+    private static final int LATEST_SERIALIZER_VERSION = 3;
 
     /** */
     private final boolean alwaysWriteFullPages;
