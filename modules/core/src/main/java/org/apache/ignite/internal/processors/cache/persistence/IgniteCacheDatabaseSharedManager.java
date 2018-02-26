@@ -114,7 +114,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         assert memCfg != null;
 
-        initDfltDataRegionIfRequired(memCfg);
+        initDefaultDataRegionIfRequired(memCfg);
 
         validateConfiguration(memCfg);
 
@@ -123,11 +123,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         initDataRegions(memCfg);
     }
 
-    private void initDfltDataRegionIfRequired(DataStorageConfiguration memCfg) {
+    /**
+     * @param memCfg Data storage configuration.
+     */
+    private void initDefaultDataRegionIfRequired(DataStorageConfiguration memCfg) {
         DataRegionConfiguration dflt = memCfg.getDefaultDataRegionConfiguration();
 
-        if(dflt == null && !cctx.kernalContext().clientNode())
+        if (dflt == null) {
             dflt = new DataRegionConfiguration();
+
+            if (cctx.kernalContext().clientNode())
+                U.warn(log, "Default data region will be started.");
+        }
 
         memCfg.setDefaultDataRegionConfiguration(dflt);
     }
