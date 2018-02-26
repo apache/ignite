@@ -124,7 +124,6 @@ import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
@@ -267,7 +266,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** Custom event listener. */
     private ConcurrentMap<Class<?>, List<CustomEventListener<DiscoveryCustomMessage>>> customEvtLsnrs =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Local node initialization event listeners. */
     private final Collection<IgniteInClosure<ClusterNode>> locNodeInitLsnrs = new ArrayList<>();
@@ -1059,25 +1058,28 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             /** {@inheritDoc} */
             @Override public Map<Integer, CacheMetrics> cacheMetrics() {
-                Collection<GridCacheAdapter<?, ?>> caches = ctx.cache().internalCaches();
+                try {
+                    Collection<GridCacheAdapter<?, ?>> caches = ctx.cache().internalCaches();
 
-                if (F.isEmpty(caches))
-                    return Collections.emptyMap();
+                    if (!F.isEmpty(caches)) {
+                        Map<Integer, CacheMetrics> metrics = U.newHashMap(caches.size());
 
-                Map<Integer, CacheMetrics> metrics = null;
+                        for (GridCacheAdapter<?, ?> cache : caches) {
+                            if (cache.context().statisticsEnabled() &&
+                                cache.context().started() &&
+                                cache.context().affinity().affinityTopologyVersion().topologyVersion() > 0) {
 
-                for (GridCacheAdapter<?, ?> cache : caches) {
-                    if (cache.context().statisticsEnabled() &&
-                        cache.context().started() &&
-                        cache.context().affinity().affinityTopologyVersion().topologyVersion() > 0) {
-                        if (metrics == null)
-                            metrics = U.newHashMap(caches.size());
+                                metrics.put(cache.context().cacheId(), cache.localMetrics());
+                            }
+                        }
 
-                        metrics.put(cache.context().cacheId(), cache.localMetrics());
+                        return metrics;
                     }
+                } catch (Exception e) {
+                    U.warn(log, "Failed to compute cache metrics", e);
                 }
 
-                return metrics == null ? Collections.<Integer, CacheMetrics>emptyMap() : metrics;
+                return Collections.emptyMap();
             }
         };
     }

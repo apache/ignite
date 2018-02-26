@@ -25,8 +25,10 @@ import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.MarshalledRecord;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.record.RecordTypes;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.util.typedef.CIX1;
@@ -93,8 +95,8 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
     }
 
     /** {@inheritDoc} */
-    @Override protected FileWriteAheadLogManager.ReadFileHandle advanceSegment(
-        @Nullable FileWriteAheadLogManager.ReadFileHandle curWalSegment) throws IgniteCheckedException {
+    @Override protected AbstractReadFileHandle advanceSegment(
+        @Nullable AbstractReadFileHandle curWalSegment) throws IgniteCheckedException {
         if (segmentInitialized) {
             closeCurrentWalSegment();
             // No advance as we iterate over single segment.
@@ -121,6 +123,12 @@ public class SingleSegmentLogicalRecordsIterator extends AbstractWalRecordsItera
 
         if (curRec != null && advanceC != null)
             advanceC.apply(curRec.get2());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected AbstractReadFileHandle createReadFileHandle(FileIO fileIO, long idx,
+        RecordSerializer ser, FileInput in) {
+        return new FileWriteAheadLogManager.ReadFileHandle(fileIO, idx, ser, in);
     }
 
     /**

@@ -187,7 +187,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private void deleteWorkFiles() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /**
@@ -750,7 +750,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testFillWalForExactSegmentsCount() throws Exception {
-        customWalMode = WALMode.DEFAULT;
+        customWalMode = WALMode.FSYNC;
 
         final CountDownLatch reqSegments = new CountDownLatch(15);
         final Ignite ignite = startGrid("node0");
@@ -799,7 +799,7 @@ public class IgniteWalReaderTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testReadEmptyWal() throws Exception {
-        customWalMode = WALMode.DEFAULT;
+        customWalMode = WALMode.FSYNC;
 
         final Ignite ignite = startGrid("node0");
 
