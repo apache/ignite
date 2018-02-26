@@ -37,29 +37,27 @@ public class BatchedInsertBenchmark extends AbstractUploadBenchmark {
     /** {@inheritDoc} */
     @Override protected void warmup(Connection warmupConn) throws SQLException {
         performBatchUpdate(warmupConn, WARMUP_ROWS_CNT);
-
-        clearTable();
     }
 
     /** {@inheritDoc} */
     @Override public void upload(Connection uploadConn) throws Exception {
-        performBatchUpdate(uploadConn, INSERT_SIZE);
+        performBatchUpdate(uploadConn, INSERT_ROWS_CNT);
     }
 
     /**
      * Actually performs batched inserts, using specified connection.
      *
      * @param uploadConn Special connection for upload purposes.
-     * @param rowsCount Number of rows to insert.
+     * @param rowsCnt Number of rows to insert.
      */
-    private void performBatchUpdate(Connection uploadConn, long rowsCount) throws SQLException{
+    private void performBatchUpdate(Connection uploadConn, long rowsCnt) throws SQLException{
         try (PreparedStatement insert = uploadConn.prepareStatement(queries.insert())) {
-            for (int id = 1; id <= rowsCount; id++) {
+            for (int id = 1; id <= rowsCnt; id++) {
                 queries.setRandomInsertArgs(insert, id);
 
                 insert.addBatch();
 
-                if (id % BATCH_SIZE == 0 || id == rowsCount)
+                if (id % BATCH_SIZE == 0 || id == rowsCnt)
                     insert.executeBatch();
             }
         }

@@ -34,7 +34,7 @@ import org.yardstickframework.BenchmarkUtils;
  */
 public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     /** Total inserts size. */
-    public int INSERT_SIZE;
+    public int INSERT_ROWS_CNT;
 
     /** Rows count to be inserted and deleted during warmup */
     public static final int WARMUP_ROWS_CNT = 3000_000;
@@ -46,11 +46,13 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     @Override public final void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        INSERT_SIZE = args.range();
+        INSERT_ROWS_CNT = args.range();
 
         init();
 
         warmup0();
+
+        clearTable();
 
         dropAndCreate();
     }
@@ -114,13 +116,8 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
 
     /** Drops and re-creates test table. */
     protected final void dropAndCreate() throws SQLException{
-        try (PreparedStatement drop = conn.get().prepareStatement(queries.dropTableIfExists())) {
-            drop.executeUpdate();
-        }
-
-        try (PreparedStatement create = conn.get().prepareStatement(queries.createTable())) {
-            create.executeUpdate();
-        }
+        executeUpdate(queries.dropTableIfExists());
+        executeUpdate(queries.createTable());
     }
 
     /** Clears all the data in the test table. */
@@ -147,8 +144,8 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         try {
             long count = count();
 
-            if (count != INSERT_SIZE) {
-                String msg = "Rows count is incorrect: [actual=" + count + ", expected=" + INSERT_SIZE + "]";
+            if (count != INSERT_ROWS_CNT) {
+                String msg = "Rows count is incorrect: [actual=" + count + ", expected=" + INSERT_ROWS_CNT + "]";
 
                 BenchmarkUtils.println(cfg, "TearDown: " + msg);
 

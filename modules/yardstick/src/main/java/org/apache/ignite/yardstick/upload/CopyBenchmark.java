@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.PrintStream;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.util.Map;
 import org.yardstickframework.BenchmarkUtils;
 
 /**
@@ -32,29 +31,31 @@ import org.yardstickframework.BenchmarkUtils;
  */
 public class CopyBenchmark extends AbstractUploadBenchmark {
     /** csv file for warmup */
-    private String warmupCsv;
+    private String warmupCsvPath;
 
     /** csv file for benchmared action */
-    private String realCsv;
+    private String realCsvPath;
 
     /** {@inheritDoc} */
     @Override protected void init() {
         super.init();
 
-        warmupCsv = generateWarmupCsv();
-        realCsv = generateRealCsv();
+        warmupCsvPath = generateWarmupCsv();
+        realCsvPath = generateRealCsv();
     }
 
     /** Generate csv file for copy operation being benchmarked. */
     private String generateRealCsv() {
-        String prefix = "data-" + INSERT_SIZE;
+        String prefix = "data-" + INSERT_ROWS_CNT + "-rows-";
 
-        return generate(prefix, INSERT_SIZE);
+        return generate(prefix, INSERT_ROWS_CNT);
     }
 
     /** Generate csv file for copy operation being performed during warmup. */
     private String generateWarmupCsv() {
-        return generate("warmup", WARMUP_ROWS_CNT);
+        String prefix = "warmup-" + WARMUP_ROWS_CNT + "-rows-" ;
+
+        return generate(prefix, WARMUP_ROWS_CNT);
     }
 
     /**
@@ -100,16 +101,14 @@ public class CopyBenchmark extends AbstractUploadBenchmark {
 
     /** {@inheritDoc} */
     @Override protected void warmup(Connection warmupConn) throws Exception {
-        try (PreparedStatement fromCsv = warmupConn.prepareStatement(queries.copyFrom(warmupCsv))) {
+        try (PreparedStatement fromCsv = warmupConn.prepareStatement(queries.copyFrom(warmupCsvPath))) {
             fromCsv.executeUpdate();
         }
-
-        clearTable();
     }
 
     /** {@inheritDoc} */
     @Override public void upload(Connection uploadConn) throws Exception {
-        try (PreparedStatement fromCsv = uploadConn.prepareStatement(queries.copyFrom(realCsv))) {
+        try (PreparedStatement fromCsv = uploadConn.prepareStatement(queries.copyFrom(realCsvPath))) {
             fromCsv.executeUpdate();
         }
     }
