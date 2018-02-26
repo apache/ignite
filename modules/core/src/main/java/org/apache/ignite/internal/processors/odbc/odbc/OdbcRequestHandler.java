@@ -22,6 +22,7 @@ import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -250,14 +251,19 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             List<FieldsQueryCursor<List<?>>> cursors = ctx.query().querySqlFields(qry, true, false);
 
             OdbcQueryResults results = new OdbcQueryResults(cursors);
+            Collection<OdbcColumnMeta> fieldsMeta;
 
-            if (!results.hasUnfetchedRows())
+            if (!results.hasUnfetchedRows()) {
                 results.closeAll();
-            else
+
+                fieldsMeta = new ArrayList<>();
+            } else {
                 qryResults.put(qryId, results);
 
-            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, results.currentResultSet().fieldsMeta(),
-                results.rowsAffected());
+                fieldsMeta = results.currentResultSet().fieldsMeta();
+            }
+
+            OdbcQueryExecuteResult res = new OdbcQueryExecuteResult(qryId, fieldsMeta, results.rowsAffected());
 
             return new OdbcResponse(res);
         }
