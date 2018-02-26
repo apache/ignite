@@ -59,13 +59,33 @@ export class NotebooksListCtrl {
             onRegisterApi: (api) => {
                 this.gridApi = api;
 
+                api.selection.on.rowSelectionChanged($scope, this._onSelectionChanged.bind(this));
+                api.selection.on.rowSelectionChangedBatch($scope, this._onSelectionChanged.bind(this));
+
                 this.$scope.$watch(() => this.gridApi.grid.getVisibleRows().length, (rows) => this._adjustHeight(rows));
             }
         };
+
+        this.actionOptions = [
+            {
+                action: 'Clone',
+                click: this.cloneNotebook.bind(this),
+                available: true
+            },
+            {
+                action: 'Delete',
+                click: this.deleteNotebooks.bind(this),
+                available: true
+            }
+        ];
     }
 
-    async $onInit() {
-        this.notebooks = await this._loadAllNotebooks();
+    $onInit() {
+        this.loadAllNotebooks();
+    }
+
+    async loadAllNotebooks() {
+        this.notebooks = await this.IgniteNotebook.read();
         this.gridOptions.data = this._preprocessNotebooksList(this.notebooks);
     }
 
@@ -82,8 +102,21 @@ export class NotebooksListCtrl {
         return notebook.paragraphs.filter((paragraph) => paragraph.qryType === queryType).length || 0;
     }
 
-    _loadAllNotebooks() {
-        return this.IgniteNotebook.read();
+    _onSelectionChanged() {
+        this._checkCloneAllow();
+    }
+
+    _checkCloneAllow() {
+        this.actionOptions[0].available = this.gridApi.selection.getSelectedRows().length === 1;
+    }
+
+    cloneNotebook() {
+        // Not implemented
+    }
+
+    async deleteNotebooks() {
+        await this.IgniteNotebook.removeBatch(this.gridApi.selection.getSelectedRows());
+        this.loadAllNotebooks();
     }
 
     _adjustHeight(rows) {

@@ -71,4 +71,14 @@ export default class Notebook {
                     .catch(this.Messages.showError);
             });
     }
+
+    removeBatch(notebooks) {
+        return this.confirmModal.confirm(`Are you sure you want to remove ${notebooks.length} selected notebooks?`)
+            .then(() => {
+                const deleteNotebooksPromises = notebooks.map((notebook) => this.NotebookData.remove(notebook));
+
+                return Promise.all(deleteNotebooksPromises);
+            })
+            .catch(this.Messages.showError);
+    }
 }

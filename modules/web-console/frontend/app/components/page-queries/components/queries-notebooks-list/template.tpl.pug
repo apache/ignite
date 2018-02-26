@@ -14,13 +14,25 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include /app/helpers/jade/mixins
 
 .queries-notebooks-list
     .panel--ignite
         .panel-heading.ui-grid-settings
             .panel-title
+                +ignite-form-field-bsdropdown({
+                    label: 'Actions',
+                    model: '$ctrl.action',
+                    name: 'action',
+                    disabled: '$ctrl.gridApi.selection.getSelectedRows().length === 0',
+                    required: false,
+                    options: '$ctrl.actionOptions'
+                })
+
                 .ui-grid-settings--heading
                     span Notebooks
+
+
 
         .panel-collapse
             .grid.ui-grid--ignite(ui-grid='$ctrl.gridOptions' ui-grid-tree-view ui-grid-resize-columns ui-grid-selection ui-grid-exporter ui-grid-pinning ui-grid-hovering)
