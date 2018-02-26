@@ -164,11 +164,14 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
      *  This connection is special, since it may have additional jdbc url parameters
      */
     private Connection uploadConnection() throws SQLException{
-        String params = args.uploadJdbcParams();
+        String urlParams = "";
 
-        if (!params.isEmpty())
-            params = "?" + params;
+        if (!urlParams.isEmpty()) {
+            // todo: requires java8!
+            String kvList = String.join("&", args.uploadJdbcParams());
+            urlParams = "?" + kvList;
+        }
 
-        return connection(url() + params);
+        return connection(url() + urlParams);
     }
 }

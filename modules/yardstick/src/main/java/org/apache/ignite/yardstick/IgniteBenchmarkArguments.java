@@ -18,6 +18,7 @@
 package org.apache.ignite.yardstick;
 
 import com.beust.jcommander.Parameter;
+import java.util.Collections;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -270,11 +271,12 @@ public class IgniteBenchmarkArguments {
             "and turn it on again when upload is done")
     private boolean switchWal = false;
 
+    /** */
     @Parameter(names = {"--sql-jdbc-params"},
-        description = "Upload benchmark only" +
-            "Additional url parameters for special jdbc connection that only uploads data. " +
-            "Format is url parameters (comma separated key=value) without leading ?")
-    private String uploadJdbcParams = "";
+        variableArity = true,
+        description = "Upload benchmark only: " +
+            "Additional url parameters (space separated key=value) for special jdbc connection that only uploads data. ")
+    private List<String> uploadJdbcParams = Collections.emptyList();
 
     /**
      * @return {@code True} if need set {@link DataStorageConfiguration}.
@@ -677,7 +679,7 @@ public class IgniteBenchmarkArguments {
     }
 
     /** @return parameters for jdbc url */
-    public String uploadJdbcParams(){
+    public List<String> uploadJdbcParams(){
         return uploadJdbcParams;
     }
 
