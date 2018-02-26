@@ -318,7 +318,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
             long base = entryBase(idxCurr);
 
             //todo provide tag
-            int tag = 0; //GridUnsafe.getInt(base + TAG_OFFSET);
+            int tag = 1; //GridUnsafe.getInt(base + TAG_OFFSET);
 
             return new ReplaceCandidate(tag, getValue(base),
                 new FullPageId(getPageId(base), getGrpId(base)));

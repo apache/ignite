@@ -127,7 +127,7 @@ public interface PageMemoryEx extends PageMemory {
      *
      * @param grpId Group ID.
      * @param partId Partition ID.
-     * @return New partition tag (growing 1-based partition file version).
+     * @return New partition generation (growing 1-based partition file version).
      */
     public int invalidate(int grpId, int partId);
 

@@ -50,9 +50,9 @@ public class ReplaceCandidate {
     }
 
     /**
-     * @return Tag.
+     * @return Partition generation saved in map, too old value means page may be safely cleared.
      */
-    public int tag() {
+    public int generation() {
         return tag;
     }
 
