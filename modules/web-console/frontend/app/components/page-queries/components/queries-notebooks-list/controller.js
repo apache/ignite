@@ -23,7 +23,9 @@ export class NotebooksListCtrl {
     constructor(IgniteNotebook, $scope) {
         Object.assign(this, { IgniteNotebook, $scope });
 
-        const notebookNameTemplate = `<a ui-sref="base.sql.tabs.notebook({ noteId: row.entity._id })">{{ row.entity.name }}</a>`;
+        const notebookNameTemplate = `<div class="ui-grid-cell-contents notebook-name"><a ui-sref="base.sql.tabs.notebook({ noteId: row.entity._id })">{{ row.entity.name }}</a></div>`;
+        const sqlQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.sqlQueriesParagraphsLength}}</div>`;
+        const scanQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.scanQueriesPsaragraphsLength}}</div>`;
 
         const categories = [
             { name: 'Name', visible: true, enableHiding: false },
@@ -32,9 +34,9 @@ export class NotebooksListCtrl {
         ];
 
         const columnDefs = [
-            { name: 'name', displayName: 'Name', categoryDisplayName: 'Name', field: 'name', cellTemplate: notebookNameTemplate, filter: { placeholder: 'Filter by Name...' } },
-            { name: 'sqlQueryNum', displayName: 'SQL Query', categoryDisplayName: 'SQL Query', field: 'sqlQueryNum', minWidth: 150, width: 150, enableFiltering: false },
-            { name: 'scanQueryNum', displayName: 'Scan Query', categoryDisplayName: 'Scan Query', field: 'scanQueryNum', minWidth: 150, width: 150, enableFiltering: false }
+            { name: 'name', displayName: 'Name', categoryDisplayName: 'Name', field: 'name', cellTemplate: notebookNameTemplate, pinnedLeft: true, filter: { placeholder: 'Filter by Name...' } },
+            { name: 'sqlQueryNum', displayName: 'SQL Query', categoryDisplayName: 'SQL Query', field: 'sqlQueryNum', cellTemplate: sqlQueryTemplate, minWidth: 150, width: 150, enableFiltering: false },
+            { name: 'scanQueryNum', displayName: 'Scan Query', categoryDisplayName: 'Scan Query', field: 'scanQueryNum', cellTemplate: scanQueryTemplate, minWidth: 150, width: 150, enableFiltering: false }
         ];
 
         this.gridOptions = {
@@ -64,7 +66,20 @@ export class NotebooksListCtrl {
 
     async $onInit() {
         this.notebooks = await this._loadAllNotebooks();
-        this.gridOptions.data = this.notebooks;
+        this.gridOptions.data = this._preprocessNotebooksList(this.notebooks);
+    }
+
+    _preprocessNotebooksList(notebooks = []) {
+        return notebooks.map((notebook) => {
+            notebook.sqlQueriesParagraphsLength = this._countParagraphs(notebook, 'query');
+            notebook.scanQueriesPsaragraphsLength = this._countParagraphs(notebook, 'scan');
+
+            return notebook;
+        });
+    }
+
+    _countParagraphs(notebook, queryType = 'query') {
+        return notebook.paragraphs.filter((paragraph) => paragraph.qryType === queryType).length || 0;
     }
 
     _loadAllNotebooks() {
