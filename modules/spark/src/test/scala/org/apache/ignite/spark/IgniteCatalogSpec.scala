@@ -21,6 +21,7 @@ import java.lang.{Long ⇒ JLong}
 
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.internal.IgnitionEx
+import org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath
 import org.apache.ignite.spark.AbstractDataFrameSpec.{DEFAULT_CACHE, EMPLOYEE_CACHE_NAME, TEST_CONFIG_FILE, enclose}
 import org.apache.spark.sql.ignite.IgniteSparkSession
 import org.apache.spark.sql.types.{LongType, StringType}
@@ -105,7 +106,8 @@ class IgniteCatalogSpec extends AbstractDataFrameSpec {
         }
 
         it("Should allow register tables based on other datasources") {
-            val citiesDataFrame = igniteSession.read.json("src/test/resources/cities.json")
+            val citiesDataFrame = igniteSession.read.json(
+                resolveIgnitePath("modules/spark/src/test/resources/cities.json").getAbsolutePath)
 
             citiesDataFrame.createOrReplaceTempView("JSON_CITIES")
 
