@@ -255,9 +255,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             if (!results.hasUnfetchedRows()) {
                 results.closeAll();
+
                 fieldsMeta = new ArrayList<>();
             } else {
                 qryResults.put(qryId, results);
+
                 fieldsMeta = results.currentResultSet().fieldsMeta();
             }
 

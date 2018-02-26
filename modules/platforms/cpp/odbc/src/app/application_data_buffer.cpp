@@ -338,22 +338,22 @@ namespace ignite
 
             ConversionResult::Type ApplicationDataBuffer::PutRawDataToBuffer(void *data, size_t len, int32_t& written)
             {
-                SqlLen ilen = static_cast<SqlLen>(len);
+                SqlLen iLen = static_cast<SqlLen>(len);
 
                 SqlLen* resLenPtr = GetResLen();
                 void* dataPtr = GetData();
 
                 if (resLenPtr)
-                    *resLenPtr = ilen;
+                    *resLenPtr = iLen;
 
-                SqlLen toCopy = std::min(buflen, ilen);
+                SqlLen toCopy = std::min(buflen, iLen);
 
                 if (dataPtr != 0 && toCopy > 0)
                     memcpy(dataPtr, data, static_cast<size_t>(toCopy));
 
                 written = static_cast<int32_t>(toCopy);
 
-                return ConversionResult::AI_SUCCESS;
+                return toCopy < iLen ? ConversionResult::AI_VARLEN_DATA_TRUNCATED : ConversionResult::AI_SUCCESS;
             }
 
             ConversionResult::Type ApplicationDataBuffer::PutInt8(int8_t value)
