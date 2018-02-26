@@ -18,7 +18,7 @@ public class BPlusTreeReproducingTest {
     public void testSeveralInitShutdown() throws Exception {
         BPlusTreeFakeReuseSelfTest test = new BPlusTreeFakeReuseSelfTest() {
             @Override protected long getTestTimeout() {
-                return 4 * 1000;
+                return (int)(Math.random()*10) * 1000;
             }
         };
 
