@@ -92,7 +92,7 @@ public class FullPageIdTable implements LoadedPagesMap {
 
     private boolean optimize = true;
     private boolean optimize2 = true;
-    //todo
+    //todo remove {{
     /** Avg get steps. */
     IntervalBasedMeasurement avgGetSteps = new IntervalBasedMeasurement(250, 4);
 

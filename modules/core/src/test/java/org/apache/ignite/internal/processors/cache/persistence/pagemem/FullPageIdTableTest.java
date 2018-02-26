@@ -24,12 +24,10 @@ import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.logger.java.JavaLogger;
 import org.junit.Test;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -113,22 +111,33 @@ public class FullPageIdTableTest  {
     @Test
     public void putRemoveScenario() throws Exception {
         long seed   = U.currentTimeMillis();
-        doPutRemoveTest(seed);
+        doPutRemoveTest(seed, false);
     }
 
     //@Test
     public void putRemoveScenarioFixedSeed() throws Exception {
         long seed = 1518082843319L;
 
-        doPutRemoveTest(seed);
+        doPutRemoveTest(seed, false);
     }
 
-    private void doPutRemoveTest(long seed) {
+    /**
+     * @throws Exception if failed.
+     */
+    @Test
+    public void putRemoveScenarioNewMap() throws Exception {
+        long seed   = U.currentTimeMillis();
+        doPutRemoveTest(seed, true);
+    }
+
+
+    private void doPutRemoveTest(long seed, boolean newMapImpl) {
         int elementsCnt = 7000;
 
-        System.setProperty(IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR, "11");
-
-        long mem = FullPageIdTable.requiredMemory(elementsCnt);
+        //System.setProperty(IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR, "11");
+        long mem = newMapImpl
+            ? RobinHoodBackwardShiftHashMap.requiredMemory(elementsCnt)
+            : FullPageIdTable.requiredMemory(elementsCnt);
 
         DirectMemoryProvider prov = new UnsafeMemoryProvider(log);
 
@@ -141,16 +150,19 @@ public class FullPageIdTableTest  {
 
             Random rnd = new Random(seed);
 
-            LoadedPagesMap tbl = new FullPageIdTable(region.address(), region.size(), true);
+            LoadedPagesMap tbl =
+                newMapImpl ?
+                    new RobinHoodBackwardShiftHashMap(region.address(), region.size())
+                    : new FullPageIdTable(region.address(), region.size(), true);
 
             Map<FullPageId, Long> check = new HashMap<>();
 
             int tag = 0;
-            for (int i = 0; i < 30_000_000 ; i++) {
+            for (int i = 0; i < 30_000_000; i++) {
                 int op = rnd.nextInt(5);
 
                 int cacheId = rnd.nextInt(CACHE_ID_RANGE2) + 1;
-                int pageId = rnd.nextInt(PAGE_ID_RANGE2  );
+                int pageId = rnd.nextInt(PAGE_ID_RANGE2);
 
                 FullPageId fullId = new FullPageId(pageId, cacheId);
 
@@ -238,12 +250,16 @@ public class FullPageIdTableTest  {
         final Map<FullPageId, Long> tblSnapshot = new HashMap<>();
 
         if (tbl instanceof FullPageIdTable)
-            ((FullPageIdTable)tbl).visitAll(new CI2<FullPageId, Long>() {
-                @Override public void apply(FullPageId fullId, Long val) {
-                    if (tblSnapshot.put(fullId, val) != null)
-                        throw new AssertionError("Duplicate full page ID mapping: " + fullId);
-                }
+            ((FullPageIdTable)tbl).visitAll((fullId, val) -> {
+                if (tblSnapshot.put(fullId, val) != null)
+                    throw new AssertionError("Duplicate full page ID mapping: " + fullId);
             });
+        else if (tbl instanceof RobinHoodBackwardShiftHashMap) {
+            ((RobinHoodBackwardShiftHashMap)tbl).forEach((fullId, val) -> {
+                if (tblSnapshot.put(fullId, val) != null)
+                    throw new AssertionError("Duplicate full page ID mapping: " + fullId);
+            });
+        }
 
         int chkSize = check.size();
         int foundTblSize = tblSnapshot.size();
@@ -251,10 +267,11 @@ public class FullPageIdTableTest  {
         HashMap<FullPageId, Long> cp = new HashMap<>(tblSnapshot);
         check.keySet().forEach(cp::remove);
 
-        if (chkSize != foundTblSize) {
+        if (chkSize != foundTblSize && tbl instanceof FullPageIdTable) {
             ((FullPageIdTable)tbl).lastDump.set(0);
             ((FullPageIdTable)tbl).dumpIfNeed();
         }
+
         assertEquals("Size check failed, check map size " +
             chkSize + " but found in table " + foundTblSize + " elements," +
             " table size " + tbl.size() +
