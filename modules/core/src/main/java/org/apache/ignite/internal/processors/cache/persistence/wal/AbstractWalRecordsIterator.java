@@ -242,7 +242,7 @@ public abstract class AbstractWalRecordsIterator
 
             rec = postProcessRecord(rec);
 
-            if (linker != null && hnd.ser.version() >= LINKER_AVAILABLE_SINCE_VERSION) {
+            if (linker != null && hnd.ser().version() >= LINKER_AVAILABLE_SINCE_VERSION) {
                 if (rec instanceof MetastoreDataRecord) {
                     linker.addMetastorageDataRecord((MetastoreDataRecord) rec, actualFilePtr);
                 }
