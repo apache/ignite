@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1119,10 +1120,7 @@ public abstract class GridAbstractTest extends TestCase {
     protected void stopAllGrids(boolean cancel) {
         try {
             G.allGrids().stream()
-                .sorted((g1, g2) ->
-                    Boolean.compare(
-                        g1.configuration().getDiscoverySpi().isClientMode(),
-                        g2.configuration().getDiscoverySpi().isClientMode()))
+                .sorted(Comparator.comparing(g -> g.configuration().getDiscoverySpi().isClientMode()))
                 .forEach(g -> stopGrid(g.name(), cancel, false));
 
             assert G.allGrids().isEmpty();
