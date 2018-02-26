@@ -15,23 +15,26 @@
  * limitations under the License.
  */
 
-const { Selector } = require('testcafe');
-const { removeData } = require('../envtools');
-const { signUp } = require('../roles');
+import { Selector } from 'testcafe';
+import { dropTestDB, insertTestUser, resolveUrl } from '../envtools';
+import { createRegularUser } from '../roles';
+
+const regularUser = createRegularUser();
 
 fixture('Checking Ingite main menu')
-    .page `${process.env.APP_URL || 'http://localhost:9001/'}`
+    .before(async() => {
+        await dropTestDB();
+        await insertTestUser();
+    })
     .beforeEach(async(t) => {
-        await t.setNativeDialogHandler(() => true);
-        await removeData();
-        await signUp(t);
+        await t.useRole(regularUser);
+        await t.navigateTo(resolveUrl('/'));
     })
     .after(async() => {
-        await removeData();
+        await dropTestDB();
     });
 
 test('Ingite main menu smoke test', async(t) => {
-
     await t
         .click(Selector('a').withAttribute('ui-sref', 'base.configuration.tabs'))
         .expect(Selector('title').innerText)

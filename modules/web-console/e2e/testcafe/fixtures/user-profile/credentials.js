@@ -15,22 +15,23 @@
  * limitations under the License.
  */
 
-const { Selector } = require('testcafe');
-const { removeData, insertTestUser } = require('../../envtools');
-const { signIn } = require('../../roles');
+import { Selector } from 'testcafe';
+import { dropTestDB, insertTestUser, resolveUrl } from '../../envtools';
+import { createRegularUser } from '../../roles';
+
+const regularUser = createRegularUser();
 
 fixture('Checking user credentials change')
-    .page `${process.env.APP_URL || 'http://localhost:9001/'}settings/profile`
-    .beforeEach(async(t) => {
-        await t.setNativeDialogHandler(() => true);
-        await removeData();
+    .before(async() => {
+        await dropTestDB();
         await insertTestUser();
-        await signIn(t);
-
-        await t.navigateTo(`${process.env.APP_URL || 'http://localhost:9001/'}settings/profile`);
+    })
+    .beforeEach(async(t) => {
+        await t.useRole(regularUser);
+        await t.navigateTo(resolveUrl('/settings/profile'));
     })
     .after(async() => {
-        await removeData();
+        await dropTestDB();
     });
 
 test('Testing secure token change', async(t) => {
@@ -42,7 +43,7 @@ test('Testing secure token change', async(t) => {
         .click(Selector('i').withAttribute('ng-click', '$ctrl.generateToken()'))
         .expect(Selector('p').withText('Are you sure you want to change security token?').exists)
         .ok()
-        .click('#confirm-btn-ok', {timeout: 5000});
+        .click('#confirm-btn-ok');
 
     await t
         .expect(await Selector('#current-security-token').innerText)
