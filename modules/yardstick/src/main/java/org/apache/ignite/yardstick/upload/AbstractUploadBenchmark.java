@@ -118,19 +118,34 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     protected final void clearTable() throws SQLException {
         executeUpdate(queries.deleteAll());
     }
-    /** {@inheritDoc} */
-    public void tearDown() throws Exception {
+
+    public long count() throws SQLException {
         try(PreparedStatement count = conn.get().prepareStatement(queries.count())){
             try (ResultSet rs = count.executeQuery()) {
                 rs.next();
                 long size = rs.getLong(1);
 
-                BenchmarkUtils.println(cfg, "Test table contains " + size + " rows");
-                // todo assert size == threads * sqlRange
+                return size;
             }
-        } catch (Exception ex){
-            BenchmarkUtils.println(cfg, "Exception thrown at tear down: " + ex);
-        } finally {
+        }
+    }
+
+    /** {@inheritDoc} */
+    public void tearDown() throws Exception {
+        BenchmarkUtils.println(cfg, "Tearing down");
+
+        try {
+            long count = count();
+
+            if (count != INSERT_SIZE) {
+                String msg = "Rows count is incorrect: [actual=" + count + ", expected=" + INSERT_SIZE + "]";
+
+                BenchmarkUtils.println(cfg, "TearDown: " + msg);
+
+                throw new RuntimeException(msg);
+            }
+        }
+        finally {
             super.tearDown();
         }
     }
