@@ -15,16 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.persistence;
+import {Selector, t} from 'testcafe';
+import { resolveUrl } from '../envtools';
+import {AngularJSSelector} from 'testcafe-angular-selectors';
 
-/**
- * Tracks allocated pages.
- */
-public interface AllocatedPageTracker {
-    /**
-     * Increments totalAllocatedPages counter.
-     *
-     * @param delta Value to increment by.
-     */
-    public void updateTotalAllocatedPages(long delta);
+export class PageSignIn {
+    async open() {
+        await t.navigateTo(resolveUrl('/signin'));
+
+        this.inputLoginEmail = AngularJSSelector.byModel('ui.email');
+        this.inputLoginPassword = AngularJSSelector.byModel('ui.password');
+        this.signinButton = Selector('#signin_submit');
+    }
+
+    async login(email, password) {
+        return await t
+            .typeText(this.inputLoginEmail, email)
+            .typeText(this.inputLoginPassword, password)
+            .click(this.signinButton);
+    }
 }
