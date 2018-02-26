@@ -21,23 +21,25 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 import org.apache.ignite.yardstick.jdbc.AbstractJdbcBenchmark;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
+/**
+ * Base class for upload benchmarks.
+ * Designed to run test method one single time.
+ * Introduces custom warmup operation.
+ */
 public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
-    /** Total inserts size */
+    /** Total inserts size. */
     public int INSERT_SIZE;
 
     /** Rows count to be inserted and deleted during warmup */
     public static final int WARMUP_ROWS_CNT = 3000_000;
 
-    /**
-     * Factory that hides all test data details:
-     * what query to use to create table
-     * or what random arguments to set in prepared statement
-     */
+    /** Factory that hides all the test data details. */
     QueryFactory queries = new QueryFactory();
 
     /** {@inheritDoc} */
@@ -47,16 +49,18 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         INSERT_SIZE = args.range();
 
         init();
+
         warmup0();
+
         dropAndCreate();
     }
 
-    /** Method to init benchmark fields */
+    /** Method to init benchmark fields. */
     protected void init() {
         // No-op
     }
 
-    /** Perform warmup keeping in mind wal optimization */
+    /** Perform warmup keeping in mind wal optimization. */
     private void warmup0() throws Exception{
         BenchmarkUtils.println(cfg, "Starting custom warmup");
 
@@ -86,6 +90,11 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         dropAndCreate();
     }
 
+
+    /**
+     * Uploads data using this special connection, that may have additional
+     * url parameters, such as {@code streaming=true}.
+     */
     protected abstract void upload(Connection uploadConn) throws Exception;
 
     /** {@inheritDoc} */
@@ -103,7 +112,7 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         return true;
     }
 
-    /** Drops and re-creates test table */
+    /** Drops and re-creates test table. */
     protected final void dropAndCreate() throws SQLException{
         try (PreparedStatement drop = conn.get().prepareStatement(queries.dropTableIfExists())) {
             drop.executeUpdate();
@@ -114,11 +123,12 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         }
     }
 
-    /** Clears all the data in the test table */
+    /** Clears all the data in the test table. */
     protected final void clearTable() throws SQLException {
         executeUpdate(queries.deleteAll());
     }
 
+    /** Retrieves records count in the test table. */
     public long count() throws SQLException {
         try(PreparedStatement count = conn.get().prepareStatement(queries.count())){
             try (ResultSet rs = count.executeQuery()) {
@@ -160,15 +170,19 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
 
 
     /**
-     *  Creates new connection only for upload purpose
-     *  This connection is special, since it may have additional jdbc url parameters
+     *  Creates new connection only for upload purpose.
+     *  This connection is special, since it may have additional jdbc url parameters.
      */
     private Connection uploadConnection() throws SQLException{
         String urlParams = "";
 
-        if (!urlParams.isEmpty()) {
+        // We can't just pass entire params string, due to yardstick, which relies on bash,
+        // has some troubles with escaping ampersand character.
+        List<String> rawParams = args.uploadJdbcParams();
+
+        if (!rawParams.isEmpty()) {
             // todo: requires java8!
-            String kvList = String.join("&", args.uploadJdbcParams());
+            String kvList = String.join("&", rawParams);
             urlParams = "?" + kvList;
         }
 

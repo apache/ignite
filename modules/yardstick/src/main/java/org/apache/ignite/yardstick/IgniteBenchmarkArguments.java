@@ -271,7 +271,12 @@ public class IgniteBenchmarkArguments {
             "and turn it on again when upload is done")
     private boolean switchWal = false;
 
-    /** */
+    /**
+     * Parameters for jdbc connection, that only uploads data.
+     *
+     * We can't just pass entire params string, due to yardstick, which relies on bash,
+     * has some troubles with escaping ampersand character.
+     */
     @Parameter(names = {"--sql-jdbc-params"},
         variableArity = true,
         description = "Upload benchmark only: " +

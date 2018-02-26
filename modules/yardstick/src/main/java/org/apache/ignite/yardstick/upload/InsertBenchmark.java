@@ -19,16 +19,12 @@ package org.apache.ignite.yardstick.upload;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Map;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.yardstick.jdbc.AbstractJdbcBenchmark;
-import org.yardstickframework.BenchmarkConfiguration;
-import org.yardstickframework.BenchmarkUtils;
 
+/**
+ * Measures total time of upload data using sequence of single inserts;
+ * Supports streaming.
+ */
 public class InsertBenchmark extends AbstractUploadBenchmark {
     /** {@inheritDoc} */
     @Override public void warmup(Connection warmupConn) throws SQLException {

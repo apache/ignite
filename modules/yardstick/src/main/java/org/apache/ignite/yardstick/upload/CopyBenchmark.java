@@ -26,7 +26,9 @@ import org.yardstickframework.BenchmarkUtils;
 
 /**
  * Single shot benchmark for the COPY FROM... sql query.
- * Measures total time of load number of rows from csv file using thin driver
+ * Measures total time of load number of rows from csv file using thin driver.
+ *
+ * Enabling streaming is useless for this benchmark, since copy uses streamer under the hood.
  */
 public class CopyBenchmark extends AbstractUploadBenchmark {
     /** csv file for warmup */

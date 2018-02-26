@@ -22,7 +22,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
 /**
- * Measures time of data upload using batched insert.
+ * Measures total time of data upload using batched insert.
+ * Supports streaming.
  */
 public class BatchedInsertBenchmark extends AbstractUploadBenchmark {
     /** Number of inserts in batch */

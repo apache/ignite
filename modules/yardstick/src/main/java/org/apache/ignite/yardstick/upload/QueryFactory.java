@@ -21,22 +21,37 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * Factory that hides all test data details:
+ * what query to use to create table
+ * or what random arguments to set in prepared statement.
+ */
 public class QueryFactory {
+    /** Query to drop table if it exists. */
     private final String dropTableIfExists = "DROP TABLE IF EXISTS test_upload;";
+
+    /** Number of "values" fields in the test table (any field except primary key). */
     private int valFieldsCnt = 10;
 
+    /** Create table. */
     private String createTable = newCreateTableQuery();
 
+    /** Parametrised query to insert new row. */
     private String insert = newInsertQuery();
 
+    /** Query to count table size */
     private String count = "SELECT COUNT(id) FROM test_upload;";
 
+    /** Deletes all rows from the test table. Does NOT drop the table itself */
     private String deleteAll = "DELETE FROM test_upload WHERE id > 0";
 
+    /** Turns on Write Ahead Log. */
     private String turnOnWal = "ALTER TABLE test_upload LOGGING";
 
+    /** Turns off Write Ahead Log. */
     private String turnOffWal = "ALTER TABLE test_upload NOLOGGING";
 
+    /** see {@link #createTable}. */
     private String newCreateTableQuery() {
         StringBuilder create = new StringBuilder("CREATE TABLE test_upload (id LONG PRIMARY KEY");
 
@@ -55,6 +70,7 @@ public class QueryFactory {
         return create.toString();
     }
 
+    /** see {@link #insert}. */
     private String newInsertQuery() {
         StringBuilder insert = new StringBuilder("INSERT INTO test_upload VALUES (?");
         for (int vi = 1; vi <= valFieldsCnt; vi++)
@@ -64,38 +80,32 @@ public class QueryFactory {
         return insert.toString();
     }
 
-    /**
-     * @return N fields.
-     */
+    /** see {@link #valFieldsCnt}. */
     public int valFieldsCnt() {
         return valFieldsCnt;
     }
 
-    /**
-     * @return Create table.
-     */
+    /** see {@link #createTable}. */
     public String createTable() {
         return createTable;
     }
 
-    /** Drops test table */
+    /** Drops the test table. */
     public String dropTableIfExists() {
         return dropTableIfExists;
     }
 
-    /**
-     * @return Insert.
-     */
+    /** see {@link #insert} */
     public String insert() {
         return insert;
     }
 
-    /** */
+    /** see {@link #count} */
     public String count() {
         return count;
     }
 
-    /** */
+    /** see {@link #deleteAll}*/
     public String deleteAll() {
         return deleteAll;
     }
@@ -125,6 +135,13 @@ public class QueryFactory {
         return attrs.toString();
     }
 
+    /**
+     * Fills specified prepared statement with random values and specified id (primary key).
+     *
+     * @param stmt prepared statement, built from {@link #insert} query.
+     * @param id id in the test table.
+     * @throws SQLException if statement is not correct.
+     */
     public void setRandomInsertArgs(PreparedStatement stmt, long id) throws SQLException {
         stmt.setLong(1, id);
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
@@ -139,7 +156,7 @@ public class QueryFactory {
             if (vi % 2 == 1)
                 stmt.setLong(qryIdx, nextVal);
             else
-                // FIXME: use pre-generated values
+                // todo: it's possible to pre-generate values
                 stmt.setString(qryIdx, String.valueOf(nextVal));
         }
     }
@@ -169,16 +186,12 @@ public class QueryFactory {
         return line.toString();
     }
 
-    /**
-     * @return Turn on wal.
-     */
+    /** see {@link #turnOnWal}*/
     public String turnOnWal() {
         return turnOnWal;
     }
 
-    /**
-     * @return Turn offset wal.
-     */
+    /** see {@link #turnOffWal} */
     public String turnOffWal() {
         return turnOffWal;
     }
