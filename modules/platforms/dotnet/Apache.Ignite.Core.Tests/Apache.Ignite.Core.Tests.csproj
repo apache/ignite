@@ -473,6 +473,12 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.Tests.nunit" />
     <None Include="Apache.Ignite.Core.Tests.snk" />
+    <None Include="Config\KeyStore\server.jks">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="Config\KeyStore\trust.jks">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Config\Client\server.jks">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
