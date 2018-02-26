@@ -614,7 +614,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @Override public WALIterator replay(WALPointer start)
+    @Override public WALIterator replay(WALPointer start, boolean linkDeltaRecords)
         throws IgniteCheckedException, StorageException {
         assert start == null || start instanceof FileWALPointer : "Invalid start pointer: " + start;
 
@@ -636,7 +636,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             ioFactory,
             archiver,
             decompressor,
-            log
+            log,
+                linkDeltaRecords
         );
     }
 
@@ -2927,13 +2928,15 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             FileIOFactory ioFactory,
             FileArchiver archiver,
             FileDecompressor decompressor,
-            IgniteLogger log
+            IgniteLogger log,
+            boolean linkDeltaRecords
         ) throws IgniteCheckedException {
             super(log,
                 cctx,
                 serializerFactory,
                 ioFactory,
-                psCfg.getWalRecordIteratorBufferSize());
+                psCfg.getWalRecordIteratorBufferSize(),
+                linkDeltaRecords);
             this.walWorkDir = walWorkDir;
             this.walArchiveDir = walArchiveDir;
             this.psCfg = psCfg;
