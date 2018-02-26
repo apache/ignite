@@ -1080,6 +1080,7 @@ public abstract class GridAbstractTest extends TestCase {
         }
         catch (Throwable t) {
             stopGridErr = true;
+
             throw t;
         }
     }

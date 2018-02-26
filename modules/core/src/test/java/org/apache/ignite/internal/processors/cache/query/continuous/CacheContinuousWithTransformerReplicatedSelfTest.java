@@ -115,6 +115,7 @@ public class CacheContinuousWithTransformerReplicatedSelfTest extends GridCommon
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
+
         startGrids(DFLT_SERVER_NODE_CNT);
     }
 

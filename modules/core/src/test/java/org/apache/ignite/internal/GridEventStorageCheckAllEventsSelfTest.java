@@ -104,6 +104,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
+
         ignite = null;
     }
 
