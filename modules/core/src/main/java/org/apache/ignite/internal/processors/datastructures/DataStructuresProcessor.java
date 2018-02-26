@@ -643,29 +643,46 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache = ctx.cache().cache(cacheName);
 
                 if (cache != null && cache.context().gate().enterIfNotStopped()) {
-                    try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                        AtomicDataStructureValue val = cache.get(key);
+                    boolean isInterrupted = Thread.interrupted();
 
-                        if (val == null)
-                            return null;
+                    try {
+                        while(true) {
+                            try {
+                                try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                                    AtomicDataStructureValue val = cache.get(key);
 
-                        if (val.type() != type)
-                            throw new IgniteCheckedException("Data structure has different type " +
-                                "[name=" + name +
-                                ", expectedType=" + type +
-                                ", actualType=" + val.type() + ']');
+                                    if (val == null)
+                                        return null;
 
-                        if (pred == null || pred.applyx(val)) {
-                            cache.remove(key);
+                                    if (val.type() != type)
+                                        throw new IgniteCheckedException("Data structure has different type " +
+                                            "[name=" + name +
+                                            ", expectedType=" + type +
+                                            ", actualType=" + val.type() + ']');
 
-                            tx.commit();
+                                    if (pred == null || pred.applyx(val)) {
+                                        cache.remove(key);
 
-                            if (afterRmv != null)
-                                afterRmv.applyx(null);
+                                        tx.commit();
+
+                                        if (afterRmv != null)
+                                            afterRmv.applyx(null);
+                                    }
+                                }
+
+                                break;
+                            } catch (IgniteCheckedException e) {
+                                if (X.hasCause(e, InterruptedException.class))
+                                    isInterrupted = Thread.interrupted();
+                                else
+                                    throw e;
+                            }
                         }
-                    }
-                    finally {
+                    } finally {
                         cache.context().gate().leave();
+
+                        if (isInterrupted)
+                            Thread.currentThread().interrupt();
                     }
                 }
 
