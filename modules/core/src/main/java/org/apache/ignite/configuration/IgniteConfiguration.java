@@ -114,6 +114,9 @@ public class IgniteConfiguration {
      */
     public static final long DFLT_METRICS_EXPIRE_TIME = Long.MAX_VALUE;
 
+    /** Default network compression flag. */
+    public static final boolean DFLT_COMPRESSION_ENABLED = true;
+
     /** Default maximum timeout to wait for network responses in milliseconds (value is {@code 5,000ms}). */
     public static final long DFLT_NETWORK_TIMEOUT = 5000;
 
@@ -290,6 +293,9 @@ public class IgniteConfiguration {
 
     /** Events of these types should be recorded. */
     private int[] inclEvtTypes;
+
+    /** Network compression enabled flag. */
+    private boolean compressionEnabled = DFLT_COMPRESSION_ENABLED;
 
     /** Maximum network requests timeout. */
     private long netTimeout = DFLT_NETWORK_TIMEOUT;
@@ -562,6 +568,7 @@ public class IgniteConfiguration {
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
+        compressionEnabled = cfg.isCompressionEnabled();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
         odbcCfg = cfg.getOdbcConfiguration();
@@ -1387,6 +1394,35 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setMetricsExpireTime(long metricsExpTime) {
         this.metricsExpTime = metricsExpTime;
+
+        return this;
+    }
+
+    /**
+     * Network compression enabled flag.
+     * <p>
+     * If not provided, then default value
+     * {@link #DFLT_COMPRESSION_ENABLED} is used.
+     *
+     * @return True if network compression enabled.
+     * @see #DFLT_COMPRESSION_ENABLED
+     */
+    public boolean isCompressionEnabled() {
+        return compressionEnabled;
+    }
+
+    /**
+     * Set network compression enabled flag.
+     * <p>
+     * If not provided (value is {@code 0}), then default value
+     * {@link #DFLT_COMPRESSION_ENABLED} is used.
+     *
+     * @param compressionEnabled Network compression enabled flag.
+     * @see #DFLT_COMPRESSION_ENABLED
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setCompressionEnabled(boolean compressionEnabled) {
+        this.compressionEnabled = compressionEnabled;
 
         return this;
     }

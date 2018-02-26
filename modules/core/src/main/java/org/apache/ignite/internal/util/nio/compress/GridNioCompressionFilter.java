@@ -196,7 +196,7 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
         boolean fut,
         IgniteInClosure<IgniteException> ackC
     ) throws IgniteCheckedException {
-        if (directMode)
+        if (!ses.isCompressed() || directMode)
             return proceedSessionWrite(ses, msg, fut, ackC);
 
         ByteBuffer input = checkMessage(ses, msg);
@@ -223,6 +223,12 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
+        if (!ses.isCompressed()) {
+            proceedMessageReceived(ses, msg);
+
+            return;
+        }
+
         ByteBuffer input = checkMessage(ses, msg);
 
         GridNioCompressionHandler hnd = compressionHandler(ses);
@@ -251,6 +257,9 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
+        if (!ses.isCompressed())
+            return proceedSessionClose(ses);
+
         GridNioSslFilter sslFilter = null;
 
         if (nextFilter() instanceof GridNioSslFilter) {

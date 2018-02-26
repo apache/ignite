@@ -63,6 +63,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
@@ -148,6 +149,7 @@ import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_COMPRESSION_ENABLED;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.COMPRESSION_META;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.ALREADY_CONNECTED;
@@ -306,9 +308,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * {@code "Math.max(4, Runtime.getRuntime().availableProcessors() / 2)"}.
      */
     public static final int DFLT_SELECTORS_CNT = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
-
-    /** Default network compression type. */
-    public static final CompressionType DFLT_COMPRESSION_TYPE = CompressionType.LZ4;
 
     /**
      * Version when client is ready to wait to connect to server (could be needed when client tries to open connection
@@ -524,6 +523,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 assert old == null;
 
                 ClusterNode locNode = getSpiContext().localNode();
+
+                if (isCompressionEnabled(locNode, rmtNode))
+                    ses.setCompressed(true);
 
                 if (ses.remoteAddress() == null)
                     return;
@@ -803,7 +805,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send message: " + e, e);
                 }
-
                 recovery.onConnected();
 
                 GridTcpNioCommunicationClient client = null;
@@ -988,6 +989,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                 }
                             };
 
+                            if (isCompressionEnabled(getLocalNode(), rmtNode))
+                                ses.setCompressed(true);
+
                             nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recoveryDesc.received()), lsnr);
                         }
                         catch (IgniteCheckedException e) {
@@ -1111,9 +1115,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     /** Count of selectors to use in TCP server. */
     private int selectorsCnt = DFLT_SELECTORS_CNT;
 
-    /** Network compression type. */
-    private CompressionType compressionType = DFLT_COMPRESSION_TYPE;
-
     /**
      * Defines how many non-blocking {@code selector.selectNow()} should be made before
      * falling into {@code selector.select(long)} in NIO server. Long value. Default is {@code 0}.
@@ -1154,13 +1155,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     private boolean isSslEnabled() {
         return ignite.configuration().getSslContextFactory() != null;
-    }
-
-    /**
-     * @return {@code True} if network compressing enabled.
-     */
-    private boolean isNetworkCompressingEnabled() {
-        return compressionType != CompressionType.NO_COMPRESSION;
     }
 
     /**
@@ -1621,30 +1615,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     public int getSelectorsCount() {
         return selectorsCnt;
-    }
-
-    /**
-     * Sets the network compression type.
-     * <p/>
-     * If not provided, default value is {@link #DFLT_COMPRESSION_TYPE}.
-     *
-     * @param compressionType Compression type.
-     * @return {@code this} for chaining.
-     */
-    @IgniteSpiConfiguration(optional = true)
-    public TcpCommunicationSpi setCompressionType(CompressionType compressionType) {
-        this.compressionType = compressionType;
-
-        return this;
-    }
-
-    /**
-     * See {@link #setCompressionType(CompressionType)}.
-     *
-     * @return Network compression type.
-     */
-    public CompressionType getCompressionType() {
-        return compressionType;
     }
 
     /**
@@ -2335,14 +2305,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 filterList.add(new GridNioCodecFilter(parser, log, true));
                 filterList.add(new GridConnectionBytesVerifyFilter(log));
 
-                if (isNetworkCompressingEnabled()) {
-                    GridNioCompressionFilter compressFilter =
-                        new GridNioCompressionFilter(compressionType, true, ByteOrder.nativeOrder(), log);
+                GridNioCompressionFilter compressFilter =
+                    new GridNioCompressionFilter(CompressionType.LZ4, true, ByteOrder.nativeOrder(), log);
 
-                    compressFilter.directMode(true);
+                compressFilter.directMode(true);
 
-                    filterList.add(compressFilter);
-                }
+                filterList.add(compressFilter);
 
                 if (isSslEnabled()) {
                     GridNioSslFilter sslFilter =
@@ -3212,10 +3180,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             sslMeta.sslEngine(sslEngine);
                         }
 
-                        if (isNetworkCompressingEnabled()) {
+                        boolean isCompressed = isCompressionEnabled(getLocalNode(), node);
+
+                        if (isCompressed) {
                             meta.put(COMPRESSION_META.ordinal(), compressMeta = new GridCompressionMeta());
 
-                            compressMeta.compressionEngine(GridNioCompressionFilter.createEngine(compressionType));
+                            compressMeta.compressionEngine(GridNioCompressionFilter.createEngine(CompressionType.LZ4));
                         }
 
                         Integer handshakeConnIdx = connIdx;
@@ -3226,7 +3196,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             timeoutHelper.nextTimeoutChunk(connTimeout0),
                             sslMeta,
                             compressMeta,
-                            handshakeConnIdx);
+                            handshakeConnIdx,
+                            isCompressed);
 
                         if (rcvCnt == ALREADY_CONNECTED) {
                             return null;
@@ -3249,6 +3220,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         }
 
                         GridNioSession ses = nioSrvr.createSession(ch, meta, false, null).get();
+
+                        if (isCompressed)
+                            ses.setCompressed(true);
 
                         client = new GridTcpNioCommunicationClient(connIdx, ses, log);
                     }
@@ -3427,6 +3401,22 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /**
+     * @param locNode ClusterNode.
+     * @param rmtNode ClusterNode.
+     * @return {@code True} if compression enabled.
+     */
+    private boolean isCompressionEnabled(ClusterNode locNode, ClusterNode rmtNode) {
+        assert locNode != null;
+        assert rmtNode != null;
+
+        Object flag1 = locNode.attribute(ATTR_COMPRESSION_ENABLED);
+        Object flag2 = rmtNode.attribute(ATTR_COMPRESSION_ENABLED);
+
+        return flag1 != null && flag2 != null && ((boolean)flag1 || (boolean)flag2);
+
+    }
+
+    /**
      * @param errs Error.
      * @return {@code True} if error was caused by some connection IO error.
      */
@@ -3494,7 +3484,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         long timeout,
         GridSslMeta sslMeta,
         GridCompressionMeta compressMeta,
-        @Nullable Integer handshakeConnIdx
+        @Nullable Integer handshakeConnIdx,
+        boolean isCompressed
     ) throws IgniteCheckedException {
         HandshakeTimeoutObject obj = new HandshakeTimeoutObject<>(ch, U.currentTimeMillis() + timeout);
 
@@ -3508,29 +3499,25 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             ByteBuffer buf;
 
-            if (isSslEnabled() || isNetworkCompressingEnabled()) {
-                ByteBuffer sslAppBuf = null;
+            if (isCompressed) {
+                assert compressMeta != null;
 
-                if (isSslEnabled()) {
-                    assert sslMeta != null;
+                compressHnd = new BlockingCompressionHandler(compressMeta.compressionEngine(), directBuf, ByteOrder.nativeOrder(), log);
 
-                    sslHnd = new BlockingSslHandler(sslMeta.sslEngine(), ch, directBuf, ByteOrder.nativeOrder(), log);
+                assert compressHnd.applicationBuffer().remaining() == 0;
+            }
 
-                    if (!sslHnd.handshake())
-                        throw new HandshakeException("SSL handshake is not completed.");
+            if (isSslEnabled()) {
+                assert sslMeta != null;
 
-                    sslAppBuf = sslHnd.applicationBuffer();
-                }
+                sslHnd = new BlockingSslHandler(sslMeta.sslEngine(), ch, directBuf, ByteOrder.nativeOrder(), log);
 
-                if (isNetworkCompressingEnabled()) {
-                    assert compressMeta != null;
+                if (!sslHnd.handshake())
+                    throw new HandshakeException("SSL handshake is not completed.");
 
-                    compressHnd = new BlockingCompressionHandler(compressMeta.compressionEngine(), directBuf, ByteOrder.nativeOrder(), log);
+                ByteBuffer handBuff = sslHnd.applicationBuffer();
 
-                    assert compressHnd.applicationBuffer().remaining() == 0;
-                }
-
-                if (!isSslEnabled() || sslAppBuf.remaining() < NodeIdMessage.MESSAGE_FULL_SIZE) {
+                if (handBuff.remaining() < NodeIdMessage.MESSAGE_FULL_SIZE) {
                     buf = ByteBuffer.allocate(1000);
 
                     int read = ch.read(buf);
@@ -3540,18 +3527,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     buf.flip();
 
-                    if (isSslEnabled())
-                        buf = sslHnd.decode(buf);
-
-                    if (isNetworkCompressingEnabled())
-                        buf = compressHnd.decompress(buf);
+                    buf = sslHnd.decode(buf);
                 }
-                else {
-                    if (isNetworkCompressingEnabled())
-                        buf = compressHnd.decompress(sslAppBuf);
-                    else
-                        buf = sslAppBuf;
-                }
+                else
+                    buf = handBuff;
             }
             else {
                 buf = ByteBuffer.allocate(NodeIdMessage.MESSAGE_FULL_SIZE);
@@ -3574,21 +3553,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             else if (log.isDebugEnabled())
                 log.debug("Received remote node ID: " + rmtNodeId0);
 
-            ByteBuffer hdrBuf = ByteBuffer.wrap(U.IGNITE_HEADER);
-
-            if (isNetworkCompressingEnabled()) {
-                assert  compressHnd != null;
-
-                hdrBuf = compressHnd.compress(hdrBuf);
-            }
-
             if (isSslEnabled()) {
                 assert sslHnd != null;
 
-                hdrBuf = sslHnd.encrypt(hdrBuf);
+                ch.write(sslHnd.encrypt(ByteBuffer.wrap(U.IGNITE_HEADER)));
             }
-
-            ch.write(hdrBuf);
+            else
+                ch.write(ByteBuffer.wrap(U.IGNITE_HEADER));
 
             ClusterNode locNode = getLocalNode();
 
@@ -3629,43 +3600,29 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 buf.flip();
 
-                if (isNetworkCompressingEnabled()) {
-                    assert compressHnd != null;
-
-                    buf = compressHnd.compress(buf);
-                }
-
                 if (isSslEnabled()) {
                     assert sslHnd != null;
 
-                    buf = sslHnd.encrypt(buf);
+                    ch.write(sslHnd.encrypt(buf));
                 }
-
-                ch.write(buf);
+                else
+                    ch.write(buf);
             }
             else {
-                ByteBuffer nodeIdBuf = ByteBuffer.wrap(NodeIdMessage.nodeIdBytesWithType(safeLocalNodeId()));
-
-                if (isNetworkCompressingEnabled()) {
-                    assert compressHnd != null;
-
-                    nodeIdBuf = compressHnd.compress(nodeIdBuf);
-                }
-
                 if (isSslEnabled()) {
                     assert sslHnd != null;
 
-                    nodeIdBuf = sslHnd.encrypt(nodeIdBuf);
+                    ch.write(sslHnd.encrypt(ByteBuffer.wrap(NodeIdMessage.nodeIdBytesWithType(safeLocalNodeId()))));
                 }
-
-                ch.write(nodeIdBuf);
+                else
+                    ch.write(ByteBuffer.wrap(NodeIdMessage.nodeIdBytesWithType(safeLocalNodeId())));
             }
 
             if (recovery != null) {
                 if (log.isDebugEnabled())
                     log.debug("Waiting for handshake [rmtNode=" + rmtNodeId + ']');
 
-                if (isSslEnabled() || isNetworkCompressingEnabled()) {
+                if (isSslEnabled() || isCompressed) {
                     buf = ByteBuffer.allocate(1000);
                     buf.order(ByteOrder.nativeOrder());
 
@@ -3689,7 +3646,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             decode0 = sslHnd.decode(buf);
                         }
 
-                        if (isNetworkCompressingEnabled()) {
+                        if (isCompressed) {
                             assert compressHnd != null;
 
                             decode0 = compressHnd.decompress(decode0 == null ? buf : decode0);
@@ -3711,7 +3668,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     if (decode.limit() > RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE) {
                         decode.position(RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE);
 
-                        if (isNetworkCompressingEnabled())
+                        if (isCompressed)
                             compressMeta.decodedBuffer(decode);
                         else if (isSslEnabled())
                             sslMeta.decodedBuffer(decode);
@@ -3724,7 +3681,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             sslMeta.encodedBuffer(inBuf);
                     }
 
-                    if (isNetworkCompressingEnabled()) {
+                    if (isCompressed) {
                         ByteBuffer inBuf = compressHnd.inputBuffer();
 
                         if (inBuf.position() > 0)
