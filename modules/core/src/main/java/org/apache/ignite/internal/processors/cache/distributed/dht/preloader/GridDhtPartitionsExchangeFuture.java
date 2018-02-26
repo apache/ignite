@@ -1841,7 +1841,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @return {@code True} If some futures were merged to current, false in other case.
      */
     private boolean hasMergedExchanges() {
-        return context().events().events().size() > 1;
+        synchronized (mux) {
+            return context().events().events().size() > 1;
+        }
     }
 
     /**
@@ -2388,8 +2390,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 boolean finish = cctx.exchange().mergeExchangesOnCoordinator(this);
 
-                if (hasMergedExchanges())
-                    updateTopologies(true);
+                if (hasMergedExchanges()) {
+                    // Synchronize in case of changed coordinator (thread switched to sys-*)
+                    synchronized (mux) {
+                        updateTopologies(true);
+                    }
+                }
 
                 if (!finish)
                     return;
@@ -2987,8 +2993,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         return; // Node is stopping, no need to further process exchange.
                     }
 
-                    if (hasMergedExchanges())
-                        updateTopologies(false);
+                    if (hasMergedExchanges()) {
+                        // Synchronize in case of changed coordinator (thread switched to sys-*)
+                        synchronized (mux) {
+                            updateTopologies(false);
+                        }
+                    }
 
                     assert resTopVer.equals(exchCtx.events().topologyVersion()) :  "Unexpected result version [" +
                         "msgVer=" + resTopVer +
