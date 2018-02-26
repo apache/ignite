@@ -35,7 +35,7 @@ const insertTestUser = ({userId = '000000000000000000000001', token = 'ppw4tPI3J
                     throw err;
                 }
 
-                // add user
+                // Add test user.
                 const user = {
                     _id: objectid(userId),
                     salt: 'ca8b49c2eacd498a0973de30c0873c166ed99fa0605981726aedcc85bee17832',
@@ -46,15 +46,16 @@ const insertTestUser = ({userId = '000000000000000000000001', token = 'ppw4tPI3J
                     lastName: 'Doe',
                     company: 'TestCompany',
                     country: 'Canada',
+                    industry: 'Banking',
                     admin: true,
                     token,
                     attempts: 0,
-                    lastLogin: '2016-06-28T10:41:07.463Z',
+                    lastLogin: '2018-01-28T10:41:07.463Z',
                     resetPasswordToken: '892rnLbEnVp1FP75Jgpi'
                 };
                 db.collection('accounts').insert(user);
 
-                // add spaces
+                // Add test spaces.
 
                 const spaces = [
                     {
@@ -79,7 +80,7 @@ const insertTestUser = ({userId = '000000000000000000000001', token = 'ppw4tPI3J
     });
 };
 
-const removeData = () => {
+const dropTestDB = () => {
     return new Promise((resolve, reject) => {
         MongoClient.connect(mongoUrl, async(err, db) => {
             if (err)
@@ -148,9 +149,9 @@ const startEnv = () => {
         const command = `${process.platform === 'win32' ? 'npm.cmd' : 'npm'} start`;
 
         let port = 9001;
-        if (process.env.APP_URL) {
-            port = parseInt(url.parse(process.env.APP_URL).port) || 80;
-        }
+
+        if (process.env.APP_URL)
+            port = parseInt(url.parse(process.env.APP_URL).port, 10) || 80;
 
         const backendInstanceLaunch = exec(command, 'Start listening', '../../backend', {server_port: 3001, mongodb_url: mongoUrl});
         const frontendInstanceLaunch = exec(command, 'Compiled successfully', '../../frontend', {BACKEND_PORT: 3001, PORT: port});
@@ -171,16 +172,21 @@ if (start) {
     startEnv();
 
     process.on('SIGINT', async() => {
-        await removeData();
+        await dropTestDB();
 
         process.exit(0);
     });
 }
 
 if (stop) {
-    removeData();
+    dropTestDB();
 
     console.log('Cleaning done...');
 }
 
-module.exports = { startEnv, removeData, insertTestUser };
+
+const resolveUrl = (targetUrl) => {
+    return url.resolve(process.env.APP_URL || 'http://localhost:9001', targetUrl);
+};
+
+module.exports = { startEnv, insertTestUser, dropTestDB, resolveUrl };
