@@ -2305,12 +2305,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 filterList.add(new GridNioCodecFilter(parser, log, true));
                 filterList.add(new GridConnectionBytesVerifyFilter(log));
 
-                GridNioCompressionFilter compressFilter =
-                    new GridNioCompressionFilter(CompressionType.LZ4, true, ByteOrder.nativeOrder(), log);
+                CompressionType compressionType = ignite().configuration().getCompressionType();
 
-                compressFilter.directMode(true);
+                if (compressionType != CompressionType.NO_COMPRESSION) {
+                    GridNioCompressionFilter compressFilter =
+                        new GridNioCompressionFilter(compressionType, true, ByteOrder.nativeOrder(), log);
 
-                filterList.add(compressFilter);
+                    compressFilter.directMode(true);
+
+                    filterList.add(compressFilter);
+                }
 
                 if (isSslEnabled()) {
                     GridNioSslFilter sslFilter =

@@ -44,6 +44,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
+import org.apache.ignite.internal.util.nio.compress.CompressionType;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteAsyncCallback;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -113,6 +114,8 @@ public class IgniteConfiguration {
      * means that metrics never expire.
      */
     public static final long DFLT_METRICS_EXPIRE_TIME = Long.MAX_VALUE;
+
+    public static final CompressionType DFLT_COMPRESSION_TYPE = CompressionType.LZ4;
 
     /** Default network compression flag. */
     public static final boolean DFLT_COMPRESSION_ENABLED = true;
@@ -293,6 +296,9 @@ public class IgniteConfiguration {
 
     /** Events of these types should be recorded. */
     private int[] inclEvtTypes;
+
+    /** Network compression type. */
+    private CompressionType compressionType = DFLT_COMPRESSION_TYPE;
 
     /** Network compression enabled flag. */
     private boolean compressionEnabled = DFLT_COMPRESSION_ENABLED;
@@ -568,6 +574,7 @@ public class IgniteConfiguration {
         metricsLogFreq = cfg.getMetricsLogFrequency();
         metricsUpdateFreq = cfg.getMetricsUpdateFrequency();
         mgmtPoolSize = cfg.getManagementThreadPoolSize();
+        compressionType = cfg.getCompressionType();
         compressionEnabled = cfg.isCompressionEnabled();
         netTimeout = cfg.getNetworkTimeout();
         nodeId = cfg.getNodeId();
@@ -1394,6 +1401,18 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setMetricsExpireTime(long metricsExpTime) {
         this.metricsExpTime = metricsExpTime;
+
+        return this;
+    }
+
+    /** */
+    public CompressionType getCompressionType() {
+        return compressionType;
+    }
+
+    /** */
+    public IgniteConfiguration setCompressionType(CompressionType compressionType) {
+        this.compressionType = compressionType;
 
         return this;
     }
