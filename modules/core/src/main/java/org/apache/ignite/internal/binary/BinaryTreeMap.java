@@ -32,6 +32,9 @@ import java.util.TreeMap;
 
 /**
  * Binary {@link TreeMap} wrapper.
+ *
+ * Note: It is required to supply a BinaryTypeConfiguration for BinaryTreeMap with BinaryArrayIdentityResolver
+ *  for using this type in keys.
  */
 public class BinaryTreeMap implements Binarylizable, Serializable {
     /** */
