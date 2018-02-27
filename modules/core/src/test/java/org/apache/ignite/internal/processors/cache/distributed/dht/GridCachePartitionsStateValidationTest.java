@@ -34,11 +34,15 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
     /** {@inheritDoc */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        cleanPersistenceDir();
     }
 
     /**
@@ -52,7 +56,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
 
         awaitPartitionMapExchange();
 
-        // Modify update counter.
+        // Modify update counter for some partition.
         for (GridDhtLocalPartition partition : ignite.cachex(CACHE_NAME).context().topology().localPartitions()) {
             partition.updateCounter(100500L);
             break;
@@ -63,7 +67,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
 
         awaitPartitionMapExchange();
 
-        // Nothing should happen and we're able to put data to corrupted cache.
+        // Nothing should happen (just log error message) and we're still able to put data to corrupted cache.
         ignite.cache(CACHE_NAME).put(0, 0);
 
         stopAllGrids();
