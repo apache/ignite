@@ -110,30 +110,33 @@ public class JdbcThinConnection implements Connection {
     /**
      * Creates new connection.
      *
-     * @param url Connection URL.
-     * @param schema Schema name.
-     * @param props Connection properties.
+     * @param connProps Connection properties.
      * @throws SQLException In case Ignite client failed to start.
      */
-    public JdbcThinConnection(String url, String schema, Properties props) throws SQLException {
-        assert url != null;
+    public JdbcThinConnection(ConnectionProperties connProps) throws SQLException {
+        url = connProps.getUrl();
 
-        this.url = url;
-
-        connProps = new ConnectionPropertiesImpl();
-
-        ((ConnectionPropertiesImpl)connProps).init(props);
+        this.connProps = connProps;
 
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
 
-        this.schema = normalizeSchema(schema);
+        schema = normalizeSchema(connProps.getSchema());
 
+        connect();
+    }
+
+    /**
+     * @throws SQLException On connection error.
+     */
+    private void connect() throws SQLException {
         try {
             cliIo = new JdbcThinTcpIo(connProps);
 
             cliIo.start();
+
+            closed = false;
         }
         catch (SQLException e) {
             cliIo.close();
@@ -159,6 +162,7 @@ public class JdbcThinConnection implements Connection {
      * Add another query for batched execution.
      * @param sql Query.
      * @param args Arguments.
+     * @throws SQLException On error.
      */
     synchronized void addBatch(String sql, List<Object> args) throws SQLException {
         boolean newQry = (args == null || !F.eq(lastStreamQry, sql));
@@ -729,7 +733,21 @@ public class JdbcThinConnection implements Connection {
         catch (Exception e) {
             close();
 
-            throw new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);
+            SQLException connErr = null;
+
+            try {
+                connect();
+            }
+            catch (SQLException connErr0) {
+                connErr = connErr0;
+            }
+
+            SQLException ex = new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);
+
+            if (connErr != null)
+                ex.addSuppressed(connErr);
+
+            throw ex;
         }
     }
 

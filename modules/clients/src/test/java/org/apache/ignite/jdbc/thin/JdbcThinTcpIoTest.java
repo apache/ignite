@@ -89,13 +89,7 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
      * @throws SQLException On connection error or reject.
      */
     private JdbcThinTcpIo createTcpIo(String[] addrs, int port) throws SQLException {
-        ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();
-
-        connProps.setHost("test.domain.name");
-
-        connProps.setPort(port);
-
-        return new JdbcThinTcpIo(connProps) {
+        ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl() {
             @Override protected InetAddress[] getAllAddressesByHost(String host) throws UnknownHostException {
                 InetAddress[] addresses = new InetAddress[addrs.length];
 
@@ -104,7 +98,13 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
 
                 return addresses;
             }
+        };
 
+        connProps.setHost("test.domain.name");
+
+        connProps.setPort(port);
+
+        return new JdbcThinTcpIo(connProps) {
             @Override public void handshake(ClientListenerProtocolVersion ver) {
                 // Skip handshake.
             }

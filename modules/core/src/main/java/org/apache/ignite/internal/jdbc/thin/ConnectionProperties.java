@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import java.net.InetSocketAddress;
 import java.sql.SQLException;
 
 /**
@@ -30,6 +31,26 @@ public interface ConnectionProperties {
     public static final String SSL_MODE_REQUIRE = "require";
 
     /**
+     * @return Schema name of the connection.
+     */
+    public String getSchema();
+
+    /**
+     * @param schema Schema name of the connection.
+     */
+    public void setSchema(String schema);
+
+    /**
+     * @return The URL of the connection.
+     */
+    public String getUrl();
+
+    /**
+     * @param url The URL of the connection.
+     */
+    public void setUrl(String url) throws SQLException;
+
+    /**
      * @return Host name or host's IP to connect.
      */
     public String getHost();
@@ -37,7 +58,7 @@ public interface ConnectionProperties {
     /**
      * @param host Host name or host's IP to connect.
      */
-    public void setHost(String host);
+    public void setHost(String host) throws SQLException;
 
     /**
      * @return Port to connect.
@@ -49,6 +70,16 @@ public interface ConnectionProperties {
      * @throws SQLException On error.
      */
     public void setPort(int port) throws SQLException;
+
+    /**
+     * @return Ignite nodes addresses.
+     */
+    public InetSocketAddress[] getAddresses();
+
+    /**
+     * @param addrs Ignite nodes addresses.
+     */
+    public void setAddresses(InetSocketAddress[] addrs);
 
     /**
      * @return Distributed joins flag.
