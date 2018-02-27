@@ -60,8 +60,6 @@ import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioServerListener;
 import org.apache.ignite.internal.util.nio.GridNioSession;
-import org.apache.ignite.internal.util.nio.compress.CompressionType;
-import org.apache.ignite.internal.util.nio.compress.GridNioCompressionFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -177,31 +175,19 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
             try {
                 IgniteLogger gridLog = new JavaLogger(false);
 
-                ArrayList<GridNioFilter> filterList = new ArrayList<>();
+                GridNioFilter[] filters;
 
-                filterList.add(new GridNioCodecFilter(new GridTcpRestParser(routerClient), gridLog, false));
-
-                if (cfg.getCompressionType() != CompressionType.NO_COMPRESSION) {
-                    GridNioCompressionFilter compressionFilter = new GridNioCompressionFilter(
-                        cfg.getCompressionType(),true, ByteOrder.nativeOrder(), gridLog);
-
-                    compressionFilter.directMode(false);
-
-                    filterList.add(compressionFilter);
-                }
+                GridNioFilter codecFilter = new GridNioCodecFilter(new GridTcpRestParser(routerClient), gridLog, false);
 
                 if (sslCtx != null) {
-                    GridNioSslFilter sslFilter = new GridNioSslFilter(
-                        sslCtx, true, ByteOrder.nativeOrder(), gridLog);
+                    GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtx, true, ByteOrder.nativeOrder(), gridLog);
 
                     sslFilter.directMode(false);
 
-                    filterList.add(sslFilter);
+                    filters = new GridNioFilter[]{codecFilter, sslFilter};
                 }
-
-                GridNioFilter[] filters = new GridNioFilter[filterList.size()];
-
-                filterList.toArray(filters);
+                else
+                    filters = new GridNioFilter[]{codecFilter};
 
                 srv = GridNioServer.builder().address(U.getLocalHost())
                     .port(-1)
