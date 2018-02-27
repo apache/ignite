@@ -234,53 +234,17 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
     }
 
     /**
-     * Long reducer.
-     */
-    private static class LongReducer {
-        /** Sum. */
-        long sum = 0;
-
-        /**
-         * @param val Value.
-         */
-        public void collect(long val) {
-            sum += val;
-        }
-
-        /**
-         * Reduce
-         */
-        public long reduce() {
-            return sum;
-        }
-    }
-
-    /**
      * Converts statistics from internal representation to JMX-readable format.
      *
      * @param srcStat Internal statistics representation.
      * @return Result map.
      */
     private <T> Map<T, Long> convertStatistics(Set<Map<T, MessageCounter>> srcStat, ToLongFunction<MessageCounter> func) {
-        Map<T, LongReducer> destStat = new HashMap<>();
-
-        Callable<LongReducer> rdcFactory = () -> new LongReducer();
-
-        srcStat.forEach(
-            m -> m.forEach((key, val) -> {
-                long cnt = func.applyAsLong(val);
-
-                LongReducer rdc = F.addIfAbsent(destStat, key, rdcFactory);
-
-                rdc.collect(cnt);
-            })
-        );
-
         return srcStat.stream()
             .flatMap(m -> m.entrySet().stream())
             .collect(
                 Collectors.groupingBy(
-                    e -> e.getKey(),
+                    Map.Entry::getKey,
                     Collectors.summarizingLong(e -> func.applyAsLong(e.getValue()))
                 )
             ).entrySet().stream()
