@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,19 +15,24 @@
  * limitations under the License.
  */
 
-const { Role, t } = require('testcafe');
-import { resolveUrl } from './envtools';
-const { PageSignIn } = require('./page-models/PageSignIn');
+namespace Apache.Ignite.Core.Client
+{
+    using System.IO;
+    using System.Net.Security;
 
-export const createRegularUser = () => {
-    return new Role(resolveUrl('/signin'), async() => {
-        await t.eval(() => window.localStorage.clear());
-
-        // Disable "Getting started" modal.
-        await t.eval(() => window.localStorage.showGettingStarted = 'false');
-
-        const page = new PageSignIn();
-        await page.open();
-        await page.login('a@a', 'a');
-    });
-};
+    /// <summary>
+    /// SSL Stream Factory defines how SSL connection is established.
+    /// </summary>
+    public interface ISslStreamFactory
+    {
+        /// <summary>
+        /// Creates the SSL stream.
+        /// </summary>
+        /// <param name="stream">The underlying raw stream.</param>
+        /// <param name="targetHost">Target host.</param>
+        /// <returns>
+        /// SSL stream.
+        /// </returns>
+        SslStream Create(Stream stream, string targetHost);
+    }
+}

@@ -15,19 +15,23 @@
  * limitations under the License.
  */
 
-const { Role, t } = require('testcafe');
-import { resolveUrl } from './envtools';
-const { PageSignIn } = require('./page-models/PageSignIn');
+import {Selector, t} from 'testcafe';
+import { resolveUrl } from '../envtools';
+import {AngularJSSelector} from 'testcafe-angular-selectors';
 
-export const createRegularUser = () => {
-    return new Role(resolveUrl('/signin'), async() => {
-        await t.eval(() => window.localStorage.clear());
+export class PageSignIn {
+    async open() {
+        await t.navigateTo(resolveUrl('/signin'));
 
-        // Disable "Getting started" modal.
-        await t.eval(() => window.localStorage.showGettingStarted = 'false');
+        this.inputLoginEmail = AngularJSSelector.byModel('ui.email');
+        this.inputLoginPassword = AngularJSSelector.byModel('ui.password');
+        this.signinButton = Selector('#signin_submit');
+    }
 
-        const page = new PageSignIn();
-        await page.open();
-        await page.login('a@a', 'a');
-    });
-};
+    async login(email, password) {
+        return await t
+            .typeText(this.inputLoginEmail, email)
+            .typeText(this.inputLoginPassword, password)
+            .click(this.signinButton);
+    }
+}
