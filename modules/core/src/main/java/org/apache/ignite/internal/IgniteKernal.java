@@ -2510,7 +2510,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
                 if (CU.isSystemCache(cacheName))
                     memPlcName = "sysMemPlc";
-                else if (memPlcName == null && cfg.getDataStorageConfiguration() != null)
+                else if (memPlcName == null && cfg.getDataStorageConfiguration() != null
+                    && cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration() != null)
                     memPlcName = cfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration().getName();
 
                 if (!memPlcNamesMapping.containsKey(memPlcName))
