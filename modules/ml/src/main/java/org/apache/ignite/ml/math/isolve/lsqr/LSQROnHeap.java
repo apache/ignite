@@ -37,8 +37,7 @@ public class LSQROnHeap<K, V> extends AbstractLSQR implements AutoCloseable {
      * @param datasetBuilder Dataset builder.
      * @param partDataBuilder Partition data builder.
      */
-    public
-    LSQROnHeap(DatasetBuilder<K, V> datasetBuilder,
+    public LSQROnHeap(DatasetBuilder<K, V> datasetBuilder,
         PartitionDataBuilder<K, V, LSQRPartitionContext, LinSysPartitionDataOnHeap> partDataBuilder) {
         this.dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new LSQRPartitionContext(),
