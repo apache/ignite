@@ -299,7 +299,7 @@ public final class GridTestUtils {
             call.call();
         }
         catch (Throwable e) {
-            if (cls != e.getClass() && !cls.isAssignableFrom(e.getClass())) {
+            if (cls != e.getClass()) {
                 if (e.getClass() == CacheException.class && e.getCause() != null && e.getCause().getClass() == cls)
                     e = e.getCause();
                 else {

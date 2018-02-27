@@ -505,7 +505,7 @@ public final class UpdatePlan {
     /**
      * @return Local subquery flag.
      */
-    public boolean isLocalSubquery() {
+    @Nullable public boolean isLocalSubquery() {
         return isLocSubqry;
     }
 }
