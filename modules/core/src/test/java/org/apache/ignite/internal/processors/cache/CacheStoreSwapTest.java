@@ -113,8 +113,21 @@ public class CacheStoreSwapTest extends GridCommonAbstractTest {
      */
     public void testGetAll() throws Exception {
         startGridsMultiThreaded(2, true);
-        Ignite client = startGrid("client");
 
+        validate(startGrid("client"));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalGetAll() throws Exception {
+        validate(startGrid(0));
+    }
+
+    /**
+     * @param client Client.
+     */
+    private void validate(Ignite client) {
         IgniteCache<Integer, Value> cache = client.cache(CACHE_NAME);
 
         Map<Integer, Value> all = cache.getAll(MAP.keySet());
