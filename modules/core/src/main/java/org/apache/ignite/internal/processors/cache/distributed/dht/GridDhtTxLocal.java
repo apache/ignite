@@ -67,8 +67,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
     /** */
     private static final long serialVersionUID = 0L;
 
-    public static final AtomicInteger finishCntr = new AtomicInteger();
-
     /** */
     private UUID nearNodeId;
 

@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -172,7 +173,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
      * @throws Exception If f nodeailed.
      */
     private Ignite startClient() throws Exception {
-        Ignite client = startGrid("client1");
+        Ignite client = startGrid("client");
 
         assertTrue(client.configuration().isClientMode());
 
@@ -516,6 +517,39 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
     /**
      *
+
+     java.lang.AssertionError: nodeId=74e89b92-4bcb-4c20-9dfa-0f8478f00000, threadId=285, ver=GridCacheVersion [topVer=131139538, order=1519659541636, nodeOrder=2], cnt=1
+     at org.apache.ignite.internal.processors.cache.distributed.GridCacheTxFinishSync$TxFinishSync.onSend(GridCacheTxFinishSync.java:251)
+     at org.apache.ignite.internal.processors.cache.distributed.GridCacheTxFinishSync$ThreadFinishSync.onSend(GridCacheTxFinishSync.java:164)
+     */
+    public void testDelayFinishResponse() throws Exception {
+        final Ignite client = startClient();
+
+        Ignite prim = primaryNode(0, CACHE_NAME);
+
+        final TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)prim.configuration().getCommunicationSpi();
+
+        IgniteInternalFuture f;
+
+        try(Transaction tx = client.transactions().txStart()) {
+            client.cache(CACHE_NAME).put(0, 0);
+
+            //spi.blockMessages(GridNearTxFinishResponse.class, client.name());
+
+            rollbackAsync(tx);
+        }
+
+
+
+//        try(Transaction tx = client.transactions().txStart()) {
+//            client.cache(CACHE_NAME).put(1, 1);
+//
+//            rollbackAsync(tx);
+//        }
+    }
+
+    /**
+     *
      */
     public void testMixedAsyncRollbackTypes() throws Exception {
         final Ignite client = startClient();
@@ -663,6 +697,14 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         checkFutures();
     }
 
+    public void testRollbackInPreparedState() {
+
+    }
+
+    private void testRollbackInPreparedState0(TransactionConcurrency concurrency, TransactionIsolation isolation) {
+
+    }
+
     /**
      * Locks entry in tx and delays commit until signalled.
      *
@@ -714,7 +756,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
             @Override public void run() {
                 tx.rollback();
             }
-        }, 1, "tx-rollback-thread");
+        }, 1, "tx-rollback-thread").get();
     }
 
 }
