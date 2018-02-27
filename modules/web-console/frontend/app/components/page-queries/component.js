@@ -25,10 +25,15 @@ export default {
         queriesTitle: '?queriesTitle'
     },
     controller: class Ctrl {
-        static $inject = ['$element'];
+        static $inject = ['$element', '$rootScope', '$state'];
 
-        constructor($element) {
-            this.$element = $element;
+        constructor($element, $rootScope, $state) {
+            Object.assign(this, {$element, $rootScope, $state});
+        }
+
+        $onInit() {
+            if (this.$rootScope.IgniteDemoMode)
+                this.$state.go('base.sql.tabs.demo');
         }
 
         $postLink() {
