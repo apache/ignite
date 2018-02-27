@@ -22,6 +22,7 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionBac
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionExcludeNeighborsSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionFastPowerOfTwoHashSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionStandardHashSelfTest;
+import org.apache.ignite.internal.IgniteReflectionFactorySelfTest;
 import org.apache.ignite.internal.processors.cache.CacheComparatorTest;
 import org.apache.ignite.internal.processors.cache.CacheConcurrentReadThroughTest;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationLeakTest;
@@ -296,6 +297,8 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(CachePartitionStateTest.class));
 
         suite.addTest(new TestSuite(CacheComparatorTest.class));
+
+        suite.addTest(new TestSuite(IgniteReflectionFactorySelfTest.class));
 
         return suite;
     }

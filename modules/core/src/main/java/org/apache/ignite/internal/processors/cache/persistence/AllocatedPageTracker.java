@@ -23,6 +23,8 @@ package org.apache.ignite.internal.processors.cache.persistence;
 public interface AllocatedPageTracker {
     /**
      * Increments totalAllocatedPages counter.
+     *
+     * @param delta Value to increment by.
      */
     public void updateTotalAllocatedPages(long delta);
 }

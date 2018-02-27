@@ -621,7 +621,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (Object obj : grp.configuredUserObjects())
             cleanup(cfg, obj, false);
 
-        if (!grp.systemCache()) {
+        if (!grp.systemCache() && !U.IGNITE_MBEANS_DISABLED) {
             try {
                 ctx.config().getMBeanServer().unregisterMBean(U.makeMBeanName(ctx.igniteInstanceName(),
                     CACHE_GRP_METRICS_MBEAN_GRP, grp.cacheOrGroupName()));
@@ -1986,7 +1986,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         CacheGroupContext old = cacheGrps.put(desc.groupId(), grp);
 
-        if (!grp.systemCache()) {
+        if (!grp.systemCache()  && !U.IGNITE_MBEANS_DISABLED) {
             try {
                 U.registerMBean(ctx.config().getMBeanServer(), ctx.igniteInstanceName(), CACHE_GRP_METRICS_MBEAN_GRP,
                     grp.cacheOrGroupName(), grp.mxBean(), CacheGroupMetricsMXBean.class);
@@ -2574,15 +2574,36 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @return Future that will be completed when cache is deployed.
      */
     public IgniteInternalFuture<?> getOrCreateFromTemplate(String cacheName, boolean checkThreadTx) {
+        return getOrCreateFromTemplate(cacheName, cacheName, null, checkThreadTx);
+    }
+
+    /**
+     * Dynamically starts cache using template configuration.
+     *
+     * @param cacheName Cache name.
+     * @param templateName Cache template name.
+     * @param cfgOverride Cache config properties to override.
+     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
+     * @return Future that will be completed when cache is deployed.
+     */
+    public IgniteInternalFuture<?> getOrCreateFromTemplate(String cacheName, String templateName,
+        CacheConfigurationOverride cfgOverride, boolean checkThreadTx) {
         assert cacheName != null;
 
         try {
             if (publicJCache(cacheName, false, checkThreadTx) != null) // Cache with given name already started.
                 return new GridFinishedFuture<>();
 
-            CacheConfiguration cfg = getOrCreateConfigFromTemplate(cacheName);
+            CacheConfiguration ccfg = F.isEmpty(templateName)
+                ?  getOrCreateConfigFromTemplate(cacheName)
+                :  getOrCreateConfigFromTemplate(templateName);
 
-            return dynamicStartCache(cfg, cacheName, null, false, true, checkThreadTx);
+            ccfg.setName(cacheName);
+
+            if (cfgOverride != null)
+                cfgOverride.apply(ccfg);
+
+            return dynamicStartCache(ccfg, cacheName, null, false, true, checkThreadTx);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -3083,6 +3104,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return fut;
     }
 
+    /**
+     * @param cacheName Cache name.
+     * @return Cache type.
+     */
     public CacheType cacheType(String cacheName ) {
         if (CU.isUtilityCache(cacheName))
             return CacheType.UTILITY;
