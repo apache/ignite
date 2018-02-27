@@ -37,7 +37,6 @@ public class InsertBenchmark extends AbstractUploadBenchmark {
         }
     }
 
-
     /** Sequence of single inserts */
     @Override public void upload (Connection uploadConn) throws Exception {
         for (int id = 1; id <= INSERT_ROWS_CNT; id++) {
@@ -46,7 +45,6 @@ public class InsertBenchmark extends AbstractUploadBenchmark {
 
                 insert.executeUpdate();
             }
-
         }
     }
 }

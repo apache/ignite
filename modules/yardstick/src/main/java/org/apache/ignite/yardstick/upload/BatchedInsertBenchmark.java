@@ -50,7 +50,7 @@ public class BatchedInsertBenchmark extends AbstractUploadBenchmark {
      * @param uploadConn Special connection for upload purposes.
      * @param rowsCnt Number of rows to insert.
      */
-    private void performBatchUpdate(Connection uploadConn, long rowsCnt) throws SQLException{
+    private void performBatchUpdate(Connection uploadConn, long rowsCnt) throws SQLException {
         try (PreparedStatement insert = uploadConn.prepareStatement(queries.insert())) {
             for (int id = 1; id <= rowsCnt; id++) {
                 queries.setRandomInsertArgs(insert, id);

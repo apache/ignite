@@ -80,11 +80,6 @@ public class QueryFactory {
         return insert.toString();
     }
 
-    /** see {@link #valFieldsCnt}. */
-    public int valFieldsCnt() {
-        return valFieldsCnt;
-    }
-
     /** see {@link #createTable}. */
     public String createTable() {
         return createTable;
@@ -195,5 +190,4 @@ public class QueryFactory {
     public String turnOffWal() {
         return turnOffWal;
     }
-
 }

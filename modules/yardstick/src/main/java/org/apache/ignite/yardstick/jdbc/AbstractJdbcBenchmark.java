@@ -89,8 +89,9 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
      * Sets up test data
      *
      * Gets executed before local Ignite node is closed
+     * @throws Exception On error.
      */
-    protected void setupData() throws Exception{
+    protected void setupData() throws Exception {
         fillData(cfg, (IgniteEx)ignite(), args.range());
     }
 

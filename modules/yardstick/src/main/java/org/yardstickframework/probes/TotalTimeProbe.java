@@ -102,7 +102,7 @@ public class TotalTimeProbe implements BenchmarkExecutionAwareProbe, BenchmarkTo
     /**
      * Measures execution time. Used in thread local context
      */
-    static class ThreadAgent{
+    static class ThreadAgent {
         /** Start time of {@link org.yardstickframework.BenchmarkDriver#test(java.util.Map)} method. */
         private volatile long startTs;
 

@@ -59,11 +59,11 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
 
     /** Method to init benchmark fields. */
     protected void init() {
-        // No-op
+        // No-op.
     }
 
     /** Perform warmup keeping in mind wal optimization. */
-    private void warmup0() throws Exception{
+    private void warmup0() throws Exception {
         BenchmarkUtils.println(cfg, "Starting custom warmup");
 
         if (args.switchWal())
@@ -92,7 +92,6 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         dropAndCreate();
     }
 
-
     /**
      * Uploads data using this special connection, that may have additional
      * url parameters, such as {@code streaming=true}.
@@ -115,7 +114,7 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     }
 
     /** Drops and re-creates test table. */
-    protected final void dropAndCreate() throws SQLException{
+    protected final void dropAndCreate() throws SQLException {
         executeUpdate(queries.dropTableIfExists());
         executeUpdate(queries.createTable());
     }
@@ -157,20 +156,18 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         }
     }
 
-
     /** Facility method for executing update queries */
-    private int executeUpdate(String updQry) throws SQLException{
+    private int executeUpdate(String updQry) throws SQLException {
         try(PreparedStatement update = conn.get().prepareStatement(updQry)){
             return update.executeUpdate();
         }
     }
 
-
     /**
      *  Creates new connection only for upload purpose.
      *  This connection is special, since it may have additional jdbc url parameters.
      */
-    private Connection uploadConnection() throws SQLException{
+    private Connection uploadConnection() throws SQLException {
         String urlParams = "";
 
         // We can't just pass entire params string, due to yardstick, which relies on bash,
