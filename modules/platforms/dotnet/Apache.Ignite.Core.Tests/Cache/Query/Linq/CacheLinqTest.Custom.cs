@@ -121,7 +121,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             var queryable = cache.AsCacheQueryable();
 
-            queryable.UpdateAll(d => d.Set(p => p.AliasTest, 1)
+            queryable
+                .Where(p => p.Value.Age > 0)
+                .Take(2)
+                .UpdateAll(d => d.Set(p => p.AliasTest, 1)
                 .Set(p => p.Age, p => p.Age + 1));
 
             //queryable.UpdateAll(entry => "asd");

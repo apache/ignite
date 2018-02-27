@@ -33,18 +33,33 @@ namespace Apache.Ignite.Linq.Impl.Dml
     /// </summary>
     internal sealed class UpdateAllExpressionNode : ResultOperatorExpressionNodeBase
     {
+        static UpdateAllExpressionNode()
+        {
+            var updateAllMethodInfos = typeof(CacheLinqExtensions)
+                .GetMethods()
+                .Where(x => x.Name == "UpdateAll")
+                .ToArray();
+            var updateAllImplMethodInfos = typeof(CacheLinqExtensions)
+                .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic)
+                .Where(x => x.Name == "UpdateAllImpl")
+                .ToArray();
+            UpdateAllDescriptorMethodInfo =
+                updateAllMethodInfos.Single(x => x.GetParameters().Length == 2 && x.GetParameters()[1].ParameterType.IsGenericType);
+            UpdateAllImplDescriptorMethodInfo =
+                updateAllImplMethodInfos.Single(x => x.GetParameters().Length == 2);
+        }
+
+
         /** */
-        private static readonly MethodInfo[] UpdateAllMethodInfos = typeof(CacheLinqExtensions)
-            .GetMethods()
-            .Where(x => x.Name == "UpdateAll")
-            .ToArray();
+
+        /** */
 
         /// <summary>
         /// The UpdateAll(pred) method.
         /// </summary>
-        public static readonly MethodInfo UpdateAllDescriptorMethodInfo =
-            UpdateAllMethodInfos.Single(x => x.GetParameters().Length == 2 && x.GetParameters()[1].ParameterType.IsGenericType);
+        public static readonly MethodInfo UpdateAllDescriptorMethodInfo;
 
+        public static readonly MethodInfo UpdateAllImplDescriptorMethodInfo;
 
         //public static readonly MethodInfo UpdateAllString =
         //    UpdateAllMethodInfos.Single(x => x.GetParameters().Length == 2);
@@ -55,9 +70,10 @@ namespace Apache.Ignite.Linq.Impl.Dml
         /// <param name="parseInfo">The parse information.</param>
         /// <param name="optionalPredicate">The optional predicate.</param>
         /// <param name="optionalSelector">The optional selector.</param>
+        /// <param name="test"></param>
         public UpdateAllExpressionNode(MethodCallExpressionParseInfo parseInfo,
-            LambdaExpression optionalPredicate, LambdaExpression optionalSelector)
-            : base(parseInfo, optionalPredicate, optionalSelector)
+            Expression test)
+            : base(parseInfo, null, null)
         {
             // No-op.
         }
@@ -81,6 +97,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
         /// </summary>
         public static IEnumerable<MethodInfo> GetSupportedMethods()
         {
+            yield return UpdateAllImplDescriptorMethodInfo;
             yield return UpdateAllDescriptorMethodInfo;
             //yield return UpdateAllString;
         }

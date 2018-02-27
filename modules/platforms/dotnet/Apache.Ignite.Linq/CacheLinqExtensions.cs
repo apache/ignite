@@ -211,11 +211,80 @@ namespace Apache.Ignite.Linq
             IgniteArgumentCheck.NotNull(query, "query");
             IgniteArgumentCheck.NotNull(updateDescription, "updateDescription");
 
-            var method = UpdateAllExpressionNode.UpdateAllDescriptorMethodInfo
+            if (!(updateDescription.Body is MethodCallExpression))
+            {
+                throw new NotSupportedException();
+            }
+
+            var parameter = Expression.Parameter(typeof(TValue), "p");
+
+            var type = typeof(UpdateDesc<>).MakeGenericType(typeof(TValue));
+
+            var newDescriptor = Expression.New(type.GetConstructors().First());
+
+            var methodCall = (MethodCallExpression) updateDescription.Body;
+            while (true)
+            {
+                if (methodCall.Object is MethodCallExpression)
+                {
+                    methodCall = (MethodCallExpression) methodCall.Object;
+                }
+                else
+                {
+                    methodCall = methodCall.Update(newDescriptor, methodCall.Arguments);
+                    break;
+                }
+            }
+
+
+            var updateDescriptionBody = updateDescription.Body;
+            var updateDescriptionNodeType = updateDescription.NodeType;
+            var expressionType = updateDescriptionBody.NodeType;
+
+            var mc = updateDescriptionBody as MethodCallExpression;
+            var expression = Expression.Lambda<Func<TValue, IUpdateDescriptor<TValue>>>(methodCall, parameter);
+            return UpdateAllImpl(query, expression);
+        }
+
+        public class UpdateAllExpression:Expression
+        {
+            public int I { get; set; }
+
+            public override ExpressionType NodeType
+            {
+                get { return ExpressionType.Lambda; }
+            }
+        }
+
+        internal static int UpdateAllImpl<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query,
+            //UpdateAllExpression updateDescription
+            Expression<Func<TValue, IUpdateDescriptor<TValue>>> updateDescription
+            )
+        {
+            IgniteArgumentCheck.NotNull(query, "query");
+            IgniteArgumentCheck.NotNull(updateDescription, "updateDescription");
+
+            var method = UpdateAllExpressionNode.UpdateAllImplDescriptorMethodInfo
                 .MakeGenericMethod(typeof(TKey), typeof(TValue)); // TODO: cache?
 
-            return query.Provider.Execute<int>(Expression.Call(null, method, new[] { query.Expression,
-                Expression.Quote(updateDescription)}));
+            return query.Provider.Execute<int>(Expression.Call(null, method, new[]
+            {
+                query.Expression,
+                Expression.Quote(updateDescription)
+            }));
+        }
+
+        class UpdateDesc<T>:IUpdateDescriptor<T>
+        {
+            public IUpdateDescriptor<T> Set<TProp>(Func<T, TProp> selector, TProp value)
+            {
+                return this;
+            }
+
+            public IUpdateDescriptor<T> Set<TProp>(Func<T, TProp> selector, Func<T, TProp> valueBuilder)
+            {
+                return this;
+            }
         }
 
         //public static int UpdateAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query, Expression<Func<ICacheEntry<TKey,TValue>, string>> func) 

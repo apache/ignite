@@ -54,7 +54,8 @@ namespace Apache.Ignite.Linq.Impl.Dml
         [ExcludeFromCodeCoverage]
         public override StreamedValue ExecuteInMemory<T>(StreamedSequence sequence)
         {
-            throw new NotSupportedException("RemoveAll is not supported for in-memory sequences.");
+            throw new NotSupportedException("UpdateAll is not supported for in-memory sequences.");
         }
+
     }
 }
