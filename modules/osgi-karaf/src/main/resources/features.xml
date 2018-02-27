@@ -40,6 +40,7 @@
         <feature>ignite-jta</feature>
         <feature>ignite-kafka</feature>
         <feature>ignite-mqtt</feature>
+        <feature>ignite-indexing</feature>
         <!-- KARAF-4129 Karaf feature containing a fragment that attaches to pax-logging-api cannot be installed
         <feature>ignite-log4j</feature>-->
         <feature>ignite-rest-http</feature>
