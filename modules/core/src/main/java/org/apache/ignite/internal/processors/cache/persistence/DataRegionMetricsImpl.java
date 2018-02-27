@@ -16,6 +16,7 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -23,25 +24,24 @@ import org.apache.ignite.internal.processors.cache.ratemetrics.HitRateMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteOutClosure;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
 
 /**
  *
  */
-public class DataRegionMetricsImpl implements DataRegionMetrics {
+public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTracker {
     /** */
-    private final IgniteOutClosure<Float> fillFactorProvider;
+    private final IgniteOutClosure<Long> freeSpaceProvider;
 
     /** */
-    private final LongAdder8 totalAllocatedPages = new LongAdder8();
+    private final LongAdder totalAllocatedPages = new LongAdder();
 
     /**
      * Counter for number of pages occupied by large entries (one entry is larger than one page).
      */
-    private final LongAdder8 largeEntriesPages = new LongAdder8();
+    private final LongAdder largeEntriesPages = new LongAdder();
 
     /** Counter for number of dirty pages. */
-    private LongAdder8 dirtyPages = new LongAdder8();
+    private LongAdder dirtyPages = new LongAdder();
 
     /** */
     private volatile boolean metricsEnabled;
@@ -54,6 +54,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** Allocation rate calculator. */
     private volatile HitRateMetrics allocRate = new HitRateMetrics(60_000, 5);
+
+    /** Eviction rate calculator. */
+    private volatile HitRateMetrics evictRate = new HitRateMetrics(60_000, 5);
 
     /** */
     private volatile HitRateMetrics pageReplaceRate = new HitRateMetrics(60_000, 5);
@@ -80,9 +83,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
     /**
      * @param memPlcCfg DataRegionConfiguration.
      */
-    public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg, @Nullable IgniteOutClosure<Float> fillFactorProvider) {
+    public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg, @Nullable IgniteOutClosure<Long> freeSpaceProvider) {
         this.memPlcCfg = memPlcCfg;
-        this.fillFactorProvider = fillFactorProvider;
+        this.freeSpaceProvider = freeSpaceProvider;
 
         metricsEnabled = memPlcCfg.isMetricsEnabled();
 
@@ -98,7 +101,17 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public long getTotalAllocatedPages() {
-        return metricsEnabled ? totalAllocatedPages.longValue() : 0;
+        if (!metricsEnabled)
+            return 0;
+
+        return totalAllocatedPages.longValue();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalAllocatedSize() {
+        assert pageMem != null;
+
+        return getTotalAllocatedPages() * pageMem.pageSize();
     }
 
     /** {@inheritDoc} */
@@ -111,7 +124,10 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public float getEvictionRate() {
-        return 0;
+        if (!metricsEnabled)
+            return 0;
+
+        return ((float)evictRate.getRate() * 1000) / rateTimeInterval;
     }
 
     /** {@inheritDoc} */
@@ -126,10 +142,14 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public float getPagesFillFactor() {
-        if (!metricsEnabled || fillFactorProvider == null)
+        if (!metricsEnabled || freeSpaceProvider == null)
             return 0;
 
-        return fillFactorProvider.apply();
+        long freeSpace = freeSpaceProvider.apply();
+
+        long totalAllocated = getPageSize() * totalAllocatedPages.longValue();
+
+        return (float) (totalAllocated - freeSpace) / totalAllocated;
     }
 
     /** {@inheritDoc} */
@@ -171,6 +191,36 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         return pageMem.loadedPages();
     }
 
+    /** {@inheritDoc} */
+    @Override public long getPhysicalMemorySize() {
+        return getPhysicalMemoryPages() * pageMem.pageSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointBufferPages() {
+        if (!metricsEnabled)
+            return 0;
+
+        assert pageMem != null;
+
+        return pageMem.checkpointBufferPagesCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getCheckpointBufferSize() {
+        return getCheckpointBufferPages() * pageMem.pageSize();
+    }
+
+    /** {@inheritDoc} */
+    public int getPageSize() {
+        if (!metricsEnabled)
+            return 0;
+
+        assert pageMem != null;
+
+        return pageMem.pageSize();
+    }
+
     /**
      * Updates pageReplaceRate metric.
      */
@@ -210,18 +260,32 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      * Increments totalAllocatedPages counter.
      */
     public void incrementTotalAllocatedPages() {
-        if (metricsEnabled) {
-            totalAllocatedPages.increment();
+        updateTotalAllocatedPages(1);
+    }
 
-            updateAllocationRateMetrics();
+    /** {@inheritDoc} */
+    @Override public void updateTotalAllocatedPages(long delta) {
+        if (metricsEnabled) {
+            totalAllocatedPages.add(delta);
+
+            if (delta > 0)
+                updateAllocationRateMetrics(delta);
         }
     }
 
     /**
      *
      */
-    private void updateAllocationRateMetrics() {
-        allocRate.onHit();
+    private void updateAllocationRateMetrics(long hits) {
+        allocRate.onHits(hits);
+    }
+
+    /**
+     * Updates eviction rate metric.
+     */
+    public void updateEvictionRate() {
+        if (metricsEnabled)
+            evictRate.onHit();
     }
 
     /**
@@ -282,6 +346,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
         this.rateTimeInterval = rateTimeInterval;
 
         allocRate = new HitRateMetrics((int) rateTimeInterval, subInts);
+        evictRate = new HitRateMetrics((int) rateTimeInterval, subInts);
         pageReplaceRate = new HitRateMetrics((int)rateTimeInterval, subInts);
         pageReplaceAge = new HitRateMetrics((int)rateTimeInterval, subInts);
     }
@@ -301,6 +366,7 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
             subInts = (int) rateTimeInterval / 10;
 
         allocRate = new HitRateMetrics((int) rateTimeInterval, subInts);
+        evictRate = new HitRateMetrics((int) rateTimeInterval, subInts);
         pageReplaceRate = new HitRateMetrics((int)rateTimeInterval, subInts);
         pageReplaceAge = new HitRateMetrics((int)rateTimeInterval, subInts);
     }

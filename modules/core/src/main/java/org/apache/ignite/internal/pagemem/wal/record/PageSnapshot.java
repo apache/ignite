@@ -29,7 +29,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 /**
  *
  */
-public class PageSnapshot extends WALRecord {
+public class PageSnapshot extends WALRecord implements WalRecordCacheGroupAware{
     /** */
     @GridToStringExclude
     private byte[] pageData;
@@ -99,5 +99,10 @@ public class PageSnapshot extends WALRecord {
         finally {
             GridUnsafe.cleanDirectBuffer(buf);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public int groupId() {
+        return fullPageId.groupId();
     }
 }

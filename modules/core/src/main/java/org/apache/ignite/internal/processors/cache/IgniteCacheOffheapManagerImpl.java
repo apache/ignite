@@ -1586,8 +1586,13 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             CacheObject oldVal,
             CacheObject newVal
         ) {
+            GridCacheAdapter cache = cctx.cache();
+            if (cache == null) {
+                return;
+            }
+
             // In case we deal with IGFS cache, count updated data
-            if (cctx.cache().isIgfsDataCache() &&
+            if (cache.isIgfsDataCache() &&
                 !cctx.isNear() &&
                 ctx.kernalContext()
                     .igfsHelper()
@@ -1598,7 +1603,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 int delta = newSize - oldSize;
 
                 if (delta != 0)
-                    cctx.cache().onIgfsDataSizeChanged(delta);
+                    cache.onIgfsDataSizeChanged(delta);
             }
         }
 

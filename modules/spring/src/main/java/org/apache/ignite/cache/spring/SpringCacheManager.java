@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteSpring;
@@ -28,7 +29,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -147,7 +148,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
     private static final String SPRING_LOCK_NAME_PREFIX = "springSync";
 
     /** Caches map. */
-    private final ConcurrentMap<String, SpringCache> caches = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<String, SpringCache> caches = new ConcurrentHashMap<>();
 
     /** Grid configuration file path. */
     private String cfgPath;
@@ -174,7 +175,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
     private ApplicationContext springCtx;
 
     /** Locks for value loading to support sync option. */
-    private ConcurrentHashMap8<Integer, IgniteLock> locks = new ConcurrentHashMap8<>();
+    private ConcurrentHashMap<Integer, IgniteLock> locks = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
     @Override public void setApplicationContext(ApplicationContext ctx) {
@@ -374,10 +375,6 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
 
         final int idx = hash % getLocksCount();
 
-        return locks.computeIfAbsent(idx, new ConcurrentHashMap8.Fun<Integer, IgniteLock>() {
-            @Override public IgniteLock apply(Integer integer) {
-                return ignite.reentrantLock(SPRING_LOCK_NAME_PREFIX + idx, true, false, true);
-            }
-        });
+        return locks.computeIfAbsent(idx, i -> ignite.reentrantLock(SPRING_LOCK_NAME_PREFIX + idx, true, false, true));
     }
 }

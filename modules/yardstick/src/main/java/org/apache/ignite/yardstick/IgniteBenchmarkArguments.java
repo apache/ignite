@@ -21,7 +21,6 @@ import com.beust.jcommander.Parameter;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.DataStorageConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -251,6 +250,17 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-stbs", "--streamerBufSize"}, description = "Data streamer buffer size")
     private int streamerBufSize = IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE;
+
+    /** */
+    @Parameter(names = {"-sqlr", "--sqlRange"}, description = "Result set size")
+    @GridToStringInclude
+    private int sqlRange = 1;
+
+    /** */
+    @Parameter(names = {"-clidx", "--clientNodesAfterId"},
+        description = "Start client nodes when server ID greater then the parameter value")
+    @GridToStringInclude
+    private int clientNodesAfterId = -1;
 
     /**
      * @return {@code True} if need set {@link DataStorageConfiguration}.
@@ -629,6 +639,20 @@ public class IgniteBenchmarkArguments {
      */
     public int streamerBufferSize() {
         return streamerBufSize;
+    }
+
+    /**
+     * @return Result set size.
+     */
+    public int sqlRange() {
+        return sqlRange;
+    }
+
+    /**
+     * @return Result set size.
+     */
+    public int clientNodesAfterId() {
+        return clientNodesAfterId;
     }
 
     /** {@inheritDoc} */

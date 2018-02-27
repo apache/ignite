@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
+import org.apache.ignite.internal.ClassSetTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
@@ -123,9 +124,6 @@ public class IgniteBasicTestSuite extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, GridMessagingSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridMessagingNoPeerClassLoadingSelfTest.class, ignoredTests);
 
-        if (U.isLinux() || U.isMacOs())
-            suite.addTest(IgniteIpcSharedMemorySelfTestSuite.suite());
-
         GridTestUtils.addTestIfNeeded(suite, GridReleaseTypeSelfTest.class, ignoredTests);
         suite.addTestSuite(GridProductVersionSelfTest.class);
         suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);
@@ -190,6 +188,8 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(IgniteRejectConnectOnNodeStopTest.class);
 
         suite.addTestSuite(GridCleanerTest.class);
+
+        suite.addTestSuite(ClassSetTest.class);
 
         return suite;
     }

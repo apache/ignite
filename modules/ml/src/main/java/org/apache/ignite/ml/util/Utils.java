@@ -53,7 +53,7 @@ public class Utils {
             obj = in.readObject();
         }
         catch (IOException | ClassNotFoundException e) {
-            throw new IgniteException("Couldn't copy the object.");
+            throw new IgniteException("Couldn't copy the object.", e);
         }
 
         return (T)obj;

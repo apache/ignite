@@ -24,6 +24,7 @@ import java.util.Date;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
@@ -34,7 +35,6 @@ import org.apache.ignite.loadtests.util.GridCumulativeAverage;
 import org.apache.ignite.testframework.GridFileLock;
 import org.apache.ignite.testframework.GridLoadTestUtils;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.LongAdder8;
 
 /**
  *
@@ -50,7 +50,7 @@ public class GridJobExecutionLoadTestClient implements Callable<Object> {
     private static Ignite g;
 
     /** Transaction count. */
-    private static LongAdder8 txCnt = new LongAdder8();
+    private static LongAdder txCnt = new LongAdder();
 
     /** Finish flag. */
     private static volatile boolean finish;

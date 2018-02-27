@@ -268,7 +268,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (dfltMemPlcName == null)
             dfltMemPlcName = DFLT_DATA_REG_DEFAULT_NAME;
 
-        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(dataRegionCfg, fillFactorProvider(dataRegionCfg));
+        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(dataRegionCfg, freeSpaceProvider(dataRegionCfg));
 
         DataRegion memPlc = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable);
 
@@ -289,28 +289,23 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dataRegCfg Data region configuration.
      * @return Closure.
      */
-    protected IgniteOutClosure<Float> fillFactorProvider(final DataRegionConfiguration dataRegCfg) {
+    protected IgniteOutClosure<Long> freeSpaceProvider(final DataRegionConfiguration dataRegCfg) {
         final String dataRegName = dataRegCfg.getName();
 
-        return new IgniteOutClosure<Float>() {
+        return new IgniteOutClosure<Long>() {
             private CacheFreeListImpl freeList;
 
-            @Override public Float apply() {
+            @Override public Long apply() {
                 if (freeList == null) {
                     CacheFreeListImpl freeList0 = freeListMap.get(dataRegName);
 
                     if (freeList0 == null)
-                        return (float) 0;
+                        return 0L;
 
                     freeList = freeList0;
                 }
 
-                T2<Long, Long> fillFactor = freeList.fillFactor();
-
-                if (fillFactor.get2() == 0)
-                    return (float) 0;
-
-                return (float) fillFactor.get1() / fillFactor.get2();
+                return freeList.freeSpace();
             }
         };
     }
@@ -728,6 +723,15 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Allows to wait checkpoint finished.
+     *
+     * @param reason Reason.
+     */
+    @Nullable public CheckpointFuture forceCheckpoint(String reason) {
+        return null;
+    }
+
+    /**
      * Waits until current state is checkpointed.
      *
      * @throws IgniteCheckedException If failed.
@@ -740,6 +744,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param discoEvt Before exchange for the given discovery event.
      */
     public void beforeExchange(GridDhtPartitionsExchangeFuture discoEvt) throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /**
+     * @param fut Partition exchange future.
+     */
+    public void rebuildIndexesIfNeeded(GridDhtPartitionsExchangeFuture fut) {
         // No-op.
     }
 
@@ -828,9 +839,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             boolean shouldEvict = allocatedPagesCnt > (memorySize / sysPageSize * plcCfg.getEvictionThreshold()) &&
                 emptyDataPagesCnt < plcCfg.getEmptyPagesPoolSize();
 
-            if (shouldEvict)
+            if (shouldEvict) {
                 memPlc.evictionTracker().evictDataPage();
-            else
+
+                memPlc.memoryMetrics().updateEvictionRate();
+            } else
                 break;
         }
     }
@@ -927,7 +940,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     ) {
         memMetrics.persistenceEnabled(false);
 
-        return new PageMemoryNoStoreImpl(
+        PageMemory pageMem = new PageMemoryNoStoreImpl(
             log,
             memProvider,
             cctx,
@@ -936,6 +949,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             memMetrics,
             false
         );
+
+        memMetrics.pageMemory(pageMem);
+
+        return pageMem;
     }
 
     /**
@@ -997,5 +1014,23 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public MetaStorage metaStorage() {
         return null;
+    }
+
+    /**
+     * @param grpId Group ID.
+     * @return WAL enabled flag.
+     */
+    public boolean walEnabled(int grpId) {
+        return false;
+    }
+
+    /**
+     * Marks cache group as with disabled WAL.
+     *
+     * @param grpId Group id.
+     * @param enabled flag.
+     */
+    public void walEnabled(int grpId, boolean enabled) {
+        // No-op.
     }
 }
