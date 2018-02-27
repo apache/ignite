@@ -42,9 +42,10 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Test for page evictions.
+ * Test for page replacement (rotation with disk) process with enabled persistence.
+ * A lot of reader threads tries to acquire page and checkpointer threads write data.
  */
-public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
+public class IgnitePdsPageReplacementTest extends GridCommonAbstractTest {
     /** */
     private static final int NUMBER_OF_SEGMENTS = 64;
 
@@ -114,7 +115,7 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If fail.
      */
-    public void testPageEviction() throws Exception {
+    public void testPageReplacement() throws Exception {
         final IgniteEx ig = startGrid(0);
 
         ig.active(true);
@@ -130,16 +131,16 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private void writeData(final IgniteEx ignite, final PageMemory memory, final int cacheId) throws Exception {
-        final int size = PAGES_NUM;
+        final int pagesNum = getPagesNum();
 
-        final List<FullPageId> pageIds = new ArrayList<>(size);
+        final List<FullPageId> pageIds = new ArrayList<>(pagesNum);
 
         IgniteCacheDatabaseSharedManager db = ignite.context().cache().context().database();
 
         PageIO pageIO = new DummyPageIO();
 
         // Allocate.
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < pagesNum; i++) {
             db.checkpointReadLock();
             try {
                 final FullPageId fullId = new FullPageId(memory.allocatePage(cacheId, i % 256, PageMemory.FLAG_DATA),
@@ -157,11 +158,11 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
         System.out.println("Allocated pages: " + pageIds.size());
 
         // Write data. (Causes evictions.)
-        final int part = PAGES_NUM / NUMBER_OF_SEGMENTS;
+        final int part = pagesNum / NUMBER_OF_SEGMENTS;
 
         final Collection<IgniteInternalFuture> futs = new ArrayList<>();
 
-        for (int i = 0; i < PAGES_NUM; i += part)
+        for (int i = 0; i < pagesNum; i += part)
             futs.add(runWriteInThread(ignite, i, i + part, memory, pageIds));
 
         for (final IgniteInternalFuture fut : futs)
@@ -172,13 +173,20 @@ public class IgnitePdsEvictionTest extends GridCommonAbstractTest {
         // Read data. (Causes evictions.)
         futs.clear();
 
-        for (int i = 0; i < PAGES_NUM; i += part)
+        for (int i = 0; i < pagesNum; i += part)
             futs.add(runReadInThread(ignite, i, i + part, memory, pageIds));
 
         for (final IgniteInternalFuture fut : futs)
             fut.get();
 
         System.out.println("Read pages: " + pageIds.size());
+    }
+
+    /**
+     * @return num of pages to operate in test.
+     */
+    protected int getPagesNum() {
+        return PAGES_NUM;
     }
 
     /**
