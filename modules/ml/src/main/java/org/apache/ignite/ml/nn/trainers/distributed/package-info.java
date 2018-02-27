@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Cluster group example.
+ * Contains multilayer perceptron distributed trainers.
  */
-package org.apache.ignite.examples.computegrid.cluster;
+package org.apache.ignite.ml.nn.trainers.distributed;

@@ -15,18 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark
-
-import org.scalatest.Suites
+package org.apache.ignite.examples.ml;
 
 /**
-  * Test suite for Spark DataFram API implementation.
-  */
-class IgniteDataFrameSuite extends Suites (
-    new IgniteDataFrameSchemaSpec,
-    new IgniteSQLDataFrameSpec,
-    new IgniteSQLDataFrameWriteSpec,
-    new IgniteSQLDataFrameIgniteSessionWriteSpec,
-    new IgniteDataFrameWrongConfigSpec,
-    new IgniteCatalogSpec
-)
+ * Some common arguments for examples in ML module.
+ */
+public class MLExamplesCommonArgs {
+    /**
+     * Unattended argument.
+     */
+    public static String UNATTENDED = "unattended";
+
+    /** Empty args for ML examples. */
+    public static final String[] EMPTY_ARGS_ML = new String[] {"--" + UNATTENDED};
+}

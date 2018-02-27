@@ -1499,7 +1499,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         /**
          * Background creation of all segments except first. First segment was created in main thread by
-         * {@link FileWriteAheadLogManager#checkOrPrepareFiles()}
+         * {@code FileWriteAheadLogManager#checkOrPrepareFiles()}
          */
         private void allocateRemainingFiles() throws IgniteCheckedException {
             checkFiles(1, true, new IgnitePredicate<Integer>() {
@@ -1663,7 +1663,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             int segmentSerializerVer;
 
             try (FileIO fileIO = ioFactory.create(raw)) {
-                IgniteBiTuple<Integer, Boolean> tup = FileWriteAheadLogManager.readSerializerVersionAndCompactedFlag(fileIO);
+                IgniteBiTuple<Integer, Boolean> tup = readSerializerVersionAndCompactedFlag(fileIO);
 
                 segmentSerializerVer = tup.get1();
             }

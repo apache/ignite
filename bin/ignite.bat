@@ -28,7 +28,7 @@ if "%OS%" == "Windows_NT"  setlocal
 if defined JAVA_HOME  goto checkJdk
     echo %0, ERROR:
     echo JAVA_HOME environment variable is not found.
-    echo Please point JAVA_HOME variable to location of JDK 1.7 or JDK 1.8.
+    echo Please point JAVA_HOME variable to location of JDK 1.8 or JDK 9.
     echo You can also download latest JDK at http://java.com/download.
 goto error_finish
 
@@ -42,7 +42,7 @@ if exist "%JAVA_HOME%\bin\java.exe" goto checkJdkVersion
 goto error_finish
 
 :checkJdkVersion
-"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"java version .9\..*" /c:"java version .1\.8\..*" > nul
+"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"version .9\..*" /c:"version .1\.8\..*" > nul
 if %ERRORLEVEL% equ 0 goto checkIgniteHome1
     echo %0, ERROR:
     echo The version of JAVA installed in %JAVA_HOME% is incorrect.
@@ -216,7 +216,7 @@ if "%MAIN_CLASS%" == "" set MAIN_CLASS=org.apache.ignite.startup.cmdline.Command
 ::
 :: Final JVM_OPTS for Java 9 compatibility
 ::
-"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"java version .9\..*" > nul && set JVM_OPTS=--add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/sun.nio.ch=ALL-UNNAMED --add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED  --add-modules java.xml.bind %JVM_OPTS%
+"%JAVA_HOME%\bin\java.exe" -version 2>&1 | findstr /R /c:"version .9\..*" > nul && set JVM_OPTS=--add-exports java.base/jdk.internal.misc=ALL-UNNAMED --add-exports java.base/sun.nio.ch=ALL-UNNAMED --add-exports java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED --add-exports jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED --add-modules java.xml.bind %JVM_OPTS%
 
 if "%INTERACTIVE%" == "1" (
     "%JAVA_HOME%\bin\java.exe" %JVM_OPTS% %QUIET% %RESTART_SUCCESS_OPT% %JMX_MON% ^

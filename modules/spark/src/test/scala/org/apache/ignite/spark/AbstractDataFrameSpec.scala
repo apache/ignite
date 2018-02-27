@@ -26,7 +26,7 @@ import java.lang.{Long ⇒ JLong}
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.cache.query.annotations.QuerySqlField
 import org.apache.ignite.internal.IgnitionEx
-import org.apache.ignite.spark.AbstractDataFrameSpec.configuration
+import org.apache.ignite.spark.AbstractDataFrameSpec._
 
 import scala.annotation.meta.field
 import scala.reflect.ClassTag
@@ -39,16 +39,12 @@ abstract class AbstractDataFrameSpec extends FunSpec with Matchers with BeforeAn
     var client: Ignite = _
 
     override protected def beforeAll() = {
-        spark = SparkSession.builder()
-            .appName("DataFrameSpec")
-            .master("local")
-            .config("spark.executor.instances", "2")
-            .getOrCreate()
-
         for (i ← 0 to 3)
             Ignition.start(configuration("grid-" + i, client = false))
 
         client = Ignition.getOrStart(configuration("client", client = true))
+
+        createSparkSession()
     }
 
     override protected def afterAll() = {
@@ -60,12 +56,26 @@ abstract class AbstractDataFrameSpec extends FunSpec with Matchers with BeforeAn
         spark.close()
     }
 
-    def createPersonTable(client: Ignite, cacheName: String): Unit = {
+    protected def createSparkSession(): Unit = {
+        spark = SparkSession.builder()
+            .appName("DataFrameSpec")
+            .master("local")
+            .config("spark.executor.instances", "2")
+            .getOrCreate()
+    }
+
+    def createPersonTable2(client: Ignite, cacheName: String): Unit =
+        createPersonTable0(client, cacheName, PERSON_TBL_NAME_2)
+
+    def createPersonTable(client: Ignite, cacheName: String): Unit =
+        createPersonTable0(client, cacheName, PERSON_TBL_NAME)
+
+    private def createPersonTable0(client: Ignite, cacheName: String, tblName: String): Unit = {
         val cache = client.cache(cacheName)
 
         cache.query(new SqlFieldsQuery(
-            """
-              | CREATE TABLE person (
+            s"""
+              | CREATE TABLE $tblName (
               |    id LONG,
               |    name VARCHAR,
               |    birth_date DATE,
@@ -78,7 +88,7 @@ abstract class AbstractDataFrameSpec extends FunSpec with Matchers with BeforeAn
               |    PRIMARY KEY (id, city_id)) WITH "backups=1, affinityKey=city_id"
             """.stripMargin)).getAll
 
-        val qry = new SqlFieldsQuery("INSERT INTO person (id, name, city_id) values (?, ?, ?)")
+        val qry = new SqlFieldsQuery(s"INSERT INTO $tblName (id, name, city_id) values (?, ?, ?)")
 
         cache.query(qry.setArgs(1L.asInstanceOf[JLong], "John Doe", 3L.asInstanceOf[JLong])).getAll
         cache.query(qry.setArgs(2L.asInstanceOf[JLong], "Jane Roe", 2L.asInstanceOf[JLong])).getAll
@@ -120,6 +130,10 @@ object AbstractDataFrameSpec {
 
     val EMPLOYEE_CACHE_NAME = "cache3"
 
+    val PERSON_TBL_NAME = "person"
+
+    val PERSON_TBL_NAME_2 = "person2"
+
     def configuration(igniteInstanceName: String, client: Boolean): IgniteConfiguration = {
         val cfg = IgnitionEx.loadConfiguration(TEST_CONFIG_FILE).get1()
 
@@ -151,6 +165,11 @@ object AbstractDataFrameSpec {
 
         ccfg
     }
+
+    /**
+      * Enclose some closure, so it doesn't on outer object(default scala behaviour) while serializing.
+      */
+    def enclose[E, R](enclosed: E)(func: E => R): R = func(enclosed)
 }
 
 case class Employee (
