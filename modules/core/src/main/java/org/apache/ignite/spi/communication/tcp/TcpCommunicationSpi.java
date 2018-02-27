@@ -989,9 +989,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                 }
                             };
 
-                            if (isCompressionEnabled(getLocalNode(), rmtNode))
-                                ses.setCompressed(true);
-
                             nioSrvr.sendSystem(ses, new RecoveryLastReceivedMessage(recoveryDesc.received()), lsnr);
                         }
                         catch (IgniteCheckedException e) {
