@@ -123,7 +123,7 @@
         <bundle start="true" dependency="true">mvn:org.osgi/org.osgi.enterprise/${osgi.enterprise.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.lucene/${lucene.bundle.version}</bundle>
         <bundle start="true" dependency="true">mvn:com.h2database/h2/${h2.version}</bundle>
-        <bundle start="false">mvn:org.apache.ignite/ignite-indexing/${project.version}</bundle>
+        <bundle start="true">mvn:org.apache.ignite/ignite-indexing/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-jcl" version="${project.version}" description="Apache Ignite :: JCL">
