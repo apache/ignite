@@ -16,6 +16,14 @@
  */
 
 queries-notebook {
+    .back-to-notebooks {
+        margin-bottom: 20px;
+
+        a {
+            color: #0067b9
+        }
+    }
+
     .docs-content > header {
         margin: 0;
         margin-bottom: 30px;
@@ -25,8 +33,8 @@ queries-notebook {
         align-items: center;
 
         h1 {
-        	margin: 0;
-        	margin-right: 8px;
+            margin: 0;
+            margin-right: 8px;
         }
     }
 
