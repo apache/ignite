@@ -726,11 +726,11 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
         if (canRemap || !cctx.config().isReadFromBackup())
             return affNodes.get(0);
 
-        List<ClusterNode> nodes = affNodes.parallelStream()
+        List<ClusterNode> nodes = affNodes.stream()
             .filter(node -> cctx.discovery().alive(node))
             .collect(Collectors.toList());
 
-        Optional<ClusterNode> nodeOptional = nodes.parallelStream()
+        Optional<ClusterNode> nodeOptional = nodes.stream()
             .filter(node -> IgniteUtils.sameMacs(cctx.localNode(), node))
             .findAny();
 
