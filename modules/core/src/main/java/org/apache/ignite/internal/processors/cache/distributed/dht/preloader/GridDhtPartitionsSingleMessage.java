@@ -227,6 +227,12 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         return CachePartitionPartialCountersMap.fromCountersMap(map, partsCnt);
     }
 
+    /**
+     * Adds partition sizes map for specified {@code grpId} to the current message.
+     *
+     * @param grpId Group id.
+     * @param partSizesMap Partition sizes map.
+     */
     public void addPartitionSizes(int grpId, Map<Integer, Long> partSizesMap) {
         if (partSizesMap.isEmpty())
             return;
@@ -237,6 +243,12 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
         partSizes.put(grpId, partSizesMap);
     }
 
+    /**
+     * Returns partition sizes map for specified {@code grpId}.
+     *
+     * @param grpId Group id.
+     * @return Partition sizes map (partId, partSize).
+     */
     public Map<Integer, Long> partitionSizes(int grpId) {
         if (partSizes == null)
             return Collections.emptyMap();
