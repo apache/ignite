@@ -30,7 +30,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -52,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
@@ -734,7 +732,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             return null;
 
         Optional<ClusterNode> nodeOptional = nodes.stream()
-            .filter(node -> IgniteUtils.sameMacs(cctx.localNode(), node))
+            .filter(node -> U.sameMacs(cctx.localNode(), node))
             .findAny();
 
         return nodeOptional.orElseGet(() -> nodes.get(ThreadLocalRandom.current().nextInt(nodes.size())));
