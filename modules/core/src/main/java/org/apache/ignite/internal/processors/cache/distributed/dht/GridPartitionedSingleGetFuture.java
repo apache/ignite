@@ -725,6 +725,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             return affNodes.get(0);
 
         List<ClusterNode> nodes = affNodes.stream()
+            .skip(1)
             .filter(node -> cctx.discovery().alive(node))
             .collect(Collectors.toList());
 
