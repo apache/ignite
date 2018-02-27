@@ -31,6 +31,31 @@ export default angular.module('ignite-console.sql', [
     queriesNotebook.name
 ])
     .component('pageQueries', pageQueriesCmp)
+    .component('pageQueriesSlot', {
+        require: {
+            pageQueries: '^pageQueries'
+        },
+        bindings: {
+            slotName: '<'
+        },
+        controller: class {
+            static $inject = ['$transclude', '$timeout'];
+
+            constructor($transclude, $timeout) {
+                this.$transclude = $transclude;
+                this.$timeout = $timeout;
+            }
+
+            $postLink() {
+                this.$timeout(() => {
+                    this.$transclude((clone) => {
+                        clone.appendTo(this.pageQueries[this.slotName]);
+                    });
+                });
+            }
+        },
+        transclude: true
+    })
     .service('IgniteNotebook', Notebook)
     .config(['$stateProvider', ($stateProvider) => {
         // set up the states
@@ -42,15 +67,13 @@ export default angular.module('ignite-console.sql', [
                         template
                     },
                     '@base.sql': {
-                        controller: 'snapshotsCtrl',
-                        controllerAs: '$ctrl',
                         template: '<ui-view></ui-view>'
                     }
                 }
             })
             .state('base.sql.tabs', {
                 url: '/queries',
-                template: '<page-queries></page-queries>',
+                component: 'pageQueries',
                 redirectTo: 'base.sql.tabs.notebooks-list',
                 permission: 'query'
             })

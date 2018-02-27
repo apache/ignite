@@ -18,10 +18,10 @@
 import headerTemplate from '../../../../../app/primitives/ui-grid-header/index.tpl.pug';
 
 export class NotebooksListCtrl {
-    static $inject = ['IgniteNotebook', '$scope'];
+    static $inject = ['IgniteNotebook', '$scope', '$transclude'];
 
-    constructor(IgniteNotebook, $scope) {
-        Object.assign(this, { IgniteNotebook, $scope });
+    constructor(IgniteNotebook, $scope, $transclude) {
+        Object.assign(this, { IgniteNotebook, $scope, $transclude });
 
         const notebookNameTemplate = `<div class="ui-grid-cell-contents notebook-name"><a ui-sref="base.sql.tabs.notebook({ noteId: row.entity._id })">{{ row.entity.name }}</a></div>`;
         const sqlQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.sqlQueriesParagraphsLength}}</div>`;
@@ -81,10 +81,10 @@ export class NotebooksListCtrl {
     }
 
     $onInit() {
-        this.loadAllNotebooks();
+        this._loadAllNotebooks();
     }
 
-    async loadAllNotebooks() {
+    async _loadAllNotebooks() {
         this.notebooks = await this.IgniteNotebook.read();
         this.gridOptions.data = this._preprocessNotebooksList(this.notebooks);
     }

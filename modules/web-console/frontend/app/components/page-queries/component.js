@@ -18,5 +18,23 @@
 import templateUrl from './template.tpl.pug';
 
 export default {
-    templateUrl
+    templateUrl,
+    transclude: {
+        queriesButtons: '?queriesButtons',
+        queriesContent: '?queriesContent',
+        queriesTitle: '?queriesTitle'
+    },
+    controller: class Ctrl {
+        static $inject = ['$element'];
+
+        constructor($element) {
+            this.$element = $element;
+        }
+
+        $postLink() {
+            this.queriesTitle = this.$element.find('.queries-title');
+            this.queriesButtons = this.$element.find('.queries-buttons');
+            this.queriesContent = this.$element.find('.queries-content');
+        }
+    }
 };

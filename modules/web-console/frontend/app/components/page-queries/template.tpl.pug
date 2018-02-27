@@ -17,14 +17,14 @@
 .row.page-data-replication
     header.header-with-selector
         div
-            h1 Queries
+            .queries-title
             cluster-selector
-        div
-            button.btn-ignite.btn-ignite--primary() Create notebook
+        .queries-buttons
+
     div
         ul.tabs.tabs--blue
             li(role='presentation' ui-sref-active='active')
                 a(ui-sref='base.sql.tabs.notebooks-list') Notebooks
 
-        div
-            ui-view
+        .queries-content
+        ui-view

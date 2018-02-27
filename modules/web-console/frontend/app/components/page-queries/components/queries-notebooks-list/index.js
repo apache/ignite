@@ -23,5 +23,6 @@ import './style.scss';
 export default angular.module('ignite-console.sql.notebooks-list', [])
     .component('queriesNotebooksList', {
         controller: NotebooksListCtrl,
-        templateUrl
+        templateUrl,
+        transclude: true
     });

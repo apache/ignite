@@ -21,7 +21,7 @@ import { NotebookCtrl } from './controller';
 // This controller is used in navbar with showing "Create notebook" modal dialog. Under deprecation.
 import notebookNavbarCtrl from './notebook.navbar.controller';
 
-import NotebookData from './notebook.data';
+import NotebookData from '../../notebook.data';
 
 import './style.scss';
 
