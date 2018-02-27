@@ -18,6 +18,8 @@
 namespace Apache.Ignite.Linq
 {
     using System;
+    using System.Collections.Generic;
+    using System.Collections.ObjectModel;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
@@ -32,7 +34,7 @@ namespace Apache.Ignite.Linq
     /// <summary>
     /// Extensions methods for <see cref="ICache{TK,TV}"/>.
     /// </summary>
-    public static class CacheLinqExtensions
+    public static partial class CacheLinqExtensions
     {
         /// <summary>
         /// Gets an <see cref="IQueryable{T}"/> instance over this cache.
@@ -213,14 +215,11 @@ namespace Apache.Ignite.Linq
 
             if (!(updateDescription.Body is MethodCallExpression))
             {
-                throw new NotSupportedException();
+                throw new NotSupportedException("Expression is not supported for UpdateAll: " + updateDescription.Body);
             }
 
             var parameter = Expression.Parameter(typeof(TValue), "p");
-
-            var type = typeof(UpdateDesc<>).MakeGenericType(typeof(TValue));
-
-            var newDescriptor = Expression.New(type.GetConstructors().First());
+            var updates = new List<ReadOnlyCollection<Expression>>();
 
             var methodCall = (MethodCallExpression) updateDescription.Body;
             while (true)
@@ -228,38 +227,30 @@ namespace Apache.Ignite.Linq
                 if (methodCall.Object is MethodCallExpression)
                 {
                     methodCall = (MethodCallExpression) methodCall.Object;
+                    updates.Add(methodCall.Arguments);
                 }
                 else
                 {
-                    methodCall = methodCall.Update(newDescriptor, methodCall.Arguments);
                     break;
                 }
             }
 
+            var lambda = Expression.Lambda<Func<TValue, UpdateDescription>>(
+                Expression.Constant(new UpdateDescription {Updates = updates}, typeof(UpdateDescription)), parameter);
 
-            var updateDescriptionBody = updateDescription.Body;
-            var updateDescriptionNodeType = updateDescription.NodeType;
-            var expressionType = updateDescriptionBody.NodeType;
-
-            var mc = updateDescriptionBody as MethodCallExpression;
-            var expression = Expression.Lambda<Func<TValue, IUpdateDescriptor<TValue>>>(methodCall, parameter);
-            return UpdateAllImpl(query, expression);
+            return UpdateAllImpl(query, lambda);
         }
 
-        public class UpdateAllExpression:Expression
-        {
-            public int I { get; set; }
-
-            public override ExpressionType NodeType
-            {
-                get { return ExpressionType.Lambda; }
-            }
-        }
-
+        /// <summary>
+        /// Internal method rewriting user call 
+        /// </summary>
+        /// <typeparam name="TKey">Key type.</typeparam>
+        /// <typeparam name="TValue">Value type.</typeparam>
+        /// <param name="query">The query.</param>
+        /// <param name="updateDescription">The update description.</param>
+        /// <returns>Affected row count.</returns>
         internal static int UpdateAllImpl<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query,
-            //UpdateAllExpression updateDescription
-            Expression<Func<TValue, IUpdateDescriptor<TValue>>> updateDescription
-            )
+            Expression<Func<TValue, UpdateDescription>> updateDescription)
         {
             IgniteArgumentCheck.NotNull(query, "query");
             IgniteArgumentCheck.NotNull(updateDescription, "updateDescription");
@@ -273,40 +264,5 @@ namespace Apache.Ignite.Linq
                 Expression.Quote(updateDescription)
             }));
         }
-
-        class UpdateDesc<T>:IUpdateDescriptor<T>
-        {
-            public IUpdateDescriptor<T> Set<TProp>(Func<T, TProp> selector, TProp value)
-            {
-                return this;
-            }
-
-            public IUpdateDescriptor<T> Set<TProp>(Func<T, TProp> selector, Func<T, TProp> valueBuilder)
-            {
-                return this;
-            }
-        }
-
-        //public static int UpdateAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query, Expression<Func<ICacheEntry<TKey,TValue>, string>> func) 
-        //{
-        //    var method = UpdateAllExpressionNode.UpdateAllString
-        //        .MakeGenericMethod(typeof(TKey), typeof(TValue)); // TODO: cache?
-
-        //    return query.Provider.Execute<int>(Expression.Call(null, method, query.Expression,
-        //        Expression.Quote(func)));
-        //}
-
-        //public class UD<T>:IUpdateDescriptor<T>
-        //{
-        //    public IUpdateDescriptor<T> Set<TProp>(Func<T, TProp> selector, TProp value)
-        //    {
-        //        return this;
-        //    }
-
-        //    public IUpdateDescriptor<T> Set<TProp>(Func<T, TProp> selector, Func<T, TProp> valueBuilder)
-        //    {
-        //        return this;
-        //    }
-        //}
     }
 }

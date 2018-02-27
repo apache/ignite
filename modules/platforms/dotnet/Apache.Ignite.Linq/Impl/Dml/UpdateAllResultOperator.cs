@@ -30,6 +30,13 @@ namespace Apache.Ignite.Linq.Impl.Dml
     /// </summary>
     internal sealed class UpdateAllResultOperator : ValueFromSequenceResultOperatorBase
     {
+        private readonly Expression _updateDescription;
+
+        public UpdateAllResultOperator(Expression updateDescription)
+        {
+            _updateDescription = updateDescription;
+        }
+
         /** <inheritdoc /> */
         public override IStreamedDataInfo GetOutputDataInfo(IStreamedDataInfo inputInfo)
         {
@@ -40,7 +47,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
         [ExcludeFromCodeCoverage]
         public override ResultOperatorBase Clone(CloneContext cloneContext)
         {
-            return new UpdateAllResultOperator();
+            return new UpdateAllResultOperator(_updateDescription);
         }
 
         /** <inheritdoc /> */

@@ -79,6 +79,7 @@
     <Compile Include="Package-Info.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QueryOptions.cs" />
+    <Compile Include="Impl\Dml\UpdateDescription.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Apache.Ignite.Linq.nuspec" />

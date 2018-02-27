@@ -33,6 +33,8 @@ namespace Apache.Ignite.Linq.Impl.Dml
     /// </summary>
     internal sealed class UpdateAllExpressionNode : ResultOperatorExpressionNodeBase
     {
+        private readonly Expression _updateDescription;
+
         static UpdateAllExpressionNode()
         {
             var updateAllMethodInfos = typeof(CacheLinqExtensions)
@@ -68,14 +70,12 @@ namespace Apache.Ignite.Linq.Impl.Dml
         /// Initializes a new instance of the <see cref="UpdateAllExpressionNode"/> class.
         /// </summary>
         /// <param name="parseInfo">The parse information.</param>
-        /// <param name="optionalPredicate">The optional predicate.</param>
-        /// <param name="optionalSelector">The optional selector.</param>
-        /// <param name="test"></param>
+        /// <param name="updateDescription">Expression with update description info</param>
         public UpdateAllExpressionNode(MethodCallExpressionParseInfo parseInfo,
-            Expression test)
+            Expression updateDescription)
             : base(parseInfo, null, null)
         {
-            // No-op.
+            _updateDescription = updateDescription;
         }
 
         /** <inheritdoc /> */
@@ -89,7 +89,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
         /** <inheritdoc /> */
         protected override ResultOperatorBase CreateResultOperator(ClauseGenerationContext clauseGenerationContext)
         {
-            return new UpdateAllResultOperator();
+            return new UpdateAllResultOperator(_updateDescription);
         }
 
         /// <summary>
