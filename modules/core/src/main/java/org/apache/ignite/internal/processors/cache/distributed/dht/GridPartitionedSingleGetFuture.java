@@ -19,14 +19,18 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -48,6 +52,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
@@ -718,16 +723,20 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @return Affinity node to get key from.
      */
     @Nullable private ClusterNode affinityNode(List<ClusterNode> affNodes) {
-        if (!canRemap) {
-            for (ClusterNode node : affNodes) {
-                if (cctx.discovery().alive(node))
-                    return node;
-            }
-
-            return null;
-        }
-        else
+        if (!canRemap || !cctx.config().isReadFromBackup())
             return affNodes.get(0);
+
+        List<ClusterNode> nodes = affNodes
+            .parallelStream()
+            .filter(node -> cctx.discovery().alive(node))
+            .collect(Collectors.toList());
+
+        Optional<ClusterNode> nodeOptional = nodes
+            .parallelStream()
+            .filter(node -> IgniteUtils.sameMacs(cctx.localNode(), node))
+            .findAny();
+
+        return nodeOptional.orElseGet(() -> nodes.get(ThreadLocalRandom.current().nextInt(nodes.size())));
     }
 
     /** {@inheritDoc} */
