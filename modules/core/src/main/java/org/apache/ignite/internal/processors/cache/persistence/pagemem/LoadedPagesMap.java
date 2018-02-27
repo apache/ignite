@@ -30,12 +30,12 @@ public interface LoadedPagesMap {
      *
      * @param grpId Cache Group ID.
      * @param pageId Page ID.
-     * @param tag Counter associated with value.
+     * @param ver Version, counter associated with value.
      * @param absent return if provided page is not presented in map.
-     * @param outdated return if provided {@code tag} counter is greater than initial provided
+     * @param outdated return if provided {@code ver} counter is greater than initial provided
      * @return A value associated with the given key.
      */
-    public long get(int grpId, long pageId, int tag, long absent, long outdated);
+    public long get(int grpId, long pageId, int ver, long absent, long outdated);
 
     /**
      * Associates the given key with the given value.
@@ -43,9 +43,9 @@ public interface LoadedPagesMap {
      * @param cacheId Cache ID
      * @param pageId Page ID.
      * @param val Value to set.
-     * @param tag Counter associated with value, can be used to check if value is outdated.
+     * @param ver Version/counter associated with value, can be used to check if value is outdated.
      */
-    public void put(int cacheId, long pageId, long val, int tag);
+    public void put(int cacheId, long pageId, long val, int ver);
 
     /**
      * Refresh outdated value.

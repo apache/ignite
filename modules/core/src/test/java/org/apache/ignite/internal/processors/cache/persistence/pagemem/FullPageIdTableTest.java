@@ -110,15 +110,15 @@ public class FullPageIdTableTest  {
      */
     @Test
     public void putRemoveScenario() throws Exception {
-        long seed   = U.currentTimeMillis();
-        doPutRemoveTest(seed, false);
+        long seed = U.currentTimeMillis();
+        doPutRemoveTest(seed, false, 2_000_000);
     }
 
     //@Test
     public void putRemoveScenarioFixedSeed() throws Exception {
         long seed = 1518082843319L;
 
-        doPutRemoveTest(seed, false);
+        doPutRemoveTest(seed, false, 2_000_000);
     }
 
     /**
@@ -126,12 +126,16 @@ public class FullPageIdTableTest  {
      */
     @Test
     public void putRemoveScenarioNewMap() throws Exception {
-        long seed   = U.currentTimeMillis();
-        doPutRemoveTest(seed, true);
+        long seed = U.currentTimeMillis();
+        doPutRemoveTest(seed, true, 30_000_000);
     }
 
-
-    private void doPutRemoveTest(long seed, boolean newMapImpl) {
+    /**
+     * @param seed random initial value.
+     * @param newMapImpl use RobinHood map
+     * @param iters iterations.
+     */
+    private void doPutRemoveTest(long seed, boolean newMapImpl, int iters) {
         int elementsCnt = 7000;
 
         //System.setProperty(IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR, "11");
@@ -151,14 +155,14 @@ public class FullPageIdTableTest  {
             Random rnd = new Random(seed);
 
             LoadedPagesMap tbl =
-                newMapImpl ?
-                    new RobinHoodBackwardShiftHashMap(region.address(), region.size())
+                newMapImpl
+                    ? new RobinHoodBackwardShiftHashMap(region.address(), region.size())
                     : new FullPageIdTable(region.address(), region.size(), true);
 
             Map<FullPageId, Long> check = new HashMap<>();
 
             int tag = 0;
-            for (int i = 0; i < 30_000_000; i++) {
+            for (int i = 0; i < iters; i++) {
                 int op = rnd.nextInt(5);
 
                 int cacheId = rnd.nextInt(CACHE_ID_RANGE2) + 1;
@@ -213,11 +217,8 @@ public class FullPageIdTableTest  {
 
                     tag++;
                 }
+
                 i++;
-
-
-               // if(avgPutSteps.getAverage()>2000)
-                //    break;
             }
 
             verifyLinear(tbl, check);

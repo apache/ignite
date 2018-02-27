@@ -110,7 +110,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     }
 
     /**
-     * Creates map in preallocated unsafe segment.
+     * Creates map in preallocated unsafe memory segment.
      *
      * @param baseAddr Base buffer address.
      * @param size Size available for map, number of buckets (cells) to store will be determined accordingly.
@@ -123,21 +123,6 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     }
 
     /**
-     * Creates map in preallocated unsafe segment.
-     *
-     * @param baseAddr Base buffer address.
-     * @param numBuckets Number of buckets (cells) to store, capacity.
-     */
-    public RobinHoodBackwardShiftHashMap(long baseAddr, int numBuckets) {
-        this.baseAddr = baseAddr;
-        this.numBuckets = numBuckets;
-
-        long memoryByBuckets = requiredMemoryByBuckets(numBuckets);
-
-        GridUnsafe.setMemory(baseAddr, memoryByBuckets, (byte)0);
-    }
-
-    /**
      * @param idx cell index.
      * @return base cell (bucket) address in buffer.
      */
@@ -146,7 +131,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     }
 
     /** {@inheritDoc} */
-    @Override public long get(int grpId, long pageId, int tag, long absent, long outdated) {
+    @Override public long get(int grpId, long pageId, int ver, long absent, long outdated) {
         assert grpId != 0;
         int idxInit = U.safeAbs(FullPageId.hashCode(grpId, pageId)) % numBuckets;
 
@@ -176,14 +161,14 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     }
 
     /** {@inheritDoc} */
-    @Override public void put(int grpId, long pageId, long val, int tag) {
+    @Override public void put(int grpId, long pageId, long val, int ver) {
         assert grpId != 0;
 
         int idxInit = U.safeAbs(FullPageId.hashCode(grpId, pageId)) % numBuckets;
 
         int grpIdToInsert = grpId;
         long pageIdToInsert = pageId;
-        int tagToInsert = tag;
+        int tagToInsert = ver;
         long valToInsert = val;
         long idxIdealToInsert = idxInit;
         int swapCount = 0;

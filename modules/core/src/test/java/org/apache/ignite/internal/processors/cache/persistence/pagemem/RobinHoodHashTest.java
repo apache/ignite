@@ -39,11 +39,16 @@ import static org.junit.Assert.assertTrue;
 public class RobinHoodHashTest {
     private boolean dump = false;
 
+    /**
+     * @param tester map test code
+     * @param cap required map capacity.
+     */
     private void withMap(Consumer<RobinHoodBackwardShiftHashMap> tester, int cap) {
-        long addr = GridUnsafe.allocateMemory(
-            RobinHoodBackwardShiftHashMap.requiredMemoryByBuckets(cap));
+        long memSize = RobinHoodBackwardShiftHashMap.requiredMemoryByBuckets(cap);
+        long addr = GridUnsafe.allocateMemory(memSize);
 
-        RobinHoodBackwardShiftHashMap map = new RobinHoodBackwardShiftHashMap(addr, cap);
+        RobinHoodBackwardShiftHashMap map
+            = new RobinHoodBackwardShiftHashMap(addr, memSize);
         try {
             tester.accept(map);
         }
@@ -63,11 +68,11 @@ public class RobinHoodHashTest {
                     int val = grpId * grpId;
 
                     assertSizeChanged("Unique put should be successful " + grpId,
-                        map, ()-> map.put(grpId, 1, val, 1) );
+                        map, () -> map.put(grpId, 1, val, 1));
                     assertEquals(val, map.get(grpId, 1, 0, -1, -2));
 
                     assertSizeNotchanged("Duplicate put for " + grpId,
-                        map, ()-> map.put(grpId, 1, 1, 1));
+                        map, () -> map.put(grpId, 1, 1, 1));
                     assertEquals(1, map.get(grpId, 1, 0, -1, -2));
                 }
 
@@ -121,7 +126,7 @@ public class RobinHoodHashTest {
                     int grpId = i + 1;
                     int val = grpId * grpId;
                     assertSizeChanged("Unique put should be successful " + grpId, map,
-                        ()-> map.put(grpId, 1, val, 1));
+                        () -> map.put(grpId, 1, val, 1));
                 }
 
                 doAddRemove(map);
@@ -143,25 +148,29 @@ public class RobinHoodHashTest {
 
     @Test
     public void testCollisionOnRemove() {
-        LinkedHashMap<FullPageId, Long> control = new LinkedHashMap<>();
-        int elem = 10;
-        int cap = elem;
+        LinkedHashMap<FullPageId, Long> ctrl = new LinkedHashMap<>();
+        int cap = 10;
         FullPageId baseId = new FullPageId(0, 1);
 
         withMap(map -> {
-            for (int i = 0; i < elem; i++) {
+            for (int i = 0; i < cap; i++) {
                 int grpId = i + 1;
                 int pageId = findPageIdForCollision(grpId, baseId, cap);
-                long val = grpId;
-                control.put(new FullPageId(pageId, grpId), val);
-                map.put(grpId, pageId, val, 1);
+                ctrl.put(new FullPageId(pageId, grpId), (long)grpId);
+                map.put(grpId, pageId, (long)grpId, 1);
             }
-            for (FullPageId next : control.keySet()) {
+            for (FullPageId next : ctrl.keySet()) {
                 assertTrue(map.remove(next.groupId(), next.pageId()));
             }
         }, cap);
     }
 
+    /**
+     * @param grpId Group ID to use
+     * @param id Page to be placed to same bucket with
+     * @param cap map maximum cells.
+     * @return page ID to use in addition to provided {@code grpId} to reach collision.
+     */
     private int findPageIdForCollision(int grpId, FullPageId id, int cap) {
         int bucket = U.safeAbs(id.hashCode()) % cap;
 
@@ -175,13 +184,13 @@ public class RobinHoodHashTest {
 
     @Test
     public void testRandomOpsPutRemove() {
-        doPutRemoveTest(1);
+        doPutRemoveTest(System.currentTimeMillis());
     }
 
     private void doPutRemoveTest(long seed) {
-        int elementsCnt = 10_000;
-
         System.setProperty(IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR, "11");
+
+        int elementsCnt = 10_000;
 
         withMap(tbl -> {
             Random rnd = new Random(seed);
@@ -215,8 +224,7 @@ public class RobinHoodHashTest {
                 else if ((op == 1 || op == 2) && (check.size() < elementsCnt)) {
                     long val = U.safeAbs(rnd.nextInt(30));
 
-                    Long prevPut = check.put(fullId, val);
-                    boolean prevValuePresent = prevPut != null;
+                    check.put(fullId, val);
                     tbl.put(cacheId, pageId, val, tag);
 
                     if (dump)
@@ -225,7 +233,6 @@ public class RobinHoodHashTest {
                 else if ((op == 3) && check.size() >= elementsCnt * 2 / 3) {
                     tbl.remove(cacheId, pageId);
                     check.remove(fullId);
-
 
                     System.out.println("remove " + getPageString(fullId) + " ");
                 }
@@ -240,34 +247,14 @@ public class RobinHoodHashTest {
                     }
                 }
 
-
-                if (i > 0 && i % 100_000 == 0) {
-                   /*                IntervalBasedMeasurement avgPutSteps = U.field(tbl, "avgPutSteps");
-                     info("Done: " + i
-                        + " Size: " + check.size()
-                        + " Capacity: " + tbl.capacity()
-                        + " avg steps " + avgPutSteps.getAverage());
-*/
-                    //verifyLinear(tbl, check);
-
-                    // tag++;
-                }
                 i++;
-
-                // if(avgPutSteps.getAverage()>2000)
-                //    break;
             }
 
-//            IntervalBasedMeasurement avgPutSteps = U.field(tbl, "avgPutSteps");
-   //         System.out.println("Average put required: " + avgPutSteps.getAverage());
         }, elementsCnt);
     }
 
     @NotNull private String getPageString(FullPageId fullId) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("(grp=").append(fullId.groupId()).append(",");
-        sb.append("page=").append(fullId.pageId()).append(")");
-
-        return sb.toString();
+        return "(grp=" + fullId.groupId() + "," +
+            "page=" + fullId.pageId() + ")";
     }
 }

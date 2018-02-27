@@ -141,10 +141,10 @@ public class FullPageIdTable implements LoadedPagesMap {
     }
 
     /** {@inheritDoc} */
-    @Override public long get(int grpId, long pageId, int tag, long absent, long outdated) {
+    @Override public long get(int grpId, long pageId, int ver, long absent, long outdated) {
         assert assertKey(grpId, pageId);
 
-        int idx = getKey(grpId, pageId, tag, false);
+        int idx = getKey(grpId, pageId, ver, false);
 
         if (idx == -1)
             return absent;
@@ -180,10 +180,10 @@ public class FullPageIdTable implements LoadedPagesMap {
     }
 
     /** {@inheritDoc} */
-    @Override public void put(int cacheId, long pageId, long val, int tag) {
+    @Override public void put(int cacheId, long pageId, long val, int ver) {
         assert assertKey(cacheId, pageId);
 
-        int index = putKey(cacheId, pageId, tag);
+        int index = putKey(cacheId, pageId, ver);
 
         setValueAt(index, val);
     }
