@@ -283,6 +283,10 @@ public class IgniteBenchmarkArguments {
             "Additional url parameters (space separated key=value) for special jdbc connection that only uploads data. ")
     private List<String> uploadJdbcParams = Collections.emptyList();
 
+    @Parameter(names={"--sql-copy-packet-size"},
+        description = "Upload benchmark only: use custom packet_size (in bytes) for copy comand")
+    private Long copyPacketSize = null;
+
     /**
      * @return {@code True} if need set {@link DataStorageConfiguration}.
      */
@@ -686,6 +690,11 @@ public class IgniteBenchmarkArguments {
     /** @return parameters for jdbc url */
     public List<String> uploadJdbcParams(){
         return uploadJdbcParams;
+    }
+
+    /** @return packet_size value for copy command or {@code null} for default value */
+    @Nullable public Long copyPacketSize() {
+        return copyPacketSize;
     }
 
     /** {@inheritDoc} */

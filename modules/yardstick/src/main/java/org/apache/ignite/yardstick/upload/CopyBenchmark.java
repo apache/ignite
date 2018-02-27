@@ -36,12 +36,17 @@ public class CopyBenchmark extends AbstractUploadBenchmark {
     /** csv file for benchmared action */
     private String realCsvPath;
 
+    private Long packetSize;
+
     /** {@inheritDoc} */
     @Override protected void init() {
         super.init();
 
+        packetSize = args.copyPacketSize();
+
         warmupCsvPath = generateWarmupCsv();
         realCsvPath = generateRealCsv();
+
     }
 
     /** Generate csv file for copy operation being benchmarked. */
@@ -101,14 +106,14 @@ public class CopyBenchmark extends AbstractUploadBenchmark {
 
     /** {@inheritDoc} */
     @Override protected void warmup(Connection warmupConn) throws Exception {
-        try (PreparedStatement fromCsv = warmupConn.prepareStatement(queries.copyFrom(warmupCsvPath))) {
+        try (PreparedStatement fromCsv = warmupConn.prepareStatement(queries.copyFrom(warmupCsvPath, packetSize))) {
             fromCsv.executeUpdate();
         }
     }
 
     /** {@inheritDoc} */
     @Override public void upload(Connection uploadConn) throws Exception {
-        try (PreparedStatement fromCsv = uploadConn.prepareStatement(queries.copyFrom(realCsvPath))) {
+        try (PreparedStatement fromCsv = uploadConn.prepareStatement(queries.copyFrom(realCsvPath, packetSize))) {
             fromCsv.executeUpdate();
         }
     }

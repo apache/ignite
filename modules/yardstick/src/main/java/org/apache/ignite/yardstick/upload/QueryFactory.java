@@ -20,6 +20,7 @@ package org.apache.ignite.yardstick.upload;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.concurrent.ThreadLocalRandom;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Factory that hides all test data details:
@@ -39,10 +40,10 @@ public class QueryFactory {
     /** Parametrised query to insert new row. */
     private String insert = newInsertQuery();
 
-    /** Query to count table size */
+    /** Query to count table size. */
     private String count = "SELECT COUNT(id) FROM test_upload;";
 
-    /** Deletes all rows from the test table. Does NOT drop the table itself */
+    /** Deletes all rows from the test table. Does NOT drop the table itself. */
     private String deleteAll = "DELETE FROM test_upload WHERE id > 0";
 
     /** Turns on Write Ahead Log. */
@@ -106,18 +107,26 @@ public class QueryFactory {
     }
 
     /**
-     * @param csvFilePath path to csv file
-     * @return sql query that inserts data from specified csv file
+     * @param csvFilePath path to csv file.
+     * @param packetSize if not null, add packet_size query option.
+     * @return sql query that inserts data from specified csv file.
      */
-    public String copyFrom(String csvFilePath) {
-        return "COPY FROM \"" + csvFilePath + "\" INTO test_upload " + attributes() + " FORMAT CSV;";
+    public String copyFrom(String csvFilePath, @Nullable Long packetSize) {
+        String pSizeExpr = "";
+
+        if (packetSize != null)
+            pSizeExpr = " packet_size" + packetSize;
+
+        return "COPY FROM \"" + csvFilePath + "\" " +
+            "INTO test_upload " + attributes() + " " +
+            "FORMAT CSV" + pSizeExpr + ";";
     }
 
     /**
      * Creates string - comma-separated attributes of test table, surrounded with braces
-     * Is used as a part of sql statement
+     * Is used as a part of sql statement.
      *
-     * @return attributes list of test table as part of sql statement
+     * @return attributes list of test table as part of sql statement.
      */
     private String attributes() {
         StringBuilder attrs = new StringBuilder("(id");
@@ -161,8 +170,8 @@ public class QueryFactory {
      * This line corresponds 1 row of the test table,
      * which will be inserted in the end.
      *
-     * @param id key in the test table
-     * @return generated comma-separated line
+     * @param id key in the test table.
+     * @return generated comma-separated line.
      */
     public String randomCsvLine(long id) {
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
