@@ -2135,7 +2135,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                                 return map;
                             }
                         }
-                    );
+                    ).chain(new CX1<IgniteInternalFuture<Map<K1, V1>>, Map<K1, V1>>() {
+                        @Override public Map<K1, V1> applyx(IgniteInternalFuture<Map<K1, V1>> f) throws IgniteCheckedException {
+                            Map<K1, V1> map = f.get();
+
+                            // Start swapping/evicting if need.
+                            CU.unwindEvicts(ctx);
+
+                            return map;
+                        }
+                    });
                 }
                 else
                     // Misses can be non-zero only if store is enabled.
