@@ -679,7 +679,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             addCacheOnJoinFromConfig(caches, templates);
 
-            if (CU.isPersistenceEnabled(ctx.config())) {
+            if (CU.isPersistenceEnabled(ctx.config()) && !ctx.config().isClientMode() && !ctx.config().isDaemon()) {
                 Map<String, StoredCacheData> storedCfgs = ctx.cache().context().pageStore().readCacheConfigurations();
 
                 for (Map.Entry<String, StoredCacheData> e : storedCfgs.entrySet()) {
