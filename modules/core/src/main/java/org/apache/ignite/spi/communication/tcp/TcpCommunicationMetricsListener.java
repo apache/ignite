@@ -18,17 +18,23 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.LongFunction;
+import java.util.function.ToLongFunction;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.nio.GridNioMetricsListener;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
@@ -46,13 +52,6 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
 
     /** Sent bytes count.*/
     private final LongAdder sentBytesCnt = new LongAdder();
-
-    /** Counter factory. */
-    private static final Callable<LongAdder> LONG_ADDER_FACTORY = new Callable<LongAdder>() {
-        @Override public LongAdder call() {
-            return new LongAdder();
-        }
-    };
 
     /** Counter factory. */
     private static final Callable<MessageCounter> MSGS_CNT_FACTORY = new Callable<MessageCounter>() {
@@ -102,6 +101,7 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
 
     /**
      * Thread local counters map.
+     *
      * @param <T> grouping key class.
      */
     private class ThreadLocalCountersMap<T> extends ThreadLocal<Map<T, MessageCounter>> {
@@ -234,18 +234,62 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
     }
 
     /**
+     * Long reducer.
+     */
+    private static class LongReducer {
+        /** Sum. */
+        long sum = 0;
+
+        /**
+         * @param val Value.
+         */
+        public void collect(long val) {
+            sum += val;
+        }
+
+        /**
+         * Reduce
+         */
+        public long reduce() {
+            return sum;
+        }
+    }
+
+    /**
      * Converts statistics from internal representation to JMX-readable format.
      *
      * @param srcStat Internal statistics representation.
      * @return Result map.
      */
-    private <T> Map<T, Long> convertStatistics(Map<T, LongAdder> srcStat) {
-        Map<T, Long> destStat = U.newHashMap(srcStat.size());
+    private <T> Map<T, Long> convertStatistics(Set<Map<T, MessageCounter>> srcStat, ToLongFunction<MessageCounter> func) {
+        Map<T, LongReducer> destStat = new HashMap<>();
 
-        for (Map.Entry<T, LongAdder> entry : srcStat.entrySet())
-            destStat.put(entry.getKey(), entry.getValue().longValue());
+        Callable<LongReducer> rdcFactory = () -> new LongReducer();
 
-        return destStat;
+        srcStat.forEach(
+            m -> m.forEach((key, val) -> {
+                long cnt = func.applyAsLong(val);
+
+                LongReducer rdc = F.addIfAbsent(destStat, key, rdcFactory);
+
+                rdc.collect(cnt);
+            })
+        );
+
+        return srcStat.stream()
+            .flatMap(m -> m.entrySet().stream())
+            .collect(
+                Collectors.groupingBy(
+                    e -> e.getKey(),
+                    Collectors.summarizingLong(e -> func.applyAsLong(e.getValue()))
+                )
+            ).entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    e -> e.getValue().getSum()
+                )
+            );
     }
 
     /**
@@ -254,7 +298,7 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
      * @return Map containing message types and respective counts.
      */
     public Map<String, Long> receivedMessagesByType() {
-        return convertStatistics(rcvdMsgsCntByType);
+        return convertStatistics(msgsCntrByTypeAll, c -> c.rcvdMsgs());
     }
 
     /**
@@ -263,7 +307,7 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
      * @return Map containing sender nodes and respective counts.
      */
     public Map<UUID, Long> receivedMessagesByNode() {
-        return convertStatistics(rcvdMsgsCntByNode);
+        return convertStatistics(msgsCntrByNodeAll, c -> c.rcvdMsgs());
     }
 
     /**
@@ -272,7 +316,7 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
      * @return Map containing message types and respective counts.
      */
     public Map<String, Long> sentMessagesByType() {
-        return convertStatistics(sentMsgsCntByType);
+        return convertStatistics(msgsCntrByTypeAll, c -> c.sentMsgs());
     }
 
     /**
@@ -281,7 +325,7 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
      * @return Map containing receiver nodes and respective counts.
      */
     public Map<UUID, Long> sentMessagesByNode() {
-        return convertStatistics(sentMsgsCntByNode);
+        return convertStatistics(msgsCntrByNodeAll, c -> c.sentMsgs());
     }
 
     /**
@@ -295,9 +339,10 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
         sentBytesCnt.add(-sentBytesCnt.sum());
         rcvdBytesCnt.add(-rcvdBytesCnt.sum());
 
-        sentMsgsCntByType.clear();
-        rcvdMsgsCntByType.clear();
-        sentMsgsCntByNode.clear();
-        rcvdMsgsCntByNode.clear();
+        for (Map<UUID, MessageCounter> map : msgsCntrByNodeAll)
+            map.clear();
+
+        for (Map<String, MessageCounter> map : msgsCntrByTypeAll)
+            map.clear();
     }
 }
