@@ -723,7 +723,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @return Affinity node to get key from.
      */
     @Nullable private ClusterNode affinityNode(List<ClusterNode> affNodes) {
-        if (!canRemap || !cctx.config().isReadFromBackup())
+        if (canRemap || !cctx.config().isReadFromBackup())
             return affNodes.get(0);
 
         List<ClusterNode> nodes = affNodes
