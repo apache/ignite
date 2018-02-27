@@ -29,7 +29,7 @@ public class InsertBenchmark extends AbstractUploadBenchmark {
     /** {@inheritDoc} */
     @Override public void warmup(Connection warmupConn) throws SQLException {
         try (PreparedStatement insert = warmupConn.prepareStatement(queries.insert())) {
-            for (int id = 1; id <= WARMUP_ROWS_CNT ; id++) {
+            for (int id = 1; id <= warmupRowsCnt; id++) {
                 queries.setRandomInsertArgs(insert, id);
 
                 insert.executeUpdate();
@@ -39,7 +39,7 @@ public class InsertBenchmark extends AbstractUploadBenchmark {
 
     /** Sequence of single inserts */
     @Override public void upload (Connection uploadConn) throws Exception {
-        for (int id = 1; id <= INSERT_ROWS_CNT; id++) {
+        for (int id = 1; id <= insertRowsCnt; id++) {
             try (PreparedStatement insert = uploadConn.prepareStatement(queries.insert())) {
                 queries.setRandomInsertArgs(insert, id);
 

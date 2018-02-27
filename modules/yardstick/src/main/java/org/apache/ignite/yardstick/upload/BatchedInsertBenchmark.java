@@ -36,12 +36,12 @@ public class BatchedInsertBenchmark extends AbstractUploadBenchmark {
 
     /** {@inheritDoc} */
     @Override protected void warmup(Connection warmupConn) throws SQLException {
-        performBatchUpdate(warmupConn, WARMUP_ROWS_CNT);
+        performBatchUpdate(warmupConn, warmupRowsCnt);
     }
 
     /** {@inheritDoc} */
     @Override public void upload(Connection uploadConn) throws Exception {
-        performBatchUpdate(uploadConn, INSERT_ROWS_CNT);
+        performBatchUpdate(uploadConn, insertRowsCnt);
     }
 
     /**

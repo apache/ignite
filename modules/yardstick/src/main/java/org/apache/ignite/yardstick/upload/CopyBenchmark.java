@@ -51,16 +51,16 @@ public class CopyBenchmark extends AbstractUploadBenchmark {
 
     /** Generate csv file for copy operation being benchmarked. */
     private String generateRealCsv() {
-        String prefix = "data-" + INSERT_ROWS_CNT + "-rows-";
+        String prefix = "data-" + insertRowsCnt + "-rows-";
 
-        return generate(prefix, INSERT_ROWS_CNT);
+        return generate(prefix, insertRowsCnt);
     }
 
     /** Generate csv file for copy operation being performed during warmup. */
     private String generateWarmupCsv() {
-        String prefix = "warmup-" + WARMUP_ROWS_CNT + "-rows-" ;
+        String prefix = "warmup-" + warmupRowsCnt + "-rows-" ;
 
-        return generate(prefix, WARMUP_ROWS_CNT);
+        return generate(prefix, warmupRowsCnt);
     }
 
     /**

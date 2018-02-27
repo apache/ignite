@@ -34,10 +34,10 @@ import org.yardstickframework.BenchmarkUtils;
  */
 public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     /** Total inserts size. */
-    public int INSERT_ROWS_CNT;
+    public int insertRowsCnt;
 
     /** Rows count to be inserted and deleted during warmup */
-    public static final int WARMUP_ROWS_CNT = 3000_000;
+    public static final int warmupRowsCnt = 3000_000;
 
     /** Factory that hides all the test data details. */
     QueryFactory queries = new QueryFactory();
@@ -46,7 +46,7 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     @Override public final void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        INSERT_ROWS_CNT = args.range();
+        insertRowsCnt = args.range();
 
         init();
 
@@ -143,8 +143,8 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         try {
             long count = count();
 
-            if (count != INSERT_ROWS_CNT) {
-                String msg = "Rows count is incorrect: [actual=" + count + ", expected=" + INSERT_ROWS_CNT + "]";
+            if (count != insertRowsCnt) {
+                String msg = "Rows count is incorrect: [actual=" + count + ", expected=" + insertRowsCnt + "]";
 
                 BenchmarkUtils.println(cfg, "TearDown: " + msg);
 
