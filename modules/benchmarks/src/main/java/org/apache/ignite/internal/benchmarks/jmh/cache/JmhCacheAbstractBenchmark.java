@@ -169,6 +169,7 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
 
         TcpCommunicationSpi tcpSpi = new TcpCommunicationSpi();
         tcpSpi.setCompressionType(compressionType());
+//        tcpSpi.setCompressionType(compressionType());
         cfg.setCommunicationSpi(tcpSpi);
 
         return cfg;
