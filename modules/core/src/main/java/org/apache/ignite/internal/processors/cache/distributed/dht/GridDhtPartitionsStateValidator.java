@@ -230,7 +230,7 @@ public class GridDhtPartitionsStateValidator {
     private String fold(AffinityTopologyVersion topVer, Map<Integer, Map<UUID, Long>> invalidPartitions) {
         SB sb = new SB();
         for (Map.Entry<Integer, Map<UUID, Long>> p : invalidPartitions.entrySet()) {
-            sb.a("Part ").a(p).a(": [");
+            sb.a("Part ").a(p.getKey()).a(": [");
             for (Map.Entry<UUID, Long> e : p.getValue().entrySet()) {
                 Object consistentId = cctx.discovery().node(topVer, e.getKey()).consistentId();
                 sb.a(consistentId).a("=").a(e.getValue()).a(" ");
