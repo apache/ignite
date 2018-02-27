@@ -15,22 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.examples.spark
+package org.apache.ignite.scalar.examples.spark
 
-import java.lang.{Long ⇒ JLong, String ⇒ JString}
+import java.lang.{Long ⇒ JLong}
 
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.configuration.CacheConfiguration
 import org.apache.ignite.{Ignite, Ignition}
 import org.apache.log4j.{Level, Logger}
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.functions._
-import org.apache.ignite.spark.IgniteDataFrameSettings._
+import org.apache.spark.sql.ignite.IgniteSparkSession
 
 /**
-  * Example application showing use-cases for Ignite implementation of Spark DataFrame API.
+  * Example application to show use-case for Ignite implementation of Spark SQL {@link org.apache.spark.sql.catalog.Catalog}.
+  * Catalog provides ability to automatically resolve SQL tables created in Ignite.
   */
-object IgniteDataFrameExample extends App {
+object IgniteCatalogExample extends App {
     /**
       * Ignite config file.
       */
@@ -45,93 +44,77 @@ object IgniteDataFrameExample extends App {
     val ignite = setupServerAndData
 
     closeAfter(ignite) { ignite ⇒
-        //Creating spark session.
-        implicit val spark = SparkSession.builder()
-            .appName("Spark Ignite data sources example")
+        //Creating Ignite-specific implementation of Spark session.
+        val igniteSession = IgniteSparkSession.builder()
+            .appName("Spark Ignite catalog example")
             .master("local")
             .config("spark.executor.instances", "2")
+            .igniteConfig(CONFIG)
             .getOrCreate()
 
-        // Adjust the logger to exclude the logs of no interest.
+        //Adjust the logger to exclude the logs of no interest.
         Logger.getRootLogger.setLevel(Level.ERROR)
         Logger.getLogger("org.apache.ignite").setLevel(Level.INFO)
 
-        // Executing examples.
+        println("List of available tables:")
 
-        sparkDSLExample
+        //Showing existing tables.
+        igniteSession.catalog.listTables().show()
 
-        nativeSparkSqlExample
-    }
+        println("PERSON table description:")
 
-    /**
-      * Examples of usage Ignite DataFrame implementation.
-      * Selecting data throw Spark DSL.
-      *
-      * @param spark SparkSession.
-      */
-    def sparkDSLExample(implicit spark: SparkSession): Unit = {
-        println("Querying using Spark DSL.")
+        //Showing `person` schema.
+        igniteSession.catalog.listColumns("person").show()
+
+        println("CITY table description:")
+
+        //Showing `city` schema.
+        igniteSession.catalog.listColumns("city").show()
+
+        println("Querying all persons from city with ID=2.")
         println
 
-        val igniteDF = spark.read
-            .format(FORMAT_IGNITE) //Data source type.
-            .option(OPTION_TABLE, "person") //Table to read.
-            .option(OPTION_CONFIG_FILE, CONFIG) //Ignite config.
-            .load()
-            .filter(col("id") >= 2) //Filter clause.
-            .filter(col("name") like "%M%") //Another filter clause.
-
-        println("Data frame schema:")
-
-        igniteDF.printSchema() //Printing query schema to console.
-
-        println("Data frame content:")
-
-        igniteDF.show() //Printing query results to console.
-    }
-
-    /**
-      * Examples of usage Ignite DataFrame implementation.
-      * Registration of Ignite DataFrame for following usage.
-      * Selecting data by Spark SQL query.
-      *
-      * @param spark SparkSession.
-      */
-    def nativeSparkSqlExample(implicit spark: SparkSession): Unit = {
-        println("Querying using Spark SQL.")
-        println
-
-        val df = spark.read
-            .format(FORMAT_IGNITE) //Data source type.
-            .option(OPTION_TABLE, "person") //Table to read.
-            .option(OPTION_CONFIG_FILE, CONFIG) //Ignite config.
-            .load()
-
-        //Registering DataFrame as Spark view.
-        df.createOrReplaceTempView("person")
-
-        //Selecting data from Ignite throw Spark SQL Engine.
-        val igniteDF = spark.sql("SELECT * FROM person WHERE id >= 2 AND name = 'Mary Major'")
+        //Selecting data throw Spark SQL engine.
+        val df = igniteSession.sql("SELECT * FROM person WHERE CITY_ID = 2")
 
         println("Result schema:")
 
-        igniteDF.printSchema() //Printing query schema to console.
+        df.printSchema()
 
         println("Result content:")
 
-        igniteDF.show() //Printing query results to console.
+        df.show()
+
+        println("Querying all persons living in Denver.")
+        println
+
+        //Selecting data throw Spark SQL engine.
+        val df2 = igniteSession.sql("SELECT * FROM person p JOIN city c ON c.ID = p.CITY_ID WHERE c.NAME = 'Denver'")
+
+        println("Result schema:")
+
+        df2.printSchema()
+
+        println("Result content:")
+
+        df2.show()
     }
 
+    /**
+      * Starting ignite server node and creating.
+      *
+      * @return Ignite server node.
+      */
     def setupServerAndData: Ignite = {
         //Starting Ignite.
         val ignite = Ignition.start(CONFIG)
 
-        //Creating first test cache.
-        val ccfg = new CacheConfiguration[JLong, JString](CACHE_NAME).setSqlSchema("PUBLIC")
+        //Creating cache.
+        val ccfg = new CacheConfiguration[Int, Int](CACHE_NAME).setSqlSchema("PUBLIC")
 
         val cache = ignite.getOrCreateCache(ccfg)
 
-        //Creating SQL tables.
+        //Create tables.
         cache.query(new SqlFieldsQuery(
             "CREATE TABLE city (id LONG PRIMARY KEY, name VARCHAR) WITH \"template=replicated\"")).getAll
 
@@ -141,7 +124,7 @@ object IgniteDataFrameExample extends App {
 
         cache.query(new SqlFieldsQuery("CREATE INDEX on Person (city_id)")).getAll
 
-        //Inserting some data to tables.
+        //Inserting some data into table.
         var qry = new SqlFieldsQuery("INSERT INTO city (id, name) VALUES (?, ?)")
 
         cache.query(qry.setArgs(1L.asInstanceOf[JLong], "Forest Hill")).getAll
