@@ -239,7 +239,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
                 continue;
             }
 
-            info("Running test in data mode: " + dataMode);
+            info("Running test in data mode [dataMode=" + dataMode +
+                ", marshaller=" + getConfiguration().getMarshaller() + ']');
 
             if (i != 0)
                 beforeTest();
