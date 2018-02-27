@@ -677,15 +677,6 @@ namespace ignite
             }
 
             /**
-             * Get index of the set which caused an error.
-             * @return Index of the set which caused an error.
-             */
-            int64_t GetErrorSetIdx() const
-            {
-                return static_cast<int64_t>(affectedRows.size());
-            }
-
-            /**
              * Get error message.
              * @return Error message.
              */
@@ -713,9 +704,6 @@ namespace ignite
 
             /** Affected rows. */
             std::vector<int64_t> affectedRows;
-
-            /** Index of the set which caused an error. */
-            int64_t errorSetIdx;
 
             /** Error message. */
             std::string errorMessage;

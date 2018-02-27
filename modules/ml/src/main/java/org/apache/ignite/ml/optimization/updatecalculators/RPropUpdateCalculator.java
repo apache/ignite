@@ -30,7 +30,7 @@ import org.apache.ignite.ml.optimization.SmoothParametrized;
  * <p>
  * See <a href="https://paginas.fe.up.pt/~ee02162/dissertacao/RPROP%20paper.pdf">RProp</a>.</p>
  */
-public class RPropUpdateCalculator<M extends SmoothParametrized> implements ParameterUpdateCalculator<M, RPropParameterUpdate> {
+public class RPropUpdateCalculator implements ParameterUpdateCalculator<SmoothParametrized, RPropParameterUpdate> {
     /**
      * Default initial update.
      */
@@ -138,14 +138,14 @@ public class RPropUpdateCalculator<M extends SmoothParametrized> implements Para
     }
 
     /** {@inheritDoc} */
-    @Override public RPropParameterUpdate init(M mdl,
+    @Override public RPropParameterUpdate init(SmoothParametrized mdl,
         IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss) {
         this.loss = loss;
         return new RPropParameterUpdate(mdl.parametersCount(), initUpdate);
     }
 
     /** {@inheritDoc} */
-    @Override public <M1 extends M> M1 update(M1 obj, RPropParameterUpdate update) {
+    @Override public <M1 extends SmoothParametrized> M1 update(M1 obj, RPropParameterUpdate update) {
         Vector updatesToAdd = VectorUtils.elementWiseTimes(update.updatesMask().copy(), update.prevIterationUpdates());
         return (M1)obj.setParameters(obj.parameters().plus(updatesToAdd));
     }

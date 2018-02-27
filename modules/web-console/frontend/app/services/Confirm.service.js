@@ -16,6 +16,7 @@
  */
 
 import templateUrl from 'views/templates/confirm.tpl.pug';
+import {CancellationError} from 'app/errors/CancellationError';
 
 // Confirm popup service.
 export default ['IgniteConfirm', ['$rootScope', '$q', '$modal', '$animate', ($root, $q, $modal, $animate) => {
@@ -46,7 +47,7 @@ export default ['IgniteConfirm', ['$rootScope', '$q', '$modal', '$animate', ($ro
     scope.confirmCancel = () => {
         _hide();
 
-        deferred.reject({cancelled: true});
+        deferred.reject(new CancellationError());
     };
 
     /**
