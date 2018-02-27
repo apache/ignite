@@ -730,6 +730,9 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             .filter(node -> cctx.discovery().alive(node))
             .collect(Collectors.toList());
 
+        if (nodes.isEmpty())
+            return null;
+
         Optional<ClusterNode> nodeOptional = nodes.stream()
             .filter(node -> IgniteUtils.sameMacs(cctx.localNode(), node))
             .findAny();
