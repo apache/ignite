@@ -2372,19 +2372,31 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         lock.readLock().lock();
 
         try {
-            final int locPartCnt = (int) IntStream.range(0, locParts.length())
-                    .filter(partId -> locParts.get(partId) != null)
-                    .count();
+            int locPartCnt = 0;
 
-            CachePartitionPartialCountersMap res = IntStream.range(0, locParts.length())
-                    .filter(partId -> locParts.get(partId) != null)
-                    .mapToObj(locParts::get)
-                    .filter(part -> !skipZeros || part.initialUpdateCounter() > 0 || part.updateCounter() > 0)
-                    .collect(
-                            () -> new CachePartitionPartialCountersMap(locPartCnt),
-                            (map, part) -> map.add(part.id(), part.initialUpdateCounter(), part.updateCounter()),
-                            (a, b) -> { }
-                    );
+            for (int i = 0; i < locParts.length(); i++) {
+                GridDhtLocalPartition part = locParts.get(i);
+
+                if (part != null)
+                    locPartCnt++;
+            }
+
+            CachePartitionPartialCountersMap res = new CachePartitionPartialCountersMap(locPartCnt);
+
+            for (int i = 0; i < locParts.length(); i++) {
+                GridDhtLocalPartition part = locParts.get(i);
+
+                if (part == null)
+                    continue;
+
+                long updCntr = part.updateCounter();
+                long initCntr = part.initialUpdateCounter();
+
+                if (skipZeros && initCntr == 0L && updCntr == 0L)
+                    continue;
+
+                res.add(part.id(), initCntr, updCntr);
+            }
 
             res.trim();
 

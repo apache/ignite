@@ -67,10 +67,12 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
     /** Serialized partitions counters. */
     private byte[] partCntrsBytes;
 
+    /** Partitions sizes. */
     @GridToStringInclude
     @GridDirectTransient
     private Map<Integer, Map<Integer, Long>> partSizes;
 
+    /** Serialized partitions counters. */
     private byte[] partSizesBytes;
 
     /** Partitions history reservation counters. */
