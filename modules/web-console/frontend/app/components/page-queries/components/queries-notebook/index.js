@@ -18,8 +18,6 @@
 import templateUrl from './template.tpl.pug';
 import { NotebookCtrl } from './controller';
 
-// This controller is used in navbar with showing "Create notebook" modal dialog. Under deprecation.
-import notebookNavbarCtrl from './notebook.navbar.controller';
 
 import NotebookData from '../../notebook.data';
 
@@ -30,5 +28,4 @@ export default angular.module('ignite-console.sql.notebook', [])
         controller: NotebookCtrl,
         templateUrl
     })
-    .service('IgniteNotebookData', NotebookData)
-    .controller('notebookNavbarController', notebookNavbarCtrl);
+    .service('IgniteNotebookData', NotebookData);

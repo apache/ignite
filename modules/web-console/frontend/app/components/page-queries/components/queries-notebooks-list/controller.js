@@ -16,12 +16,13 @@
  */
 
 import headerTemplate from '../../../../../app/primitives/ui-grid-header/index.tpl.pug';
+import createNotebookModalTemplateUrl from './notebook-new.tpl.pug';
 
 export class NotebooksListCtrl {
-    static $inject = ['IgniteNotebook', '$scope', '$transclude'];
+    static $inject = ['IgniteNotebook', 'IgniteMessages', '$scope', '$modal'];
 
-    constructor(IgniteNotebook, $scope, $transclude) {
-        Object.assign(this, { IgniteNotebook, $scope, $transclude });
+    constructor(IgniteNotebook, IgniteMessages, $scope, $modal) {
+        Object.assign(this, { IgniteNotebook, IgniteMessages, $scope, $modal });
 
         const notebookNameTemplate = `<div class="ui-grid-cell-contents notebook-name"><a ui-sref="base.sql.tabs.notebook({ noteId: row.entity._id })">{{ row.entity.name }}</a></div>`;
         const sqlQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.sqlQueriesParagraphsLength}}</div>`;
@@ -110,13 +111,34 @@ export class NotebooksListCtrl {
         this.actionOptions[0].available = this.gridApi.selection.getSelectedRows().length === 1;
     }
 
+    openCreateNotebookModal() {
+        // Name value is passed from modal scope via Promise as 'this' reference can't be passed and called directly in modal controller.
+        const createNotebook = (name) => new Promise((resolve) => { resolve(name); }).then((name) => this.createNotebook(name));
+        this.$scope.createNotebook = createNotebook;
+        this.createNotebookModal = this.$modal({ scope: this.$scope, templateUrl: createNotebookModalTemplateUrl, show: true });
+    }
+
+    async createNotebook(newNotebookName) {
+        try {
+            await this.IgniteNotebook.create(newNotebookName);
+            this._loadAllNotebooks();
+
+        } catch (err) {
+            this.IgniteMessages.showError(err);
+
+        } finally {
+            if (this.createNotebookModal)
+                this.createNotebookModal.hide();
+        }
+    }
+
     cloneNotebook() {
         // Not implemented
     }
 
     async deleteNotebooks() {
         await this.IgniteNotebook.removeBatch(this.gridApi.selection.getSelectedRows());
-        this.loadAllNotebooks();
+        this._loadAllNotebooks();
     }
 
     _adjustHeight(rows) {

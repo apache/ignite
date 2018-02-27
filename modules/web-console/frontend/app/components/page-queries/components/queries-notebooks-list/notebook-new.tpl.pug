@@ -30,4 +30,4 @@
                         input.form-control(id='create-notebook' type='text' ng-model='name' required ignite-on-enter='ui.inputForm.$valid && create(name)' ignite-auto-focus)
             .modal-footer
                 button.btn.btn-default(id='copy-btn-cancel' ng-click='$hide()') Cancel
-                button.btn.btn-primary(id='copy-btn-confirm' ng-disabled='ui.inputForm.$invalid' ng-click='create(name)') Create
+                button.btn.btn-primary(id='copy-btn-confirm' ng-disabled='ui.inputForm.$invalid' ng-click='createNotebook(name)') Create
