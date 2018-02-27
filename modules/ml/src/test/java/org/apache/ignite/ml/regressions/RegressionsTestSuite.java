@@ -21,6 +21,7 @@ import org.apache.ignite.ml.regressions.linear.BlockDistributedLinearRegressionQ
 import org.apache.ignite.ml.regressions.linear.BlockDistributedLinearRegressionSGDTrainerTest;
 import org.apache.ignite.ml.regressions.linear.DistributedLinearRegressionQRTrainerTest;
 import org.apache.ignite.ml.regressions.linear.DistributedLinearRegressionSGDTrainerTest;
+import org.apache.ignite.ml.regressions.linear.LinearRegressionLSQRTrainerTest;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModelTest;
 import org.apache.ignite.ml.regressions.linear.LocalLinearRegressionQRTrainerTest;
 import org.apache.ignite.ml.regressions.linear.LocalLinearRegressionSGDTrainerTest;
@@ -38,7 +39,8 @@ import org.junit.runners.Suite;
     DistributedLinearRegressionQRTrainerTest.class,
     DistributedLinearRegressionSGDTrainerTest.class,
     BlockDistributedLinearRegressionQRTrainerTest.class,
-    BlockDistributedLinearRegressionSGDTrainerTest.class
+    BlockDistributedLinearRegressionSGDTrainerTest.class,
+    LinearRegressionLSQRTrainerTest.class
 })
 public class RegressionsTestSuite {
     // No-op.

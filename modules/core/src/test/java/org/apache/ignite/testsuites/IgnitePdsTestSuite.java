@@ -19,15 +19,16 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.IgniteClusterActivateDeactivateTestWithPersistence;
-import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsClientNearCachePutGetTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataRegionMetricsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
-import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsEvictionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsPageReplacementTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreePageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreeReuseListPageMemoryImplTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.FillFactorMetricTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IndexStoragePageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplNoLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplTest;
@@ -38,7 +39,6 @@ import org.apache.ignite.internal.processors.database.IgniteDbMultiNodePutGetTes
 import org.apache.ignite.internal.processors.database.IgniteDbPutGetWithCacheStoreTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodePutGetTest;
 import org.apache.ignite.internal.processors.database.IgniteDbSingleNodeTinyPutGetTest;
-
 
 /**
  *
@@ -52,11 +52,11 @@ public class IgnitePdsTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Persistent Store Test Suite");
 
         addRealPageStoreTests(suite);
+        addRealPageStoreTestsLongRunning(suite);
 
         // Basic PageMemory tests.
         suite.addTestSuite(PageMemoryImplNoLoadTest.class);
         suite.addTestSuite(IndexStoragePageMemoryImplTest.class);
-        suite.addTestSuite(IgnitePdsEvictionTest.class);
         suite.addTestSuite(PageMemoryImplTest.class);
 
         // BTree tests with store page memory.
@@ -68,7 +68,21 @@ public class IgnitePdsTestSuite extends TestSuite {
         // Write throttling
         suite.addTestSuite(PagesWriteThrottleSmokeTest.class);
 
+        // Metrics
+        suite.addTestSuite(FillFactorMetricTest.class);
+
         return suite;
+    }
+
+    /**
+     * Fills {@code suite} with PDS test subset, which operates with real page store, but requires long time to
+     * execute.
+     *
+     * @param suite suite to add tests into.
+     */
+    public static void addRealPageStoreTestsLongRunning(TestSuite suite) {
+        // Basic PageMemory tests.
+        suite.addTestSuite(IgnitePdsPageReplacementTest.class);
     }
 
     /**
@@ -77,8 +91,6 @@ public class IgnitePdsTestSuite extends TestSuite {
      * @param suite suite to add tests into.
      */
     public static void addRealPageStoreTests(TestSuite suite) {
-        // Basic PageMemory tests.
-        suite.addTestSuite(IgnitePdsEvictionTest.class);
 
         // Checkpointing smoke-test.
         suite.addTestSuite(IgnitePdsCheckpointSimulationWithRealCpDisabledTest.class);
@@ -92,12 +104,14 @@ public class IgnitePdsTestSuite extends TestSuite {
         // Persistence-enabled.
         suite.addTestSuite(IgnitePdsSingleNodePutGetPersistenceTest.class);
         suite.addTestSuite(IgnitePdsDynamicCacheTest.class);
-        suite.addTestSuite(IgnitePdsClientNearCachePutGetTest.class);
+        // TODO uncomment when https://issues.apache.org/jira/browse/IGNITE-7510 is fixed
+        // suite.addTestSuite(IgnitePdsClientNearCachePutGetTest.class);
         suite.addTestSuite(IgniteDbPutGetWithCacheStoreTest.class);
 
         suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistence.class);
 
         suite.addTestSuite(IgnitePdsCacheRestoreTest.class);
+        suite.addTestSuite(IgnitePdsDataRegionMetricsTest.class);
 
         suite.addTestSuite(DefaultPageSizeBackwardsCompatibilityTest.class);
     }

@@ -256,9 +256,9 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public void initPartitionsWhenAffinityReady(AffinityTopologyVersion affVer,
+    @Override public boolean initPartitionsWhenAffinityReady(AffinityTopologyVersion affVer,
         GridDhtPartitionsExchangeFuture exchFut) {
-        // No-op.
+        return false;
     }
 
     /** {@inheritDoc} */
@@ -380,6 +380,11 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         if (log.isDebugEnabled())
             log.debug("Partition map after beforeExchange [exchId=" + exchId + ", fullMap=" +
                 fullMapString() + ']');
+    }
+
+    /** {@inheritDoc} */
+    @Override public void afterStateRestored(AffinityTopologyVersion topVer) {
+        // no-op
     }
 
     /** {@inheritDoc} */

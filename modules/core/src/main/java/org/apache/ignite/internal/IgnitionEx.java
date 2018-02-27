@@ -37,8 +37,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Handler;
 import javax.management.JMException;
@@ -110,7 +113,7 @@ import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.IgniteState.STOPPED;
@@ -156,10 +159,10 @@ public class IgnitionEx {
     public static final String DFLT_CFG = "config/default-config.xml";
 
     /** Map of named Ignite instances. */
-    private static final ConcurrentMap<Object, IgniteNamedInstance> grids = new ConcurrentHashMap8<>();
+    private static final ConcurrentMap<Object, IgniteNamedInstance> grids = new ConcurrentHashMap<>();
 
     /** Map of grid states ever started in this JVM. */
-    private static final Map<Object, IgniteState> gridStates = new ConcurrentHashMap8<>();
+    private static final Map<Object, IgniteState> gridStates = new ConcurrentHashMap<>();
 
     /** Mutex to synchronize updates of default grid reference. */
     private static final Object dfltGridMux = new Object();
@@ -384,6 +387,36 @@ public class IgnitionEx {
         U.warn(null, "Ignoring stopping Ignite instance that was already stopped or never started: " + name);
 
         return false;
+    }
+
+    /**
+     * Behavior of the method is the almost same as {@link IgnitionEx#stop(String, boolean, boolean)}.
+     * If node stopping process will not be finished within {@code timeoutMs} whole JVM will be killed.
+     *
+     * @param timeoutMs Timeout to wait graceful stopping.
+     */
+    public static boolean stop(@Nullable String name, boolean cancel, boolean stopNotStarted, long timeoutMs) {
+        final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+
+        // Schedule delayed node killing if graceful stopping will be not finished within timeout.
+        executor.schedule(new Runnable() {
+            @Override
+            public void run() {
+                if (state(name) == IgniteState.STARTED) {
+                    U.error(null, "Unable to gracefully stop node within timeout " + timeoutMs +
+                            " milliseconds. Killing node...");
+
+                    // We are not able to kill only one grid so whole JVM will be stopped.
+                    System.exit(Ignition.KILL_EXIT_CODE);
+                }
+            }
+        }, timeoutMs, TimeUnit.MILLISECONDS);
+
+        boolean success = stop(name, cancel, stopNotStarted);
+
+        executor.shutdownNow();
+
+        return success;
     }
 
     /**
