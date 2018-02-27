@@ -24,7 +24,8 @@ namespace ignite
     namespace odbc
     {
         Environment::Environment() : 
-            odbcVersion(SQL_OV_ODBC3), odbcNts(SQL_TRUE)
+            odbcVersion(SQL_OV_ODBC3),
+            odbcNts(SQL_TRUE)
         {
             // No-op.
         }
