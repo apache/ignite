@@ -68,6 +68,7 @@
                                 <value>Apache.Ignite.Core.Tests.Compute.BinarizableClosureTaskTest+BinarizableFunc</value>
                                 <value>Apache.Ignite.Core.Tests.Compute.BinarizableClosureTaskTest+BinarizableResult</value>
                                 <value>Apache.Ignite.Core.Tests.Compute.BinarizableClosureTaskTest+BinarizableException</value>
+                                <value>Apache.Ignite.Core.Tests.Compute.ResourceTaskTest+InjectionJobBinarizable</value>
                             </list>
                         </property>
                         <property name="typesConfiguration">

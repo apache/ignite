@@ -943,7 +943,7 @@ namespace ignite
                  *
                  * @return Stream.
                  */
-                impl::interop::InteropInputStream* GetStream();
+                interop::InteropInputStream* GetStream();
             private:
                 /** Underlying stream. */
                 interop::InteropInputStream* stream;

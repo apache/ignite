@@ -34,7 +34,7 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics, Externalizabl
     private static final long serialVersionUID = 0L;
 
     /** Minimum time of execution. */
-    private final GridAtomicLong minTime = new GridAtomicLong();
+    private final GridAtomicLong minTime = new GridAtomicLong(Long.MAX_VALUE);
 
     /** Maximum time of execution. */
     private final GridAtomicLong maxTime = new GridAtomicLong();
@@ -58,7 +58,9 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics, Externalizabl
 
     /** {@inheritDoc} */
     @Override public long minimumTime() {
-        return minTime.get();
+        long min = minTime.get();
+
+        return min == Long.MAX_VALUE ? 0 : min;
     }
 
     /** {@inheritDoc} */
@@ -71,9 +73,9 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics, Externalizabl
         if (avgTime > 0)
             return avgTime;
         else {
-            long val = completed.sum();
+            double val = completed.sum();
 
-            return val > 0 ? sumTime.sum() / val : 0;
+            return val > 0 ? sumTime.sum() / val : 0.0;
         }
     }
 
@@ -98,31 +100,22 @@ public class GridCacheQueryMetricsAdapter implements QueryMetrics, Externalizabl
     }
 
     /**
-     * Callback for query execution.
-     *
-     * @param fail {@code True} query executed unsuccessfully {@code false} otherwise.
-     */
-    public void onQueryExecute(boolean fail) {
-        execs.increment();
-
-        if (fail)
-            fails.increment();
-    }
-
-    /**
-     * Callback for completion of query execution.
+     * Update metrics.
      *
      * @param duration Duration of queue execution.
      * @param fail {@code True} query executed unsuccessfully {@code false} otherwise.
      */
-    public void onQueryCompleted(long duration, boolean fail) {
-        minTime.setIfLess(duration);
-        maxTime.setIfGreater(duration);
-
-        if (fail)
+    public void update(long duration, boolean fail) {
+        if (fail) {
+            execs.increment();
             fails.increment();
+        }
         else {
+            execs.increment();
             completed.increment();
+
+            minTime.setIfLess(duration);
+            maxTime.setIfGreater(duration);
 
             sumTime.add(duration);
         }

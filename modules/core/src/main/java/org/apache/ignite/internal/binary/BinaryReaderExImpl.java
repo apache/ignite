@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
@@ -34,6 +35,7 @@ import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -1442,6 +1444,22 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @throws BinaryObjectException If failed.
      */
     @Nullable Object deserialize() throws BinaryObjectException {
+        String newName = ctx.configuration().getGridName();
+        String oldName = IgniteUtils.setCurrentIgniteName(newName);
+
+        try {
+            return deserialize0();
+        }
+        finally {
+            IgniteUtils.restoreOldIgniteName(oldName, newName);
+        }
+    }
+
+    /**
+     * @return Deserialized object.
+     * @throws BinaryObjectException If failed.
+     */
+    @Nullable private Object deserialize0() throws BinaryObjectException {
         Object obj;
 
         byte flag = in.readByte();
@@ -1705,15 +1723,23 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             if (fieldIdLen != BinaryUtils.FIELD_ID_LEN) {
                 BinaryTypeImpl type = (BinaryTypeImpl)ctx.metadata(typeId);
 
-                if (type == null || type.metadata() == null)
-                    throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
-                        typeId);
+                if (type == null || type.metadata() == null || type.metadata().schemas() == null || type.metadata().schemas().isEmpty()) {
+                    if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_USE_LOCAL_BINARY_MARSHALLER_CACHE, false)) {
+                        BinaryClassDescriptor desc = ctx.descriptorForTypeId(true, typeId, getClass().getClassLoader(), false);
 
-                for (BinarySchema typeSchema : type.metadata().schemas()) {
-                    if (schemaId == typeSchema.schemaId()) {
-                        schema = typeSchema;
+                        schema = desc.schema();
+                    }
+                    else
+                        throw new BinaryObjectException("Cannot find metadata for object with compact footer: " +
+                            typeId);
+                }
+                else {
+                    for (BinarySchema typeSchema : type.metadata().schemas()) {
+                        if (schemaId == typeSchema.schemaId()) {
+                            schema = typeSchema;
 
-                        break;
+                            break;
+                        }
                     }
                 }
 
@@ -2047,6 +2073,13 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /** {@inheritDoc} */
     @Override public void close() throws IOException {
         // No-op.
+    }
+
+    /**
+     * @return Binary context.
+     */
+    public BinaryContext context() {
+        return ctx;
     }
 
     /**

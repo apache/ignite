@@ -30,6 +30,18 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** */
         private readonly string _name;
 
+        /** */
+        private enum Op
+        {
+            AddAndGet = 1,
+            Close = 2,
+            Get = 3,
+            GetBatchSize = 6,
+            IncrementAndGet = 7,
+            IsClosed = 8,
+            SetBatchSize = 9
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Apache.Ignite.Core.Impl.DataStructures.AtomicLong"/> class.
         /// </summary>
@@ -53,38 +65,38 @@ namespace Apache.Ignite.Core.Impl.DataStructures
         /** <inheritDoc /> */
         public long Read()
         {
-            return UnmanagedUtils.AtomicSequenceGet(Target);
+            return DoOutInOp((int) Op.Get);
         }
 
         /** <inheritDoc /> */
         public long Increment()
         {
-            return UnmanagedUtils.AtomicSequenceIncrementAndGet(Target);
+            return DoOutInOp((int) Op.IncrementAndGet);
         }
 
         /** <inheritDoc /> */
         public long Add(long value)
         {
-            return UnmanagedUtils.AtomicSequenceAddAndGet(Target, value);
+            return DoOutInOp((int) Op.AddAndGet, value);
         }
 
         /** <inheritDoc /> */
         public int BatchSize
         {
-            get { return UnmanagedUtils.AtomicSequenceGetBatchSize(Target); }
-            set { UnmanagedUtils.AtomicSequenceSetBatchSize(Target, value); }
+            get { return (int) DoOutInOp((int) Op.GetBatchSize); }
+            set { DoOutInOp((int) Op.SetBatchSize, value); }
         }
 
         /** <inheritDoc /> */
         public bool IsClosed
         {
-            get { return UnmanagedUtils.AtomicSequenceIsClosed(Target); }
+            get { return DoOutInOp((int) Op.IsClosed) == True; }
         }
 
         /** <inheritDoc /> */
         public void Close()
         {
-            UnmanagedUtils.AtomicSequenceClose(Target);
+            DoOutInOp((int) Op.Close);
         }
     }
 }

@@ -97,6 +97,13 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
         assertTrue(client.configuration().isClientMode());
     }
 
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+
+        super.afterTestsStopped();
+    }
+
     /**
      * @throws Exception If failed.
      */

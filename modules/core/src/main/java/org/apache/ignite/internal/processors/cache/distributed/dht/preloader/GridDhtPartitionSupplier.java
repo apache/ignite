@@ -302,7 +302,7 @@ class GridDhtPartitionSupplier {
                             (Iterator<GridCacheMapEntry>)sctx.entryIt : loc.allEntries().iterator();
 
                         while (entIt.hasNext()) {
-                            if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
+                            if (!cctx.affinity().partitionBelongs(node, part, d.topologyVersion())) {
                                 // Demander no longer needs this partition, so we send '-1' partition and move on.
                                 s.missed(part);
 
@@ -387,7 +387,7 @@ class GridDhtPartitionSupplier {
                             boolean prepared = false;
 
                             while (iter.hasNext()) {
-                                if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
+                                if (!cctx.affinity().partitionBelongs(node, part, d.topologyVersion())) {
                                     // Demander no longer needs this partition,
                                     // so we send '-1' partition and move on.
                                     s.missed(part);
@@ -510,7 +510,7 @@ class GridDhtPartitionSupplier {
                             (Iterator<GridCacheEntryInfo>)sctx.entryIt : entries.iterator();
 
                         while (lsnrIt.hasNext()) {
-                            if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
+                            if (!cctx.affinity().partitionBelongs(node, part, d.topologyVersion())) {
                                 // Demander no longer needs this partition,
                                 // so we send '-1' partition and move on.
                                 s.missed(part);
@@ -808,7 +808,7 @@ class GridDhtPartitionSupplier {
                     boolean partMissing = false;
 
                     for (GridCacheEntryEx e : loc.allEntries()) {
-                        if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
+                        if (!cctx.affinity().partitionBelongs(node, part, d.topologyVersion())) {
                             // Demander no longer needs this partition, so we send '-1' partition and move on.
                             s.missed(part);
 
@@ -859,7 +859,7 @@ class GridDhtPartitionSupplier {
                                 boolean prepared = false;
 
                                 for (Map.Entry<byte[], GridCacheSwapEntry> e : iter) {
-                                    if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
+                                    if (!cctx.affinity().partitionBelongs(node, part, d.topologyVersion())) {
                                         // Demander no longer needs this partition,
                                         // so we send '-1' partition and move on.
                                         s.missed(part);
@@ -947,7 +947,7 @@ class GridDhtPartitionSupplier {
                         swapLsnr = null;
 
                         for (GridCacheEntryInfo info : entries) {
-                            if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
+                            if (!cctx.affinity().partitionBelongs(node, part, d.topologyVersion())) {
                                 // Demander no longer needs this partition,
                                 // so we send '-1' partition and move on.
                                 s.missed(part);

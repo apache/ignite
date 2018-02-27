@@ -26,6 +26,7 @@ import java.io.ObjectStreamException;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -89,7 +90,7 @@ public class ClusterNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> impl
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            return IgnitionEx.gridx(stash.get()).cluster().nodeLocalMap();
+            return IgnitionEx.localIgnite().cluster().nodeLocalMap();
         }
         catch (IllegalStateException e) {
             throw U.withCause(new InvalidObjectException(e.getMessage()), e);

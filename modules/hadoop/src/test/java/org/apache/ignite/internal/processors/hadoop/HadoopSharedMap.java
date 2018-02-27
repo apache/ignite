@@ -43,6 +43,7 @@ public class HadoopSharedMap {
      * @param key Key.
      * @param val Value.
      */
+    @SuppressWarnings("unchecked")
     public <T> T put(String key, T val) {
         Object old = map.putIfAbsent(key, val);
 

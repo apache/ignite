@@ -76,6 +76,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         private const int OpPrimaryPartitions = 14;
 
         /** */
+        private const int OpPartitions = 15;
+
+        /** */
         private readonly bool _keepBinary;
         
         /** Grid. */
@@ -101,7 +104,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** <inheritDoc /> */
         public int Partitions
         {
-            get { return UU.AffinityPartitions(Target); }
+            get { return (int) DoOutInOp(OpPartitions); }
         }
 
         /** <inheritDoc /> */

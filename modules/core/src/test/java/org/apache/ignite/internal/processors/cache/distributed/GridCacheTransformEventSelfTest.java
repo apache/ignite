@@ -38,6 +38,7 @@ import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -74,9 +75,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
-    /** Closure name. */
-    private static final String CLO_NAME = Transformer.class.getName();
-
     /** Key 1. */
     private Integer key1;
 
@@ -98,7 +96,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     /** Caches. */
     private IgniteCache<Integer, Integer>[] caches;
 
-    /** Recorded events.*/
+    /** Recorded events. */
     private ConcurrentHashSet<CacheEvent> evts;
 
     /** Cache mode. */
@@ -477,13 +475,25 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
         caches[0].invoke(key1, new Transformer());
 
-        checkEventNodeIdsStrict(primaryIdsForKeys(key1));
+        checkEventNodeIdsStrict(Transformer.class.getName(), primaryIdsForKeys(key1));
 
         assert evts.isEmpty();
 
         caches[0].invokeAll(keys, new Transformer());
 
-        checkEventNodeIdsStrict(primaryIdsForKeys(key1, key2));
+        checkEventNodeIdsStrict(Transformer.class.getName(), primaryIdsForKeys(key1, key2));
+
+        assert evts.isEmpty();
+
+        caches[0].invoke(key1, new TransformerWithInjection());
+
+        checkEventNodeIdsStrict(TransformerWithInjection.class.getName(), primaryIdsForKeys(key1));
+
+        assert evts.isEmpty();
+
+        caches[0].invokeAll(keys, new TransformerWithInjection());
+
+        checkEventNodeIdsStrict(TransformerWithInjection.class.getName(), primaryIdsForKeys(key1, key2));
     }
 
     /**
@@ -492,7 +502,6 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
      * @param cacheMode Cache mode.
      * @param txConcurrency TX concurrency.
      * @param txIsolation TX isolation.
-     *
      * @throws Exception If failed.
      */
     private void checkTx(CacheMode cacheMode, TransactionConcurrency txConcurrency,
@@ -505,13 +514,29 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
         System.out.println("AFTER: " + evts.size());
 
-        checkEventNodeIdsStrict(idsForKeys(key1));
+        checkEventNodeIdsStrict(Transformer.class.getName(), idsForKeys(key1));
 
         assert evts.isEmpty();
 
         caches[0].invokeAll(keys, new Transformer());
 
-        checkEventNodeIdsStrict(idsForKeys(key1, key2));
+        checkEventNodeIdsStrict(Transformer.class.getName(), idsForKeys(key1, key2));
+
+        assert evts.isEmpty();
+
+        System.out.println("BEFORE: " + evts.size());
+
+        caches[0].invoke(key1, new TransformerWithInjection());
+
+        System.out.println("AFTER: " + evts.size());
+
+        checkEventNodeIdsStrict(TransformerWithInjection.class.getName(), idsForKeys(key1));
+
+        assert evts.isEmpty();
+
+        caches[0].invokeAll(keys, new TransformerWithInjection());
+
+        checkEventNodeIdsStrict(TransformerWithInjection.class.getName(), idsForKeys(key1, key2));
     }
 
     /**
@@ -572,9 +597,10 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     /**
      * Ensure that events were recorded on the given nodes.
      *
+     * @param cClsName Entry processor class name.
      * @param ids Event IDs.
      */
-    private void checkEventNodeIdsStrict(UUID... ids) {
+    private void checkEventNodeIdsStrict(String cClsName, UUID... ids) {
         if (ids == null)
             assertTrue(evts.isEmpty());
         else {
@@ -585,7 +611,7 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
 
                 for (CacheEvent evt : evts) {
                     if (F.eq(id, evt.node().id())) {
-                        assertEquals(CLO_NAME, evt.closureClassName());
+                        assertEquals(cClsName, evt.closureClassName());
 
                         foundEvt = evt;
 
@@ -620,6 +646,24 @@ public class GridCacheTransformEventSelfTest extends GridCommonAbstractTest {
     private static class Transformer implements EntryProcessor<Integer, Integer, Void>, Serializable {
         /** {@inheritDoc} */
         @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+            e.setValue(e.getValue() + 1);
+
+            return null;
+        }
+    }
+
+    /**
+     * Transform closure.
+     */
+    private static class TransformerWithInjection implements EntryProcessor<Integer, Integer, Void>, Serializable {
+        /** */
+        @IgniteInstanceResource
+        private transient Ignite ignite;
+
+        /** {@inheritDoc} */
+        @Override public Void process(MutableEntry<Integer, Integer> e, Object... args) {
+            assert ignite != null;
+
             e.setValue(e.getValue() + 1);
 
             return null;

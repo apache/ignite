@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.igfs;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.igfs.IgfsInputStream;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsOutOfSpaceException;
 import org.apache.ignite.igfs.IgfsOutputStream;
@@ -381,7 +382,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                             break;
 
                         case OPEN_READ: {
-                            IgfsInputStreamAdapter igfsIn = !req.flag() ? igfs.open(req.path(), bufSize) :
+                            IgfsInputStream igfsIn = !req.flag() ? igfs.open(req.path(), bufSize) :
                                 igfs.open(req.path(), bufSize, req.sequentialReadsBeforePrefetch());
 
                             long streamId = registerResource(ses, igfsIn);
@@ -390,7 +391,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                                 log.debug("Opened IGFS input stream for file read [igfsName=" + igfs.name() + ", path=" +
                                     req.path() + ", streamId=" + streamId + ", ses=" + ses + ']');
 
-                            res.response(new IgfsInputStreamDescriptor(streamId, igfsIn.fileInfo().length()));
+                            res.response(new IgfsInputStreamDescriptor(streamId, igfsIn.length()));
 
                             break;
                         }
@@ -514,7 +515,7 @@ class IgfsIpcHandler implements IgfsServerHandler {
                 long pos = req.position();
                 int size = req.length();
 
-                IgfsInputStreamAdapter igfsIn = (IgfsInputStreamAdapter)resource(ses, rsrcId);
+                IgfsInputStreamImpl igfsIn = (IgfsInputStreamImpl)resource(ses, rsrcId);
 
                 if (igfsIn == null)
                     throw new IgniteCheckedException("Input stream not found (already closed?): " + rsrcId);

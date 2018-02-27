@@ -18,6 +18,7 @@
 package org.apache.ignite.internal;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -31,12 +32,17 @@ import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.events.JobEvent;
+import org.apache.ignite.events.TaskEvent;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
 import static org.apache.ignite.events.EventType.EVTS_ALL_MINUS_METRIC_UPDATE;
+import static org.apache.ignite.events.EventType.EVTS_JOB_EXECUTION;
+import static org.apache.ignite.events.EventType.EVTS_TASK_EXECUTION;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_TASK_STARTED;
@@ -193,6 +199,53 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Checks that specified event is not task or job event.
+     *
+     * @param evt Event to check.
+     */
+    private void checkGridInternalEvent(Event evt) {
+        assertFalse("Found TASK event for task marked with @GridInternal [evtType=" + evt.type() + "]", evt instanceof TaskEvent);
+        assertFalse("Found JOB event for task marked with @GridInternal [evtType=" + evt.type() + "]", evt instanceof JobEvent);
+    }
+
+    /**
+     * @throws Exception In case of error.
+     */
+    public void testGridInternalEvents() throws Exception {
+        IgnitePredicate<Event> lsnr = new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                checkGridInternalEvent(evt);
+
+                return true;
+            }
+        };
+
+        ignite1.events().localListen(lsnr, EVTS_TASK_EXECUTION);
+        ignite1.events().localListen(lsnr, EVTS_JOB_EXECUTION);
+        ignite2.events().localListen(lsnr, EVTS_TASK_EXECUTION);
+        ignite2.events().localListen(lsnr, EVTS_JOB_EXECUTION);
+
+        executeGridInternalTask(ignite1);
+
+        Collection<Event> evts1 = ignite1.events().localQuery(F.<Event>alwaysTrue());
+        Collection<Event> evts2 = ignite2.events().localQuery(F.<Event>alwaysTrue());
+
+        assert evts1 != null;
+        assert evts2 != null;
+
+        for (Event evt : evts1)
+            checkGridInternalEvent(evt);
+
+        for (Event evt : evts2)
+            checkGridInternalEvent(evt);
+
+        assert ignite1.events().stopLocalListen(lsnr, EVTS_TASK_EXECUTION);
+        assert ignite1.events().stopLocalListen(lsnr, EVTS_JOB_EXECUTION);
+        assert ignite2.events().stopLocalListen(lsnr, EVTS_TASK_EXECUTION);
+        assert ignite2.events().stopLocalListen(lsnr, EVTS_JOB_EXECUTION);
+    }
+
+    /**
      * Create events in grid.
      *
      * @param ignite Grid.
@@ -201,6 +254,15 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
         ignite.compute().localDeployTask(GridEventTestTask.class, GridEventTestTask.class.getClassLoader());
 
         ignite.compute().execute(GridEventTestTask.class.getName(), null);
+    }
+
+    /**
+     * Execute task marged with {@code GridInternal} annotation.
+     *
+     * @param ignite Grid.
+     */
+    private void executeGridInternalTask(Ignite ignite) {
+        ignite.compute().execute(GridInternalTestTask.class.getName(), null);
     }
 
     /**
@@ -228,6 +290,39 @@ public class GridEventStorageSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public String execute() {
             return "GridEventTestJob-test-event.";
+        }
+    }
+
+    /**
+     * Test task marked with @GridInternal.
+     */
+    @GridInternal
+    private static class GridInternalTestTask extends ComputeTaskSplitAdapter<Object, Object> {
+        /** {@inheritDoc} */
+        @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {
+            Collection<ComputeJob> jobs = new ArrayList<>(gridSize);
+
+            for (int i = 0; i < gridSize; i++)
+                jobs.add(new GridInternalTestJob());
+
+            return jobs;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Serializable reduce(List<ComputeJobResult> results) {
+            assert results != null;
+
+            return "GridInternalTestTask-result.";
+        }
+    }
+
+    /**
+     * Test job.
+     */
+    private static class GridInternalTestJob extends ComputeJobAdapter {
+        /** {@inheritDoc} */
+        @Override public String execute() {
+            return "GridInternalTestJob-result.";
         }
     }
 

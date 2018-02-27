@@ -38,6 +38,15 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
     /** Get single entry. */
     private static final int OP_GET_SINGLE = 3;
 
+    /** Start iterating. */
+    private static final int OP_ITERATOR = 4;
+
+    /** Close iterator. */
+    private static final int OP_ITERATOR_CLOSE = 5;
+
+    /** Close iterator. */
+    private static final int OP_ITERATOR_HAS_NEXT = 6;
+
     /** Underlying cursor. */
     private final QueryCursorEx<T> cursor;
 
@@ -70,13 +79,12 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
                 try {
                     int cntPos = writer.reserveInt();
 
-                    int cnt;
+                    int cnt = 0;
 
-                    for (cnt = 0; cnt < batchSize; cnt++) {
-                        if (iter.hasNext())
-                            write(writer, iter.next());
-                        else
-                            break;
+                    while (cnt < batchSize && iter.hasNext()) {
+                        write(writer, iter.next());
+
+                        cnt++;
                     }
 
                     writer.writeInt(cntPos, cnt);
@@ -127,23 +135,26 @@ public abstract class PlatformAbstractQueryCursor<T> extends PlatformAbstractTar
         }
     }
 
-    /**
-     * Get cursor iterator.
-     */
-    public void iterator() {
-        iter = cursor.iterator();
-    }
+    /** {@inheritDoc} */
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_ITERATOR:
+                iter = cursor.iterator();
 
-    /**
-     * Check whether next iterator entry exists.
-     *
-     * @return {@code True} if exists.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    public boolean iteratorHasNext() {
-        assert iter != null : "iterator() has not been called";
+                return TRUE;
 
-        return iter.hasNext();
+            case OP_ITERATOR_CLOSE:
+                cursor.close();
+
+                return TRUE;
+
+            case OP_ITERATOR_HAS_NEXT:
+                assert iter != null : "iterator() has not been called";
+
+                return iter.hasNext() ? TRUE : FALSE;
+        }
+
+        return super.processInLongOutLong(type, val);
     }
 
     /** {@inheritDoc} */

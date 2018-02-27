@@ -354,7 +354,8 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             for (int r = 0; r < 20; r++) {
                 int idx0 = rnd.nextInt(gridCnt - 1) + 1;
 
-                stopGrid(idx0);
+                // No wait for PartitionMapExchange
+                stopGrid(idx0, false, false);
 
                 U.sleep(200);
 
@@ -478,7 +479,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
             Object origMsg = msg.message();
 
             return delay &&
-                ((origMsg instanceof GridNearAtomicUpdateRequest) || (origMsg instanceof GridDhtAtomicUpdateRequest));
+                ((origMsg instanceof GridNearAtomicAbstractUpdateRequest) || (origMsg instanceof GridDhtAtomicAbstractUpdateRequest));
         }
     }
 }

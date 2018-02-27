@@ -1,0 +1,90 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins.jade
+
+mixin hard-link(ref, txt)
+    a(style='color:#ec1c24' href=ref target='_blank') #{txt}
+
+.docs-header
+    h1 Configurations Summary
+.docs-body.summary
+    ignite-information
+        ul
+            li Preview XML configurations for #[a(href='https://apacheignite.readme.io/docs/clients-vs-servers' target='_blank') server and client] nodes
+            li Preview code configuration
+            li Preview #[a(href='https://apacheignite.readme.io/docs/docker-deployment' target='_blank') Docker file]
+            li Preview POM dependencies
+            li Download ready-to-use Maven project
+    hr
+    .padding-dflt(ng-if='ui.ready && (!clusters || clusters.length == 0)')
+        | You have no clusters configured. Please configure them #[a(ui-sref='base.configuration.clusters') here].
+
+    div(ng-show='clusters && clusters.length > 0' ignite-loading='summaryPage' ignite-loading-text='Loading summary screen...' ignite-loading-position='top')
+        +main-table('clusters', 'clustersView', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}', 'name')
+        div(ng-show='selectedItem && contentVisible(displayedRows, selectedItem)')
+            .actions.padding-top-dflt(bs-affix)
+                div
+                    button.btn.btn-primary(id='download' ng-click='downloadConfiguration()' bs-tooltip='' data-title='Download project' data-placement='bottom' ng-disabled='isPrepareDownloading')
+                        div
+                            i.fa.fa-fw.fa-download(ng-hide='isPrepareDownloading')
+                            i.fa.fa-fw.fa-refresh.fa-spin(ng-show='isPrepareDownloading')
+                            span.tipLabel Download project
+                    button.btn.btn-primary(bs-tooltip='' data-title='Preview generated project structure' data-placement='bottom')
+                        div(bs-popover data-template-url='/configuration/summary-project-structure.html', data-placement='bottom', data-trigger='click' data-auto-close='true')
+                            i.fa.fa-sitemap
+                            label.tipLabel Project structure
+                    button.btn.btn-primary(id='proprietary-jdbc-drivers' ng-if='downloadJdbcDriversVisible()' ng-click='downloadJdbcDrivers()' bs-tooltip='' data-title='Open proprietary JDBC drivers download pages' data-placement='bottom') Download JDBC drivers
+                .actions-note(ng-show='ui.isSafari')
+                    i.icon-note
+                    label "Download project" is not fully supported in Safari. Please rename downloaded file from "Unknown" to "&lt;project-name&gt;.zip"
+                hr
+            .bs-affix-fix
+            .panel-group(bs-collapse ng-init='ui.activePanels=[0,1]' ng-model='ui.activePanels' data-allow-multiple='true')
+                .panel.panel-default
+                    .panel-heading(role='tab' bs-collapse-toggle)
+                        ignite-form-panel-chevron
+                        label Server
+
+                    .panel-collapse(id='server' role='tabpanel' bs-collapse-target)
+                        .summary-tabs(ignite-ui-ace-tabs)
+                            div(bs-tabs data-bs-active-pane="tabsServer.activeTab" template='configuration/summary-tabs.html')
+                                div(bs-pane title='XML')
+                                    ignite-ui-ace-spring(ng-if='tabsServer.activeTab == 0 || tabsServer.init[0]' ng-init='tabsServer.init[0] = true' data-master='cluster' data-generator='igniteConfiguration' data-no-deep-watch)
+                                div(bs-pane title='Java')
+                                    ignite-ui-ace-java(ng-if='tabsServer.activeTab == 1 || tabsServer.init[1]' ng-init='tabsServer.init[1] = true' data-master='cluster' data-generator='igniteConfiguration' data-no-deep-watch)
+                                div(bs-pane title='POM')
+                                    ignite-ui-ace-pom(ng-if='tabsServer.activeTab == 2 || tabsServer.init[2]' ng-init='tabsServer.init[2] = true' data-cluster='cluster' data-generator='igniteConfiguration' data-no-deep-watch)
+                                div(bs-pane title='Dockerfile')
+                                    ignite-ui-ace-docker(ng-if='tabsServer.activeTab == 3 || tabsServer.init[3]' ng-init='tabsServer.init[3] = true' data-cluster='cluster' data-generator='igniteConfiguration' data-no-deep-watch ng-model='ctrl.data.docker')
+
+                .panel.panel-default
+                    .panel-heading(role='tab' bs-collapse-toggle)
+                        ignite-form-panel-chevron
+                        label Client
+
+                    .panel-collapse(id='client' role='tabpanel' bs-collapse-target)
+                        .summary-tabs(ignite-ui-ace-tabs)
+                            div(bs-tabs data-bs-active-pane="tabsClient.activeTab" template='configuration/summary-tabs.html')
+                                div(bs-pane title='XML')
+                                    ignite-ui-ace-spring(ng-if='tabsClient.activeTab == 0 || tabsClient.init[0]' ng-init='tabsClient.init[0] = true' data-master='cluster' data-generator='igniteConfiguration' data-client='true' data-no-deep-watch)
+                                div(bs-pane title='Java')
+                                    ignite-ui-ace-java(ng-if='tabsClient.activeTab == 1 || tabsClient.init[1]' ng-init='tabsClient.init[1] = true' data-master='cluster' data-generator='igniteConfiguration' data-client='true' data-no-deep-watch)
+                                div(bs-pane title='POM')
+                                    ignite-ui-ace-pom(ng-if='tabsClient.activeTab == 2 || tabsClient.init[2]' ng-init='tabsClient.init[2] = true' data-cluster='cluster' data-generator='igniteConfiguration' data-client='true' data-no-deep-watch)
+                                div(bs-pane title='POJO' ng-if='cluster | hasPojo')
+                                    ignite-ui-ace-pojos(ng-if='tabsClient.activeTab == 3 || tabsClient.init[3]' ng-init='tabsClient.init[3] = true' data-cluster='cluster' data-no-deep-watch ng-model='ctrl.data.pojos')
+                        

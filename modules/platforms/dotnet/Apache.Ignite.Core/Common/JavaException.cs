@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Common
     /// <summary>
     /// Indicates an error on Java side and contains full Java stack trace.
     /// </summary>
+    [Serializable]
     public class JavaException : IgniteException
     {
         /// <summary>

@@ -43,7 +43,7 @@ public class GridBinaryMarshaller {
     private static final ThreadLocal<BinaryContext> BINARY_CTX = new ThreadLocal<>();
 
     /** */
-    static final byte OPTM_MARSH = -2;
+    public static final byte OPTM_MARSH = -2;
 
     /** */
     public static final byte BYTE = 1;
@@ -175,10 +175,19 @@ public class GridBinaryMarshaller {
     public static final byte LINKED_HASH_SET = 4;
 
     /** */
+    public static final byte SINGLETON_LIST = 5;
+
+    /** */
+    public static final byte SINGLETON_SET = 6;
+
+    /** */
     public static final byte HASH_MAP = 1;
 
     /** */
     public static final byte LINKED_HASH_MAP = 2;
+
+    /** */
+    public static final byte SINGLETON_MAP = 3;
 
     /** */
     public static final byte PLATFORM_JAVA_OBJECT_FACTORY_PROXY = 99;

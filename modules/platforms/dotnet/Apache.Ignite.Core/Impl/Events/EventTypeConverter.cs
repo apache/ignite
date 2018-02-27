@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl.Events
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.Linq;
     using Apache.Ignite.Core.Events;
@@ -57,6 +58,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <returns>
         /// true if this converter can perform the conversion; otherwise, false.
         /// </returns>
+        [ExcludeFromCodeCoverage]  // not called
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
             return sourceType == typeof(string);
@@ -72,6 +74,7 @@ namespace Apache.Ignite.Core.Impl.Events
         /// <returns>
         /// true if this converter can perform the conversion; otherwise, false.
         /// </returns>
+        [ExcludeFromCodeCoverage]  // not called
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
             return destinationType == typeof(string);

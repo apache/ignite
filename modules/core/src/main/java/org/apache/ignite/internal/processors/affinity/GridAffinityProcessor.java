@@ -58,6 +58,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -193,6 +194,24 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         return aff.affFunc.partition(aff.affinityKey(key));
     }
+
+    /**
+     * Maps partition to a node.
+     *
+     * @param cacheName Cache name.
+     * @param partId partition.
+     * @param topVer Affinity topology version.
+     * @return Picked node.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public ClusterNode mapPartitionToNode(@Nullable String cacheName, int partId,
+        AffinityTopologyVersion topVer)
+        throws IgniteCheckedException {
+        AffinityInfo affInfo = affinityCache(cacheName, topVer);
+
+        return affInfo != null ? F.first(affInfo.assignment().get(partId)) : null;
+    }
+
 
     /**
      * Maps keys to nodes for given cache.
@@ -367,10 +386,16 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             }
 
             try {
+                AffinityAssignment assign0 = cctx.affinity().assignment(topVer);
+
+                GridAffinityAssignment assign = assign0 instanceof GridAffinityAssignment ?
+                    (GridAffinityAssignment)assign0 :
+                    new GridAffinityAssignment(topVer, assign0.assignment(), assign0.idealAssignment());
+
                 AffinityInfo info = new AffinityInfo(
                     cctx.config().getAffinity(),
                     cctx.config().getAffinityMapper(),
-                    new GridAffinityAssignment(topVer, cctx.affinity().assignment(topVer)),
+                    assign,
                     cctx.cacheObjectContext());
 
                 IgniteInternalFuture<AffinityInfo> old = affMap.putIfAbsent(key, new GridFinishedFuture<>(info));
@@ -472,7 +497,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     private AffinityInfo affinityInfoFromNode(@Nullable String cacheName, AffinityTopologyVersion topVer, ClusterNode n)
         throws IgniteCheckedException {
         GridTuple3<GridAffinityMessage, GridAffinityMessage, GridAffinityAssignment> t = ctx.closure()
-            .callAsyncNoFailover(BROADCAST, affinityJob(cacheName, topVer), F.asList(n), true/*system pool*/).get();
+            .callAsyncNoFailover(BROADCAST, affinityJob(cacheName, topVer), F.asList(n), true/*system pool*/, 0, false).get();
 
         AffinityFunction f = (AffinityFunction)unmarshall(ctx, n.id(), t.get1());
         AffinityKeyMapper m = (AffinityKeyMapper)unmarshall(ctx, n.id(), t.get2());
@@ -542,6 +567,20 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException("Failed to get affinity nodes [aff=" + aff + ", key=" + key + ']');
 
         return nodes.iterator().next();
+    }
+
+    /**
+     * @param aff Affinity function.
+     * @param nodeFilter Node class.
+     * @param backups Number of backups.
+     * @param parts Number of partitions.
+     * @return Key to find caches with similar affinity.
+     */
+    public Object similaryAffinityKey(AffinityFunction aff,
+        IgnitePredicate<ClusterNode> nodeFilter,
+        int backups,
+        int parts) {
+        return new SimilarAffinityKey(aff.getClass(), nodeFilter.getClass(), backups, parts);
     }
 
     /** {@inheritDoc} */
@@ -940,6 +979,72 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
                     "yet or cache was already stopped): " + cacheName);
 
             return aff;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class SimilarAffinityKey {
+        /** */
+        private final int backups;
+
+        /** */
+        private final Class<?> affFuncCls;
+
+        /** */
+        private final Class<?> filterCls;
+
+        /** */
+        private final int partsCnt;
+
+        /** */
+        private final int hash;
+
+        /**
+         * @param affFuncCls Affinity function class.
+         * @param filterCls Node filter class.
+         * @param backups Number of backups.
+         * @param partsCnt Number of partitions.
+         */
+        SimilarAffinityKey(Class<?> affFuncCls, Class<?> filterCls, int backups, int partsCnt) {
+            this.backups = backups;
+            this.affFuncCls = affFuncCls;
+            this.filterCls = filterCls;
+            this.partsCnt = partsCnt;
+
+            int hash = backups;
+            hash = 31 * hash + affFuncCls.hashCode();
+            hash = 31 * hash + filterCls.hashCode();
+            hash= 31 * hash + partsCnt;
+
+            this.hash = hash;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return hash;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (o == this)
+                return true;
+
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            SimilarAffinityKey key = (SimilarAffinityKey)o;
+
+            return backups == key.backups &&
+                affFuncCls == key.affFuncCls &&
+                filterCls == key.filterCls &&
+                partsCnt == key.partsCnt;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(SimilarAffinityKey.class, this);
         }
     }
 }

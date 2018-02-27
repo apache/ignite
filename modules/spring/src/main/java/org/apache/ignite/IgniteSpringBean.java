@@ -302,6 +302,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<IgniteCache> createCaches(Collection<CacheConfiguration> cacheCfgs) {
+        checkIgnite();
+
+        return g.createCaches(cacheCfgs);
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> getOrCreateCache(CacheConfiguration<K, V> cacheCfg, NearCacheConfiguration<K, V> nearCfg) {
         checkIgnite();
 
@@ -330,6 +337,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
     }
 
     /** {@inheritDoc} */
+    @Override public Collection<IgniteCache> getOrCreateCaches(Collection<CacheConfiguration> cacheCfgs) {
+        checkIgnite();
+
+        return g.getOrCreateCaches(cacheCfgs);
+    }
+
+    /** {@inheritDoc} */
     @Override public <K, V> IgniteCache<K, V> createCache(String cacheName) {
         checkIgnite();
 
@@ -348,6 +362,13 @@ public class IgniteSpringBean implements Ignite, DisposableBean, InitializingBea
         checkIgnite();
 
         g.destroyCache(cacheName);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroyCaches(Collection<String> cacheNames) {
+        checkIgnite();
+
+        g.destroyCaches(cacheNames);
     }
 
     /** {@inheritDoc} */

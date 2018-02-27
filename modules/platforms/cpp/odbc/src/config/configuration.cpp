@@ -20,6 +20,9 @@
 #include <algorithm>
 #include <iterator>
 
+#include "ignite/common/common.h"
+#include "ignite/common/utils.h"
+
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/config/configuration.h"
 
@@ -29,20 +32,30 @@ namespace ignite
     {
         namespace config
         {
-            const std::string Configuration::Key::dsn     = "dsn";
-            const std::string Configuration::Key::driver  = "driver";
-            const std::string Configuration::Key::cache   = "cache";
-            const std::string Configuration::Key::address = "address";
-            const std::string Configuration::Key::server  = "server";
-            const std::string Configuration::Key::port    = "port";
+            const std::string Configuration::Key::dsn               = "dsn";
+            const std::string Configuration::Key::driver            = "driver";
+            const std::string Configuration::Key::cache             = "cache";
+            const std::string Configuration::Key::address           = "address";
+            const std::string Configuration::Key::server            = "server";
+            const std::string Configuration::Key::port              = "port";
+            const std::string Configuration::Key::distributedJoins  = "distributed_joins";
+            const std::string Configuration::Key::enforceJoinOrder  = "enforce_join_order";
+            const std::string Configuration::Key::protocolVersion   = "protocol_version";
+            const std::string Configuration::Key::pageSize          = "page_size";
 
-            const std::string Configuration::DefaultValue::dsn     = "Apache Ignite DSN";
-            const std::string Configuration::DefaultValue::driver  = "Apache Ignite";
-            const std::string Configuration::DefaultValue::cache   = "";
-            const std::string Configuration::DefaultValue::address = "";
-            const std::string Configuration::DefaultValue::server  = "";
-            const std::string Configuration::DefaultValue::port    = "10800";
-            const uint16_t Configuration::DefaultValue::uintPort = common::LexicalCast<uint16_t>(port);
+            const std::string Configuration::DefaultValue::dsn      = "Apache Ignite DSN";
+            const std::string Configuration::DefaultValue::driver   = "Apache Ignite";
+            const std::string Configuration::DefaultValue::cache    = "";
+            const std::string Configuration::DefaultValue::address  = "";
+            const std::string Configuration::DefaultValue::server   = "";
+
+            const uint16_t Configuration::DefaultValue::port    = 10800;
+            const int32_t Configuration::DefaultValue::pageSize = 1024;
+
+            const bool Configuration::DefaultValue::distributedJoins = false;
+            const bool Configuration::DefaultValue::enforceJoinOrder = false;
+
+            const ProtocolVersion& Configuration::DefaultValue::protocolVersion = ProtocolVersion::GetCurrent();
 
             Configuration::Configuration() :
                 arguments()
@@ -80,13 +93,8 @@ namespace ignite
                 else
                 {
                     endPoint.host = GetStringValue(Key::server, DefaultValue::server);
-                    endPoint.port = common::LexicalCast<uint16_t>(GetStringValue(Key::port, DefaultValue::port));
+                    endPoint.port = static_cast<uint16_t>(GetIntValue(Key::port, DefaultValue::port));
                 }
-            }
-
-            void Configuration::FillFromConnectString(const std::string& str)
-            {
-                FillFromConnectString(str.data(), str.size());
             }
 
             std::string Configuration::ToConnectString() const
@@ -110,7 +118,7 @@ namespace ignite
                 return connect_string_buffer.str();
             }
 
-            void Configuration::FillFromConfigAttributes(const char * attributes)
+            void Configuration::FillFromConfigAttributes(const char* attributes)
             {
                 // Initializing map.
                 arguments.clear();
@@ -134,8 +142,45 @@ namespace ignite
                 else
                 {
                     endPoint.host = GetStringValue(Key::server, DefaultValue::server);
-                    endPoint.port = common::LexicalCast<uint16_t>(GetStringValue(Key::port, DefaultValue::port));
+                    endPoint.port = static_cast<uint16_t>(GetIntValue(Key::port, DefaultValue::port));
                 }
+            }
+
+            void Configuration::SetTcpPort(uint16_t port)
+            {
+                arguments[Key::port] = common::LexicalCast<std::string>(port);
+
+                ArgumentMap::const_iterator it = arguments.find(Key::address);
+
+                if (it == arguments.end())
+                    endPoint.port = port;
+            }
+
+            void Configuration::SetHost(const std::string& server)
+            {
+                arguments[Key::server] = server;
+
+                ArgumentMap::const_iterator it = arguments.find(Key::address);
+
+                if (it == arguments.end())
+                    endPoint.host = server;
+            }
+
+            void Configuration::SetAddress(const std::string& address)
+            {
+                arguments[Key::address] = address;
+
+                ParseAddress(address, endPoint);
+            }
+
+            ProtocolVersion Configuration::GetProtocolVersion() const
+            {
+                ArgumentMap::const_iterator it = arguments.find(Key::protocolVersion);
+
+                if (it != arguments.end())
+                    return ProtocolVersion::FromString(it->second);
+
+                return DefaultValue::protocolVersion;
             }
 
             const std::string& Configuration::GetStringValue(const std::string& key, const std::string& dflt) const
@@ -146,6 +191,47 @@ namespace ignite
                     return it->second;
 
                 return dflt;
+            }
+
+            int64_t Configuration::GetIntValue(const std::string& key, int64_t dflt) const
+            {
+                ArgumentMap::const_iterator it = arguments.find(common::ToLower(key));
+
+                if (it != arguments.end())
+                {
+                    const std::string& val = it->second;
+
+                    if (!common::AllOf(val.begin(), val.end(), isdigit))
+                        IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_GENERIC,
+                            "Invalid argument value: Integer value is expected.", "key", key);
+
+                    return common::LexicalCast<int64_t>(val);
+                }
+
+                return dflt;
+            }
+
+            bool Configuration::GetBoolValue(const std::string& key, bool dflt) const
+            {
+                ArgumentMap::const_iterator it = arguments.find(common::ToLower(key));
+
+                if (it != arguments.end())
+                {
+                    std::string lowercaseVal = common::ToLower(it->second);
+
+                    if (lowercaseVal != "true" && lowercaseVal != "false")
+                        IGNITE_ERROR_FORMATTED_1(IgniteError::IGNITE_ERR_GENERIC,
+                            "Invalid argument value: Boolean value is expected (true or false).", "key", key);
+
+                    return lowercaseVal == "true";
+                }
+
+                return dflt;
+            }
+
+            void Configuration::SetBoolValue(const std::string& key, bool val)
+            {
+                arguments[key] = val ? "true" : "false";
             }
 
             void Configuration::ParseAttributeList(const char * str, size_t len, char delimeter, ArgumentMap & args)
@@ -179,7 +265,7 @@ namespace ignite
 
                         utility::IntoLower(key);
 
-                        if (value.front() == '{' && value.back() == '}')
+                        if (value[0] == '{' && value[value.size() - 1] == '}')
                             value = value.substr(1, value.size() - 2);
 
                         args[key] = value;
@@ -199,7 +285,7 @@ namespace ignite
                 if (colonNum == 0)
                 {
                     res.host = address;
-                    res.port = DefaultValue::uintPort;
+                    res.port = DefaultValue::port;
                 }
                 else if (colonNum == 1)
                 {

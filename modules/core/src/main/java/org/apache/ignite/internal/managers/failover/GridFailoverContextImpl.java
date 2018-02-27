@@ -23,6 +23,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.failover.FailoverContext;
@@ -42,11 +43,17 @@ public class GridFailoverContextImpl implements FailoverContext {
     @GridToStringExclude
     private final GridLoadBalancerManager loadMgr;
 
+    /** Partition key for affinityCall. */
+    private final int partId;
+
     /** Affinity key for affinityCall. */
     private final Object affKey;
 
     /** Affinity cache name for affinityCall. */
     private final String affCacheName;
+
+    /** Affinity topology version. */
+    private final AffinityTopologyVersion topVer;
 
     /**
      * Initializes failover context.
@@ -54,14 +61,18 @@ public class GridFailoverContextImpl implements FailoverContext {
      * @param taskSes Grid task session.
      * @param jobRes Failed job result.
      * @param loadMgr Load manager.
+     * @param partId Partition.
      * @param affKey Affinity key.
      * @param affCacheName Affinity cache name.
+     * @param topVer Affinity topology version.
      */
     public GridFailoverContextImpl(GridTaskSessionImpl taskSes,
         ComputeJobResult jobRes,
         GridLoadBalancerManager loadMgr,
+        int partId,
         @Nullable Object affKey,
-        @Nullable String affCacheName) {
+        @Nullable String affCacheName,
+        @Nullable AffinityTopologyVersion topVer) {
         assert taskSes != null;
         assert jobRes != null;
         assert loadMgr != null;
@@ -69,8 +80,10 @@ public class GridFailoverContextImpl implements FailoverContext {
         this.taskSes = taskSes;
         this.jobRes = jobRes;
         this.loadMgr = loadMgr;
+        this.partId = partId;
         this.affKey = affKey;
         this.affCacheName = affCacheName;
+        this.topVer = topVer;
     }
 
     /** {@inheritDoc} */
@@ -96,6 +109,18 @@ public class GridFailoverContextImpl implements FailoverContext {
     /** {@inheritDoc} */
     @Nullable @Override public String affinityCacheName() {
         return affCacheName;
+    }
+
+    /** {@inheritDoc} */
+    public int partition() {
+        return partId;
+    }
+
+    /**
+     * @return Affinity topology version.
+     */
+    @Nullable public AffinityTopologyVersion affinityTopologyVersion() {
+        return topVer;
     }
 
     /** {@inheritDoc} */

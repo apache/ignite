@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -38,6 +39,7 @@ import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheckMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -70,7 +72,33 @@ abstract class TcpDiscoveryImpl {
 
     /** Received messages. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
-    protected ConcurrentLinkedDeque<String> debugLog;
+    protected ConcurrentLinkedDeque<String> debugLogQ;
+
+    /** */
+    protected final ServerImpl.DebugLogger debugLog = new DebugLogger() {
+        /** {@inheritDoc} */
+        @Override public boolean isDebugEnabled() {
+            return log.isDebugEnabled();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void debug(String msg) {
+            log.debug(msg);
+        }
+    };
+
+    /** */
+    protected final ServerImpl.DebugLogger traceLog = new DebugLogger() {
+        /** {@inheritDoc} */
+        @Override public boolean isDebugEnabled() {
+            return log.isTraceEnabled();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void debug(String msg) {
+            log.trace(msg);
+        }
+    };
 
     /**
      * @param spi Adapter.
@@ -111,12 +139,12 @@ abstract class TcpDiscoveryImpl {
             "-" + locNode.internalOrder() + "] " +
             msg;
 
-        debugLog.add(msg0);
+        debugLogQ.add(msg0);
 
-        int delta = debugLog.size() - debugMsgHist;
+        int delta = debugLogQ.size() - debugMsgHist;
 
-        for (int i = 0; i < delta && debugLog.size() > debugMsgHist; i++)
-            debugLog.poll();
+        for (int i = 0; i < delta && debugLogQ.size() > debugMsgHist; i++)
+            debugLogQ.poll();
     }
 
     /**
@@ -233,6 +261,13 @@ abstract class TcpDiscoveryImpl {
     }
 
     /**
+     * Leave cluster and try to join again.
+     *
+     * @throws IgniteSpiException If failed.
+     */
+    public abstract void reconnect() throws IgniteSpiException;
+
+    /**
      * <strong>FOR TEST ONLY!!!</strong>
      * <p>
      * Simulates this node failure by stopping service threads. So, node will become
@@ -246,6 +281,11 @@ abstract class TcpDiscoveryImpl {
      * FOR TEST PURPOSE ONLY!
      */
     public abstract void brakeConnection();
+
+    /**
+     * @param maxHops Maximum hops for {@link TcpDiscoveryRingLatencyCheckMessage}.
+     */
+    public abstract void checkRingLatency(int maxHops);
 
     /**
      * <strong>FOR TEST ONLY!!!</strong>
@@ -303,7 +343,7 @@ abstract class TcpDiscoveryImpl {
      */
     protected boolean checkAckTimeout(long ackTimeout) {
         if (ackTimeout > spi.getMaxAckTimeout()) {
-            LT.warn(log, null, "Acknowledgement timeout is greater than maximum acknowledgement timeout " +
+            LT.warn(log, "Acknowledgement timeout is greater than maximum acknowledgement timeout " +
                 "(consider increasing 'maxAckTimeout' configuration property) " +
                 "[ackTimeout=" + ackTimeout + ", maxAckTimeout=" + spi.getMaxAckTimeout() + ']');
 
@@ -325,5 +365,28 @@ abstract class TcpDiscoveryImpl {
         Collections.sort(res);
 
         return res;
+    }
+
+    /**
+     * @param msg Message.
+     * @return Message logger.
+     */
+    protected final DebugLogger messageLogger(TcpDiscoveryAbstractMessage msg) {
+        return msg.traceLogLevel() ? traceLog : debugLog;
+    }
+
+    /**
+     *
+     */
+    interface DebugLogger {
+        /**
+         * @return {@code True} if debug logging is enabled.
+         */
+        boolean isDebugEnabled();
+
+        /**
+         * @param msg Message to log.
+         */
+        void debug(String msg);
     }
 }

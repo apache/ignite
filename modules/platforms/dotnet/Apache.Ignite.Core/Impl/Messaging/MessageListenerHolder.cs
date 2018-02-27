@@ -102,12 +102,6 @@ namespace Apache.Ignite.Core.Impl.Messaging
                 DestroyAction();
         }
 
-        /** <inheritDoc /> */
-        public bool Released
-        {
-            get { return false; } // Multiple releases are allowed.
-        }
-
         /// <summary>
         /// Creates local holder instance.
         /// </summary>

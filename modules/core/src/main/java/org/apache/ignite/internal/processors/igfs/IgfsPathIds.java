@@ -163,7 +163,7 @@ public class IgfsPathIds {
      * @return Path of the last existing element.
      */
     public IgfsPath lastExistingPath() {
-        IgfsPath path = new IgfsPath();
+        IgfsPath path = IgfsPath.ROOT;
 
         for (int i = 1; i <= lastExistingIdx; i++)
             path = new IgfsPath(path, parts[i]);

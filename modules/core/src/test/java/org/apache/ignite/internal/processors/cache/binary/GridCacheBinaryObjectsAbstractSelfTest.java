@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -28,6 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
@@ -35,6 +37,7 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
@@ -59,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -223,7 +227,11 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
         String typeName = nameMapper.typeName(TestReferenceObject.class.getName());
 
-        assertTrue("Unexpected toString: " + str, str.startsWith(typeName) && str.contains("obj=" + typeName + " ["));
+        assertTrue("Unexpected toString: " + str,
+            S.INCLUDE_SENSITIVE ?
+            str.startsWith(typeName) && str.contains("obj=" + typeName + " [") :
+            str.startsWith("BinaryObject") && str.contains("idHash=") && str.contains("hash=")
+        );
 
         TestReferenceObject obj1_r = po.deserialize();
 
@@ -387,6 +395,86 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
                 assertEquals(idx, (int)map.get(idx).field("val"));
             }
+        }
+    }
+
+    /**
+     * Checks deserialization of elements in the singleton map.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSingletonMap() {
+        System.setProperty(IgniteSystemProperties.IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION, "true");
+        try {
+            IgniteCache<Integer, Map<TestObject, TestObject>> c = jcache(0);
+
+            TestObject obj = new TestObject(123);
+            c.put(0, Collections.singletonMap(obj, obj));
+
+            assertEquals(1, c.get(0).size());
+
+            Map.Entry<TestObject, TestObject> entry = c.get(0).entrySet().iterator().next();
+            assertEquals(123, entry.getKey().val);
+            assertEquals(123, entry.getValue().val);
+
+            IgniteCache<Integer, Map<BinaryObject, BinaryObject>> kpc = keepBinaryCache();
+
+            Map<?, ?> cBinary = kpc.get(0);
+
+            assertEquals(Collections.singletonMap(null, null).getClass(), cBinary.getClass());
+
+            Map.Entry<?, ?> binaryEntry =kpc.get(0).entrySet().iterator().next();
+
+            assertTrue(binaryEntry.getKey() instanceof BinaryObject);
+            assertTrue(binaryEntry.getValue() instanceof BinaryObject);
+            assertEquals(Integer.valueOf(123), ((BinaryObject)binaryEntry.getKey()).field("val"));
+            assertEquals(Integer.valueOf(123), ((BinaryObject)binaryEntry.getValue()).field("val"));
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION);
+        }
+    }
+
+    /**
+     * Checks deserialization of elements in the singleton list and set.
+     *
+     * @throws Exception If failed.
+     */
+    public void testSingletonCollection() {
+        System.setProperty(IgniteSystemProperties.IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION, "true");
+        try {
+            IgniteCache<Integer, Collection<TestObject>> c = jcache(0);
+
+            c.put(0, Collections.singletonList(new TestObject(123)));
+            c.put(1, Collections.singleton(new TestObject(123)));
+
+            assertEquals(1, c.get(0).size());
+            assertEquals(123,c.get(0).iterator().next().val);
+
+            assertEquals(1, c.get(1).size());
+            assertEquals(123,c.get(1).iterator().next().val);
+
+            IgniteCache<Integer, Collection<BinaryObject>> kpc = keepBinaryCache();
+
+            Collection<?> binaryList = kpc.get(0);
+            Collection<?> binarySet = kpc.get(1);
+
+            assertEquals(Collections.singletonList(null).getClass(), binaryList.getClass());
+            assertEquals(Collections.singleton(null).getClass(), binarySet.getClass());
+
+            assertEquals(1, binaryList.size());
+            assertEquals(1, binarySet.size());
+
+            Object obj1 = binaryList.iterator().next();
+            assertTrue(obj1 instanceof BinaryObject);
+            assertEquals(Integer.valueOf(123), ((BinaryObject)obj1).field("val"));
+
+            Object obj2 = binaryList.iterator().next();
+            assertTrue(obj2 instanceof BinaryObject);
+            assertEquals(Integer.valueOf(123), ((BinaryObject)obj2).field("val"));
+        }
+        finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION);
         }
     }
 
@@ -884,6 +972,42 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
                 tx.commit();
             }
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @SuppressWarnings({ "ThrowableResultOfMethodCallIgnored", "unchecked" })
+    public void testPutWithoutHashCode() throws Exception {
+        final IgniteCache c = jcache(0);
+
+        GridCacheAdapter<Object, Object> cache0 = grid(0).context().cache().internalCache(null);
+
+        cache0.forceKeyCheck();
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            /** {@inheritDoc} */
+            @Override public Object call() throws Exception {
+                c.put(new TestObject(5), 5);
+                return null;
+            }
+        }, IllegalArgumentException.class, "Cache key must override hashCode() and equals() methods: ");
+
+        BinaryObjectBuilder bldr = grid(0).binary().builder(TestObject.class.getName());
+        bldr.setField("val", 5);
+
+        final BinaryObject binKey = bldr.build();
+
+        cache0.forceKeyCheck();
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            /** {@inheritDoc} */
+            @Override public Object call() throws Exception {
+                c.put(binKey, 5);
+                return null;
+            }
+        }, IllegalArgumentException.class, "Cache key created with BinaryBuilder is missing hash code - " +
+            "please set it explicitly during building by using BinaryBuilder.hashCode(int)");
     }
 
     /**

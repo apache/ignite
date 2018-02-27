@@ -99,4 +99,9 @@ public interface HadoopJob {
      * Cleans up the job staging directory.
      */
     public void cleanupStagingDirectory();
+
+    /**
+     * @return Ignite work directory.
+     */
+    public String igniteWorkDirectory();
 }

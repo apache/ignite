@@ -86,7 +86,7 @@ public class GridLocalCacheStoreManagerDeserializationTest extends GridCacheStor
 
         final BinaryObjectBuilder builder = grid.binary().builder("custom_type");
 
-        final BinaryObject entity = builder.setField("id", 0).build();
+        final BinaryObject entity = builder.setField("id", 0).hashCode(0).build();
 
         cache.put(entity, entity);
 

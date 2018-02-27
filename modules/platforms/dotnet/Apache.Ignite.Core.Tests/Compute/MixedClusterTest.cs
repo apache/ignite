@@ -31,8 +31,12 @@ namespace Apache.Ignite.Core.Tests.Compute
     /// </summary>
     public class MixedClusterTest
     {
+        /** */
         private IIgnite _ignite;
+        
+        /** */
         private string _javaNodeName;
+
         /** */
         private const string SpringConfig = @"Config\Compute\compute-grid1.xml";
 
@@ -95,7 +99,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         public void TestScanQuery()
         {
             var cache = GetCache();
-            
+
             // Scan query does not work in the mixed cluster.
             Assert.Throws<IgniteException>(() => cache.Query(new ScanQuery<int, int>(new ScanFilter())).GetAll());
         }

@@ -38,4 +38,9 @@ public class GridCacheDeploymentOffHeapValuesSelfTest extends GridCacheDeploymen
 
         return cacheCfg;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testDeployment() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-12701");
+    }
 }

@@ -29,15 +29,14 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Interop projection.
  */
 @SuppressWarnings({"UnusedDeclaration"})
 public class PlatformClusterGroup extends PlatformAbstractTarget {
-    /** */
-    private static final int OP_ALL_METADATA = 1;
-
     /** */
     private static final int OP_FOR_ATTRIBUTE = 2;
 
@@ -55,9 +54,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
 
     /** */
     private static final int OP_FOR_NODE_IDS = 7;
-
-    /** */
-    private static final int OP_METADATA = 8;
 
     /** */
     private static final int OP_METRICS = 9;
@@ -78,7 +74,28 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     private static final int OP_TOPOLOGY = 14;
 
     /** */
-    private static final int OP_SCHEMA = 15;
+    private static final int OP_FOR_OTHERS = 16;
+
+    /** */
+    private static final int OP_FOR_REMOTES = 17;
+
+    /** */
+    private static final int OP_FOR_DAEMONS = 18;
+
+    /** */
+    private static final int OP_FOR_RANDOM = 19;
+
+    /** */
+    private static final int OP_FOR_OLDEST = 20;
+
+    /** */
+    private static final int OP_FOR_YOUNGEST = 21;
+
+    /** */
+    private static final int OP_RESET_METRICS = 22;
+
+    /** */
+    private static final int OP_FOR_SERVERS = 23;
 
     /** Projection. */
     private final ClusterGroupEx prj;
@@ -101,11 +118,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
         switch (type) {
             case OP_METRICS:
                 platformCtx.writeClusterMetrics(writer, prj.metrics());
-
-                break;
-
-            case OP_ALL_METADATA:
-                platformCtx.writeAllMetadata(writer);
 
                 break;
 
@@ -175,27 +187,10 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
                 break;
             }
 
-            case OP_METADATA: {
-                int typeId = reader.readInt();
-
-                platformCtx.writeMetadata(writer, typeId);
-
-                break;
-            }
-
             case OP_TOPOLOGY: {
                 long topVer = reader.readLong();
 
                 platformCtx.writeNodes(writer, topology(topVer));
-
-                break;
-            }
-
-            case OP_SCHEMA: {
-                int typeId = reader.readInt();
-                int schemaId = reader.readInt();
-
-                platformCtx.writeSchema(writer, typeId, schemaId);
 
                 break;
             }
@@ -260,54 +255,61 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
         }
     }
 
-    /**
-     * @param exclude Projection to exclude.
-     * @return New projection.
-     */
-    public PlatformClusterGroup forOthers(PlatformClusterGroup exclude) {
-        return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forOthers(exclude.prj));
+    /** {@inheritDoc} */
+    @Override protected Object processInObjectStreamOutObjectStream(
+            int type, @Nullable Object arg, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
+            throws IgniteCheckedException {
+        switch (type) {
+            case OP_FOR_OTHERS: {
+                PlatformClusterGroup exclude = (PlatformClusterGroup) arg;
+
+                assert exclude != null;
+
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forOthers(exclude.prj));
+            }
+        }
+
+        return super.processInObjectStreamOutObjectStream(type, arg, reader, writer);
     }
 
-    /**
-     * @return New projection.
-     */
-    public PlatformClusterGroup forRemotes() {
-        return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forRemotes());
+    /** {@inheritDoc} */
+    @Override protected Object processOutObject(int type) throws IgniteCheckedException {
+        switch (type) {
+            case OP_FOR_REMOTES:
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forRemotes());
+
+            case OP_FOR_DAEMONS:
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forDaemons());
+
+            case OP_FOR_RANDOM:
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forRandom());
+
+            case OP_FOR_OLDEST:
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forOldest());
+
+            case OP_FOR_YOUNGEST:
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forYoungest());
+
+            case OP_FOR_SERVERS:
+                return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forServers());
+        }
+
+        return super.processOutObject(type);
     }
 
-    /**
-     * @return New projection.
-     */
-    public PlatformClusterGroup forDaemons() {
-        return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forDaemons());
-    }
+    /** {@inheritDoc} */
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_RESET_METRICS: {
+                assert prj instanceof IgniteCluster; // Can only be invoked on top-level cluster group.
 
-    /**
-     * @return New projection.
-     */
-    public PlatformClusterGroup forRandom() {
-        return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forRandom());
-    }
+                ((IgniteCluster)prj).resetMetrics();
 
-    /**
-     * @return New projection.
-     */
-    public PlatformClusterGroup forOldest() {
-        return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forOldest());
-    }
+                return TRUE;
+            }
+        }
 
-    /**
-     * @return New projection.
-     */
-    public PlatformClusterGroup forYoungest() {
-        return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forYoungest());
-    }
-
-    /**
-     * @return New projection.
-     */
-    public PlatformClusterGroup forServers() {
-        return new PlatformClusterGroup(platformCtx, (ClusterGroupEx)prj.forServers());
+        return super.processInLongOutLong(type, val);
     }
 
     /**
@@ -315,15 +317,6 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
      */
     public ClusterGroupEx projection() {
         return prj;
-    }
-
-    /**
-     * Resets local I/O, job, and task execution metrics.
-     */
-    public void resetMetrics() {
-        assert prj instanceof IgniteCluster; // Can only be invoked on top-level cluster group.
-
-        ((IgniteCluster)prj).resetMetrics();
     }
 
     /**
@@ -343,7 +336,7 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
      * @return Collection of grid nodes which represented by specified topology version,
      * if it is present in history storage, {@code null} otherwise.
      * @throws UnsupportedOperationException If underlying SPI implementation does not support
-     *      topology history. Currently only {@link org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi}
+     *      topology history. Currently only {@link TcpDiscoverySpi}
      *      supports topology history.
      */
     private Collection<ClusterNode> topology(long topVer) {

@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using System.Linq;
     using System.Reflection;
     using System.Xml;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Events;
 
     /// <summary>
@@ -57,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Common
             var cfg = new IgniteConfiguration();
 
             if (reader.NodeType == XmlNodeType.Element || reader.Read())
-                ReadElement(reader, cfg);
+                ReadElement(reader, cfg, new TypeResolver());
 
             return cfg;
         }
@@ -164,7 +165,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Reads the element.
         /// </summary>
-        private static void ReadElement(XmlReader reader, object target)
+        private static void ReadElement(XmlReader reader, object target, TypeResolver resolver)
         {
             var targetType = target.GetType();
 
@@ -197,7 +198,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof (ICollection<>))
                 {
                     // Collection
-                    ReadCollectionProperty(reader, prop, target);
+                    ReadCollectionProperty(reader, prop, target, resolver);
                 }
                 else if (propType.IsGenericType && propType.GetGenericTypeDefinition() == typeof (IDictionary<,>))
                 {
@@ -207,7 +208,7 @@ namespace Apache.Ignite.Core.Impl.Common
                 else
                 {
                     // Nested object (complex property)
-                    prop.SetValue(target, ReadComplexProperty(reader, propType, prop.Name, targetType), null);
+                    prop.SetValue(target, ReadComplexProperty(reader, propType, prop.Name, targetType, resolver), null);
                 }
             }
         }
@@ -215,7 +216,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Reads the complex property (nested object).
         /// </summary>
-        private static object ReadComplexProperty(XmlReader reader, Type propType, string propName, Type targetType)
+        private static object ReadComplexProperty(XmlReader reader, Type propType, string propName, Type targetType, 
+            TypeResolver resolver)
         {
             if (propType.IsAbstract)
             {
@@ -225,7 +227,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
                 propType = typeName == null
                     ? null
-                    : Type.GetType(typeName, false) ?? derivedTypes.FirstOrDefault(x => x.Name == typeName);
+                    : resolver.ResolveType(typeName) ?? derivedTypes.FirstOrDefault(x => x.Name == typeName);
 
                 if (propType == null)
                 {
@@ -249,7 +251,7 @@ namespace Apache.Ignite.Core.Impl.Common
             {
                 subReader.Read();  // read first element
 
-                ReadElement(subReader, nestedVal);
+                ReadElement(subReader, nestedVal, resolver);
             }
 
             return nestedVal;
@@ -258,7 +260,8 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <summary>
         /// Reads the collection.
         /// </summary>
-        private static void ReadCollectionProperty(XmlReader reader, PropertyInfo prop, object target)
+        private static void ReadCollectionProperty(XmlReader reader, PropertyInfo prop, object target, 
+            TypeResolver resolver)
         {
             var elementType = prop.PropertyType.GetGenericArguments().Single();
 
@@ -283,7 +286,7 @@ namespace Apache.Ignite.Core.Impl.Common
 
                     list.Add(converter != null
                         ? converter.ConvertFromInvariantString(subReader.ReadString())
-                        : ReadComplexProperty(subReader, elementType, prop.Name, target.GetType()));
+                        : ReadComplexProperty(subReader, elementType, prop.Name, target.GetType(), resolver));
                 }
             }
 

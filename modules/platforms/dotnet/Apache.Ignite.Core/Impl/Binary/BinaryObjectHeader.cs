@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
     using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using System.IO;
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -100,6 +101,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Initializes a new instance of the <see cref="BinaryObjectHeader"/> struct from specified stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
+        [ExcludeFromCodeCoverage]   // big-endian only
         private BinaryObjectHeader(IBinaryStream stream)
         {
             Header = stream.ReadByte();
@@ -116,6 +118,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Writes this instance to the specified stream.
         /// </summary>
         /// <param name="stream">The stream.</param>
+        [ExcludeFromCodeCoverage]   // big-endian only
         private void Write(IBinaryStream stream)
         {
             stream.WriteByte(Header);
@@ -292,7 +295,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         public override bool Equals(object obj)
         {
             if (ReferenceEquals(null, obj)) return false;
-            
+
             return obj is BinaryObjectHeader && Equals((BinaryObjectHeader) obj);
         }
 

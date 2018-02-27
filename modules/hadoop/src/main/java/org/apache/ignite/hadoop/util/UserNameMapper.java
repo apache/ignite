@@ -17,14 +17,12 @@
 
 package org.apache.ignite.hadoop.util;
 
-import org.apache.ignite.hadoop.fs.HadoopFileSystemFactory;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 
 /**
- * Hadoop file system name mapper. Used by {@link HadoopFileSystemFactory} implementation to pass proper user names
- * to the underlying Hadoop file system.
+ * Hadoop file system name mapper. Ensures that correct user name is passed to the underlying Hadoop file system.
  */
 public interface UserNameMapper extends Serializable {
     /**

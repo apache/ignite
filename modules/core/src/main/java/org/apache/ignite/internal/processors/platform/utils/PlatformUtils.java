@@ -388,6 +388,34 @@ public class PlatformUtils {
     }
 
     /**
+     * Read linked map.
+     *
+     * @param reader Reader.
+     * @param readClo Reader closure.
+     * @return Map.
+     */
+    public static <K, V> Map<K, V> readLinkedMap(BinaryRawReaderEx reader,
+        @Nullable PlatformReaderBiClosure<K, V> readClo) {
+        int cnt = reader.readInt();
+
+        Map<K, V> map = U.newLinkedHashMap(cnt);
+
+        if (readClo == null) {
+            for (int i = 0; i < cnt; i++)
+                map.put((K)reader.readObjectDetached(), (V)reader.readObjectDetached());
+        }
+        else {
+            for (int i = 0; i < cnt; i++) {
+                IgniteBiTuple<K, V> entry = readClo.read(reader);
+
+                map.put(entry.getKey(), entry.getValue());
+            }
+        }
+
+        return map;
+    }
+
+    /**
      * Read nullable map.
      *
      * @param reader Reader.
@@ -572,6 +600,31 @@ public class PlatformUtils {
         writer.writeObjectDetached(evt.getKey());
         writer.writeObjectDetached(evt.getOldValue());
         writer.writeObjectDetached(evt.getValue());
+    }
+
+    /**
+     * Writes error.
+     *
+     * @param ex Error.
+     * @param writer Writer.
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    public static void writeError(Throwable ex, BinaryRawWriterEx writer) {
+        writer.writeObjectDetached(ex.getClass().getName());
+
+        writer.writeObjectDetached(ex.getMessage());
+
+        writer.writeObjectDetached(X.getFullStackTrace(ex));
+
+        PlatformNativeException nativeCause = X.cause(ex, PlatformNativeException.class);
+
+        if (nativeCause != null) {
+            writer.writeBoolean(true);
+
+            writer.writeObjectDetached(nativeCause.cause());
+        }
+        else
+            writer.writeBoolean(false);
     }
 
     /**
@@ -788,12 +841,16 @@ public class PlatformUtils {
     @SuppressWarnings("deprecation")
     public static GridBinaryMarshaller marshaller() {
         try {
+            IgniteConfiguration cfg = new IgniteConfiguration();
+
             BinaryContext ctx =
-                new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
+                new BinaryContext(BinaryNoopMetadataHandler.instance(), cfg, new NullLogger());
 
             BinaryMarshaller marsh = new BinaryMarshaller();
 
-            marsh.setContext(new MarshallerContextImpl(null));
+            String workDir = U.workDirectory(cfg.getWorkDirectory(), cfg.getIgniteHome());
+
+            marsh.setContext(new MarshallerContextImpl(workDir, null));
 
             ctx.configure(marsh, new IgniteConfiguration());
 
@@ -890,7 +947,7 @@ public class PlatformUtils {
         for (Object obj : col)
             col0.add(unwrapBinary(obj));
 
-        return col0;
+        return U.unwrapSingletonCollection(col0);
     }
 
     /**
@@ -920,7 +977,7 @@ public class PlatformUtils {
         for (Map.Entry<Object, Object> e : map.entrySet())
             map0.put(unwrapBinary(e.getKey()), unwrapBinary(e.getValue()));
 
-        return map0;
+        return U.unwrapSingletonMap(map0);
     }
     /**
      * Create Java object.

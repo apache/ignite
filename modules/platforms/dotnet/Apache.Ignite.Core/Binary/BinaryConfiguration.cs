@@ -88,7 +88,10 @@ namespace Apache.Ignite.Core.Binary
         public ICollection<BinaryTypeConfiguration> TypeConfigurations { get; set; }
 
         /// <summary>
-        /// Binarizable types. Shorthand for creating <see cref="BinaryTypeConfiguration"/>.
+        /// Gets or sets a collection of assembly-qualified type names 
+        /// (the result of <see cref="Type.AssemblyQualifiedName"/>) for binarizable types.
+        /// <para />
+        /// Shorthand for creating <see cref="BinaryTypeConfiguration"/>.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<string> Types { get; set; }

@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 
-using System;
-using System.Collections;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using Apache.Ignite.Core.Cache;
-using Apache.Ignite.Core.Cache.Store;
-
 namespace Apache.Ignite.ExamplesDll.Datagrid
 {
+    using System;
+    using System.Collections;
+    using System.Collections.Concurrent;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.ExamplesDll.Binary;
 
     /// <summary>

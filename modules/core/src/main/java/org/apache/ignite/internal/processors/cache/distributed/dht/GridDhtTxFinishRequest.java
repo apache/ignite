@@ -46,6 +46,9 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
     /** */
     public static final int WAIT_REMOTE_TX_FLAG_MASK = 0x01;
 
+    /** */
+    public static final int NEED_RETURN_VALUE_FLAG_MASK = 0x02;
+
     /** Near node ID. */
     private UUID nearNodeId;
 
@@ -141,7 +144,9 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         int txSize,
         @Nullable UUID subjId,
         int taskNameHash,
-        boolean addDepInfo
+        boolean addDepInfo,
+        boolean retVal,
+        boolean waitRemoteTxs
     ) {
         super(
             xidVer,
@@ -172,6 +177,9 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         this.sysInvalidate = sysInvalidate;
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
+
+        needReturnValue(retVal);
+        waitRemoteTransactions(waitRemoteTxs);
     }
 
     /**
@@ -224,11 +232,13 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
         @Nullable UUID subjId,
         int taskNameHash,
         boolean addDepInfo,
-        Collection<Long> updateIdxs
+        Collection<Long> updateIdxs,
+        boolean retVal,
+        boolean waitRemoteTxs
     ) {
         this(nearNodeId, futId, miniId, topVer, xidVer, commitVer, threadId, isolation, commit, invalidate, sys, plc,
             sysInvalidate, syncCommit, syncRollback, baseVer, committedVers, rolledbackVers, pendingVers, txSize,
-            subjId, taskNameHash, addDepInfo);
+            subjId, taskNameHash, addDepInfo, retVal, waitRemoteTxs);
 
         if (updateIdxs != null && !updateIdxs.isEmpty()) {
             partUpdateCnt = new GridLongList(updateIdxs.size());
@@ -337,6 +347,23 @@ public class GridDhtTxFinishRequest extends GridDistributedTxFinishRequest {
             flags = (byte)(flags | WAIT_REMOTE_TX_FLAG_MASK);
         else
             flags &= ~WAIT_REMOTE_TX_FLAG_MASK;
+    }
+
+    /**
+     * @return Flag indicating whether transaction needs return value.
+     */
+    public boolean needReturnValue() {
+        return (flags & NEED_RETURN_VALUE_FLAG_MASK) != 0;
+    }
+
+    /**
+     * @param retVal Need return value.
+     */
+    public void needReturnValue(boolean retVal) {
+        if (retVal)
+            flags = (byte)(flags | NEED_RETURN_VALUE_FLAG_MASK);
+        else
+            flags &= ~NEED_RETURN_VALUE_FLAG_MASK;
     }
 
     /** {@inheritDoc} */

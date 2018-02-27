@@ -18,20 +18,24 @@
 package org.apache.ignite.schema.parser.dialect;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Set;
 
 /**
  * MySQL specific metadata dialect.
  */
 public class MySQLMetadataDialect extends JdbcMetadataDialect {
+    /** Type name index. */
+    private static final int TYPE_NAME_IDX = 1;
+
     /** {@inheritDoc} */
     @Override public Collection<String> schemas(Connection conn) throws SQLException {
-        List<String> schemas = new ArrayList<>();
+        Collection<String> schemas = new ArrayList<>();
 
         ResultSet rs = conn.getMetaData().getCatalogs();
 
@@ -58,5 +62,21 @@ public class MySQLMetadataDialect extends JdbcMetadataDialect {
     /** {@inheritDoc} */
     @Override protected boolean useSchema() {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Set<String> unsignedTypes(DatabaseMetaData dbMeta) throws SQLException {
+        Set<String> unsignedTypes = new HashSet<>();
+
+        try (ResultSet typeRs = dbMeta.getTypeInfo()) {
+            while (typeRs.next()) {
+                String typeName = typeRs.getString(TYPE_NAME_IDX);
+
+                if (typeName.contains("UNSIGNED"))
+                    unsignedTypes.add(typeName);
+            }
+        }
+
+        return unsignedTypes;
     }
 }

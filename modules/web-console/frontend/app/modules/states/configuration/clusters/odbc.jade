@@ -1,0 +1,48 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins.jade
+
+-var form = 'odbcConfiguration'
+-var model = 'backupItem.odbc'
+-var enabled = model + '.odbcEnabled'
+
+.panel.panel-default(ng-form=form novalidate)
+    .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
+        ignite-form-panel-chevron
+        label ODBC configuration
+        ignite-form-field-tooltip.tipLabel
+            | ODBC server configuration#[br]
+            | #[a(href="https://apacheignite.readme.io/docs/odbc-driver" target="_blank") More info]
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
+            .col-sm-6
+                .settings-row
+                    +checkbox('Enabled', enabled, '"odbcEnabled"', 'Flag indicating whether to configure ODBC configuration')
+                .settings-row
+                    +text-ip-address-with-port-range('ODBC endpoint address:', model + '.endpointAddress', '"endpointAddress"', enabled, '0.0.0.0:10800..10810',
+                        'ODBC endpoint address. <br/>\
+                        The following address formats are permitted:\
+                        <ul>\
+                            <li>hostname - will use provided hostname and default port range</li>\
+                            <li>hostname:port - will use provided hostname and port</li>\
+                            <li>hostname:port_from..port_to - will use provided hostname and port range</li>\
+                        </ul>')
+                .settings-row
+                    +number('Maximum open cursors', model + '.maxOpenCursors', '"maxOpenCursors"', enabled, '128', '1', 'Maximum number of opened cursors per connection')
+            .col-sm-6
+                +preview-xml-java(model, 'clusterODBC')

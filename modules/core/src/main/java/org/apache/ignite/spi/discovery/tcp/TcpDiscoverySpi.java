@@ -64,6 +64,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
@@ -342,7 +343,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     protected volatile long gridStartTime;
 
     /** Marshaller. */
-    protected final Marshaller marsh = new JdkMarshaller();
+    private final Marshaller marsh = new JdkMarshaller();
 
     /** Statistics. */
     protected final TcpDiscoveryStatistics stats = new TcpDiscoveryStatistics();
@@ -407,6 +408,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
     /** */
     private boolean clientReconnectDisabled;
+
+    /** */
+    protected IgniteSpiContext spiCtx;
 
     /** {@inheritDoc} */
     @Override public String getSpiState() {
@@ -1157,8 +1161,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /** {@inheritDoc} */
+    @Override public void checkRingLatency(int maxHops) {
+        impl.checkRingLatency(maxHops);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void onContextInitialized0(IgniteSpiContext spiCtx) throws IgniteSpiException {
         super.onContextInitialized0(spiCtx);
+
+        this.spiCtx = spiCtx;
 
         ctxInitLatch.countDown();
 
@@ -1379,7 +1390,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         IgniteCheckedException err = null;
 
         try {
-            marsh.marshal(msg, out);
+            U.marshal(marshaller(), msg, out);
         }
         catch (IgniteCheckedException e) {
             err = e;
@@ -1463,15 +1474,16 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         try {
             sock.setSoTimeout((int)timeout);
 
-            T res = marsh.unmarshal(in == null ? sock.getInputStream() : in,
+            T res = U.unmarshal(marshaller(), in == null ? sock.getInputStream() : in,
                 U.resolveClassLoader(ignite.configuration()));
 
             return res;
         }
         catch (IOException | IgniteCheckedException e) {
             if (X.hasCause(e, SocketTimeoutException.class))
-                LT.warn(log, null, "Timed out waiting for message to be read (most probably, the reason is " +
-                    "in long GC pauses on remote node) [curTimeout=" + timeout + ']');
+                LT.warn(log, "Timed out waiting for message to be read (most probably, the reason is " +
+                    "long GC pauses on remote node) [curTimeout=" + timeout +
+                    ", rmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() + ']');
 
             throw e;
         }
@@ -1510,10 +1522,11 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
             return res;
         }
         catch (SocketTimeoutException e) {
-            LT.warn(log, null, "Timed out waiting for message delivery receipt (most probably, the reason is " +
+            LT.warn(log, "Timed out waiting for message delivery receipt (most probably, the reason is " +
                 "in long GC pauses on remote node; consider tuning GC and increasing 'ackTimeout' " +
-                "configuration property). Will retry to send message with increased timeout. " +
-                "Current timeout: " + timeout + '.');
+                "configuration property). Will retry to send message with increased timeout " +
+                "[currentTimeout=" + timeout + ", rmtAddr=" + sock.getRemoteSocketAddress() +
+                ", rmtPort=" + sock.getPort() + ']');
 
             stats.onAckTimeout();
 
@@ -1574,7 +1587,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
                     res.add(resolved);
             }
             catch (UnknownHostException ignored) {
-                LT.warn(log, null, "Failed to resolve address from IP finder (host is unknown): " + addr);
+                LT.warn(log, "Failed to resolve address from IP finder (host is unknown): " + addr);
 
                 // Add address in any case.
                 res.add(addr);
@@ -1681,7 +1694,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         for (Map.Entry<Integer, Serializable> entry : data.entrySet()) {
             try {
-                byte[] bytes = marsh.marshal(entry.getValue());
+                byte[] bytes = U.marshal(marshaller(), entry.getValue());
 
                 data0.put(entry.getKey(), bytes);
             }
@@ -1712,7 +1725,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         for (Map.Entry<Integer, byte[]> entry : data.entrySet()) {
             try {
-                Serializable compData = marsh.unmarshal(entry.getValue(), clsLdr);
+                Serializable compData = U.unmarshal(marshaller(), entry.getValue(), clsLdr);
 
                 data0.put(entry.getKey(), compData);
             }
@@ -1921,6 +1934,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /**
+     * Force reconnect to cluster.
+     *
+     * @throws IgniteSpiException If failed.
+     */
+    public void reconnect() throws IgniteSpiException {
+        impl.reconnect();
+    }
+
+    /**
      * <strong>FOR TEST ONLY!!!</strong>
      */
     public int clientWorkerCount() {
@@ -1989,6 +2011,15 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         impl.brakeConnection();
     }
 
+    /**
+     * @return Marshaller.
+     */
+    protected Marshaller marshaller() {
+        MarshallerUtils.setNodeName(marsh, gridName);
+
+        return marsh;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoverySpi.class, this);
@@ -2035,11 +2066,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
                 // Close socket - timeout occurred.
                 U.closeQuiet(sock);
 
-                LT.warn(log, null, "Socket write has timed out (consider increasing " +
+                LT.warn(log, "Socket write has timed out (consider increasing " +
                     (failureDetectionTimeoutEnabled() ?
-                    "'IgniteConfiguration.failureDetectionTimeout' configuration property) [" +
-                    "failureDetectionTimeout=" + failureDetectionTimeout() + ']' :
-                    "'sockTimeout' configuration property) [sockTimeout=" + sockTimeout + ']'));
+                        "'IgniteConfiguration.failureDetectionTimeout' configuration property) [" +
+                        "failureDetectionTimeout=" + failureDetectionTimeout() :
+                        "'sockTimeout' configuration property) [sockTimeout=" + sockTimeout) +
+                    ", rmtAddr=" + sock.getRemoteSocketAddress() + ", rmtPort=" + sock.getPort() +
+                    ", sockTimeout=" + sockTimeout + ']');
 
                 stats.onSocketTimeout();
             }

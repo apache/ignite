@@ -20,6 +20,7 @@ package org.apache.ignite.stream.kafka.connect.serialization;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.CacheEvent;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.kafka.common.errors.SerializationException;
@@ -40,7 +41,7 @@ public class CacheEventDeserializer implements Deserializer<CacheEvent> {
     /** {@inheritDoc} */
     @Override public CacheEvent deserialize(String topic, byte[] bytes) {
         try {
-            return marsh.unmarshal(bytes, getClass().getClassLoader());
+            return U.unmarshal(marsh, bytes, getClass().getClassLoader());
         }
         catch (IgniteCheckedException e) {
             throw new SerializationException("Failed to deserialize cache event!", e);

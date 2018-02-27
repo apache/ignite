@@ -1,0 +1,48 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins.jade
+
+-var form = 'pools'
+-var model = 'backupItem'
+
+.panel.panel-default(ng-form=form novalidate)
+    .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
+        ignite-form-panel-chevron
+        label Thread pools size
+        ignite-form-field-tooltip.tipLabel
+            | Settings for node thread pools
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
+            .col-sm-6
+                .settings-row
+                    +number('Public:', model + '.publicThreadPoolSize', '"publicThreadPoolSize"', 'true', 'max(8, availableProcessors) * 2', '1',
+                        'Thread pool that is in charge of processing ComputeJob, GridJobs and user messages sent to node')
+                .settings-row
+                    +number('System:', model + '.systemThreadPoolSize', '"systemThreadPoolSize"', 'true', 'max(8, availableProcessors) * 2', '1',
+                        'Thread pool that is in charge of processing internal system messages')
+                .settings-row
+                    +number('Management:', model + '.managementThreadPoolSize', '"managementThreadPoolSize"', 'true', '4', '1',
+                        'Thread pool that is in charge of processing internal and Visor ComputeJob, GridJobs')
+                .settings-row
+                    +number('IGFS:', model + '.igfsThreadPoolSize', '"igfsThreadPoolSize"', 'true', 'availableProcessors', '1',
+                        'Thread pool that is in charge of processing outgoing IGFS messages')
+                .settings-row
+                    +number('Rebalance:', model + '.rebalanceThreadPoolSize', '"rebalanceThreadPoolSize"', 'true', '1', '1',
+                        'Max count of threads can be used at rebalancing')
+            .col-sm-6
+                +preview-xml-java(model, 'clusterPools')

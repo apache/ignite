@@ -19,6 +19,7 @@ package org.apache.ignite.internal.websession;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.testframework.IgniteTestSuite;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP;
 
@@ -32,7 +33,7 @@ public class IgniteWebSessionSelfTestSuite extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Web Sessions Test Suite");
+        TestSuite suite = new IgniteTestSuite("Ignite Web Sessions Test Suite");
 
         suite.addTestSuite(WebSessionSelfTest.class);
         suite.addTestSuite(WebSessionTransactionalSelfTest.class);
@@ -47,70 +48,5 @@ public class IgniteWebSessionSelfTestSuite extends TestSuite {
             GridTestUtils.getNextMulticastGroup(IgniteWebSessionSelfTestSuite.class));
 
         return suite;
-    }
-
-    /**
-     * Tests web sessions with TRANSACTIONAL cache.
-     */
-    public static class WebSessionTransactionalSelfTest extends WebSessionSelfTest {
-        /** {@inheritDoc} */
-        @Override protected String getCacheName() {
-            return "partitioned_tx";
-        }
-
-        /** {@inheritDoc} */
-        @Override public void testRestarts() throws Exception {
-            fail("https://issues.apache.org/jira/browse/IGNITE-810");
-        }
-
-        /** {@inheritDoc} */
-        @Override public void testInvalidatedSession() throws Exception {
-            fail("https://issues.apache.org/jira/browse/IGNITE-810");
-        }
-
-        /** {@inheritDoc} */
-        @Override public void testClientReconnectRequest() throws Exception {
-            fail("https://issues.apache.org/jira/browse/IGNITE-810");
-        }
-    }
-
-    /**
-     * Tests web sessions with REPLICATED cache.
-     */
-    public static class WebSessionReplicatedSelfTest extends WebSessionSelfTest {
-        /** {@inheritDoc} */
-        @Override protected String getCacheName() {
-            return "replicated";
-        }
-    }
-
-    /**
-     * Old version test.
-     */
-    public static class WebSessionV1SelfTest extends WebSessionSelfTest {
-        /** {@inheritDoc} */
-        @Override protected boolean keepBinary() {
-            return false;
-        }
-    }
-
-    /**
-     * Tests web sessions with TRANSACTIONAL cache in compatibility mode.
-     */
-    public static class WebSessionTransactionalV1SelfTest extends WebSessionTransactionalSelfTest {
-        /** {@inheritDoc} */
-        @Override protected boolean keepBinary() {
-            return false;
-        }
-    }
-
-    /**
-     * Tests web sessions with REPLICATED cache in compatibility mode.
-     */
-    public static class WebSessionReplicatedV1SelfTest extends WebSessionReplicatedSelfTest {
-        /** {@inheritDoc} */
-        @Override protected boolean keepBinary() {
-            return false;
-        }
     }
 }

@@ -117,10 +117,7 @@ public class GridCacheDhtEvictionsDisabledSelfTest extends GridCommonAbstractTes
             assertNotNull(v1);
             assertNotNull(v2);
 
-            if (affinity(cache).mapKeyToNode(key).isLocal())
-                assertSame(v1, v2);
-            else
-                assertEquals(v1, v2);
+            assertEquals(v1, v2);
         }
     }
 }

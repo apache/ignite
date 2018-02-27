@@ -21,6 +21,10 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -45,6 +49,7 @@ import junit.framework.TestCase;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -56,6 +61,7 @@ import org.apache.ignite.internal.binary.builder.BinaryBuilderEnum;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryMarshalerAwareTestClass;
 import org.apache.ignite.internal.binary.mutabletest.GridBinaryTestClasses;
+import org.apache.ignite.internal.binary.test.GridBinaryTestClass2;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.binary.IgniteBinaryImpl;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
@@ -1389,6 +1395,19 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
     }
 
     /**
+     * Ensure that object w/o schema can be re-built.
+     */
+    public void testBuildFromObjectWithoutSchema() {
+        BinaryObjectBuilderImpl binBuilder = wrap(new GridBinaryTestClass2());
+
+        BinaryObject binObj = binBuilder.build();
+
+        BinaryObjectBuilderImpl binBuilder2 = wrap(binObj);
+
+        binBuilder2.build();
+    }
+
+    /**
      * @param obj Object.
      * @return Object in binary format.
      */
@@ -1409,11 +1428,19 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
      * @return Wrapper.
      */
     private BinaryObjectBuilderImpl newWrapper(Class<?> aCls) {
+        return newWrapper(aCls.getName());
+    }
+
+    /**
+     * @param typeName Type name.
+     * @return Wrapper.
+     */
+    private BinaryObjectBuilderImpl newWrapper(String typeName) {
         CacheObjectBinaryProcessorImpl processor = (CacheObjectBinaryProcessorImpl)(
             (IgniteBinaryImpl)binaries()).processor();
 
-        return new BinaryObjectBuilderImpl(processor.binaryContext(), processor.typeId(aCls.getName()),
-            processor.binaryContext().userTypeName(aCls.getName()));
+        return new BinaryObjectBuilderImpl(processor.binaryContext(), processor.typeId(typeName),
+            processor.binaryContext().userTypeName(typeName));
     }
 
     /**
@@ -1487,11 +1514,186 @@ public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTes
 
         assert MAP.equals(binaryObj.type().fieldTypeName("singletonMap"));
 
+
         assert OBJ.equals(binaryObj.type().fieldTypeName("asList"));
         assert OBJ.equals(binaryObj.type().fieldTypeName("asSet"));
         assert OBJ.equals(binaryObj.type().fieldTypeName("asMap"));
         assert OBJ.equals(binaryObj.type().fieldTypeName("asListHint"));
         assert OBJ.equals(binaryObj.type().fieldTypeName("asSetHint"));
         assert OBJ.equals(binaryObj.type().fieldTypeName("asMapHint"));
+    }
+
+    /**
+     * Check that correct type is stored in binary object.
+     */
+    public void testSingletonCollectionsSerialization() {
+        System.setProperty(IgniteSystemProperties.IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION, "true");
+        try {
+            final BinaryObjectBuilder root = newWrapper("SingletonColBinary");
+
+            final Set<Integer> hashSet = new HashSet<>();
+            hashSet.add(Integer.MAX_VALUE);
+
+            final Map<String, String> hashMap = new HashMap<>();
+            hashMap.put("key", "val");
+
+            // objects
+            root.setField("asList", Collections.singletonList(Integer.MAX_VALUE));
+            root.setField("asSet", Collections.singleton(Integer.MAX_VALUE));
+            root.setField("asMap", Collections.singletonMap("key", "val"));
+
+            BinaryObject binaryObj = root.build();
+
+            final String COL = "Collection";
+            final String MAP = "Map";
+            final String OBJ = "Object";
+
+            assert COL.equals(binaryObj.type().fieldTypeName("asList"));
+            assert COL.equals(binaryObj.type().fieldTypeName("asSet"));
+            assert MAP.equals(binaryObj.type().fieldTypeName("asMap"));
+        }finally {
+            System.clearProperty(IgniteSystemProperties.IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION);
+        }
+    }
+
+    /**
+     * Checks that externalizable value is correctly serialized/deserialized.
+     *
+     * @throws Exception If failed.
+     */
+    public void testBuilderExternalizable() throws Exception {
+        BinaryObjectBuilder builder = newWrapper("TestType");
+
+        final TestObjectExternalizable exp = new TestObjectExternalizable("test");
+        final TestObjectExternalizable[] expArr = new TestObjectExternalizable[]{
+            new TestObjectExternalizable("test1"), new TestObjectExternalizable("test2")};
+
+        BinaryObject extObj = builder.setField("extVal", exp).setField("extArr", expArr).build();
+
+        assertEquals(exp, extObj.field("extVal"));
+        Assert.assertArrayEquals(expArr, (Object[])extObj.field("extArr"));
+
+        builder = extObj.toBuilder();
+
+        extObj = builder.setField("intVal", 10).build();
+
+        assertEquals(exp, extObj.field("extVal"));
+        Assert.assertArrayEquals(expArr, (Object[])extObj.field("extArr"));
+        assertEquals(Integer.valueOf(10), extObj.field("intVal"));
+
+        builder = extObj.toBuilder();
+
+        extObj = builder.setField("strVal", "some string").build();
+
+        assertEquals(exp, extObj.field("extVal"));
+        Assert.assertArrayEquals(expArr, (Object[])extObj.field("extArr"));
+        assertEquals(Integer.valueOf(10), extObj.field("intVal"));
+        assertEquals("some string", extObj.field("strVal"));
+    }
+
+    /**
+     * Checks correct serialization/deserialization of enums in builder.
+     *
+     * @throws Exception If failed.
+     */
+    public void testEnum() throws Exception {
+        BinaryObjectBuilder builder = newWrapper("TestType");
+
+        final TestEnum exp = TestEnum.A;
+        final TestEnum[] expArr = {TestEnum.A, TestEnum.B};
+
+        BinaryObject enumObj = builder.setField("testEnum", exp).setField("testEnumArr", expArr).build();
+
+        assertEquals(exp, ((BinaryObject)enumObj.field("testEnum")).deserialize());
+        Assert.assertArrayEquals(expArr, (Object[])deserializeEnumBinaryArray(enumObj.field("testEnumArr")));
+
+        builder = newWrapper(enumObj.type().typeName());
+
+        enumObj = builder.setField("testEnum", (Object)enumObj.field("testEnum"))
+            .setField("testEnumArr", (Object)enumObj.field("testEnumArr")).build();
+
+        assertEquals(exp, ((BinaryObject)enumObj.field("testEnum")).deserialize());
+        Assert.assertArrayEquals(expArr, (Object[])deserializeEnumBinaryArray(enumObj.field("testEnumArr")));
+    }
+
+    /**
+     * @param obj BinaryObject array.
+     * @return Deserialized enums.
+     */
+    private TestEnum[] deserializeEnumBinaryArray(Object obj) {
+        Object[] arr = (Object[])obj;
+
+        final TestEnum[] res = new TestEnum[arr.length];
+
+        for (int i = 0; i < arr.length; i++)
+            res[i] = ((BinaryObject)arr[i]).deserialize();
+
+        return res;
+    }
+
+    /**
+     *
+     */
+    private static class TestObjectExternalizable implements Externalizable {
+        /** */
+        private String val;
+
+        /**
+         *
+         */
+        public TestObjectExternalizable() {
+        }
+
+        /**
+         * @param val Value.
+         */
+        public TestObjectExternalizable(final String val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(final ObjectOutput out) throws IOException {
+            out.writeUTF(val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
+            val = in.readUTF();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(final Object o) {
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
+
+            final TestObjectExternalizable that = (TestObjectExternalizable)o;
+
+            return val != null ? val.equals(that.val) : that.val == null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return val != null ? val.hashCode() : 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return "TestObjectExternalizable{" +
+                "val='" + val + '\'' +
+                '}';
+        }
+    }
+
+    /**
+     *
+     */
+    private enum TestEnum {
+        /** */
+        A,
+
+        /** */
+        B
     }
 }

@@ -40,6 +40,12 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
     private static final int OP_COMPARE_AND_SET_AND_GET = 3;
 
     /** */
+    private static final int OP_CLOSE = 4;
+
+    /** */
+    private static final int OP_IS_CLOSED = 5;
+
+    /** */
     private final GridCacheAtomicReferenceImpl atomicRef;
 
     /**
@@ -87,22 +93,6 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
         atomicRef = ref;
     }
 
-    /**
-     * Returns a value indicating whether this instance has been closed.
-     *
-     * @return Value indicating whether this instance has been closed.
-     */
-    public boolean isClosed() {
-        return atomicRef.removed();
-    }
-
-    /**
-     * Closes this instance.
-     */
-    public void close() {
-        atomicRef.close();
-    }
-
     /** {@inheritDoc} */
     @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         if (type == OP_GET)
@@ -142,5 +132,19 @@ public class PlatformAtomicReference extends PlatformAbstractTarget {
         else
             super.processInStreamOutStream(type, reader, writer);
     }
-}
 
+    /** {@inheritDoc} */
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_CLOSE:
+                atomicRef.close();
+
+                return TRUE;
+
+            case OP_IS_CLOSED:
+                return atomicRef.removed() ? TRUE : FALSE;
+        }
+
+        return super.processInLongOutLong(type, val);
+    }
+}

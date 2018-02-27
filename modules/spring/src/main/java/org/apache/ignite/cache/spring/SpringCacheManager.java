@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.jsr166.ConcurrentHashMap8;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -158,7 +159,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
     /** Ignite instance. */
     private Ignite ignite;
 
-    /** Spring context */
+    /** Spring context. */
     private ApplicationContext springCtx;
 
     /** {@inheritDoc} */
@@ -276,7 +277,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean, Appli
     }
 
     /** {@inheritDoc} */
-    @Override public org.springframework.cache.Cache getCache(String name) {
+    @Override public Cache getCache(String name) {
         assert ignite != null;
 
         SpringCache cache = caches.get(name);

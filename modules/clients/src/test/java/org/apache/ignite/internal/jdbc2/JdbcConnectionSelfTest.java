@@ -267,4 +267,29 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
             );
         }
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testSqlHints() throws Exception {
+        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "enforceJoinOrder=true@"
+            + CFG_URL)) {
+            assertTrue(((JdbcConnection)conn).isEnforceJoinOrder());
+            assertFalse(((JdbcConnection)conn).isDistributedJoins());
+            assertFalse(((JdbcConnection)conn).isCollocatedQuery());
+        }
+
+        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "distributedJoins=true@"
+            + CFG_URL)) {
+            assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
+            assertTrue(((JdbcConnection)conn).isDistributedJoins());
+            assertFalse(((JdbcConnection)conn).isCollocatedQuery());
+        }
+
+        try (final Connection conn = DriverManager.getConnection(CFG_URL_PREFIX + "collocated=true@" + CFG_URL)) {
+            assertFalse(((JdbcConnection)conn).isEnforceJoinOrder());
+            assertFalse(((JdbcConnection)conn).isDistributedJoins());
+            assertTrue(((JdbcConnection)conn).isCollocatedQuery());
+        }
+    }
 }

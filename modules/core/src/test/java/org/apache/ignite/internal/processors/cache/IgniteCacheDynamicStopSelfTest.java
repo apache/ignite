@@ -78,27 +78,37 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
         IgniteInternalFuture<Object> fut = GridTestUtils.runAsync(new Callable<Object>() {
             /** {@inheritDoc} */
             @Override public Object call() throws Exception {
-                try (IgniteDataStreamer<Integer, Integer> str = ignite(0).dataStreamer(null)) {
-                    str.allowOverwrite(allowOverwrite);
+                while (!stop.get()) {
+                    try (IgniteDataStreamer<Integer, Integer> str = ignite(0).dataStreamer(null)) {
+                        str.allowOverwrite(allowOverwrite);
 
-                    int i = 0;
+                        int i = 0;
 
-                    while (!stop.get()) {
-                        str.addData(i % 10_000, i).listen(new CI1<IgniteFuture<?>>() {
-                            @Override public void apply(IgniteFuture<?> f) {
-                                try {
-                                    f.get();
-                                }
-                                catch (CacheException ignore) {
-                                    // This may be debugged.
-                                }
+                        while (!stop.get()) {
+                            try {
+                                str.addData(i % 10_000, i).listen(new CI1<IgniteFuture<?>>() {
+                                    @Override public void apply(IgniteFuture<?> f) {
+                                        try {
+                                            f.get();
+                                        }
+                                        catch (CacheException ignore) {
+                                            // This may be debugged.
+                                        }
+                                    }
+                                });
                             }
-                        });
+                            catch (IllegalStateException ignored) {
+                                break;
+                            }
 
-                        if (i > 0 && i % 10000 == 0)
-                            info("Added: " + i);
+                            if (i > 0 && i % 10000 == 0)
+                                info("Added: " + i);
 
-                        i++;
+                            i++;
+                        }
+                    }
+                    catch (IllegalStateException | CacheException ignored) {
+                        // This may be debugged.
                     }
                 }
 
@@ -114,6 +124,8 @@ public class IgniteCacheDynamicStopSelfTest extends GridCommonAbstractTest {
             Thread.sleep(500);
 
             ignite(0).createCache(ccfg);
+
+            Thread.sleep(1000);
         }
         finally {
             stop.set(true);

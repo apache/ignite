@@ -25,14 +25,14 @@ import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -40,7 +40,9 @@ import org.apache.ignite.binary.BinaryReflectiveSerializer;
 import org.apache.ignite.binary.BinarySerializer;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -89,8 +91,8 @@ public class BinaryClassDescriptor {
     /** */
     private final BinaryFieldAccessor[] fields;
 
-    /** */
-    private final Method writeReplaceMtd;
+    /** Write replacer. */
+    private final BinaryWriteReplacer writeReplacer;
 
     /** */
     private final Method readResolveMtd;
@@ -114,7 +116,13 @@ public class BinaryClassDescriptor {
     private final boolean excluded;
 
     /** */
+    private final boolean overridesHashCode;
+
+    /** */
     private final Class<?>[] intfs;
+
+    /** Whether stable schema was published. */
+    private volatile boolean stableSchemaPublished;
 
     /**
      * @param ctx Context.
@@ -147,8 +155,8 @@ public class BinaryClassDescriptor {
 
         initialSerializer = serializer;
 
-        // If serializer is not defined at this point, then we have to user OptimizedMarshaller.
-        useOptMarshaller = serializer == null;
+        // If serializer is not defined at this point, then we have to use OptimizedMarshaller.
+        useOptMarshaller = serializer == null || GridQueryProcessor.isGeometryClass(cls);
 
         // Reset reflective serializer so that we rely on existing reflection-based serialization.
         if (serializer instanceof BinaryReflectiveSerializer)
@@ -163,6 +171,8 @@ public class BinaryClassDescriptor {
         this.serializer = serializer;
         this.mapper = mapper;
         this.registered = registered;
+
+        overridesHashCode = IgniteUtils.overridesEqualsAndHashCode(cls);
 
         schemaReg = ctx.schemaRegistry(typeId);
 
@@ -179,7 +189,8 @@ public class BinaryClassDescriptor {
                 mode = serializer != null ? BinaryWriteMode.BINARY : BinaryUtils.mode(cls);
         }
 
-        if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls)) {
+        if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls) &&
+            !GridQueryProcessor.isGeometryClass(cls)) {
             U.warn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
                 BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
                 "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
@@ -263,10 +274,19 @@ public class BinaryClassDescriptor {
             case OBJECT:
                 // Must not use constructor to honor transient fields semantics.
                 ctor = null;
-                ArrayList<BinaryFieldAccessor> fields0 = new ArrayList<>();
-                stableFieldsMeta = metaDataEnabled ? new HashMap<String, Integer>() : null;
 
-                BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
+                Map<Object, BinaryFieldAccessor> fields0;
+
+                if (BinaryUtils.FIELDS_SORTED_ORDER) {
+                    fields0 = new TreeMap<>();
+
+                    stableFieldsMeta = metaDataEnabled ? new TreeMap<String, Integer>() : null;
+                }
+                else {
+                    fields0 = new LinkedHashMap<>();
+
+                    stableFieldsMeta = metaDataEnabled ? new LinkedHashMap<String, Integer>() : null;
+                }
 
                 Set<String> duplicates = duplicateFields(cls);
 
@@ -294,20 +314,20 @@ public class BinaryClassDescriptor {
 
                             BinaryFieldAccessor fieldInfo = BinaryFieldAccessor.create(f, fieldId);
 
-                            fields0.add(fieldInfo);
+                            fields0.put(name, fieldInfo);
 
-                            schemaBuilder.addField(fieldId);
-
-                            if (metaDataEnabled) {
-                                assert stableFieldsMeta != null;
-
+                            if (metaDataEnabled)
                                 stableFieldsMeta.put(name, fieldInfo.mode().typeId());
-                            }
                         }
                     }
                 }
 
-                fields = fields0.toArray(new BinaryFieldAccessor[fields0.size()]);
+                fields = fields0.values().toArray(new BinaryFieldAccessor[fields0.size()]);
+
+                BinarySchema.Builder schemaBuilder = BinarySchema.Builder.newBuilder();
+
+                for (BinaryFieldAccessor field : fields)
+                    schemaBuilder.addField(field.id);
 
                 stableSchema = schemaBuilder.build();
 
@@ -320,14 +340,24 @@ public class BinaryClassDescriptor {
                 throw new BinaryObjectException("Invalid mode: " + mode);
         }
 
+        BinaryWriteReplacer writeReplacer0 = BinaryUtils.writeReplacer(cls);
+
+        Method writeReplaceMthd;
+
         if (mode == BinaryWriteMode.BINARY || mode == BinaryWriteMode.OBJECT) {
             readResolveMtd = U.findNonPublicMethod(cls, "readResolve");
-            writeReplaceMtd = U.findNonPublicMethod(cls, "writeReplace");
+
+            writeReplaceMthd = U.findNonPublicMethod(cls, "writeReplace");
         }
         else {
             readResolveMtd = null;
-            writeReplaceMtd = null;
+            writeReplaceMthd = null;
         }
+
+        if (writeReplaceMthd != null && writeReplacer0 == null)
+            writeReplacer0 = new BinaryMethodWriteReplacer(writeReplaceMthd);
+
+        writeReplacer = writeReplacer0;
     }
 
     /**
@@ -469,10 +499,22 @@ public class BinaryClassDescriptor {
     }
 
     /**
-     * @return binaryWriteReplace() method
+     * @return {@code True} if write-replace should be performed for class.
      */
-    @Nullable Method getWriteReplaceMethod() {
-        return writeReplaceMtd;
+    public boolean isWriteReplace() {
+        return writeReplacer != null;
+    }
+
+    /**
+     * Perform write replace.
+     *
+     * @param obj Original object.
+     * @return Replaced object.
+     */
+    public Object writeReplace(Object obj) {
+        assert isWriteReplace();
+
+        return writeReplacer.replace(obj);
     }
 
     /**
@@ -722,6 +764,18 @@ public class BinaryClassDescriptor {
                 break;
 
             case OBJECT:
+                if (userType && !stableSchemaPublished) {
+                    // Update meta before write object with new schema
+                    BinaryMetadata meta = new BinaryMetadata(typeId, typeName, stableFieldsMeta,
+                        affKeyFieldName, Collections.singleton(stableSchema), false);
+
+                    ctx.updateMetadata(typeId, meta);
+
+                    schemaReg.addSchema(stableSchema.schemaId(), stableSchema);
+
+                    stableSchemaPublished = true;
+                }
+
                 if (preWrite(writer, obj)) {
                     try {
                         for (BinaryFieldAccessor info : fields)
@@ -826,7 +880,15 @@ public class BinaryClassDescriptor {
      * @param obj Object.
      */
     private void postWrite(BinaryWriterExImpl writer, Object obj) {
-        writer.postWrite(userType, registered, obj instanceof CacheObjectImpl ? 0 : obj.hashCode());
+        if (obj instanceof CacheObjectImpl)
+            writer.postWrite(userType, registered, 0, false);
+        else if (obj instanceof BinaryObjectEx) {
+            boolean flagSet = ((BinaryObjectEx)obj).isFlagSet(BinaryUtils.FLAG_EMPTY_HASH_CODE);
+
+            writer.postWrite(userType, registered, obj.hashCode(), !flagSet);
+        }
+        else
+            writer.postWrite(userType, registered, obj.hashCode(), overridesHashCode);
     }
 
     /**

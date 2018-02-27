@@ -23,6 +23,7 @@
 
 #include "ignite/impl/interop/interop_memory.h"
 #include "ignite/impl/binary/binary_type_manager.h"
+#include "ignite/jni/utils.h"
 
 namespace ignite 
 {
@@ -52,24 +53,29 @@ namespace ignite
             /**
              * Populate callback handlers.
              *
-             * @param Target (current env wrapped into a shared pointer).
+             * @param target (current env wrapped into a shared pointer).
              * @return JNI handlers.
              */
-            ignite::jni::java::JniHandlers GetJniHandlers(ignite::common::concurrent::SharedPointer<IgniteEnvironment>* target);
+            jni::java::JniHandlers GetJniHandlers(common::concurrent::SharedPointer<IgniteEnvironment>* target);
 
             /**
-             * Perform initialization on successful start.
+             * Set context.
              *
              * @param ctx Context.
              */
-            void Initialize(ignite::common::concurrent::SharedPointer<ignite::jni::java::JniContext> ctx);
+            void SetContext(common::concurrent::SharedPointer<jni::java::JniContext> ctx);
+
+            /**
+             * Perform initialization on successful start.
+             */
+            void Initialize();
 
             /**
              * Start callback.
              *
              * @param memPtr Memory pointer.
              */
-            void OnStartCallback(long long memPtr);
+            void OnStartCallback(long long memPtr, jobject proc);
 
             /**
              * Get name of Ignite instance.
@@ -83,14 +89,14 @@ namespace ignite
              *
              * @return Context.
              */
-            ignite::jni::java::JniContext* Context();
+            jni::java::JniContext* Context();
 
             /**
              * Get memory for interop operations.
              *
              * @return Memory.
              */
-            ignite::common::concurrent::SharedPointer<interop::InteropMemory> AllocateMemory();
+            common::concurrent::SharedPointer<interop::InteropMemory> AllocateMemory();
 
             /**
              * Get memory chunk for interop operations with desired capacity.
@@ -98,7 +104,7 @@ namespace ignite
              * @param cap Capacity.
              * @return Memory.
              */
-            ignite::common::concurrent::SharedPointer<interop::InteropMemory> AllocateMemory(int32_t cap);
+            common::concurrent::SharedPointer<interop::InteropMemory> AllocateMemory(int32_t cap);
 
             /**
              * Get memory chunk located at the given pointer.
@@ -106,26 +112,45 @@ namespace ignite
              * @param memPtr Memory pointer.
              * @retrun Memory.
              */
-            ignite::common::concurrent::SharedPointer<interop::InteropMemory> GetMemory(int64_t memPtr);
+            common::concurrent::SharedPointer<interop::InteropMemory> GetMemory(int64_t memPtr);
 
             /**
              * Get type manager.
              *
-             * @param Type manager.
+             * @return Type manager.
              */
             binary::BinaryTypeManager* GetTypeManager();
+
+            /**
+             * Get type updater.
+             *
+             * @return Type updater.
+             */
+            binary::BinaryTypeUpdater* GetTypeUpdater();
+
+            /**
+             * Notify processor that Ignite instance has started.
+             */
+            void ProcessorReleaseStart();
+
         private:
             /** Context to access Java. */
-            ignite::common::concurrent::SharedPointer<ignite::jni::java::JniContext> ctx;
+            common::concurrent::SharedPointer<jni::java::JniContext> ctx;
 
             /** Startup latch. */
-            ignite::common::concurrent::SingleLatch* latch;
+            common::concurrent::SingleLatch* latch;
 
             /** Ignite name. */
             char* name;
 
+            /** Processor instance. */
+            jni::JavaGlobalRef proc;
+
             /** Type manager. */
             binary::BinaryTypeManager* metaMgr;
+
+            /** Type updater. */
+            binary::BinaryTypeUpdater* metaUpdater;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteEnvironment);
         };

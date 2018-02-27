@@ -31,6 +31,7 @@ import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -58,6 +59,9 @@ import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.util.MutableSingletonList;
+import org.apache.ignite.internal.util.MutableSingletonMap;
+import org.apache.ignite.internal.util.MutableSingletonSet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -65,8 +69,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 
 /**
  * Binary utils.
@@ -82,11 +86,23 @@ public class BinaryUtils {
     public static final boolean USE_STR_SERIALIZATION_VER_2 = IgniteSystemProperties.getBoolean(
         IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, false);
 
+    /** Map from class to associated write replacer. */
+    public static final Map<Class, BinaryWriteReplacer> CLS_TO_WRITE_REPLACER = new HashMap<>();
+
     /** {@code true} if serialized value of this type cannot contain references to objects. */
     private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];
 
     /** Binary classes. */
     private static final Collection<Class<?>> BINARY_CLS = new HashSet<>();
+
+    /** Class for SingletonList obtained at runtime. */
+    public static final Class<? extends Collection> SINGLETON_LIST_CLS = Collections.singletonList(null).getClass();
+
+    /** Class for SingletonMap obtained at runtime. */
+    public static final Class<? extends Map> SINGLETON_MAP_CLS = Collections.singletonMap(null, null).getClass();
+
+    /** Class for SingletonSet obtained at runtime. */
+    public static final Class<? extends Collection> SINGLETON_SET_CLS = Collections.singleton(null).getClass();
 
     /** Flag: user type. */
     public static final short FLAG_USR_TYP = 0x0001;
@@ -106,6 +122,9 @@ public class BinaryUtils {
     /** Flag: compact footer, no field IDs. */
     public static final short FLAG_COMPACT_FOOTER = 0x0020;
 
+    /** Flag: no hash code has been set. */
+    public static final short FLAG_EMPTY_HASH_CODE = 0x0040;
+
     /** Offset which fits into 1 byte. */
     public static final int OFFSET_1 = 1;
 
@@ -117,6 +136,14 @@ public class BinaryUtils {
 
     /** Field ID length. */
     public static final int FIELD_ID_LEN = 4;
+
+    /** Whether to skip TreeMap/TreeSet wrapping. */
+    public static final boolean WRAP_TREES =
+        !IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_DONT_WRAP_TREE_STRUCTURES);
+
+    /** Whether to sort field in binary objects (doesn't affect Binarylizable). */
+    public static final boolean FIELDS_SORTED_ORDER =
+        IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_BINARY_SORT_OBJECT_FIELDS);
 
     /** Field type names. */
     private static final String[] FIELD_TYPE_NAMES;
@@ -244,6 +271,11 @@ public class BinaryUtils {
         FIELD_TYPE_NAMES[GridBinaryMarshaller.TIMESTAMP_ARR] = "Timestamp[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.OBJ_ARR] = "Object[]";
         FIELD_TYPE_NAMES[GridBinaryMarshaller.ENUM_ARR] = "Enum[]";
+
+        if (wrapTrees()) {
+            CLS_TO_WRITE_REPLACER.put(TreeMap.class, new BinaryTreeMapWriteReplacer());
+            CLS_TO_WRITE_REPLACER.put(TreeSet.class, new BinaryTreeSetWriteReplacer());
+        }
     }
 
     /**
@@ -293,7 +325,7 @@ public class BinaryUtils {
      * @param flag Flag.
      * @return {@code True} if flag is set in flags.
      */
-    private static boolean isFlagSet(short flags, short flag) {
+    static boolean isFlagSet(short flags, short flag) {
         return (flags & flag) == flag;
     }
 
@@ -584,6 +616,13 @@ public class BinaryUtils {
     }
 
     /**
+     * @return Whether tree structures should be wrapped.
+     */
+    public static boolean wrapTrees() {
+        return WRAP_TREES;
+    }
+
+    /**
      * @param map Map to check.
      * @return {@code True} if this map type is supported.
      */
@@ -592,9 +631,10 @@ public class BinaryUtils {
 
         return cls == HashMap.class ||
             cls == LinkedHashMap.class ||
-            cls == TreeMap.class ||
+            (!wrapTrees() && cls == TreeMap.class) ||
             cls == ConcurrentHashMap8.class ||
-            cls == ConcurrentHashMap.class;
+            cls == ConcurrentHashMap.class ||
+            (isSingletonCollectionSerializationEnabled() && cls == SINGLETON_MAP_CLS);
     }
 
     /**
@@ -611,12 +651,18 @@ public class BinaryUtils {
             return U.newHashMap(((Map)map).size());
         else if (cls == LinkedHashMap.class)
             return U.newLinkedHashMap(((Map)map).size());
-        else if (cls == TreeMap.class)
+        else if (!wrapTrees() && cls == TreeMap.class)
             return new TreeMap<>(((TreeMap<Object, Object>)map).comparator());
         else if (cls == ConcurrentHashMap8.class)
             return new ConcurrentHashMap8<>(U.capacity(((Map)map).size()));
         else if (cls == ConcurrentHashMap.class)
             return new ConcurrentHashMap<>(U.capacity(((Map)map).size()));
+
+        if (isSingletonCollectionSerializationEnabled()) {
+            if(cls == SINGLETON_MAP_CLS){
+                return new MutableSingletonMap<>();
+            }
+        }
 
         return null;
     }
@@ -650,10 +696,11 @@ public class BinaryUtils {
 
         return cls == HashSet.class ||
             cls == LinkedHashSet.class ||
-            cls == TreeSet.class ||
+            (!wrapTrees() && cls == TreeSet.class) ||
             cls == ConcurrentSkipListSet.class ||
             cls == ArrayList.class ||
-            cls == LinkedList.class;
+            cls == LinkedList.class ||
+            BinaryUtils.isSingletonCollection(cls);
     }
 
     /**
@@ -686,7 +733,7 @@ public class BinaryUtils {
             return U.newHashSet(((Collection)col).size());
         else if (cls == LinkedHashSet.class)
             return U.newLinkedHashSet(((Collection)col).size());
-        else if (cls == TreeSet.class)
+        else if (!wrapTrees() && cls == TreeSet.class)
             return new TreeSet<>(((TreeSet<Object>)col).comparator());
         else if (cls == ConcurrentSkipListSet.class)
             return new ConcurrentSkipListSet<>(((ConcurrentSkipListSet<Object>)col).comparator());
@@ -694,6 +741,15 @@ public class BinaryUtils {
             return new ArrayList<>(((Collection)col).size());
         else if (cls == LinkedList.class)
             return new LinkedList<>();
+
+        if (BinaryUtils.isSingletonCollectionSerializationEnabled()) {
+            if (cls == SINGLETON_LIST_CLS) {
+                return new MutableSingletonList<>();
+            }
+            else if (cls == SINGLETON_SET_CLS) {
+                return new MutableSingletonSet<>();
+            }
+        }
 
         return null;
     }
@@ -921,10 +977,16 @@ public class BinaryUtils {
             }
 
             // Check and merge fields.
-            boolean changed = false;
+            Map<String, Integer> mergedFields;
 
-            Map<String, Integer> mergedFields = new HashMap<>(oldMeta.fieldsMap());
+            if (FIELDS_SORTED_ORDER)
+                mergedFields = new TreeMap<>(oldMeta.fieldsMap());
+            else
+                mergedFields = new LinkedHashMap<>(oldMeta.fieldsMap());
+
             Map<String, Integer> newFields = newMeta.fieldsMap();
+
+            boolean changed = false;
 
             for (Map.Entry<String, Integer> newField : newFields.entrySet()) {
                 Integer oldFieldType = mergedFields.put(newField.getKey(), newField.getValue());
@@ -1068,7 +1130,7 @@ public class BinaryUtils {
      * @return {@code True} if this is a special collection class.
      */
     public static boolean isSpecialCollection(Class cls) {
-        return ArrayList.class.equals(cls) || LinkedList.class.equals(cls) ||
+        return ArrayList.class.equals(cls) || LinkedList.class.equals(cls) || BinaryUtils.isSingletonCollection(cls) ||
             HashSet.class.equals(cls) || LinkedHashSet.class.equals(cls);
     }
 
@@ -1079,7 +1141,7 @@ public class BinaryUtils {
      * @return {@code True} if this is a special map class.
      */
     public static boolean isSpecialMap(Class cls) {
-        return HashMap.class.equals(cls) || LinkedHashMap.class.equals(cls);
+        return HashMap.class.equals(cls) || LinkedHashMap.class.equals(cls) || BinaryUtils.isSingletonMap(cls);
     }
 
     /**
@@ -1161,13 +1223,15 @@ public class BinaryUtils {
         int scale = in.readInt();
         byte[] mag = doReadByteArray(in);
 
+        boolean negative = mag[0] < 0;
+
+        if (negative)
+            mag[0] &= 0x7F;
+
         BigInteger intVal = new BigInteger(mag);
 
-        if (scale < 0) {
-            scale &= 0x7FFFFFFF;
-
+        if (negative)
             intVal = intVal.negate();
-        }
 
         return new BigDecimal(intVal, scale);
     }
@@ -1855,6 +1919,16 @@ public class BinaryUtils {
 
                     break;
 
+                case GridBinaryMarshaller.SINGLETON_LIST:
+                    col = new MutableSingletonList<>();
+
+                    break;
+
+                case GridBinaryMarshaller.SINGLETON_SET:
+                    col = new MutableSingletonSet<>();
+
+                    break;
+
                 case GridBinaryMarshaller.HASH_SET:
                     col = U.newHashSet(size);
 
@@ -1885,7 +1959,7 @@ public class BinaryUtils {
         for (int i = 0; i < size; i++)
             col.add(deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize));
 
-        return col;
+        return U.unwrapSingletonCollection(col);
     }
 
     /**
@@ -1927,6 +2001,11 @@ public class BinaryUtils {
 
                     break;
 
+                case GridBinaryMarshaller.SINGLETON_MAP:
+                    map = new MutableSingletonMap<>();
+
+                    break;
+
                 default:
                     throw new BinaryObjectException("Invalid map type: " + mapType);
             }
@@ -1941,7 +2020,7 @@ public class BinaryUtils {
             map.put(key, val);
         }
 
-        return map;
+        return U.unwrapSingletonMap(map);
     }
 
     /**
@@ -2050,6 +2129,38 @@ public class BinaryUtils {
         }
         else
             return null;
+    }
+
+    /**
+     * Determines whether singleton collection serialization enabled.
+     *
+     * @return {@code true} if custom Java serialization logic exists, {@code false} otherwise.
+     * @see IgniteSystemProperties#IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION
+     */
+    public static boolean isSingletonCollectionSerializationEnabled() {
+        return Boolean.getBoolean(IgniteSystemProperties.IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION);
+    }
+
+    /**
+     * Determines whether target class could be serialized as singleton collection.
+     *
+     * @param cls target class.
+     * @return {@code True} if target class could be serialized as singleton collection.
+     */
+    public static boolean isSingletonCollection(Class cls) {
+        return cls != null && isSingletonCollectionSerializationEnabled() &&
+            (SINGLETON_LIST_CLS.equals(cls) || SINGLETON_SET_CLS.equals(cls));
+    }
+
+
+    /**
+     * Determines whether target map could be serialized as singleton map.
+     *
+     * @param cls target class.
+     * @return {@code True} if target class could be serialized as singleton map.
+     */
+    public static boolean isSingletonMap(Class cls) {
+        return cls != null && isSingletonCollectionSerializationEnabled() && SINGLETON_MAP_CLS.equals(cls);
     }
 
     /**
@@ -2196,7 +2307,9 @@ public class BinaryUtils {
         if (ctx == null)
             throw new BinaryObjectException("BinaryContext is not set for the object.");
 
-        return new BinaryTypeProxy(ctx, obj.typeId());
+        String clsName = obj instanceof BinaryEnumObjectImpl ? ((BinaryEnumObjectImpl)obj).className() : null;
+
+        return new BinaryTypeProxy(ctx, obj.typeId(), clsName);
     }
 
     /**
@@ -2211,6 +2324,16 @@ public class BinaryUtils {
             throw new BinaryObjectException("BinaryContext is not set for the object.");
 
         return ctx.metadata(obj.typeId());
+    }
+
+    /**
+     * Get predefined write-replacer associated with class.
+     *
+     * @param cls Class.
+     * @return Write replacer.
+     */
+    public static BinaryWriteReplacer writeReplacer(Class cls) {
+        return cls != null ? CLS_TO_WRITE_REPLACER.get(cls) : null;
     }
 
     /**

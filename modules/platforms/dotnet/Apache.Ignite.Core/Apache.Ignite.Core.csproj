@@ -75,6 +75,7 @@
     <Optimize>true</Optimize>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
+    <DebugType>none</DebugType>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -90,6 +91,7 @@
     <Compile Include="Discovery\Tcp\Multicast\Package-Info.cs" />
     <Compile Include="Discovery\Tcp\Package-Info.cs" />
     <Compile Include="Discovery\Tcp\Static\Package-Info.cs" />
+    <Compile Include="Impl\Binary\BinaryProcessor.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
     <Compile Include="Impl\Binary\IBinarySerializerInternal.cs" />
     <Compile Include="Binary\Package-Info.cs" />
@@ -176,11 +178,12 @@
     <Compile Include="Impl\Binary\SerializableSerializer.cs" />
     <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionBase.cs" />
+    <Compile Include="Impl\Cache\ICacheLockInternal.cs" />
+    <Compile Include="Impl\Common\Platform.cs" />
     <Compile Include="Impl\Binary\UserSerializerProxy.cs" />
     <Compile Include="Impl\Cache\Affinity\AffinityFunctionSerializer.cs" />
     <Compile Include="Impl\Cache\Affinity\PlatformAffinityFunction.cs" />
     <Compile Include="Impl\Common\ObjectInfoHolder.cs" />
-    <Compile Include="Impl\Common\Platform.cs" />
     <Compile Include="Impl\Cache\Event\JavaCacheEntryEventFilter.cs" />
     <Compile Include="Impl\Common\PlatformJavaObjectFactoryProxy.cs" />
     <Compile Include="Compute\ComputeExecutionRejectedException.cs" />
@@ -285,7 +288,6 @@
     <Compile Include="Impl\Cluster\ClusterGroupImpl.cs" />
     <Compile Include="Impl\Cluster\ClusterMetricsImpl.cs" />
     <Compile Include="Impl\Cluster\ClusterNodeImpl.cs" />
-    <Compile Include="Impl\Cluster\IClusterGroupEx.cs" />
     <Compile Include="Impl\Collections\CollectionExtensions.cs" />
     <Compile Include="Impl\Collections\MultiValueDictionary.cs" />
     <Compile Include="Impl\Collections\ReadOnlyCollection.cs" />
@@ -308,8 +310,6 @@
     <Compile Include="Impl\Common\IgniteConfigurationXmlSerializer.cs" />
     <Compile Include="Impl\Common\IgniteHome.cs" />
     <Compile Include="Impl\Common\LoadedAssembliesResolver.cs" />
-    <Compile Include="Impl\Common\Logger.cs" />
-    <Compile Include="Impl\Common\ResizeableArray.cs" />
     <Compile Include="Impl\Common\TypeCaster.cs" />
     <Compile Include="Impl\Common\TypeStringConverter.cs" />
     <Compile Include="Impl\Compute\Closure\ComputeAbstractClosureTask.cs" />
@@ -343,13 +343,13 @@
     <Compile Include="Impl\Ignite.cs" />
     <Compile Include="Impl\IgniteManager.cs" />
     <Compile Include="Impl\IgniteProxy.cs" />
+    <Compile Include="Impl\Log\JavaLogger.cs" />
     <Compile Include="Impl\PlatformTarget.cs" />
     <Compile Include="Impl\IgniteUtils.cs" />
     <Compile Include="Impl\Handle\Handle.cs" />
     <Compile Include="Impl\Handle\HandleRegistry.cs" />
     <Compile Include="Impl\Handle\IHandle.cs" />
     <Compile Include="Impl\IInteropCallback.cs" />
-    <Compile Include="Impl\InteropExceptionHolder.cs" />
     <Compile Include="Impl\LifecycleBeanHolder.cs" />
     <Compile Include="Impl\Memory\InteropExternalMemory.cs" />
     <Compile Include="Impl\Memory\InteropMemoryUtils.cs" />
@@ -384,7 +384,6 @@
     <Compile Include="Impl\Binary\BinarizableSerializer.cs" />
     <Compile Include="Impl\Binary\Marshaller.cs" />
     <Compile Include="Impl\Binary\BinaryMode.cs" />
-    <Compile Include="Impl\Binary\BinaryObjectHandle.cs" />
     <Compile Include="Impl\Binary\BinaryObjectHeader.cs" />
     <Compile Include="Impl\Binary\BinaryObjectSchema.cs" />
     <Compile Include="Impl\Binary\BinaryObjectSchemaField.cs" />
@@ -419,6 +418,7 @@
     <Compile Include="Impl\Services\ServiceProxyInvoker.cs" />
     <Compile Include="Impl\Services\ServiceProxySerializer.cs" />
     <Compile Include="Impl\Services\Services.cs" />
+    <Compile Include="Impl\SwapSpace\SwapSpaceSerializer.cs" />
     <Compile Include="Impl\Transactions\Transaction.cs" />
     <Compile Include="Impl\Transactions\TransactionImpl.cs" />
     <Compile Include="Impl\Transactions\TransactionMetricsImpl.cs" />
@@ -435,6 +435,10 @@
     <Compile Include="Interop\Package-Info.cs" />
     <Compile Include="Lifecycle\ClientReconnectEventArgs.cs" />
     <Compile Include="Lifecycle\Package-Info.cs" />
+    <Compile Include="Log\CategoryLogger.cs" />
+    <Compile Include="Log\ILogger.cs" />
+    <Compile Include="Log\LoggerExtensions.cs" />
+    <Compile Include="Log\LogLevel.cs" />
     <Compile Include="Messaging\Package-Info.cs" />
     <Compile Include="Package-Info.cs" />
     <Compile Include="Lifecycle\ILifecycleBean.cs" />
@@ -468,12 +472,15 @@
     <Compile Include="Services\Package-Info.cs" />
     <Compile Include="Services\ServiceConfiguration.cs" />
     <Compile Include="Services\ServiceInvocationException.cs" />
+    <Compile Include="SwapSpace\File\FileSwapSpaceSpi.cs" />
+    <Compile Include="SwapSpace\ISwapSpaceSpi.cs" />
     <Compile Include="Transactions\ITransaction.cs" />
     <Compile Include="Transactions\ITransactionMetrics.cs" />
     <Compile Include="Transactions\ITransactions.cs" />
     <Compile Include="Transactions\Package-Info.cs" />
     <Compile Include="Transactions\TransactionConcurrency.cs" />
     <Compile Include="Transactions\TransactionConfiguration.cs" />
+    <Compile Include="Transactions\TransactionDeadlockException.cs" />
     <Compile Include="Transactions\TransactionHeuristicException.cs" />
     <Compile Include="Transactions\TransactionIsolation.cs" />
     <Compile Include="Transactions\TransactionOptimisticException.cs" />

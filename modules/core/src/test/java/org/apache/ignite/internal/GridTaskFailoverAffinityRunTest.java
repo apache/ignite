@@ -137,7 +137,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
                 Collection<IgniteFuture<?>> futs = new ArrayList<>(1000);
 
                 for (int i = 0; i < 1000; i++) {
-                    comp.affinityCall(null, i, new TestJob());
+                    comp.affinityCall((String)null, i, new TestJob());
 
                     IgniteFuture<?> fut0 = comp.future();
 

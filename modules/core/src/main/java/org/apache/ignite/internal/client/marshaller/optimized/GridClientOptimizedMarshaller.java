@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.MarshallerContextAdapter;
 import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
@@ -84,7 +85,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
                 throw new IOException("Message serialization of given type is not supported: " +
                     obj.getClass().getName());
 
-            byte[] bytes = opMarsh.marshal(obj);
+            byte[] bytes = U.marshal(opMarsh, obj);
 
             ByteBuffer buf = ByteBuffer.allocate(off + bytes.length);
 
@@ -104,7 +105,7 @@ public class GridClientOptimizedMarshaller implements GridClientMarshaller {
     /** {@inheritDoc} */
     @Override public <T> T unmarshal(byte[] bytes) throws IOException {
         try {
-            return opMarsh.unmarshal(bytes, null);
+            return U.unmarshal(opMarsh, bytes, null);
         }
         catch (IgniteCheckedException e) {
             throw new IOException(e);

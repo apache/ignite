@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 namespace Apache.Ignite.Core.Tests.Cache.Query
 {
     using System;
@@ -758,6 +759,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         {
             Name = name;
             Age = age;
+            Birthday = DateTime.UtcNow.AddYears(-age);
         }
 
         /// <summary>
@@ -769,6 +771,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Age.
         /// </summary>
         public int Age { get; set; }
+
+        /// <summary>
+        /// Gets or sets the birthday.
+        /// </summary>
+        [QuerySqlField]  // Enforce Timestamp serialization
+        public DateTime Birthday { get; set; }
     }
 
     /// <summary>

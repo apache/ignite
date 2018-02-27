@@ -95,6 +95,15 @@ public class FairAffinityFunction implements AffinityFunction {
     /** Exclude neighbors warning. */
     private transient boolean exclNeighborsWarn;
 
+    /**
+     * <b>NOTE:</b> Use {@code true} value only for new clusters or in case of cluster upgrade with downtime.
+     * If nodes of cluster have affinity function with different configuration it will lead to different
+     * assignments calculation on different nodes and, therefore, broken consistent hashing functionality.
+     *
+     * Compatibility flag. Lead to better partitions distribution if value is {@code true}.
+     */
+    private boolean ceilIdealPartCnt = false;
+
     /** Logger instance. */
     @LoggerResource
     private transient IgniteLogger log;
@@ -280,6 +289,24 @@ public class FairAffinityFunction implements AffinityFunction {
         this.exclNeighbors = exclNeighbors;
     }
 
+    /**
+     * Returns value of {@link #ceilIdealPartCnt} compatibility flag.
+     *
+     * @return Value of {@link #ceilIdealPartCnt} compatibility flag.
+     */
+    public boolean isCeilIdealPartitionsCount() {
+        return ceilIdealPartCnt;
+    }
+
+    /**
+     * Sets value of {@link #ceilIdealPartCnt} compatibility flag.
+     *
+     * @param ceilIdealPartCnt Indicates that ideal partitions count should be rounded to biggest integer value.
+     */
+    public void setCeilIdealPartitionsCount(boolean ceilIdealPartCnt) {
+        this.ceilIdealPartCnt = ceilIdealPartCnt;
+    }
+
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext ctx) {
         List<ClusterNode> topSnapshot = ctx.currentTopologySnapshot();
@@ -331,7 +358,7 @@ public class FairAffinityFunction implements AffinityFunction {
                 balance(tier, pendingParts, fullMap, topSnapshot, true);
 
                 if (!exclNeighborsWarn) {
-                    LT.warn(log, null, "Affinity function excludeNeighbors property is ignored " +
+                    LT.warn(log, "Affinity function excludeNeighbors property is ignored " +
                         "because topology has no enough nodes to assign backups.");
 
                     exclNeighborsWarn = true;
@@ -382,7 +409,7 @@ public class FairAffinityFunction implements AffinityFunction {
         if (F.isEmpty(pending))
             return;
 
-        int idealPartCnt = parts / topSnapshot.size();
+        int idealPartCnt = ceilIdealPartCnt ? (int)Math.ceil((double)parts / topSnapshot.size()) : parts / topSnapshot.size();
 
         Map<UUID, PartitionSet> tierMapping = fullMap.tierMapping(tier);
 

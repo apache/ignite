@@ -66,7 +66,7 @@ BOOST_AUTO_TEST_CASE(TestColumnShort)
 
     short shortBuf = 0;
     SqlLen reslen = 0;
-    size_t* offset = 0;
+    int* offset = 0;
 
     ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_SIGNED_SHORT, &shortBuf, sizeof(shortBuf), &reslen, &offset);
 
@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE(TestColumnString)
 
     char strBuf[1024] = {};
     SqlLen reslen = 0;
-    size_t* offset = 0;
+    int* offset = 0;
 
     ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, &offset);
 
@@ -164,7 +164,7 @@ BOOST_AUTO_TEST_CASE(TestColumnStringSeveral)
 
     std::string strBuf(data.size() / 3 + 2, 0);
     SqlLen reslen = 0;
-    size_t* offset = 0;
+    int* offset = 0;
 
     ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_CHAR, &strBuf[0], strBuf.size(), &reslen, &offset);
 
@@ -246,7 +246,7 @@ BOOST_AUTO_TEST_CASE(TestColumnMultiString)
 
     char strBuf[1024] = {};
     SqlLen reslen = 0;
-    size_t* offset = 0;
+    int* offset = 0;
 
     ApplicationDataBuffer appBuf(type_traits::IGNITE_ODBC_C_TYPE_CHAR, &strBuf, sizeof(strBuf), &reslen, &offset);
 

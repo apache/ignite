@@ -399,7 +399,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                     ", daemon=" + daemon + ']');
 
             if (!daemon) {
-                LT.warn(log, null, "Ignoring deployment in PRIVATE or ISOLATED mode " +
+                LT.warn(log, "Ignoring deployment in PRIVATE or ISOLATED mode " +
                     "[sndId=" + sndId + ", ldrId=" + ldrId + ", userVer=" + userVer + ", mode=" + mode +
                     ", participants=" + participants + ", daemon=" + daemon + ']');
             }
@@ -408,7 +408,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         }
 
         if (mode != cctx.gridConfig().getDeploymentMode()) {
-            LT.warn(log, null, "Local and remote deployment mode mismatch (please fix configuration and restart) " +
+            LT.warn(log, "Local and remote deployment mode mismatch (please fix configuration and restart) " +
                 "[locDepMode=" + cctx.gridConfig().getDeploymentMode() + ", rmtDepMode=" + mode + ", rmtNodeId=" +
                 sndId + ']');
 

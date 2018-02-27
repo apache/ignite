@@ -58,13 +58,13 @@ public final class SpiQuery<K, V> extends Query<Cache.Entry<K, V>> {
     }
 
     /** {@inheritDoc} */
-    @Override public SqlQuery<K, V> setPageSize(int pageSize) {
-        return (SqlQuery<K, V>)super.setPageSize(pageSize);
+    @Override public SpiQuery<K, V> setPageSize(int pageSize) {
+        return (SpiQuery<K, V>)super.setPageSize(pageSize);
     }
 
     /** {@inheritDoc} */
-    @Override public SqlQuery<K, V> setLocal(boolean loc) {
-        return (SqlQuery<K, V>)super.setLocal(loc);
+    @Override public SpiQuery<K, V> setLocal(boolean loc) {
+        return (SpiQuery<K, V>)super.setLocal(loc);
     }
 
     /** {@inheritDoc} */

@@ -62,9 +62,15 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable, Bin
     /** URI representing this path. Should never change after object creation or de-serialization. */
     private String path;
 
+    /** Root path. */
+    public static final IgfsPath ROOT = new IgfsPath(SLASH);
+
     /**
      * Constructs default root path.
+     *
+     * @deprecated Use {@link #ROOT} instead.
      */
+    @Deprecated
     public IgfsPath() {
         path = SLASH;
     }
@@ -146,9 +152,11 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable, Bin
      * Returns a root for this path.
      *
      * @return Root for this path.
+     * @deprecated Use {@link #ROOT} instead.
      */
+    @Deprecated
     public IgfsPath root() {
-        return new IgfsPath();
+        return ROOT;
     }
 
     /**
@@ -244,7 +252,10 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable, Bin
      *
      * @param path Path to check.
      * @return {@code True} if paths are identical.
+     * @deprecated Use {@link #equals(Object)} instead.
      */
+    @SuppressWarnings("unused")
+    @Deprecated
     public boolean isSame(IgfsPath path) {
         A.notNull(path, "path");
 
@@ -252,6 +263,7 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable, Bin
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("NullableProblems")
     @Override public int compareTo(IgfsPath o) {
         return path.compareTo(o.path);
     }

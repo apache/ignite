@@ -41,6 +41,8 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isIgfsCache;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isSystemCache;
 import static org.apache.ignite.internal.visor.compute.VisorComputeMonitoringHolder.COMPUTE_MONITORING_HOLDER_KEY;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.EVT_MAPPER;
+import static org.apache.ignite.internal.visor.util.VisorTaskUtils.EVT_MAPPER_V2;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.VISOR_TASK_EVTS;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.checkExplicitTaskMonitoring;
 import static org.apache.ignite.internal.visor.util.VisorTaskUtils.collectEvents;
@@ -62,6 +64,9 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
     /** */
     private static final IgniteProductVersion VER_1_5_26 = IgniteProductVersion.fromString("1.5.26");
 
+    /** */
+    protected static final IgniteProductVersion VER_1_7_2 = IgniteProductVersion.fromString("1.7.2");
+
     /**
      * Create job with given argument.
      *
@@ -82,7 +87,8 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
      */
     protected void events0(VisorNodeDataCollectorJobResult res, String evtOrderKey, String evtThrottleCntrKey,
         final boolean all) {
-        res.events().addAll(collectEvents(ignite, evtOrderKey, evtThrottleCntrKey, all));
+        res.events().addAll(collectEvents(ignite, evtOrderKey, evtThrottleCntrKey, all,
+            compatibleWith(VER_1_7_2) ? EVT_MAPPER_V2 : EVT_MAPPER));
     }
 
     /**
@@ -132,7 +138,7 @@ public class VisorNodeDataCollectorJob extends VisorJob<VisorNodeDataCollectorTa
      * @param ver Version to check.
      * @return {@code true} if found at least one compatible node with specified version.
      */
-    private boolean compatibleWith(IgniteProductVersion ver) {
+    protected boolean compatibleWith(IgniteProductVersion ver) {
         for (ClusterNode node : ignite.cluster().nodes())
             if (node.version().compareToIgnoreTimestamp(ver) <= 0)
                 return true;

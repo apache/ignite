@@ -71,7 +71,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Cache name. */
-    private static final String CACHE = "cache";
+    protected static final String CACHE = "cache";
 
     /** Empty cache name. */
     private static final String EMPTY_CACHE = "emptyCache";

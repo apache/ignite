@@ -96,7 +96,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
             int off = start + GridBinaryMarshaller.DFLT_HDR_LEN;
 
-            String clsName = BinaryUtils.doReadClassName(new BinaryOffheapInputStream(off, size));
+            String clsName = BinaryUtils.doReadClassName(new BinaryOffheapInputStream(ptr + off, size));
 
             typeId = ctx.typeId(clsName);
         }
@@ -145,6 +145,13 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isFlagSet(short flag) {
+        short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
+
+        return BinaryUtils.isFlagSet(flags, flag);
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public BinaryType type() throws BinaryObjectException {
         return BinaryUtils.typeProxy(ctx, this);
     }
@@ -164,6 +171,28 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(int fieldId) throws BinaryObjectException {
         return (F) reader(null, false).unmarshalField(fieldId);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override protected int dataStartOffset() {
+        int typeId = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.TYPE_ID_POS);
+
+        if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID) {
+            int len = BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.DFLT_HDR_LEN + 1);
+
+            return start + GridBinaryMarshaller.DFLT_HDR_LEN + len + 5;
+        } else
+            return start + GridBinaryMarshaller.DFLT_HDR_LEN;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override protected int footerStartOffset() {
+        short flags = BinaryPrimitives.readShort(ptr, start + GridBinaryMarshaller.FLAGS_POS);
+
+        if (!BinaryUtils.hasSchema(flags))
+            return start + length();
+
+        return start + BinaryPrimitives.readInt(ptr, start + GridBinaryMarshaller.SCHEMA_OR_RAW_OFF_POS);
     }
 
     /** {@inheritDoc} */

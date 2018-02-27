@@ -70,4 +70,9 @@ public class GridCachePartitionedOffHeapTieredMultiNodeFullApiSelfTest extends G
         assertEquals(5, cache.get(key).intValue());
         assertEquals(5, storeStgy.getFromStore(key));
     }
+
+    /** {@inheritDoc} */
+    @Override public void testRemoveLoad() throws Exception {
+        fail("https://ggsystems.atlassian.net/browse/GG-12698");
+    }
 }

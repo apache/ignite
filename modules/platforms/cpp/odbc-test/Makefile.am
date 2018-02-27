@@ -34,7 +34,9 @@ AM_CPPFLAGS = \
     -I@top_srcdir@/core/os/linux/include \
     -I$(JAVA_HOME)/include \
     -I$(JAVA_HOME)/include/linux \
-    -DIGNITE_IMPL
+    -DIGNITE_IMPL \
+    -D__STDC_LIMIT_MACROS \
+    -D__STDC_CONSTANT_MACROS
 
 AM_CXXFLAGS = \
     -Wall \
@@ -61,11 +63,24 @@ ignite_odbc_tests_SOURCES = \
     src/row_test.cpp \
     src/utility_test.cpp \
     src/queries_test.cpp \
+    src/test_utils.cpp \
+    src/sql_test_suite_fixture.cpp \
+    src/sql_string_functions_test.cpp \
+    src/sql_numeric_functions_test.cpp \
+    src/sql_aggregate_functions_test.cpp \
+    src/sql_system_functions_test.cpp \
+    src/sql_operators_test.cpp \
+    src/sql_value_expressions_test.cpp \
+    src/sql_types_test.cpp \
+    src/sql_date_time_functions_test.cpp \
+    src/sql_outer_join_test.cpp \
+    src/api_robustness_test.cpp \
     ../odbc/src/cursor.cpp \
     ../odbc/src/config/connection_info.cpp \
     ../odbc/src/app/application_data_buffer.cpp \
     ../odbc/src/config/configuration.cpp \
     ../odbc/src/row.cpp \
+    ../odbc/src/protocol_version.cpp \
     ../odbc/src/column.cpp \
     ../odbc/src/utility.cpp \
     ../odbc/src/result_page.cpp

@@ -30,6 +30,7 @@ import java.util.zip.ZipOutputStream;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
@@ -131,7 +132,7 @@ public class GridClientZipOptimizedMarshaller extends GridClientOptimizedMarshal
                 throw new IOException("Message serialization of given type is not supported: " +
                     obj.getClass().getName());
 
-            byte[] marshBytes = opMarsh.marshal(obj);
+            byte[] marshBytes = U.marshal(opMarsh, obj);
 
             boolean zip = marshBytes.length > 512;
 
@@ -158,7 +159,7 @@ public class GridClientZipOptimizedMarshaller extends GridClientOptimizedMarshal
 
             byte[] marshBytes = Arrays.copyOfRange(bytes, 1, bytes.length);
 
-            return opMarsh.unmarshal(unzip ? unzipBytes(marshBytes) : marshBytes, null);
+            return U.unmarshal(opMarsh, unzip ? unzipBytes(marshBytes) : marshBytes, null);
         }
         catch (IgniteCheckedException e) {
             throw new IOException(e);

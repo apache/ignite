@@ -86,7 +86,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  *      ...
  *      cfg.setGridLogger(log);
  * </pre>
- * Please take a look at <a target=_new href="http://java.sun.com/j2se/1.4.2/docs/api20/java/util/logging/Logger.html">Logger javadoc</a>
+ * Please take a look at <a target=_new href="http://docs.oracle.com/javase/7/docs/api/java/util/logging/Logger.html">Logger javadoc</a>
  * for additional information.
  * <p>
  * It's recommended to use Ignite logger injection instead of using/instantiating
@@ -112,6 +112,9 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
 
     /** Quiet flag. */
     private final boolean quiet;
+
+    /** Work directory. */
+    private volatile String workDir;
 
     /** Node ID. */
     private volatile UUID nodeId;
@@ -340,6 +343,15 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
         }
     }
 
+    /**
+     * Set work directory.
+     *
+     * @param workDir Work directory.
+     */
+    public void setWorkDirectory(String workDir) {
+        this.workDir = workDir;
+    }
+
     /** {@inheritDoc} */
     @Override public void setNodeId(UUID nodeId) {
         A.notNull(nodeId, "nodeId");
@@ -361,7 +373,7 @@ public class JavaLogger implements IgniteLogger, LoggerNodeIdAware {
             return;
 
         try {
-            fileHnd.nodeId(nodeId);
+            fileHnd.nodeId(nodeId, workDir);
         }
         catch (IgniteCheckedException | IOException e) {
             throw new RuntimeException("Failed to enable file handler.", e);

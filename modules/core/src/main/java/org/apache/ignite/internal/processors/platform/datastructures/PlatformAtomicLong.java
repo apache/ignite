@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.datastructures;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.datastructures.GridCacheAtomicLongImpl;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
@@ -27,6 +29,42 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 public class PlatformAtomicLong extends PlatformAbstractTarget {
     /** */
     private final GridCacheAtomicLongImpl atomicLong;
+
+    /** */
+    private static final int OP_ADD_AND_GET = 1;
+
+    /** */
+    private static final int OP_CLOSE = 2;
+
+    /** */
+    private static final int OP_COMPARE_AND_SET = 3;
+
+    /** */
+    private static final int OP_COMPARE_AND_SET_AND_GET = 4;
+
+    /** */
+    private static final int OP_DECREMENT_AND_GET = 5;
+
+    /** */
+    private static final int OP_GET = 6;
+
+    /** */
+    private static final int OP_GET_AND_ADD = 7;
+
+    /** */
+    private static final int OP_GET_AND_DECREMENT = 8;
+
+    /** */
+    private static final int OP_GET_AND_INCREMENT = 9;
+
+    /** */
+    private static final int OP_GET_AND_SET = 10;
+
+    /** */
+    private static final int OP_INCREMENT_AND_GET = 11;
+
+    /** */
+    private static final int OP_IS_CLOSED = 12;
 
     /**
      * Ctor.
@@ -41,109 +79,61 @@ public class PlatformAtomicLong extends PlatformAbstractTarget {
         this.atomicLong = atomicLong;
     }
 
-    /**
-     * Reads the value.
-     *
-     * @return Current atomic long value.
-     */
-    public long get() {
-        return atomicLong.get();
+    /** {@inheritDoc} */
+    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
+        switch (type) {
+            case OP_COMPARE_AND_SET:
+                long cmp = reader.readLong();
+                long val = reader.readLong();
+
+                return atomicLong.compareAndSet(cmp, val) ? TRUE : FALSE;
+
+            case OP_COMPARE_AND_SET_AND_GET:
+                long expVal = reader.readLong();
+                long newVal = reader.readLong();
+
+                return atomicLong.compareAndSetAndGet(expVal, newVal);
+        }
+
+        return super.processInStreamOutLong(type, reader);
     }
 
-    /**
-     * Increments the value.
-     *
-     * @return Current atomic long value.
-     */
-    public long incrementAndGet() {
-        return atomicLong.incrementAndGet();
-    }
+    /** {@inheritDoc} */
+    @Override protected long processInLongOutLong(int type, long val) throws IgniteCheckedException {
+        switch (type) {
+            case OP_ADD_AND_GET:
+                return atomicLong.addAndGet(val);
 
-    /**
-     * Increments the value.
-     *
-     * @return Original atomic long value.
-     */
-    public long getAndIncrement() {
-        return atomicLong.getAndIncrement();
-    }
+            case OP_GET_AND_ADD:
+                return atomicLong.getAndAdd(val);
 
-    /**
-     * Adds a value.
-     *
-     * @return Current atomic long value.
-     */
-    public long addAndGet(long val) {
-        return atomicLong.addAndGet(val);
-    }
+            case OP_GET_AND_SET:
+                return atomicLong.getAndSet(val);
 
-    /**
-     * Adds a value.
-     *
-     * @return Original atomic long value.
-     */
-    public long getAndAdd(long val) {
-        return atomicLong.getAndAdd(val);
-    }
+            case OP_CLOSE:
+                atomicLong.close();
 
-    /**
-     * Decrements the value.
-     *
-     * @return Current atomic long value.
-     */
-    public long decrementAndGet() {
-        return atomicLong.decrementAndGet();
-    }
+                return TRUE;
 
-    /**
-     * Decrements the value.
-     *
-     * @return Original atomic long value.
-     */
-    public long getAndDecrement() {
-        return atomicLong.getAndDecrement();
-    }
+            case OP_DECREMENT_AND_GET:
+                return atomicLong.decrementAndGet();
 
-    /**
-     * Gets current value of atomic long and sets new value
-     *
-     * @return Original atomic long value.
-     */
-    public long getAndSet(long val) {
-        return atomicLong.getAndSet(val);
-    }
+            case OP_GET:
+                return atomicLong.get();
 
-    /**
-     * Compares two values for equality and, if they are equal, replaces the first value.
-     *
-     * @return Original atomic long value.
-     */
-    public long compareAndSetAndGet(long expVal, long newVal) {
-        return atomicLong.compareAndSetAndGet(expVal, newVal);
-    }
+            case OP_GET_AND_DECREMENT:
+                return atomicLong.getAndDecrement();
 
-    /**
-     * Compares two values for equality and, if they are equal, replaces the first value.
-     *
-     * @return Original atomic long value.
-     */
-    public boolean compareAndSet(long cmp, long val) {
-        return atomicLong.compareAndSet(cmp, val);
-    }
+            case OP_GET_AND_INCREMENT:
+                return atomicLong.getAndIncrement();
 
-    /**
-     * Gets status of atomic.
-     *
-     * @return {@code true} if atomic was removed from cache, {@code false} in other case.
-     */
-    public boolean isClosed() {
-        return atomicLong.removed();
-    }
+            case OP_INCREMENT_AND_GET:
+                return atomicLong.incrementAndGet();
 
-    /**
-     * Removes this atomic long.
-     */
-    public void close() {
-        atomicLong.close();
+            case OP_IS_CLOSED:
+                return atomicLong.removed() ? TRUE : FALSE;
+        }
+
+        return super.processInLongOutLong(type, val);
     }
 }

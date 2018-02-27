@@ -33,7 +33,9 @@ AM_CPPFLAGS = \
     -I@top_srcdir@/jni/os/linux/include \
     -I$(JAVA_HOME)/include \
     -I$(JAVA_HOME)/include/linux \
-    -DIGNITE_IMPL
+    -DIGNITE_IMPL \
+    -D__STDC_LIMIT_MACROS \
+    -D__STDC_CONSTANT_MACROS
 
 AM_CXXFLAGS = \
     -Wall \
@@ -55,13 +57,13 @@ ignite_tests_SOURCES = \
     src/interop_memory_test.cpp \
     src/interop_test.cpp \
     src/handle_registry_test.cpp \
-	src/ignite_error_test.cpp \
+    src/ignite_error_test.cpp \
     src/binary_test_defs.cpp \
     src/binary_reader_writer_raw_test.cpp \
     src/binary_reader_writer_test.cpp \
     src/binary_session_test.cpp \
-	src/decimal_test.cpp \
-	src/dynamic_size_array_test.cpp \
+    src/decimal_test.cpp \
+    src/dynamic_size_array_test.cpp \
     src/fixed_size_array_test.cpp \
     src/transactions_test.cpp \
     src/teamcity_messages.cpp \

@@ -81,14 +81,14 @@ namespace ignite
              *
              * @param ptr Column binding offset pointer.
              */
-            void SetColumnBindOffsetPtr(size_t* ptr);
+            void SetColumnBindOffsetPtr(int* ptr);
 
             /**
              * Get column binding offset pointer.
              *
              * @return Column binding offset pointer.
              */
-            size_t* GetColumnBindOffsetPtr();
+            int* GetColumnBindOffsetPtr();
 
             /**
              * Get number of columns in the result set.
@@ -118,6 +118,25 @@ namespace ignite
             void UnbindAllParameters();
 
             /**
+             * Set statement attribute.
+             *
+             * @param attr Attribute type.
+             * @param value Value pointer.
+             * @param valueLen Value length.
+             */
+            void SetAttribute(int attr, void* value, SQLINTEGER valueLen);
+
+            /**
+             * Get statement attribute.
+             *
+             * @param attr Attribute type.
+             * @param buf Buffer for value.
+             * @param bufLen Buffer length.
+             * @param valueLen Resulting value length.
+             */
+            void GetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER *valueLen);
+
+            /**
              * Get number of binded parameters.
              *
              * @return Number of binded parameters.
@@ -129,14 +148,14 @@ namespace ignite
              *
              * @param ptr Parameter binding offset pointer.
              */
-            void SetParamBindOffsetPtr(size_t* ptr);
+            void SetParamBindOffsetPtr(int* ptr);
 
             /**
              * Get parameter binding offset pointer.
              *
              * @return Parameter binding offset pointer.
              */
-            size_t* GetParamBindOffsetPtr();
+            int* GetParamBindOffsetPtr();
 
             /**
              * Get value of the column in the result set.
@@ -328,8 +347,55 @@ namespace ignite
              */
             uint16_t* GetRowStatusesPtr();
 
+            /**
+             * Select next parameter data for which is required.
+             *
+             * @param paramPtr Pointer to param id stored here.
+             */
+            void SelectParam(void** paramPtr);
+
+            /**
+             * Puts data for previously selected parameter or column.
+             *
+             * @param data Data.
+             * @param len Data length.
+             */
+            void PutData(void* data, SqlLen len);
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(Statement);
+
+            /**
+             * Bind parameter.
+             *
+             * @param paramIdx Parameter index.
+             * @param param Parameter.
+             * @return Operation result.
+             */
+            SqlResult InternalBindParameter(uint16_t paramIdx, const app::Parameter& param);
+
+            /**
+             * Set statement attribute.
+             * Internal call.
+             *
+             * @param attr Attribute type.
+             * @param value Value pointer.
+             * @param valueLen Value length.
+             * @return Operation result.
+             */
+            SqlResult InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen);
+
+            /**
+             * Get statement attribute.
+             * Internal call.
+             *
+             * @param attr Attribute type.
+             * @param buf Buffer for value.
+             * @param bufLen Buffer length.
+             * @param valueLen Resulting value length.
+             * @return Operation result.
+             */
+            SqlResult InternalGetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen);
 
             /**
              * Get value of the column in the result set.
@@ -488,6 +554,21 @@ namespace ignite
             SqlResult InternalAffectedRows(int64_t& rowCnt);
 
             /**
+             * Select next parameter data for which is required.
+             *
+             * @param paramPtr Pointer to param id stored here.
+             */
+            SqlResult InternalSelectParam(void** paramPtr);
+
+            /**
+             * Puts data for previously selected parameter or column.
+             *
+             * @param data Data.
+             * @param len Data length.
+             */
+            SqlResult InternalPutData(void* data, SqlLen len);
+
+            /**
              * Constructor.
              * Called by friend classes.
              *
@@ -514,10 +595,13 @@ namespace ignite
             uint16_t* rowStatuses;
 
             /** Offset added to pointers to change binding of parameters. */
-            size_t* paramBindOffset;
+            int* paramBindOffset;
             
-            /* Offset added to pointers to change binding of column data. */
-            size_t* columnBindOffset;
+            /** Offset added to pointers to change binding of column data. */
+            int* columnBindOffset;
+
+            /** Index of the parameter, which is currently being set. */
+            uint16_t currentParamIdx;
         };
     }
 }

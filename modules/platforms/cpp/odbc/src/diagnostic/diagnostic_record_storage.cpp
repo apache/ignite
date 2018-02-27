@@ -102,6 +102,24 @@ namespace ignite
                 return statusRecords[idx - 1];
             }
 
+            DiagnosticRecord& DiagnosticRecordStorage::GetStatusRecord(int32_t idx)
+            {
+                return statusRecords[idx - 1];
+            }
+
+            int32_t DiagnosticRecordStorage::GetLastNonRetrieved() const
+            {
+                for (size_t i = 0; i < statusRecords.size(); ++i)
+                {
+                    const DiagnosticRecord& record = statusRecords[i];
+
+                    if (!record.IsRetrieved())
+                        return static_cast<int32_t>(i + 1);
+                }
+
+                return 0;
+            }
+
             bool DiagnosticRecordStorage::IsSuccessful() const
             {
                 return result == SQL_RESULT_SUCCESS || 
@@ -190,7 +208,7 @@ namespace ignite
 
                     case IGNITE_SQL_DIAG_STATUS_MESSAGE_TEXT:
                     {
-                        buffer.PutString(record.GetMessage());
+                        buffer.PutString(record.GetMessageText());
 
                         return SQL_RESULT_SUCCESS;
                     }

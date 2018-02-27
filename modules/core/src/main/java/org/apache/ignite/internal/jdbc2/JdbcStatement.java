@@ -95,8 +95,9 @@ public class JdbcStatement implements Statement {
 
         boolean loc = nodeId == null;
 
-        JdbcQueryTask qryTask = new JdbcQueryTask(loc ? ignite : null, conn.cacheName(),
-            sql, loc, args, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(), conn.isDistributedJoins());
+        JdbcQueryTask qryTask = JdbcQueryTaskV2.createTask(loc ? ignite : null, conn.cacheName(),
+            sql, loc, args, fetchSize, uuid, conn.isLocalQuery(), conn.isCollocatedQuery(),
+            conn.isDistributedJoins(), conn.isEnforceJoinOrder());
 
         try {
             JdbcQueryTask.QueryResult res =
@@ -121,6 +122,7 @@ public class JdbcStatement implements Statement {
         ensureNotClosed();
 
         throw new SQLFeatureNotSupportedException("Updates are not supported.");
+
     }
 
     /** {@inheritDoc} */
@@ -132,6 +134,7 @@ public class JdbcStatement implements Statement {
 
     /**
      * Marks statement as closed and closes all result sets.
+     * @throws SQLException On error.
      */
     void closeInternal() throws SQLException {
         for (Iterator<JdbcResultSet> it = resSets.iterator(); it.hasNext(); ) {

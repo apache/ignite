@@ -140,6 +140,41 @@ public class JdbcPreparedStatementSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testRepeatableUsage() throws Exception {
+        stmt = conn.prepareStatement("select * from TestObject where id = ?");
+
+        stmt.setInt(1, 1);
+
+        ResultSet rs = stmt.executeQuery();
+
+        int cnt = 0;
+
+        while (rs.next()) {
+            if (cnt == 0)
+                assertEquals(1, rs.getInt(1));
+
+            cnt++;
+        }
+
+        assertEquals(1, cnt);
+
+        cnt = 0;
+
+        rs = stmt.executeQuery();
+
+        while (rs.next()) {
+            if (cnt == 0)
+                assertEquals(1, rs.getInt(1));
+
+            cnt++;
+        }
+
+        assertEquals(1, cnt);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testBoolean() throws Exception {
         stmt = conn.prepareStatement("select * from TestObject where boolVal is not distinct from ?");
 
