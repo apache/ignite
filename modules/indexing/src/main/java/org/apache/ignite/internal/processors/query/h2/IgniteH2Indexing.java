@@ -2338,7 +2338,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @Override public void checkStatementStreamable(PreparedStatement nativeStmt) {
         if (!GridSqlQueryParser.isStreamableInsertStatement(nativeStmt))
-            throw new IgniteSQLException("Streaming mode supports only INSERT commands without subqueries.",
+            throw new IgniteSQLException("Only tuple based INSERT statements are supported in streaming mode.",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
