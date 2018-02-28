@@ -167,10 +167,7 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
         if (isSsl())
             cfg.setSslContextFactory(GridTestUtils.sslFactory());
 
-        TcpCommunicationSpi tcpSpi = new TcpCommunicationSpi();
-        tcpSpi.setCompressionType(compressionType());
-//        tcpSpi.setCompressionType(compressionType());
-        cfg.setCommunicationSpi(tcpSpi);
+        cfg.setCompressionType(compressionType());
 
         return cfg;
     }
