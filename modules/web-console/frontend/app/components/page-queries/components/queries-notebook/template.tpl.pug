@@ -49,8 +49,10 @@ mixin chart-settings
             +result-toolbar
 
 mixin notebook-rename
-    div(class='back-to-notebooks')
-        a(ui-sref='base.sql.tabs.notebooks-list') Back to notebooks
+    breadcrumbs
+        a.link-success(ui-sref='^.') Notebooks
+        span(ui-sref='.' ui-sref-active) Notebook '{{notebook.name}}'
+
     .docs-header.notebook-header
         h1.col-sm-6(ng-hide='notebook.edit')
             label(style='max-width: calc(100% - 60px)') {{notebook.name}}

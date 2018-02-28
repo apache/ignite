@@ -16,11 +16,12 @@
  */
 
 queries-notebook {
-    .back-to-notebooks {
+    breadcrumbs {
         margin-bottom: 20px;
+        padding-left: 0;
 
-        a {
-            color: #0067b9
+        .breadcrumbs__home {
+            margin-left: 0 !important;
         }
     }
 
