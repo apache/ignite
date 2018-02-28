@@ -21,7 +21,9 @@ import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 
-import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
+import static org.apache.ignite.internal.sql.SqlParserUtils.error;
+import static org.apache.ignite.internal.sql.SqlParserUtils.parseBooleanParameter;
+import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
 
 /**
  * SET STREAMING command.
@@ -30,25 +32,80 @@ public class SqlSetStreamingCommand implements SqlCommand {
     /** Whether streaming must be turned on or off by this command. */
     private boolean turnOn;
 
+    /** Whether existing values should be overwritten on keys duplication. */
+    private boolean allowOverwrite;
+
+    /** Batch size for driver. */
+    private int batchSize;
+
+    /** Per node number of parallel operations. */
+    private int parOps;
+
+    /** Per node buffer size. */
+    private int bufSize;
+
+    /** Streamer flush timeout. */
+    private long flushFreq;
+
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
-        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
-            switch (lex.token()) {
-                case SqlKeyword.ON:
-                case "1":
-                    turnOn = true;
+        turnOn = parseBooleanParameter(lex);
 
-                    return this;
+        while (lex.lookAhead().tokenType() == SqlLexerTokenType.DEFAULT) {
+            switch (lex.lookAhead().token()) {
+                case SqlKeyword.ALLOW_OVERWRITE:
+                    lex.shift();
 
-                case SqlKeyword.OFF:
-                case "0":
-                    turnOn = false;
+                    allowOverwrite = parseBooleanParameter(lex);
 
+                    break;
+
+                case SqlKeyword.PER_NODE_PARALLEL_OPERATIONS:
+                    lex.shift();
+
+                    parOps = parseInt(lex);
+
+                    if (parOps <= 0)
+                        throw error(lex, "Invalid per node parallel operations number - must be positive.");
+
+                    break;
+
+                case SqlKeyword.BATCH_SIZE:
+                    lex.shift();
+
+                    batchSize = parseInt(lex);
+
+                    if (batchSize <= 0)
+                        throw error(lex, "Invalid driver batch size - must be positive.");
+
+                    break;
+
+                case SqlKeyword.FLUSH_FREQUENCY:
+                    lex.shift();
+
+                    flushFreq = parseInt(lex);
+
+                    if (flushFreq <= 0)
+                        throw error(lex, "Invalid streamer flush frequency - must be positive.");
+
+                    break;
+
+                case SqlKeyword.PER_NODE_BUFFER_SIZE:
+                    lex.shift();
+
+                    bufSize = parseInt(lex);
+
+                    if (bufSize <= 0)
+                        throw error(lex, "Invalid per node buffer size - must be positive.");
+
+                    break;
+
+                default:
                     return this;
             }
         }
 
-        throw errorUnexpectedToken(lex, SqlKeyword.ON, SqlKeyword.OFF, "1", "0");
+        return this;
     }
 
     /**
@@ -56,6 +113,41 @@ public class SqlSetStreamingCommand implements SqlCommand {
      */
     public boolean isTurnOn() {
         return turnOn;
+    }
+
+    /**
+     * @return Whether existing values should be overwritten on keys duplication.
+     */
+    public boolean isAllowOverwrite() {
+        return allowOverwrite;
+    }
+
+    /**
+     * @return Batch size for driver.
+     */
+    public int batchSize() {
+        return batchSize;
+    }
+
+    /**
+     * @return Per node number of parallel operations.
+     */
+    public int perNodeParallelOperations() {
+        return parOps;
+    }
+
+    /**
+     * @return Per node streamer buffer size.
+     */
+    public int perNodeBufferSize() {
+        return bufSize;
+    }
+
+    /**
+     * @return Streamer flush timeout
+     */
+    public long flushFrequency() {
+        return flushFreq;
     }
 
     /** {@inheritDoc} */

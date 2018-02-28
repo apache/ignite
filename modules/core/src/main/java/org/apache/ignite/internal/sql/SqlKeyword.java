@@ -29,8 +29,14 @@ public class SqlKeyword {
     /** Keyword: ALTER. */
     public static final String ALTER = "ALTER";
 
+    /** Keyword: ALLOW_OVERWRITE */
+    public static final String ALLOW_OVERWRITE = "ALLOW_OVERWRITE";
+
     /** Keyword: ASC. */
     public static final String ASC = "ASC";
+
+    /** Keyword: BATCH_SIZE */
+    public static final String BATCH_SIZE = "BATCH_SIZE";
 
     /** Keyword: BIGINT */
     public static final String BIGINT = "BIGINT";
@@ -94,6 +100,9 @@ public class SqlKeyword {
 
     /** Keyword: FLOAT8. */
     public static final String FLOAT8 = "FLOAT8";
+
+    /** Keyword: FLUSH_FREQUENCY. */
+    public static final String FLUSH_FREQUENCY = "FLUSH_FREQUENCY";
 
     /** Keyword: FORMAT. */
     public static final String FORMAT = "FORMAT";
@@ -172,6 +181,12 @@ public class SqlKeyword {
 
     /** Keyword: ON. */
     public static final String ON = "ON";
+
+    /** Keyword: PER_NODE_PARALLEL_OPERATIONS. */
+    public static final String PER_NODE_PARALLEL_OPERATIONS = "PER_NODE_PARALLEL_OPERATIONS";
+
+    /** Keyword: PER_NODE_BUFFER_SIZE. */
+    public static final String PER_NODE_BUFFER_SIZE = "PER_NODE_BUFFER_SIZE";
 
     /** Keyword: PRECISION. */
     public static final String PRECISION = "PRECISION";

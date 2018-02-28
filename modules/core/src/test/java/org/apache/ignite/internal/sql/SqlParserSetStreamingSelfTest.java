@@ -28,11 +28,18 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
      *
      */
     public void testParseSetStreaming() {
-        parseValidate("set streaming on", true);
-        parseValidate("set streaming 1", true);
-        parseValidate("set streaming off", false);
-        parseValidate("set streaming 0", false);
-        parseValidate("set streaming on;", true);
+        parseValidate("set streaming on", true, false, 0, 0, 0, 0);
+        parseValidate("set streaming 1", true, false, 0, 0, 0, 0);
+        parseValidate("set streaming off", false, false, 0, 0, 0, 0);
+        parseValidate("set streaming 0", false, false, 0, 0, 0, 0);
+        parseValidate("set streaming on batch_size 100", true, false, 100, 0, 0, 0);
+        parseValidate("set streaming on flush_frequency 500", true, false, 0, 0, 0, 500);
+        parseValidate("set streaming on per_node_buffer_size 100", true, false, 0, 0, 100, 0);
+        parseValidate("set streaming on per_node_parallel_operations 4", true, false, 0, 4, 0, 0);
+        parseValidate("set streaming on allow_overwrite on", true, true, 0, 0, 0, 0);
+        parseValidate("set streaming on allow_overwrite off", true, false, 0, 0, 0, 0);
+        parseValidate("set streaming on per_node_buffer_size 50 flush_frequency 500 " +
+            "per_node_parallel_operations 4 allow_overwrite on batch_size 100", true, true, 100, 4, 50, 500);
 
         assertParseError(QueryUtils.DFLT_SCHEMA, "set",
             "Failed to parse SQL statement \"set[*]\": Unexpected end of command (expected: \"STREAMING\")");
@@ -52,6 +59,26 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
         assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming 500",
             "Failed to parse SQL statement \"set streaming [*]500\": Unexpected token: \"500\" (expected: " +
                 "\"ON\", \"OFF\", \"1\", \"0\")");
+
+        assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming off allow_overwrite",
+            "set streaming off allow_overwrite[*]\": Unexpected end of command (expected: \"ON\", \"OFF\", \"1\", " +
+                "\"0\")");
+
+        assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming 1 batch_size",
+            "Failed to parse SQL statement \"set streaming 1 batch_size[*]\": Unexpected end of command " +
+                "(expected: \"[integer]\")");
+
+        assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming on per_node_parallel_operations -4",
+            "Failed to parse SQL statement \"set streaming on per_node_parallel_operations -[*]4\": " +
+                "Invalid per node parallel operations number - must be positive.");
+
+        assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming on per_node_buffer_size -4",
+            "Failed to parse SQL statement \"set streaming on per_node_buffer_size -[*]4\": " +
+                "Invalid per node buffer size - must be positive.");
+
+        assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming on flush_frequency -4",
+            "Failed to parse SQL statement \"set streaming on flush_frequency -[*]4\": " +
+                "Invalid streamer flush frequency - must be positive.");
     }
 
     /**
@@ -59,10 +86,26 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
      *
      * @param sql SQL.
      * @param expOn Expected return value of {@link  SqlSetStreamingCommand#turnOn}.
+     * @param expAllowOverwrite Expected return value of {@link  SqlSetStreamingCommand#allowOverwrite}.
+     * @param expBatchSize Expected return value of {@link  SqlSetStreamingCommand#batchSize}.
+     * @param expParOps Expected return value of {@link  SqlSetStreamingCommand#parOps}.
+     * @param expBufSize Expected return value of {@link  SqlSetStreamingCommand#bufSize}.
+     * @param expFlushFreq Expected return value of {@link  SqlSetStreamingCommand#flushFreq}.
      */
-    private static void parseValidate(String sql, boolean expOn) {
+    private static void parseValidate(String sql, boolean expOn, boolean expAllowOverwrite, int expBatchSize,
+        int expParOps, int expBufSize, long expFlushFreq) {
         SqlSetStreamingCommand cmd = (SqlSetStreamingCommand)new SqlParser(QueryUtils.DFLT_SCHEMA, sql).nextCommand();
 
         assertEquals(expOn, cmd.isTurnOn());
+
+        assertEquals(expAllowOverwrite, cmd.isAllowOverwrite());
+
+        assertEquals(expBatchSize, cmd.batchSize());
+
+        assertEquals(expParOps, cmd.perNodeParallelOperations());
+
+        assertEquals(expBufSize, cmd.perNodeBufferSize());
+
+        assertEquals(expFlushFreq, cmd.flushFrequency());
     }
 }
