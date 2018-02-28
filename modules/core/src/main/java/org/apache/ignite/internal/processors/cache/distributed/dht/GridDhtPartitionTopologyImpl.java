@@ -2462,6 +2462,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             return IntStream.range(0, locParts.length())
                     .filter(part -> locParts.get(part) != null)
                     .mapToObj(locParts::get)
+                    .filter(part -> part.fullSize() != 0)
                     .collect(Collectors.toMap(GridDhtLocalPartition::id, GridDhtLocalPartition::fullSize));
         }
         finally {

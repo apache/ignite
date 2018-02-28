@@ -2472,6 +2472,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
+            validatePartitionsState();
+
             if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 assert firstDiscoEvt instanceof DiscoveryCustomEvent;
 
@@ -2656,6 +2658,33 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Validates that partition update counters and cache sizes for all caches are consistent.
+     */
+    private void validatePartitionsState() {
+        for (Map.Entry<Integer, CacheGroupDescriptor> e : cctx.affinity().cacheGroups().entrySet()) {
+            CacheGroupDescriptor grpDesc = e.getValue();
+            if (grpDesc.config().getCacheMode() == CacheMode.LOCAL)
+                continue;
+
+            int grpId = e.getKey();
+
+            CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpId);
+
+            GridDhtPartitionTopology top = grpCtx != null ?
+                    grpCtx.topology() :
+                    cctx.exchange().clientTopology(grpId, events().discoveryCache());
+
+            try {
+                validator.validatePartitionCountersAndSizes(this, top, msgs);
+            }
+            catch (IgniteCheckedException ex) {
+                U.error(log, "Partition states validation was failed for cache " + grpDesc.cacheOrGroupName(), ex);
+                // TODO: Handle such errors https://issues.apache.org/jira/browse/IGNITE-7833
+            }
+        }
+    }
+
+    /**
      *
      */
     private void assignPartitionsStates() {
@@ -2672,14 +2701,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             GridDhtPartitionTopology top = grpCtx != null ?
                 grpCtx.topology() :
                 cctx.exchange().clientTopology(e.getKey(), events().discoveryCache());
-
-            try {
-                validator.validatePartitionCountersAndSizes(this, top, msgs);
-            }
-            catch (IgniteCheckedException ex) {
-                U.error(log, "Partition states validation was failed for cache " + grpDesc.cacheOrGroupName(), ex);
-                // TODO: Handle such errors https://issues.apache.org/jira/browse/IGNITE-7833
-            }
 
             assignPartitionStates(top);
         }

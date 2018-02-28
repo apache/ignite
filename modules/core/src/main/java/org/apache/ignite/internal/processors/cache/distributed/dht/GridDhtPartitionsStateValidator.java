@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -97,17 +98,17 @@ public class GridDhtPartitionsStateValidator {
             Set<UUID> ignoringNodes) {
         Map<Integer, Map<UUID, Long>> invalidPartitions = new HashMap<>();
 
-        Map<Integer, Long> updateCountersByPartitions = new HashMap<>();
-        Map<Integer, UUID> updateCounterNodesByPartitions = new HashMap<>();
+        Map<Integer, T2<UUID, Long>> updateCountersAndNodesByPartitions = new HashMap<>();
 
         // Populate counters statistics from local node partitions.
         for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
             if (top.partitionState(cctx.localNodeId(), part.id()) != GridDhtPartitionState.OWNING)
                 continue;
 
-            updateCountersByPartitions.put(part.id(), part.updateCounter());
-            updateCounterNodesByPartitions.put(part.id(), cctx.localNodeId());
+            updateCountersAndNodesByPartitions.put(part.id(), new T2<>(cctx.localNodeId(), part.updateCounter()));
         }
+
+        int partitions = top.partitions();
 
         // Then process and validate counters from other nodes.
         for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : messages.entrySet()) {
@@ -115,35 +116,16 @@ public class GridDhtPartitionsStateValidator {
             if (ignoringNodes.contains(nodeId))
                 continue;
 
-            GridDhtPartitionsSingleMessage msg = e.getValue();
-            CachePartitionPartialCountersMap countersMap = msg.partitionUpdateCounters(top.groupId(), top.partitions());
+            CachePartitionPartialCountersMap countersMap = e.getValue().partitionUpdateCounters(top.groupId(), partitions);
 
-            for (int i = 0; i < countersMap.size(); i++) {
-                int part = countersMap.partitionAt(i);
-
+            for (int part = 0; part < partitions; part++) {
                 if (top.partitionState(nodeId, part) != GridDhtPartitionState.OWNING)
                     continue;
 
-                long currentCounter = countersMap.updateCounterAt(i);
+                int partIdx = countersMap.partitionIndex(part);
+                long currentCounter = partIdx >= 0 ? countersMap.updateCounterAt(partIdx) : 0;
 
-                Long existingCounter = updateCountersByPartitions.get(part);
-                if (existingCounter == null) {
-                    updateCountersByPartitions.put(part, currentCounter);
-                    updateCounterNodesByPartitions.put(part, nodeId);
-                }
-                else {
-                    if (existingCounter != currentCounter) {
-                        UUID existingNodeId = updateCounterNodesByPartitions.get(part);
-
-                        invalidPartitions.computeIfAbsent(part, p -> {
-                            Map<UUID, Long> counters = new HashMap<>();
-                            counters.put(existingNodeId, existingCounter);
-                            return counters;
-                        });
-
-                        invalidPartitions.get(part).put(nodeId, currentCounter);
-                    }
-                }
+                process(invalidPartitions, updateCountersAndNodesByPartitions, part, nodeId, currentCounter);
             }
         }
 
@@ -165,56 +147,65 @@ public class GridDhtPartitionsStateValidator {
             Set<UUID> ignoringNodes) {
         Map<Integer, Map<UUID, Long>> invalidPartitions = new HashMap<>();
 
-        Map<Integer, Long> sizesByPartitions = new HashMap<>();
-        Map<Integer, UUID> sizeNodesByPartitions = new HashMap<>();
+        Map<Integer, T2<UUID, Long>> sizesAndNodesByPartitions = new HashMap<>();
 
         // Populate sizes statistics from local node partitions.
         for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
             if (top.partitionState(cctx.localNodeId(), part.id()) != GridDhtPartitionState.OWNING)
                 continue;
 
-            sizesByPartitions.put(part.id(), part.fullSize());
-            sizeNodesByPartitions.put(part.id(), cctx.localNodeId());
+            sizesAndNodesByPartitions.put(part.id(), new T2<>(cctx.localNodeId(), part.fullSize()));
         }
 
-        // Then process and validate counters from other nodes.
+        int partitions = top.partitions();
+
+        // Then process and validate sizes from other nodes.
         for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : messages.entrySet()) {
             UUID nodeId = e.getKey();
             if (ignoringNodes.contains(nodeId))
                 continue;
 
-            GridDhtPartitionsSingleMessage msg = e.getValue();
-            Map<Integer, Long> sizesMap = msg.partitionSizes(top.groupId());
-            for (Map.Entry<Integer, Long> entry : sizesMap.entrySet()) {
-                int part = entry.getKey();
+            Map<Integer, Long> sizesMap = e.getValue().partitionSizes(top.groupId());
 
+            for (int part = 0; part < partitions; part++) {
                 if (top.partitionState(nodeId, part) != GridDhtPartitionState.OWNING)
                     continue;
 
-                long currentSize = entry.getValue();
+                long currentSize = sizesMap.getOrDefault(part, 0L);
 
-                Long existingSize = sizesByPartitions.get(part);
-                if (existingSize == null) {
-                    sizesByPartitions.put(part, currentSize);
-                    sizeNodesByPartitions.put(part, nodeId);
-                }
-                else {
-                    if (existingSize != currentSize) {
-                        UUID existingNodeId = sizeNodesByPartitions.get(part);
-
-                        invalidPartitions.computeIfAbsent(part, p -> {
-                            Map<UUID, Long> counters = new HashMap<>();
-                            counters.put(existingNodeId, existingSize);
-                            return counters;
-                        });
-
-                        invalidPartitions.get(part).put(nodeId, currentSize);
-                    }
-                }
+                process(invalidPartitions, sizesAndNodesByPartitions, part, nodeId, currentSize);
             }
         }
 
         return invalidPartitions;
+    }
+
+    /**
+     * Processes given {@code counter} for partition {@code part} reported by {@code node}.
+     * Populates {@code invalidPartitions} map if existing counter and current {@code counter} are different.
+     *
+     * @param invalidPartitions Invalid partitions map.
+     * @param countersAndNodes Current map of counters and nodes by partitions.
+     * @param part Processing partition.
+     * @param node Node id.
+     * @param counter Counter value reported by {@code node}.
+     */
+    private void process(Map<Integer, Map<UUID, Long>> invalidPartitions,
+                         Map<Integer, T2<UUID, Long>> countersAndNodes,
+                         int part,
+                         UUID node,
+                         long counter) {
+        T2<UUID, Long> existingData = countersAndNodes.putIfAbsent(part, new T2<>(node, counter));
+
+        if (existingData != null && counter != existingData.get2()) {
+            invalidPartitions.computeIfAbsent(part, p -> {
+                Map<UUID, Long> map = new HashMap<>();
+                map.put(existingData.get1(), existingData.get2());
+                return map;
+            });
+
+            invalidPartitions.get(part).put(node, counter);
+        }
     }
 
     /**

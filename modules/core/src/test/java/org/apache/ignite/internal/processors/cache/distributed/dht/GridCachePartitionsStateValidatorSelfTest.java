@@ -98,11 +98,10 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         UUID remoteNode = UUID.randomUUID();
         UUID ignoreNode = UUID.randomUUID();
 
-        // For partitions 0 and 2 we have inconsistent update counters.
+        // For partitions 0 and 2 (zero counter) we have inconsistent update counters.
         Map<Integer, T2<Long, Long>> updateCountersMap = new HashMap<>();
         updateCountersMap.put(0, new T2<>(2L, 2L));
         updateCountersMap.put(1, new T2<>(2L, 2L));
-        updateCountersMap.put(2, new T2<>(2L, 2L));
 
         // Form single messages map.
         Map<UUID, GridDhtPartitionsSingleMessage> messages = new HashMap<>();
@@ -121,7 +120,7 @@ public class GridCachePartitionsStateValidatorSelfTest extends GridCommonAbstrac
         Assert.assertTrue(result.get(0).get(localNodeId) == 1L);
         Assert.assertTrue(result.get(0).get(remoteNode) == 2L);
         Assert.assertTrue(result.get(2).get(localNodeId) == 3L);
-        Assert.assertTrue(result.get(2).get(remoteNode) == 2L);
+        Assert.assertTrue(result.get(2).get(remoteNode) == 0L);
     }
 
     /**

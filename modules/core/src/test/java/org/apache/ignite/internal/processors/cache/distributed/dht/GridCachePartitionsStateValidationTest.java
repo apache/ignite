@@ -19,8 +19,6 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -36,9 +34,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        cfg.setDataStorageConfiguration(new DataStorageConfiguration().setDefaultDataRegionConfiguration(
-                new DataRegionConfiguration().setPersistenceEnabled(true)
-        ));
+        cfg.setConsistentId(igniteInstanceName);
 
         cfg.setCacheConfiguration(new CacheConfiguration(CACHE_NAME)
                 .setBackups(1)
@@ -51,15 +47,11 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
     /** {@inheritDoc */
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
-
-        cleanPersistenceDir();
     }
 
     /** {@inheritDoc */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
-
-        cleanPersistenceDir();
     }
 
     /**
