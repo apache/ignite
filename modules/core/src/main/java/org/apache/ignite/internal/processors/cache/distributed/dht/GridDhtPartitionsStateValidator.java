@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsSingleMessage;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.lang.IgniteProductVersion;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 
@@ -37,6 +38,9 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
  * Class to validate partitions update counters and cache sizes during exchange process.
  */
 public class GridDhtPartitionsStateValidator {
+    /** Version since node is able to send cache sizes in {@link GridDhtPartitionsSingleMessage}. */
+    private static final IgniteProductVersion SIZES_VALIDATION_AVAILABLE_SINCE = IgniteProductVersion.fromString("2.4.0");
+
     /** Cache shared context. */
     private final GridCacheSharedContext<?, ?> cctx;
 
@@ -76,6 +80,14 @@ public class GridDhtPartitionsStateValidator {
         Map<Integer, Map<UUID, Long>> result = validatePartitionsUpdateCounters(top, messages, ignoringNodes);
         if (!result.isEmpty())
             throw new IgniteCheckedException("Partitions update counters are inconsistent for " + fold(topVer, result));
+
+        // For sizes validation ignore also nodes which are not able to send cache sizes.
+        ignoringNodes.addAll(
+                messages.keySet()
+                        .stream()
+                        .filter(node -> cctx.discovery().node(topVer, node).version().compareTo(SIZES_VALIDATION_AVAILABLE_SINCE) < 0)
+                        .collect(Collectors.toList())
+        );
 
         // Validate cache sizes.
         result = validatePartitionsSizes(top, messages, ignoringNodes);
