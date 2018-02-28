@@ -160,7 +160,6 @@ public class QueryFactory {
             if (vi % 2 == 1)
                 stmt.setLong(qryIdx, nextVal);
             else
-                // todo: it's possible to pre-generate values
                 stmt.setString(qryIdx, String.valueOf(nextVal));
         }
     }

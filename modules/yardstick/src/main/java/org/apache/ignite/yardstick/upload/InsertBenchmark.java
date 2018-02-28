@@ -40,6 +40,7 @@ public class InsertBenchmark extends AbstractUploadBenchmark {
     /** Sequence of single inserts */
     @Override public void upload (Connection uploadConn) throws Exception {
         for (int id = 1; id <= insertRowsCnt; id++) {
+            // TODO: Prepared statement should be created only once.
             try (PreparedStatement insert = uploadConn.prepareStatement(queries.insert())) {
                 queries.setRandomInsertArgs(insert, id);
 
