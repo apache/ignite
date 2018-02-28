@@ -103,13 +103,6 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 10 * 60_000;
     }
@@ -183,7 +176,7 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
         final TransactionConcurrency concurrency,
         final TransactionIsolation isolation) throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-627");
-        
+
         log.info("Execute updates [concurrency=" + concurrency + ", isolation=" + isolation + ']');
 
         final Ignite ignite0 = ignite(0);

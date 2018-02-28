@@ -222,8 +222,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        initStoreStrategy();
-
         if (cacheStartType() == CacheStartMode.STATIC)
             super.beforeTestsStarted();
         else {
