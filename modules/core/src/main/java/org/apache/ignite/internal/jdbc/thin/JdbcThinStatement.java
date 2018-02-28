@@ -79,9 +79,6 @@ public class JdbcThinStatement implements Statement {
     /** Result set  holdability*/
     private final int resHoldability;
 
-    /** Batch size to keep track of number of items to return as fake update counters for executeBatch. */
-    protected int batchSize;
-
     /** Batch. */
     protected List<JdbcQuery> batch;
 
@@ -136,19 +133,6 @@ public class JdbcThinStatement implements Statement {
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty.");
 
-        if (conn.isStream()) {
-            if (stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE)
-                throw new SQLException("executeQuery() method is not allowed in streaming mode.",
-                    SqlStateCode.INTERNAL_ERROR,
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-            conn.addBatch(sql, args);
-
-            resultSets = Collections.singletonList(resultSetForUpdate(0));
-
-            return;
-        }
-
         JdbcResult res0 = conn.sendRequest(new JdbcQueryExecuteRequest(stmtType, schema, pageSize,
             maxRows, sql, args == null ? null : args.toArray(new Object[args.size()])));
 
@@ -174,8 +158,11 @@ public class JdbcThinStatement implements Statement {
             boolean firstRes = true;
 
             for(JdbcResultInfo rsInfo : resInfos) {
-                if (!rsInfo.isQuery())
-                    resultSets.add(resultSetForUpdate(rsInfo.updateCount()));
+                if (!rsInfo.isQuery()) {
+                    resultSets.add(new JdbcThinResultSet(this, -1, pageSize,
+                        true, Collections.<List<Object>>emptyList(), false,
+                        conn.autoCloseServerCursor(), rsInfo.updateCount(), closeOnCompletion));
+                }
                 else {
                     if (firstRes) {
                         firstRes = false;
@@ -196,16 +183,6 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("Unexpected result [res=" + res0 + ']');
 
         assert resultSets.size() > 0 : "At least one results set is expected";
-    }
-
-    /**
-     * @param cnt Update counter.
-     * @return Result set for given update counter.
-     */
-    private JdbcThinResultSet resultSetForUpdate(long cnt) {
-        return new JdbcThinResultSet(this, -1, pageSize,
-            true, Collections.<List<Object>>emptyList(), false,
-            conn.autoCloseServerCursor(), cnt, closeOnCompletion);
     }
 
     /**
@@ -492,14 +469,6 @@ public class JdbcThinStatement implements Statement {
     @Override public void addBatch(String sql) throws SQLException {
         ensureNotClosed();
 
-        batchSize++;
-
-        if (conn.isStream()) {
-            conn.addBatch(sql, null);
-
-            return;
-        }
-
         if (batch == null)
             batch = new ArrayList<>();
 
@@ -510,8 +479,6 @@ public class JdbcThinStatement implements Statement {
     @Override public void clearBatch() throws SQLException {
         ensureNotClosed();
 
-        batchSize = 0;
-
         batch = null;
     }
 
@@ -520,14 +487,6 @@ public class JdbcThinStatement implements Statement {
         ensureNotClosed();
 
         closeResults();
-
-        if (conn.isStream()) {
-            int[] res = new int[batchSize];
-
-            batchSize = 0;
-
-            return res;
-        }
 
         if (batch == null || batch.isEmpty())
             throw new SQLException("Batch is empty.");
@@ -543,8 +502,6 @@ public class JdbcThinStatement implements Statement {
             return res.updateCounts();
         }
         finally {
-            batchSize = 0;
-
             batch = null;
         }
     }

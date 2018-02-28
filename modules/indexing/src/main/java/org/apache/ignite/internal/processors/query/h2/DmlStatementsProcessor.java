@@ -385,7 +385,6 @@ public class DmlStatementsProcessor {
     /**
      * Perform given statement against given data streamer. Only rows based INSERT is supported.
      *
-     * @param schemaName Schema name.
      * @param streamer Streamer to feed data to.
      * @param stmt Statement.
      * @param args Statement arguments.
@@ -393,74 +392,81 @@ public class DmlStatementsProcessor {
      * @throws IgniteCheckedException if failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    long streamUpdateQuery(String schemaName, IgniteDataStreamer streamer, PreparedStatement stmt, final Object[] args)
+    long streamUpdateQuery(IgniteDataStreamer streamer, PreparedStatement stmt, final Object[] args)
         throws IgniteCheckedException {
-        idx.checkStatementStreamable(stmt);
-
         Prepared p = GridSqlQueryParser.prepared(stmt);
 
         assert p != null;
 
-        final UpdatePlan plan = getPlanForStatement(schemaName, null, p, null, true, null);
+        final UpdatePlan plan = UpdatePlanBuilder.planForStatement(p, true, idx, null, null, null);
 
-        assert plan.isLocalSubquery();
+        if (!F.eq(streamer.cacheName(), plan.cacheContext().name()))
+            throw new IgniteSQLException("Cross cache streaming is not supported, please specify cache explicitly" +
+                " in connection options", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
-        final GridCacheContext cctx = plan.cacheContext();
+        if (plan.mode() == UpdateMode.INSERT && plan.rowCount() > 0) {
+            assert plan.isLocalSubquery();
 
-        QueryCursorImpl<List<?>> cur;
+            final GridCacheContext cctx = plan.cacheContext();
 
-        final ArrayList<List<?>> data = new ArrayList<>(plan.rowCount());
+            QueryCursorImpl<List<?>> cur;
 
-        QueryCursorImpl<List<?>> stepCur = new QueryCursorImpl<>(new Iterable<List<?>>() {
-            @Override public Iterator<List<?>> iterator() {
-                try {
-                    Iterator<List<?>> it;
+            final ArrayList<List<?>> data = new ArrayList<>(plan.rowCount());
 
-                    if (!F.isEmpty(plan.selectQuery())) {
-                        GridQueryFieldsResult res = idx.queryLocalSqlFields(idx.schema(cctx.name()),
-                            plan.selectQuery(), F.asList(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)),
-                            null, false, 0, null);
+            QueryCursorImpl<List<?>> stepCur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+                @Override public Iterator<List<?>> iterator() {
+                    try {
+                        Iterator<List<?>> it;
 
-                        it = res.iterator();
+                        if (!F.isEmpty(plan.selectQuery())) {
+                            GridQueryFieldsResult res = idx.queryLocalSqlFields(idx.schema(cctx.name()),
+                                plan.selectQuery(), F.asList(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)),
+                                null, false, 0, null);
+
+                            it = res.iterator();
+                        }
+                        else
+                            it = plan.createRows(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)).iterator();
+
+                        return new GridQueryCacheObjectsIterator(it, idx.objectContext(), cctx.keepBinary());
                     }
-                    else
-                        it = plan.createRows(U.firstNotNull(args, X.EMPTY_OBJECT_ARRAY)).iterator();
-
-                    return new GridQueryCacheObjectsIterator(it, idx.objectContext(), cctx.keepBinary());
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
                 }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteException(e);
+            }, null);
+
+            data.addAll(stepCur.getAll());
+
+            cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
+                @Override public Iterator<List<?>> iterator() {
+                    return data.iterator();
                 }
+            }, null);
+
+            if (plan.rowCount() == 1) {
+                IgniteBiTuple t = plan.processRow(cur.iterator().next());
+
+                streamer.addData(t.getKey(), t.getValue());
+
+                return 1;
             }
-        }, null);
 
-        data.addAll(stepCur.getAll());
+            Map<Object, Object> rows = new LinkedHashMap<>(plan.rowCount());
 
-        cur = new QueryCursorImpl<>(new Iterable<List<?>>() {
-            @Override public Iterator<List<?>> iterator() {
-                return data.iterator();
+            for (List<?> row : cur) {
+                final IgniteBiTuple t = plan.processRow(row);
+
+                rows.put(t.getKey(), t.getValue());
             }
-        }, null);
 
-        if (plan.rowCount() == 1) {
-            IgniteBiTuple t = plan.processRow(cur.iterator().next());
+            streamer.addData(rows);
 
-            streamer.addData(t.getKey(), t.getValue());
-
-            return 1;
+            return rows.size();
         }
-
-        Map<Object, Object> rows = new LinkedHashMap<>(plan.rowCount());
-
-        for (List<?> row : cur) {
-            final IgniteBiTuple t = plan.processRow(row);
-
-            rows.put(t.getKey(), t.getValue());
-        }
-
-        streamer.addData(rows);
-
-        return rows.size();
+        else
+            throw new IgniteSQLException("Only tuple based INSERT statements are supported in streaming mode",
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**
@@ -513,7 +519,7 @@ public class DmlStatementsProcessor {
                 .setPageSize(fieldsQry.getPageSize())
                 .setTimeout(fieldsQry.getTimeout(), TimeUnit.MILLISECONDS);
 
-            cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schemaName, newFieldsQry, null, true, true,
+            cur = (QueryCursorImpl<List<?>>)idx.querySqlFields(schemaName, newFieldsQry, true, true,
                 cancel).get(0);
         }
         else if (plan.hasRows())
@@ -604,7 +610,7 @@ public class DmlStatementsProcessor {
      * @return Update plan.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    UpdatePlan getPlanForStatement(String schema, Connection conn, Prepared p, SqlFieldsQuery fieldsQry,
+    private UpdatePlan getPlanForStatement(String schema, Connection conn, Prepared p, SqlFieldsQuery fieldsQry,
         boolean loc, @Nullable Integer errKeysPos) throws IgniteCheckedException {
         H2CachedStatementKey planKey = H2CachedStatementKey.forDmlStatement(schema, p.getSQL(), fieldsQry, loc);
 
