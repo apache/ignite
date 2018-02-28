@@ -939,6 +939,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         else if (req.activate()) {
             // TODO: BLT changes on inactive cluster can't be handled easily because persistent storage hasn't been initialized yet.
             try {
+                if (!forceAffReassignment) {
+                    // possible only if cluster contains nodes without forceAffReassignment mode
+                    assert firstEventCache().minimumNodeVersion()
+                        .compareToIgnoreTimestamp(FORCE_AFF_REASSIGNMENT_SINCE) < 0
+                        : firstEventCache().minimumNodeVersion();
+
+                    cctx.affinity().onBaselineTopologyChanged(this, crd);
+                }
+
                 if (CU.isPersistenceEnabled(cctx.kernalContext().config()) && !cctx.kernalContext().clientNode())
                     cctx.kernalContext().state().onBaselineTopologyChanged(req.baselineTopology(),
                         req.prevBaselineTopologyHistoryItem());
