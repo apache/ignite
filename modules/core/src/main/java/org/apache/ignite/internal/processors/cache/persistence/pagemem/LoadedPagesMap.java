@@ -16,8 +16,6 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import org.apache.ignite.internal.util.lang.GridPredicate3;
-
 /**
  * Interface for storing correspondence of page id in a cache group
  * ->long value (address in offheap segment). Map support versioning of entries.
@@ -90,9 +88,23 @@ public interface LoadedPagesMap {
 
     /**
      * @param idx Index to clear value at. Bounded with {@link #capacity()}.
-     * @param pred Test predicate.
-     * @param absent Value to return if the cell is empty.
-     * @return Value at the given index.
+     * @param keyPred Test predicate for (cache group ID, page ID).
+     * @param absent Value to return if the cell is empty or key is not matching provided predicate.
+     * @return Value at the given index or {@code absent} for empty cell or not mathing.
      */
-    public long clearAt(int idx, GridPredicate3<Integer, Long, Integer> pred, long absent);
+    public long clearAt(int idx, KeyPredicate keyPred, long absent);
+
+    /**
+     * Interface describing a predicate for Key (cache group ID, page ID). Usage of this predicate prevents odd object
+     * creation.
+     */
+    @FunctionalInterface public interface KeyPredicate {
+        /**
+         * Predicate body.
+         *
+         * @param grpId Cache group ID.
+         * @param pageId Page ID.
+         */
+        boolean test(int grpId, long pageId);
+    }
 }

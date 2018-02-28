@@ -47,13 +47,16 @@ public class RobinHoodHashTest {
         long memSize = RobinHoodBackwardShiftHashMap.requiredMemoryByBuckets(cap);
         long addr = GridUnsafe.allocateMemory(memSize);
 
-        RobinHoodBackwardShiftHashMap map
-            = new RobinHoodBackwardShiftHashMap(addr, memSize);
+        RobinHoodBackwardShiftHashMap map = new RobinHoodBackwardShiftHashMap(addr, memSize);
+        boolean success = false;
         try {
             tester.accept(map);
+
+            success = true;
         }
         finally {
-            System.err.println(map.dump());
+            if (!success)
+                System.err.println(map.dump());
 
             GridUnsafe.freeMemory(addr);
         }
@@ -71,7 +74,7 @@ public class RobinHoodHashTest {
                         map, () -> map.put(grpId, 1, val, 1));
                     assertEquals(val, map.get(grpId, 1, 0, -1, -2));
 
-                    assertSizeNotchanged("Duplicate put for " + grpId,
+                    assertSizeNotChanged("Duplicate put for " + grpId,
                         map, () -> map.put(grpId, 1, 1, 1));
                     assertEquals(1, map.get(grpId, 1, 0, -1, -2));
                 }
@@ -91,7 +94,7 @@ public class RobinHoodHashTest {
 
                     assertEquals(val, map.get(grpId, 1, 0, -1, -2));
 
-                    assertSizeNotchanged("Duplicate put for " + grpId, map, () -> map.put(grpId, 1, 1, 1));
+                    assertSizeNotChanged("Duplicate put for " + grpId, map, () -> map.put(grpId, 1, 1, 1));
                     assertEquals(1, map.get(grpId, 1, 0, -1, -2));
                 }
 
@@ -108,7 +111,7 @@ public class RobinHoodHashTest {
         assertNotEquals(msg, size, newSize);
     }
 
-    private static void assertSizeNotchanged(String msg, LoadedPagesMap map, Runnable act) {
+    private static void assertSizeNotChanged(String msg, LoadedPagesMap map, Runnable act) {
         int size = map.size();
         act.run();
         int newSize = map.size();
@@ -258,48 +261,83 @@ public class RobinHoodHashTest {
             "page=" + fullId.pageId() + ")";
     }
 
-
     @Test
     public void testPutAndCantGetOutdatedValue() throws Exception {
         withMap(map -> {
-                //fill with 1 space left;
-                for (int i = 0; i < 99; i++) {
-                    int ver = i;
-                    int grpId = ver + 1;
-                    int val = grpId * grpId;
-                    map.put(grpId, 1, val, ver);
+            //fill with 1 space left;
+            for (int i = 0; i < 99; i++) {
+                int ver = i;
+                int grpId = ver + 1;
+                int val = grpId * grpId;
+                map.put(grpId, 1, val, ver);
 
-                    assertEquals(val, map.get(grpId, 1, ver, -1, -2));
+                assertEquals(val, map.get(grpId, 1, ver, -1, -2));
 
-                    assertEquals(-2, map.get(grpId, 1, ver + 1, -1, -2));
-                }
-
-                doAddRemove(map);
+                assertEquals(-2, map.get(grpId, 1, ver + 1, -1, -2));
             }
-            , 100);
+        }, 100);
     }
 
     @Test
     public void testPutAndRefreshValue() throws Exception {
         withMap(map -> {
-                //fill with 1 space left;
-                for (int i = 0; i < 99; i++) {
-                    int ver = i;
-                    int grpId = ver + 1;
-                    int val = grpId * grpId;
-                    int pageId = 1;
-                    map.put(grpId, pageId, val, ver);
+            //fill with 1 space left;
+            for (int i = 0; i < 99; i++) {
+                int ver = i;
+                int grpId = ver + 1;
+                int val = grpId * grpId;
+                int pageId = 1;
+                map.put(grpId, pageId, val, ver);
 
-                    assertEquals(-2, map.get(grpId, pageId, ver + 1, -1, -2));
+                map.refresh(grpId, pageId, ver+1);
 
-                    map.refresh(grpId, pageId, ver+1);
+                assertEquals(val, map.get(grpId, pageId, ver + 1, -1, -2));
 
-                    assertEquals(val, map.get(grpId, pageId, ver + 1, -1, -2));
-
-                }
-
-                doAddRemove(map);
             }
-            , 100);
+
+            doAddRemove(map);
+        }, 100);
+    }
+
+    @Test
+    public void testClearAtWithControlMap() throws Exception {
+        int cap = 100;
+
+        LoadedPagesMap.KeyPredicate pred = new LoadedPagesMap.KeyPredicate() {
+            @Override public boolean test(int grpId, long pageId) {
+                int hc = Integer.hashCode(grpId) + 31 * Long.hashCode(pageId);
+
+                return hc % 7 == 0;
+            }
+        };
+
+        withMap(map -> {
+            Map<FullPageId, Long> check = new HashMap<>();
+
+            //fill with 1 space left;
+            for (int i = 0; i < 99; i++) {
+                int ver = i;
+                int grpId = ver + 1;
+                long val = grpId * grpId;
+                int pageId = 1;
+                map.put(grpId, pageId, val, ver);
+
+                check.put(new FullPageId(pageId, grpId), val);
+            }
+
+            for (int i = 0; i < cap; i++) {
+                long l = map.clearAt(i, pred, -1);
+
+            }
+
+            check.keySet().removeIf(entry -> pred.test(entry.groupId(), entry.pageId()));
+
+            Map<FullPageId, Long> res = new HashMap<>();
+
+            map.forEach(res::put);
+
+            org.hamcrest.MatcherAssert.assertThat(res, org.hamcrest.Matchers.is(check));
+
+        }, cap);
     }
 }

@@ -377,8 +377,9 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
 
     //todo implement
     /** {@inheritDoc} */
-    @Override public long clearAt(int idx, GridPredicate3<Integer, Long, Integer> pred, long absent) {
+    @Override public long clearAt(int idx, KeyPredicate pred, long absent) {
         throw new UnsupportedOperationException();
+        // return 0l;
     }
 
 
@@ -516,12 +517,20 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
         return getInt(base + IDEAL_BUCKET_OFFSET);
     }
 
+    /**
+     * @param base Address of current cell.
+     * @return Page ID saved in cell.
+     */
     private long getPageId(long base) {
         return getLong(base + PAGE_ID_OFFSET);
     }
 
-    private void setPageId(long base, long pageIdToInsert) {
-        putLong(base + PAGE_ID_OFFSET, pageIdToInsert);
+    /**
+     * @param base Address of cell.
+     * @param pageId Page ID to set in current cell.
+     */
+    private void setPageId(long base, long pageId) {
+        putLong(base + PAGE_ID_OFFSET, pageId);
     }
 
     /**

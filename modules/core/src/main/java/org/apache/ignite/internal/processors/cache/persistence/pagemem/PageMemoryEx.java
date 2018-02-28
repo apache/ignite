@@ -141,9 +141,9 @@ public interface PageMemoryEx extends PageMemory {
     /**
      * Asynchronously clears pages satisfying the given predicate.
      *
-     * @param pred Predicate for cache group id, pageId and partition tag.
+     * @param pred Predicate for cache group id, pageId.
      * @param cleanDirty Flag indicating that dirty pages collection should be cleaned.
      * @return Future that will be completed when all pages are cleared.
      */
-    public IgniteInternalFuture<Void> clearAsync(GridPredicate3<Integer, Long, Integer> pred, boolean cleanDirty);
+    public IgniteInternalFuture<Void> clearAsync(LoadedPagesMap.KeyPredicate pred, boolean cleanDirty);
 }

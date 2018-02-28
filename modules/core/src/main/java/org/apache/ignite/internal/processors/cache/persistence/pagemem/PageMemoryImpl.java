@@ -76,7 +76,6 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.OffheapReadWriteLock;
 import org.apache.ignite.internal.util.future.CountDownFuture;
 import org.apache.ignite.internal.util.lang.GridInClosure3X;
-import org.apache.ignite.internal.util.lang.GridPredicate3;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -1231,7 +1230,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Void> clearAsync(
-        GridPredicate3<Integer, Long, Integer> pred,
+        LoadedPagesMap.KeyPredicate pred,
         boolean cleanDirty
     ) {
         CountDownFuture completeFut = new CountDownFuture(segments.length);
@@ -2632,8 +2631,8 @@ public class PageMemoryImpl implements PageMemoryEx {
         /** */
         private Segment seg;
 
-        /** */
-        private GridPredicate3<Integer, Long, Integer> clearPred;
+        /** Clear element filter for (cache group ID, page ID). */
+        LoadedPagesMap.KeyPredicate clearPred;
 
         /** */
         private CountDownFuture doneFut;
@@ -2646,12 +2645,12 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         /**
          * @param seg Segment.
-         * @param clearPred Clear predicate.
+         * @param clearPred Clear predicate for (cache group ID, page ID).
          * @param doneFut Completion future.
          */
         private ClearSegmentRunnable(
             Segment seg,
-            GridPredicate3<Integer, Long, Integer> clearPred,
+            LoadedPagesMap.KeyPredicate clearPred,
             boolean rmvDirty,
             CountDownFuture doneFut,
             int pageSize

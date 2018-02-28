@@ -25,7 +25,6 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.lang.GridPredicate3;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -219,17 +218,16 @@ public class FullPageIdTable implements LoadedPagesMap {
     }
 
     /** {@inheritDoc} */
-    @Override public long clearAt(int idx, GridPredicate3<Integer, Long, Integer> pred, long absent) {
+    @Override public long clearAt(int idx, KeyPredicate keyPred, long absent) {
         long base = entryBase(idx);
 
         int grpId = GridUnsafe.getInt(base);
-        int tag = GridUnsafe.getInt(base + TAG_OFFSET);
         long pageId = GridUnsafe.getLong(base + PAGE_ID_OFFSET);
 
         if (isRemoved(grpId, pageId) || isEmpty(grpId, pageId))
             return absent;
 
-        if (pred.apply(grpId, pageId, tag)) {
+        if (keyPred.test(grpId, pageId)) {
             long res = valueAt(idx);
 
             setRemoved(idx);
