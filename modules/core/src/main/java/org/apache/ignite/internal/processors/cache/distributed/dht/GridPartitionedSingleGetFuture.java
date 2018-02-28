@@ -19,11 +19,8 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -350,7 +347,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             }
         }
 
-        ClusterNode affNode = affinityNode(affNodes);
+        ClusterNode affNode = CU.affinityNode(cctx, affNodes, canRemap);
 
         if (affNode == null) {
             onDone(serverNotFoundError(topVer));
@@ -712,31 +709,6 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     private ClusterTopologyServerNotFoundException serverNotFoundError(AffinityTopologyVersion topVer) {
         return new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
             "(all partition nodes left the grid) [topVer=" + topVer + ", cache=" + cctx.name() + ']');
-    }
-
-    /**
-     * Affinity node to send get request to.
-     *
-     * @param affNodes All affinity nodes.
-     * @return Affinity node to get key from.
-     */
-    @Nullable private ClusterNode affinityNode(List<ClusterNode> affNodes) {
-        if (canRemap || !cctx.config().isReadFromBackup())
-            return affNodes.get(0);
-
-        List<ClusterNode> nodes = affNodes.stream()
-            .skip(1)
-            .filter(node -> cctx.discovery().alive(node))
-            .collect(Collectors.toList());
-
-        if (nodes.isEmpty())
-            return null;
-
-        Optional<ClusterNode> nodeOptional = nodes.stream()
-            .filter(node -> U.sameMacs(cctx.localNode(), node))
-            .findAny();
-
-        return nodeOptional.orElseGet(() -> nodes.get(ThreadLocalRandom.current().nextInt(nodes.size())));
     }
 
     /** {@inheritDoc} */

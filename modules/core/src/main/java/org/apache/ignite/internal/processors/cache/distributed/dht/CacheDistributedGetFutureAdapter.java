@@ -157,17 +157,8 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCacheCo
      * @param affNodes All affinity nodes.
      * @return Affinity node to get key from.
      */
-    protected final ClusterNode affinityNode(List<ClusterNode> affNodes) {
-        if (!canRemap) {
-            for (ClusterNode node : affNodes) {
-                if (cctx.discovery().alive(node))
-                    return node;
-            }
-
-            return null;
-        }
-        else
-            return affNodes.get(0);
+    @Nullable protected final ClusterNode affinityNode(List<ClusterNode> affNodes) {
+        return CU.affinityNode(cctx, affNodes, canRemap);
     }
 
     /**
