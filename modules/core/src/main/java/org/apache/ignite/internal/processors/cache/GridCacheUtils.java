@@ -477,21 +477,24 @@ public class GridCacheUtils {
 
         assert locMacs != null;
 
-        int[] aliveIdxs = new int[affNodes.size()];
-        int alive = 0;
+        int r = ThreadLocalRandom.current().nextInt(affNodes.size());
 
-        for (int i = 0; i < affNodes.size(); i++) {
-            ClusterNode node = affNodes.get(i);
+        ClusterNode n0 = null;
+
+        for (ClusterNode node : affNodes) {
+            if (r > 0)
+                r--;
 
             if (canRemap || ctx.discovery().alive(node)) {
                 if (U.sameMacs(locMacs, node))
                     return node;
 
-                aliveIdxs[alive++] = i;
+                if (r == 0 || n0 == null)
+                    n0 = node;
             }
         }
 
-        return alive == 0 ? null : affNodes.get(aliveIdxs[ThreadLocalRandom.current().nextInt(alive)]);
+        return n0;
     }
 
     /**
