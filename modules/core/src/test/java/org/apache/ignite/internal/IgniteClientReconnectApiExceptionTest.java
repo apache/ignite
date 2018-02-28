@@ -39,6 +39,7 @@ import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -861,6 +862,6 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
     /** Get default {@link org.apache.ignite.configuration.CollectionConfiguration} with backups */
     private CollectionConfiguration getCollectionConfiguration() {
-        return new CollectionConfiguration().setBackups(1);
+        return new CollectionConfiguration().setBackups(AtomicConfiguration.DFLT_BACKUPS);
     }
 }
