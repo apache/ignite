@@ -54,14 +54,14 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         BenchmarkUtils.println(this.cfg, "Starting custom warmup");
 
         if (args.switchWal())
-            executeUpdate(queries.turnOffWal());
+            executeUpdate(QueryFactory.TURN_OFF_WAL);
 
         try (Connection warmupConn = uploadConnection()) {
             warmup(warmupConn);
         }
 
         if (args.switchWal())
-            executeUpdate(queries.turnOnWal());
+            executeUpdate(QueryFactory.TURN_ON_WAL);
 
         BenchmarkUtils.println(this.cfg, "Custom warmup finished");
 
@@ -94,27 +94,27 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     /** {@inheritDoc} */
     @Override public final boolean test(Map<Object, Object> ctx) throws Exception {
         if (args.switchWal())
-            executeUpdate(queries.turnOffWal());
+            executeUpdate(QueryFactory.TURN_OFF_WAL);
 
         try (Connection uploadConn = uploadConnection()) {
             upload(uploadConn);
         }
 
         if (args.switchWal())
-            executeUpdate(queries.turnOnWal());
+            executeUpdate(QueryFactory.TURN_ON_WAL);
 
         return true;
     }
 
     /** Drops and re-creates test table. */
     protected final void dropAndCreate() throws SQLException {
-        executeUpdate(queries.dropTableIfExists());
+        executeUpdate(QueryFactory.DROP_TABLE_IF_EXISTS);
         executeUpdate(queries.createTable());
     }
 
     /** Retrieves records count in the test table. */
     public long count() throws SQLException {
-        try(PreparedStatement count = conn.get().prepareStatement(queries.count())){
+        try(PreparedStatement count = conn.get().prepareStatement(QueryFactory.COUNT)){
             try (ResultSet rs = count.executeQuery()) {
                 rs.next();
                 long size = rs.getLong(1);

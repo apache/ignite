@@ -29,7 +29,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class QueryFactory {
     /** Query to drop table if it exists. */
-    private final String dropTableIfExists = "DROP TABLE IF EXISTS test_upload;";
+    public static final String DROP_TABLE_IF_EXISTS = "DROP TABLE IF EXISTS test_upload;";
+
+    /** Query to count table size. */
+    public static final String COUNT = "SELECT COUNT(id) FROM test_upload;";
+
+    /** Turns off Write Ahead Log. */
+    public static final String TURN_OFF_WAL = "ALTER TABLE test_upload NOLOGGING";
+
+    /** Turns on Write Ahead Log. */
+    public static final String TURN_ON_WAL = "ALTER TABLE test_upload LOGGING";
 
     /** Number of "values" fields in the test table (any field except primary key). */
     private int valFieldsCnt = 10;
@@ -39,18 +48,6 @@ public class QueryFactory {
 
     /** Parametrised query to insert new row. */
     private String insert = newInsertQuery();
-
-    /** Query to count table size. */
-    private String count = "SELECT COUNT(id) FROM test_upload;";
-
-    /** Deletes all rows from the test table. Does NOT drop the table itself. */
-    private String deleteAll = "DELETE FROM test_upload WHERE id > 0";
-
-    /** Turns on Write Ahead Log. */
-    private String turnOnWal = "ALTER TABLE test_upload LOGGING";
-
-    /** Turns off Write Ahead Log. */
-    private String turnOffWal = "ALTER TABLE test_upload NOLOGGING";
 
     /** see {@link #createTable}. */
     private String newCreateTableQuery() {
@@ -86,24 +83,9 @@ public class QueryFactory {
         return createTable;
     }
 
-    /** Drops the test table. */
-    public String dropTableIfExists() {
-        return dropTableIfExists;
-    }
-
     /** see {@link #insert} */
     public String insert() {
         return insert;
-    }
-
-    /** see {@link #count} */
-    public String count() {
-        return count;
-    }
-
-    /** see {@link #deleteAll}*/
-    public String deleteAll() {
-        return deleteAll;
     }
 
     /**
@@ -187,15 +169,5 @@ public class QueryFactory {
         }
 
         return line.toString();
-    }
-
-    /** see {@link #turnOnWal}*/
-    public String turnOnWal() {
-        return turnOnWal;
-    }
-
-    /** see {@link #turnOffWal} */
-    public String turnOffWal() {
-        return turnOffWal;
     }
 }
