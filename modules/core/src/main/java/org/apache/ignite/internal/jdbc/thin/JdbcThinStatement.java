@@ -289,7 +289,7 @@ public class JdbcThinStatement implements Statement {
             for (JdbcThinResultSet rs : resultSets)
                 rs.closeOnDisconnect();
 
-            resultSets.clear();
+            resultSets = null;
         }
 
         closed = true;
