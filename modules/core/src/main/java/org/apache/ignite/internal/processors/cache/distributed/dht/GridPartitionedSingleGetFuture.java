@@ -17,31 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
 import org.apache.ignite.internal.IgniteDiagnosticPrepareContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.EntryGetResult;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheFuture;
-import org.apache.ignite.internal.processors.cache.GridCacheFutureAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheMessage;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils.BackupPostProcessingClosure;
-import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.CacheVersionedValue;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
@@ -58,6 +45,12 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.jetbrains.annotations.Nullable;
+import org.jsr166.ThreadLocalRandom8;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
@@ -705,17 +698,41 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
      * @param affNodes All affinity nodes.
      * @return Affinity node to get key from.
      */
-    @Nullable private ClusterNode affinityNode(List<ClusterNode> affNodes) {
-        if (!canRemap) {
-            for (ClusterNode node : affNodes) {
-                if (cctx.discovery().alive(node))
-                    return node;
-            }
-
-            return null;
-        }
-        else
+    @Nullable private ClusterNode affinityNode(final List<ClusterNode> affNodes) {
+        if (forcePrimary) {
             return affNodes.get(0);
+        }
+
+        final String mac = cctx.localNode().attribute(IgniteNodeAttributes.ATTR_MACS);
+        assert mac != null;
+
+        int lastMatch = -1;
+        ClusterNode affinityNode = null;
+        final int nodesSize = affNodes.size();
+        final int randNodeIndex = ThreadLocalRandom8.current().nextInt(nodesSize);
+
+        for (int i = 0; i < nodesSize; i++) {
+            final ClusterNode node = affNodes.get(i);
+
+            if (canRemap || cctx.discovery().alive(node)) {
+                // Prefer collocated node
+                if (mac.equals(node.attribute(IgniteNodeAttributes.ATTR_MACS))) {
+                    return node;
+                }
+
+                if (i == randNodeIndex) {
+                    affinityNode = node;
+                }
+
+                lastMatch = i;
+            }
+        }
+
+        if (affinityNode == null && lastMatch != -1) {
+            return affNodes.get(lastMatch);
+        }
+
+        return affinityNode;
     }
 
     /** {@inheritDoc} */
