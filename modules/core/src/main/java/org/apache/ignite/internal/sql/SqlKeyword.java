@@ -17,11 +17,10 @@
 
 package org.apache.ignite.internal.sql;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.F;
-
 import java.lang.reflect.Field;
 import java.util.HashSet;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * SQL keyword constants.
@@ -168,6 +167,9 @@ public class SqlKeyword {
     /** Keyword: NVARCHAR2. */
     public static final String NVARCHAR2 = "NVARCHAR2";
 
+    /** Keyword: OFF. */
+    public static final String OFF = "OFF";
+
     /** Keyword: ON. */
     public static final String ON = "ON";
 
@@ -183,6 +185,9 @@ public class SqlKeyword {
     /** Keyword: RESTRICT. */
     public static final String RESTRICT = "RESTRICT";
 
+    /** Keyword: SET. */
+    public static final String SET = "SET";
+
     /** Keyword: SIGNED. */
     public static final String SIGNED = "SIGNED";
 
@@ -194,6 +199,9 @@ public class SqlKeyword {
 
     /** Keyword: SPATIAL. */
     public static final String SPATIAL = "SPATIAL";
+
+    /** Keyword: STREAMING. */
+    public static final String STREAMING = "STREAMING";
 
     /** Keyword: TABLE. */
     public static final String TABLE = "TABLE";

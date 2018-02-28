@@ -118,8 +118,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
     /**
      * Constructor.
-     *
-     * @param ctx Context.
+     *  @param ctx Context.
      * @param busyLock Shutdown latch.
      * @param maxCursors Maximum allowed cursors.
      * @param distributedJoins Distributed joins flag.
@@ -129,7 +128,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
-     * @param stream Streaming flag.
      * @param streamAllowOverwrites Streaming overwrites flag.
      * @param streamParOps Number of parallel ops per cluster node during streaming.
      * @param streamBufSize Buffer size per cluster node during streaming.
@@ -139,7 +137,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
         boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate,
-        boolean stream, boolean streamAllowOverwrites, int streamParOps, int streamBufSize, long streamFlushFreq,
+        boolean streamAllowOverwrites, int streamParOps, int streamBufSize, long streamFlushFreq,
         ClientListenerProtocolVersion protocolVer) {
         this.ctx = ctx;
 
@@ -150,7 +148,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             collocated,
             lazy,
             skipReducerOnUpdate,
-            stream,
             streamAllowOverwrites,
             streamParOps,
             streamBufSize,

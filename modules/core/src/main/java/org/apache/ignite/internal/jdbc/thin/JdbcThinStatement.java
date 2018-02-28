@@ -46,6 +46,11 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultInfo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
+import org.apache.ignite.internal.sql.SqlKeyword;
+import org.apache.ignite.internal.sql.SqlParseException;
+import org.apache.ignite.internal.sql.SqlParser;
+import org.apache.ignite.internal.sql.command.SqlCommand;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.FETCH_FORWARD;
@@ -122,6 +127,43 @@ public class JdbcThinStatement implements Statement {
     }
 
     /**
+     * @param sql Query.
+     * @return Native {@link SqlCommand}, or {@code null} if parsing was not successful.
+     */
+    private SqlCommand tryParseNative(String sql) {
+        if (!isEligibleForNativeParsing(sql))
+            return null;
+
+        try {
+            return new SqlParser(schema, sql).nextCommand();
+        }
+        catch (SqlParseException e) {
+            return null;
+        }
+    }
+
+    /**
+     * @param sql Query.
+     * @return Whether it's worth trying to parse this statement on the client.
+     */
+    private static boolean isEligibleForNativeParsing(String sql) {
+        if (F.isEmpty(sql))
+            return false;
+
+        sql = sql.toUpperCase();
+
+        int setPos = sql.indexOf(SqlKeyword.SET);
+
+        if (setPos == -1)
+            return false;
+
+        int streamingPos = sql.indexOf(SqlKeyword.STREAMING);
+
+        // There must be at least one symbol between SET and STREAMING.
+        return streamingPos - setPos - SqlKeyword.SET.length() >= 1;
+    }
+
+    /**
      * @param stmtType Expected statement type.
      * @param sql Sql query.
      * @param args Query parameters.
@@ -135,6 +177,21 @@ public class JdbcThinStatement implements Statement {
 
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty.");
+
+        SqlCommand nativeCmd = null;
+
+        if (stmtType != JdbcStatementType.SELECT_STATEMENT_TYPE && isEligibleForNativeParsing(sql))
+            nativeCmd = tryParseNative(sql);
+
+        if (nativeCmd != null) {
+            conn.executeNative(sql, nativeCmd);
+
+            resultSets = Collections.singletonList(resultSetForUpdate(0));
+
+            // If this command should be executed as native one, we do not treat it
+            // as an ordinary batch citizen.
+            return;
+        }
 
         if (conn.isStream()) {
             if (stmtType == JdbcStatementType.SELECT_STATEMENT_TYPE)

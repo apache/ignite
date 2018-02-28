@@ -353,16 +353,6 @@ public interface ConnectionProperties {
     public void setSslFactory(String sslFactory);
 
     /**
-     * @return Streamed connection flag.
-     */
-    public boolean isStream();
-
-    /**
-     * @param stream Streamed connection flag.
-     */
-    public void setStream(boolean stream);
-
-    /**
      * @return Allow overwrites during streaming connection flag.
      */
     public boolean isStreamAllowOverwrite();

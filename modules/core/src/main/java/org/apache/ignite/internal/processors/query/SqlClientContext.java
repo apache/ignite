@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLogger;
@@ -62,7 +63,7 @@ public class SqlClientContext implements AutoCloseable {
     private final long streamFlushTimeout;
 
     /** Streamers for various caches. */
-    private final Map<String, IgniteDataStreamer<?, ?>> streamers;
+    private Map<String, IgniteDataStreamer<?, ?>> streamers;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -74,15 +75,14 @@ public class SqlClientContext implements AutoCloseable {
      * @param collocated Collocated flag.
      * @param lazy Lazy query execution flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
-     * @param stream Streaming state flag
      * @param streamAllowOverwrite Allow overwrites for duplicate keys on streamed {@code INSERT}s.
      * @param streamNodeParOps Parallel ops count per node for data streamer.
      * @param streamNodeBufSize Node buffer size for data streamer.
      * @param streamFlushTimeout Auto flush frequency for streaming.
      */
     public SqlClientContext(GridKernalContext ctx, boolean distributedJoins, boolean enforceJoinOrder,
-        boolean collocated, boolean lazy, boolean skipReducerOnUpdate, boolean stream, boolean streamAllowOverwrite,
-        int streamNodeParOps, int streamNodeBufSize, long streamFlushTimeout) {
+                            boolean collocated, boolean lazy, boolean skipReducerOnUpdate, boolean streamAllowOverwrite,
+                            int streamNodeParOps, int streamNodeBufSize, long streamFlushTimeout) {
         this.ctx = ctx;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
@@ -94,11 +94,39 @@ public class SqlClientContext implements AutoCloseable {
         this.streamNodeBufSize = streamNodeBufSize;
         this.streamFlushTimeout = streamFlushTimeout;
 
-        streamers = stream ? new HashMap<>() : null;
-
         log = ctx.log(SqlClientContext.class.getName());
 
         ctx.query().registerClientContext(this);
+    }
+
+    /**
+     * Turn on streaming on this client context.
+     */
+    public void enableStreaming() {
+        if (streamers != null)
+            return;
+
+        streamers = new HashMap<>();
+    }
+
+    /**
+     * Turn off streaming on this client context - with closing all open streamers, if any.
+     */
+    public void disableStreaming() {
+        if (streamers == null)
+            return;
+
+        Iterator<IgniteDataStreamer<?, ?>> it = streamers.values().iterator();
+
+        while (it.hasNext()) {
+            IgniteDataStreamer<?, ?> streamer = it.next();
+
+            U.close(streamer, log);
+
+            it.remove();
+        }
+
+        streamers = null;
     }
 
     /**

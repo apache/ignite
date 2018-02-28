@@ -47,10 +47,14 @@ import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.sql.command.SqlCommand;
+import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -85,6 +89,9 @@ public class JdbcThinConnection implements Connection {
 
     /** Read-only flag. */
     private boolean readOnly;
+
+    /** Streaming flag. */
+    private volatile boolean stream;
 
     /** Current transaction holdability. */
     private int holdability;
@@ -151,8 +158,47 @@ public class JdbcThinConnection implements Connection {
     /**
      * @return Whether this connection is streamed or not.
      */
-    public boolean isStream() {
-        return connProps.isStream();
+    boolean isStream() {
+        return stream;
+    }
+
+    /**
+     * @param stream Whether this connection is streamed or not.
+     */
+    void setStream(boolean stream) {
+        this.stream = stream;
+    }
+
+    /**
+     * @param sql Statement.
+     * @param cmd Parsed form of {@code sql}.
+     * @throws SQLException if failed.
+     */
+    synchronized void executeNative(String sql, SqlCommand cmd) throws SQLException {
+        if (cmd instanceof SqlSetStreamingCommand) {
+            boolean newVal = ((SqlSetStreamingCommand)cmd).isTurnOn();
+
+            if (!stream && newVal) {
+                // Actual ON.
+                sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
+                    schema, 1, 1, sql, null));
+
+                stream = true;
+            }
+            else if (stream && !newVal) {
+                // Server should handle
+                addBatch(sql, null);
+
+                executeBatch();
+
+                stream = false;
+            }
+
+            return;
+        }
+
+        throw IgniteQueryErrorCode.createJdbcSqlException("Unsupported native statement: " + sql,
+            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**

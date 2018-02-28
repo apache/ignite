@@ -147,10 +147,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private StringProperty sslFactory = new StringProperty("sslFactory",
         "Custom class name that implements Factory<SSLSocketFactory>", null, null, false, null);
 
-    /** Turn on streaming mode on this connection. */
-    private BooleanProperty stream = new BooleanProperty(
-        "streaming", "Turn on streaming mode on this connection", false, false);
-
     /** Turn on overwrite during streaming on this connection. */
     private BooleanProperty streamAllowOverwrite = new BooleanProperty(
         "streamingAllowOverwrite", "Turn on overwrite during streaming on this connection", false, false);
@@ -184,8 +180,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslMode, sslProtocol, sslKeyAlgorithm,
         sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
-        sslTrustAll, sslFactory,
-        stream, streamAllowOverwrite, streamParOps, streamBufSize, streamFlushFreq, streamBatchSize
+        sslTrustAll, sslFactory, streamAllowOverwrite, streamParOps, streamBufSize, streamFlushFreq, streamBatchSize
     };
 
     /** {@inheritDoc} */
@@ -416,16 +411,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** {@inheritDoc} */
     @Override public void setSslFactory(String sslFactory) {
         this.sslFactory.setValue(sslFactory);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isStream() {
-        return stream.value();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setStream(boolean val) {
-        stream.setValue(val);
     }
 
     /** {@inheritDoc} */

@@ -57,9 +57,13 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
     /** {@inheritDoc} */
     @Override protected Connection createStreamedConnection(boolean allowOverwrite, long flushFreq) throws Exception {
-        return JdbcThinAbstractSelfTest.connect(grid(0), "streaming=true&streamingFlushFrequency="
+        Connection c = JdbcThinAbstractSelfTest.connect(grid(0), "streamingFlushFrequency="
             + flushFreq + "&" + "streamingAllowOverwrite=" + allowOverwrite + "&streamingPerNodeBufferSize=1000&"
             + "streamingBatchSize=" + batchSize);
+
+        execute(c, "SET STREAMING 1");
+
+        return c;
     }
 
     /** {@inheritDoc} */
@@ -75,7 +79,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
             put(i, nameForId(i * 100));
 
         try (Connection conn = createStreamedConnection(false)) {
-            assertStreamingOn();
+            assertStreamingState(true);
 
             try (PreparedStatement stmt = conn.prepareStatement("insert into Person(\"id\", \"name\") values (?, ?), " +
                 "(?, ?)")) {
@@ -116,7 +120,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
         U.sleep(500);
 
         try (Connection conn = createStreamedConnection(false, 10000)) {
-            assertStreamingOn();
+            assertStreamingState(true);
 
             PreparedStatement firstStmt = conn.prepareStatement("insert into Person(\"id\", \"name\") values (?, ?)");
 
@@ -189,7 +193,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
         String stmtStr = "insert into Person(\"id\", \"name\") values (%d, '%s')";
 
         try (Connection conn = createStreamedConnection(false, 10000)) {
-            assertStreamingOn();
+            assertStreamingState(true);
 
             PreparedStatement firstStmt = conn.prepareStatement(prepStmtStr);
 
@@ -237,6 +241,60 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
     }
 
     /**
+     * @throws SQLException if failed.
+     */
+    public void testStreamingOffToOn() throws SQLException {
+        try (Connection conn = createOrdinaryConnection()) {
+            assertStreamingState(false);
+
+            execute(conn, "SET STREAMING 1");
+
+            assertStreamingState(true);
+        }
+    }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    public void testStreamingOnToOff() throws Exception {
+        try (Connection conn = createStreamedConnection(false)) {
+            assertStreamingState(true);
+
+            execute(conn, "SET STREAMING off");
+
+            assertStreamingState(false);
+        }
+    }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    public void testFlush() throws Exception {
+        try (Connection conn = createStreamedConnection(false, 10000)) {
+            assertStreamingState(true);
+
+            try (PreparedStatement stmt = conn.prepareStatement("insert into Person(\"id\", \"name\") values (?, ?)")) {
+                for (int i = 1; i <= 100; i++) {
+                    stmt.setInt(1, i);
+                    stmt.setString(2, nameForId(i));
+
+                    stmt.executeUpdate();
+                }
+            }
+
+            assertCacheEmpty();
+
+            execute(conn, "set streaming 0");
+
+            assertStreamingState(false);
+
+            // Now let's check it's all there.
+            for (int i = 1; i <= 100; i++)
+                assertEquals(nameForId(i), nameForIdInCache(i));
+        }
+    }
+
+    /**
      * Check that there's nothing in cache.
      */
     private void assertCacheEmpty() {
@@ -269,11 +327,12 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
     /**
      * Check that streaming state on target node is as expected.
+     * @param on Expected streaming state.
      */
-    private void assertStreamingOn() {
+    private void assertStreamingState(boolean on) {
         SqlClientContext cliCtx = sqlClientContext();
 
-        assertTrue(cliCtx.isStream());
+        assertEquals(on, cliCtx.isStream());
     }
 
     /** {@inheritDoc} */

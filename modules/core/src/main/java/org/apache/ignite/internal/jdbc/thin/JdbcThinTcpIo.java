@@ -268,7 +268,6 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isAutoCloseServerCursor());
         writer.writeBoolean(connProps.isLazy());
         writer.writeBoolean(connProps.isSkipReducerOnUpdate());
-        writer.writeBoolean(connProps.isStream());
         writer.writeBoolean(connProps.isStreamAllowOverwrite());
         writer.writeInt(connProps.getStreamParallelOperations());
         writer.writeInt(connProps.getStreamBufferSize());
