@@ -1,4 +1,9 @@
 .queries-notebooks-list {
+  grid-no-data {
+    top: -6px;
+    background: white;
+  }
+
   .notebook-name {
     a {
       color: #0067b9;
