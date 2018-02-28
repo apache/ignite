@@ -38,8 +38,8 @@ export class NotebooksListCtrl {
 
         const columnDefs = [
             { name: 'name', displayName: 'Name', categoryDisplayName: 'Name', field: 'name', cellTemplate: notebookNameTemplate, pinnedLeft: true, filter: { placeholder: 'Filter by Name...' } },
-            { name: 'sqlQueryNum', displayName: 'SQL Query', categoryDisplayName: 'SQL Query', field: 'sqlQueryNum', cellTemplate: sqlQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: 150, enableFiltering: false },
-            { name: 'scanQueryNum', displayName: 'Scan Query', categoryDisplayName: 'Scan Query', field: 'scanQueryNum', cellTemplate: scanQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: 150, enableFiltering: false }
+            { name: 'sqlQueryNum', displayName: 'SQL Query', categoryDisplayName: 'SQL Query', field: 'sqlQueriesParagraphsLength', cellTemplate: sqlQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: 150, enableFiltering: false },
+            { name: 'scanQueryNum', displayName: 'Scan Query', categoryDisplayName: 'Scan Query', field: 'scanQueriesParagraphsLength', cellTemplate: scanQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: 150, enableFiltering: false }
         ];
 
         this.gridOptions = {
