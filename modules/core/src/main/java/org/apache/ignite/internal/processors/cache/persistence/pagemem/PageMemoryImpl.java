@@ -651,6 +651,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         seg.writeLock().lock();
 
+        long lockedPageAbsPtr = -1;
+        boolean readPageFromStore = false;
+
         try {
             // Double-check.
             long relPtr = seg.loadedPages.get(
@@ -691,24 +694,10 @@ public class PageMemoryImpl implements PageMemoryEx {
                 long pageAddr = absPtr + PAGE_OVERHEAD;
 
                 if (!restore) {
-                    try {
-                        ByteBuffer buf = wrapPointer(pageAddr, pageSize());
+                    if (delayedPageReplacementTracker != null)
+                        delayedPageReplacementTracker.waitUnlock(fullId);
 
-                        if (delayedPageReplacementTracker != null)
-                            delayedPageReplacementTracker.waitUnlock(fullId);
-
-                        storeMgr.read(cacheId, pageId, buf);
-                    }
-                    catch (IgniteDataIntegrityViolationException ignore) {
-                        U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
-                            "restore using existing WAL) [fullPageId=" + fullId + ']');
-
-                        tryToRestorePage(fullId, absPtr);
-
-                        seg.acquirePage(absPtr);
-
-                        return absPtr;
-                    }
+                    readPageFromStore = true;
                 }
                 else {
                     GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
@@ -718,6 +707,14 @@ public class PageMemoryImpl implements PageMemoryEx {
                 }
 
                 rwLock.init(absPtr + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
+
+                if (readPageFromStore) {
+                    boolean locked = rwLock.writeLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+
+                    assert locked: "Page ID " + fullId + " expected to be locked";
+
+                    lockedPageAbsPtr = absPtr;
+                }
             }
             else if (relPtr == OUTDATED_REL_PTR) {
                 assert PageIdUtils.pageIndex(pageId) == 0 : fullId;
@@ -752,6 +749,32 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             if (delayedWriter != null)
                 delayedWriter.finishReplacement();
+
+            if (readPageFromStore) {
+                assert lockedPageAbsPtr != -1 : "Page is expected to have a valid address [pageId=" + fullId +
+                    ", lockedPageAbsPtr=" + U.hexLong(lockedPageAbsPtr) + ']';
+
+                assert isPageWriteLocked(lockedPageAbsPtr) : "Page is expected to be locked: [pageId=" + fullId + "]";
+
+                long pageAddr = lockedPageAbsPtr + PAGE_OVERHEAD;
+
+                ByteBuffer buf = wrapPointer(pageAddr, pageSize());
+
+                try {
+                    storeMgr.read(cacheId, pageId, buf);
+                }
+                catch (IgniteDataIntegrityViolationException ignore) {
+                    U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
+                        "restore using existing WAL) [fullPageId=" + fullId + ']');
+
+                    buf.rewind();
+
+                    tryToRestorePage(fullId, buf);
+                }
+                finally {
+                    rwLock.writeUnlock(lockedPageAbsPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+                }
+            }
         }
     }
 
@@ -801,12 +824,17 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /**
-     * @param fullId Full id.
-     * @param absPtr Absolute pointer.
+     * Restores page from WAL page snapshot & delta records.
+     *
+     * @param fullId Full page ID.
+     * @param buf Destination byte buffer. Note: synchronization to provide ByteBuffer safety should be done outside
+     * this method.
+     *
+     * @throws IgniteCheckedException If failed to start WAL iteration, if incorrect page type observed in data, etc.
+     * @throws AssertionError if it was not possible to restore page, page not found in WAL.
      */
-    private void tryToRestorePage(FullPageId fullId, long absPtr) throws IgniteCheckedException {
+    private void tryToRestorePage(FullPageId fullId, ByteBuffer buf) throws IgniteCheckedException {
         Long tmpAddr = null;
-
         try {
             ByteBuffer curPage = null;
             ByteBuffer lastValidPage = null;
@@ -873,14 +901,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                     fullId.groupId(), fullId.pageId()
                 ));
 
-            long pageAddr = writeLockPage(absPtr, fullId, false);
-
-            try {
-                pageBuffer(pageAddr).put(restored);
-            }
-            finally {
-                writeUnlockPage(absPtr, fullId, null, true, false);
-            }
+            buf.put(restored);
         }
         finally {
             if (tmpAddr != null)
@@ -2033,8 +2054,8 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (!pageReplacementWarned) {
                 pageReplacementWarned = true;
 
-                U.warn(log, "Page evictions started, this will affect storage performance (consider increasing " +
-                    "DataRegionConfiguration#setMaxSize).");
+                U.warn(log, "Page replacements started, pages will be rotated with disk, " +
+                    "this will affect storage performance (consider increasing DataRegionConfiguration#setMaxSize).");
             }
 
             final ThreadLocalRandom rnd = ThreadLocalRandom.current();

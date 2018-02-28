@@ -214,7 +214,7 @@
 
                     position: absolute;
                     top: 0;
-                    right: 9px;
+                    right: 15px;
                     z-index: 1000;
 
                     width: 5px;
@@ -506,6 +506,10 @@
 
     .ui-grid-selection-row-header-buttons::before {
         opacity: 1;
+    }
+
+    .ui-grid-clearfix:before, .ui-grid-clearfix:after {
+        display: flex;
     }
 }
 

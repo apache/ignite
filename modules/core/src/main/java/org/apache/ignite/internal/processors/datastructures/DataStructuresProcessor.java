@@ -623,11 +623,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param afterRmv Optional closure to run after data structure removed.
      * @throws IgniteCheckedException If failed.
      */
-    private <T> void removeDataStructure(@Nullable final IgnitePredicateX<AtomicDataStructureValue> pred,
+    private <T> void removeDataStructure(
+        @Nullable final IgnitePredicateX<AtomicDataStructureValue> pred,
         final String name,
         String grpName,
         final DataStructureType type,
-        @Nullable final IgniteInClosureX<T> afterRmv) throws IgniteCheckedException {
+        @Nullable final IgniteInClosureX<T> afterRmv
+    ) throws IgniteCheckedException {
         assert name != null;
         assert grpName != null;
         assert type != null;
@@ -643,29 +645,48 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache = ctx.cache().cache(cacheName);
 
                 if (cache != null && cache.context().gate().enterIfNotStopped()) {
-                    try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                        AtomicDataStructureValue val = cache.get(key);
+                    boolean isInterrupted = Thread.interrupted();
 
-                        if (val == null)
-                            return null;
+                    try {
+                        while(true) {
+                            try {
+                                try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                                    AtomicDataStructureValue val = cache.get(key);
 
-                        if (val.type() != type)
-                            throw new IgniteCheckedException("Data structure has different type " +
-                                "[name=" + name +
-                                ", expectedType=" + type +
-                                ", actualType=" + val.type() + ']');
+                                    if (val == null)
+                                        return null;
 
-                        if (pred == null || pred.applyx(val)) {
-                            cache.remove(key);
+                                    if (val.type() != type)
+                                        throw new IgniteCheckedException("Data structure has different type " +
+                                            "[name=" + name +
+                                            ", expectedType=" + type +
+                                            ", actualType=" + val.type() + ']');
 
-                            tx.commit();
+                                    if (pred == null || pred.applyx(val)) {
+                                        cache.remove(key);
 
-                            if (afterRmv != null)
-                                afterRmv.applyx(null);
+                                        tx.commit();
+
+                                        if (afterRmv != null)
+                                            afterRmv.applyx(null);
+                                    }
+                                }
+
+                                break;
+                            }
+                            catch (IgniteCheckedException e) {
+                                if (X.hasCause(e, InterruptedException.class))
+                                    isInterrupted = Thread.interrupted();
+                                else
+                                    throw e;
+                            }
                         }
                     }
                     finally {
                         cache.context().gate().leave();
+
+                        if (isInterrupted)
+                            Thread.currentThread().interrupt();
                     }
                 }
 

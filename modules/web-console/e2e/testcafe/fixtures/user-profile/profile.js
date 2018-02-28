@@ -15,26 +15,26 @@
  * limitations under the License.
  */
 
-const { Selector } = require('testcafe');
-const { removeData, insertTestUser } = require('../../envtools');
-const { signIn } = require('../../roles');
+import { Selector } from 'testcafe';
+import { dropTestDB, insertTestUser, resolveUrl } from '../../envtools';
+import { createRegularUser } from '../../roles';
+
+const regularUser = createRegularUser();
 
 fixture('Checking user profile')
-    .page `${process.env.APP_URL || 'http://localhost:9001/'}settings/profile`
-    .beforeEach(async(t) => {
-        await t.setNativeDialogHandler(() => true);
-        await removeData();
+    .before(async() => {
+        await dropTestDB();
         await insertTestUser();
-        await signIn(t);
-
-        await t.navigateTo(`${process.env.APP_URL || 'http://localhost:9001/'}settings/profile`);
+    })
+    .beforeEach(async(t) => {
+        await t.useRole(regularUser);
+        await t.navigateTo(resolveUrl('/settings/profile'));
     })
     .after(async() => {
-        await removeData();
+        await dropTestDB();
     });
 
 test('Testing user data change', async(t) => {
-
     const newUserData = {
         firstName: {
             selector: '#firstNameInput',
@@ -70,7 +70,7 @@ test('Testing user data change', async(t) => {
         .click(Selector('span').withText(newUserData.country.value))
         .click(Selector('button').withText('Save Changes'));
 
-    await t.navigateTo(`${process.env.APP_URL || 'http://localhost:9001/'}settings/profile`);
+    await t.navigateTo(resolveUrl('/settings/profile'));
 
     ['firstName', 'lastName', 'email', 'company'].forEach(async(item) => {
         await t

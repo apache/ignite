@@ -15,30 +15,29 @@
  * limitations under the License.
  */
 
-const { Selector, Role } = require('testcafe');
-const { signUp } = require('../roles');
-const { AngularJSSelector } = require('testcafe-angular-selectors');
-const { removeData, insertTestUser } = require('../envtools');
+import { Selector } from 'testcafe';
+import { AngularJSSelector } from 'testcafe-angular-selectors';
+import { dropTestDB, insertTestUser, resolveUrl } from '../envtools';
+import { createRegularUser } from '../roles';
 
 fixture('Checking Ignite auth screen')
-    .page `${process.env.APP_URL || 'http://localhost:9001/'}signin`
+    .page(resolveUrl('/signin'))
     .beforeEach(async(t) => {
-        await removeData();
-
+        await dropTestDB();
         await t.setNativeDialogHandler(() => true);
-        await t.useRole(Role.anonymous());
     })
     .after(async() => {
-        await removeData();
+        await dropTestDB();
     });
 
 test('Testing Ignite signup validation and signup success', async(t) => {
     async function checkBtnDisabled() {
-        const btnDisabled = await t.expect(Selector('#signup_submit').getAttribute('disabled')).ok();
+        // Timeout is used to force Selector fetching without long waiting for default timeout (3000 ms)
+        const btnDisabled = await t.expect(Selector('#signup_submit', {timeout: 1000}).getAttribute('disabled')).ok();
 
         const btnNotWorks =  await t
             .click('#signup_submit')
-            .expect(Selector('title').innerText).eql('Apache Ignite - Management Tool and Configuration Wizard – Apache Ignite Web Console');
+            .expect(Selector('title', {timeout: 1000}).innerText).eql('Apache Ignite - Management Tool and Configuration Wizard – Apache Ignite Web Console');
 
         return btnDisabled && btnNotWorks;
     }
@@ -82,12 +81,26 @@ test('Testing Ignite signup validation and signup success', async(t) => {
 
 });
 
-test('Testing Ignite validation and successful sign in of existing user', async(t) => {
+test('Testing logout', async(t) => {
+    await insertTestUser();
+
+    const user = createRegularUser();
+
+    await t.useRole(user);
+
+    await t.click(Selector('div').withAttribute('bs-dropdown', 'userbar.items'));
+    await t
+        .click(Selector('a').withAttribute('ui-sref', 'logout'))
+        .expect(Selector('title').innerText).eql('Apache Ignite - Management Tool and Configuration Wizard – Apache Ignite Web Console');
+});
+
+test('Testing Ignite validation for sign in of existing user', async(t) => {
     async function checkSignInBtnDisabled() {
-        const btnDisabled = await t.expect(await Selector('#signin_submit').getAttribute('disabled')).ok();
+        // Timeout is used to force Selector fetching without long waiting for default timeout (3000 ms)
+        const btnDisabled = await t.expect(Selector('#signin_submit', {timeout: 1000}).getAttribute('disabled')).ok();
         const btnNotWorks =  await t
             .click('#signin_submit')
-            .expect(Selector('title').innerText).eql('Apache Ignite - Management Tool and Configuration Wizard – Apache Ignite Web Console');
+            .expect(Selector('title', {timeout: 1000}).innerText).eql('Apache Ignite - Management Tool and Configuration Wizard – Apache Ignite Web Console');
 
         return btnDisabled && btnNotWorks;
     }
@@ -96,7 +109,7 @@ test('Testing Ignite validation and successful sign in of existing user', async(
 
     // Checking signin validation.
     await t
-        .typeText(AngularJSSelector.byModel('ui.email'), 'test@test.com');
+        .typeText(AngularJSSelector.byModel('ui.email'), 'a@a');
     await checkSignInBtnDisabled();
 
     await t
@@ -109,22 +122,24 @@ test('Testing Ignite validation and successful sign in of existing user', async(
         .pressKey('ctrl+a delete')
         .typeText(AngularJSSelector.byModel('ui.email'), 'testtest.com');
     await checkSignInBtnDisabled();
+});
 
-    // Checking regular sigin in
+
+test('Testing successfull signin', async(t) => {
+    await insertTestUser();
+
+    // Checking regular signing in
     await t
         .click(AngularJSSelector.byModel('ui.email'))
         .pressKey('ctrl+a delete')
         .typeText(AngularJSSelector.byModel('ui.email'), 'a@a')
-        .click(AngularJSSelector.byModel('ui.password'))
-        .pressKey('ctrl+a delete')
         .typeText(AngularJSSelector.byModel('ui.password'), 'a')
         .click('#signin_submit')
         .expect(Selector('title').innerText).eql('Basic Configuration – Apache Ignite Web Console');
-
 });
 
 test('Forbid Ignite signing up of already existing user', async(t) => {
-    await insertTestUser();
+    insertTestUser();
 
     await t
         .typeText(AngularJSSelector.byModel('ui_signup.email'), 'a@a')
@@ -142,6 +157,8 @@ test('Forbid Ignite signing up of already existing user', async(t) => {
 });
 
 test('Test Ignite password reset', async(t) => {
+    await insertTestUser();
+
     await t.click(Selector('#forgot_show'));
 
     // Testing incorrect email.
@@ -166,13 +183,4 @@ test('Test Ignite password reset', async(t) => {
         .click(Selector('button').withText('Send it to me'));
 
     await t.expect(Selector('#popover-validation-message').withText('Account with that email address does not exists!').exists).notOk();
-});
-
-test('Testing Ignite loguout', async(t) => {
-    await signUp(t);
-
-    await t.click(Selector('div').withAttribute('bs-dropdown', 'userbar.items'));
-    await t
-        .click(Selector('a').withAttribute('ui-sref', 'logout'))
-        .expect(Selector('title').innerText).eql('Apache Ignite - Management Tool and Configuration Wizard – Apache Ignite Web Console');
 });
