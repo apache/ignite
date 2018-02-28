@@ -61,6 +61,10 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
  *
  */
 public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnectAbstractTest {
+
+    /** Cache key for test put and invoke operation after reconnect */
+    private final static int CACHE_PUT_INVOKE_KEY = 10010;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -315,14 +319,15 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
                     }
                 }
             ),
-            // Check invoke operation.
+            // Check put and invoke operation.
             new T2<Callable, C1<Object, Boolean>>(
                 new Callable() {
                     @Override public Object call() throws Exception {
                         boolean failed = false;
 
                         try {
-                            dfltCache.invoke(10000, new CacheEntryProcessor<Object, Object, Object>() {
+                            dfltCache.put(CACHE_PUT_INVOKE_KEY, 10000);
+                            dfltCache.invoke(CACHE_PUT_INVOKE_KEY, new CacheEntryProcessor<Object, Object, Object>() {
                                 @Override public Object process(MutableEntry<Object, Object> entry,
                                     Object... arguments) throws EntryProcessorException {
                                     assertTrue(entry.exists());
@@ -339,7 +344,8 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
                         assertTrue(failed);
 
-                        return dfltCache.invoke(10000, new CacheEntryProcessor<Object, Object, Object>() {
+                        dfltCache.put(CACHE_PUT_INVOKE_KEY, 10000);
+                        return dfltCache.invoke(CACHE_PUT_INVOKE_KEY, new CacheEntryProcessor<Object, Object, Object>() {
                             @Override public Object process(MutableEntry<Object, Object> entry,
                                 Object... arguments) throws EntryProcessorException {
                                 assertTrue(entry.exists());
