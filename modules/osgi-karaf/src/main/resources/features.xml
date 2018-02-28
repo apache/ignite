@@ -126,7 +126,7 @@
         <feature prerequisite="true">wrap</feature>
         <bundle start="true" dependency="true">mvn:org.osgi/org.osgi.enterprise/${osgi.enterprise.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.lucene/${lucene.bundle.version}</bundle>
-        <bundle start="true" dependency="true">mvn:com.h2database/h2/${h2.version}</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:com.h2database/h2/${h2.version}$Bundle-SymbolicName=h2&amp;Bundle-Version=${h2.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:org.apache.lucene/lucene-analyzers-common/${lucene.version}$Bundle-SymbolicName=lucene-analyzers-common&amp;Bundle-Version=${lucene.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:org.apache.lucene/lucene-queryparser/${lucene.version}$Bundle-SymbolicName=lucene-queryparser&amp;Bundle-Version=${lucene.version}</bundle>
         <bundle start="false">mvn:org.apache.ignite/ignite-indexing/${project.version}</bundle>
