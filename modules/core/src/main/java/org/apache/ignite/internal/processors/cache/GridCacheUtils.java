@@ -488,7 +488,7 @@ public class GridCacheUtils {
                 if (U.sameMacs(locMacs, node))
                     return node;
 
-                if (r >= 0)
+                if (r >= 0 || n0 == null)
                     n0 = node;
             }
         }
