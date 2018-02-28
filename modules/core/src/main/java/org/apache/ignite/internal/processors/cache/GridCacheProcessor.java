@@ -739,7 +739,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             CacheType cacheType = cacheType(cacheName);
 
-            if (cacheType != CacheType.USER && cfg.getDataRegionName() == null)
+            if (cacheType != CacheType.USER && cacheType != CacheType.DATA_STRUCTURES && cfg.getDataRegionName() == null)
                 cfg.setDataRegionName(sharedCtx.database().systemDateRegionName());
 
             if (!cacheType.userCache())
