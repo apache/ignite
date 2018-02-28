@@ -485,7 +485,7 @@ public class GridCacheUtils {
             r--;
 
             if (canRemap || ctx.discovery().alive(node)) {
-                if (U.sameMacs(locMacs, node))
+                if (locMacs.equals(node.attribute(IgniteNodeAttributes.ATTR_MACS)))
                     return node;
 
                 if (r >= 0 || n0 == null)
