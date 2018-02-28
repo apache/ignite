@@ -20,46 +20,47 @@ import org.apache.ignite.internal.util.lang.GridPredicate3;
 
 /**
  * Interface for storing correspondence of page id in a cache group
- * ->long value (address in offheap segment).
+ * ->long value (address in offheap segment). Map support versioning of entries.
+ * Outdated entry (entry having version lower than requested). is not provided in case of get.
  *
  * This mapping is not thread safe and should be protected by outside locking.
  */
 public interface LoadedPagesMap {
     /**
-     *  Gets value associated with the given key.
+     * Gets value associated with the given key.
      *
-     * @param grpId Cache Group ID.
-     * @param pageId Page ID.
-     * @param ver Version, counter associated with value.
+     * @param grpId Cache Group ID. First part of the key.
+     * @param pageId Page ID. Second part of the key.
+     * @param reqVer Requested entry version, counter associated with value.
      * @param absent return if provided page is not presented in map.
-     * @param outdated return if provided {@code ver} counter is greater than initial provided
+     * @param outdated return if provided {@code reqVer} version is greater than value in map (was used for put).
      * @return A value associated with the given key.
      */
-    public long get(int grpId, long pageId, int ver, long absent, long outdated);
+    public long get(int grpId, long pageId, int reqVer, long absent, long outdated);
 
     /**
      * Associates the given key with the given value.
      *
-     * @param cacheId Cache ID
-     * @param pageId Page ID.
+     * @param cacheId Cache ID. First part of the key.
+     * @param pageId Page ID. Second part of the key.
      * @param val Value to set.
      * @param ver Version/counter associated with value, can be used to check if value is outdated.
      */
     public void put(int cacheId, long pageId, long val, int ver);
 
     /**
-     * Refresh outdated value.
+     * Refresh outdated value. Sets provided version to value associated with cache and page.
      *
-     * @param cacheId Cache Group ID.
-     * @param pageId Page ID.
-     * @param tag Partition tag.
+     * @param cacheId First part of the key. Cache Group ID.
+     * @param pageId Second part of the key. Page ID.
+     * @param ver Partition tag.
      * @return A value associated with the given key.
      */
-    public long refresh(int cacheId, long pageId, int tag);
+    public long refresh(int cacheId, long pageId, int ver);
 
     /**
      * Removes key-value association for the given key.
-     * @param grpId Cache group ID.
+     * @param grpId Cache Group ID.
      * @param pageId Page ID.
      * @return {@code True} if value was actually found and removed.
      */
@@ -69,7 +70,6 @@ public interface LoadedPagesMap {
      * @return Maximum number of entries in the map. This maximum can not be always reached.
      */
     public int capacity();
-
 
     /**
      * @return Current number of entries in the map.

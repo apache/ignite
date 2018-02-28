@@ -28,6 +28,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_LONG_HASH_MAP
 import static org.apache.ignite.IgniteSystemProperties.getFloat;
 import static org.apache.ignite.internal.util.GridUnsafe.getInt;
 import static org.apache.ignite.internal.util.GridUnsafe.getLong;
+import static org.apache.ignite.internal.util.GridUnsafe.putInt;
+import static org.apache.ignite.internal.util.GridUnsafe.putLong;
 
 /**
  *
@@ -66,17 +68,20 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     /** Value offset from entry base. */
     private static final int VALUE_OFFSET = PAGE_ID_OFFSET + PAGE_ID_SIZE;
 
-    /** Tag offset from entry base. */
-    private static final int TAG_OFFSET = 4;
+    /** Version (tag/generation) offset from entry base. */
+    private static final int VERSION_SIZE  = 4;
 
-    /** */
+    /** Version (tag/generation) offset from entry base. */
+    private static final int VERSION_OFFSET = VALUE_OFFSET + VALUE_SIZE;
+
+    /** Page ID used for empty bucket. */
     private static final long EMPTY_PAGE_ID = 0;
 
-    /** */
+    /** Cache Group ID used for empty bucket. */
     private static final int EMPTY_CACHE_GRP_ID = 0;
 
     /** Bytes required for storing one entry (cell). */
-    private static final int BYTES_PER_CELL = IDEAL_BUCKET_SIZE + GRP_ID_SIZE + PAGE_ID_SIZE + VALUE_SIZE;
+    private static final int BYTES_PER_CELL = IDEAL_BUCKET_SIZE + GRP_ID_SIZE + PAGE_ID_SIZE + VALUE_SIZE + VERSION_SIZE;
 
     /** Number of buckets, indicates range of scan memory, max probe count and maximum map size. */
     private final int numBuckets;
@@ -131,7 +136,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     }
 
     /** {@inheritDoc} */
-    @Override public long get(int grpId, long pageId, int ver, long absent, long outdated) {
+    @Override public long get(int grpId, long pageId, int reqVer, long absent, long outdated) {
         assert grpId != 0;
         int idxInit = U.safeAbs(FullPageId.hashCode(grpId, pageId)) % numBuckets;
 
@@ -139,7 +144,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
             int idxCurr = (idxInit + i) % numBuckets;
 
             final long base = entryBase(idxCurr);
-            final int dibEntryToInsert = distance(idxCurr, idxInit);
+            final int distanceFromInit = distance(idxCurr, idxInit);
 
             final int curGrpId = getGrpId(base);
             final long curPageId = getPageId(base);
@@ -151,10 +156,15 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
                 return absent;
             else if (curGrpId == grpId && curPageId == pageId) {
                 //equal value found
-                return curVal;
+                long actualVer = getVersion(base);
+                boolean freshVal = actualVer >= reqVer;
+
+                return freshVal ? curVal : outdated;
             }
-            else if (dibCurEntry < dibEntryToInsert)
+            else if (dibCurEntry < distanceFromInit) {
+                //current entry has quite good position,  it would be swapped at hypothetical insert of current value
                 return absent;
+            }
         }
 
         return absent;
@@ -168,7 +178,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
 
         int grpIdToInsert = grpId;
         long pageIdToInsert = pageId;
-        int tagToInsert = ver;
+        int verToInsert = ver;
         long valToInsert = val;
         long idxIdealToInsert = idxInit;
         int swapCount = 0;
@@ -185,10 +195,11 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
                 final long curPageId = getPageId(base);
                 final int curIdealBucket = getIdealBucket(base);
                 final long curVal = getValue(base);
+                final int curVer = getVersion(base);
                 final int dibCurEntry = distance(idxCurr, curIdealBucket);
 
                 if (isEmpty(curGrpId, curPageId)) {
-                    setCellValue(base, idxIdealToInsert, grpIdToInsert, pageIdToInsert, valToInsert);
+                    setCellValue(base, idxIdealToInsert, grpIdToInsert, pageIdToInsert, valToInsert, verToInsert);
 
                     setSize(size() + 1);
                     return;
@@ -209,12 +220,13 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
                 }
                 else if (dibCurEntry < dibEntryToInsert) {
                     //swapping *toInsert and state in bucket: save cur state to bucket
-                    setCellValue(base, idxIdealToInsert, grpIdToInsert, pageIdToInsert, valToInsert);
+                    setCellValue(base, idxIdealToInsert, grpIdToInsert, pageIdToInsert, valToInsert, verToInsert);
 
                     idxIdealToInsert = curIdealBucket;
                     pageIdToInsert = curPageId;
                     grpIdToInsert = curGrpId;
                     valToInsert = curVal;
+                    verToInsert = curVer;
 
                     swapCount++;
                 }
@@ -262,7 +274,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
 
         setSize(size() - 1);
 
-        //scanning rest of map
+        //scanning rest of map to perform backward shifts
         for (int i = 0; i < numBuckets - 1; i++) {
             int idxCurr = (idxEqualValFound + i) % numBuckets;
             int idxNext = (idxEqualValFound + i + 1) % numBuckets;
@@ -273,6 +285,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
             final int nextGrpId = getGrpId(baseNext);
             final long nextPageId = getPageId(baseNext);
             final int nextIdealBucket = getIdealBucket(baseNext);
+            final int nextEntryVer = getVersion(baseNext);
 
             if (isEmpty(nextGrpId, nextPageId)
                 || distance(idxNext, nextIdealBucket) == 0) {
@@ -281,7 +294,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
                 return true;
             }
             else
-                setCellValue(baseCurr, nextIdealBucket, nextGrpId, nextPageId, getValue(baseNext));
+                setCellValue(baseCurr, nextIdealBucket, nextGrpId, nextPageId, getValue(baseNext), nextEntryVer);
         }
 
         int lastShiftedIdx = (idxEqualValFound -1) % numBuckets;
@@ -302,10 +315,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
 
             long base = entryBase(idxCurr);
 
-            //todo provide tag
-            int tag = 1; //GridUnsafe.getInt(base + TAG_OFFSET);
-
-            return new ReplaceCandidate(tag, getValue(base),
+            return new ReplaceCandidate(getVersion(base), getValue(base),
                 new FullPageId(getPageId(base), getGrpId(base)));
         }
 
@@ -323,7 +333,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     }
 
     //todo implement
-    @Override public long refresh(int cacheId, long pageId, int tag) {
+    @Override public long refresh(int cacheId, long pageId, int ver) {
         throw new UnsupportedOperationException();
     }
 
@@ -380,6 +390,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
         setGrpId(addr, EMPTY_CACHE_GRP_ID);
         setValue(addr, 0);
         setIdealBucket(addr, 0);
+        setVersion(addr, 0);
     }
 
     /**
@@ -389,7 +400,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     private void setIdealBucket(long base, long idxIdeal) {
         assert idxIdeal>=0 && idxIdeal < numBuckets;
 
-        GridUnsafe.putLong(base + IDEAL_BUCKET_OFFSET, idxIdeal);
+        putLong(base + IDEAL_BUCKET_OFFSET, idxIdeal);
     }
 
     /**
@@ -413,6 +424,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
         int curGrpId = getGrpId(base);
         long curPageId = getPageId(base);
         long curVal = getValue(base);
+        long ver = getVersion(base);
 
         sb.append("slot [").append(idx).append("]:");
 
@@ -423,7 +435,8 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
         sb.append("(grp=").append(curGrpId).append(",");
         sb.append("page=").append(curPageId).append(")");
         sb.append("->");
-        sb.append("val=").append(curVal).append(",");
+        sb.append("(val=").append(curVal).append(",");
+        sb.append("ver=").append(ver).append(")");
         sb.append("\n");
     }
 
@@ -431,15 +444,17 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     /**
      * @param base Entry base, address in buffer of the entry start.
      * @param idealBucket number of ideal bucket (cell) to insert this value.
-     * @param grpId Group ID to be stored in entry.
-     * @param pageId
-     * @param val
+     * @param grpId Entry key. Group ID to be stored in entry.
+     * @param pageId Entry key. Page ID to be stored.
+     * @param val Entry value associated with key.
+     * @param ver Entry version.
      */
-    private void setCellValue(long base, long idealBucket, int grpId, long pageId, long val) {
+    private void setCellValue(long base, long idealBucket, int grpId, long pageId, long val, int ver) {
         setIdealBucket(base, idealBucket);
         setGrpId(base, grpId);
         setPageId(base, pageId);
         setValue(base, val);
+        setVersion(base, ver);
     }
 
     /**
@@ -455,7 +470,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     }
 
     private void setPageId(long base, long pageIdToInsert) {
-        GridUnsafe.putLong(base + PAGE_ID_OFFSET, pageIdToInsert);
+        putLong(base + PAGE_ID_OFFSET, pageIdToInsert);
     }
 
     /**
@@ -471,7 +486,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
      * @param grpId Group ID to be stored in entry.
      */
     private void setGrpId(long base, int grpId) {
-        GridUnsafe.putInt(base + GRP_ID_OFFSET, grpId);
+        putInt(base + GRP_ID_OFFSET, grpId);
     }
 
     private long getValue(long base) {
@@ -479,7 +494,15 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     }
 
     private void setValue(long base, long pageId) {
-        GridUnsafe.putLong(base + VALUE_OFFSET, pageId);
+        putLong(base + VALUE_OFFSET, pageId);
+    }
+
+    private int getVersion(long base) {
+        return getInt(base + VERSION_OFFSET);
+    }
+
+    private void setVersion(long base, int ver) {
+        putInt(base + VERSION_OFFSET, ver);
     }
 
     /** {@inheritDoc} */
@@ -492,7 +515,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
      * @param sz new size to set.
      */
     private void setSize(int sz) {
-        GridUnsafe.putInt(baseAddr + MAPSIZE_OFFSET, sz);
+        putInt(baseAddr + MAPSIZE_OFFSET, sz);
     }
 
     /**
@@ -505,9 +528,9 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
             if (!isEmptyAt(i)) {
                 long base = entryBase(i);
 
-                int grpId = GridUnsafe.getInt(base + GRP_ID_OFFSET);
-                long pageId = GridUnsafe.getLong(base + PAGE_ID_OFFSET);
-                long val = GridUnsafe.getLong(base + VALUE_OFFSET);
+                int grpId = getGrpId(base);
+                long pageId = getPageId(base);
+                long val = getValue(VALUE_OFFSET);
 
                 visitor.accept(new FullPageId(pageId, grpId), val);
             }

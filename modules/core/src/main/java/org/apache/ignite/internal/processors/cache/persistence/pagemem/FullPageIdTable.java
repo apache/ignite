@@ -141,10 +141,10 @@ public class FullPageIdTable implements LoadedPagesMap {
     }
 
     /** {@inheritDoc} */
-    @Override public long get(int grpId, long pageId, int ver, long absent, long outdated) {
+    @Override public long get(int grpId, long pageId, int reqVer, long absent, long outdated) {
         assert assertKey(grpId, pageId);
 
-        int idx = getKey(grpId, pageId, ver, false);
+        int idx = getKey(grpId, pageId, reqVer, false);
 
         if (idx == -1)
             return absent;
@@ -160,21 +160,21 @@ public class FullPageIdTable implements LoadedPagesMap {
      *
      * @param cacheId Cache ID.
      * @param pageId Page ID.
-     * @param tag Partition tag.
+     * @param ver Partition tag.
      * @return A value associated with the given key.
      */
-    public long refresh(int cacheId, long pageId, int tag) {
+    public long refresh(int cacheId, long pageId, int ver) {
         assert assertKey(cacheId, pageId);
 
-        int idx = getKey(cacheId, pageId, tag, true);
+        int idx = getKey(cacheId, pageId, ver, true);
 
-        assert idx >= 0 : "[idx=" + idx + ", tag=" + tag + ", cacheId=" + cacheId +
+        assert idx >= 0 : "[idx=" + idx + ", tag=" + ver + ", cacheId=" + cacheId +
             ", pageId=" + U.hexLong(pageId) + ']';
 
-        assert tagAt(idx) < tag : "[idx=" + idx + ", tag=" + tag + ", cacheId=" + cacheId +
+        assert tagAt(idx) < ver : "[idx=" + idx + ", tag=" + ver + ", cacheId=" + cacheId +
             ", pageId=" + U.hexLong(pageId) + ", tagAtIdx=" + tagAt(idx) + ']';
 
-        setTagAt(idx, tag);
+        setTagAt(idx, ver);
 
         return valueAt(idx);
     }
