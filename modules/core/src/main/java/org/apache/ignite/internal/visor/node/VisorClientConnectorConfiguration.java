@@ -26,8 +26,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.visor.util.VisorTaskUtils.compactClass;
-
 /**
  * Data transfer object for client connector configuration.
  */
@@ -108,10 +106,10 @@ public class VisorClientConnectorConfiguration extends VisorDataTransferObject {
         jdbcEnabled = cfg.isJdbcEnabled();
         odbcEnabled = cfg.isOdbcEnabled();
         thinCliEnabled = cfg.isThinClientEnabled();
-        sslEnabled = cfg.isSslEnabled();
-        useIgniteSslCtxFactory = cfg.isUseIgniteSslContextFactory();
-        sslClientAuth = cfg.isSslClientAuth();
-        sslCtxFactory = compactClass(cfg.getSslContextFactory());
+        sslEnabled = false;
+        useIgniteSslCtxFactory = false;
+        sslClientAuth = false;
+        sslCtxFactory = null;
     }
 
     /**
@@ -225,6 +223,7 @@ public class VisorClientConnectorConfiguration extends VisorDataTransferObject {
         return sslCtxFactory;
     }
 
+    /** {@inheritDoc} */
     @Override public byte getProtocolVersion() {
         return V2;
     }
