@@ -50,21 +50,8 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
 
         init();
 
-        warmup0();
-
-        clearTable();
-
-        dropAndCreate();
-    }
-
-    /** Method to init benchmark fields. */
-    protected void init() {
-        // No-op.
-    }
-
-    /** Perform warmup keeping in mind wal optimization. */
-    private void warmup0() throws Exception {
-        BenchmarkUtils.println(cfg, "Starting custom warmup");
+        // Perform warmup keeping in mind wal optimization.
+        BenchmarkUtils.println(this.cfg, "Starting custom warmup");
 
         if (args.switchWal())
             executeUpdate(queries.turnOffWal());
@@ -76,8 +63,14 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         if (args.switchWal())
             executeUpdate(queries.turnOnWal());
 
-        BenchmarkUtils.println(cfg, "Custom warmup finished");
+        BenchmarkUtils.println(this.cfg, "Custom warmup finished");
 
+        dropAndCreate();
+    }
+
+    /** Method to init benchmark fields. */
+    protected void init() {
+        // No-op.
     }
 
     /**
@@ -117,11 +110,6 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     protected final void dropAndCreate() throws SQLException {
         executeUpdate(queries.dropTableIfExists());
         executeUpdate(queries.createTable());
-    }
-
-    /** Clears all the data in the test table. */
-    protected final void clearTable() throws SQLException {
-        executeUpdate(queries.deleteAll());
     }
 
     /** Retrieves records count in the test table. */
@@ -175,11 +163,10 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         List<String> rawParams = args.uploadJdbcParams();
 
         if (!rawParams.isEmpty()) {
-            // todo: requires java8!
             String kvList = String.join("&", rawParams);
             urlParams = "?" + kvList;
         }
 
-        return connection(url() + urlParams);
+        return connection(url + urlParams);
     }
 }

@@ -42,7 +42,7 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
     private final List<Connection> threadConnections = new ArrayList<>();
 
     /** JDBC URL. */
-    private String url;
+    protected String url;
 
     /** Each connection is also a transaction, so we better pin them to threads. */
     protected ThreadLocal<Connection> conn = new ThreadLocal<Connection>() {
@@ -167,9 +167,5 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
                 }
             }
         };
-    }
-
-    protected String url(){
-        return url;
     }
 }
