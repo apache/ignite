@@ -85,6 +85,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 
 /**
@@ -828,7 +829,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             skipStore,
             keepBinary);
 
-        if (fut.isDone())
+        if (fut.error() != null)
             return fut;
 
         for (KeyCacheObject key : keys) {
@@ -1122,6 +1123,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req.skipStore(),
                     req.keepBinary(),
                     req.nearCache());
+
+                if (txFut.isDone() && txFut.error() != null)
+                    return new GridDhtFinishedFuture<>(txFut.error());
 
                 final GridDhtTxLocal t = tx;
 

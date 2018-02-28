@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -54,6 +56,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static java.lang.Thread.sleep;
@@ -551,6 +554,30 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             assertTrue("Unexpected incomplete future", f.isDone());
         }
 
+    }
+
+    /**
+     *
+     */
+    public void testEnlistMany() throws Exception {
+        final Ignite client = startClient();
+
+        Map<Integer, Integer> entries = new HashMap<>();
+
+        for (int i = 0; i < 1000000; i++)
+            entries.put(i, i);
+
+        try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 200, 0)) {
+            client.cache(CACHE_NAME).putAll(entries);
+
+            tx.commit();
+        }
+        catch (Throwable t) {
+            // No-op.
+            assertTrue("Expecting timeout", X.hasCause(t, TransactionTimeoutException.class));
+        }
+
+        assertEquals(0, client.cache(CACHE_NAME).size());
     }
 
     /**

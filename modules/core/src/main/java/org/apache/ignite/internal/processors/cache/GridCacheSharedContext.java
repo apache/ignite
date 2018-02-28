@@ -982,14 +982,14 @@ public class GridCacheSharedContext<K, V> {
      * @return Rollback future.
      */
     public IgniteInternalFuture rollbackTxAsync(GridNearTxLocal tx) {
-        tx.txState().awaitLastFuture(this);
-
         final GridNearTxLocal locTx = txMgr.userTx();
 
         // {@code True) if rolling back from tx control thread.
         boolean clearThreadMap = locTx == tx;
 
-        if (!clearThreadMap)
+        if (clearThreadMap)
+            tx.txState().awaitLastFuture(this);
+        else
             tx.state(MARKED_ROLLBACK);
 
         return tx.rollbackNearTxLocalAsync(clearThreadMap, false);

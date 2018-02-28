@@ -719,6 +719,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             skipStore,
             keepBinary);
 
+        if (fut.error() != null)
+            return new GridFinishedFuture<>(fut.error());
+
         return new GridEmbeddedFuture<>(
             fut,
             new PLC1<GridCacheReturn>(ret) {

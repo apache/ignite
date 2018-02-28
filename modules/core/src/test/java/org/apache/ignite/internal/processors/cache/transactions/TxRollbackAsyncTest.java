@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -89,9 +91,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
     /** */
     private static final String CACHE_NAME = "test";
-
-    /** */
-    private static final String CACHE_NAME_2 = "test2";
 
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -225,7 +224,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         near.cache(CACHE_NAME).put(1, 0);
 
-        rollbackAsync(tx);
+        rollbackAsync(tx).get();
 
         try {
             assertNull(near.cache(CACHE_NAME).get(0));
@@ -257,7 +256,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         // Normal rollback async before put.
         tx = near.transactions().txStart();
 
-        rollbackAsync(tx);
+        rollbackAsync(tx).get();
 
         try {
             assertNull(near.cache(CACHE_NAME).get(0));
@@ -417,6 +416,35 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    public void testEnlistMany() throws Exception {
+        final Ignite client = startClient();
+
+        Map<Integer, Integer> entries = new HashMap<>();
+
+        for (int i = 0; i < 1000000; i++)
+            entries.put(i, i);
+
+        IgniteInternalFuture<?> fut = null;
+
+        try(Transaction tx = client.transactions().txStart()) {
+            fut = rollbackAsync(tx, 200);
+
+            client.cache(CACHE_NAME).putAll(entries);
+
+            tx.commit();
+        }
+        catch (Throwable t) {
+            assertTrue(X.hasCause(t, TransactionRollbackException.class));
+        }
+
+        fut.get();
+
+        assertEquals(0, client.cache(CACHE_NAME).size());
+    }
+
+    /**
      * Rollback tx while lock request is delayed.
      */
     public void testRollbackDelayLockRequest() throws Exception {
@@ -536,7 +564,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
             //spi.blockMessages(GridNearTxFinishResponse.class, client.name());
 
-            rollbackAsync(tx);
+            rollbackAsync(tx).get();
         }
 
 
@@ -751,12 +779,26 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      * @param tx Tx to rollback.
      */
-    private void rollbackAsync(final Transaction tx) throws Exception {
-        multithreadedAsync(new Runnable() {
+    private IgniteInternalFuture<?> rollbackAsync(final Transaction tx) throws Exception {
+        return multithreadedAsync(new Runnable() {
             @Override public void run() {
                 tx.rollback();
             }
-        }, 1, "tx-rollback-thread").get();
+        }, 1, "tx-rollback-thread");
+    }
+
+    /**
+     * @param tx Tx to rollback.
+     * @param delay Delay in millis.
+     */
+    private IgniteInternalFuture<?> rollbackAsync(final Transaction tx, long delay) throws Exception {
+        return multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                doSleep(delay);
+
+                tx.rollback();
+            }
+        }, 1, "tx-rollback-thread");
     }
 
 }
