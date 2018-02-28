@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -54,16 +55,22 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
     };
 
     /** Received messages count grouped by message type. */
-    private final ConcurrentMap<String, LongAdder> rcvdMsgsCntByType = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Short, LongAdder> rcvdMsgsCntByType = new ConcurrentHashMap<>();
 
     /** Received messages count grouped by sender. */
     private final ConcurrentMap<UUID, LongAdder> rcvdMsgsCntByNode = new ConcurrentHashMap<>();
 
     /** Sent messages count grouped by message type. */
-    private final ConcurrentMap<String, LongAdder> sentMsgsCntByType = new ConcurrentHashMap<>();
+    private final ConcurrentMap<Short, LongAdder> sentMsgsCntByType = new ConcurrentHashMap<>();
 
     /** Sent messages count grouped by receiver. */
     private final ConcurrentMap<UUID, LongAdder> sentMsgsCntByNode = new ConcurrentHashMap<>();
+
+    /** Method to synchronize access to message type map. */
+    private final Object msgTypMapMux = new Object();
+
+    /** Message type map. */
+    private volatile Map<Short, String> msgTypMap;
 
     /** {@inheritDoc} */
     @Override public void onBytesSent(int bytesCnt) {
@@ -90,7 +97,9 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
         if (msg instanceof GridIoMessage)
             msg = ((GridIoMessage)msg).message();
 
-        LongAdder cntByType = F.addIfAbsent(sentMsgsCntByType, msg.getClass().getSimpleName(), LONG_ADDER_FACTORY);
+        updateMessageTypeMap(msg);
+
+        LongAdder cntByType = F.addIfAbsent(sentMsgsCntByType, msg.directType(), LONG_ADDER_FACTORY);
         LongAdder cntByNode = F.addIfAbsent(sentMsgsCntByNode, nodeId, LONG_ADDER_FACTORY);
 
         cntByType.increment();
@@ -112,11 +121,45 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
         if (msg instanceof GridIoMessage)
             msg = ((GridIoMessage)msg).message();
 
-        LongAdder cntByType = F.addIfAbsent(rcvdMsgsCntByType, msg.getClass().getSimpleName(), LONG_ADDER_FACTORY);
+        updateMessageTypeMap(msg);
+
+        LongAdder cntByType = F.addIfAbsent(rcvdMsgsCntByType, msg.directType(), LONG_ADDER_FACTORY);
         LongAdder cntByNode = F.addIfAbsent(rcvdMsgsCntByNode, nodeId, LONG_ADDER_FACTORY);
 
         cntByType.increment();
         cntByNode.increment();
+    }
+
+    /**
+     * Update message type map.
+     *
+     * @param msg Message.
+     */
+    private void updateMessageTypeMap(Message msg) {
+        short typeId = msg.directType();
+
+        Map<Short, String> msgTypMap0 = msgTypMap;
+
+        if (msgTypMap0 == null || !msgTypMap0.containsKey(typeId)) {
+            synchronized (msgTypMapMux) {
+                if (msgTypMap == null) {
+                    msgTypMap0 = new HashMap<>();
+
+                    msgTypMap0.put(typeId, msg.getClass().getName());
+
+                    msgTypMap = msgTypMap0;
+                }
+                else {
+                    if (!msgTypMap.containsKey(typeId)) {
+                        msgTypMap0 = new HashMap<>(msgTypMap);
+
+                        msgTypMap0.put(typeId, msg.getClass().getName());
+
+                        msgTypMap = msgTypMap0;
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -176,7 +219,14 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
      * @return Map containing message types and respective counts.
      */
     public Map<String, Long> receivedMessagesByType() {
-        return convertStatistics(rcvdMsgsCntByType);
+        Map<Short, Long> res = convertStatistics(rcvdMsgsCntByType);
+
+        Map<String, Long> res0 = new HashMap<>();
+
+        for (Map.Entry<Short, Long> entry : res.entrySet())
+            res0.put(msgTypMap.get(entry.getKey()), entry.getValue());
+
+        return res0;
     }
 
     /**
@@ -194,7 +244,14 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
      * @return Map containing message types and respective counts.
      */
     public Map<String, Long> sentMessagesByType() {
-        return convertStatistics(sentMsgsCntByType);
+        Map<Short, Long> res = convertStatistics(sentMsgsCntByType);
+
+        Map<String, Long> res0 = new HashMap<>();
+
+        for (Map.Entry<Short, Long> entry : res.entrySet())
+            res0.put(msgTypMap.get(entry.getKey()), entry.getValue());
+
+        return res0;
     }
 
     /**
