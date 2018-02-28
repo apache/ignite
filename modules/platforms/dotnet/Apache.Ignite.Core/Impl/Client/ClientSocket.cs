@@ -517,25 +517,6 @@ namespace Apache.Ignite.Core.Impl.Client
         }
 
         /// <summary>
-        /// Gets the socket stream.
-        /// </summary>
-        private static Stream GetSocketStream(Socket socket, IgniteClientConfiguration cfg)
-        {
-            var stream = new NetworkStream(socket)
-            {
-                ReadTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
-                WriteTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
-            };
-
-            if (cfg.SslStreamFactory == null)
-            {
-                return stream;
-            }
-
-            return cfg.SslStreamFactory.Create(stream, cfg.Host);
-        }
-
-        /// <summary>
         /// Checks if any of the current requests timed out.
         /// </summary>
         private void CheckTimeouts(object _)

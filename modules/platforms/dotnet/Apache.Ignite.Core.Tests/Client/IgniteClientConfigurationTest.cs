@@ -20,8 +20,6 @@ namespace Apache.Ignite.Core.Tests.Client
     using System;
     using System.Configuration;
     using System.IO;
-    using System.Net;
-    using System.Net.Sockets;
     using System.Security.Authentication;
     using System.Text;
     using System.Xml;
