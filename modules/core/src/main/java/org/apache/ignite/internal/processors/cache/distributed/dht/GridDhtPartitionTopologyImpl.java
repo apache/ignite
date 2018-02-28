@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -37,6 +38,7 @@ import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
@@ -2144,7 +2146,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         UUID locId = ctx.localNodeId();
 
-        List<GridDhtLocalPartition> rentingQueue = new ArrayList<>();
+        List<IgniteInternalFuture<?>> rentingFutures = new ArrayList<>();
 
         for (int p = 0; p < locParts.length(); p++) {
             GridDhtLocalPartition part = locParts.get(p);
@@ -2163,11 +2165,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     // If all affinity nodes are owners, then evict partition from local node.
                     if (nodeIds.containsAll(F.nodeIds(affNodes))) {
-                        updateSeq = updateLocal(part.id(), RENTING, updateSeq, aff.topologyVersion());
+                        IgniteInternalFuture<?> rentFuture = part.rent(false);
+                        rentingFutures.add(rentFuture);
+
+                        updateSeq = updateLocal(part.id(), part.state(), updateSeq, aff.topologyVersion());
 
                         changed = true;
-
-                        rentingQueue.add(part);
 
                         if (log.isDebugEnabled()) {
                             log.debug("Evicted local partition (all affinity nodes are owners) [grp=" + grp.cacheOrGroupName() +
@@ -2188,14 +2191,12 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                 ClusterNode n = nodes.get(i);
 
                                 if (locId.equals(n.id())) {
-                                    updateSeq = updateLocal(part.id(),
-                                        RENTING,
-                                        updateSeq,
-                                        aff.topologyVersion());
+                                    IgniteInternalFuture<?> rentFuture = part.rent(false);
+                                    rentingFutures.add(rentFuture);
+
+                                    updateSeq = updateLocal(part.id(), part.state(), updateSeq, aff.topologyVersion());
 
                                     changed = true;
-
-                                    rentingQueue.add(part);
 
                                     if (log.isDebugEnabled()) {
                                         log.debug("Evicted local partition (this node is oldest non-affinity node) [" +
@@ -2211,7 +2212,29 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
         }
 
-        rentingQueue.forEach(part -> part.rent(true));
+        // After all rents are finished resend partitions.
+        if (!rentingFutures.isEmpty()) {
+            final AtomicInteger rentingPartitions = new AtomicInteger(rentingFutures.size());
+
+            for (IgniteInternalFuture<?> rentingFuture : rentingFutures) {
+                rentingFuture.listen(f -> {
+                    int remaining = rentingPartitions.decrementAndGet();
+
+                    if (remaining == 0) {
+                        lock.writeLock().lock();
+
+                        try {
+                            this.updateSeq.incrementAndGet();
+
+                            ctx.exchange().scheduleResendPartitions();
+                        }
+                        finally {
+                            lock.writeLock().unlock();
+                        }
+                    }
+                });
+            }
+        }
 
         return changed;
     }
