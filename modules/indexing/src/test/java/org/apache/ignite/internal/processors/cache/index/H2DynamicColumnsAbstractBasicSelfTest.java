@@ -192,6 +192,11 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
         run(cache, "ALTER TABLE City DROP COLUMN state_name");
 
+        List<List<?>> res1 = run(cache, "SELECT * from City c " +
+            "WHERE c.population > 5000000");
+
+        assertEquals(res1.get(0).size(), 3);
+
         List<List<?>> res = run(cache, "SELECT p.name from Person p join City c on p.city = c.name where " +
             "c.population > 5000000 order by p.name");
 
