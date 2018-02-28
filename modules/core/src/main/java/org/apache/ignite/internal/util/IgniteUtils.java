@@ -2184,6 +2184,19 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * @param mac MAC address.
+     * @param rmt Remote node.
+     * @return Whether given MAC address and node's MAC address are identical.
+     */
+    public static boolean sameMacs(String mac, ClusterNode rmt) {
+        assert rmt != null;
+
+        String rmtMacs = rmt.attribute(IgniteNodeAttributes.ATTR_MACS);
+
+        return mac != null && mac.equals(rmtMacs);
+    }
+
+    /**
      * Gets a list of all local non-loopback IPs known to this JVM.
      * Note that this will include both IPv4 and IPv6 addresses (even if one "resolves"
      * into another). Loopbacks will be skipped.

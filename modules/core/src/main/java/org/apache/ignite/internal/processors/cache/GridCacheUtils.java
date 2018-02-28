@@ -473,21 +473,25 @@ public class GridCacheUtils {
         if (!ctx.config().isReadFromBackup())
             return affNodes.get(0);
 
-        int r = ThreadLocalRandom.current().nextInt(affNodes.size());
+        String locMacs = ctx.localNode().attribute(IgniteNodeAttributes.ATTR_MACS);
 
-        ClusterNode n0 = null;
+        assert locMacs != null;
 
-        for (ClusterNode node : affNodes) {
+        int[] aliveIdxs = new int[affNodes.size()];
+        int alive = 0;
+
+        for (int i = 0; i < affNodes.size(); i++) {
+            ClusterNode node = affNodes.get(i);
+
             if (canRemap || ctx.discovery().alive(node)) {
-                if (U.sameMacs(ctx.localNode(), node))
+                if (U.sameMacs(locMacs, node))
                     return node;
 
-                if (r-- == 0 || n0 == null)
-                    n0 = node;
+                aliveIdxs[alive++] = i;
             }
         }
 
-        return n0;
+        return alive == 0 ? null : affNodes.get(aliveIdxs[ThreadLocalRandom.current().nextInt(alive)]);
     }
 
     /**
