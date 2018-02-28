@@ -222,17 +222,10 @@ namespace Apache.Ignite.Linq
             var updates = new List<ReadOnlyCollection<Expression>>();
 
             var methodCall = (MethodCallExpression) updateDescription.Body;
-            while (true)
+            while (methodCall != null)
             {
-                if (methodCall.Object is MethodCallExpression)
-                {
-                    methodCall = (MethodCallExpression) methodCall.Object;
-                    updates.Add(methodCall.Arguments);
-                }
-                else
-                {
-                    break;
-                }
+                updates.Add(methodCall.Arguments);
+                methodCall = methodCall.Object as MethodCallExpression;
             }
 
             var lambda = Expression.Lambda<Func<TValue, UpdateDescription>>(
@@ -249,7 +242,7 @@ namespace Apache.Ignite.Linq
         /// <param name="query">The query.</param>
         /// <param name="updateDescription">The update description.</param>
         /// <returns>Affected row count.</returns>
-        internal static int UpdateAllImpl<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query,
+        internal static int UpdateAllImpl<TKey, TValue>(IQueryable<ICacheEntry<TKey, TValue>> query,
             Expression<Func<TValue, UpdateDescription>> updateDescription)
         {
             IgniteArgumentCheck.NotNull(query, "query");
