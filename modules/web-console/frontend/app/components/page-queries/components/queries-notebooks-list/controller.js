@@ -19,10 +19,10 @@ import headerTemplate from '../../../../../app/primitives/ui-grid-header/index.t
 import createNotebookModalTemplateUrl from './notebook-new.tpl.pug';
 
 export class NotebooksListCtrl {
-    static $inject = ['IgniteNotebook', 'IgniteMessages', '$scope', '$modal'];
+    static $inject = ['IgniteNotebook', 'IgniteMessages', 'IgniteLoading', '$scope', '$modal'];
 
-    constructor(IgniteNotebook, IgniteMessages, $scope, $modal) {
-        Object.assign(this, { IgniteNotebook, IgniteMessages, $scope, $modal });
+    constructor(IgniteNotebook, IgniteMessages, IgniteLoading, $scope, $modal) {
+        Object.assign(this, { IgniteNotebook, IgniteMessages, IgniteLoading, $scope, $modal });
 
         const notebookNameTemplate = `<div class="ui-grid-cell-contents notebook-name"><a ui-sref="base.sql.tabs.notebook({ noteId: row.entity._id })">{{ row.entity.name }}</a></div>`;
         const sqlQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.sqlQueriesParagraphsLength}}</div>`;
@@ -86,8 +86,17 @@ export class NotebooksListCtrl {
     }
 
     async _loadAllNotebooks() {
-        this.notebooks = await this.IgniteNotebook.read();
-        this.gridOptions.data = this._preprocessNotebooksList(this.notebooks);
+        try {
+            this.IgniteLoading.start('notebooksLoading');
+            this.notebooks = await this.IgniteNotebook.read();
+            this.gridOptions.data = this._preprocessNotebooksList(this.notebooks);
+
+        } catch (err) {
+            this.IgniteMessages.showError(err);
+
+        } finally {
+            await this.IgniteLoading.finish('notebooksLoading');
+        }
     }
 
     _preprocessNotebooksList(notebooks = []) {
@@ -113,20 +122,24 @@ export class NotebooksListCtrl {
 
     openCreateNotebookModal() {
         // Name value is passed from modal scope via Promise as 'this' reference can't be passed and called directly in modal controller.
-        const createNotebook = (name) => new Promise((resolve) => { resolve(name); }).then((name) => this.createNotebook(name));
-        this.$scope.createNotebook = createNotebook;
+        this.$scope.createNotebook = (name) => new Promise((resolve) => { resolve(name); }).then((name) => this.createNotebook(name));
         this.createNotebookModal = this.$modal({ scope: this.$scope, templateUrl: createNotebookModalTemplateUrl, show: true });
     }
 
     async createNotebook(newNotebookName) {
         try {
+            this.IgniteLoading.start('notebooksLoading');
             await this.IgniteNotebook.create(newNotebookName);
+            await this.IgniteLoading.finish('notebooksLoading');
+
             this._loadAllNotebooks();
 
         } catch (err) {
             this.IgniteMessages.showError(err);
 
         } finally {
+            await this.IgniteLoading.finish('notebooksLoading');
+
             if (this.createNotebookModal)
                 this.createNotebookModal.hide();
         }
@@ -137,8 +150,19 @@ export class NotebooksListCtrl {
     }
 
     async deleteNotebooks() {
-        await this.IgniteNotebook.removeBatch(this.gridApi.selection.getSelectedRows());
-        this._loadAllNotebooks();
+        try {
+            this.IgniteLoading.start('notebooksLoading');
+            await this.IgniteNotebook.removeBatch(this.gridApi.selection.getSelectedRows());
+            await this.IgniteLoading.finish('notebooksLoading');
+
+            this._loadAllNotebooks();
+
+        } catch (err) {
+            this.IgniteMessages.showError(err);
+
+        } finally {
+            await this.IgniteLoading.finish('notebooksLoading');
+        }
     }
 
     _adjustHeight(rows) {

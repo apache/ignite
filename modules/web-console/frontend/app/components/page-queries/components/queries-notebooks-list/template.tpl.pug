@@ -43,7 +43,7 @@ page-queries-slot(slot-name="'queriesButtons'")
 
 
 
-        .panel-collapse
+        .panel-collapse(ignite-loading='notebooksLoading' ignite-loading-text='Loading notebooks...')
             .grid.ui-grid--ignite(ui-grid='$ctrl.gridOptions' ui-grid-tree-view ui-grid-resize-columns ui-grid-selection ui-grid-exporter ui-grid-pinning ui-grid-hovering)
             grid-no-data(grid-api='$ctrl.gridApi')
                 | You have no notebooks.
