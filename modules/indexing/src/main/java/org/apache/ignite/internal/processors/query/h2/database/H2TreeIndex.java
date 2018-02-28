@@ -517,6 +517,9 @@ public class H2TreeIndex extends GridH2IndexBase {
     @Override public void refreshColumnIds() {
         super.refreshColumnIds();
 
+        if (inlineIdxs == null)
+            return;
+
         List<InlineIndexHelper> inlineHelpers = getAvailableInlineColumns(indexColumns);
 
         assert inlineIdxs.size() == inlineHelpers.size();
