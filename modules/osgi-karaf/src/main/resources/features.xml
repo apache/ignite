@@ -40,7 +40,6 @@
         <feature>ignite-jta</feature>
         <feature>ignite-kafka</feature>
         <feature>ignite-mqtt</feature>
-        <feature>ignite-indexing</feature>
         <!-- KARAF-4129 Karaf feature containing a fragment that attaches to pax-logging-api cannot be installed
         <feature>ignite-log4j</feature>-->
         <feature>ignite-rest-http</feature>
@@ -123,7 +122,8 @@
         <bundle start="true" dependency="true">mvn:org.osgi/org.osgi.enterprise/${osgi.enterprise.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.lucene/${lucene.bundle.version}</bundle>
         <bundle start="true" dependency="true">mvn:com.h2database/h2/${h2.version}</bundle>
-        <bundle start="true">mvn:org.apache.ignite/ignite-indexing/${project.version}</bundle>
+        <bundle start="true" dependency="true">mvn:org.apache.lucene/lucene-analyzers-common/${lucene.version}</bundle>
+        <bundle start="false">mvn:org.apache.ignite/ignite-indexing/${project.version}</bundle>
     </feature>
 
     <feature name="ignite-jcl" version="${project.version}" description="Apache Ignite :: JCL">
