@@ -788,9 +788,9 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
         destroyCacheDataStore();
 
-        ((GridDhtPreloader)grp.preloader()).onPartitionEvicted(this, updateSeq);
-
         rent.onDone();
+
+        ((GridDhtPreloader)grp.preloader()).onPartitionEvicted(this, updateSeq);
 
         clearDeferredDeletes();
     }

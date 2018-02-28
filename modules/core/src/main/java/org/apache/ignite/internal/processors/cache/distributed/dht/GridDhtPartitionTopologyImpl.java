@@ -2221,9 +2221,16 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     int remaining = rentingPartitions.decrementAndGet();
 
                     if (remaining == 0) {
-                        this.updateSeq.incrementAndGet();
+                        lock.writeLock().lock();
 
-                        ctx.exchange().scheduleResendPartitions();
+                        try {
+                            this.updateSeq.incrementAndGet();
+
+                            ctx.exchange().scheduleResendPartitions();
+                        }
+                        finally {
+                            lock.writeLock().unlock();
+                        }
                     }
                 });
             }
