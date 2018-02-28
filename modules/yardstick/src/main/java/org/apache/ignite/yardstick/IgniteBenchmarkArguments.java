@@ -264,6 +264,7 @@ public class IgniteBenchmarkArguments {
     private int clientNodesAfterId = -1;
 
     /** */
+    // TODO: Rename to "--disable-wal"
     @Parameter(names = {"--switch-wal"},
         arity = 1,
         description = "Upload benchmark only: " +
