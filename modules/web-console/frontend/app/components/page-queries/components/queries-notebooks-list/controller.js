@@ -123,8 +123,22 @@ export class NotebooksListCtrl {
     }
 
     fetchNewNotebookNameFromModal(notebookName = '') {
+        const cloningMode = notebookName !== '';
+        const modalTexts = {
+            create: {
+                title: 'New query notebook',
+                buttonText: 'Create'
+            },
+            clone: {
+                title: 'Clone query notebook',
+                buttonText: 'Clone'
+            }
+        };
+
         return new Promise((getName, cancel) => {
             this.$scope.name = notebookName;
+
+            this.$scope.modalText = cloningMode ? modalTexts.clone : modalTexts.create;
 
             this.createNotebookModal = this.$modal({ scope: this.$scope, templateUrl: createNotebookModalTemplateUrl, show: false });
 
@@ -168,8 +182,26 @@ export class NotebooksListCtrl {
         }
     }
 
-    cloneNotebook() {
+    async cloneNotebook() {
+        try {
+            const clonedNotebook = Object.assign({}, this.gridApi.selection.getSelectedRows()[0]);
+            const newNotebookName = await this.fetchNewNotebookNameFromModal(clonedNotebook.name);
 
+            this.IgniteLoading.start('notebooksLoading');
+            await this.IgniteNotebook.clone(newNotebookName, clonedNotebook);
+            await this.IgniteLoading.finish('notebooksLoading');
+
+            this._loadAllNotebooks();
+
+        } catch (err) {
+            this.IgniteMessages.showError(err);
+
+        } finally {
+            await this.IgniteLoading.finish('notebooksLoading');
+
+            if (this.createNotebookModal)
+                this.createNotebookModal.$promise.then(this.createNotebookModal.hide);
+        }
     }
 
     async deleteNotebooks() {
