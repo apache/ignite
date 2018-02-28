@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.Properties;
 import javax.naming.RefAddr;
 import javax.naming.Reference;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.util.typedef.F;

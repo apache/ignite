@@ -18,6 +18,7 @@
 package org.apache.ignite.jdbc.thin;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -28,6 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -35,7 +37,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Connection test.
+ * JDBC driver reconnect test with multiple addresses.
  */
 @SuppressWarnings("ThrowableNotThrown")
 public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSelfTest {
@@ -119,15 +121,96 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
      */
     public void testMultipleAddressesConnect() throws Exception {
         try (Connection conn = DriverManager.getConnection(url())) {
-            checkConnection(conn);
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("SELECT 1");
+
+                ResultSet rs = stmt.getResultSet();
+
+                assertTrue(rs.next());
+
+                assertEquals(1, rs.getInt(1));
+            }
         }
     }
 
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"EmptyTryBlock", "unused"})
-    public void testFailover() throws Exception {
+    public void testOneNodeFailoverOnStatementExecute() throws Exception {
+        checkReconnectOnStatementExecute(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAllNodesFailoverOnStatementExecute() throws Exception {
+        checkReconnectOnStatementExecute(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOneNodeFailoverOnResultSet() throws Exception {
+        checkReconnectOnResultSet(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAllNodesFailoverOnResultSet() throws Exception {
+        checkReconnectOnResultSet(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testOneNodeFailoverOnMeta() throws Exception {
+        checkReconnectOnMeta(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAllNodesFailoverOnMeta() throws Exception {
+        checkReconnectOnMeta(true);
+    }
+
+    /**
+     * Check failover on restart cluster ar stop one node.
+     * @param allNodes Restart all nodes flag.
+     * @throws Exception If failed.
+     */
+    private void checkReconnectOnMeta(boolean allNodes) throws Exception {
+        try (Connection conn = DriverManager.getConnection(url())) {
+            DatabaseMetaData meta = conn.getMetaData();
+
+            ResultSet rs0 = meta.getTables(null, null, null, null);
+
+            assertFalse(rs0.next());
+
+            stop(conn, allNodes);
+
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    meta.getTables(null, null, null, null);
+
+                    return null;
+                }
+            }, SQLException.class, "Failed to communicate with Ignite cluster");
+
+            restart(allNodes);
+
+            rs0 = meta.getTables(null, null, null, null);
+            assertFalse(rs0.next());
+        }
+    }
+
+    /**
+     * Check failover on restart cluster ar stop one node.
+     * @param allNodes Restart all nodes flag.
+     * @throws Exception If failed.
+     */
+    private void checkReconnectOnStatementExecute(boolean allNodes) throws Exception {
         try (Connection conn = DriverManager.getConnection(url())) {
             final Statement stmt0 = conn.createStatement();
 
@@ -136,12 +219,10 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
             ResultSet rs0 = stmt0.getResultSet();
 
             assertTrue(rs0.next());
-
             assertEquals(1, rs0.getInt(1));
-
             assertFalse(rs0.isClosed());
 
-            stopAllGrids();
+            stop(conn, allNodes);
 
             GridTestUtils.assertThrows(log, new Callable<Object>() {
                 @Override public Object call() throws Exception {
@@ -151,10 +232,10 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
                 }
             }, SQLException.class, "Failed to communicate with Ignite cluster");
 
-            startGrids(NODES_CNT);
-
             assertTrue(rs0.isClosed());
             assertTrue(stmt0.isClosed());
+
+            restart(allNodes);
 
             final Statement stmt1 = conn.createStatement();
 
@@ -163,25 +244,75 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
             ResultSet rs1 = stmt1.getResultSet();
 
             assertTrue(rs1.next());
-
             assertEquals(1, rs1.getInt(1));
+        }
+    }
 
+    /**
+     * Check failover on restart cluster ar stop one node.
+     * @param allNodes Restart all nodes flag.
+     * @throws Exception If failed.
+     */
+    private void checkReconnectOnResultSet(boolean allNodes) throws Exception {
+        try (Connection conn = DriverManager.getConnection(url())) {
+            final Statement stmt0 = conn.createStatement();
+
+            stmt0.execute("SELECT 1");
+
+            final ResultSet rs0 = stmt0.getResultSet();
+
+            assertTrue(rs0.next());
+            assertEquals(1, rs0.getInt(1));
+            assertFalse(rs0.isClosed());
+
+            stop(conn, allNodes);
+
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    rs0.close();
+
+                    return null;
+                }
+            }, SQLException.class, "Failed to communicate with Ignite cluster");
+
+            assertTrue(rs0.isClosed());
+            assertTrue(stmt0.isClosed());
+
+            restart(allNodes);
+
+            final Statement stmt1 = conn.createStatement();
+
+            stmt1.execute("SELECT 1");
+
+            ResultSet rs1 = stmt1.getResultSet();
+
+            assertTrue(rs1.next());
+            assertEquals(1, rs1.getInt(1));
         }
     }
 
     /**
      * @param conn Connection.
-     * @throws SQLException On error.
+     * @param all If {@code true} all nodes will be stopped.
      */
-    private void checkConnection(Connection conn) throws SQLException {
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute("SELECT 1");
+    private void stop(Connection conn, boolean all) {
+        if (all)
+            stopAllGrids();
+        else {
+            JdbcThinTcpIo io = GridTestUtils.getFieldValue(conn, "cliIo");
 
-            ResultSet rs = stmt.getResultSet();
+            int idx = GridTestUtils.getFieldValue(io, "addrIdx");
 
-            assertTrue(rs.next());
-
-            assertEquals(1, rs.getInt(1));
+            stopGrid(idx);
         }
+    }
+
+    /**
+     * @param all If {@code true} all nodes will be started.
+     * @throws Exception On error.
+     */
+    private void restart(boolean all) throws Exception {
+        if (all)
+            startGrids(NODES_CNT);
     }
 }

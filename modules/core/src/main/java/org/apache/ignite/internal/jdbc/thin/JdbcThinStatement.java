@@ -190,6 +190,8 @@ public class JdbcThinStatement implements Statement {
      *
      * @param cmdRes Result of invoking COPY command: contains server-parsed
      *    bulk load parameters, such as file name and batch size.
+     * @return Bulk load result.
+     * @throws SQLException On error.
      */
     private JdbcResult sendFile(JdbcBulkLoadAckResult cmdRes) throws SQLException {
         String fileName = cmdRes.params().localFileName();
@@ -257,9 +259,12 @@ public class JdbcThinStatement implements Statement {
         if (isClosed())
             return;
 
-        closeResults();
-
-        closed = true;
+        try {
+            closeResults();
+        }
+        finally {
+            closed = true;
+        }
     }
 
     /**
@@ -274,6 +279,20 @@ public class JdbcThinStatement implements Statement {
             resultSets = null;
             curRes = 0;
         }
+    }
+
+    /**
+     *
+     */
+    void closeOnDisconnect() {
+        if (resultSets != null) {
+            for (JdbcThinResultSet rs : resultSets)
+                rs.closeOnDisconnect();
+
+            resultSets.clear();
+        }
+
+        closed = true;
     }
 
     /** {@inheritDoc} */

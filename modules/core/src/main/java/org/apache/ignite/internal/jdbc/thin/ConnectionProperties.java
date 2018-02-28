@@ -47,6 +47,7 @@ public interface ConnectionProperties {
 
     /**
      * @param url The URL of the connection.
+     * @throws SQLException On invalid URL.
      */
     public void setUrl(String url) throws SQLException;
 
@@ -57,6 +58,7 @@ public interface ConnectionProperties {
 
     /**
      * @param host Host name or host's IP to connect.
+     * @throws SQLException On error.
      */
     public void setHost(String host) throws SQLException;
 

@@ -33,6 +33,7 @@ import java.sql.SQLXML;
 import java.sql.Savepoint;
 import java.sql.Statement;
 import java.sql.Struct;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
@@ -94,6 +95,12 @@ public class JdbcThinConnection implements Connection {
     /** Connection properties. */
     private ConnectionProperties connProps;
 
+    /** Connected. */
+    private boolean connected;
+
+    /** Tracked statements to close on disconnect. */
+    private ArrayList<JdbcThinStatement> stmts = new ArrayList<>();
+
     /**
      * Creates new connection.
      *
@@ -111,27 +118,30 @@ public class JdbcThinConnection implements Connection {
 
         schema = normalizeSchema(connProps.getSchema());
 
-        connect();
+        cliIo = new JdbcThinTcpIo(connProps);
+
+        ensureConnected();
     }
 
     /**
      * @throws SQLException On connection error.
      */
-    private void connect() throws SQLException {
+    private synchronized void ensureConnected() throws SQLException {
         try {
-            cliIo = new JdbcThinTcpIo(connProps);
+            if (connected)
+                return;
 
             cliIo.start();
 
-            closed = false;
+            connected = true;
         }
         catch (SQLException e) {
-            cliIo.close();
+            close();
 
             throw e;
         }
         catch (Exception e) {
-            cliIo.close();
+            close();
 
             throw new SQLException("Failed to connect to Ignite cluster [host=" + connProps.getHost() +
                 ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
@@ -159,6 +169,8 @@ public class JdbcThinConnection implements Connection {
 
         if (timeout > 0)
             stmt.timeout(timeout);
+
+        stmts.add(stmt);
 
         return stmt;
     }
@@ -188,6 +200,8 @@ public class JdbcThinConnection implements Connection {
 
         if (timeout > 0)
             stmt.timeout(timeout);
+
+        stmts.add(stmt);
 
         return stmt;
     }
@@ -649,6 +663,8 @@ public class JdbcThinConnection implements Connection {
      */
     @SuppressWarnings("unchecked")
     <R extends JdbcResult> R sendRequest(JdbcRequest req) throws SQLException {
+        ensureConnected();
+
         try {
             JdbcResponse res = cliIo.sendRequest(req);
 
@@ -661,23 +677,9 @@ public class JdbcThinConnection implements Connection {
             throw e;
         }
         catch (Exception e) {
-            close();
+            onDisconnect();
 
-            SQLException connErr = null;
-
-            try {
-                connect();
-            }
-            catch (SQLException connErr0) {
-                connErr = connErr0;
-            }
-
-            SQLException ex = new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);
-
-            if (connErr != null)
-                ex.addSuppressed(connErr);
-
-            throw ex;
+            throw new SQLException("Failed to communicate with Ignite cluster.", SqlStateCode.CONNECTION_FAILURE, e);
         }
     }
 
@@ -686,6 +688,23 @@ public class JdbcThinConnection implements Connection {
      */
     public String url() {
         return url;
+    }
+
+    /**
+     * Called on IO disconnect: close the client IO and opened statements.
+     */
+    private void onDisconnect() {
+        if (!connected)
+            return;
+
+        cliIo.close();
+
+        connected = false;
+
+        for (JdbcThinStatement s : stmts)
+            s.closeOnDisconnect();
+
+        stmts.clear();
     }
 
     /**

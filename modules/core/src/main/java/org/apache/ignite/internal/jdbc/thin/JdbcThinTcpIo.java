@@ -113,6 +113,9 @@ public class JdbcThinTcpIo {
      */
     public JdbcThinTcpIo(ConnectionProperties connProps) {
         this.connProps = connProps;
+
+        // Try to connect to random address then round robin.
+        addrIdx = RND.nextInt(connProps.getAddresses().length);
     }
 
     /**
@@ -135,10 +138,8 @@ public class JdbcThinTcpIo {
 
         InetSocketAddress [] addrs = connProps.getAddresses();
 
-        addrIdx = RND.nextInt(addrs.length);
-
         for (int i = 0; i < addrs.length; i++, addrIdx = (addrIdx + 1) % addrs.length) {
-            InetSocketAddress addr = addrs [addrIdx];
+            InetSocketAddress addr = addrs[addrIdx];
 
             try {
                 connect(addr, timeout);
