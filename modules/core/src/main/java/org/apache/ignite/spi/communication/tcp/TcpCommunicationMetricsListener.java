@@ -17,16 +17,19 @@
 
 package org.apache.ignite.spi.communication.tcp;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.ToLongFunction;
+import java.util.stream.Collectors;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.nio.GridNioMetricsListener;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 
 /**
@@ -46,23 +49,88 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
     private final LongAdder sentBytesCnt = new LongAdder();
 
     /** Counter factory. */
-    private static final Callable<LongAdder> LONG_ADDER_FACTORY = new Callable<LongAdder>() {
-        @Override public LongAdder call() {
-            return new LongAdder();
+    private static final Callable<MessageCounter> MSGS_CNT_FACTORY = new Callable<MessageCounter>() {
+        @Override public MessageCounter call() {
+            return new MessageCounter();
         }
     };
 
-    /** Received messages count grouped by message type. */
-    private final ConcurrentMap<String, LongAdder> rcvdMsgsCntByType = new ConcurrentHashMap<>();
+    /**
+     * Received/sent message counter.
+     */
+    private static class MessageCounter {
+        /** Received messages count. */
+        volatile long rcvdMsgs;
 
-    /** Received messages count grouped by sender. */
-    private final ConcurrentMap<UUID, LongAdder> rcvdMsgsCntByNode = new ConcurrentHashMap<>();
+        /** Sent messages count. */
+        volatile long sentMsgs;
 
-    /** Sent messages count grouped by message type. */
-    private final ConcurrentMap<String, LongAdder> sentMsgsCntByType = new ConcurrentHashMap<>();
+        /**
+         * Increment received messages count.
+         */
+        public void incrementRcvdCount() {
+            rcvdMsgs++;
+        }
 
-    /** Sent messages count grouped by receiver. */
-    private final ConcurrentMap<UUID, LongAdder> sentMsgsCntByNode = new ConcurrentHashMap<>();
+        /**
+         * Increment sent messages count.
+         */
+        public void incrementSentCount() {
+            sentMsgs++;
+        }
+
+        /**
+         * @return Received messages count.
+         */
+        public long rcvdMsgs() {
+            return rcvdMsgs;
+        }
+
+        /**
+         * @return Sent messages count.
+         */
+        public long sentMsgs() {
+            return sentMsgs;
+        }
+    }
+
+    /**
+     * Thread local counters map.
+     *
+     * @param <T> grouping key class.
+     */
+    private class ThreadLocalCountersMap<T> extends ThreadLocal<Map<T, MessageCounter>> {
+        /** Counter maps for all threads. */
+        private final Collection<Map<T, MessageCounter>> cntrAggregator;
+
+        /**
+         * @param aggregator Counter maps for all threads.
+         */
+        private ThreadLocalCountersMap(Collection<Map<T, MessageCounter>> aggregator) {
+            cntrAggregator = aggregator;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Map<T, MessageCounter> initialValue() {
+            Map<T, MessageCounter> cntrMap = new ConcurrentHashMap<>();
+
+            cntrAggregator.add(cntrMap);
+
+            return cntrMap;
+        }
+    }
+
+    /** Message counters by node for all threads. */
+    Set<Map<UUID, MessageCounter>> msgsCntrByNodeAll = new GridConcurrentHashSet<>();
+
+    /** Message counter by node for local thread. */
+    ThreadLocal<Map<UUID, MessageCounter>> msgsCntrByNode = new ThreadLocalCountersMap<>(msgsCntrByNodeAll);
+
+    /** Message counters by type for all threads. */
+    Set<Map<String, MessageCounter>> msgsCntrByTypeAll = new GridConcurrentHashSet<>();
+
+    /** Message counter by type for local thread. */
+    ThreadLocal<Map<String, MessageCounter>> msgsCntrByType = new ThreadLocalCountersMap<>(msgsCntrByTypeAll);
 
     /** {@inheritDoc} */
     @Override public void onBytesSent(int bytesCnt) {
@@ -89,11 +157,14 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
         if (msg instanceof GridIoMessage)
             msg = ((GridIoMessage)msg).message();
 
-        LongAdder cntByType = F.addIfAbsent(sentMsgsCntByType, msg.getClass().getSimpleName(), LONG_ADDER_FACTORY);
-        LongAdder cntByNode = F.addIfAbsent(sentMsgsCntByNode, nodeId, LONG_ADDER_FACTORY);
+        Map<String, MessageCounter> cntrMapByType = msgsCntrByType.get();
+        Map<UUID, MessageCounter> cntrMapByNode = msgsCntrByNode.get();
 
-        cntByType.increment();
-        cntByNode.increment();
+        MessageCounter cntrByType = F.addIfAbsent(cntrMapByType, msg.getClass().getSimpleName(), MSGS_CNT_FACTORY);
+        MessageCounter cntrByNode = F.addIfAbsent(cntrMapByNode, nodeId, MSGS_CNT_FACTORY);
+
+        cntrByType.incrementSentCount();
+        cntrByNode.incrementSentCount();
     }
 
     /**
@@ -111,11 +182,14 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
         if (msg instanceof GridIoMessage)
             msg = ((GridIoMessage)msg).message();
 
-        LongAdder cntByType = F.addIfAbsent(rcvdMsgsCntByType, msg.getClass().getSimpleName(), LONG_ADDER_FACTORY);
-        LongAdder cntByNode = F.addIfAbsent(rcvdMsgsCntByNode, nodeId, LONG_ADDER_FACTORY);
+        Map<String, MessageCounter> cntrMapByType = msgsCntrByType.get();
+        Map<UUID, MessageCounter> cntrMapByNode = msgsCntrByNode.get();
 
-        cntByType.increment();
-        cntByNode.increment();
+        MessageCounter cntrByType = F.addIfAbsent(cntrMapByType, msg.getClass().getSimpleName(), MSGS_CNT_FACTORY);
+        MessageCounter cntrByNode = F.addIfAbsent(cntrMapByNode, nodeId, MSGS_CNT_FACTORY);
+
+        cntrByType.incrementRcvdCount();
+        cntrByNode.incrementRcvdCount();
     }
 
     /**
@@ -160,13 +234,21 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
      * @param srcStat Internal statistics representation.
      * @return Result map.
      */
-    private <T> Map<T, Long> convertStatistics(Map<T, LongAdder> srcStat) {
-        Map<T, Long> destStat = U.newHashMap(srcStat.size());
-
-        for (Map.Entry<T, LongAdder> entry : srcStat.entrySet())
-            destStat.put(entry.getKey(), entry.getValue().longValue());
-
-        return destStat;
+    private <T> Map<T, Long> convertStatistics(Set<Map<T, MessageCounter>> srcStat, ToLongFunction<MessageCounter> func) {
+        return srcStat.stream()
+            .flatMap(m -> m.entrySet().stream())
+            .collect(
+                Collectors.groupingBy(
+                    Map.Entry::getKey,
+                    Collectors.summarizingLong(e -> func.applyAsLong(e.getValue()))
+                )
+            ).entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    e -> e.getValue().getSum()
+                )
+            );
     }
 
     /**
@@ -175,7 +257,7 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
      * @return Map containing message types and respective counts.
      */
     public Map<String, Long> receivedMessagesByType() {
-        return convertStatistics(rcvdMsgsCntByType);
+        return convertStatistics(msgsCntrByTypeAll, c -> c.rcvdMsgs());
     }
 
     /**
@@ -184,7 +266,7 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
      * @return Map containing sender nodes and respective counts.
      */
     public Map<UUID, Long> receivedMessagesByNode() {
-        return convertStatistics(rcvdMsgsCntByNode);
+        return convertStatistics(msgsCntrByNodeAll, c -> c.rcvdMsgs());
     }
 
     /**
@@ -193,7 +275,7 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
      * @return Map containing message types and respective counts.
      */
     public Map<String, Long> sentMessagesByType() {
-        return convertStatistics(sentMsgsCntByType);
+        return convertStatistics(msgsCntrByTypeAll, c -> c.sentMsgs());
     }
 
     /**
@@ -202,7 +284,7 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
      * @return Map containing receiver nodes and respective counts.
      */
     public Map<UUID, Long> sentMessagesByNode() {
-        return convertStatistics(sentMsgsCntByNode);
+        return convertStatistics(msgsCntrByNodeAll, c -> c.sentMsgs());
     }
 
     /**
@@ -216,9 +298,10 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
         sentBytesCnt.add(-sentBytesCnt.sum());
         rcvdBytesCnt.add(-rcvdBytesCnt.sum());
 
-        sentMsgsCntByType.clear();
-        rcvdMsgsCntByType.clear();
-        sentMsgsCntByNode.clear();
-        rcvdMsgsCntByNode.clear();
+        for (Map<UUID, MessageCounter> map : msgsCntrByNodeAll)
+            map.clear();
+
+        for (Map<String, MessageCounter> map : msgsCntrByTypeAll)
+            map.clear();
     }
 }
