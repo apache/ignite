@@ -698,8 +698,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
                 }
                 else {
-                    metricsLsnr.onMessageReceived(msg, connKey.nodeId());
-
                     if (msg instanceof RecoveryLastReceivedMessage) {
                         GridNioRecoveryDescriptor recovery = ses.outRecoveryDescriptor();
 
@@ -2643,6 +2641,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     client.forceClose();
             }
         }
+    }
+
+    /**
+     * Handle message received event.
+     *
+     * @param nodeId Node ID.
+     * @param msg Message.
+     */
+    public void onMessageReceived(UUID nodeId, Object msg) {
+        metricsLsnr.onMessageReceived((Message)msg, nodeId);
     }
 
     /**
