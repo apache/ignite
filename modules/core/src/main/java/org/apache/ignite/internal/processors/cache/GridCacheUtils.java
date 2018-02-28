@@ -482,14 +482,13 @@ public class GridCacheUtils {
         ClusterNode n0 = null;
 
         for (ClusterNode node : affNodes) {
-            if (r > 0)
-                r--;
+            r--;
 
             if (canRemap || ctx.discovery().alive(node)) {
                 if (U.sameMacs(locMacs, node))
                     return node;
 
-                if (r == 0 || n0 == null)
+                if (r >= 0)
                     n0 = node;
             }
         }
