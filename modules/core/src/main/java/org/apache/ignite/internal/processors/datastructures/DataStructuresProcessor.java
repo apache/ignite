@@ -274,6 +274,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         restoreStructuresState(ctx);
 
+        for (GridCacheContext cctx : ctx.cache().context().cacheContexts()) {
+            if (cctx.dataStructuresCache())
+                cctx.dataStructures().onActivate();
+        }
+
         onKernalStart0();
     }
 

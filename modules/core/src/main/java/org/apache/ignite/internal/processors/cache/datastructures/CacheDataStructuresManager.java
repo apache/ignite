@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
@@ -40,12 +41,14 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -81,6 +84,12 @@ import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** Known classes which are safe to use on server nodes. */
     private static final Collection<Class<?>> KNOWN_CLS = new HashSet<>();
+
+    /** Cache peek mode primary. */
+    private static final CachePeekMode[] PRIMARY = {CachePeekMode.PRIMARY};
+
+    /** Cache peek mode primary and backup. */
+    private static final CachePeekMode[] PRIMARY_BACKUP = {CachePeekMode.PRIMARY, CachePeekMode.BACKUP};
 
     /**
      *
@@ -129,6 +138,15 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
     /** Init flag. */
     private boolean initFlag;
+
+    /** Init set data map latch. */
+    private final CountDownLatch initSetLatch = new CountDownLatch(1);
+
+    /** Indicates that cluster activation callback was called. */
+    private volatile boolean activated;
+
+    /** Indicates that local set data recovery may be in progress. */
+    private volatile boolean awaitSetData;
 
     /**
      *
@@ -205,6 +223,47 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
                 queuesMap.remove(e.getKey(), queue);
             }
+        }
+    }
+
+    /**
+     * Called when cluster performs activation.
+     */
+    public void onActivate() {
+        if (!activated) {
+            awaitSetData = activated = true;
+
+            restoreSetDataMap(cctx);
+        }
+    }
+
+
+    /**
+     * Restore local set items map from cache.
+     *
+     * @param cctx cache context.
+     */
+    private void restoreSetDataMap(GridCacheContext cctx) {
+        try {
+            if (log.isDebugEnabled())
+                log.debug("Restoring local set items from internal cache " + cctx.name());
+
+            Iterable entries = cctx.cache().localEntries(cctx.isReplicatedAffinityNode() ? PRIMARY_BACKUP : PRIMARY);
+
+            for (Object entry : entries) {
+                Object key = ((Cache.Entry)entry).getKey();
+
+                if (key instanceof SetItemKey)
+                    onSetItemUpdated((SetItemKey)key, false);
+            }
+
+            if (log.isDebugEnabled())
+                log.debug("Finished restoring local set items from internal cache " + cctx.name());
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        } finally {
+            initSetLatch.countDown();
         }
     }
 
@@ -466,7 +525,18 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @return Data for given set.
      */
     @Nullable public GridConcurrentHashSet<SetItemKey> setData(IgniteUuid id) {
-        return setDataMap.get(id);
+        try {
+            if (awaitSetData) {
+                awaitSetData = false;
+
+                U.await(initSetLatch);
+            }
+
+            return setDataMap.get(id);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /**

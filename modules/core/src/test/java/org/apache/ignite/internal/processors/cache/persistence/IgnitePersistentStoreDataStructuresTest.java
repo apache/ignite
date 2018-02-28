@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicSequence;
@@ -33,7 +36,6 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -163,33 +165,46 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
      * @throws Exception If failed.
      */
     public void testSet() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-5553");
-
         Ignite ignite = startGrids(4);
 
-        ignite.active(true);
+        int max = 100;
 
-        IgniteSet<Object> set = ignite.set("testSet", new CollectionConfiguration());
+        ignite.cluster().active(true);
 
-        for (int i = 0; i < 100; i++)
+        IgniteSet<Integer> set = ignite.set("testSet", new CollectionConfiguration());
+
+        for (int i = 0; i < max; i++)
             set.add(i);
 
-        assertEquals(100, set.size());
+        assertEquals(max, set.size());
 
         stopAllGrids();
 
         ignite = startGrids(4);
 
-        ignite.active(true);
+        ignite.cluster().active(true);
 
         set = ignite.set("testSet", null);
 
-        assertFalse(set.add(99));
+        assertFalse(set.add(max - 1));
 
-        for (int i = 0; i < 100; i++)
+        assertEquals(max, set.size());
+
+        for (int i = 0; i < max; i++)
             assertTrue(set.contains(i));
 
-        assertEquals(100, set.size());
+        // Check iterator.
+        Set<Integer> exp = new HashSet<>();
+
+        for (int i = 0; i < max; i++)
+            exp.add(i);
+
+        Set<Integer> actual = new HashSet<>();
+
+        for (Integer num : set)
+            actual.add(num);
+
+        assertEquals(exp, actual);
     }
 
     /**
