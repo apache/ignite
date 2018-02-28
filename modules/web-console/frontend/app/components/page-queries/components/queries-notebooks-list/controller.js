@@ -18,6 +18,8 @@
 import headerTemplate from '../../../../../app/primitives/ui-grid-header/index.tpl.pug';
 import createNotebookModalTemplateUrl from './notebook-new.tpl.pug';
 
+import { CancellationError } from 'app/errors/CancellationError';
+
 export class NotebooksListCtrl {
     static $inject = ['IgniteNotebook', 'IgniteMessages', 'IgniteLoading', '$scope', '$modal'];
 
@@ -36,8 +38,8 @@ export class NotebooksListCtrl {
 
         const columnDefs = [
             { name: 'name', displayName: 'Name', categoryDisplayName: 'Name', field: 'name', cellTemplate: notebookNameTemplate, pinnedLeft: true, filter: { placeholder: 'Filter by Name...' } },
-            { name: 'sqlQueryNum', displayName: 'SQL Query', categoryDisplayName: 'SQL Query', field: 'sqlQueryNum', cellTemplate: sqlQueryTemplate, minWidth: 150, width: 150, enableFiltering: false },
-            { name: 'scanQueryNum', displayName: 'Scan Query', categoryDisplayName: 'Scan Query', field: 'scanQueryNum', cellTemplate: scanQueryTemplate, minWidth: 150, width: 150, enableFiltering: false }
+            { name: 'sqlQueryNum', displayName: 'SQL Query', categoryDisplayName: 'SQL Query', field: 'sqlQueryNum', cellTemplate: sqlQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: 150, enableFiltering: false },
+            { name: 'scanQueryNum', displayName: 'Scan Query', categoryDisplayName: 'Scan Query', field: 'scanQueryNum', cellTemplate: scanQueryTemplate, enableSorting: true, type: 'number', minWidth: 150, width: 150, enableFiltering: false }
         ];
 
         this.gridOptions = {
@@ -120,14 +122,35 @@ export class NotebooksListCtrl {
         this.actionOptions[0].available = this.gridApi.selection.getSelectedRows().length === 1;
     }
 
-    openCreateNotebookModal() {
-        // Name value is passed from modal scope via Promise as 'this' reference can't be passed and called directly in modal controller.
-        this.$scope.createNotebook = (name) => new Promise((resolve) => { resolve(name); }).then((name) => this.createNotebook(name));
-        this.createNotebookModal = this.$modal({ scope: this.$scope, templateUrl: createNotebookModalTemplateUrl, show: true });
+    fetchNewNotebookNameFromModal(notebookName = '') {
+        return new Promise((getName, cancel) => {
+            this.$scope.name = notebookName;
+
+            this.createNotebookModal = this.$modal({ scope: this.$scope, templateUrl: createNotebookModalTemplateUrl, show: false });
+
+            // Name value is passed from modal scope via Promise as 'this' reference can't be passed and called directly in modal controller.
+            this.$scope.fetchNotebookName = (name) => new Promise((resolve) => { resolve(name); }).then((name) => {
+                this.createNotebookModal.$promise.then(() => {
+                    this.createNotebookModal.hide();
+                    getName(name);
+                });
+            });
+
+            this.$scope.cancelModal = () => {
+                this.createNotebookModal.$promise.then(() => {
+                    this.createNotebookModal.hide();
+                    cancel(new CancellationError());
+                });
+            };
+
+            this.createNotebookModal.$promise.then(this.createNotebookModal.show);
+        });
     }
 
-    async createNotebook(newNotebookName) {
+    async createNotebook() {
         try {
+            const newNotebookName = await this.fetchNewNotebookNameFromModal();
+
             this.IgniteLoading.start('notebooksLoading');
             await this.IgniteNotebook.create(newNotebookName);
             await this.IgniteLoading.finish('notebooksLoading');
@@ -141,12 +164,12 @@ export class NotebooksListCtrl {
             await this.IgniteLoading.finish('notebooksLoading');
 
             if (this.createNotebookModal)
-                this.createNotebookModal.hide();
+                this.createNotebookModal.$promise.then(this.createNotebookModal.hide);
         }
     }
 
     cloneNotebook() {
-        // Not implemented
+
     }
 
     async deleteNotebooks() {
@@ -160,7 +183,6 @@ export class NotebooksListCtrl {
         } catch (err) {
             this.IgniteMessages.showError(err);
 
-        } finally {
             await this.IgniteLoading.finish('notebooksLoading');
         }
     }

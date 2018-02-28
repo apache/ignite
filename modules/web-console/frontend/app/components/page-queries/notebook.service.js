@@ -43,6 +43,13 @@ export default class Notebook {
         return this.NotebookData.save(notebook);
     }
 
+    async clone(newNotebookName, clonedNotebook) {
+        const newNotebook = await this.create(newNotebookName);
+        Object.assign(clonedNotebook, {name: newNotebook.name, _id: newNotebook._id });
+
+        return this.save(clonedNotebook);
+    }
+
     find(_id) {
         return this.NotebookData.find(_id);
     }

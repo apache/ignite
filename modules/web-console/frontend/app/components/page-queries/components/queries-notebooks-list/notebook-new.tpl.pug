@@ -18,7 +18,7 @@
     .modal-dialog
         .modal-content
             .modal-header
-                button.close(ng-click='$hide()') &times;
+                button.close(ng-click='cancelModal()') &times;
                 h4.modal-title
                     i.fa.fa-file-o
                     | New query notebook
@@ -29,5 +29,5 @@
                     .col-sm-10
                         input.form-control(id='create-notebook' type='text' ng-model='name' required ignite-on-enter='ui.inputForm.$valid && create(name)' ignite-auto-focus)
             .modal-footer
-                button.btn.btn-default(id='copy-btn-cancel' ng-click='$hide()') Cancel
-                button.btn.btn-primary(id='copy-btn-confirm' ng-disabled='ui.inputForm.$invalid' ng-click='createNotebook(name)') Create
+                button.btn.btn-default(id='copy-btn-cancel' ng-click='cancelModal()') Cancel
+                button.btn.btn-primary(id='copy-btn-confirm' ng-disabled='ui.inputForm.$invalid' ng-click='fetchNotebookName(name)') Create
