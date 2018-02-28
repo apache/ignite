@@ -656,14 +656,14 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
 
             run("INSERT INTO test VALUES(1, 'one', 11), (2, 'two', 22), (3, 'three', 33)");
 
-            List<List<?>> res = run("SELECT * FROM test ORDER BY id");
+            List<List<?>> res = run("SELECT * FROM test WHERE b > 0 ORDER BY b");
 
             assertEquals(3, res.size());
             assertEquals(3, res.get(0).size());
 
             run("ALTER TABLE test DROP COLUMN a");
 
-            res = run("SELECT * FROM test ORDER BY id");
+            res = run("SELECT * FROM test WHERE b > 0 ORDER BY b");
 
             assertEquals(3, res.size());
             assertEquals(2, res.get(0).size());
