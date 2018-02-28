@@ -18,6 +18,7 @@
 package org.apache.ignite.configuration;
 
 import java.io.Serializable;
+import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -54,6 +55,9 @@ public class CollectionConfiguration implements Serializable {
 
     /** Group name. */
     private String grpName;
+
+    /** If {@code True} then {@link IgniteSet} will use off-heap caching instead of on-heap for support iterator. */
+    private boolean offHeapCaching = false;
 
     /**
      * @return {@code True} if all items within the same collection will be collocated on the same node.
@@ -175,6 +179,20 @@ public class CollectionConfiguration implements Serializable {
         this.grpName = grpName;
 
         return this;
+    }
+
+    /**
+     * @return {@code True} if off-heap caching is used instead of on-heap in {@link IgniteSet}.
+     */
+    public boolean isOffHeapCaching() {
+        return offHeapCaching;
+    }
+
+    /**
+     * @param offHeapCaching {@code True} to use off-heap caching instead of on-heap in {@link IgniteSet}.
+     */
+    public void setOffHeapCaching(boolean offHeapCaching) {
+        this.offHeapCaching = offHeapCaching;
     }
 
     /** {@inheritDoc} */

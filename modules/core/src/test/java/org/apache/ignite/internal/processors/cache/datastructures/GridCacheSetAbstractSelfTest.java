@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.datastructures;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.MemoryMXBean;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -64,6 +66,11 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /** */
     protected static final String SET_NAME = "testSet";
 
+    /** */
+    protected boolean offHeapCaching() {
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 4;
@@ -72,6 +79,8 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
     /** {@inheritDoc} */
     @Override protected CollectionConfiguration collectionConfiguration() {
         CollectionConfiguration colCfg = super.collectionConfiguration();
+
+        colCfg.setOffHeapCaching(offHeapCaching());
 
         if (colCfg.getCacheMode() == PARTITIONED)
             colCfg.setBackups(1);
@@ -1036,6 +1045,47 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
 
         assert cctx(set5).cacheId() == cctx(set6).cacheId();
         assert cctx(set1).groupId() != cctx(set5).groupId();
+    }
+
+    /**
+     * Test that in full off-heap mode {@link IgniteSet} is not use JVM heap for duplicated values.
+     */
+    public void testHeapUsage() {
+        int max = 100_000;
+        int half = max / 2;
+        int minObjSize = 24;
+
+        CollectionConfiguration colCfg = collectionConfiguration();
+
+        colCfg.setAtomicityMode(ATOMIC);
+
+        IgniteSet<Integer> set = grid(0).set(SET_NAME, colCfg);
+
+        // warm up
+        for (int j = 0; j < half; j++)
+            set.add(j);
+
+        GridTestUtils.runGC();
+
+        MemoryMXBean memBean = ManagementFactory.getMemoryMXBean();
+
+        long heapStart = memBean.getHeapMemoryUsage().getUsed();
+
+        for (int j = half; j < max; j++)
+            set.add(j);
+
+        assertEquals(max, grid(gridCount() - 1).set(SET_NAME, colCfg).size());
+
+        GridTestUtils.runGC();
+
+        long heapDelta = memBean.getHeapMemoryUsage().getUsed() - heapStart;
+
+        long delta = minObjSize * half;
+
+        if (offHeapCaching())
+            assertTrue("heapDelta=" + heapDelta + " >= delta=" + delta, heapDelta < delta);
+        else
+            assertTrue("heapDelta=" + heapDelta + " < delta=" + delta, heapDelta >= delta);
     }
 
     /**
