@@ -461,9 +461,11 @@ public class GridCacheUtils {
     }
 
     /**
-     * Affinity node to send get request to.
+     * Determines an affinity node to send get request to.
      *
+     * @param ctx Context.
      * @param affNodes All affinity nodes.
+     * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
      * @return Affinity node to get key from.
      */
     @Nullable public static ClusterNode affinityNode(GridCacheContext ctx, List<ClusterNode> affNodes,
