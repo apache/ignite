@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -55,16 +54,16 @@ public class TcpCommunicationMetricsListener implements GridNioMetricsListener{
     };
 
     /** Received messages count grouped by message type. */
-    private final ConcurrentMap<Short, LongAdder> rcvdMsgsCntByType = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Short, LongAdder> rcvdMsgsCntByType = new ConcurrentHashMap<>();
 
     /** Received messages count grouped by sender. */
-    private final ConcurrentMap<UUID, LongAdder> rcvdMsgsCntByNode = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, LongAdder> rcvdMsgsCntByNode = new ConcurrentHashMap<>();
 
     /** Sent messages count grouped by message type. */
-    private final ConcurrentMap<Short, LongAdder> sentMsgsCntByType = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Short, LongAdder> sentMsgsCntByType = new ConcurrentHashMap<>();
 
     /** Sent messages count grouped by receiver. */
-    private final ConcurrentMap<UUID, LongAdder> sentMsgsCntByNode = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, LongAdder> sentMsgsCntByNode = new ConcurrentHashMap<>();
 
     /** Method to synchronize access to message type map. */
     private final Object msgTypMapMux = new Object();
