@@ -139,7 +139,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
                         boolean failed = false;
 
                         try {
-                            client.set("testSet", new CollectionConfiguration());
+                            client.set("testSet", getCollectionConfiguration());
                         }
                         catch (IgniteClientDisconnectedException e) {
                             failed = true;
@@ -149,7 +149,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
                         assertTrue(failed);
 
-                        return client.set("testSet", new CollectionConfiguration());
+                        return client.set("testSet", getCollectionConfiguration());
                     }
                 },
                 new C1<Object, Boolean>() {
@@ -176,7 +176,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
                         boolean failed = false;
 
                         try {
-                            client.queue("TestQueue", 10, new CollectionConfiguration());
+                            client.queue("TestQueue", 10, getCollectionConfiguration());
                         }
                         catch (IgniteClientDisconnectedException e) {
                             failed = true;
@@ -186,7 +186,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
                         assertTrue(failed);
 
-                        return client.queue("TestQueue", 10, new CollectionConfiguration());
+                        return client.queue("TestQueue", 10, getCollectionConfiguration());
                     }
                 },
                 new C1<Object, Boolean>() {
@@ -857,5 +857,10 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
             stopAllGrids();
         }
+    }
+
+    /** Get default {@link org.apache.ignite.configuration.CollectionConfiguration} with backups */
+    private CollectionConfiguration getCollectionConfiguration() {
+        return new CollectionConfiguration().setBackups(1);
     }
 }
