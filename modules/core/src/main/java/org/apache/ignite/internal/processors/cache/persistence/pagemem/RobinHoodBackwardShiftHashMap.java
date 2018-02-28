@@ -23,6 +23,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridPredicate3;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR;
 import static org.apache.ignite.IgniteSystemProperties.getFloat;
@@ -137,7 +138,9 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
 
     /** {@inheritDoc} */
     @Override public long get(int grpId, long pageId, int reqVer, long absent, long outdated) {
-        assert grpId != 0;
+        assert grpId != EMPTY_CACHE_GRP_ID;
+
+        // initial index is also ideal for searhed element
         int idxInit = U.safeAbs(FullPageId.hashCode(grpId, pageId)) % numBuckets;
 
         for (int i = 0; i < numBuckets; i++) {
@@ -148,9 +151,8 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
 
             final int curGrpId = getGrpId(base);
             final long curPageId = getPageId(base);
-            final int curIdealBucket = getIdealBucket(base);
-            final long curVal = getValue(base);
-            final int dibCurEntry = distance(idxCurr, curIdealBucket);
+
+            final int dibCurEntry = distance(idxCurr, getIdealBucket(base));
 
             if (isEmpty(curGrpId, curPageId))
                 return absent;
@@ -159,10 +161,10 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
                 long actualVer = getVersion(base);
                 boolean freshVal = actualVer >= reqVer;
 
-                return freshVal ? curVal : outdated;
+                return freshVal ? getValue(base) : outdated;
             }
             else if (dibCurEntry < distanceFromInit) {
-                //current entry has quite good position,  it would be swapped at hypothetical insert of current value
+                //current entry has quite good position, it would be swapped at hypothetical insert of current value
                 return absent;
             }
         }
@@ -174,17 +176,19 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     @Override public void put(int grpId, long pageId, long val, int ver) {
         assert grpId != 0;
 
+        // initial index is also ideal for inserted element
         int idxInit = U.safeAbs(FullPageId.hashCode(grpId, pageId)) % numBuckets;
-
-        int grpIdToInsert = grpId;
-        long pageIdToInsert = pageId;
-        int verToInsert = ver;
-        long valToInsert = val;
-        long idxIdealToInsert = idxInit;
-        int swapCount = 0;
 
         int i = 0;
         try {
+            int swapCnt = 0;
+
+            int grpIdToInsert = grpId;
+            long pageIdToInsert = pageId;
+            long valToInsert = val;
+            int verToInsert = ver;
+            long idxIdealToInsert = idxInit;
+
             for (i = 0; i < numBuckets; i++) {
                 int idxCurr = (idxInit + i) % numBuckets;
 
@@ -205,14 +209,8 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
                     return;
                 }
                 else if (curGrpId == grpIdToInsert && curPageId == pageIdToInsert) {
-
-                    if (swapCount != 0) {
-                        StringBuilder sb = new StringBuilder();
-
-                        dumpEntry(sb, idxCurr);
-
-                        assert swapCount == 0 : "Swapped " + swapCount + " times:" + sb;
-                    }
+                    if (swapCnt != 0)
+                        throw new IllegalStateException("Swapped " + swapCnt + " times. Entry: " + dumpEntry(idxCurr));
 
                     setValue(base, valToInsert);
 
@@ -228,7 +226,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
                     valToInsert = curVal;
                     verToInsert = curVer;
 
-                    swapCount++;
+                    swapCnt++;
                 }
             }
         }
@@ -243,7 +241,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
 
     /** {@inheritDoc} */
     @Override public boolean remove(int grpId, long pageId) {
-        assert grpId != 0;
+        assert grpId != EMPTY_CACHE_GRP_ID;
 
         int idxInit = U.safeAbs(FullPageId.hashCode(grpId, pageId)) % numBuckets;
 
@@ -315,8 +313,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
 
             long base = entryBase(idxCurr);
 
-            return new ReplaceCandidate(getVersion(base), getValue(base),
-                new FullPageId(getPageId(base), getGrpId(base)));
+            return new ReplaceCandidate(getVersion(base), getValue(base), getFullPageId(base));
         }
 
         return null;
@@ -332,12 +329,54 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
         return isEmpty(getGrpId(base), getPageId(base));
     }
 
-    //todo implement
-    @Override public long refresh(int cacheId, long pageId, int ver) {
-        throw new UnsupportedOperationException();
+    /** {@inheritDoc} */
+    @Override public long refresh(int grpId, long pageId, int ver) {
+        assert grpId != EMPTY_CACHE_GRP_ID;
+
+        int idxInit = U.safeAbs(FullPageId.hashCode(grpId, pageId)) % numBuckets;
+
+        for (int i = 0; i < numBuckets; i++) {
+            int idxCurr = (idxInit + i) % numBuckets;
+
+            final long base = entryBase(idxCurr);
+            final int distanceFromInit = distance(idxCurr, idxInit);
+
+            final int curGrpId = getGrpId(base);
+            final long curPageId = getPageId(base);
+            final int curIdealBucket = getIdealBucket(base);
+            final int dibCurEntry = distance(idxCurr, curIdealBucket);
+
+            if (isEmpty(curGrpId, curPageId))
+                break; // break to fail
+            else if (curGrpId == grpId && curPageId == pageId) {
+                //equal value found
+                long actualVer = getVersion(base);
+
+                boolean freshVal = actualVer >= ver;
+
+                if (freshVal) {
+                    throw new IllegalArgumentException("Fresh element found at " +
+                        dumpEntry(idxCurr) + " during search of cell to refresh. " +
+                        "Refresh should be called for existent outdated element. ");
+                }
+
+                setVersion(base, ver);
+
+                return getValue(base);
+            }
+            else if (dibCurEntry < distanceFromInit) {
+                //current entry has quite good position,  it would be swapped at hypothetical insert of current value
+
+                break;
+            }
+        }
+
+        throw new IllegalArgumentException("Element not found group ID: " + grpId + ", page ID: " + pageId +
+            " during search of cell to refresh. Refresh should be called for existent outdated element. ");
     }
 
     //todo implement
+    /** {@inheritDoc} */
     @Override public long clearAt(int idx, GridPredicate3<Integer, Long, Integer> pred, long absent) {
         throw new UnsupportedOperationException();
     }
@@ -416,6 +455,18 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     }
 
     /**
+     * @param idx index of entry to dump
+     * @return string representation of bucket content.
+     */
+    private String dumpEntry(int idx) {
+        StringBuilder sb = new StringBuilder();
+
+        dumpEntry(sb, idx);
+
+        return sb.toString();
+    }
+
+    /**
      * @param sb destination string builder to dump entry to.
      * @param idx bucket index.
      */
@@ -428,7 +479,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
 
         sb.append("slot [").append(idx).append("]:");
 
-        if(isEmpty(curGrpId, curPageId))
+        if (isEmpty(curGrpId, curPageId))
             sb.append("Empty: ");
 
         sb.append("i.buc=").append(getIdealBucket(base)).append(",");
@@ -489,18 +540,34 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
         putInt(base + GRP_ID_OFFSET, grpId);
     }
 
+    /**
+     * @param base Bucket base address.
+     * @return value stored in bucket.
+     */
     private long getValue(long base) {
         return getLong(base + VALUE_OFFSET);
     }
 
-    private void setValue(long base, long pageId) {
-        putLong(base + VALUE_OFFSET, pageId);
+    /**
+     * @param base Bucket base address.
+     * @param val Value to store in bucket.
+     */
+    private void setValue(long base, long val) {
+        putLong(base + VALUE_OFFSET, val);
     }
 
+    /**
+     * @param base Bucket base address.
+     * @return Entry version associated with bucket.
+     */
     private int getVersion(long base) {
         return getInt(base + VERSION_OFFSET);
     }
 
+    /**
+     * @param base Bucket base address.
+     * @param ver Entry version to set in bucket.
+     */
     private void setVersion(long base, int ver) {
         putInt(base + VERSION_OFFSET, ver);
     }
@@ -521,19 +588,24 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     /**
      * Scans all the elements in this table.
      *
-     * @param visitor Visitor.
+     * @param act Visitor/action to be applied to each not empty cell.
      */
-    public void forEach(BiConsumer<FullPageId, Long> visitor) {
+    public void forEach(BiConsumer<FullPageId, Long> act) {
         for (int i = 0; i < numBuckets; i++) {
-            if (!isEmptyAt(i)) {
-                long base = entryBase(i);
+            if (isEmptyAt(i))
+                continue;
 
-                int grpId = getGrpId(base);
-                long pageId = getPageId(base);
-                long val = getValue(VALUE_OFFSET);
+            long base = entryBase(i);
 
-                visitor.accept(new FullPageId(pageId, grpId), val);
-            }
+            act.accept(getFullPageId(base), getValue(base));
         }
+    }
+
+    /**
+     * @param base bucket base address.
+     * @return Key. Full page ID from bucket.
+     */
+    @NotNull private FullPageId getFullPageId(long base) {
+        return new FullPageId(getPageId(base), getGrpId(base));
     }
 }

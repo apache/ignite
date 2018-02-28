@@ -26,6 +26,7 @@ import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.lang.GridPredicate3;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 
@@ -155,24 +156,19 @@ public class FullPageIdTable implements LoadedPagesMap {
         return valueAt(idx);
     }
 
-    /**
-     * Refresh outdated value.
-     *
-     * @param cacheId Cache ID.
-     * @param pageId Page ID.
-     * @param ver Partition tag.
-     * @return A value associated with the given key.
-     */
-    public long refresh(int cacheId, long pageId, int ver) {
-        assert assertKey(cacheId, pageId);
+    /** {@inheritDoc} */
+    @Override public long refresh(int grpId, long pageId, int ver) {
+        assert assertKey(grpId, pageId);
 
-        int idx = getKey(cacheId, pageId, ver, true);
+        int idx = getKey(grpId, pageId, ver, true);
 
-        assert idx >= 0 : "[idx=" + idx + ", tag=" + ver + ", cacheId=" + cacheId +
-            ", pageId=" + U.hexLong(pageId) + ']';
+        if (!(idx >= 0) || !(tagAt(idx) < ver)) {
+            A.ensure(idx >= 0, "[idx=" + idx + ", tag=" + ver + ", cacheId=" + grpId +
+                ", pageId=" + U.hexLong(pageId) + ']');
 
-        assert tagAt(idx) < ver : "[idx=" + idx + ", tag=" + ver + ", cacheId=" + cacheId +
-            ", pageId=" + U.hexLong(pageId) + ", tagAtIdx=" + tagAt(idx) + ']';
+            A.ensure(tagAt(idx) < ver, "[idx=" + idx + ", tag=" + ver + ", cacheId=" + grpId +
+                ", pageId=" + U.hexLong(pageId) + ", tagAtIdx=" + tagAt(idx) + ']');
+        }
 
         setTagAt(idx, ver);
 
@@ -180,12 +176,12 @@ public class FullPageIdTable implements LoadedPagesMap {
     }
 
     /** {@inheritDoc} */
-    @Override public void put(int cacheId, long pageId, long val, int ver) {
-        assert assertKey(cacheId, pageId);
+    @Override public void put(int grpId, long pageId, long val, int ver) {
+        assert assertKey(grpId, pageId);
 
-        int index = putKey(cacheId, pageId, ver);
+        int idx = putKey(grpId, pageId, ver);
 
-        setValueAt(index, val);
+        setValueAt(idx, val);
     }
 
     /** {@inheritDoc} */

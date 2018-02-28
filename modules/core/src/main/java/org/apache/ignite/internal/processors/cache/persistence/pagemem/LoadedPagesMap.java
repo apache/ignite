@@ -41,27 +41,30 @@ public interface LoadedPagesMap {
     /**
      * Associates the given key with the given value.
      *
-     * @param cacheId Cache ID. First part of the key.
+     * @param grpId Cache Group ID. First part of the key.
      * @param pageId Page ID. Second part of the key.
      * @param val Value to set.
      * @param ver Version/counter associated with value, can be used to check if value is outdated.
      */
-    public void put(int cacheId, long pageId, long val, int ver);
+    public void put(int grpId, long pageId, long val, int ver);
 
     /**
      * Refresh outdated value. Sets provided version to value associated with cache and page.
+     * Method should be called only for key present and only if version was outdated.
+     * Method may be called in case {@link #get(int, long, int, long, long)} returned {@code outdated} return value.
      *
-     * @param cacheId First part of the key. Cache Group ID.
+     * @param grpId First part of the key. Cache Group ID.
      * @param pageId Second part of the key. Page ID.
      * @param ver Partition tag.
      * @return A value associated with the given key.
+     * @throws IllegalArgumentException if method is called for absent key or key with fresh version.
      */
-    public long refresh(int cacheId, long pageId, int ver);
+    public long refresh(int grpId, long pageId, int ver);
 
     /**
      * Removes key-value association for the given key.
-     * @param grpId Cache Group ID.
-     * @param pageId Page ID.
+     * @param grpId First part of the key. Cache Group ID.
+     * @param pageId Second part of the key. Page ID.
      * @return {@code True} if value was actually found and removed.
      */
     public boolean remove(int grpId, long pageId);
