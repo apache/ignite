@@ -866,7 +866,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
         }
     }
 
-    /** Get default {@link org.apache.ignite.configuration.CollectionConfiguration} with backups */
+    /** Get {@link CollectionConfiguration} with number of backups equal to {@link AtomicConfiguration} default */
     private CollectionConfiguration getCollectionConfiguration() {
         return new CollectionConfiguration().setBackups(AtomicConfiguration.DFLT_BACKUPS);
     }
