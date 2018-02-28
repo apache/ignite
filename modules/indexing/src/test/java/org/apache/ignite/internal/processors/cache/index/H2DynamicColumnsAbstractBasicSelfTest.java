@@ -645,6 +645,38 @@ public abstract class H2DynamicColumnsAbstractBasicSelfTest extends DynamicColum
     }
 
     /**
+     *
+     * @throws Exception if failed.
+     */
+    public void testDropColumnPriorToIndexedColumn() throws Exception {
+        try {
+            run("CREATE TABLE test(id INT PRIMARY KEY, a CHAR, b INT)");
+
+            run("CREATE INDEX idxB ON test(b)");
+
+            run("INSERT INTO test VALUES(1, 'one', 11), (2, 'two', 22), (3, 'three', 33)");
+
+            List<List<?>> res = run("SELECT * FROM test ORDER BY id");
+
+            assertEquals(3, res.size());
+            assertEquals(3, res.get(0).size());
+
+            run("ALTER TABLE test DROP COLUMN a");
+
+            res = run("SELECT * FROM test ORDER BY id");
+
+            assertEquals(3, res.size());
+            assertEquals(2, res.get(0).size());
+
+            assertEquals(1, res.get(0).get(0));
+            assertEquals(11, res.get(0).get(1));
+        }
+        finally {
+            run("DROP TABLE IF EXISTS test");
+        }
+    }
+
+    /**
      * Test that {@code ADD COLUMN} fails for tables that have flat value.
      * @param tblName table name.
      */
