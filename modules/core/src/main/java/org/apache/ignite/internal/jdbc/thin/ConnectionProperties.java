@@ -351,4 +351,70 @@ public interface ConnectionProperties {
      * @param sslFactory Custom class name that implements Factory&lt;SSLSocketFactory&gt;.
      */
     public void setSslFactory(String sslFactory);
+
+    /**
+     * @return Streamed connection flag.
+     */
+    public boolean isStream();
+
+    /**
+     * @param stream Streamed connection flag.
+     */
+    public void setStream(boolean stream);
+
+    /**
+     * @return Allow overwrites during streaming connection flag.
+     */
+    public boolean isStreamAllowOverwrite();
+
+    /**
+     * @param streamAllowOverwrite Allow overwrites during streaming connection flag.
+     */
+    public void setStreamAllowOverwrite(boolean streamAllowOverwrite);
+
+    /**
+     * @return Number of parallel operations per node during streaming connection param.
+     */
+    public int getStreamParallelOperations();
+
+    /**
+     * @param streamParallelOperations Number of parallel operations per node during streaming connection param.
+     * @throws SQLException if value check failed.
+     */
+    public void setStreamParallelOperations(int streamParallelOperations) throws SQLException;
+
+    /**
+     * @return Buffer size during streaming connection param.
+     */
+    public int getStreamBufferSize();
+
+    /**
+     * @param streamBufSize Buffer size during streaming connection param.
+     * @throws SQLException if value check failed.
+     */
+    public void setStreamBufferSize(int streamBufSize) throws SQLException;
+
+    /**
+     * @return Flush timeout during streaming connection param.
+     */
+    public long getStreamFlushFrequency();
+
+    /**
+     * @param streamFlushFreq Flush timeout during streaming connection param.
+     * @throws SQLException if value check failed.
+     */
+    public void setStreamFlushFrequency(long streamFlushFreq) throws SQLException;
+
+    /**
+     * @return Batch size for streaming (number of commands to accumulate internally before actually
+     * sending over the wire).
+     */
+    public int getStreamBatchSize();
+
+    /**
+     * @param streamBatchSize Batch size for streaming (number of commands to accumulate internally before actually
+     * sending over the wire).
+     * @throws SQLException if value check failed.
+     */
+    public void setStreamBatchSize(int streamBatchSize) throws SQLException;
 }
