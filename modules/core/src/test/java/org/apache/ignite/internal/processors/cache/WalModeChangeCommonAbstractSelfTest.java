@@ -31,7 +31,6 @@ import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -43,7 +42,6 @@ import java.util.Collections;
 import java.util.concurrent.Callable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Test dynamic WAL mode change.
@@ -314,13 +312,6 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
         ccfg.setNodeFilter(FILTER);
 
         return ccfg;
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**

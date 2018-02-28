@@ -124,9 +124,6 @@ public class IgniteBasicTestSuite extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, GridMessagingSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridMessagingNoPeerClassLoadingSelfTest.class, ignoredTests);
 
-        if (U.isLinux() || U.isMacOs())
-            suite.addTest(IgniteIpcSharedMemorySelfTestSuite.suite());
-
         GridTestUtils.addTestIfNeeded(suite, GridReleaseTypeSelfTest.class, ignoredTests);
         suite.addTestSuite(GridProductVersionSelfTest.class);
         suite.addTestSuite(GridAffinityProcessorRendezvousSelfTest.class);

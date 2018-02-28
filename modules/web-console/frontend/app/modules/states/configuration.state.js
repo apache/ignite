@@ -71,6 +71,7 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
 
                     return PageConfigure.onStateEnterRedirect(trans.to());
                 },
+                failState: 'signin',
                 tfMetaTags: {
                     title: 'Configuration'
                 }

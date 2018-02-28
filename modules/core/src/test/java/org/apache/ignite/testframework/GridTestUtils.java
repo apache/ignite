@@ -106,9 +106,6 @@ import org.apache.ignite.testframework.config.GridTestProperties;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-import static org.springframework.util.FileSystemUtils.deleteRecursively;
-
 /**
  * Utility class for tests.
  */
@@ -1965,13 +1962,6 @@ public final class GridTestUtils {
             b.append(ALPHABETH.charAt(rnd.nextInt(ALPHABETH.length())));
 
         return b.toString();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public static void deleteDbFiles() throws Exception {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**
