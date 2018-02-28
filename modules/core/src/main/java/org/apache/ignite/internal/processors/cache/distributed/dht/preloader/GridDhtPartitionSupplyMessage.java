@@ -42,8 +42,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemTy
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.versionForRemovedValue;
-
 /**
  * Partition supply message.
  */
@@ -219,7 +217,6 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
     void addEntry0(int p, GridCacheEntryInfo info, GridCacheSharedContext ctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         assert info != null;
         assert info.key() != null : info;
-        assert info.value() != null || versionForRemovedValue(info.coordinatorVersion()): info;
 
         // Need to call this method to initialize info properly.
         marshalInfo(info, ctx, cacheObjCtx);

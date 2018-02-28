@@ -202,6 +202,7 @@ public interface IgniteCacheOffheapManager {
      * @param val Value.
      * @param ver Version.
      * @param mvccVer MVCC version.
+     * @param newMvccVer New MVCC version.
      * @return {@code True} if value was inserted.
      * @throws IgniteCheckedException If failed.
      */
@@ -210,7 +211,8 @@ public interface IgniteCacheOffheapManager {
         @Nullable CacheObject val,
         GridCacheVersion ver,
         long expireTime,
-        MvccVersion mvccVer
+        MvccVersion mvccVer,
+        MvccVersion newMvccVer
     ) throws IgniteCheckedException;
 
     /**
@@ -542,6 +544,7 @@ public interface IgniteCacheOffheapManager {
          * @param val Value.
          * @param ver Version.
          * @param mvccVer MVCC version.
+         * @param newMvccVer New MVCC version.
          * @return {@code True} if new value was inserted.
          * @throws IgniteCheckedException If failed.
          */
@@ -551,7 +554,8 @@ public interface IgniteCacheOffheapManager {
             @Nullable CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            MvccVersion mvccVer) throws IgniteCheckedException;
+            MvccVersion mvccVer,
+            MvccVersion newMvccVer) throws IgniteCheckedException;
 
         /**
          * @param cctx Cache context.

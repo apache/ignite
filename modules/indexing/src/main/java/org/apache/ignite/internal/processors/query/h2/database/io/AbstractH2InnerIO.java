@@ -89,18 +89,4 @@ public abstract class AbstractH2InnerIO extends BPlusInnerIO<GridH2SearchRow> im
 
         return PageUtils.getLong(pageAddr, offset(idx) + 16);
     }
-
-    /** {@inheritDoc} */
-    @Override public long getNewMvccCoordinatorVersion(long pageAddr, int idx) {
-        assert storeMvccInfo();
-
-        return PageUtils.getLong(pageAddr, offset(idx) + 24);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getNewMvccCounter(long pageAddr, int idx) {
-        assert storeMvccInfo();
-
-        return PageUtils.getLong(pageAddr, offset(idx) + 32);
-    }
 }

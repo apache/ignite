@@ -32,7 +32,7 @@ public class H2MvccInnerIO extends AbstractH2InnerIO {
      * @param ver Page format version.
      */
     private H2MvccInnerIO(int ver) {
-        super(T_H2_MVCC_REF_INNER, ver, 40);
+        super(T_H2_MVCC_REF_INNER, ver, 24);
     }
 
     /** {@inheritDoc} */

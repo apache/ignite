@@ -43,7 +43,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.versionForRemovedValue;
 
 /**
  * Thread pool for supplying partitions to demanding nodes.
@@ -377,19 +376,15 @@ class GridDhtPartitionSupplier {
                             info.key(row.key());
                             info.cacheId(row.cacheId());
 
-                            boolean rmvd = false;
-
                             if (grp.mvccEnabled()) {
                                 info.mvccVersion(row.mvccCoordinatorVersion(), row.mvccCounter());
-
-                                rmvd = versionForRemovedValue(row.mvccCoordinatorVersion());
+                                info.newMvccVersion(row.newMvccCoordinatorVersion(),
+                                    row.newMvccCounter());
                             }
 
-                            if (!rmvd) {
-                                info.value(row.value());
-                                info.version(row.version());
-                                info.expireTime(row.expireTime());
-                            }
+                            info.value(row.value());
+                            info.version(row.version());
+                            info.expireTime(row.expireTime());
 
                             if (preloadPred == null || preloadPred.apply(info))
                                 s.addEntry0(part, info, grp.shared(), grp.cacheObjectContext());

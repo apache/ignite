@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.tree.mvcc.search;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -28,14 +29,24 @@ import org.apache.ignite.internal.processors.cache.tree.RowLinkIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.unmaskCoordinatorVersion;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.getNewVersion;
 
 /**
  * Closure which returns version of the very first encountered row.
  */
 public class MvccFirstRowVersionTreeClosure implements MvccTreeClosure {
+    /** */
+    private final GridCacheContext cctx;
+
     /** Maximum MVCC version found for the row. */
     private MvccVersion res;
+
+    /**
+     * @param cctx Cache context.
+     */
+    public MvccFirstRowVersionTreeClosure(GridCacheContext cctx) {
+        this.cctx = cctx;
+    }
 
     /**
      * @return Maximum MVCC version found for the row.
@@ -49,8 +60,12 @@ public class MvccFirstRowVersionTreeClosure implements MvccTreeClosure {
         long pageAddr, int idx) throws IgniteCheckedException {
         RowLinkIO rowIo = (RowLinkIO)io;
 
-        res = new MvccVersionImpl(unmaskCoordinatorVersion(rowIo.getMvccCoordinatorVersion(pageAddr, idx)),
-            rowIo.getMvccCounter(pageAddr, idx));
+        MvccVersion newVer = getNewVersion(cctx, rowIo.getLink(pageAddr, idx));
+
+        if (newVer != null)
+            res = newVer;
+        else
+            res = new MvccVersionImpl(rowIo.getMvccCoordinatorVersion(pageAddr, idx), rowIo.getMvccCounter(pageAddr, idx));
 
         return false;  // Stop search.
     }

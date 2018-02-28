@@ -64,6 +64,9 @@ public abstract class WALRecord {
         DATA_PAGE_SET_FREE_LIST_PAGE,
 
         /** */
+        MVCC_DATA_PAGE_MARK_UPDATED_RECORD,
+
+        /** */
         BTREE_META_PAGE_INIT_ROOT,
 
         /** */

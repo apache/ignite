@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.tree;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -27,8 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteInClosure;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.assertMvccVersionValid;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.unmaskCoordinatorVersion;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.assertMvccVersionValid;
 
 /**
  *
@@ -100,7 +100,7 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
             long mvccUpdateTopVer = ((RowLinkIO)srcIo).getMvccCoordinatorVersion(srcPageAddr, srcIdx);
             long mvccUpdateCntr = ((RowLinkIO)srcIo).getMvccCounter(srcPageAddr, srcIdx);
 
-            assert unmaskCoordinatorVersion(mvccUpdateTopVer) > 0 : mvccUpdateCntr;
+            assert mvccUpdateTopVer > 0 : mvccUpdateCntr;
             assert mvccUpdateCntr != MVCC_COUNTER_NA;
 
             PageUtils.putLong(dstPageAddr, off, mvccUpdateTopVer);
@@ -111,7 +111,8 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
     }
 
     /** {@inheritDoc} */
-    @Override public final CacheSearchRow getLookupRow(BPlusTree<CacheSearchRow, ?> tree, long pageAddr, int idx) {
+    @Override public final CacheSearchRow getLookupRow(BPlusTree<CacheSearchRow, ?> tree, long pageAddr, int idx)
+        throws IgniteCheckedException {
         long link = getLink(pageAddr, idx);
         int hash = getHash(pageAddr, idx);
         int cacheId = getCacheId(pageAddr, idx);

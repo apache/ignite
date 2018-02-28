@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.tree;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -27,8 +28,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteInClosure;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.assertMvccVersionValid;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.unmaskCoordinatorVersion;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.assertMvccVersionValid;
 
 /**
  *
@@ -62,7 +62,7 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
         }
 
         if (storeMvccVersion()) {
-            assert unmaskCoordinatorVersion(row.mvccCoordinatorVersion()) > 0 : row;
+            assert row.mvccCoordinatorVersion() > 0 : row;
             assert row.mvccCounter() != MVCC_COUNTER_NA : row;
 
             PageUtils.putLong(pageAddr, off, row.mvccCoordinatorVersion());
@@ -73,7 +73,8 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
     }
 
     /** {@inheritDoc} */
-    @Override public final CacheSearchRow getLookupRow(BPlusTree<CacheSearchRow, ?> tree, long pageAddr, int idx) {
+    @Override public final CacheSearchRow getLookupRow(BPlusTree<CacheSearchRow, ?> tree, long pageAddr, int idx)
+        throws IgniteCheckedException {
         long link = getLink(pageAddr, idx);
         int hash = getHash(pageAddr, idx);
         int cacheId = getCacheId(pageAddr, idx);
@@ -82,7 +83,7 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
             long mvccTopVer = getMvccCoordinatorVersion(pageAddr, idx);
             long mvccCntr = getMvccCounter(pageAddr, idx);
 
-            assert unmaskCoordinatorVersion(mvccTopVer) > 0 : mvccTopVer;
+            assert mvccTopVer > 0 : mvccTopVer;
             assert mvccCntr != MVCC_COUNTER_NA;
 
             return ((CacheDataTree)tree).rowStore().mvccRow(cacheId,

@@ -21,7 +21,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +57,6 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -114,6 +112,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
     /** */
     protected CacheConfiguration ccfg;
+
+    /** */
+    protected static final int TX_TIMEOUT = 3000;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -257,6 +258,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
      * @param cfgC Optional closure applied to cache configuration.
      * @param withRmvs If {@code true} then in addition to puts tests also executes removes.
      * @param readMode Read mode.
+     * @param writeMode Write mode.
      * @throws Exception If failed.
      */
     final void accountsTxReadAll(
@@ -266,7 +268,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         int cacheParts,
         @Nullable IgniteInClosure<CacheConfiguration> cfgC,
         final boolean withRmvs,
-        final ReadMode readMode
+        final ReadMode readMode,
+        final WriteMode writeMode
     )
         throws Exception
     {
@@ -295,7 +298,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             }
         };
 
-        final Set<Integer> rmvdIds = new HashSet<>();
+        final RemovedAccountsTracker rmvdTracker = new RemovedAccountsTracker(ACCOUNTS);
 
         GridInClosure3<Integer, List<TestCache>, AtomicBoolean> writer =
             new GridInClosure3<Integer, List<TestCache>, AtomicBoolean>() {
@@ -326,11 +329,24 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                             Integer cntr1 = null;
                             Integer cntr2 = null;
 
-                            try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                                MvccTestAccount a1;
-                                MvccTestAccount a2;
+                            Integer rmvd = null;
+                            Integer inserted = null;
 
-                                Map<Integer, MvccTestAccount> accounts = cache.cache.getAll(keys);
+                            MvccTestAccount a1;
+                            MvccTestAccount a2;
+
+                            try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                                tx.timeout(TX_TIMEOUT);
+
+
+                                Map<Integer, MvccTestAccount> accounts = null;
+
+                                if (writeMode == WriteMode.KEY_VALUE)
+                                    accounts = cache.cache.getAll(keys);
+                                else if (writeMode == WriteMode.DML)
+                                    accounts = getAllSql(cache);
+                                else
+                                    assert false : "Unknown write mode";
 
                                 a1 = accounts.get(id1);
                                 a2 = accounts.get(id2);
@@ -342,66 +358,137 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                                     cntr1 = a1.updateCnt + 1;
                                     cntr2 = a2.updateCnt + 1;
 
-                                    cache.cache.put(id1, new MvccTestAccount(a1.val + 1, cntr1));
-                                    cache.cache.put(id2, new MvccTestAccount(a2.val - 1, cntr2));
+                                    if (writeMode == WriteMode.KEY_VALUE) {
+                                        cache.cache.put(id1, new MvccTestAccount(a1.val + 1, cntr1));
+                                        cache.cache.put(id2, new MvccTestAccount(a2.val - 1, cntr2));
+                                    }
+                                    else if (writeMode == WriteMode.DML)  {
+                                        updateSql(cache, id1, a1.val + 1, cntr1);
+                                        updateSql(cache, id2, a2.val - 1, cntr2);
+                                    }
+                                    else
+                                        assert false : "Unknown write mode";
                                 }
                                 else {
                                     if (a1 != null || a2 != null) {
                                         if (a1 != null && a2 != null) {
-                                            Integer rmvd = null;
-
                                             if (rnd.nextInt(10) == 0) {
-                                                synchronized (rmvdIds) {
-                                                    if (rmvdIds.size() < ACCOUNTS / 2) {
-                                                        rmvd = rnd.nextBoolean() ? id1 : id2;
+                                                if (rmvdTracker.size() < ACCOUNTS / 2) {
+                                                    rmvd = rnd.nextBoolean() ? id1 : id2;
 
-                                                        assertTrue(rmvdIds.add(rmvd));
-                                                    }
+                                                    assertTrue(rmvdTracker.markRemoved(rmvd));
                                                 }
                                             }
 
                                             if (rmvd != null) {
-                                                cache.cache.remove(rmvd);
+                                                if (writeMode == WriteMode.KEY_VALUE) {
+                                                    cache.cache.remove(rmvd);
 
-                                                cache.cache.put(rmvd.equals(id1) ? id2 : id1,
-                                                    new MvccTestAccount(a1.val + a2.val, 1));
+                                                    cache.cache.put(rmvd.equals(id1) ? id2 : id1,
+                                                        new MvccTestAccount(a1.val + a2.val, 1));
+                                                }
+                                                else if (writeMode == WriteMode.DML)  {
+                                                    removeSql(cache, rmvd);
+
+                                                    updateSql(cache, rmvd.equals(id1) ? id2 : id1,
+                                                        a1.val + a2.val, 1);
+                                                }
+                                                else
+                                                    assert false : "Unknown write mode";
                                             }
                                             else {
-                                                cache.cache.put(id1, new MvccTestAccount(a1.val + 1, 1));
-                                                cache.cache.put(id2, new MvccTestAccount(a2.val - 1, 1));
+                                                if (writeMode == WriteMode.KEY_VALUE) {
+                                                    cache.cache.put(id1, new MvccTestAccount(a1.val + 1, 1));
+                                                    cache.cache.put(id2, new MvccTestAccount(a2.val - 1, 1));
+                                                }
+                                                else if (writeMode == WriteMode.DML) {
+                                                    updateSql(cache, id1, a1.val + 1, 1);
+                                                    updateSql(cache, id2, a2.val - 1, 1);
+                                                }
+                                                else
+                                                    assert false : "Unknown write mode";
                                             }
                                         }
                                         else {
                                             if (a1 == null) {
-                                                cache.cache.put(id1, new MvccTestAccount(100, 1));
-                                                cache.cache.put(id2, new MvccTestAccount(a2.val - 100, 1));
+                                                inserted = id1;
 
-                                                assertTrue(rmvdIds.remove(id1));
+                                                if (writeMode == WriteMode.KEY_VALUE) {
+                                                    cache.cache.put(id1, new MvccTestAccount(100, 1));
+                                                    cache.cache.put(id2, new MvccTestAccount(a2.val - 100, 1));
+                                                }
+                                                else if (writeMode == WriteMode.DML) {
+                                                    insertSql(cache, id1, 100, 1);
+                                                    updateSql(cache, id2, a2.val - 100, 1);
+                                                }
+                                                else
+                                                    assert false : "Unknown write mode";
                                             }
                                             else {
-                                                cache.cache.put(id1, new MvccTestAccount(a1.val - 100, 1));
-                                                cache.cache.put(id2, new MvccTestAccount(100, 1));
+                                                inserted = id2;
 
-                                                assertTrue(rmvdIds.remove(id2));
+                                                if (writeMode == WriteMode.KEY_VALUE) {
+                                                    cache.cache.put(id1, new MvccTestAccount(a1.val - 100, 1));
+                                                    cache.cache.put(id2, new MvccTestAccount(100, 1));
+                                                }
+                                                else if (writeMode == WriteMode.DML) {
+                                                    updateSql(cache, id1, a1.val - 100, 1);
+                                                    insertSql(cache, id2, 100, 1);
+                                                }
+                                                else
+                                                    assert false : "Unknown write mode";
                                             }
                                         }
                                     }
                                 }
 
                                 tx.commit();
+
+                                // In case of tx success mark inserted.
+                                if (inserted != null) {
+                                    assert withRmvs;
+
+                                    assertTrue(rmvdTracker.unmarkRemoved(inserted));
+                                }
+                            }
+                            catch (Throwable e) {
+                                if (rmvd != null) {
+                                    assert withRmvs;
+
+                                    // If tx fails, unmark removed.
+                                    assertTrue(rmvdTracker.unmarkRemoved(rmvd));
+                                }
+
+                                throw e;
                             }
 
                             if (!withRmvs) {
-                                Map<Integer, MvccTestAccount> accounts = cache.cache.getAll(keys);
+                                Map<Integer, MvccTestAccount> accounts = null;
 
-                                MvccTestAccount a1 = accounts.get(id1);
-                                MvccTestAccount a2 = accounts.get(id2);
+                                if (writeMode == WriteMode.KEY_VALUE)
+                                    accounts = cache.cache.getAll(keys);
+                                else if (writeMode == WriteMode.DML)
+                                    accounts = getAllSql(cache);
+                                else
+                                    assert false : "Unknown write mode";
+
+                                a1 = accounts.get(id1);
+                                a2 = accounts.get(id2);
 
                                 assertNotNull(a1);
                                 assertNotNull(a2);
 
                                 assertTrue(a1.updateCnt >= cntr1);
                                 assertTrue(a2.updateCnt >= cntr2);
+                            }
+                        }
+                        catch (Throwable e) {
+                            if (e.getMessage() == null || !(e.getMessage().contains("Mvcc version mismatch.") ||
+                                // TODO Remove this in IGNITE-7188.
+                                e.getMessage().contains("Failed to acquire lock within provided timeout for transaction"))) {
+                                error("Writer error: ", e);
+
+                                throw e;
                             }
                         }
                         finally {
@@ -574,6 +661,72 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             init,
             writer,
             reader);
+    }
+
+    /**
+     * Returns all accounts from cache by means of SQL.
+     *
+     * @param cache Cache.
+     * @return All accounts
+     */
+    private static Map<Integer, MvccTestAccount> getAllSql(TestCache<Integer, MvccTestAccount> cache) {
+        Map<Integer, MvccTestAccount> accounts = new HashMap<>();
+
+        SqlFieldsQuery qry = new SqlFieldsQuery("select _key, val, updateCnt from MvccTestAccount");
+
+        for (List<?> row : cache.cache.query(qry)) {
+            Integer id = (Integer)row.get(0);
+            Integer val = (Integer)row.get(1);
+            Integer updateCnt = (Integer)row.get(2);
+
+            MvccTestAccount old = accounts.put(id, new MvccTestAccount(val, updateCnt));
+
+            assertNull(old);
+        }
+
+        return accounts;
+    }
+
+    /**
+     * Updates account by means of SQL API.
+     *
+     * @param cache Cache.
+     * @param key Key.
+     * @param val Value.
+     * @param updateCnt Update counter.
+     */
+    private static void updateSql(TestCache<Integer, MvccTestAccount> cache, Integer key, Integer val, Integer updateCnt) {
+        SqlFieldsQuery qry = new SqlFieldsQuery("update MvccTestAccount set val=" + val + ", updateCnt=" +
+            updateCnt + " where _key=" + key);
+
+        cache.cache.query(qry).getAll();
+    }
+
+    /**
+     * Removes account by means of SQL API.
+     *
+     * @param cache Cache.
+     * @param key Key.
+     */
+    private static void removeSql(TestCache<Integer, MvccTestAccount> cache, Integer key) {
+        SqlFieldsQuery qry = new SqlFieldsQuery("delete from MvccTestAccount where _key=" + key);
+
+        cache.cache.query(qry).getAll();
+    }
+
+    /**
+     * Inserts account by means of SQL API.
+     *
+     * @param cache Cache.
+     * @param key Key.
+     * @param val Value.
+     * @param updateCnt Update counter.
+     */
+    private static void insertSql(TestCache<Integer, MvccTestAccount> cache, int key, Integer val, Integer updateCnt) {
+        SqlFieldsQuery qry = new SqlFieldsQuery("insert into MvccTestAccount(_key, val, updateCnt) values " +
+            " (" + key+ ", " + val + ", " + updateCnt + ")");
+
+        cache.cache.query(qry).getAll();
     }
 
     /**
@@ -903,6 +1056,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         final int val;
 
         /** */
+        @QuerySqlField
         final int updateCnt;
 
         /**
@@ -918,7 +1072,10 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return S.toString(MvccTestAccount.class, this);
+            return "MvccTestAccount{" +
+                "val=" + val +
+                ", updateCnt=" + updateCnt +
+                '}';
         }
     }
 
@@ -937,6 +1094,17 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         /** */
         SQL_SUM
+    }
+
+    /**
+     *
+     */
+    enum WriteMode {
+        /** */
+        DML,
+
+        /** */
+        KEY_VALUE
     }
 
     /**
@@ -1009,6 +1177,86 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
          */
         void readUnlock() {
             stopLock.readLock().unlock();
+        }
+    }
+
+    /**
+     *
+     */
+    static class InitIndexing implements IgniteInClosure<CacheConfiguration> {
+        /** */
+        private final Class[] idxTypes;
+
+        /**
+         * @param idxTypes Indexed types.
+         */
+        InitIndexing(Class<?>... idxTypes) {
+            this.idxTypes = idxTypes;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void apply(CacheConfiguration cfg) {
+            cfg.setIndexedTypes(idxTypes);
+        }
+    }
+
+    /**
+     * Removed accounts tracker.
+     */
+    private static class RemovedAccountsTracker {
+        /** */
+        private final Map<Integer, Integer> rmvdKeys;
+
+        /**
+         * @param size Size.
+         */
+        RemovedAccountsTracker(int size) {
+            this.rmvdKeys = new HashMap<>(size);
+
+            for (int i = 0; i < size; i++)
+                rmvdKeys.put(i, 0);
+        }
+
+        /**
+         * @return Size.
+         */
+        public synchronized int size() {
+            int size = 0;
+
+            for (int i = 0; i < rmvdKeys.size(); i++) {
+                if (rmvdKeys.get(i) > 0)
+                    size++;
+            }
+
+            return size;
+        }
+
+        /**
+         * @param id Id.
+         * @return {@code True} if success.
+         */
+        synchronized boolean markRemoved(Integer id) {
+            Integer rmvdCntr = rmvdKeys.get(id);
+
+            Integer newCntr = rmvdCntr + 1;
+
+            rmvdKeys.put(id, newCntr);
+
+            return newCntr >= 0;
+        }
+
+        /**
+         * @param id Id.
+         * @return {@code True} if success.
+         */
+        synchronized boolean unmarkRemoved(Integer id) {
+            Integer rmvdCntr = rmvdKeys.get(id);
+
+            Integer newCntr = rmvdCntr - 1;
+
+            rmvdKeys.put(id, newCntr);
+
+            return newCntr >= 0;
         }
     }
 }

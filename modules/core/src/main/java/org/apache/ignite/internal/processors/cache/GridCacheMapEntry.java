@@ -785,7 +785,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     // Update indexes before actual write to entry.
                     if (cctx.mvccEnabled())
-                        cctx.offheap().mvccInitialValue(this, ret, nextVer, expTime, null);
+                        cctx.offheap().mvccInitialValue(this, ret, nextVer, expTime, null, null);
                     else
                         storeValue(ret, expTime, nextVer, null);
 
@@ -899,7 +899,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     // Update indexes.
                     if (ret != null) {
                         if (cctx.mvccEnabled())
-                            cctx.offheap().mvccInitialValue(this, ret, nextVer, expTime, null);
+                            cctx.offheap().mvccInitialValue(this, ret, nextVer, expTime, null, null);
                         else
                             storeValue(ret, expTime, nextVer, null);
 
@@ -2747,6 +2747,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         CacheObject val,
         GridCacheVersion ver,
         MvccVersion mvccVer,
+        MvccVersion newMvccVer,
         long ttl,
         long expireTime,
         boolean preload,
@@ -2788,7 +2789,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
                 if (cctx.mvccEnabled()) {
-                    cctx.offheap().mvccInitialValue(this, val, ver, expTime, mvccVer);
+                    cctx.offheap().mvccInitialValue(this, val, ver, expTime, mvccVer, newMvccVer);
 
                     if (val != null)
                         update(val, expTime, ttl, ver, true);
@@ -2972,7 +2973,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 if (val != null) {
                     if (cctx.mvccEnabled())
-                        cctx.offheap().mvccInitialValue(this, val, newVer, expTime, null);
+                        cctx.offheap().mvccInitialValue(this, val, newVer, expTime, null, null);
                     else
                         storeValue(val, expTime, newVer, null);
 

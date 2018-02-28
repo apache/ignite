@@ -928,6 +928,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
+        @Override public int size() throws IgniteCheckedException {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int headerSize() {
+            throw new UnsupportedOperationException();
+        }
+
+        /** {@inheritDoc} */
         @Override public long link() {
             return 0;
         }
@@ -963,8 +973,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         }
 
         /** {@inheritDoc} */
-        @Override public boolean removed() {
-            return false; // TODO IGNITE-7384
+        @Override public long newMvccCoordinatorVersion() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long newMvccCounter() {
+            return 0;
         }
     }
 
@@ -1368,12 +1383,13 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             @Nullable CacheObject val,
             GridCacheVersion ver,
             long expireTime,
-            MvccVersion mvccVer)
+            MvccVersion mvccVer,
+            MvccVersion newMvccVer)
             throws IgniteCheckedException
         {
             CacheDataStore delegate = init0(false);
 
-            return delegate.mvccInitialValue(cctx, key, val, ver, expireTime, mvccVer);
+            return delegate.mvccInitialValue(cctx, key, val, ver, expireTime, mvccVer, newMvccVer);
         }
 
         /** {@inheritDoc} */

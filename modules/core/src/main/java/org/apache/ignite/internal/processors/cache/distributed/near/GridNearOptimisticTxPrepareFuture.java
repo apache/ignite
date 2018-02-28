@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -69,6 +68,7 @@ import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.noCoordinatorError;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 
@@ -387,7 +387,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             MvccCoordinator mvccCrd = write.context().affinity().mvccCoordinator(topVer);
 
             if (mvccCrd == null) {
-                onDone(MvccProcessor.noCoordinatorError(topVer));
+                onDone(noCoordinatorError(topVer));
 
                 return;
             }
@@ -455,7 +455,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 mvccCrd = write.context().affinity().mvccCoordinator(topVer);
 
                 if (mvccCrd == null) {
-                    onDone(MvccProcessor.noCoordinatorError(topVer));
+                    onDone(noCoordinatorError(topVer));
 
                     break;
                 }

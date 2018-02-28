@@ -31,6 +31,8 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.noCoordinatorError;
+
 /**
  *
  */
@@ -192,7 +194,7 @@ public class MvccQueryTracker implements MvccCoordinatorChangeAware {
         MvccCoordinator mvccCrd0 = cctx.affinity().mvccCoordinator(topVer);
 
         if (mvccCrd0 == null) {
-            lsnr.apply(null, MvccProcessor.noCoordinatorError(topVer));
+            lsnr.apply(null, noCoordinatorError(topVer));
 
             return;
         }

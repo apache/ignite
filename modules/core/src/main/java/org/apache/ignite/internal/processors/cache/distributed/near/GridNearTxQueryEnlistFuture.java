@@ -37,10 +37,9 @@ import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTx
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxQueryEnlistFuture;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
@@ -56,6 +55,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.noCoordinatorError;
 
 /**
  * Cache lock future.
@@ -306,7 +307,7 @@ public class GridNearTxQueryEnlistFuture extends GridCacheCompoundIdentityFuture
             MvccCoordinator mvccCrd = cctx.affinity().mvccCoordinator(topVer);
 
             if (mvccCrd == null) {
-                onDone(MvccProcessor.noCoordinatorError(topVer));
+                onDone(noCoordinatorError(topVer));
 
                 return;
             }

@@ -91,18 +91,4 @@ public abstract class AbstractH2LeafIO extends BPlusLeafIO<GridH2SearchRow> impl
 
         return PageUtils.getLong(pageAddr, offset(idx) + 16);
     }
-
-    /** {@inheritDoc} */
-    @Override public long getNewMvccCoordinatorVersion(long pageAddr, int idx) {
-        assert storeMvccInfo();
-
-        return PageUtils.getLong(pageAddr, offset(idx) + 24);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getNewMvccCounter(long pageAddr, int idx) {
-        assert storeMvccInfo();
-
-        return PageUtils.getLong(pageAddr, offset(idx) + 32);
-    }
 }

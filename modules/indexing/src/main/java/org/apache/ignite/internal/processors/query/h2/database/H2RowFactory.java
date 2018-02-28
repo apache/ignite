@@ -61,7 +61,7 @@ public class H2RowFactory {
 
         rowBuilder.initFromLink(cctx.group(), CacheDataRowAdapter.RowData.FULL);
 
-        GridH2Row row = rowDesc.createRow(rowBuilder, null);
+        GridH2Row row = rowDesc.createRow(rowBuilder);
 
         assert row.version() != null;
 
@@ -77,6 +77,6 @@ public class H2RowFactory {
      */
     public GridH2Row getMvccRow(long link, long mvccCrdVer, long mvccCntr) throws IgniteCheckedException {
         return rowDesc.createRow(new MvccDataRow(cctx.group(),0, link,
-            PageIdUtils.partId(PageIdUtils.pageId(link)),null, mvccCrdVer, mvccCntr), null);
+            PageIdUtils.partId(PageIdUtils.pageId(link)),null, mvccCrdVer, mvccCntr));
     }
 }

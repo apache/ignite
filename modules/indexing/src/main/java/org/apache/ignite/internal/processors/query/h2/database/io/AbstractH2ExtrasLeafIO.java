@@ -171,16 +171,6 @@ public class AbstractH2ExtrasLeafIO extends BPlusLeafIO<GridH2SearchRow> impleme
     }
 
     /** {@inheritDoc} */
-    @Override public long getNewMvccCoordinatorVersion(long pageAddr, int idx) {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getNewMvccCounter(long pageAddr, int idx) {
-        return MVCC_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean storeMvccInfo() {
         return false;
     }

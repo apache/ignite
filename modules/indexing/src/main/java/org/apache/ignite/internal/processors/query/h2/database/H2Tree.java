@@ -27,23 +27,22 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
+import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasInnerIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2ExtrasLeafIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.h2.result.SearchRow;
 import org.h2.table.IndexColumn;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.assertMvccVersionValid;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.unmaskCoordinatorVersion;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.assertMvccVersionValid;
 
 /**
  */
@@ -327,27 +326,24 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @return Comparison result.
      */
     private int mvccCompare(H2RowLinkIO io, long pageAddr, int idx, GridH2SearchRow r2) {
-        if (mvccEnabled && !r2.indexSearchRow()) {
-            long crdVer1 = io.getMvccCoordinatorVersion(pageAddr, idx);
-            long crdVer2 = r2.mvccCoordinatorVersion();
+        if (!mvccEnabled || r2.indexSearchRow())
+            return 0;
 
-            assert crdVer1 != 0;
-            assert crdVer2 != 0 : r2;
+        long crdVer1 = io.getMvccCoordinatorVersion(pageAddr, idx);
+        long crdVer2 = r2.mvccCoordinatorVersion();
 
-            int c = Long.compare(unmaskCoordinatorVersion(crdVer1), unmaskCoordinatorVersion(crdVer2));
+        assert crdVer1 != 0;
 
-            if (c != 0)
-                return c;
+        int c = -Long.compare(crdVer1, crdVer2);
 
-            long cntr = io.getMvccCounter(pageAddr, idx);
+        if (c != 0)
+            return c;
 
-            assert cntr != MVCC_COUNTER_NA;
-            assert r2.mvccCounter() != MVCC_COUNTER_NA : r2;
+        long cntr = io.getMvccCounter(pageAddr, idx);
 
-            return Long.compare(cntr, r2.mvccCounter());
-        }
+        assert cntr != MVCC_COUNTER_NA;
 
-        return 0;
+        return -Long.compare(cntr, r2.mvccCounter());
     }
 
     /**
@@ -356,25 +352,18 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @return Comparison result.
      */
     private int mvccCompare(GridH2SearchRow r1, GridH2SearchRow r2) {
-        if (mvccEnabled && !r2.indexSearchRow()) {
-            long crdVer1 = r1.mvccCoordinatorVersion();
-            long crdVer2 = r2.mvccCoordinatorVersion();
+        if (!mvccEnabled || r2.indexSearchRow())
+            return 0;
 
-            assert crdVer1 != 0 : r1;
-            assert crdVer2 != 0 : r2;
+        long crdVer1 = r1.mvccCoordinatorVersion();
+        long crdVer2 = r2.mvccCoordinatorVersion();
 
-            int c = Long.compare(unmaskCoordinatorVersion(crdVer1), unmaskCoordinatorVersion(crdVer2));
+        int c = -Long.compare(crdVer1, crdVer2);
 
-            if (c != 0)
-                return c;
+        if (c != 0)
+            return c;
 
-            assert r1.mvccCounter() != MVCC_COUNTER_NA : r1;
-            assert r2.mvccCounter() != MVCC_COUNTER_NA : r2;
-
-            return Long.compare(r1.mvccCounter(), r2.mvccCounter());
-        }
-
-        return 0;
+        return -Long.compare(r1.mvccCounter(), r2.mvccCounter());
     }
 
     /**

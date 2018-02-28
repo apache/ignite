@@ -275,21 +275,18 @@ public class GridH2RowDescriptor {
      * Creates new row.
      *
      * @param dataRow Data row.
-     * @param newVer Version of new mvcc value inserted for the same key.
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row createRow(CacheDataRow dataRow, @Nullable MvccVersion newVer) throws IgniteCheckedException {
+    public GridH2Row createRow(CacheDataRow dataRow) throws IgniteCheckedException {
         GridH2Row row;
 
         try {
             if (dataRow.value() == null) { // Only can happen for remove operation, can create simple search row.
-                assert newVer == null;
-
                 row = new GridH2KeyRowOnheap(dataRow, wrap(dataRow.key(), keyType));
             }
             else
-                row = new GridH2KeyValueRowOnheap(this, dataRow, newVer, keyType, valType);
+                row = new GridH2KeyValueRowOnheap(this, dataRow, keyType, valType);
         }
         catch (ClassCastException e) {
             throw new IgniteCheckedException("Failed to convert key to SQL type. " +

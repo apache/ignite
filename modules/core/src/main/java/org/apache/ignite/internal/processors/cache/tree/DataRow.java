@@ -60,13 +60,6 @@ public class DataRow extends CacheDataRowAdapter {
     }
 
     /**
-     *
-     */
-    public DataRow() {
-        super(0);
-    }
-
-    /**
      * @param key Key.
      * @param val Value.
      * @param ver Version.
@@ -84,6 +77,20 @@ public class DataRow extends CacheDataRowAdapter {
         this.part = part;
         this.expireTime = expireTime;
         this.cacheId = cacheId;
+    }
+
+    /**
+     * @param link Link.
+     */
+    protected DataRow(long link) {
+        super(link);
+    }
+
+    /**
+     *
+     */
+    DataRow() {
+        super(0);
     }
 
     /** {@inheritDoc} */

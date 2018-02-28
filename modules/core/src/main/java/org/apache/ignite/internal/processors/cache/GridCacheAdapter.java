@@ -3523,6 +3523,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             entry.initialValue(cacheVal,
                 ver,
                 null,
+                null,
                 ttl,
                 CU.EXPIRE_TIME_CALCULATE,
                 false,

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.tree;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -25,8 +26,6 @@ import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.versionForRemovedValue;
 
 /**
  *
@@ -72,15 +71,10 @@ public class CacheDataRowStore extends RowStore {
      * @param crdVer Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.
      * @return Search row.
+     * @throws IgniteCheckedException If failed.
      */
-    MvccDataRow mvccRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData, long crdVer, long mvccCntr) {
-        if (versionForRemovedValue(crdVer)) {
-            if (rowData == CacheDataRowAdapter.RowData.NO_KEY || rowData == CacheDataRowAdapter.RowData.LINK_ONLY)
-                return MvccDataRow.removedRowNoKey(link, partId, cacheId, crdVer, mvccCntr);
-            else
-                rowData = CacheDataRowAdapter.RowData.KEY_ONLY;
-        }
-
+    MvccDataRow mvccRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData, long crdVer, long mvccCntr)
+        throws IgniteCheckedException {
         MvccDataRow dataRow = new MvccDataRow(grp,
             hash,
             link,

@@ -174,16 +174,6 @@ public abstract class AbstractH2ExtrasInnerIO extends BPlusInnerIO<GridH2SearchR
     }
 
     /** {@inheritDoc} */
-    @Override public long getNewMvccCoordinatorVersion(long pageAddr, int idx) {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getNewMvccCounter(long pageAddr, int idx) {
-        return MVCC_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean storeMvccInfo() {
         return false;
     }

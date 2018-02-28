@@ -260,7 +260,6 @@ public interface GridQueryIndexing {
      * @param type Type descriptor.
      * @param row New row.
      * @param prevRow Previous row.
-     * @param newVer Version of new mvcc value inserted for the same key.
      * @param prevRowAvailable Whether previous row is available.
      * @param idxRebuild If index rebuild is in progress.
      * @throws IgniteCheckedException If failed.
@@ -269,7 +268,6 @@ public interface GridQueryIndexing {
         GridQueryTypeDescriptor type,
         CacheDataRow row,
         CacheDataRow prevRow,
-        @Nullable MvccVersion newVer,
         boolean prevRowAvailable,
         boolean idxRebuild) throws IgniteCheckedException;
 

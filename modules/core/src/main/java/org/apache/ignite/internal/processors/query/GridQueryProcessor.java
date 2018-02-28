@@ -1820,18 +1820,16 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * @param cctx Cache context.
      * @param newRow New row.
-     * @param mvccVer Mvcc version for update.
      * @param prevRow Previous row.
      * @param idxRebuild If index rebuild is in progress.
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    public void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable MvccVersion mvccVer,
-        @Nullable CacheDataRow prevRow, boolean prevRowAvailable, boolean idxRebuild)
+    public void store(GridCacheContext cctx, CacheDataRow newRow, @Nullable CacheDataRow prevRow,
+        boolean prevRowAvailable, boolean idxRebuild)
         throws IgniteCheckedException {
         assert cctx != null;
         assert newRow != null;
-        assert !cctx.mvccEnabled() || mvccVer != null || idxRebuild;
         assert prevRowAvailable || prevRow == null;
 
         KeyCacheObject key = newRow.key();
@@ -1871,16 +1869,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (desc == null)
                 return;
 
-            if (cctx.mvccEnabled()) {
-                // Add new mvcc value.
-                idx.store(cctx, desc, newRow, null, null, true, idxRebuild);
-
-                // Set info about more recent version for previous record.
-                if (prevRow != null)
-                    idx.store(cctx, desc, prevRow, null, mvccVer, true, idxRebuild);
-            }
-            else
-                idx.store(cctx, desc, newRow, prevRow, null, prevRowAvailable, idxRebuild);
+            idx.store(cctx, desc, newRow, prevRow, prevRowAvailable, idxRebuild);
         }
         finally {
             busyLock.leaveBusy();
@@ -2458,17 +2447,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * @param cctx Cache context.
-     * @param val Value removed from cache.
-     * @param newVer Mvcc version for remove operation.
+     * @param row Row removed from cache.
      * @throws IgniteCheckedException Thrown in case of any errors.
      */
-    public void remove(GridCacheContext cctx, CacheDataRow val, @Nullable MvccVersion newVer)
+    public void remove(GridCacheContext cctx, CacheDataRow row)
         throws IgniteCheckedException {
-        assert val != null;
-        assert cctx.mvccEnabled() || newVer == null;
+        assert row != null;
 
         if (log.isDebugEnabled())
-            log.debug("Remove [cacheName=" + cctx.name() + ", key=" + val.key()+ ", val=" + val.value() + "]");
+            log.debug("Remove [cacheName=" + cctx.name() + ", key=" + row.key()+ ", val=" + row.value() + "]");
 
         if (idx == null)
             return;
@@ -2479,23 +2466,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             QueryTypeDescriptorImpl desc = typeByValue(cctx.name(),
                 cctx.cacheObjectContext(),
-                val.key(),
-                val.value(),
+                row.key(),
+                row.value(),
                 false);
 
             if (desc == null)
                 return;
 
-            if (cctx.mvccEnabled()) {
-                if (newVer != null) {
-                    // Set info about more recent version for previous record.
-                    idx.store(cctx, desc, val, null, newVer, true, false);
-                }
-                else
-                    idx.remove(cctx, desc, val);
-            }
-            else
-                idx.remove(cctx, desc, val);
+                idx.remove(cctx, desc, row);
         }
         finally {
             busyLock.leaveBusy();

@@ -538,6 +538,7 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                             info.value(),
                             info.version(),
                             info,
+                            info.newMvccVersion(),
                             info.ttl(),
                             info.expireTime(),
                             true,

@@ -576,23 +576,35 @@ public final class GridDhtTxQueryEnlistFuture extends GridCacheFutureAdapter<Gri
             true,
             false);
 
-        txEntry.cached(entry);
+        GridCacheMvccCandidate c;
+
+        while (true) {
+            try {
+                c = entry.addDhtLocal(
+                    nearNodeId,
+                    nearLockVer,
+                    topVer,
+                    threadId,
+                    lockVer,
+                    null,
+                    timeout,
+                    false,
+                    true,
+                    false,
+                    false
+                );
+
+                break;
+            }
+            catch (GridCacheEntryRemovedException ignored) {
+                entry = cctx.dhtCache().entryExx(entry.key(), topVer);
+
+                txEntry.cached(entry);
+            }
+        }
+
         txEntry.markValid();
         txEntry.queryEnlisted(true);
-
-        GridCacheMvccCandidate c = entry.addDhtLocal(
-            nearNodeId,
-            nearLockVer,
-            topVer,
-            threadId,
-            lockVer,
-            null,
-            timeout,
-            false,
-            true,
-            false,
-            false
-        );
 
         if (c == null && timeout < 0) {
 

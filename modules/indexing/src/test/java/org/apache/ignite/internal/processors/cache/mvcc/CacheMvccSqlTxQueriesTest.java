@@ -52,6 +52,9 @@ import org.apache.ignite.transactions.Transaction;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL_SUM;
+import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.DML;
 import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreaded;
@@ -62,8 +65,162 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Tests for transactional SQL.
  */
 public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
-    /** */
-    private static final int TIMEOUT = 3000;
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSql_SingleNode_SinglePartition() throws Exception {
+        accountsTxReadAll(1, 0, 0, 1,
+            new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSql_WithRemoves_SingleNode_SinglePartition() throws Exception {
+        accountsTxReadAll(1, 0, 0, 1,
+            new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSql_SingleNode() throws Exception {
+        accountsTxReadAll(1, 0, 0, 64,
+            new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSql_SingleNode_Persistence() throws Exception {
+        persistence = true;
+
+        testAccountsTxDmlSql_SingleNode();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSumSql_SingleNode() throws Exception {
+        accountsTxReadAll(1, 0, 0, 64,
+            new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL_SUM, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSumSql_WithRemoves_SingleNode() throws Exception {
+        accountsTxReadAll(1, 0, 0, 64,
+            new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL_SUM, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSumSql_WithRemoves__ClientServer_Backups0() throws Exception {
+        accountsTxReadAll(4, 2, 0, 64,
+            new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL_SUM, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSumSql_ClientServer_Backups2() throws Exception {
+        accountsTxReadAll(4, 2, 2, 64,
+            new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL_SUM, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSql_WithRemoves_SingleNode() throws Exception {
+        accountsTxReadAll(1, 0, 0, 64,
+            new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSql_WithRemoves_SingleNode_Persistence() throws Exception {
+        persistence = true;
+
+        testAccountsTxDmlSql_WithRemoves_SingleNode();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSql_ClientServer_Backups0() throws Exception {
+        accountsTxReadAll(4, 2, 0, 64,
+            new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSql_WithRemoves_ClientServer_Backups0() throws Exception {
+        accountsTxReadAll(4, 2, 0, 64,
+            new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSql_WithRemoves_ClientServer_Backups0_Persistence() throws Exception {
+        persistence = true;
+
+        testAccountsTxDmlSql_WithRemoves_ClientServer_Backups0();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSql_ClientServer_Backups1() throws Exception {
+        accountsTxReadAll(4, 2, 1, 64,
+            new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSql_WithRemoves_ClientServer_Backups1() throws Exception {
+        accountsTxReadAll(4, 2, 1, 64,
+            new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSql_WithRemoves_ClientServer_Backups1_Persistence() throws Exception {
+        persistence = true;
+
+        testAccountsTxDmlSql_WithRemoves_ClientServer_Backups1();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSql_ClientServer_Backups2() throws Exception {
+        accountsTxReadAll(4, 2, 2, 64,
+            new InitIndexing(Integer.class, MvccTestAccount.class), false, SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSql_WithRemoves_ClientServer_Backups2() throws Exception {
+        accountsTxReadAll(4, 2, 2, 64,
+            new InitIndexing(Integer.class, MvccTestAccount.class), true, SQL, DML);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAccountsTxDmlSql_ClientServer_Backups2_Persistence() throws Exception {
+        persistence = true;
+
+        testAccountsTxDmlSql_ClientServer_Backups2();
+    }
 
     /**
      * @throws Exception If failed.
@@ -82,7 +239,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            tx.timeout(TIMEOUT);
+            tx.timeout(TX_TIMEOUT);
 
             SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
 
@@ -127,7 +284,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
         SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)")
-            .setTimeout(TIMEOUT, TimeUnit.MILLISECONDS);
+            .setTimeout(TX_TIMEOUT, TimeUnit.MILLISECONDS);
 
         IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
 
@@ -163,7 +320,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         assertEquals(3, cache.get(3));
 
         try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            tx.timeout(TIMEOUT);
+            tx.timeout(TX_TIMEOUT);
 
             SqlFieldsQuery qry = new SqlFieldsQuery("DELETE FROM Integer WHERE 1 = 1");
 
@@ -204,7 +361,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         assertEquals(3, cache.get(3));
 
         try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            tx.timeout(TIMEOUT);
+            tx.timeout(TX_TIMEOUT);
 
             SqlFieldsQuery qry = new SqlFieldsQuery("DELETE FROM Integer WHERE _key = 1");
 
@@ -245,7 +402,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         assertEquals(3, cache.get(3));
 
         try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            tx.timeout(TIMEOUT);
+            tx.timeout(TX_TIMEOUT);
 
             SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer SET _val = 8 WHERE _key = 1");
 
@@ -289,7 +446,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         assertEquals(new MvccTestSqlIndexValue(3), cache.get(3));
 
         try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            tx.timeout(TIMEOUT);
+            tx.timeout(TX_TIMEOUT);
 
             SqlFieldsQuery qry = new SqlFieldsQuery("DELETE FROM MvccTestSqlIndexValue WHERE _key = 1");
 
@@ -333,7 +490,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         assertEquals(new MvccTestSqlIndexValue(3), cache.get(3));
 
         try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            tx.timeout(TIMEOUT);
+            tx.timeout(TX_TIMEOUT);
 
             SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE MvccTestSqlIndexValue SET idxVal1 = 8 WHERE _key = 1");
 
@@ -374,7 +531,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         assertEquals(3, cache.get(3));
 
         SqlFieldsQuery qry = new SqlFieldsQuery("DELETE FROM Integer WHERE 1 = 1")
-            .setTimeout(TIMEOUT, TimeUnit.MILLISECONDS);
+            .setTimeout(TX_TIMEOUT, TimeUnit.MILLISECONDS);
 
         IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
 
@@ -410,7 +567,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         assertEquals(3, cache.get(3));
 
         try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            tx.timeout(TIMEOUT);
+            tx.timeout(TX_TIMEOUT);
 
             SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer SET _val = (_key * 10)");
 
@@ -451,7 +608,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         assertEquals(3, cache.get(3));
 
         SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE Integer SET _val = (_key * 10)")
-            .setTimeout(TIMEOUT, TimeUnit.MILLISECONDS);
+            .setTimeout(TX_TIMEOUT, TimeUnit.MILLISECONDS);
 
         IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
 
@@ -490,7 +647,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
 
                 try {
                     try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        tx.timeout(TIMEOUT);
+                        tx.timeout(TX_TIMEOUT);
 
                         IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
 
@@ -575,7 +732,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
 
         SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)")
-            .setTimeout(TIMEOUT, TimeUnit.MILLISECONDS);
+            .setTimeout(TX_TIMEOUT, TimeUnit.MILLISECONDS);
 
         try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
             cur.getAll();
@@ -617,7 +774,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            tx.timeout(TIMEOUT);
+            tx.timeout(TX_TIMEOUT);
 
             SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
 
@@ -666,7 +823,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
         SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)")
-            .setTimeout(TIMEOUT, TimeUnit.MILLISECONDS);
+            .setTimeout(TX_TIMEOUT, TimeUnit.MILLISECONDS);
 
         IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
 
@@ -705,7 +862,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
             3, new MvccTestSqlIndexValue(3)));
 
         try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            tx.timeout(TIMEOUT);
+            tx.timeout(TX_TIMEOUT);
 
             SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) SELECT _key * 10, idxVal1 FROM MvccTestSqlIndexValue");
 
@@ -749,7 +906,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
             3, new MvccTestSqlIndexValue(3)));
 
         SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) SELECT _key * 10, idxVal1 FROM MvccTestSqlIndexValue")
-            .setTimeout(TIMEOUT, TimeUnit.MILLISECONDS);
+            .setTimeout(TX_TIMEOUT, TimeUnit.MILLISECONDS);
 
         IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
 
@@ -788,7 +945,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
             3, new MvccTestSqlIndexValue(3)));
 
         try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            tx.timeout(TIMEOUT);
+            tx.timeout(TX_TIMEOUT);
 
             SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE MvccTestSqlIndexValue SET (idxVal1) = SELECT t.idxVal1 * 10 FROM MvccTestSqlIndexValue as t");
 
@@ -833,7 +990,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
 
 
         SqlFieldsQuery qry = new SqlFieldsQuery("UPDATE MvccTestSqlIndexValue SET (idxVal1) = SELECT t.idxVal1 * 10 FROM MvccTestSqlIndexValue as t")
-            .setTimeout(TIMEOUT, TimeUnit.MILLISECONDS);
+            .setTimeout(TX_TIMEOUT, TimeUnit.MILLISECONDS);
 
         IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
 
@@ -892,7 +1049,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
                     IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
                     try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        tx.timeout(TIMEOUT);
+                        tx.timeout(TX_TIMEOUT);
 
                         SqlFieldsQuery qry = new SqlFieldsQuery(bldr.toString()).setPageSize(100);
 
@@ -933,7 +1090,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
 
                 try {
                     try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        tx.timeout(TIMEOUT);
+                        tx.timeout(TX_TIMEOUT);
 
                         IgniteCache<Object, Object> cache0 = node.cache(DEFAULT_CACHE_NAME);
 
@@ -968,7 +1125,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
                     phaser.arriveAndAwaitAdvance();
 
                     try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        tx.timeout(TIMEOUT);
+                        tx.timeout(TX_TIMEOUT);
 
                         IgniteCache<Integer, Integer> cache0 = node.cache(DEFAULT_CACHE_NAME);
 
@@ -996,7 +1153,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         fut.markInitialized();
 
         try {
-            fut.get(TIMEOUT);
+            fut.get(TX_TIMEOUT);
         }
         catch (IgniteCheckedException e) {
             onException(ex, e);
@@ -1039,7 +1196,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
 
                 try {
                     try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        tx.timeout(TIMEOUT);
+                        tx.timeout(TX_TIMEOUT);
 
                         barrier.await();
 
@@ -1091,7 +1248,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
         try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            tx.timeout(TIMEOUT);
+            tx.timeout(TX_TIMEOUT);
 
             SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
 
@@ -1135,7 +1292,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         assertThrows(log(), new Callable<Void>() {
             @Override public Void call() {
                 try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    tx.timeout(TIMEOUT);
+                    tx.timeout(TX_TIMEOUT);
 
                     SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
 
@@ -1219,7 +1376,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT * FROM MvccTestSqlIndexValue");
 
         try (Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-            tx.timeout(TIMEOUT);
+            tx.timeout(TX_TIMEOUT);
 
             try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
                 assertEquals(3, cur.getAll().size());
@@ -1235,7 +1392,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
                         assertEquals(3L, cur.iterator().next().get(0));
                     }
                 }
-            }).get(TIMEOUT);
+            }).get(TX_TIMEOUT);
 
             try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
                 assertEquals(3, cur.getAll().size());

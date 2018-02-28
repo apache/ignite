@@ -29,24 +29,16 @@ class H2MvccExtrasLeafIO extends AbstractH2ExtrasLeafIO {
     /** */
     private final int cntrOff;
 
-    /** */
-    private final int newCrdVerOff;
-
-    /** */
-    private final int newCntrOff;
-
     /**
      * @param type Page type.
      * @param ver Page format version.
      * @param payloadSize Payload size.
      */
     H2MvccExtrasLeafIO(short type, int ver, int payloadSize) {
-        super(type, ver, 40, payloadSize);
+        super(type, ver, 24, payloadSize);
 
         crdVerOff = payloadSize + 8;
         cntrOff = payloadSize + 16;
-        newCrdVerOff = payloadSize + 24;
-        newCntrOff = payloadSize + 32;
     }
 
     /** {@inheritDoc} */
@@ -57,16 +49,6 @@ class H2MvccExtrasLeafIO extends AbstractH2ExtrasLeafIO {
     /** {@inheritDoc} */
     @Override public long getMvccCounter(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + cntrOff);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getNewMvccCoordinatorVersion(long pageAddr, int idx) {
-        return PageUtils.getLong(pageAddr, offset(idx) + newCrdVerOff);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getNewMvccCounter(long pageAddr, int idx) {
-        return PageUtils.getLong(pageAddr, offset(idx) + newCntrOff);
     }
 
     /** {@inheritDoc} */

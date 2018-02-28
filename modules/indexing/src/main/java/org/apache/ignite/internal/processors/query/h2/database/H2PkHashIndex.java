@@ -216,7 +216,7 @@ public class H2PkHashIndex extends GridH2IndexBase {
         /** {@inheritDoc} */
         @Override public Row get() {
             try {
-                return desc.createRow(curr.get(), null);
+                return desc.createRow(curr.get());
             }
             catch (IgniteCheckedException e) {
                 throw DbException.convert(e);

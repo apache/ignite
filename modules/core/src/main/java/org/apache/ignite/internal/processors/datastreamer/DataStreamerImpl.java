@@ -137,7 +137,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** Version which is less then any version generated on coordinator (for remove). */
     private static final MvccSnapshot ISOLATED_STREAMER_MVCC_SNAPSHOT_RMV =
-        new MvccSnapshotWithoutTxs(MvccProcessor.createVersionForRemovedValue(1L), MvccProcessor.MVCC_START_CNTR, 0L);
+        new MvccSnapshotWithoutTxs(0, MvccProcessor.MVCC_START_CNTR, 0L);
 
     /** Cache receiver. */
     private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;
@@ -2126,6 +2126,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                     entry.initialValue(e.getValue(),
                         ver,
                         mvccSnapshot,
+                        null,
                         ttl,
                         expiryTime,
                         false,

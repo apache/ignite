@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import org.apache.ignite.IgniteCheckedException;
+
 /**
  * Simple interface for data, store in some RowStore.
  */
@@ -35,4 +37,16 @@ public interface Storable {
      * @return Partition.
      */
     public int partition();
+
+    /**
+     * @return Row size in page.
+     * @throws IgniteCheckedException If failed.
+     */
+    public int size() throws IgniteCheckedException;
+
+    /**
+     * @return Row header size in page. Header is indivisible part of row
+     * which is entirely available on the very first page followed by the row link.
+     */
+    public int headerSize();
 }

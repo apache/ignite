@@ -684,7 +684,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridQueryTypeDescriptor type,
         CacheDataRow row,
         @Nullable CacheDataRow prevRow,
-        @Nullable MvccVersion newVer,
         boolean prevRowAvailable,
         boolean idxRebuild) throws IgniteCheckedException
     {
@@ -695,7 +694,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (tbl == null)
             return; // Type was rejected.
 
-        tbl.table().update(row, prevRow, newVer, prevRowAvailable, idxRebuild);
+        tbl.table().update(row, prevRow,  prevRowAvailable, idxRebuild);
 
         if (tbl.luceneIndex() != null) {
             long expireTime = row.expireTime();
@@ -820,7 +819,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             SchemaIndexCacheVisitorClosure clo = new SchemaIndexCacheVisitorClosure() {
                 @Override public void apply(CacheDataRow row) throws IgniteCheckedException {
-                    GridH2Row h2Row = rowDesc.createRow(row, null);
+                    GridH2Row h2Row = rowDesc.createRow(row);
 
                     h2Idx.putx(h2Row);
                 }

@@ -32,7 +32,7 @@ public class H2MvccLeafIO extends AbstractH2LeafIO {
      * @param ver Page format version.
      */
     private H2MvccLeafIO(int ver) {
-        super(T_H2_MVCC_REF_LEAF, ver, 40);
+        super(T_H2_MVCC_REF_LEAF, ver, 24);
     }
 
     /** {@inheritDoc} */

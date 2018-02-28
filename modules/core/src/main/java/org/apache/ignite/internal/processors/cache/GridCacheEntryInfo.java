@@ -88,6 +88,35 @@ public class GridCacheEntryInfo implements Message, MvccVersion {
     }
 
     /**
+     * @param newCrdVer New coordinator version.
+     * @param newCtr New counter.
+     */
+    public void newMvccVersion(long newCrdVer, long newCtr) {
+        // No-op.
+    }
+
+    /**
+     * @return New MVCC version.
+     */
+    public MvccVersion newMvccVersion() {
+        return null;
+    }
+
+    /**
+     * @return new MVCC coordinator version.
+     */
+    public long newCoordinatorVersion() {
+        return 0;
+    }
+
+    /**
+     * @return new MVCC counter version.
+     */
+    public long newCounter() {
+        return 0;
+    }
+
+    /**
      * @return Cache ID.
      */
     public int cacheId() {
