@@ -1462,6 +1462,10 @@ export class NotebookCtrl {
             return false;
         };
 
+        $scope.cacheNameForSql = (paragraph) => {
+            return $scope.ddlAvailable(paragraph) && !paragraph.useAsDefaultSchema ? null : paragraph.cacheName;
+        };
+
         $scope.execute = (paragraph, local = false) => {
             const nonCollocatedJoins = !!paragraph.nonCollocatedJoins;
             const enforceJoinOrder = !!paragraph.enforceJoinOrder;
@@ -1481,7 +1485,7 @@ export class NotebookCtrl {
                         .then(() => {
                             const args = paragraph.queryArgs = {
                                 type: 'QUERY',
-                                cacheName: ($scope.ddlAvailable(paragraph) && !paragraph.useAsDefaultSchema) ? null : paragraph.cacheName,
+                                cacheName: $scope.cacheNameForSql(paragraph),
                                 query: paragraph.query,
                                 pageSize: paragraph.pageSize,
                                 maxPages: paragraph.maxPages,
@@ -1541,7 +1545,7 @@ export class NotebookCtrl {
                 .then((nid) => {
                     const args = paragraph.queryArgs = {
                         type: 'EXPLAIN',
-                        cacheName: paragraph.cacheName,
+                        cacheName: $scope.cacheNameForSql(paragraph),
                         query: 'EXPLAIN ' + paragraph.query,
                         pageSize: paragraph.pageSize
                     };

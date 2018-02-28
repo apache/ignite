@@ -53,7 +53,6 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
-import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -89,9 +88,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Kernel context. */
     private final GridKernalContext ctx;
 
-    /** Client context. */
-    private final SqlClientContext cliCtx;
-
     /** Logger. */
     private final IgniteLogger log;
 
@@ -107,8 +103,23 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Current bulk load processors. */
     private final ConcurrentHashMap<Long, JdbcBulkLoadProcessor> bulkLoadRequests = new ConcurrentHashMap<>();
 
+    /** Distributed joins flag. */
+    private final boolean distributedJoins;
+
+    /** Enforce join order flag. */
+    private final boolean enforceJoinOrder;
+
+    /** Collocated flag. */
+    private final boolean collocated;
+
     /** Replicated only flag. */
     private final boolean replicatedOnly;
+
+    /** Lazy query execution flag. */
+    private final boolean lazy;
+
+    /** Skip reducer on update flag. */
+    private final boolean skipReducerOnUpdate;
 
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
@@ -129,38 +140,22 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
-     * @param stream Streaming flag.
-     * @param streamAllowOverwrites Streaming overwrites flag.
-     * @param streamParOps Number of parallel ops per cluster node during streaming.
-     * @param streamBufSize Buffer size per cluster node during streaming.
-     * @param streamFlushFreq Data streamers' flush timeout.
      * @param protocolVer Protocol version.
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
         boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate,
-        boolean stream, boolean streamAllowOverwrites, int streamParOps, int streamBufSize, long streamFlushFreq,
         ClientListenerProtocolVersion protocolVer) {
         this.ctx = ctx;
-
-        this.cliCtx = new SqlClientContext(
-            ctx,
-            distributedJoins,
-            enforceJoinOrder,
-            collocated,
-            lazy,
-            skipReducerOnUpdate,
-            stream,
-            streamAllowOverwrites,
-            streamParOps,
-            streamBufSize,
-            streamFlushFreq
-        );
-
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
+        this.distributedJoins = distributedJoins;
+        this.enforceJoinOrder = enforceJoinOrder;
+        this.collocated = collocated;
         this.replicatedOnly = replicatedOnly;
         this.autoCloseCursors = autoCloseCursors;
+        this.lazy = lazy;
+        this.skipReducerOnUpdate = skipReducerOnUpdate;
         this.protocolVer = protocolVer;
 
         log = ctx.log(getClass());
@@ -306,8 +301,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 }
 
                 bulkLoadRequests.clear();
-
-                U.close(cliCtx, log);
             }
             finally {
                 busyLock.leaveBusy();
@@ -333,8 +326,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         long qryId = QRY_ID_GEN.getAndIncrement();
 
-        assert !cliCtx.isStream();
-
         try {
             String sql = req.sqlQuery();
 
@@ -356,17 +347,17 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                     qry = new SqlFieldsQueryEx(sql, false);
 
-                    if (cliCtx.isSkipReducerOnUpdate())
+                    if (skipReducerOnUpdate)
                         ((SqlFieldsQueryEx)qry).setSkipReducerOnUpdate(true);
             }
 
             qry.setArgs(req.arguments());
 
-            qry.setDistributedJoins(cliCtx.isDistributedJoins());
-            qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
-            qry.setCollocated(cliCtx.isCollocated());
+            qry.setDistributedJoins(distributedJoins);
+            qry.setEnforceJoinOrder(enforceJoinOrder);
+            qry.setCollocated(collocated);
             qry.setReplicatedOnly(replicatedOnly);
-            qry.setLazy(cliCtx.isLazy());
+            qry.setLazy(lazy);
 
             if (req.pageSize() <= 0)
                 return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Invalid fetch size: " + req.pageSize());
@@ -380,7 +371,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
             qry.setSchema(schemaName);
 
-            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFields(null, qry, cliCtx, true,
+            List<FieldsQueryCursor<List<?>>> results = ctx.query().querySqlFields(qry, true,
                 protocolVer.compareTo(VER_2_3_0) < 0);
 
             FieldsQueryCursor<List<?>> fieldsCur = results.get(0);
@@ -578,11 +569,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
                 qry = new SqlFieldsQueryEx(q.sql(), false);
 
-                qry.setDistributedJoins(cliCtx.isDistributedJoins());
-                qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
-                qry.setCollocated(cliCtx.isCollocated());
+                qry.setDistributedJoins(distributedJoins);
+                qry.setEnforceJoinOrder(enforceJoinOrder);
+                qry.setCollocated(collocated);
                 qry.setReplicatedOnly(replicatedOnly);
-                qry.setLazy(cliCtx.isLazy());
+                qry.setLazy(lazy);
 
                 qry.setSchema(schemaName);
             }
@@ -610,21 +601,10 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param updCntsAcc Per query rows updates counter.
      * @param firstErr First error data - code and message.
      */
-    @SuppressWarnings("ForLoopReplaceableByForEach")
     private void executeBatchedQuery(SqlFieldsQueryEx qry, List<Integer> updCntsAcc,
         IgniteBiTuple<Integer, String> firstErr) {
         try {
-            if (cliCtx.isStream()) {
-                List<Long> cnt = ctx.query().streamBatchedUpdateQuery(qry.getSchema(), cliCtx, qry.getSql(),
-                    qry.batchedArguments());
-
-                for (int i = 0; i < cnt.size(); i++)
-                    updCntsAcc.add(cnt.get(i).intValue());
-
-                return;
-            }
-
-            List<FieldsQueryCursor<List<?>>> qryRes = ctx.query().querySqlFields(null, qry, cliCtx, true, true);
+            List<FieldsQueryCursor<List<?>>> qryRes = ctx.query().querySqlFields(qry, true, true);
 
             for (FieldsQueryCursor<List<?>> cur : qryRes) {
                 if (cur instanceof BulkLoadContextCursor)
