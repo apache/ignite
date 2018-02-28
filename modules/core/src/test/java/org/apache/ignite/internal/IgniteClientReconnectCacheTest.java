@@ -60,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -87,6 +88,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.junit.Assert.assertNotEquals;
 
 /**
@@ -368,6 +370,12 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         });
 
         assertNull(txs.tx());
+
+        assertTrue(GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return tx.state() == ROLLED_BACK;
+            }
+        }, getTestTimeout()));
 
         try (Transaction tx0 = txs.txStart(OPTIMISTIC, REPEATABLE_READ)) {
             cache.put(1, 1);
