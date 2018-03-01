@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteCondition;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.internal.processors.cache.GridCacheIdMessage;
+import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
 
@@ -37,6 +38,16 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
 
     /** {@inheritDoc} */
     @Override public void needCheckNotRemoved() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void suspend() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void restart(IgniteInternalCache cache) {
         // No-op.
     }
 

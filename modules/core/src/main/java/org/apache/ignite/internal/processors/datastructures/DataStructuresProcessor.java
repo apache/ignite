@@ -136,7 +136,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     private final ConcurrentMap<GridCacheInternalKey, GridCacheRemovable> dsMap;
 
     /** */
-    private final ConcurrentHashMap8<String, IgniteInClosure<GridCacheIdMessage>> releasers;
+    private final ConcurrentHashMap<String, IgniteInClosure<GridCacheIdMessage>> releasers;
 
     /** */
     private final AtomicBoolean isHandlersAdded = new AtomicBoolean(false);
@@ -184,7 +184,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         dsMap = new ConcurrentHashMap<>(INITIAL_CAPACITY);
 
-        releasers = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
+        releasers = new ConcurrentHashMap<>(INITIAL_CAPACITY);
 
         dfltAtomicCfg = ctx.config().getAtomicConfiguration();
     }
