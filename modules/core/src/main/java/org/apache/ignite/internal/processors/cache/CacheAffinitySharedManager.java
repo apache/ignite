@@ -70,10 +70,10 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
@@ -121,7 +121,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
     /** Pending affinity assignment futures. */
     private final ConcurrentMap<Long, GridDhtAssignmentFetchFuture> pendingAssignmentFetchFuts =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** */
     private final ThreadLocal<ClientCacheChangeDiscoveryMessage> clientCacheChanges = new ThreadLocal<>();
@@ -161,17 +161,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         ClusterNode node,
         AffinityTopologyVersion topVer,
         DiscoveryDataClusterState state) {
+        if (type == EVT_NODE_JOINED && node.isLocal())
+            lastAffVer = null;
+
         if ((state.transition() || !state.active()) &&
             !DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg))
             return;
 
-        if (type == EVT_NODE_JOINED && node.isLocal())
-            lastAffVer = null;
-
         if ((!CU.clientNode(node) && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT)) ||
             DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg)) {
             synchronized (mux) {
-                assert lastAffVer == null || topVer.compareTo(lastAffVer) > 0;
+                assert lastAffVer == null || topVer.compareTo(lastAffVer) > 0 :
+                    "lastAffVer=" + lastAffVer + ", topVer=" + topVer + ", customMsg=" + customMsg;
 
                 lastAffVer = topVer;
             }
@@ -1262,6 +1263,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Applies affinity diff from the received full message.
+     *
      * @param fut Current exchange future.
      * @param msg Finish exchange message.
      */
@@ -1410,6 +1413,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Calculates affinity on coordinator for custom event types that require centralized assignment.
+     *
      * @param fut Current exchange future.
      * @return Computed difference with ideal affinity.
      * @throws IgniteCheckedException If failed.
@@ -1423,11 +1428,13 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Calculates new affinity assignment on coordinator and creates affinity diff messages for other nodes.
+     *
      * @param fut Current exchange future.
      * @return Computed difference with ideal affinity.
      * @throws IgniteCheckedException If failed.
      */
-    public Map<Integer, CacheGroupAffinityMessage> onReassignmentEnforced(
+    private Map<Integer, CacheGroupAffinityMessage> onReassignmentEnforced(
         final GridDhtPartitionsExchangeFuture fut) throws IgniteCheckedException
     {
         final ExchangeDiscoveryEvents evts = fut.context().events();
@@ -2108,6 +2115,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     }
 
     /**
+     * Initializes current affinity assignment based on partitions availability.
+     * Nodes that have most recent data will be considered affinity nodes.
+     *
      * @param topVer Topology version.
      * @param fut Exchange future.
      * @param c Closure converting affinity diff.
@@ -2176,6 +2186,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                     List<ClusterNode> owners = top.owners(p);
 
+                    // It is essential that curPrimary node has partition in OWNING state.
                     if (!owners.isEmpty() && !owners.contains(curPrimary))
                         curPrimary = owners.get(0);
 
@@ -2459,7 +2470,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 affFunc,
                 ccfg.getNodeFilter(),
                 ccfg.getBackups(),
-                ccfg.getCacheMode() == LOCAL);
+                ccfg.getCacheMode() == LOCAL,
+                grpDesc.persistenceEnabled());
 
             return new CacheGroupHolder2(ccfg.getRebalanceMode() != NONE, cctx, aff, initAff);
         }

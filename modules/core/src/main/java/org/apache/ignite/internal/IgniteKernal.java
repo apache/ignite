@@ -17,10 +17,14 @@
 
 package org.apache.ignite.internal;
 
+import java.io.BufferedReader;
 import java.io.Externalizable;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -114,6 +118,7 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -126,8 +131,8 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsi
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
-import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
@@ -259,6 +264,8 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
 import static org.apache.ignite.lifecycle.LifecycleEventType.AFTER_NODE_START;
 import static org.apache.ignite.lifecycle.LifecycleEventType.BEFORE_NODE_START;
+import static org.apache.ignite.marshaller.MarshallerUtils.CLS_NAMES_FILE;
+import static org.apache.ignite.marshaller.MarshallerUtils.JDK_CLS_NAMES_FILE;
 
 /**
  * Ignite kernal.
@@ -281,6 +288,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /** Force complete reconnect future. */
     private static final Object STOP_RECONNECT = new Object();
+
+    static {
+        LongJVMPauseDetector.start();
+    }
 
     /** */
     @GridToStringExclude
@@ -437,20 +448,33 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isRebalanceEnabled() {
+    @Override public boolean isRebalanceEnabled() {
         return ctx.cache().context().isRebalanceEnabled();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void rebalanceEnabled(boolean rebalanceEnabled) {
+    @Override public void rebalanceEnabled(boolean rebalanceEnabled) {
         ctx.cache().context().rebalanceEnabled(rebalanceEnabled);
     }
 
     /** {@inheritDoc} */
     @Override public long getUpTime() {
         return U.currentTimeMillis() - startTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getLongJVMPausesCount() {
+        return LongJVMPauseDetector.longPausesCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getLongJVMPausesTotalDuration() {
+        return LongJVMPauseDetector.longPausesTotalDuration();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Long, Long> getLongJVMPauseLastEvents() {
+        return LongJVMPauseDetector.longPauseEvents();
     }
 
     /** {@inheritDoc} */
@@ -834,7 +858,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 qryExecSvc,
                 schemaExecSvc,
                 customExecSvcs,
-                plugins
+                plugins,
+                classNameFilter()
             );
 
             cfg.getMarshaller().setContext(ctx.marshallerContext());
@@ -1685,6 +1710,104 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /**
+     * Returns class name filter for marshaller.
+     * @return Class name filter for marshaller.
+     */
+    private IgnitePredicate<String> classNameFilter() throws IgniteCheckedException {
+        ClassSet whiteList = classWhiteList();
+        ClassSet blackList = classBlackList();
+
+        return new IgnitePredicate<String>() {
+            @Override public boolean apply(String s) {
+                // Allows all primitive arrays and checks arrays' type.
+                if ((blackList != null || whiteList != null) && s.charAt(0) == '[') {
+                    if (s.charAt(1) == 'L' && s.length() > 2)
+                        s = s.substring(2, s.length() - 1);
+                    else
+                        return true;
+                }
+
+                return (blackList == null || !blackList.contains(s)) && (whiteList == null || whiteList.contains(s));
+            }
+        };
+    }
+
+    /**
+     * @return White list of classes.
+     */
+    private ClassSet classWhiteList() throws IgniteCheckedException {
+        ClassSet clsSet = null;
+
+        String fileName = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_MARSHALLER_WHITELIST);
+
+        if (fileName != null) {
+            clsSet = new ClassSet();
+
+            addClassNames(JDK_CLS_NAMES_FILE, clsSet);
+            addClassNames(CLS_NAMES_FILE, clsSet);
+            addClassNames(fileName, clsSet);
+        }
+
+        return clsSet;
+    }
+
+    /**
+     * @return Black list of classes.
+     */
+    private ClassSet classBlackList() throws IgniteCheckedException {
+        ClassSet clsSet = null;
+
+        String blackListFileName = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_MARSHALLER_BLACKLIST);
+
+        if (blackListFileName != null)
+            addClassNames(blackListFileName, clsSet = new ClassSet());
+
+        return clsSet;
+    }
+
+
+    /**
+     * Reads class names from resource referred by given system property name and returns set of classes.
+     * @param fileName File name containing list of classes.
+     * @param clsSet Class set for update.
+     * @return Set of classes.
+     */
+    private void addClassNames(String fileName, ClassSet clsSet) throws IgniteCheckedException {
+        InputStream is = this.getClass().getClassLoader().getResourceAsStream(fileName);
+
+        if (is == null) {
+            try {
+                is = new FileInputStream(new File(fileName));
+            }
+            catch (FileNotFoundException e) {
+                throw new IgniteCheckedException("File " + fileName + " not found.");
+            }
+        }
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
+            String line;
+
+            for (int i = 1; (line = reader.readLine()) != null; i++) {
+                String s = line.trim();
+
+                if (!s.isEmpty() && s.charAt(0) != '#' && s.charAt(0) != '[') {
+                    try {
+                        clsSet.add(s);
+                    }
+                    catch (IllegalArgumentException e) {
+                        throw new IgniteCheckedException("Exception occurred while reading list of classes" +
+                        "[path=" + fileName + ", row=" + i + ", line=" + s + ']', e);
+                    }
+                }
+            }
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Exception occurred while reading and creating list of classes " +
+                "[path=" + fileName + ']', e);
+        }
+    }
+
+    /**
      * Add helper.
      *
      * @param helper Helper.
@@ -2284,7 +2407,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private boolean isDaemon() {
         assert cfg != null;
 
-        return cfg.isDaemon() || "true".equalsIgnoreCase(System.getProperty(IGNITE_DAEMON));
+        return cfg.isDaemon() || IgniteSystemProperties.getBoolean(IGNITE_DAEMON);
     }
 
     /**
@@ -3058,10 +3181,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * @param cacheName Cache name.
+     * @param templateName Template name.
+     * @param cfgOverride Cache config properties to override.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when cache is deployed.
      */
-    public IgniteInternalFuture<?> getOrCreateCacheAsync(String cacheName, boolean checkThreadTx) {
+    public IgniteInternalFuture<?> getOrCreateCacheAsync(String cacheName, String templateName,
+        CacheConfigurationOverride cfgOverride, boolean checkThreadTx) {
         CU.validateCacheName(cacheName);
 
         guard();
@@ -3070,7 +3196,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             checkClusterState();
 
             if (ctx.cache().cache(cacheName) == null)
-                return ctx.cache().getOrCreateFromTemplate(cacheName, checkThreadTx);
+                return ctx.cache().getOrCreateFromTemplate(cacheName, templateName, cfgOverride, checkThreadTx);
 
             return new GridFinishedFuture<>();
         }
@@ -3905,7 +4031,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    public void dumpDebugInfo() {
+    @Override public void dumpDebugInfo() {
         try {
             GridKernalContextImpl ctx = this.ctx;
 

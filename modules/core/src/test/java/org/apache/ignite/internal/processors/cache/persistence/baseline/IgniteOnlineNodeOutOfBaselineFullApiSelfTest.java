@@ -16,17 +16,15 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.baseline;
 
-import org.apache.ignite.testframework.GridTestUtils;
-
 /**
- *
+ * Full API cache tests with situation when there is an online node out of BaselineTopology.
  */
 public class IgniteOnlineNodeOutOfBaselineFullApiSelfTest extends IgniteBaselineAbstractFullApiSelfTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         initStoreStrategy();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         startGrids(gridCount());
 

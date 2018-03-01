@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.query.QueryUtils;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.sql.Statement;
 
 /**
@@ -64,20 +65,44 @@ public class JdbcThinWalModeChangeSelfTest extends WalModeChangeAbstractSelfTest
 
     /** {@inheritDoc} */
     @Override protected boolean walEnable(Ignite node, String cacheName) {
-        String cmd = "ALTER TABLE " + cacheName + " LOGGING";
+        try {
+            String cmd = "ALTER TABLE " + cacheName + " LOGGING";
 
-        execute(node, cmd);
+            execute(node, cmd);
 
-        return false;
+            return true;
+        }
+        catch (RuntimeException e) {
+            if (e.getCause() != null && e.getCause() instanceof SQLException) {
+                SQLException e0 = (SQLException)e.getCause();
+
+                if (e0.getMessage().startsWith("Logging already enabled"))
+                    return false;
+            }
+
+            throw e;
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected boolean walDisable(Ignite node, String cacheName) {
-        String cmd = "ALTER TABLE " + cacheName + " NOLOGGING";
+        try {
+            String cmd = "ALTER TABLE " + cacheName + " NOLOGGING";
 
-        execute(node, cmd);
+            execute(node, cmd);
 
-        return false;
+            return true;
+        }
+        catch (RuntimeException e) {
+            if (e.getCause() != null && e.getCause() instanceof SQLException) {
+                SQLException e0 = (SQLException)e.getCause();
+
+                if (e0.getMessage().startsWith("Logging already disabled"))
+                    return false;
+            }
+
+            throw e;
+        }
     }
 
     /**
