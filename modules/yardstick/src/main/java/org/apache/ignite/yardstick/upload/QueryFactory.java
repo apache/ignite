@@ -97,7 +97,7 @@ public class QueryFactory {
         String pSizeExpr = "";
 
         if (packetSize != null)
-            pSizeExpr = " packet_size" + packetSize;
+            pSizeExpr = " packet_size " + packetSize;
 
         return "COPY FROM \"" + csvFilePath + "\" " +
             "INTO test_upload " + attributes() + " " +
