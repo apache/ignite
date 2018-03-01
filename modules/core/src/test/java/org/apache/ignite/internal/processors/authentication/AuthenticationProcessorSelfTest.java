@@ -479,7 +479,7 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
                 }
 
                 AuthorizationContext actx = grid(i).context().authentication()
-                    .authenticate("ignite", "ignite");
+                    .authenticate("ignite", "new_passwd");
 
                 assertNotNull(actx);
                 assertEquals("ignite", actx.userName());
