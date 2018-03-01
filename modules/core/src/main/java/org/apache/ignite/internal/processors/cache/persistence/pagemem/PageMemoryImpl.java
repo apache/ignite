@@ -2679,6 +2679,12 @@ public class PageMemoryImpl implements PageMemoryEx {
                         while (base < boundary) {
                             long ptr = seg.loadedPages.clearAt(base, clearPred, INVALID_REL_PTR);
 
+                            //todo not excellent code here
+                            if (seg.loadedPages instanceof RobinHoodBackwardShiftHashMap) {
+                                if (ptr != INVALID_REL_PTR)
+                                    base--;
+                            }
+
                             if (ptr != INVALID_REL_PTR)
                                 ptrs.add(ptr);
 

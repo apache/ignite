@@ -218,8 +218,8 @@ public class FullPageIdTable implements LoadedPagesMap {
     }
 
     /** {@inheritDoc} */
-    @Override public long clearAt(int idx, KeyPredicate keyPred, long absent) {
-        long base = entryBase(idx);
+    @Override public long clearAt(int idxToClear, KeyPredicate keyPred, long absent) {
+        long base = entryBase(idxToClear);
 
         int grpId = GridUnsafe.getInt(base);
         long pageId = GridUnsafe.getLong(base + PAGE_ID_OFFSET);
@@ -228,9 +228,9 @@ public class FullPageIdTable implements LoadedPagesMap {
             return absent;
 
         if (keyPred.test(grpId, pageId)) {
-            long res = valueAt(idx);
+            long res = valueAt(idxToClear);
 
-            setRemoved(idx);
+            setRemoved(idxToClear);
 
             return res;
         }

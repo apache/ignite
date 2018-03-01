@@ -87,12 +87,12 @@ public interface LoadedPagesMap {
     public ReplaceCandidate getNearestAt(int idxStart);
 
     /**
-     * @param idx Index to clear value at. Bounded with {@link #capacity()}.
+     * @param idxToClear Index to clear value at. Bounded with {@link #capacity()}.
      * @param keyPred Test predicate for (cache group ID, page ID).
      * @param absent Value to return if the cell is empty or key is not matching provided predicate.
-     * @return Value at the given index or {@code absent} for empty cell or not mathing.
+     * @return Value at the given index or {@code absent} for empty cell or not matching.
      */
-    public long clearAt(int idx, KeyPredicate keyPred, long absent);
+    public long clearAt(int idxToClear, KeyPredicate keyPred, long absent);
 
     /**
      * Interface describing a predicate for Key (cache group ID, page ID). Usage of this predicate prevents odd object

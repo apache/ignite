@@ -21,7 +21,6 @@ import java.util.function.BiConsumer;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.lang.GridPredicate3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 
@@ -133,6 +132,8 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
      * @return base cell (bucket) address in buffer.
      */
     private long entryBase(int idx) {
+        assert idx >= 0 && idx < numBuckets;
+
         return baseAddr + MAPSIZE_SIZE + (long)idx * BYTES_PER_CELL;
     }
 
@@ -261,6 +262,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
                 return false;
             else if (curGrpId == grpId && curPageId == pageId) {
                 idxEqualValFound = idxCurr;
+
                 break; //equal value found
             }
             else if (dibCurEntry < dibEntryToInsert) {
@@ -268,14 +270,26 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
                 return false;
             }
         }
-        assert idxEqualValFound >= 0;
 
         setSize(size() - 1);
 
+        doBackwardShift(idxEqualValFound);
+
+        return true;
+    }
+
+    /**
+     * Runs backward shifts from current index to .
+     *
+     * @param idxRmv removed index.
+     */
+    private void doBackwardShift(int idxRmv) {
+        assert idxRmv >= 0;
+
         //scanning rest of map to perform backward shifts
         for (int i = 0; i < numBuckets - 1; i++) {
-            int idxCurr = (idxEqualValFound + i) % numBuckets;
-            int idxNext = (idxEqualValFound + i + 1) % numBuckets;
+            int idxCurr = (idxRmv + i) % numBuckets;
+            int idxNext = (idxRmv + i + 1) % numBuckets;
 
             long baseCurr = entryBase(idxCurr);
 
@@ -289,19 +303,16 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
                 || distance(idxNext, nextIdealBucket) == 0) {
                 setEmpty(baseCurr);
 
-                return true;
+                return;
             }
             else
                 setCellValue(baseCurr, nextIdealBucket, nextGrpId, nextPageId, getValue(baseNext), nextEntryVer);
         }
 
-        int lastShiftedIdx = (idxEqualValFound -1) % numBuckets;
+        int lastShiftedIdx = (idxRmv - 1) % numBuckets;
 
         setEmpty(entryBase(lastShiftedIdx));
-
-        return true;
     }
-
 
     /** {@inheritDoc} */
     @Override public ReplaceCandidate getNearestAt(final int idxStart) {
@@ -375,11 +386,26 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
             " during search of cell to refresh. Refresh should be called for existent outdated element. ");
     }
 
-    //todo implement
     /** {@inheritDoc} */
-    @Override public long clearAt(int idx, KeyPredicate pred, long absent) {
-        throw new UnsupportedOperationException();
-        // return 0l;
+    @Override public long clearAt(int idxToClear, KeyPredicate keyPred, long absent) {
+        long base = entryBase(idxToClear);
+
+        int grpId = getGrpId(base);
+        long pageId = getPageId(base);
+
+        if (isEmpty(grpId, pageId))
+            return absent;
+
+        if (!keyPred.test(grpId, pageId))
+            return absent;
+
+        long valAt = getValue(base);
+
+        setSize(size() - 1);
+
+        doBackwardShift(idxToClear);
+
+        return valAt;
     }
 
 
