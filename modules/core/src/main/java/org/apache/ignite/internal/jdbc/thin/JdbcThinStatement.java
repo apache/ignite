@@ -30,6 +30,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -50,6 +51,7 @@ import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
 import org.apache.ignite.internal.sql.command.SqlCommand;
+import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
@@ -178,6 +180,8 @@ public class JdbcThinStatement implements Statement {
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty.");
 
+        drainBatchToStreamIfNeeded();
+
         SqlCommand nativeCmd = null;
 
         if (stmtType != JdbcStatementType.SELECT_STATEMENT_TYPE && isEligibleForNativeParsing(sql))
@@ -253,6 +257,29 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("Unexpected result [res=" + res0 + ']');
 
         assert resultSets.size() > 0 : "At least one results set is expected";
+    }
+
+    /**
+     * Job to do when user turns on streaming on a connection and this statement already has some batch of its own.
+     * @throws SQLException if failed.
+     */
+    synchronized void drainBatchToStreamIfNeeded() throws SQLException {
+        if (!conn.isStream() || F.isEmpty(batch))
+            return;
+
+        Iterator<JdbcQuery> it = batch.iterator();
+
+        while (it.hasNext()) {
+            JdbcQuery q = it.next();
+
+            conn.addBatch(q.sql(), q.args() != null ? Arrays.asList(q.args()) : null);
+
+            it.remove();
+        }
+
+        batch = null;
+
+        batchSize = 0;
     }
 
     /**
@@ -549,6 +576,21 @@ public class JdbcThinStatement implements Statement {
     @Override public void addBatch(String sql) throws SQLException {
         ensureNotClosed();
 
+        SqlCommand nativeCmd = null;
+
+        if (isEligibleForNativeParsing(sql))
+            nativeCmd = tryParseNative(sql);
+
+        if (nativeCmd != null) {
+            assert nativeCmd instanceof SqlSetStreamingCommand;
+
+            throw new SQLException("Streaming control commands must be executed explicitly - " +
+                "either via Statement.execute(String), or via using prepared statements.",
+                SqlStateCode.UNSUPPORTED_OPERATION);
+        }
+
+        drainBatchToStreamIfNeeded();
+
         batchSize++;
 
         if (conn.isStream()) {
@@ -578,6 +620,8 @@ public class JdbcThinStatement implements Statement {
 
         closeResults();
 
+        drainBatchToStreamIfNeeded();
+
         if (conn.isStream()) {
             int[] res = new int[batchSize];
 
@@ -586,7 +630,7 @@ public class JdbcThinStatement implements Statement {
             return res;
         }
 
-        if (batch == null || batch.isEmpty())
+        if (F.isEmpty(batch))
             throw new SQLException("Batch is empty.");
 
         try {

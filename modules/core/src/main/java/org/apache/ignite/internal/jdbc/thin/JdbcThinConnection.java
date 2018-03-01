@@ -194,16 +194,17 @@ public class JdbcThinConnection implements Connection {
                 // Server should handle
                 addBatch(sql, null);
 
-                executeBatch();
+                // executeBatch may have implicitly occurred in addBatch, so let's make sure there still is
+                // a batch to send.
+                if (!F.isEmpty(streamBatch))
+                    executeBatch();
 
                 stream = false;
             }
-
-            return;
         }
-
-        throw IgniteQueryErrorCode.createJdbcSqlException("Unsupported native statement: " + sql,
-            IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        else
+            throw IgniteQueryErrorCode.createJdbcSqlException("Unsupported native statement: " + sql,
+                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**

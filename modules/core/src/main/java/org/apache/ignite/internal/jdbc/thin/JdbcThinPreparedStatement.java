@@ -262,6 +262,8 @@ public class JdbcThinPreparedStatement extends JdbcThinStatement implements Prep
     @Override public void addBatch() throws SQLException {
         ensureNotClosed();
 
+        drainBatchToStreamIfNeeded();
+
         batchSize++;
 
         if (conn.isStream())

@@ -25,12 +25,14 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 
 /**
  * Tests for streaming via thin driver.
@@ -296,10 +298,61 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
     }
 
     /**
+     * @throws Exception if failed.
+     */
+    public void testNonPreparedStatementBatch() throws Exception {
+        try (Connection conn = createOrdinaryConnection()) {
+            try (Statement s = conn.createStatement()) {
+                for (int i = 1; i <= 100; i++)
+                    s.addBatch(String.format("insert into Person(\"id\", \"name\")values (%d, '%s')", i, nameForId(i)));
+
+                execute(conn, "SET STREAMING 1");
+
+                assertStreamingState(true);
+
+                s.executeBatch();
+
+                assertCacheEmpty();
+
+                execute(conn,"SET STREAMING off");
+
+                U.sleep(1000);
+
+                assertStreamingState(false);
+
+                // Now let's check it's all there.
+                for (int i = 51; i <= 100; i++)
+                    assertEquals(nameForId(i), nameForIdInCache(i));
+            }
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testStreamingStatementInTheMiddleOfNonPreparedBatch() throws Exception {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                try (Connection conn = createOrdinaryConnection()) {
+                    try (Statement s = conn.createStatement()) {
+                        s.addBatch(String.format("insert into Person(\"id\", \"name\")values (%d, '%s')", 1,
+                            nameForId(1)));
+
+                        s.addBatch("SET STREAMING 1 FLUSH_FREQUENCY 10000");
+                    }
+                }
+
+                return null;
+            }
+        }, SQLException.class, "Streaming control commands must be executed explicitly");
+    }
+
+    /**
      * Check that there's nothing in cache.
      */
     private void assertCacheEmpty() {
-        assertEquals(0, grid(0).cache(DEFAULT_CACHE_NAME).size(CachePeekMode.ALL));
+        assertEquals(0, cache().size(CachePeekMode.ALL));
     }
 
     /**
