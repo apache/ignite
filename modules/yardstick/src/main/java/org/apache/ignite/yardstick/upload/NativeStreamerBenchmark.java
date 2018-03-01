@@ -101,12 +101,8 @@ public class NativeStreamerBenchmark extends IgniteAbstractBenchmark {
      */
     private void upload(String cacheName,  long insertsCnt) {
         try (IgniteDataStreamer<Long, Values10> stmr = ignite().dataStreamer(cacheName)) {
-            stmr.perNodeBufferSize(1024);
-            stmr.perNodeParallelOperations(8);
-
             for (long i = 1; i <= insertsCnt; i++)
                 stmr.addData(i, new Values10());
-
         }
     }
 
