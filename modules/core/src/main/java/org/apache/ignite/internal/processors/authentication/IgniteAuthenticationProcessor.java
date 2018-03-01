@@ -1290,8 +1290,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                     }
                 });
 
-                for (String name : existUsrs.keySet())
-                    metastorage.remove(STORE_USER_PREFIX + name);
+                for (String key : existUsrs.keySet())
+                    metastorage.remove(key);
 
                 for (User u : newUsrs)
                     metastorage.write(STORE_USER_PREFIX + u.name(), u);
