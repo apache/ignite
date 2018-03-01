@@ -1325,29 +1325,6 @@ public class GridNioServer<T> {
                 buf.clear();
         }
 
-        private ByteBuffer prepareBufferWithFilters(GridSelectorNioSessionImpl ses, ByteBuffer buf) throws IOException {
-            int sesBufLimit = buf.limit();
-            int sesCap = buf.capacity();
-
-            buf.flip();
-
-            buf = applayFilters(ses, buf);
-
-            ByteBuffer sesBuf = ses.writeBuffer();
-
-            sesBuf.clear();
-
-            if (sesCap - buf.limit() < 0) {
-                int limit = sesBufLimit + (sesCap - buf.limit()) - 100;
-
-                ses.addMeta(WRITE_BUF_LIMIT, limit);
-
-                sesBuf.limit(limit);
-            }
-
-            return buf;
-        }
-
         /**
          * Processes write-ready event on the key.
          *
@@ -1358,7 +1335,7 @@ public class GridNioServer<T> {
             GridNioSession ses = (GridNioSession)key.attachment();
 
             if (sslFilter != null || ses.isCompressed())
-                processWriteSsl(key);
+                processWriteSslCompress(key);
             else
                 processWrite0(key);
         }
@@ -1370,18 +1347,26 @@ public class GridNioServer<T> {
          * @throws IOException If write failed.
          */
         @SuppressWarnings("ForLoopReplaceableByForEach")
-        private void processWriteSsl(SelectionKey key) throws IOException {
+        private void processWriteSslCompress(SelectionKey key) throws IOException {
             WritableByteChannel sockCh = (WritableByteChannel)key.channel();
 
             GridSelectorNioSessionImpl ses = (GridSelectorNioSessionImpl)key.attachment();
 
             MessageWriter writer = getWriter(ses);
 
-            if (!lockFilters(ses, sockCh))
-                return;
+            boolean handshakeFinished = false;
+            boolean isCompressed = ses.isCompressed();
+
+            if (sslFilter != null)
+                handshakeFinished = sslFilter.lock(ses);
+
+            if (isCompressed)
+                netCompressFilter.lock(ses);
 
             try {
-                if (checkSslNetBuffer(ses, sockCh))
+                writeSystem(ses, sockCh);
+
+                if (sslFilter != null && !handshakeFinished || checkSslNetBuffer(ses, sockCh))
                     return;
 
                 ByteBuffer buf = ses.writeBuffer();
@@ -1412,7 +1397,28 @@ public class GridNioServer<T> {
                     if (req != null)
                         req = processRequests(ses, buf, req, writer);
 
-                    buf = prepareBufferWithFilters(ses, buf);
+                    int sesBufLimit = buf.limit();
+                    int sesCap = buf.capacity();
+
+                    buf.flip();
+
+                    if (isCompressed)
+                        buf = netCompressFilter.compress(ses, buf);
+
+                    if (sslFilter != null)
+                        buf = sslFilter.encrypt(ses, buf);
+
+                    ByteBuffer sesBuf = ses.writeBuffer();
+
+                    sesBuf.clear();
+
+                    if (sesCap - buf.limit() < 0) {
+                        int limit = sesBufLimit + (sesCap - buf.limit()) - 100;
+
+                        ses.addMeta(WRITE_BUF_LIMIT, limit);
+
+                        sesBuf.limit(limit);
+                    }
 
                     assert buf.hasRemaining();
 
@@ -1434,7 +1440,11 @@ public class GridNioServer<T> {
                 }
             }
             finally {
-                unlockFilters(ses);
+                if (isCompressed)
+                    netCompressFilter.unlock(ses);
+
+                if (sslFilter != null)
+                    sslFilter.unlock(ses);
             }
         }
 
@@ -1557,16 +1567,6 @@ public class GridNioServer<T> {
             return false;
         }
 
-        private ByteBuffer applayFilters(GridSelectorNioSessionImpl ses, ByteBuffer buf) throws IOException {
-            if (ses.isCompressed())
-                buf = netCompressFilter.compress(ses, buf);
-
-            if (sslFilter != null)
-                buf = sslFilter.encrypt(ses, buf);
-
-            return buf;
-        }
-
         @Nullable private SessionWriteRequest processRequests(GridSelectorNioSessionImpl ses, ByteBuffer buf,
             SessionWriteRequest req, MessageWriter writer) throws IOException {
             assert ses != null;
@@ -1591,38 +1591,6 @@ public class GridNioServer<T> {
             }
 
             return req;
-        }
-
-        private boolean lockFilters(GridSelectorNioSessionImpl ses, WritableByteChannel sockCh) throws IOException {
-            assert ses != null;
-            assert sockCh != null;
-
-            boolean handshakeFinished = false;
-
-            if (sslFilter != null)
-                handshakeFinished = sslFilter.lock(ses);
-
-            writeSystem(ses, sockCh);
-
-            if (sslFilter != null) {
-                if (!handshakeFinished) {
-                    sslFilter.unlock(ses);
-                    return false;
-                }
-            }
-
-            if (ses.isCompressed())
-                netCompressFilter.lock(ses);
-
-            return true;
-        }
-
-        private void unlockFilters(GridSelectorNioSessionImpl ses) throws IOException {
-            if (ses.isCompressed())
-                netCompressFilter.unlock(ses);
-
-            if (sslFilter != null)
-                sslFilter.unlock(ses);
         }
 
         /**
@@ -3375,7 +3343,8 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
-            ses.addMeta(BUF_SYSTEM_META_KEY, new ConcurrentLinkedQueue<>());
+            if (directMode && (sslFilter != null || netCompressFilter != null))
+                ses.addMeta(BUF_SYSTEM_META_KEY, new ConcurrentLinkedQueue<>());
 
             if (ses.meta(COMPRESSION_META.ordinal()) != null)
                 ses.setCompressed(true);
