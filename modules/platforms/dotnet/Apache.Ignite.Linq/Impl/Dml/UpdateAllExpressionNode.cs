@@ -89,7 +89,6 @@ namespace Apache.Ignite.Linq.Impl.Dml
             var querySourceAccessValue =
                 Expression.MakeMemberAccess(querySourceRefExpression, cacheEntryType.GetMember("Value").First());
 
-
             if (!(_updateDescription.Body is MethodCallExpression))
                 throw new NotSupportedException("Expression is not supported for UpdateAll: " +
                                                 _updateDescription.Body);
