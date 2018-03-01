@@ -128,6 +128,27 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                     .Set(p => p.Age, p => p.Value.Age + 1));
 
             Assert.AreEqual(updated, 2);
+
+            // Skip is not supported with DELETE.
+            var nex = Assert.Throws<NotSupportedException>(
+                () => queryable.Skip(1).UpdateAll(d => d.Set(p => p.Age, 15)));
+            Assert.AreEqual(
+                "UpdateAll can not be combined with result operators (other than Take): SkipResultOperator",
+                nex.Message);
+
+            // Multiple result operators are not supported with DELETE.
+            nex = Assert.Throws<NotSupportedException>(() => queryable.Skip(1).Take(1).UpdateAll(d => d.Set(p => p.Age, 15)));
+            Assert.AreEqual(
+                "UpdateAll can not be combined with result operators (other than Take): SkipResultOperator, " +
+                "TakeResultOperator, UpdateAllResultOperator", nex.Message);
+
+            // Joins are not supported in H2.
+            var qry = queryable
+                .Where(x => x.Key == 7)
+                .Join(GetPersonCache().AsCacheQueryable(), p => p.Key, p => p.Key, (p1, p2) => p1);
+
+            var ex = Assert.Throws<IgniteException>(() => qry.UpdateAll(d => d.Set(p => p.Age, 15)));
+            Assert.AreEqual("Failed to parse query", ex.Message.Substring(0, 21));
         }
     }
 }
