@@ -30,12 +30,13 @@ import org.yardstickframework.BenchmarkUtils;
  * Enabling streaming is useless for this benchmark, since copy uses streamer under the hood.
  */
 public class CopyBenchmark extends AbstractUploadBenchmark {
-    /** csv file for warmup */
+    /** csv file for warmup. */
     private String warmupCsvPath;
 
-    /** csv file for benchmared action */
+    /** csv file for benchmared action. */
     private String realCsvPath;
 
+    /** packet_size parameter for sql COPY command.*/
     private Long packetSize;
 
     /** {@inheritDoc} */
