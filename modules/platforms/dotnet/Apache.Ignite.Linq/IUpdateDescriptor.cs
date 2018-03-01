@@ -28,14 +28,21 @@ namespace Apache.Ignite.Linq
     public interface IUpdateDescriptor<out TKey, out TValue>
     {
         /// <summary>
-        /// 
+        /// Allows to specifify member update with constant
         /// </summary>
-        /// <typeparam name="TProp"></typeparam>
-        /// <param name="selector"></param>
-        /// <param name="value"></param>
+        /// <typeparam name="TProp">Member type</typeparam>
+        /// <param name="selector">Member selector</param>
+        /// <param name="value">New value</param>
         /// <returns></returns>
         IUpdateDescriptor<TKey, TValue> Set<TProp>(Func<TValue, TProp> selector, TProp value);
 
+        /// <summary>
+        /// Allows to specifify member update with expression
+        /// </summary>
+        /// <typeparam name="TProp">Member type</typeparam>
+        /// <param name="selector">Member selector</param>
+        /// <param name="valueBuilder">New value expression</param>
+        /// <returns></returns>
         IUpdateDescriptor<TKey, TValue> Set<TProp>(Func<TValue, TProp> selector,
             Func<ICacheEntry<TKey, TValue>, TProp> valueBuilder);
     }

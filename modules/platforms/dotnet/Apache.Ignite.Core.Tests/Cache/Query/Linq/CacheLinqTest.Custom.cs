@@ -121,15 +121,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             var queryable = cache.AsCacheQueryable();
 
-            var before = queryable.ToArray();
             var updated = queryable
                 .Where(p => p.Value.Age > 0)
                 .Take(2)
                 .UpdateAll(d => d.Set(p => p.AliasTest, 1)
                     .Set(p => p.Age, p => p.Value.Age + 1));
 
-
-            var after = queryable.ToArray();
+            Assert.AreEqual(updated, 2);
         }
     }
 }

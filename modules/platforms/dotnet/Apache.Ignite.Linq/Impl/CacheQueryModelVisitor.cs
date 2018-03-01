@@ -134,35 +134,6 @@ namespace Apache.Ignite.Linq.Impl
             _aliases.Pop();
         }
 
-        private void VisitUpdateAllOperator(QueryModel queryModel)
-        {
-            var resultOps = queryModel.ResultOperators;
-
-            _builder.Append("update ");
-
-            // FROM ... WHERE ... JOIN ...
-            base.VisitQueryModel(queryModel);
-
-            if (resultOps.Count == 2)
-            {
-                var resOp = resultOps[0] as TakeResultOperator;
-
-                if (resOp == null)
-                    throw new NotSupportedException(
-                        "UpdateAll can not be combined with result operators (other than Take): " +
-                        resultOps[0].GetType().Name);
-
-                _builder.Append("limit ");
-                BuildSqlExpression(resOp.Count);
-            }
-            else if (resultOps.Count > 2)
-            {
-                throw new NotSupportedException(
-                    "UpdateAll can not be combined with result operators (other than Take): " +
-                    string.Join(", ", resultOps.Select(x => x.GetType().Name)));
-            }
-        }
-
         /// <summary>
         /// Visits the remove operator. Returns true if it is present.
         /// </summary>
@@ -194,6 +165,35 @@ namespace Apache.Ignite.Linq.Impl
 
             // FROM ... WHERE ... JOIN ...
             base.VisitQueryModel(queryModel);
+        }
+
+        private void VisitUpdateAllOperator(QueryModel queryModel)
+        {
+            var resultOps = queryModel.ResultOperators;
+
+            _builder.Append("update ");
+
+            // FROM ... WHERE ... JOIN ...
+            base.VisitQueryModel(queryModel);
+
+            if (resultOps.Count == 2)
+            {
+                var resOp = resultOps[0] as TakeResultOperator;
+
+                if (resOp == null)
+                    throw new NotSupportedException(
+                        "UpdateAll can not be combined with result operators (other than Take): " +
+                        resultOps[0].GetType().Name);
+
+                _builder.Append("limit ");
+                BuildSqlExpression(resOp.Count);
+            }
+            else if (resultOps.Count > 2)
+            {
+                throw new NotSupportedException(
+                    "UpdateAll can not be combined with result operators (other than Take): " +
+                    string.Join(", ", resultOps.Select(x => x.GetType().Name)));
+            }
         }
 
         /// <summary>
@@ -578,7 +578,6 @@ namespace Apache.Ignite.Linq.Impl
                 _aliases.AppendAsClause(_builder, fromClause).Append(" ");
             }
         }
-
 
         /// <summary>
         /// Visists Join clause in case of join with local collection

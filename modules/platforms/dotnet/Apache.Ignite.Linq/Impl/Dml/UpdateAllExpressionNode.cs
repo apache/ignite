@@ -47,9 +47,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
                 .Where(x => x.Name == "UpdateAll")
                 .ToArray();
 
-            UpdateAllDescriptorMethodInfo =
-                updateAllMethodInfos.Single(x =>
-                    x.GetParameters().Length == 2 && x.GetParameters()[1].ParameterType.IsGenericType);
+            UpdateAllDescriptorMethodInfo = updateAllMethodInfos.Single();
         }
 
         /// <summary>
