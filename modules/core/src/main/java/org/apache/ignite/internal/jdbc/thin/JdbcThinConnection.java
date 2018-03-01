@@ -191,7 +191,7 @@ public class JdbcThinConnection implements Connection {
                 stream = true;
             }
             else if (stream && !newVal) {
-                // Server should handle
+                // Server will handle streaming OFF as part of this batch.
                 addBatch(sql, null);
 
                 // executeBatch may have implicitly occurred in addBatch, so let's make sure there still is
