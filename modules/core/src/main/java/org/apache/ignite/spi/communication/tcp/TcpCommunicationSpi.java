@@ -671,6 +671,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 }
             }
 
+            @Override public void onMessageSent(GridNioSession ses, Message msg) {
+                ConnectionKey connKey = ses.meta(CONN_IDX_META);
+
+                if (connKey != null) {
+                    UUID nodeId = connKey.nodeId();
+
+                    metricsLsnr.onMessageSent(msg, nodeId);
+                }
+            }
+
             @Override public void onMessage(final GridNioSession ses, Message msg) {
                 ConnectionKey connKey = ses.meta(CONN_IDX_META);
 
@@ -698,6 +708,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     }
                 }
                 else {
+                    metricsLsnr.onMessageReceived(msg, connKey.nodeId());
+
                     if (msg instanceof RecoveryLastReceivedMessage) {
                         GridNioRecoveryDescriptor recovery = ses.outRecoveryDescriptor();
 
@@ -2618,7 +2630,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     client.release();
 
                     if (!retry)
-                        metricsLsnr.onMessageSent(msg, node.id());
+                        metricsLsnr.onMessageSent(msg, node.id()); // TODO: Remove
                     else {
                         removeNodeClient(node.id(), client);
 
@@ -2641,16 +2653,6 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     client.forceClose();
             }
         }
-    }
-
-    /**
-     * Handle message received event.
-     *
-     * @param nodeId Node ID.
-     * @param msg Message.
-     */
-    public void onMessageReceived(UUID nodeId, Object msg) {
-        metricsLsnr.onMessageReceived((Message)msg, nodeId);
     }
 
     /**
