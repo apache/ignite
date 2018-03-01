@@ -28,7 +28,7 @@ const { startEnv, dropTestDB } = require('./envtools');
 const createTestCafe = require('testcafe');
 
 // See all supported browsers at http://devexpress.github.io/testcafe/documentation/using-testcafe/common-concepts/browsers/browser-support.html#locally-installed-browsers
-const BROWSERS = ['chromium:headless --no-sandbox']; // For example: ['chrome', 'firefox'];
+const BROWSERS = ['chromium --no-sandbox']; // For example: ['chrome', 'firefox'];
 
 let testcafe = null;
 

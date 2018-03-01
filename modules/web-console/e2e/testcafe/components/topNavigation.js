@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
-import {Selector} from 'testcafe'
+import {Selector} from 'testcafe';
 
-export const configureNavButton = Selector('.wch-nav-item').withText('Configure')
+export const configureNavButton = Selector('.wch-nav-item').withText('Configure');
+export const queriesNavButton = Selector('.wch-nav-item').withText('Queries');

@@ -15,34 +15,30 @@
  * limitations under the License.
  */
 
-import { Selector } from 'testcafe';
-import { dropTestDB, insertTestUser, resolveUrl } from '../envtools';
-import { createRegularUser } from '../roles';
-import { queriesNavButton, configureNavButton } from '../components/topNavigation';
+import { dropTestDB, insertTestUser, resolveUrl } from '../../envtools';
+import { createRegularUser } from '../../roles';
+import { PageQueriesNotebooksList } from '../../page-models/PageQueries';
 
 const regularUser = createRegularUser();
 
-fixture('Checking Ingite main menu')
+fixture.only('Checking Ignite queries notebooks list')
     .before(async() => {
         await dropTestDB();
         await insertTestUser();
     })
     .beforeEach(async(t) => {
         await t.useRole(regularUser);
-        await t.navigateTo(resolveUrl('/'));
+        await t.navigateTo(resolveUrl('/queries/notebooks'));
     })
     .after(async() => {
         await dropTestDB();
     });
 
-test('Ingite main menu smoke test', async(t) => {
-    await t
-        .click(configureNavButton)
-        .expect(Selector('title').innerText)
-        .eql('Basic Configuration – Apache Ignite Web Console');
+test('Testing creating notebook', async(t) => {
+    const notebookName = 'test_notebook';
+    const notebooksListPage = new PageQueriesNotebooksList();
 
-    await t
-        .click(queriesNavButton)
-        .expect(Selector('title').innerText)
-        .eql('Notebooks – Apache Ignite Web Console');
+    await notebooksListPage.createNotebook(notebookName);
+
+    await t.expect(notebooksListPage.notebookListTable.findCell(0, 'Name').textContent).contains(notebookName);
 });

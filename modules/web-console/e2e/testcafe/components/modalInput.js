@@ -15,14 +15,26 @@
  * limitations under the License.
  */
 
-import {Selector, t} from 'testcafe'
-import {Table} from '../components/Table'
+import {Selector, t} from 'testcafe';
 
-export class PageConfigurationOverview {
+export class ModalInput {
     constructor() {
-        this.createClusterConfigButton = Selector('.btn-ignite').withText('Create Cluster Configuration')
-        this.importFromDBButton = Selector('.btn-ignite').withText('Import from Database')
-        this.clustersTable = new Table(Selector('pc-items-table'))
-        this.pageHeader = Selector('.pc-page-header')
+        this.valueInput = Selector('#input-fieldInput');
+    }
+
+    async enterValue(value) {
+        await t.typeText(this.valueInput, value);
+    }
+
+    async confirm() {
+        await t.click('#copy-btn-confirm');
+    }
+
+    async cancel() {
+        await t.click('#copy-btn-cancel');
+    }
+
+    async close() {
+        await t.click('.modal .close');
     }
 }

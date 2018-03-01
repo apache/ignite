@@ -15,14 +15,34 @@
  * limitations under the License.
  */
 
-import {Selector} from 'testcafe'
-import {FormField} from '../components/FormField'
-import {isVisible} from '../helpers'
 
-export const createModelButton = Selector('pc-items-table footer-slot .link-success').filter(isVisible)
-export const general = {
-    generatePOJOClasses: new FormField({id: 'generatePojoInput'}),
-    queryMetadata: new FormField({id: 'queryMetadataInput'}),
-    keyType: new FormField({id: 'keyTypeInput'}),
-    valueType: new FormField({id: 'valueTypeInput'})
+import { Selector, t } from 'testcafe';
+import { ModalInput } from '../components/modalInput';
+import { Table } from '../components/Table';
+
+export class PageQueriesNotebooksList {
+    constructor() {
+        this.createNotebookButton = Selector('#createNotebookBtn');
+        this.notebookListTable = new Table(Selector('.queries-notebooks-list'));
+    }
+
+    async createNotebook(notebookName) {
+        await t.click(this.createNotebookButton);
+
+        const createNotebookModal = new ModalInput();
+        await createNotebookModal.enterValue(notebookName);
+        return createNotebookModal.confirm();
+    }
+
+    deleteNotebook() {
+
+    }
+
+    deleteAllNotebooks() {
+
+    }
+
+    cloneNotebook() {
+
+    }
 }
