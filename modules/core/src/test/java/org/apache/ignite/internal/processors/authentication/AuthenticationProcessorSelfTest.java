@@ -471,18 +471,53 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
 
             for (int i = 0; i < NODES_COUNT; ++i) {
                 for (int usrIdx = 0; usrIdx < NODES_COUNT; ++usrIdx) {
-                    AuthorizationContext actx = grid(i).context().authentication()
+                    AuthorizationContext actx0 = grid(i).context().authentication()
                         .authenticate("test" + usrIdx, "passwd" + usrIdx);
 
-                    assertNotNull(actx);
-                    assertEquals("test" + usrIdx, actx.userName());
+                    assertNotNull(actx0);
+                    assertEquals("test" + usrIdx, actx0.userName());
                 }
 
                 AuthorizationContext actx = grid(i).context().authentication()
-                    .authenticate("ignite", "new_passwd");
+                    .authenticate("ignite", "ignite");
 
                 assertNotNull(actx);
                 assertEquals("ignite", actx.userName());
+            }
+        }
+        finally {
+            AuthorizationContext.clear();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDefaultUserPersistence() throws Exception {
+        AuthorizationContext.context(actxDflt);
+
+        try {
+            grid(CLI_NODE).context().authentication().addUser("test", "passwd");
+
+            stopAllGrids();
+
+            U.sleep(500);
+
+            startGrids(NODES_COUNT);
+
+            for (int i = 0; i < NODES_COUNT; ++i) {
+                AuthorizationContext  actx = grid(i).context().authentication()
+                    .authenticate("ignite", "ignite");
+
+                assertNotNull(actx);
+                assertEquals("ignite", actx.userName());
+
+                actx = grid(i).context().authentication()
+                    .authenticate("test", "passwd");
+
+                assertNotNull(actx);
+                assertEquals("test", actx.userName());
+
             }
         }
         finally {

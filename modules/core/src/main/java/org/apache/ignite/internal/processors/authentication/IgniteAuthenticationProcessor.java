@@ -1291,10 +1291,10 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
                 });
 
                 for (String name : existUsrs.keySet())
-                    metastorage.remove(name);
+                    metastorage.remove(STORE_USER_PREFIX + name);
 
                 for (User u : newUsrs)
-                    metastorage.write(u.name(), u);
+                    metastorage.write(STORE_USER_PREFIX + u.name(), u);
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Cannot cleanup old users information at metastorage", e);
