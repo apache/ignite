@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Linq.Impl.Dml
 {
+    using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
@@ -24,11 +25,15 @@ namespace Apache.Ignite.Linq.Impl.Dml
     using System.Reflection;
     using Apache.Ignite.Core.Cache;
     using Remotion.Linq.Clauses;
+    using Remotion.Linq.Clauses.Expressions;
+    using Remotion.Linq.Parsing.ExpressionVisitors;
     using Remotion.Linq.Parsing.Structure.IntermediateModel;
 
     /// <summary>
-    /// Represents a <see cref="MethodCallExpression"/> for 
-    /// <see cref="CacheLinqExtensions.UpdateAll{TKey,TValue}(System.Linq.IQueryable{Apache.Ignite.Core.Cache.ICacheEntry{TKey,TValue}},System.Linq.Expressions.Expression{System.Func{Apache.Ignite.Linq.IUpdateDescriptor{TValue},Apache.Ignite.Linq.IUpdateDescriptor{TValue}}})"/>.
+    /// Represents a <see cref="MethodCallExpression" /> for
+    /// <see
+    ///     cref="CacheLinqExtensions.UpdateAll{TKey,TValue}(IQueryable{Core.Cache.ICacheEntry{TKey,TValue}},Expression{Func{IUpdateDescriptor{TKey,TValue},IUpdateDescriptor{TKey,TValue}}})" />
+    /// .
     /// When user calls UpdateAll, this node is generated.
     /// </summary>
     internal sealed class UpdateAllExpressionNode : ResultOperatorExpressionNodeBase
@@ -41,33 +46,19 @@ namespace Apache.Ignite.Linq.Impl.Dml
                 .GetMethods()
                 .Where(x => x.Name == "UpdateAll")
                 .ToArray();
-            //var updateAllImplMethodInfos = typeof(CacheLinqExtensions)
-            //    .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic)
-            //    .Where(x => x.Name == "UpdateAllImpl")
-            //    .ToArray();
+
             UpdateAllDescriptorMethodInfo =
-                updateAllMethodInfos.Single(x => x.GetParameters().Length == 2 && x.GetParameters()[1].ParameterType.IsGenericType);
-            //UpdateAllImplDescriptorMethodInfo =
-            //    updateAllImplMethodInfos.Single(x => x.GetParameters().Length == 2);
+                updateAllMethodInfos.Single(x =>
+                    x.GetParameters().Length == 2 && x.GetParameters()[1].ParameterType.IsGenericType);
         }
-
-
-        /** */
-
-        /** */
 
         /// <summary>
         /// The UpdateAll(pred) method.
         /// </summary>
         public static readonly MethodInfo UpdateAllDescriptorMethodInfo;
 
-        //public static readonly MethodInfo UpdateAllImplDescriptorMethodInfo;
-
-        //public static readonly MethodInfo UpdateAllString =
-        //    UpdateAllMethodInfos.Single(x => x.GetParameters().Length == 2);
-
         /// <summary>
-        /// Initializes a new instance of the <see cref="UpdateAllExpressionNode"/> class.
+        /// Initializes a new instance of the <see cref="UpdateAllExpressionNode" /> class.
         /// </summary>
         /// <param name="parseInfo">The parse information.</param>
         /// <param name="updateDescription">Expression with update description info</param>
@@ -89,11 +80,56 @@ namespace Apache.Ignite.Linq.Impl.Dml
         /** <inheritdoc /> */
         protected override ResultOperatorBase CreateResultOperator(ClauseGenerationContext clauseGenerationContext)
         {
-            var expression = Source.Resolve(_updateDescription.Parameters[0],
-                _updateDescription.Body,
+            var querySourceRefExpression = (QuerySourceReferenceExpression) Source.Resolve(
+                _updateDescription.Parameters[0],
+                _updateDescription.Parameters[0],
                 clauseGenerationContext);
-            
-            return new UpdateAllResultOperator(expression);
+
+            var cacheEntryType = querySourceRefExpression.Type;
+            var querySourceAccessValue =
+                Expression.MakeMemberAccess(querySourceRefExpression, cacheEntryType.GetMember("Value").First());
+
+
+            if (!(_updateDescription.Body is MethodCallExpression))
+                throw new NotSupportedException("Expression is not supported for UpdateAll: " +
+                                                _updateDescription.Body);
+
+            var updates = new List<MemberUpdateContainer>();
+
+            var methodCall = (MethodCallExpression) _updateDescription.Body;
+            while (methodCall != null)
+            {
+                if (methodCall.Arguments.Count != 2)
+                    throw new NotSupportedException("Method is not supported for UpdateAll: " + methodCall);
+
+                var selectorLambda = (LambdaExpression) methodCall.Arguments[0];
+                var selector = ReplacingExpressionVisitor.Replace(selectorLambda.Parameters[0], querySourceAccessValue,
+                    selectorLambda.Body);
+
+                var newValue = methodCall.Arguments[1];
+                switch (newValue.NodeType)
+                {
+                    case ExpressionType.Constant:
+                        break;
+                    case ExpressionType.Lambda:
+                        var newValueLambda = (LambdaExpression) newValue;
+                        newValue = ReplacingExpressionVisitor.Replace(newValueLambda.Parameters[0],
+                            querySourceRefExpression, newValueLambda.Body);
+                        break;
+                    default:
+                        throw new NotSupportedException("Value expression is not supported for UpdateAll: " + newValue);
+                }
+
+                updates.Add(new MemberUpdateContainer
+                {
+                    Selector = selector,
+                    Value = newValue
+                });
+
+                methodCall = methodCall.Object as MethodCallExpression;
+            }
+
+            return new UpdateAllResultOperator(updates);
         }
 
         /// <summary>
@@ -101,9 +137,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
         /// </summary>
         public static IEnumerable<MethodInfo> GetSupportedMethods()
         {
-            //yield return UpdateAllImplDescriptorMethodInfo;
             yield return UpdateAllDescriptorMethodInfo;
-            //yield return UpdateAllString;
         }
     }
 }

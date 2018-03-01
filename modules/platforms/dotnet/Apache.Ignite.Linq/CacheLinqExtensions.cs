@@ -18,15 +18,11 @@
 namespace Apache.Ignite.Linq
 {
     using System;
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Linq.Impl;
@@ -209,30 +205,10 @@ namespace Apache.Ignite.Linq
         /// <param name="updateDescription">The update description.</param>
         /// <returns>Affected row count.</returns>
         public static int UpdateAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query,
-            Expression<Func<ICacheEntry<TKey,TValue>, IUpdateDescriptor<TKey,TValue>>> updateDescription)
+            Expression<Func<IUpdateDescriptor<TKey,TValue>, IUpdateDescriptor<TKey,TValue>>> updateDescription)
         {
             IgniteArgumentCheck.NotNull(query, "query");
             IgniteArgumentCheck.NotNull(updateDescription, "updateDescription");
-
-            //if (!(updateDescription.Body is MethodCallExpression))
-            //{
-            //    throw new NotSupportedException("Expression is not supported for UpdateAll: " + updateDescription.Body);
-            //}
-
-            //var parameter = Expression.Parameter(typeof(ICacheEntry<TKey, TValue>), "p");
-            //var updates = new List<ReadOnlyCollection<Expression>>();
-
-            //var methodCall = (MethodCallExpression) updateDescription.Body;
-            //while (methodCall != null)
-            //{
-            //    updates.Add(methodCall.Arguments);
-            //    methodCall = methodCall.Object as MethodCallExpression;
-            //}
-
-            //var lambda = Expression.Lambda<Func<ICacheEntry<TKey, TValue>, UpdateDescription>>(
-            //    Expression.Constant(new UpdateDescription {Updates = updates}, typeof(UpdateDescription)), parameter);
-
-            //return UpdateAllImpl(query, lambda);
 
             var method = UpdateAllExpressionNode.UpdateAllDescriptorMethodInfo
                 .MakeGenericMethod(typeof(TKey), typeof(TValue)); // TODO: cache?
@@ -242,35 +218,6 @@ namespace Apache.Ignite.Linq
                 query.Expression,
                 Expression.Quote(updateDescription)
             }));
-        }
-
-        ///// <summary>
-        ///// Internal method rewriting user call 
-        ///// </summary>
-        ///// <typeparam name="TKey">Key type.</typeparam>
-        ///// <typeparam name="TValue">Value type.</typeparam>
-        ///// <param name="query">The query.</param>
-        ///// <param name="updateDescription">The update description.</param>
-        ///// <returns>Affected row count.</returns>
-        //internal static int UpdateAllImpl<TKey, TValue>(IQueryable<ICacheEntry<TKey, TValue>> query,
-        //    Expression<Func<ICacheEntry<TKey, TValue>, UpdateDescription>> updateDescription)
-        //{
-        //    IgniteArgumentCheck.NotNull(query, "query");
-        //    IgniteArgumentCheck.NotNull(updateDescription, "updateDescription");
-
-        //    var method = UpdateAllExpressionNode.UpdateAllImplDescriptorMethodInfo
-        //        .MakeGenericMethod(typeof(TKey), typeof(TValue)); // TODO: cache?
-
-        //    return query.Provider.Execute<int>(Expression.Call(null, method, new[]
-        //    {
-        //        query.Expression,
-        //        Expression.Quote(updateDescription)
-        //    }));
-        //}
-
-        internal static class Set
-        {
-            //public static ICacheEntry<TKey, TValue> Set<TKey,TValue>(ICacheEntry<TKey, TValue> e, )
         }
 
         private static MethodInfo GetMethodInfo<T1, T2>(Func<T1, T2> f, T1 _)

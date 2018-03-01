@@ -18,7 +18,9 @@
 namespace Apache.Ignite.Linq.Impl.Dml
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using System.Linq.Expressions;
     using Apache.Ignite.Core.Cache;
     using Remotion.Linq.Clauses;
@@ -30,11 +32,11 @@ namespace Apache.Ignite.Linq.Impl.Dml
     /// </summary>
     internal sealed class UpdateAllResultOperator : ValueFromSequenceResultOperatorBase
     {
-        public Expression Description { get; private set; }
+        public MemberUpdateContainer[] Updates { get; private set; }
 
-        public UpdateAllResultOperator(Expression updateDescription)
+        public UpdateAllResultOperator(IEnumerable<MemberUpdateContainer> updates)
         {
-            Description = updateDescription;
+            Updates = updates.ToArray();
         }
 
         /** <inheritdoc /> */
@@ -47,14 +49,14 @@ namespace Apache.Ignite.Linq.Impl.Dml
         [ExcludeFromCodeCoverage]
         public override ResultOperatorBase Clone(CloneContext cloneContext)
         {
-            return new UpdateAllResultOperator(Description);
+            return new UpdateAllResultOperator(Updates);
         }
 
         /** <inheritdoc /> */
         [ExcludeFromCodeCoverage]
         public override void TransformExpressions(Func<Expression, Expression> transformation)
         {
-            Description = transformation(Description);
+            // No-op.
         }
 
         /** <inheritdoc /> */
@@ -63,6 +65,5 @@ namespace Apache.Ignite.Linq.Impl.Dml
         {
             throw new NotSupportedException("UpdateAll is not supported for in-memory sequences.");
         }
-
     }
 }

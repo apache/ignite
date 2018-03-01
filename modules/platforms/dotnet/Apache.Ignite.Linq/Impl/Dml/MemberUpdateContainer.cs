@@ -15,14 +15,24 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Linq
+
+namespace Apache.Ignite.Linq.Impl.Dml
 {
-    using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.Linq.Expressions;
 
-    public class UpdateDescription
+    /// <summary>
+    /// Contains information about member update
+    /// </summary>
+    public struct MemberUpdateContainer
     {
-        public List<ReadOnlyCollection<Expression>> Updates { get; set; }
+        /// <summary>
+        /// Gets or sets member selector
+        /// </summary>
+        public Expression Selector { get; set; }
+
+        /// <summary>
+        /// Gets or sets member new value
+        /// </summary>
+        public Expression Value { get; set; }
     }
 }
