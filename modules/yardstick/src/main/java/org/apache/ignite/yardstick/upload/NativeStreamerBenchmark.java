@@ -100,9 +100,16 @@ public class NativeStreamerBenchmark extends IgniteAbstractBenchmark {
      * @param insertsCnt - how many entries should be uploaded
      */
     private void upload(String cacheName,  long insertsCnt) {
-        try (IgniteDataStreamer<Long, Values10> stmr = ignite().dataStreamer(cacheName)) {
+        try (IgniteDataStreamer<Long, Values10> streamer = ignite().dataStreamer(cacheName)) {
+            if (args.upload.streamerBufSize() !=null)
+                streamer.perNodeBufferSize(args.upload.streamerBufSize());
+
+            if (args.upload.streamerNodeParOps() != null)
+                streamer.perNodeParallelOperations(args.upload.streamerNodeParOps());
+
             for (long i = 1; i <= insertsCnt; i++)
-                stmr.addData(i, new Values10());
+                //TODO: add batching support
+                streamer.addData(i, new Values10());
         }
     }
 

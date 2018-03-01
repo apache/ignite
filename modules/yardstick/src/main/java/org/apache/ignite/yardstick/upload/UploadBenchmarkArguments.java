@@ -21,6 +21,7 @@ import com.beust.jcommander.Parameter;
 import java.util.Collections;
 import java.util.List;
 import javax.annotation.Nullable;
+import org.apache.ignite.IgniteDataStreamer;
 
 public class UploadBenchmarkArguments {
     /** Whither or not temporary disable Write Ahead Log during upload. */
@@ -43,10 +44,17 @@ public class UploadBenchmarkArguments {
             "Additional url parameters (space separated key=value) for special jdbc connection that only uploads data. ")
     private List<String> uploadJdbcParams = Collections.emptyList();
 
-    @Parameter(names={"--sql-copy-packet-size"},
+    @Parameter(names = {"--sql-copy-packet-size"},
         description = "Upload benchmark only: use custom packet_size (in bytes) for copy command.")
     private Long copyPacketSize = null;
 
+    @Parameter(names = {"--streamer-node-buf-size"},
+        description = "Native Streamer benchmark only: Set streamer's perNodeBufferSize property")
+    private Integer streamerBufSize = null;
+
+    @Parameter(names = {"--streamer-node-par-ops"},
+        description = "Native Streamer benchmark only: Set streamer's perNodeParallelOperations property")
+    private Integer streamerNodeParOps = null;
 
     /**
      * @return Switch wal.
@@ -56,12 +64,29 @@ public class UploadBenchmarkArguments {
     }
 
     /** @return parameters for jdbc url */
-    public List<String> uploadJdbcParams(){
+    public List<String> uploadJdbcParams() {
         return uploadJdbcParams;
     }
 
     /** @return packet_size value for copy command or {@code null} for default value */
-    @Nullable public Long copyPacketSize() {
+    @Nullable
+    public Long copyPacketSize() {
         return copyPacketSize;
+    }
+
+    /**
+     * @return Value for {@link IgniteDataStreamer#perNodeBufferSize(int)}.
+     */
+    @Nullable
+    public Integer streamerBufSize() {
+        return streamerBufSize;
+    }
+
+    /**
+     * @return Value for {@link IgniteDataStreamer#perNodeParallelOperations(int)}
+     */
+    @Nullable
+    public Integer streamerNodeParOps() {
+        return streamerNodeParOps;
     }
 }
