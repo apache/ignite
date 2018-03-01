@@ -33,7 +33,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
     /// </summary>
     internal sealed class UpdateAllExpressionNode : ResultOperatorExpressionNodeBase
     {
-        private readonly Expression _updateDescription;
+        private readonly LambdaExpression _updateDescription;
 
         static UpdateAllExpressionNode()
         {
@@ -41,14 +41,14 @@ namespace Apache.Ignite.Linq.Impl.Dml
                 .GetMethods()
                 .Where(x => x.Name == "UpdateAll")
                 .ToArray();
-            var updateAllImplMethodInfos = typeof(CacheLinqExtensions)
-                .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic)
-                .Where(x => x.Name == "UpdateAllImpl")
-                .ToArray();
+            //var updateAllImplMethodInfos = typeof(CacheLinqExtensions)
+            //    .GetMethods(BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic)
+            //    .Where(x => x.Name == "UpdateAllImpl")
+            //    .ToArray();
             UpdateAllDescriptorMethodInfo =
                 updateAllMethodInfos.Single(x => x.GetParameters().Length == 2 && x.GetParameters()[1].ParameterType.IsGenericType);
-            UpdateAllImplDescriptorMethodInfo =
-                updateAllImplMethodInfos.Single(x => x.GetParameters().Length == 2);
+            //UpdateAllImplDescriptorMethodInfo =
+            //    updateAllImplMethodInfos.Single(x => x.GetParameters().Length == 2);
         }
 
 
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
         /// </summary>
         public static readonly MethodInfo UpdateAllDescriptorMethodInfo;
 
-        public static readonly MethodInfo UpdateAllImplDescriptorMethodInfo;
+        //public static readonly MethodInfo UpdateAllImplDescriptorMethodInfo;
 
         //public static readonly MethodInfo UpdateAllString =
         //    UpdateAllMethodInfos.Single(x => x.GetParameters().Length == 2);
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
         /// <param name="parseInfo">The parse information.</param>
         /// <param name="updateDescription">Expression with update description info</param>
         public UpdateAllExpressionNode(MethodCallExpressionParseInfo parseInfo,
-            Expression updateDescription)
+            LambdaExpression updateDescription)
             : base(parseInfo, null, null)
         {
             _updateDescription = updateDescription;
@@ -89,7 +89,11 @@ namespace Apache.Ignite.Linq.Impl.Dml
         /** <inheritdoc /> */
         protected override ResultOperatorBase CreateResultOperator(ClauseGenerationContext clauseGenerationContext)
         {
-            return new UpdateAllResultOperator(_updateDescription);
+            var expression = Source.Resolve(_updateDescription.Parameters[0],
+                _updateDescription.Body,
+                clauseGenerationContext);
+            
+            return new UpdateAllResultOperator(expression);
         }
 
         /// <summary>
@@ -97,7 +101,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
         /// </summary>
         public static IEnumerable<MethodInfo> GetSupportedMethods()
         {
-            yield return UpdateAllImplDescriptorMethodInfo;
+            //yield return UpdateAllImplDescriptorMethodInfo;
             yield return UpdateAllDescriptorMethodInfo;
             //yield return UpdateAllString;
         }

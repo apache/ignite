@@ -123,9 +123,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             queryable
                 .Where(p => p.Value.Age > 0)
+                //.MyWhere(p => p.Value.Age > 0)
                 .Take(2)
-                .UpdateAll(d => d.Set(p => p.AliasTest, 1)
-                .Set(p => p.Age, p => p.Value.Age + 1));
+                .UpdateAll(d => UD.Create(d).Set(p => d.Value.AliasTest, 1)
+                .Set(p => d.Value.Age, p => d.Value.Age + 1));
 
             //queryable.UpdateAll(entry => "asd");
 

@@ -54,7 +54,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
         [ExcludeFromCodeCoverage]
         public override void TransformExpressions(Func<Expression, Expression> transformation)
         {
-            // No-op.
+            Description = transformation(Description);
         }
 
         /** <inheritdoc /> */

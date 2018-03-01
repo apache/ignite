@@ -23,6 +23,7 @@ namespace Apache.Ignite.Linq
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
+    using System.Reflection;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Query;
@@ -208,47 +209,32 @@ namespace Apache.Ignite.Linq
         /// <param name="updateDescription">The update description.</param>
         /// <returns>Affected row count.</returns>
         public static int UpdateAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query,
-            Expression<Func<IUpdateDescriptor<TKey,TValue>, IUpdateDescriptor<TKey,TValue>>> updateDescription)
+            Expression<Func<ICacheEntry<TKey,TValue>, IUpdateDescriptor<TKey,TValue>>> updateDescription)
         {
             IgniteArgumentCheck.NotNull(query, "query");
             IgniteArgumentCheck.NotNull(updateDescription, "updateDescription");
 
-            if (!(updateDescription.Body is MethodCallExpression))
-            {
-                throw new NotSupportedException("Expression is not supported for UpdateAll: " + updateDescription.Body);
-            }
+            //if (!(updateDescription.Body is MethodCallExpression))
+            //{
+            //    throw new NotSupportedException("Expression is not supported for UpdateAll: " + updateDescription.Body);
+            //}
 
-            var parameter = Expression.Parameter(typeof(ICacheEntry<TKey, TValue>), "p");
-            var updates = new List<ReadOnlyCollection<Expression>>();
+            //var parameter = Expression.Parameter(typeof(ICacheEntry<TKey, TValue>), "p");
+            //var updates = new List<ReadOnlyCollection<Expression>>();
 
-            var methodCall = (MethodCallExpression) updateDescription.Body;
-            while (methodCall != null)
-            {
-                updates.Add(methodCall.Arguments);
-                methodCall = methodCall.Object as MethodCallExpression;
-            }
+            //var methodCall = (MethodCallExpression) updateDescription.Body;
+            //while (methodCall != null)
+            //{
+            //    updates.Add(methodCall.Arguments);
+            //    methodCall = methodCall.Object as MethodCallExpression;
+            //}
 
-            var lambda = Expression.Lambda<Func<ICacheEntry<TKey, TValue>, UpdateDescription>>(
-                Expression.Constant(new UpdateDescription {Updates = updates}, typeof(UpdateDescription)), parameter);
+            //var lambda = Expression.Lambda<Func<ICacheEntry<TKey, TValue>, UpdateDescription>>(
+            //    Expression.Constant(new UpdateDescription {Updates = updates}, typeof(UpdateDescription)), parameter);
 
-            return UpdateAllImpl(query, lambda);
-        }
+            //return UpdateAllImpl(query, lambda);
 
-        /// <summary>
-        /// Internal method rewriting user call 
-        /// </summary>
-        /// <typeparam name="TKey">Key type.</typeparam>
-        /// <typeparam name="TValue">Value type.</typeparam>
-        /// <param name="query">The query.</param>
-        /// <param name="updateDescription">The update description.</param>
-        /// <returns>Affected row count.</returns>
-        internal static int UpdateAllImpl<TKey, TValue>(IQueryable<ICacheEntry<TKey, TValue>> query,
-            Expression<Func<ICacheEntry<TKey, TValue>, UpdateDescription>> updateDescription)
-        {
-            IgniteArgumentCheck.NotNull(query, "query");
-            IgniteArgumentCheck.NotNull(updateDescription, "updateDescription");
-
-            var method = UpdateAllExpressionNode.UpdateAllImplDescriptorMethodInfo
+            var method = UpdateAllExpressionNode.UpdateAllDescriptorMethodInfo
                 .MakeGenericMethod(typeof(TKey), typeof(TValue)); // TODO: cache?
 
             return query.Provider.Execute<int>(Expression.Call(null, method, new[]
@@ -258,15 +244,63 @@ namespace Apache.Ignite.Linq
             }));
         }
 
-        public struct MyStruct
-        {
-            public Expression Get { get; set; }
-            public Expression Set { get; set; }
-        }
+        ///// <summary>
+        ///// Internal method rewriting user call 
+        ///// </summary>
+        ///// <typeparam name="TKey">Key type.</typeparam>
+        ///// <typeparam name="TValue">Value type.</typeparam>
+        ///// <param name="query">The query.</param>
+        ///// <param name="updateDescription">The update description.</param>
+        ///// <returns>Affected row count.</returns>
+        //internal static int UpdateAllImpl<TKey, TValue>(IQueryable<ICacheEntry<TKey, TValue>> query,
+        //    Expression<Func<ICacheEntry<TKey, TValue>, UpdateDescription>> updateDescription)
+        //{
+        //    IgniteArgumentCheck.NotNull(query, "query");
+        //    IgniteArgumentCheck.NotNull(updateDescription, "updateDescription");
+
+        //    var method = UpdateAllExpressionNode.UpdateAllImplDescriptorMethodInfo
+        //        .MakeGenericMethod(typeof(TKey), typeof(TValue)); // TODO: cache?
+
+        //    return query.Provider.Execute<int>(Expression.Call(null, method, new[]
+        //    {
+        //        query.Expression,
+        //        Expression.Quote(updateDescription)
+        //    }));
+        //}
 
         internal static class Set
         {
             //public static ICacheEntry<TKey, TValue> Set<TKey,TValue>(ICacheEntry<TKey, TValue> e, )
         }
+
+        private static MethodInfo GetMethodInfo<T1, T2>(Func<T1, T2> f, T1 _)
+        {
+            return f.Method;
+        }
+
+        private static MethodInfo GetMethodInfo<T1, T2, T3>(Func<T1, T2, T3> f, T1 _, T2 __)
+        {
+            return f.Method;
+        }
+
+        private static MethodInfo GetMethodInfo<T1, T2, T3, T4>(Func<T1, T2, T3, T4> f, T1 _, T2 __, T3 ___)
+        {
+            return f.Method;
+        }
+
+        //private static MethodInfo GetMethodInfo<T1, T2, T3, T4, T5>(Func<T1, T2, T3, T4, T5> f, T1 unused1, T2 unused2, T3 unused3, T4 unused4)
+        //{
+        //    return f.Method;
+        //}
+
+        //private static MethodInfo GetMethodInfo<T1, T2, T3, T4, T5, T6>(Func<T1, T2, T3, T4, T5, T6> f, T1 unused1, T2 unused2, T3 unused3, T4 unused4, T5 unused5)
+        //{
+        //    return f.Method;
+        //}
+
+        //private static MethodInfo GetMethodInfo<T1, T2, T3, T4, T5, T6, T7>(Func<T1, T2, T3, T4, T5, T6, T7> f, T1 unused1, T2 unused2, T3 unused3, T4 unused4, T5 unused5, T6 unused6)
+        //{
+        //    return f.Method;
+        //}
     }
 }

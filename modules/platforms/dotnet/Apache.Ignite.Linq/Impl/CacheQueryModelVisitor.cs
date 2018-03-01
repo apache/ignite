@@ -369,20 +369,39 @@ namespace Apache.Ignite.Linq.Impl
             var updateAllResultOperator = queryModel.ResultOperators.LastOrDefault() as UpdateAllResultOperator;
             if (updateAllResultOperator != null)
             {
-                var lambdaExpression = updateAllResultOperator.Description as LambdaExpression;
-                var constantExpression = lambdaExpression.Body as ConstantExpression;
-                var updateDescription = constantExpression.Value as UpdateDescription;
                 _builder.Append("set ");
                 var first = true;
-                foreach (var update in updateDescription.Updates)
+                var methodCall = updateAllResultOperator.Description as MethodCallExpression;
+                while (methodCall != null)
                 {
+                    var update = methodCall.Arguments;
+
                     if (!first) _builder.Append(", ");
                     first = false;
-                    BuildSqlExpression(((LambdaExpression)update[0]).Body);
+                    BuildSqlExpression(update[0]);
                     _builder.Append(" = (");
-                    BuildSqlExpression(((LambdaExpression)update[1]).Body);
+                    BuildSqlExpression(update[1]);
                     _builder.Append(") ");
+
+                    methodCall = methodCall.Object as MethodCallExpression;
                 }
+
+                //var lambdaExpression = updateAllResultOperator.Description as LambdaExpression;
+                //var constantExpression = lambdaExpression.Body as ConstantExpression;
+                //var updateDescription = constantExpression.Value as UpdateDescription;
+                //_builder.Append("set ");
+                //var first = true;
+                //foreach (var update in updateDescription.Updates)
+                //{
+                //    if (!first) _builder.Append(", ");
+                //    first = false;
+                //    BuildSqlExpression(((LambdaExpression)update[0]).Body);
+                //    _builder.Append(" = (");
+                //    BuildSqlExpression(((LambdaExpression)update[1]).Body);
+                //    _builder.Append(") ");
+                //}
+
+
             }
 
             var i = 0;
