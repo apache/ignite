@@ -586,6 +586,7 @@ public interface Ignite extends AutoCloseable {
      * @return ReentrantLock for the given name.
      * @throws IgniteException If reentrant lock could not be fetched or created.
      */
+    @Deprecated
     public IgniteLock reentrantLock(String name, boolean failoverSafe, boolean fair, boolean create)
         throws IgniteException;
 
