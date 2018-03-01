@@ -1,10 +1,11 @@
 namespace Apache.Ignite.Linq
 {
     using System;
+    using Apache.Ignite.Core.Cache;
 
-    public interface IUpdateDescriptor<T>
+    public interface IUpdateDescriptor<T, TV>
     {
-        IUpdateDescriptor<T> Set<TProp>(Func<T, TProp> selector, TProp value);
-        IUpdateDescriptor<T> Set<TProp>(Func<T, TProp> selector, Func<T, TProp> valueBuilder);
+        IUpdateDescriptor<T, TV> Set<TProp>(Func<TV, TProp> selector, TProp value);
+        IUpdateDescriptor<T, TV> Set<TProp>(Func<TV, TProp> selector, Func<ICacheEntry<T,TV>, TProp> valueBuilder);
     }
 }

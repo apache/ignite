@@ -208,7 +208,7 @@ namespace Apache.Ignite.Linq
         /// <param name="updateDescription">The update description.</param>
         /// <returns>Affected row count.</returns>
         public static int UpdateAll<TKey, TValue>(this IQueryable<ICacheEntry<TKey, TValue>> query,
-            Expression<Func<IUpdateDescriptor<TValue>, IUpdateDescriptor<TValue>>> updateDescription)
+            Expression<Func<IUpdateDescriptor<TKey,TValue>, IUpdateDescriptor<TKey,TValue>>> updateDescription)
         {
             IgniteArgumentCheck.NotNull(query, "query");
             IgniteArgumentCheck.NotNull(updateDescription, "updateDescription");
@@ -218,7 +218,7 @@ namespace Apache.Ignite.Linq
                 throw new NotSupportedException("Expression is not supported for UpdateAll: " + updateDescription.Body);
             }
 
-            var parameter = Expression.Parameter(typeof(TValue), "p");
+            var parameter = Expression.Parameter(typeof(ICacheEntry<TKey, TValue>), "p");
             var updates = new List<ReadOnlyCollection<Expression>>();
 
             var methodCall = (MethodCallExpression) updateDescription.Body;
@@ -228,7 +228,7 @@ namespace Apache.Ignite.Linq
                 methodCall = methodCall.Object as MethodCallExpression;
             }
 
-            var lambda = Expression.Lambda<Func<TValue, UpdateDescription>>(
+            var lambda = Expression.Lambda<Func<ICacheEntry<TKey, TValue>, UpdateDescription>>(
                 Expression.Constant(new UpdateDescription {Updates = updates}, typeof(UpdateDescription)), parameter);
 
             return UpdateAllImpl(query, lambda);
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Linq
         /// <param name="updateDescription">The update description.</param>
         /// <returns>Affected row count.</returns>
         internal static int UpdateAllImpl<TKey, TValue>(IQueryable<ICacheEntry<TKey, TValue>> query,
-            Expression<Func<TValue, UpdateDescription>> updateDescription)
+            Expression<Func<ICacheEntry<TKey, TValue>, UpdateDescription>> updateDescription)
         {
             IgniteArgumentCheck.NotNull(query, "query");
             IgniteArgumentCheck.NotNull(updateDescription, "updateDescription");
@@ -256,6 +256,17 @@ namespace Apache.Ignite.Linq
                 query.Expression,
                 Expression.Quote(updateDescription)
             }));
+        }
+
+        public struct MyStruct
+        {
+            public Expression Get { get; set; }
+            public Expression Set { get; set; }
+        }
+
+        internal static class Set
+        {
+            //public static ICacheEntry<TKey, TValue> Set<TKey,TValue>(ICacheEntry<TKey, TValue> e, )
         }
     }
 }

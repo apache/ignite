@@ -366,10 +366,25 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override void VisitBodyClauses(ObservableCollection<IBodyClause> bodyClauses, QueryModel queryModel)
         {
-            if (queryModel.ResultOperators.LastOrDefault() is UpdateAllResultOperator)
+            var updateAllResultOperator = queryModel.ResultOperators.LastOrDefault() as UpdateAllResultOperator;
+            if (updateAllResultOperator != null)
             {
-                
+                var lambdaExpression = updateAllResultOperator.Description as LambdaExpression;
+                var constantExpression = lambdaExpression.Body as ConstantExpression;
+                var updateDescription = constantExpression.Value as UpdateDescription;
+                _builder.Append("set ");
+                var first = true;
+                foreach (var update in updateDescription.Updates)
+                {
+                    if (!first) _builder.Append(", ");
+                    first = false;
+                    BuildSqlExpression(((LambdaExpression)update[0]).Body);
+                    _builder.Append(" = (");
+                    BuildSqlExpression(((LambdaExpression)update[1]).Body);
+                    _builder.Append(") ");
+                }
             }
+
             var i = 0;
             foreach (var join in bodyClauses.OfType<JoinClause>())
                 VisitJoinClause(join, queryModel, i++);
