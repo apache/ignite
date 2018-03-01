@@ -953,7 +953,11 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
                             log.debug("Adding message to waiting list [senderId=" + nodeId +
                                 ", msg=" + msg + ']');
 
-                        Deque<DelayedMessage> list = F.addIfAbsent(waitMap, nodeId, F.newDeque());
+                        Deque<DelayedMessage> list = F.<UUID, Deque<DelayedMessage>>addIfAbsent(
+                            waitMap,
+                            nodeId,
+                            ConcurrentLinkedDeque::new
+                        );
 
                         assert list != null;
 

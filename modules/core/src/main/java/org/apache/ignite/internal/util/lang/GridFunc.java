@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -59,7 +58,6 @@ import org.apache.ignite.internal.util.lang.gridfunc.AtomicIntegerFactoryCallabl
 import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryGetValueClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryHasPeekPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.ClusterNodeGetIdClosure;
-import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentDequeFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentHashSetFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentMapFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ContainsNodeIdsPredicate;
@@ -137,9 +135,6 @@ public class GridFunc {
 
     /** */
     private static final IgnitePredicate<Object> ALWAYS_FALSE = new AlwaysFalsePredicate<>();
-
-    /** */
-    private static final IgniteCallable<?> DEQUE_FACTORY = new ConcurrentDequeFactoryCallable();
 
     /** */
     private static final IgnitePredicate<Object> IS_NOT_NULL = new IsNotNullPredicate();
@@ -1273,19 +1268,6 @@ public class GridFunc {
         catch (IOException e) {
             throw new IgniteException(e);
         }
-    }
-
-    /**
-     * Returns a factory closure that creates new concurrent {@link Deque} instance.
-     * Note that this method does not create a new closure but returns a static one.
-     *
-     * @param <T> Type parameters for the created {@link List}.
-     * @return Factory closure that creates new {@link List} instance every
-     *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> IgniteCallable<Deque<T>> newDeque() {
-        return (IgniteCallable<Deque<T>>)DEQUE_FACTORY;
     }
 
     /**

@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeTask;
@@ -303,7 +304,11 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                 assert fireEvt : "Class was not added to newly created deployment [cls=" + cls +
                     ", depMode=" + depMode + ", dep=" + dep + ']';
 
-                Deque<GridDeployment> deps = F.addIfAbsent(cache, alias, F.newDeque());
+                Deque<GridDeployment> deps = F.<String, Deque<GridDeployment>>addIfAbsent(
+                    cache,
+                    alias,
+                    ConcurrentLinkedDeque::new
+                );
 
                 if (!deps.isEmpty()) {
                     for (GridDeployment d : deps) {
