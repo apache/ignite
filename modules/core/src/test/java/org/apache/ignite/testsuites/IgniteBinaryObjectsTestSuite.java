@@ -52,6 +52,9 @@ import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompac
 import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompactSimpleNameLowerCaseMappersSelfTest;
 import org.apache.ignite.internal.binary.streams.BinaryHeapStreamByteOrderSelfTest;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapStreamByteOrderSelfTest;
+import org.apache.ignite.internal.processors.cache.ReplicatedAtomicCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalOptimisticAtomicCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalPessimisticAtomicCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryAtomicCacheLocalEntriesSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataUpdatesFlowTest;
 import org.apache.ignite.internal.processors.cache.binary.BinaryTxCacheLocalEntriesSelfTest;
@@ -147,6 +150,10 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         suite.addTestSuite(BinaryOffheapStreamByteOrderSelfTest.class);
 
         suite.addTestSuite(GridCacheBinaryObjectUserClassloaderSelfTest.class);
+
+        suite.addTestSuite(ReplicatedAtomicCacheGetsDistributionTest.class);
+        suite.addTestSuite(ReplicatedTransactionalOptimisticAtomicCacheGetsDistributionTest.class);
+        suite.addTestSuite(ReplicatedTransactionalPessimisticAtomicCacheGetsDistributionTest.class);
 
         return suite;
     }

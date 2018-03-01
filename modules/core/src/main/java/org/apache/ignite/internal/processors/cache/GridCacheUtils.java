@@ -92,6 +92,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -380,6 +381,9 @@ public class GridCacheUtils {
         }
     };
 
+    /** Cluster nodes' MAC addresses equality filter. */
+    private static IgniteBiPredicate<ClusterNode, ClusterNode> macsFilter = U::sameMacs;
+
     /**
      * Ensure singleton.
      */
@@ -473,9 +477,7 @@ public class GridCacheUtils {
         if (!ctx.config().isReadFromBackup())
             return affNodes.get(0);
 
-        String locMacs = ctx.localNode().attribute(IgniteNodeAttributes.ATTR_MACS);
-
-        assert locMacs != null;
+        ClusterNode locNode = ctx.localNode();
 
         int r = ThreadLocalRandom.current().nextInt(affNodes.size());
 
@@ -485,7 +487,7 @@ public class GridCacheUtils {
             r--;
 
             if (canRemap || ctx.discovery().alive(node)) {
-                if (locMacs.equals(node.attribute(IgniteNodeAttributes.ATTR_MACS)))
+                if (macsFilter.apply(locNode, node))
                     return node;
 
                 if (r >= 0 || n0 == null)
