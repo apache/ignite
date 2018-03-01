@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.sql.command;
 
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
@@ -29,6 +30,9 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
  * SET STREAMING command.
  */
 public class SqlSetStreamingCommand implements SqlCommand {
+    /** Default batch size for driver. */
+    private final static int DFLT_STREAM_BATCH_SIZE = IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE * 4;
+
     /** Whether streaming must be turned on or off by this command. */
     private boolean turnOn;
 
@@ -36,7 +40,7 @@ public class SqlSetStreamingCommand implements SqlCommand {
     private boolean allowOverwrite;
 
     /** Batch size for driver. */
-    private int batchSize;
+    private int batchSize = DFLT_STREAM_BATCH_SIZE;
 
     /** Per node number of parallel operations. */
     private int parOps;

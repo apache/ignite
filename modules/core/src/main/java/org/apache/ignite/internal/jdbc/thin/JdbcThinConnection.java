@@ -108,6 +108,9 @@ public class JdbcThinConnection implements Connection {
     /** Connection properties. */
     private ConnectionProperties connProps;
 
+    /** Batch size for streaming. */
+    private int streamBatchSize;
+
     /** Batch for streaming. */
     private List<JdbcQuery> streamBatch;
 
@@ -183,6 +186,8 @@ public class JdbcThinConnection implements Connection {
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
                     schema, 1, 1, sql, null));
 
+                streamBatchSize = ((SqlSetStreamingCommand)cmd).batchSize();
+
                 stream = true;
             }
             else if (stream && !newVal) {
@@ -213,7 +218,7 @@ public class JdbcThinConnection implements Connection {
         JdbcQuery q  = new JdbcQuery(newQry ? sql : null, args != null ? args.toArray() : null);
 
         if (streamBatch == null)
-            streamBatch = new ArrayList<>(connProps.getStreamBatchSize());
+            streamBatch = new ArrayList<>(streamBatchSize);
 
         streamBatch.add(q);
 
@@ -221,7 +226,7 @@ public class JdbcThinConnection implements Connection {
         // we don't want to remember its query string.
         lastStreamQry = (args != null ? sql : null);
 
-        if (streamBatch.size() == connProps.getStreamBatchSize())
+        if (streamBatch.size() == streamBatchSize)
             executeBatch();
     }
 

@@ -1048,19 +1048,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         IgniteDataStreamer<?, ?> streamer = cliCtx.streamerForCache(plan.cacheContext().name());
 
-        if (streamer != null) {
-            List<Long> res = new ArrayList<>(params.size());
+        assert streamer != null;
 
-            for (int i = 0; i < params.size(); i++)
-                res.add(dmlProc.streamUpdateQuery(schemaName, streamer, stmt, params.get(i)));
+        List<Long> res = new ArrayList<>(params.size());
 
-            return res;
-        }
-        else {
-            U.warn(log, "Streaming has been turned off by concurrent command.");
+        for (int i = 0; i < params.size(); i++)
+            res.add(dmlProc.streamUpdateQuery(schemaName, streamer, stmt, params.get(i)));
 
-            return zeroBatchedStreamedUpdateResult(params.size());
-        }
+        return res;
     }
 
     /**
@@ -1550,9 +1545,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return Collections.singletonList(cursor);
         }
         else if (cmd instanceof SqlSetStreamingCommand) {
-            if (cliCtx != null) {
-                if (((SqlSetStreamingCommand) cmd).isTurnOn())
-                    cliCtx.enableStreaming();
+            SqlSetStreamingCommand setCmd = (SqlSetStreamingCommand)cmd;
+
+            boolean on = setCmd.isTurnOn();
+
+            if (cliCtx != null && cliCtx.isStream() != on) {
+                if (on)
+                    cliCtx.enableStreaming(setCmd.isAllowOverwrite(), setCmd.flushFrequency(),
+                        setCmd.perNodeBufferSize(), setCmd.perNodeParallelOperations());
                 else
                     cliCtx.disableStreaming();
             }

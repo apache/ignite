@@ -57,11 +57,10 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
     /** {@inheritDoc} */
     @Override protected Connection createStreamedConnection(boolean allowOverwrite, long flushFreq) throws Exception {
-        Connection c = JdbcThinAbstractSelfTest.connect(grid(0), "streamingFlushFrequency="
-            + flushFreq + "&" + "streamingAllowOverwrite=" + allowOverwrite + "&streamingPerNodeBufferSize=1000&"
-            + "streamingBatchSize=" + batchSize);
+        Connection c = JdbcThinAbstractSelfTest.connect(grid(0), null       );
 
-        execute(c, "SET STREAMING 1");
+        execute(c, "SET STREAMING 1 BATCH_SIZE " + batchSize + " ALLOW_OVERWRITE " + (allowOverwrite ? 1 : 0) +
+            " PER_NODE_BUFFER_SIZE 1000 FLUSH_FREQUENCY " + flushFreq);
 
         return c;
     }
@@ -287,6 +286,8 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
             execute(conn, "set streaming 0");
 
             assertStreamingState(false);
+
+            U.sleep(500);
 
             // Now let's check it's all there.
             for (int i = 1; i <= 100; i++)

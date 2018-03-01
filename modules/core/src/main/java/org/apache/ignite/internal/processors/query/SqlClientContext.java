@@ -48,19 +48,19 @@ public class SqlClientContext implements AutoCloseable {
     private final boolean lazy;
 
     /** Skip reducer on update flag. */
-    private final boolean skipReducerOnUpdate;
+    private boolean skipReducerOnUpdate;
 
     /** Allow overwrites for duplicate keys on streamed {@code INSERT}s. */
-    private final boolean streamAllowOverwrite;
+    private boolean streamAllowOverwrite;
 
     /** Parallel ops count per node for data streamer. */
-    private final int streamNodeParOps;
+    private int streamNodeParOps;
 
     /** Node buffer size for data streamer. */
-    private final int streamNodeBufSize;
+    private int streamNodeBufSize;
 
     /** Auto flush frequency for streaming. */
-    private final long streamFlushTimeout;
+    private long streamFlushTimeout;
 
     /** Streamers for various caches. */
     private Map<String, IgniteDataStreamer<?, ?>> streamers;
@@ -75,24 +75,15 @@ public class SqlClientContext implements AutoCloseable {
      * @param collocated Collocated flag.
      * @param lazy Lazy query execution flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
-     * @param streamAllowOverwrite Allow overwrites for duplicate keys on streamed {@code INSERT}s.
-     * @param streamNodeParOps Parallel ops count per node for data streamer.
-     * @param streamNodeBufSize Node buffer size for data streamer.
-     * @param streamFlushTimeout Auto flush frequency for streaming.
      */
     public SqlClientContext(GridKernalContext ctx, boolean distributedJoins, boolean enforceJoinOrder,
-                            boolean collocated, boolean lazy, boolean skipReducerOnUpdate, boolean streamAllowOverwrite,
-                            int streamNodeParOps, int streamNodeBufSize, long streamFlushTimeout) {
+        boolean collocated, boolean lazy, boolean skipReducerOnUpdate) {
         this.ctx = ctx;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
         this.collocated = collocated;
         this.lazy = lazy;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
-        this.streamAllowOverwrite = streamAllowOverwrite;
-        this.streamNodeParOps = streamNodeParOps;
-        this.streamNodeBufSize = streamNodeBufSize;
-        this.streamFlushTimeout = streamFlushTimeout;
 
         log = ctx.log(SqlClientContext.class.getName());
 
@@ -101,19 +92,29 @@ public class SqlClientContext implements AutoCloseable {
 
     /**
      * Turn on streaming on this client context.
+     *
+     * @param allowOverwrite Whether streaming should overwrite existing values.
+     * @param flushFreq Flush frequency for streamers.
+     * @param perNodeBufSize Per node streaming buffer size.
+     * @param perNodeParOps Per node streaming parallel operations number.
      */
-    public void enableStreaming() {
-        if (streamers != null)
+    public void enableStreaming(boolean allowOverwrite, long flushFreq, int perNodeBufSize, int perNodeParOps) {
+        if (isStream())
             return;
 
         streamers = new HashMap<>();
+
+        this.streamAllowOverwrite = allowOverwrite;
+        this.streamFlushTimeout = flushFreq;
+        this.streamNodeBufSize = perNodeBufSize;
+        this.streamNodeParOps = perNodeParOps;
     }
 
     /**
      * Turn off streaming on this client context - with closing all open streamers, if any.
      */
     public void disableStreaming() {
-        if (streamers == null)
+        if (!isStream())
             return;
 
         Iterator<IgniteDataStreamer<?, ?>> it = streamers.values().iterator();
@@ -176,38 +177,29 @@ public class SqlClientContext implements AutoCloseable {
      * @return Streamer for given cache.
      */
     public IgniteDataStreamer<?, ?> streamerForCache(String cacheName) {
-        Map<String, IgniteDataStreamer<?, ?>> curStreamers = streamers;
-
-        if (curStreamers == null)
+        if (streamers == null)
             return null;
 
-        IgniteDataStreamer<?, ?> res = curStreamers.get(cacheName);
+        IgniteDataStreamer<?, ?> res = streamers.get(cacheName);
 
         if (res != null)
             return res;
 
         res = ctx.grid().dataStreamer(cacheName);
 
-        IgniteDataStreamer<?, ?> exStreamer = curStreamers.putIfAbsent(cacheName, res);
+        res.autoFlushFrequency(streamFlushTimeout);
 
-        if (exStreamer == null) {
-            res.autoFlushFrequency(streamFlushTimeout);
+        res.allowOverwrite(streamAllowOverwrite);
 
-            res.allowOverwrite(streamAllowOverwrite);
+        if (streamNodeBufSize > 0)
+            res.perNodeBufferSize(streamNodeBufSize);
 
-            if (streamNodeBufSize > 0)
-                res.perNodeBufferSize(streamNodeBufSize);
+        if (streamNodeParOps > 0)
+            res.perNodeParallelOperations(streamNodeParOps);
 
-            if (streamNodeParOps > 0)
-                res.perNodeParallelOperations(streamNodeParOps);
+        streamers.put(cacheName, res);
 
-            return res;
-        }
-        else { // Someone got ahead of us.
-            res.close();
-
-            return exStreamer;
-        }
+        return res;
     }
 
     /** {@inheritDoc} */
