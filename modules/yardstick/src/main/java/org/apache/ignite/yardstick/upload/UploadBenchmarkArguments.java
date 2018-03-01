@@ -23,13 +23,12 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 public class UploadBenchmarkArguments {
-    /** */
-    // TODO: Rename to "--disable-wal"
-    @Parameter(names = {"--switch-wal"},
+    /** Whither or not temporary disable Write Ahead Log during upload. */
+    @Parameter(names = {"--disable-wal"},
         arity = 1,
         description = "Upload benchmark only: " +
             "turn off Write Ahead Log before data uploading " +
-            "and turn it on again when upload is done")
+            "and turn it on again when upload is done.")
     private boolean switchWal = false;
 
     /**
@@ -45,7 +44,7 @@ public class UploadBenchmarkArguments {
     private List<String> uploadJdbcParams = Collections.emptyList();
 
     @Parameter(names={"--sql-copy-packet-size"},
-        description = "Upload benchmark only: use custom packet_size (in bytes) for copy comand")
+        description = "Upload benchmark only: use custom packet_size (in bytes) for copy command.")
     private Long copyPacketSize = null;
 
 
