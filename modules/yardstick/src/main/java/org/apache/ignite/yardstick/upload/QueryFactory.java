@@ -43,7 +43,7 @@ public class QueryFactory {
     /** Number of "values" fields in the test table (any field except primary key). */
     private int valFieldsCnt = 10;
 
-    /** Create table. */
+    /** Create table with long primary key and number of long and varchar fields */
     private String createTable = newCreateTableQuery();
 
     /** Parametrised query to insert new row. */
