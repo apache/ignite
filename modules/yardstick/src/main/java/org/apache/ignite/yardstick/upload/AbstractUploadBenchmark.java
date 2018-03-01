@@ -53,14 +53,14 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         // Perform warmup keeping in mind wal optimization.
         BenchmarkUtils.println(this.cfg, "Starting custom warmup");
 
-        if (args.switchWal())
+        if (args.upload.switchWal())
             executeUpdate(QueryFactory.TURN_OFF_WAL);
 
         try (Connection warmupConn = uploadConnection()) {
             warmup(warmupConn);
         }
 
-        if (args.switchWal())
+        if (args.upload.switchWal())
             executeUpdate(QueryFactory.TURN_ON_WAL);
 
         BenchmarkUtils.println(this.cfg, "Custom warmup finished");
@@ -93,14 +93,14 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
 
     /** {@inheritDoc} */
     @Override public final boolean test(Map<Object, Object> ctx) throws Exception {
-        if (args.switchWal())
+        if (args.upload.switchWal())
             executeUpdate(QueryFactory.TURN_OFF_WAL);
 
         try (Connection uploadConn = uploadConnection()) {
             upload(uploadConn);
         }
 
-        if (args.switchWal())
+        if (args.upload.switchWal())
             executeUpdate(QueryFactory.TURN_ON_WAL);
 
         return true;
@@ -160,7 +160,7 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
 
         // We can't just pass entire params string, due to yardstick, which relies on bash,
         // has some troubles with escaping ampersand character.
-        List<String> rawParams = args.uploadJdbcParams();
+        List<String> rawParams = args.upload.uploadJdbcParams();
 
         if (!rawParams.isEmpty()) {
             String kvList = String.join("&", rawParams);

@@ -43,7 +43,7 @@ public class CopyBenchmark extends AbstractUploadBenchmark {
     @Override protected void init() {
         super.init();
 
-        packetSize = args.copyPacketSize();
+        packetSize = args.upload.copyPacketSize();
 
         warmupCsvPath = generateWarmupCsv();
         realCsvPath = generateRealCsv();
