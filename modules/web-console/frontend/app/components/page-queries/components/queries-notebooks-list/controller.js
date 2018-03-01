@@ -16,15 +16,14 @@
  */
 
 import headerTemplate from '../../../../../app/primitives/ui-grid-header/index.tpl.pug';
-import createNotebookModalTemplateUrl from './notebook-new.tpl.pug';
-
-import { CancellationError } from 'app/errors/CancellationError';
 
 export class NotebooksListCtrl {
-    static $inject = ['IgniteNotebook', 'IgniteMessages', 'IgniteLoading', '$scope', '$modal'];
+    static $inject = ['IgniteNotebook', 'IgniteMessages', 'IgniteLoading', 'IgniteInput', '$scope', '$modal'];
 
-    constructor(IgniteNotebook, IgniteMessages, IgniteLoading, $scope, $modal) {
-        Object.assign(this, { IgniteNotebook, IgniteMessages, IgniteLoading, $scope, $modal });
+    constructor(IgniteNotebook, IgniteMessages, IgniteLoading, IgniteInput, $scope, $modal) {
+        Object.assign(this, { IgniteNotebook, IgniteMessages, IgniteLoading, IgniteInput, $scope, $modal });
+
+        this.notebooks = [];
 
         const notebookNameTemplate = `<div class="ui-grid-cell-contents notebook-name"><a ui-sref="base.sql.tabs.notebook({ noteId: row.entity._id })">{{ row.entity.name }}</a></div>`;
         const sqlQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.sqlQueriesParagraphsLength}}</div>`;
@@ -122,48 +121,9 @@ export class NotebooksListCtrl {
         this.actionOptions[0].available = this.gridApi.selection.getSelectedRows().length === 1;
     }
 
-    fetchNewNotebookNameFromModal(notebookName = '') {
-        const cloningMode = notebookName !== '';
-        const modalTexts = {
-            create: {
-                title: 'New query notebook',
-                buttonText: 'Create'
-            },
-            clone: {
-                title: 'Clone query notebook',
-                buttonText: 'Clone'
-            }
-        };
-
-        return new Promise((getName, cancel) => {
-            this.$scope.name = notebookName;
-
-            this.$scope.modalText = cloningMode ? modalTexts.clone : modalTexts.create;
-
-            this.createNotebookModal = this.$modal({ scope: this.$scope, templateUrl: createNotebookModalTemplateUrl, show: false });
-
-            // Name value is passed from modal scope via Promise as 'this' reference can't be passed and called directly in modal controller.
-            this.$scope.fetchNotebookName = (name) => new Promise((resolve) => { resolve(name); }).then((name) => {
-                this.createNotebookModal.$promise.then(() => {
-                    this.createNotebookModal.hide();
-                    getName(name);
-                });
-            });
-
-            this.$scope.cancelModal = () => {
-                this.createNotebookModal.$promise.then(() => {
-                    this.createNotebookModal.hide();
-                    cancel(new CancellationError());
-                });
-            };
-
-            this.createNotebookModal.$promise.then(this.createNotebookModal.show);
-        });
-    }
-
     async createNotebook() {
         try {
-            const newNotebookName = await this.fetchNewNotebookNameFromModal();
+            const newNotebookName =  await this.IgniteInput.input('New query notebook', 'Notebook name');
 
             this.IgniteLoading.start('notebooksLoading');
             await this.IgniteNotebook.create(newNotebookName);
@@ -185,7 +145,7 @@ export class NotebooksListCtrl {
     async cloneNotebook() {
         try {
             const clonedNotebook = Object.assign({}, this.gridApi.selection.getSelectedRows()[0]);
-            const newNotebookName = await this.fetchNewNotebookNameFromModal(clonedNotebook.name);
+            const newNotebookName = await this.IgniteInput.clone(clonedNotebook.name, this.getNotebooksNames());
 
             this.IgniteLoading.start('notebooksLoading');
             await this.IgniteNotebook.clone(newNotebookName, clonedNotebook);
@@ -202,6 +162,10 @@ export class NotebooksListCtrl {
             if (this.createNotebookModal)
                 this.createNotebookModal.$promise.then(this.createNotebookModal.hide);
         }
+    }
+
+    getNotebooksNames() {
+        return this.notebooks.map((notebook) => notebook.name);
     }
 
     async deleteNotebooks() {
