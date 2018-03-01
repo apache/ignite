@@ -25,6 +25,8 @@ export class NotebooksListCtrl {
 
         this.notebooks = [];
 
+        this.rowsToShow = 8;
+
         const notebookNameTemplate = `<div class="ui-grid-cell-contents notebook-name"><a ui-sref="base.sql.tabs.notebook({ noteId: row.entity._id })">{{ row.entity.name }}</a></div>`;
         const sqlQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.sqlQueriesParagraphsLength}}</div>`;
         const scanQueryTemplate = `<div class="ui-grid-cell-contents">{{row.entity.scanQueriesPsaragraphsLength}}</div>`;
@@ -185,7 +187,7 @@ export class NotebooksListCtrl {
 
     _adjustHeight(rows) {
         // Add header height.
-        const height = Math.min(rows, 11) * 48 + 78;
+        const height = Math.min(rows, this.rowsToShow) * 48 + 78;
 
         this.gridApi.grid.element.css('height', height + 'px');
 
