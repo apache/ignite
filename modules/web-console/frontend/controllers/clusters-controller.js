@@ -164,7 +164,10 @@ export default ['$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLe
                                 retryPolicy: {
                                     kind: 'Default'
                                 },
-                                useReaper: true
+                                useReaper: true,
+                                cacheResponseMetadata: true,
+                                useExpectContinue: true,
+                                useThrottleRetries: true
                             }
                         }
                     };
