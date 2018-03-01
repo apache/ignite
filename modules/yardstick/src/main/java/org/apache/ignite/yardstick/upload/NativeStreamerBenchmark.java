@@ -53,6 +53,7 @@ public class NativeStreamerBenchmark extends IgniteAbstractBenchmark {
         insertRowsCnt = args.range();
 
         // warmup
+        BenchmarkUtils.println(cfg, "Starting custom warmup.");
         String warmupCacheName = CACHE_NAME + "Warmup";
 
         try(IgniteCache<Long, Values10> warmupCache = ignite().createCache(warmupCacheName)) {
@@ -61,6 +62,8 @@ public class NativeStreamerBenchmark extends IgniteAbstractBenchmark {
         finally {
             ignite().destroyCache(warmupCacheName);
         }
+
+        BenchmarkUtils.println(cfg, "Custom warmup finished.");
 
         // cache for benchmarked action
         cache = ignite().createCache(CACHE_NAME);
