@@ -2629,9 +2629,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     client.release();
 
-                    if (!retry)
-                        metricsLsnr.onMessageSent(msg, node.id()); // TODO: Remove
-                    else {
+                    if (retry) {
                         removeNodeClient(node.id(), client);
 
                         ClusterNode node0 = getSpiContext().node(node.id());
