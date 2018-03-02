@@ -17,16 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
 
 /**
- * Tests of pessimistic transactional replicated cache's 'get' requests distribution.
+ * Tests of optimistic transactional replicated cache's 'get' requests distribution.
  */
-public class ReplicatedTransactionalPessimisticAtomicCacheGetsDistributionTest extends ReplicatedTransactionalOptimisticAtomicCacheGetsDistributionTest {
+public class ReplicatedTransactionalOptimisticCacheGetsDistributionTest extends ReplicatedAtomicCacheGetsDistributionTest {
+    /** {@inheritDoc} */
+    @Override protected CacheAtomicityMode atomicityMode() {
+        return TRANSACTIONAL;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected TransactionIsolation transactionIsolation() {
+        return READ_COMMITTED;
+    }
+
     /** {@inheritDoc} */
     @Override protected TransactionConcurrency transactionConcurrency() {
-        return PESSIMISTIC;
+        return OPTIMISTIC;
     }
 }
