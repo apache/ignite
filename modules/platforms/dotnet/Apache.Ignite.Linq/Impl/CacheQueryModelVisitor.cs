@@ -103,9 +103,9 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Visits the query model.
         /// </summary>
-        private void VisitQueryModel(QueryModel queryModel, bool includeAllFields)
+        internal void VisitQueryModel(QueryModel queryModel, bool includeAllFields, bool copyAliases = false)
         {
-            _aliases.Push();
+            _aliases.Push(copyAliases);
 
             var lastResultOp = queryModel.ResultOperators.LastOrDefault();
             if (lastResultOp is RemoveAllResultOperator)
@@ -377,7 +377,7 @@ namespace Apache.Ignite.Linq.Impl
                     first = false;
                     BuildSqlExpression(update.Selector);
                     _builder.Append(" = ");
-                    BuildSqlExpression(update.Value);
+                    BuildSqlExpression(update.Value, visitSubqueryModel: true);
                 }
 
                 _builder.Append(" ");
@@ -694,9 +694,9 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Builds the SQL expression.
         /// </summary>
-        private void BuildSqlExpression(Expression expression, bool useStar = false, bool includeAllFields = false)
+        private void BuildSqlExpression(Expression expression, bool useStar = false, bool includeAllFields = false, bool visitSubqueryModel = false)
         {
-            new CacheQueryExpressionVisitor(this, useStar, includeAllFields).Visit(expression);
+            new CacheQueryExpressionVisitor(this, useStar, includeAllFields, visitSubqueryModel).Visit(expression);
         }
     }
 }

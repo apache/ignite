@@ -54,6 +54,9 @@ namespace Apache.Ignite.Linq.Impl
         /** */
         private readonly bool _includeAllFields;
 
+        /** */
+        private readonly bool _visitSubqueryModel;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor" /> class.
         /// </summary>
@@ -62,13 +65,15 @@ namespace Apache.Ignite.Linq.Impl
         /// for the whole-table select instead of _key, _val.</param>
         /// <param name="includeAllFields">Flag indicating that star '*' qualifier should be used
         /// for the whole-table select as well as _key, _val.</param>
-        public CacheQueryExpressionVisitor(CacheQueryModelVisitor modelVisitor, bool useStar, bool includeAllFields)
+        /// <param name="visitSubqueryModel">Flag, indicating that subquery should be visited as full query</param>
+        public CacheQueryExpressionVisitor(CacheQueryModelVisitor modelVisitor, bool useStar, bool includeAllFields, bool visitSubqueryModel)
         {
             Debug.Assert(modelVisitor != null);
 
             _modelVisitor = modelVisitor;
             _useStar = useStar;
             _includeAllFields = includeAllFields;
+            _visitSubqueryModel = visitSubqueryModel;
         }
 
         /// <summary>
@@ -548,9 +553,15 @@ namespace Apache.Ignite.Linq.Impl
             var subQueryModel = expression.QueryModel;
 
             var contains = subQueryModel.ResultOperators.FirstOrDefault() as ContainsResultOperator;
-            
+
+            if (_visitSubqueryModel)
+            {
+                ResultBuilder.Append("(");
+                _modelVisitor.VisitQueryModel(subQueryModel, false, true);
+                ResultBuilder.Append(")");
+            }
             // Check if IEnumerable.Contains is used.
-            if (subQueryModel.ResultOperators.Count == 1 && contains != null)
+            else if (subQueryModel.ResultOperators.Count == 1 && contains != null) 
             {
                 VisitContains(subQueryModel, contains);
             }

@@ -28,6 +28,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 {
     using System;
     using System.Linq;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Linq;
@@ -110,18 +111,73 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         [Test]
         public void TestUpdateAll()
         {
+            var orgQueryable = GetOrgCache().AsCacheQueryable();
+            var allOrgs = orgQueryable.ToArray();
+
             // Use new cache to avoid touching static data.
-            var cache = Ignition.GetIgnite().CreateCache<int, Person>(new CacheConfiguration("updateAllTest",
-                new QueryEntity(typeof(int), typeof(Person)))
+            var personCount = 10;
+
+            var cache = Ignition.GetIgnite().GetOrCreateCache<int, Person>(new CacheConfiguration("updateAllTest",
+                new QueryEntity(typeof(int), typeof(Person)), new QueryEntity(typeof(int), typeof(Organization)))
             {
-                SqlEscapeAll = GetSqlEscapeAll()
+                SqlEscapeAll = GetSqlEscapeAll(),
+                CacheMode = CacheMode.Replicated
             });
 
-            Enumerable.Range(1, 10).ToList().ForEach(x => cache.Put(x, new Person(x, x.ToString())));
+            Enumerable.Range(1, personCount).ToList().ForEach(x =>
+                cache.Put(x, new Person(x, x.ToString()) {OrganizationId = 1000 + x % allOrgs.Length}));
 
-            var queryable = cache.AsCacheQueryable();
+            var personQueryable = cache.AsCacheQueryable();
 
-            var updated = queryable
+            // ***
+            // Unconditional
+            // ***
+
+            Action<int, Func<ICacheEntry<int, Person>, bool>> assertAll = (i, func) =>
+            {
+                Assert.AreEqual(personCount, i);
+                Assert.IsTrue(personQueryable.ToArray().All(func));
+            };
+
+            // Constant value
+            var updated = personQueryable
+                .UpdateAll(d => d.Set(p => p.AliasTest, 7));
+            assertAll(updated, e => e.Value.AliasTest == 7);
+
+            // Expression value - from self
+            updated = personQueryable
+                .UpdateAll(d => d.Set(p => p.AliasTest, e => e.Key));
+            assertAll(updated, e => e.Value.AliasTest == e.Key);
+
+            // Expression value - subquery with same cache
+            updated = personQueryable
+                .UpdateAll(d => d.Set(p => p.AliasTest, e => personQueryable.Where(ie => ie.Key == e.Key).Select(ie => ie.Key).First()));
+            assertAll(updated, e => e.Value.AliasTest == e.Key);
+
+            // Expression value - subquery with other cache
+            updated = personQueryable
+                .UpdateAll(d => d.Set(p => p.AliasTest, e => orgQueryable.Count(o => o.Key > e.Key)));
+            
+            assertAll(updated, e => e.Value.AliasTest == allOrgs.Count(o => o.Key > e.Key));
+
+            updated = personQueryable
+                .UpdateAll(d => d.Set(p => p.Name, e => orgQueryable.Where(o => o.Key == e.Value.OrganizationId).Select(o => o.Value.Name).First()));
+            assertAll(updated, e => e.Value.Name == allOrgs.Where(o => o.Key == e.Value.OrganizationId).Select(o => o.Value.Name).First());
+
+            // Row number limit.
+            var count = 2;
+            var name = "rowLimit" + count;
+            updated = personQueryable
+                .Take(count)
+                .UpdateAll(d => d.Set(p => p.Name, name));
+            Assert.AreEqual(count, updated);
+            Assert.AreEqual(count, personQueryable.Count(e => e.Value.Name == name));
+
+            // ***
+            // Conditional
+            // ***
+
+            updated = personQueryable
                 .Where(p => p.Value.Age > 0)
                 .Take(2)
                 .UpdateAll(d => d.Set(p => p.AliasTest, 1)
@@ -131,19 +187,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             // Skip is not supported with DELETE.
             var nex = Assert.Throws<NotSupportedException>(
-                () => queryable.Skip(1).UpdateAll(d => d.Set(p => p.Age, 15)));
+                () => personQueryable.Skip(1).UpdateAll(d => d.Set(p => p.Age, 15)));
             Assert.AreEqual(
                 "UpdateAll can not be combined with result operators (other than Take): SkipResultOperator",
                 nex.Message);
 
             // Multiple result operators are not supported with DELETE.
-            nex = Assert.Throws<NotSupportedException>(() => queryable.Skip(1).Take(1).UpdateAll(d => d.Set(p => p.Age, 15)));
+            nex = Assert.Throws<NotSupportedException>(() => personQueryable.Skip(1).Take(1).UpdateAll(d => d.Set(p => p.Age, 15)));
             Assert.AreEqual(
                 "UpdateAll can not be combined with result operators (other than Take): SkipResultOperator, " +
                 "TakeResultOperator, UpdateAllResultOperator", nex.Message);
 
             // Joins are not supported in H2.
-            var qry = queryable
+            var qry = personQueryable
                 .Where(x => x.Key == 7)
                 .Join(GetPersonCache().AsCacheQueryable(), p => p.Key, p => p.Key, (p1, p2) => p1);
 
