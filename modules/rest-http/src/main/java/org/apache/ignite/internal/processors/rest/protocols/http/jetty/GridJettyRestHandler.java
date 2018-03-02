@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
@@ -99,6 +100,9 @@ public class GridJettyRestHandler extends AbstractHandler {
 
     /** */
     private static final String  TEMPLATE_NAME_PARAM = "templateName";
+
+    /** */
+    private static final NullOutputStream NULL_OUTPUT_STREAM = new NullOutputStream();
 
     /** Logger. */
     private final IgniteLogger log;
@@ -391,16 +395,17 @@ public class GridJettyRestHandler extends AbstractHandler {
             cmdRes = new GridRestResponse(STATUS_FAILED, e.getMessage());
         }
 
-        try {
-            ServletOutputStream os = res.getOutputStream();
-
+        try(ServletOutputStream os = res.getOutputStream()) {
             try {
+                // Try serialize.
+                jsonMapper.writeValue(NULL_OUTPUT_STREAM, cmdRes);
+
                 jsonMapper.writeValue(os, cmdRes);
             }
             catch (JsonProcessingException e) {
                 U.error(log, "Failed to convert response to JSON: " + cmdRes, e);
 
-                jsonMapper.writeValue(os, F.asMap("successStatus", STATUS_FAILED, "error", e.getMessage()));
+                jsonMapper.writeValue(os, new GridRestResponse(STATUS_FAILED, e.getMessage()));
             }
 
             if (log.isDebugEnabled())
@@ -525,10 +530,10 @@ public class GridJettyRestHandler extends AbstractHandler {
                 }
 
                 // Set cache group name.
-                String cacheGroup = (String)params.get(CACHE_GROUP_PARAM);
+                String cacheGrp = (String)params.get(CACHE_GROUP_PARAM);
 
-                if (!F.isEmpty(cacheGroup))
-                    cfg.cacheGroup(cacheGroup);
+                if (!F.isEmpty(cacheGrp))
+                    cfg.cacheGroup(cacheGrp);
 
                 // Set cache data region name.
                 String dataRegion = (String)params.get(DATA_REGION_PARAM);
@@ -921,5 +926,25 @@ public class GridJettyRestHandler extends AbstractHandler {
             return ((String[])obj)[0];
 
         return null;
+    }
+
+    /**
+     * Special stream to check JSON serialization.
+     */
+    private static class NullOutputStream extends OutputStream {
+        /** {@inheritDoc} */
+        @Override public void write(byte[] b, int off, int len) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(int b) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(byte[] b) {
+            // No-op.
+        }
     }
 }
