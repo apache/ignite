@@ -988,6 +988,11 @@ public class GridH2Table extends TableBase {
 
             desc.refreshMetadataFromTypeDescriptor();
 
+            for (Index idx : getIndexes()) {
+                if (idx instanceof GridH2IndexBase)
+                    ((GridH2IndexBase)idx).refreshColumnIds();
+            }
+
             setModified();
         }
         finally {
