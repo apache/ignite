@@ -260,6 +260,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         if (cacheMode() == PARTITIONED)
             cfg.setBackups(1);
 
+        cfg.setReadFromBackup(true);
+
         return cfg;
     }
 

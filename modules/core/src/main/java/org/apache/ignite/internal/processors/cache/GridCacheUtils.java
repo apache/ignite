@@ -31,6 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -91,6 +92,7 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -379,6 +381,9 @@ public class GridCacheUtils {
         }
     };
 
+    /** Cluster nodes' MAC addresses equality filter. */
+    private static IgniteBiPredicate<ClusterNode, ClusterNode> macsFilter = U::sameMacs;
+
     /**
      * Ensure singleton.
      */
@@ -457,6 +462,40 @@ public class GridCacheUtils {
      */
     public static Collection<ClusterNode> affinityNodes(GridCacheContext ctx, AffinityTopologyVersion topVer) {
         return ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), topVer);
+    }
+
+    /**
+     * Determines an affinity node to send get request to.
+     *
+     * @param ctx Context.
+     * @param affNodes All affinity nodes.
+     * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
+     * @return Affinity node to get key from or {@code null} or {@code null} if there is no suitable alive node.
+     */
+    @Nullable public static ClusterNode affinityNode(GridCacheContext ctx, List<ClusterNode> affNodes,
+        boolean canRemap) {
+        if (!ctx.config().isReadFromBackup())
+            return affNodes.get(0);
+
+        ClusterNode locNode = ctx.localNode();
+
+        int r = ThreadLocalRandom.current().nextInt(affNodes.size());
+
+        ClusterNode n0 = null;
+
+        for (ClusterNode node : affNodes) {
+            r--;
+
+            if (canRemap || ctx.discovery().alive(node)) {
+                if (macsFilter.apply(locNode, node))
+                    return node;
+
+                if (r >= 0 || n0 == null)
+                    n0 = node;
+            }
+        }
+
+        return n0;
     }
 
     /**
