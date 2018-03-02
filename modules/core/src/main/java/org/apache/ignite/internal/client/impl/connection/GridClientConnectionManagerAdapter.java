@@ -624,6 +624,11 @@ public abstract class GridClientConnectionManagerAdapter implements GridClientCo
         }
 
         /** {@inheritDoc} */
+        @Override public void onMessageSent(GridNioSession ses, Object msg) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public void onMessage(GridNioSession ses, Object msg) {
             GridClientFutureAdapter<Boolean> handshakeFut =
                 ses.removeMeta(GridClientNioTcpConnection.SES_META_HANDSHAKE);
