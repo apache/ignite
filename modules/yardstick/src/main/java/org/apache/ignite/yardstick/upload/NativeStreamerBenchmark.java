@@ -17,6 +17,7 @@
 
 package org.apache.ignite.yardstick.upload;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
@@ -107,9 +108,27 @@ public class NativeStreamerBenchmark extends IgniteAbstractBenchmark {
             if (args.upload.streamerNodeParOps() != null)
                 streamer.perNodeParallelOperations(args.upload.streamerNodeParOps());
 
-            for (long i = 1; i <= insertsCnt; i++)
-                //TODO: add batching support
-                streamer.addData(i, new Values10());
+            int batchSize = args.upload.streamerLocBatchSize();
+
+            // IgniteDataStreamer.addData(Object, Object) has known performance issue,
+            // so we have an option to work it around.
+            if (batchSize == 1) {
+                for (long i = 1; i <= insertsCnt; i++)
+                    streamer.addData(i, new Values10());
+            }
+            else {
+                Map<Long, Values10> buf = new HashMap<>(batchSize);
+
+                for (long i = 1; i <= insertsCnt; i++) {
+                    buf.put(i, new Values10());
+
+                    if (i % batchSize == 0 || i == insertsCnt) {
+                        streamer.addData(buf);
+
+                        buf.clear();
+                    }
+                }
+            }
         }
     }
 

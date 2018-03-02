@@ -20,6 +20,7 @@ package org.apache.ignite.yardstick.upload;
 import com.beust.jcommander.Parameter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Nullable;
 import org.apache.ignite.IgniteDataStreamer;
 
@@ -56,6 +57,11 @@ public class UploadBenchmarkArguments {
         description = "Native Streamer benchmark only: Set streamer's perNodeParallelOperations property")
     private Integer streamerNodeParOps = null;
 
+    @Parameter(names = {"--streamer-local-batch-size"},
+        description = "Native Streamer benchmark only: collect entries to local map before passing to streamer." +
+            "If set to 1, than entries will be passed directly.")
+    private int streamerLocBatchSize = 1;
+
     /**
      * @return Switch wal.
      */
@@ -88,5 +94,13 @@ public class UploadBenchmarkArguments {
     @Nullable
     public Integer streamerNodeParOps() {
         return streamerNodeParOps;
+    }
+
+    /**
+     * How many entries to collect before passing map to {@link IgniteDataStreamer#addData(Map)}.
+     * If set to 1, {@link IgniteDataStreamer#addData(Object, Object)} method will be used.
+     */
+    public int streamerLocBatchSize(){
+        return streamerLocBatchSize;
     }
 }
