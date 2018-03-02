@@ -382,10 +382,18 @@ public class GridCacheUtils {
     };
 
     /** Cluster nodes' MAC addresses equality filter. */
-    private static IgniteBiPredicate<ClusterNode, ClusterNode> macsFilter = U::sameMacs;
+    private static IgniteBiPredicate<ClusterNode, ClusterNode> macsFilter = new IgniteBiPredicate<ClusterNode, ClusterNode>() {
+        @Override public boolean apply(ClusterNode n1, ClusterNode n2) {
+            return U.sameMacs(n1, n2);
+        }
+    };
 
     /** ThreadLocalRandom generator closure. */
-    private static IgniteClosure<Integer, Integer> rndClo = bound -> ThreadLocalRandom.current().nextInt(bound);
+    private static IgniteClosure<Integer, Integer> rndClo = new IgniteClosure<Integer, Integer>() {
+        @Override public Integer apply(Integer bound) {
+            return ThreadLocalRandom.current().nextInt(bound);
+        }
+    };
 
     /**
      * Ensure singleton.
