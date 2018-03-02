@@ -185,13 +185,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             // Conditional
             // ***
 
-            // Simple conditiona
+            // Simple conditional
             aliasValue = 777;
             updated = personQueryable
                 .Where(p => p.Key > 8)
                 .UpdateAll(d => d.Set(p => p.AliasTest, aliasValue));
             Assert.AreEqual(2, updated);
             assertAll(e => (e.Key <=8 && e.Value.AliasTest != aliasValue) || e.Value.AliasTest == aliasValue);
+
+            // Conditional with limit
+            aliasValue = 8888;
+            updated = personQueryable
+                .Where(p => p.Key > 1)
+                .Take(1)
+                .UpdateAll(d => d.Set(p => p.AliasTest, aliasValue));
+            Assert.AreEqual(1, updated);
+            assertAll(e => (e.Key != 2  && e.Value.AliasTest != aliasValue) || e.Value.AliasTest == aliasValue);
+
 
             // Skip is not supported with DELETE.
             var nex = Assert.Throws<NotSupportedException>(
