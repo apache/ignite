@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import java.util.UUID;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -27,6 +30,7 @@ import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProces
 import org.apache.ignite.internal.processors.query.QuerySchema;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -284,7 +288,6 @@ public class DynamicCacheDescriptor {
         this.rcvdFromVer = rcvdFromVer;
     }
 
-
     /**
      * @return Start topology version or {@code null} if cache configured statically.
      */
@@ -344,6 +347,16 @@ public class DynamicCacheDescriptor {
         synchronized (schemaMux) {
             schema.finish(msg);
         }
+    }
+
+    /** Convert DynamicCacheDescriptor to StoredCacheData for persisting */
+    public StoredCacheData toStoredData() {
+        StoredCacheData res = new StoredCacheData(cacheConfiguration());
+
+        res.queryEntities(schema() == null ? Collections.<QueryEntity>emptyList() : schema().entities());
+        res.sql(sql());
+
+        return res;
     }
 
     /** {@inheritDoc} */
