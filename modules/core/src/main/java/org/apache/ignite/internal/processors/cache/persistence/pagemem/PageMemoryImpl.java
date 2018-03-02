@@ -651,6 +651,9 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         seg.writeLock().lock();
 
+        long lockedPageAbsPtr = -1;
+        boolean readPageFromStore = false;
+
         try {
             // Double-check.
             long relPtr = seg.loadedPages.get(
@@ -691,24 +694,10 @@ public class PageMemoryImpl implements PageMemoryEx {
                 long pageAddr = absPtr + PAGE_OVERHEAD;
 
                 if (!restore) {
-                    try {
-                        ByteBuffer buf = wrapPointer(pageAddr, pageSize());
+                    if (delayedPageReplacementTracker != null)
+                        delayedPageReplacementTracker.waitUnlock(fullId);
 
-                        if (delayedPageReplacementTracker != null)
-                            delayedPageReplacementTracker.waitUnlock(fullId);
-
-                        storeMgr.read(cacheId, pageId, buf);
-                    }
-                    catch (IgniteDataIntegrityViolationException ignore) {
-                        U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
-                            "restore using existing WAL) [fullPageId=" + fullId + ']');
-
-                        tryToRestorePage(fullId, absPtr);
-
-                        seg.acquirePage(absPtr);
-
-                        return absPtr;
-                    }
+                    readPageFromStore = true;
                 }
                 else {
                     GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
@@ -718,6 +707,14 @@ public class PageMemoryImpl implements PageMemoryEx {
                 }
 
                 rwLock.init(absPtr + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
+
+                if (readPageFromStore) {
+                    boolean locked = rwLock.writeLock(absPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+
+                    assert locked: "Page ID " + fullId + " expected to be locked";
+
+                    lockedPageAbsPtr = absPtr;
+                }
             }
             else if (relPtr == OUTDATED_REL_PTR) {
                 assert PageIdUtils.pageIndex(pageId) == 0 : fullId;
@@ -752,6 +749,28 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             if (delayedWriter != null)
                 delayedWriter.finishReplacement();
+
+            if (readPageFromStore) {
+                assert lockedPageAbsPtr != -1 : "Page is expected to have a valid address [pageId=" + fullId +
+                    ", lockedPageAbsPtr=" + U.hexLong(lockedPageAbsPtr) + ']';
+
+                try {
+                    long pageAddr = lockedPageAbsPtr + PAGE_OVERHEAD;
+
+                    ByteBuffer buf = wrapPointer(pageAddr, pageSize());
+
+                    storeMgr.read(cacheId, pageId, buf);
+                }
+                catch (IgniteDataIntegrityViolationException ignore) {
+                    U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
+                        "restore using existing WAL) [fullPageId=" + fullId + ']');
+
+                    tryToRestorePage(fullId, lockedPageAbsPtr);
+                }
+                finally {
+                    rwLock.writeUnlock(lockedPageAbsPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
+                }
+            }
         }
     }
 
@@ -2033,8 +2052,8 @@ public class PageMemoryImpl implements PageMemoryEx {
             if (!pageReplacementWarned) {
                 pageReplacementWarned = true;
 
-                U.warn(log, "Page evictions started, this will affect storage performance (consider increasing " +
-                    "DataRegionConfiguration#setMaxSize).");
+                U.warn(log, "Page replacements started, pages will be rotated with disk, " +
+                    "this will affect storage performance (consider increasing DataRegionConfiguration#setMaxSize).");
             }
 
             final ThreadLocalRandom rnd = ThreadLocalRandom.current();

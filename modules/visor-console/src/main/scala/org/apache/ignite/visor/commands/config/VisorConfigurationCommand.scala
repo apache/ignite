@@ -245,7 +245,15 @@ class VisorConfigurationCommand extends VisorConsoleCommand {
             cliConnTbl += ("Socket receive buffer size", formatMemory(cliConnCfg.getSocketReceiveBufferSize))
             cliConnTbl += ("Max connection cursors", cliConnCfg.getMaxOpenCursorsPerConnection)
             cliConnTbl += ("Pool size", cliConnCfg.getThreadPoolSize)
+            cliConnTbl += ("Idle Timeout", cliConnCfg.getIdleTimeout + "ms")
             cliConnTbl += ("TCP_NODELAY", bool2Str(cliConnCfg.isTcpNoDelay))
+            cliConnTbl += ("JDBC Enabled", bool2Str(cliConnCfg.isJdbcEnabled))
+            cliConnTbl += ("ODBC Enabled", bool2Str(cliConnCfg.isOdbcEnabled))
+            cliConnTbl += ("Thin Client Enabled", bool2Str(cliConnCfg.isThinClientEnabled))
+            cliConnTbl += ("SSL Enabled", bool2Str(cliConnCfg.isSslEnabled))
+            cliConnTbl += ("Ssl Client Auth", bool2Str(cliConnCfg.isSslClientAuth))
+            cliConnTbl += ("Use Ignite SSL Context Factory", bool2Str(cliConnCfg.isUseIgniteSslContextFactory))
+            cliConnTbl += ("SSL Context Factory", safe(cliConnCfg.getSslContextFactory))
 
             cliConnTbl.render()
         }

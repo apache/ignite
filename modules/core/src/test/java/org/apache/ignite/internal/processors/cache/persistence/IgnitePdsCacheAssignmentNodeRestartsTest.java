@@ -80,14 +80,14 @@ public class IgnitePdsCacheAssignmentNodeRestartsTest extends GridCommonAbstract
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
+        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", false));
 
         super.afterTest();
     }
