@@ -202,6 +202,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             Assert.AreEqual(1, updated);
             assertAll(e => (e.Key != 2  && e.Value.AliasTest != aliasValue) || e.Value.AliasTest == aliasValue);
 
+            // ***
+            // Not supported
+            // ***
 
             // Skip is not supported with DELETE.
             var nex = Assert.Throws<NotSupportedException>(
