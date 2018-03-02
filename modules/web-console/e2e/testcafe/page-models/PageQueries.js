@@ -18,6 +18,7 @@
 
 import { Selector, t } from 'testcafe';
 import { ModalInput } from '../components/modalInput';
+import { confirmation } from '../components/confirmation';
 import { mouseenterTrigger } from '../helpers';
 import _ from 'lodash';
 
@@ -46,15 +47,16 @@ export class PageQueriesNotebooksList {
     }
 
     selectAllNotebooks() {
-        return t.click(Selector('.ui-grid-selection-row-header-buttons').nth(0));
+        return t.click(Selector('.ui-grid-selection-row-header-buttons').nth(0).parent());
     }
 
-    deleteNotebook() {
+    async deleteAllNotebooks() {
+        await this.selectAllNotebooks();
 
-    }
+        await mouseenterTrigger('.btn-ignite:contains(Actions)');
+        await t.click(Selector('a').withText('Delete'));
 
-    deleteAllNotebooks() {
-
+        return confirmation.confirm();
     }
 
     async cloneNotebook(notebookName) {

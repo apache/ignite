@@ -47,3 +47,13 @@ test('Testing cloning notebook', async(t) => {
 
     await t.expect(Selector('.notebook-name a').withText(`${notebookName}_1`).exists).ok();
 });
+
+test.skip('Testing forbidding of creating notebook with existing name', async(t) => {
+    // Todo: Implement this test after investigation on reason of testcafe blocking notebooks API query.
+});
+
+test('Testing deleting notebooks', async(t) => {
+    await notebooksListPage.deleteAllNotebooks();
+
+    await t.expect(Selector('.notebook-name a').withText(`${notebookName}_1`).exists).notOk();
+});
