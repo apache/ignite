@@ -630,10 +630,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         cctx.time().addTimeoutObject(nextAutoArchiveTimeoutObj);
     }
 
-    /**
-     * @return Latest serializer version.
-     */
-    public int serializerVersion() {
+    /** {@inheritDoc} */
+    @Override public int serializerVersion() {
         return serializerVer;
     }
 
