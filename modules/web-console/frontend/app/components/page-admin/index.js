@@ -15,31 +15,25 @@
  * limitations under the License.
  */
 
-import angular from 'angular';
+import './style.scss';
 
-import template from 'views/base2.pug';
+import templateUrl from './template.tpl.pug';
 
-angular
-.module('ignite-console.states.admin', [
-    'ui.router'
-])
-.config(['$stateProvider', function($stateProvider) {
-    // set up the states
-    $stateProvider
-    .state('base.settings.admin', {
-        url: '/admin',
-        views: {
-            '@': {
-                template
-            },
-            '@base.settings.admin': {
-                template: '<page-admin></page-admin>'
-            }
-        },
-        // templateUrl,
-        permission: 'admin_page',
-        tfMetaTags: {
-            title: 'Admin panel'
-        }
+class PageAdminCtrl {
+    static $inject = ['UserNotifications'];
+
+    constructor(UserNotifications) {
+        this.UserNotifications = UserNotifications;
+    }
+
+    changeUserNotifications() {
+        this.UserNotifications.editor();
+    }
+}
+
+export default angular
+    .module('ignite-console.page-admin', [])
+    .component('pageAdmin', {
+        templateUrl,
+        controller: PageAdminCtrl
     });
-}]);
