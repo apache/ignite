@@ -24,7 +24,8 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 /**
  * Tests of pessimistic transactional replicated cache's 'get' requests distribution.
  */
-public class ReplicatedTransactionalPessimisticCacheGetsDistributionTest extends ReplicatedTransactionalOptimisticCacheGetsDistributionTest {
+public class ReplicatedTransactionalPessimisticCacheGetsDistributionTest
+    extends ReplicatedTransactionalOptimisticCacheGetsDistributionTest {
     /** {@inheritDoc} */
     @Override protected TransactionConcurrency transactionConcurrency() {
         return PESSIMISTIC;
