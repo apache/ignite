@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.authentication;
 
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -304,6 +305,59 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
                 catch (Exception e) {
                     e.printStackTrace();
                     fail("Unexpected exception on add / remove");
+                }
+            }
+        }, 10, "user-op");
+
+        restartFut.get();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testConcurrentFailedOperationNodeRestartServer() throws Exception {
+        final IgniteInternalFuture restartFut = GridTestUtils.runAsync(new Runnable() {
+            @Override public void run() {
+                try {
+                    for (int i = 0; i < RESTARTS; ++i) {
+                        stopGrid(1);
+
+                        U.sleep(500);
+
+                        startGrid(1);
+
+                        U.sleep(500);
+                    }
+                }
+                catch (Exception e) {
+                    e.printStackTrace(System.err);
+                    fail("Unexpected exception on server restart: " + e.getMessage());
+                }
+            }
+        });
+
+        AuthorizationContext.context(actxDflt);
+
+        grid(CLI_NODE).context().authentication().addUser("test", "test");
+
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                AuthorizationContext.context(actxDflt);
+
+                try {
+                    while (!restartFut.isDone()) {
+                        GridTestUtils.assertThrows(log, new Callable<Object>() {
+                            @Override public Object call() throws Exception {
+                                grid(CLI_NODE).context().authentication().addUser("test", "test");
+
+                                return null;
+                            }
+                        }, UserManagementException.class, "User already exists");
+                    }
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                    fail("Unexpected error on failed operation");
                 }
             }
         }, 10, "user-op");

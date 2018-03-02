@@ -1233,6 +1233,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             }
             catch (Throwable e) {
                 msg0 = new UserManagementOperationFinishedMessage(op.id(), e.toString());
+
+                // Remove failed operation from active operations.
+                activeOps.remove(op.id());
             }
 
             if (sharedCtx != null)
