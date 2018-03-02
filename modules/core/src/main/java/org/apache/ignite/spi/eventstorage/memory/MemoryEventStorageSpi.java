@@ -18,8 +18,6 @@
 package org.apache.ignite.spi.eventstorage.memory;
 
 import java.util.Collection;
-import java.util.Deque;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.util.typedef.F;
@@ -34,7 +32,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiMBeanAdapter;
 import org.apache.ignite.spi.IgniteSpiMultipleInstancesSupport;
 import org.apache.ignite.spi.eventstorage.EventStorageSpi;
-import org.apache.ignite.util.deque.LongSizeCountingDeque;
+import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 
@@ -115,7 +113,7 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
     private long expireCnt = DFLT_EXPIRE_COUNT;
 
     /** Events queue. */
-    private Deque<Event> evts = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
+    private ConcurrentLinkedDeque8<Event> evts = new ConcurrentLinkedDeque8<>();
 
     /** Configured event predicate filter. */
     private IgnitePredicate<Event> filter;
@@ -230,7 +228,7 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
      * @return Current queue size of the event queue.
      */
     public long getQueueSize() {
-        return evts.size();
+        return evts.sizex();
     }
 
     /**
@@ -274,9 +272,9 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
     private void cleanupQueue() {
         long now = U.currentTimeMillis();
 
-        long queueOversize = evts.size() - expireCnt;
+        long queueOversize = evts.sizex() - expireCnt;
 
-        for (int i = 0; i < queueOversize && evts.size() > expireCnt; i++) {
+        for (int i = 0; i < queueOversize && evts.sizex() > expireCnt; i++) {
             Event expired = evts.poll();
 
             if (log.isDebugEnabled())
@@ -284,17 +282,21 @@ public class MemoryEventStorageSpi extends IgniteSpiAdapter implements EventStor
         }
 
         while (true) {
-            Event evt = evts.peek();
+            ConcurrentLinkedDeque8.Node<Event> node = evts.peekx();
 
-            if (evt == null) // Queue is empty.
+            if (node == null) // Queue is empty.
                 break;
+
+            Event evt = node.item();
+
+            if (evt == null) // Competing with another thread.
+                continue;
 
             if (now - evt.timestamp() < expireAgeMs)
                 break;
 
-            if (evts.remove(evt) && log.isDebugEnabled())
-                // No need for unlinkx. Just remove(Object)
-                log.debug("Event expired by age: " + evt);
+            if (evts.unlinkx(node) && log.isDebugEnabled())
+                log.debug("Event expired by age: " + node.item());
         }
     }
 

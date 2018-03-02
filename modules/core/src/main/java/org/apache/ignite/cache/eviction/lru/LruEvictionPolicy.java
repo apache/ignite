@@ -19,13 +19,12 @@ package org.apache.ignite.cache.eviction.lru;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Deque;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.cache.eviction.AbstractEvictionPolicy;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
-import org.apache.ignite.util.deque.LongSizeCountingDeque;
+import org.jsr166.ConcurrentLinkedDeque8;
+import org.jsr166.ConcurrentLinkedDeque8.Node;
 
 /**
  * Eviction policy based on {@code Least Recently Used (LRU)} algorithm and supports batch eviction.
@@ -49,7 +48,8 @@ public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implem
     private static final long serialVersionUID = 0L;
 
     /** Queue. */
-    private final Deque<EvictableEntry<K, V>> queue = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
+    private final ConcurrentLinkedDeque8<EvictableEntry<K, V>> queue =
+        new ConcurrentLinkedDeque8<>();
 
     /**
      * Constructs LRU eviction policy with all defaults.
@@ -69,7 +69,7 @@ public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implem
 
     /** {@inheritDoc} */
     @Override public int getCurrentSize() {
-        return queue.size();
+        return queue.sizex();
     }
 
     /** {@inheritDoc} */
@@ -105,7 +105,7 @@ public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implem
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected boolean removeMeta(Object meta) {
-        return queue.remove(meta);
+        return queue.unlinkx((Node<EvictableEntry<K, V>>)meta);
     }
 
     /**
@@ -113,32 +113,47 @@ public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implem
      * @return {@code True} if new node has been added to queue by this call.
      */
     @Override protected boolean touch(EvictableEntry<K, V> entry) {
-        EvictableEntry<K, V> meta = entry.meta();
+        Node<EvictableEntry<K, V>> node = entry.meta();
 
         // Entry has not been enqueued yet.
-        if (meta == null) {
-            // 1 - put entry to the queue, 2 - mark entry as queued through CAS on entry meta.
-            // Strictly speaking, this order does not provides correct concurrency,
-            // but inconsistency effect is negligible, unlike the opposite order.
-            // See shrink0 and super.onEntryAccessed().
-            queue.offerLast(entry);
+        if (node == null) {
+            while (true) {
+                node = queue.offerLastx(entry);
 
-            if (!entry.isCached() || entry.putMetaIfAbsent(entry) != null) {
-                queue.remove(entry);
+                if (entry.putMetaIfAbsent(node) != null) {
+                    // Was concurrently added, need to clear it from queue.
+                    removeMeta(node);
 
-                return false;
+                    // Queue has not been changed.
+                    return false;
+                }
+                else if (node.item() != null) {
+                    if (!entry.isCached()) {
+                        // Was concurrently evicted, need to clear it from queue.
+                        removeMeta(node);
+
+                        return false;
+                    }
+
+                    memSize.add(entry.size());
+
+                    return true;
+                }
+                // If node was unlinked by concurrent shrink() call, we must repeat the whole cycle.
+                else if (!entry.removeMeta(node))
+                    return false;
             }
+        }
+        else if (removeMeta(node)) {
+            // Move node to tail.
+            Node<EvictableEntry<K, V>> newNode = queue.offerLastx(entry);
 
-            memSize.add(entry.size());
-
-            return true;
+            if (!entry.replaceMeta(node, newNode))
+                // Was concurrently added, need to clear it from queue.
+                removeMeta(newNode);
         }
 
-        if (removeMeta(meta)) {
-            // Move entry to tail.
-            queue.offerLast(entry);
-        }
-
+        // Entry is already in queue.
         return false;
     }
 
@@ -155,9 +170,9 @@ public class LruEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> implem
 
         int size = 0;
 
-        EvictableEntry<K, V> self = entry.removeMeta();
+        Node<EvictableEntry<K, V>> meta = entry.removeMeta();
 
-        if (self != null) {
+        if (meta != null) {
             size = entry.size();
 
             memSize.add(-size);

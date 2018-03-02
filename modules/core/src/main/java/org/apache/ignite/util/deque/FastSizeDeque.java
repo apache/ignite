@@ -21,34 +21,19 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * {@link java.util.Deque} decorator maintaining element counter on mutative operations.
+ * {@link java.util.Deque} decorator that uses {@link LongAdder} for fast element counting.
  * <p />
- * Implementation is thread-safe if both {@link Counter} and underlying {@link Deque} are thread-safe.
+ * Implementation is thread-safe if underlying {@link Deque} is thread-safe.
  *
  * @param <E> Deque element type
- * @param <N> Number type that is used to count.
  */
-public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
-
-    /** */
-    public interface Counter<N> {
-        /** */
-        void inc();
-
-        /** */
-        void dec();
-
-        /** */
-        void add(int n);
-
-        /** */
-        N get();
-    }
+public class FastSizeDeque<E> implements Deque<E> {
 
     /** */
     private class Iter implements Iterator<E> {
@@ -74,7 +59,7 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
         @Override public void remove() {
             iter.remove();
 
-            cntr.dec();
+            adder.decrement();
         }
 
         /** */
@@ -87,29 +72,46 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
     private final Deque<E> deque;
 
     /** */
-    private final Counter<N> cntr;
+    private final LongAdder adder = new LongAdder();
 
     /** Creates a decorator.
      *
      * @param deque Deque being decorated.
      */
-    public SizeCountingDeque(Deque<E> deque, Counter<N> cntr) {
+    public FastSizeDeque(Deque<E> deque) {
         this.deque = Objects.requireNonNull(deque);
-        this.cntr = Objects.requireNonNull(cntr);
+    }
+
+    /**
+     * Fast size getter.
+     *
+     * @return Deque size.
+     */
+    public int sizex() {
+        return adder.intValue();
+    }
+
+    /**
+     * Tests this deque for emptiness; equivalent to {@code sizex() == 0}.
+     *
+     * @return {@code true} if this deque is empty.
+     */
+    public boolean isEmptyx() {
+        return adder.intValue() == 0;
     }
 
     /** {@inheritDoc} */
     @Override public void addFirst(E e) {
         deque.addFirst(e);
 
-        cntr.inc();
+        adder.increment();
     }
 
     /** {@inheritDoc} */
     @Override public void addLast(E e) {
         deque.addLast(e);
 
-        cntr.inc();
+        adder.increment();
     }
 
     /** {@inheritDoc} */
@@ -117,7 +119,7 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
         boolean res = deque.offerFirst(e);
 
         if (res)
-            cntr.inc();
+            adder.increment();
 
         return res;
     }
@@ -127,7 +129,7 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
         boolean res = deque.offerLast(e);
 
         if (res)
-            cntr.inc();
+            adder.increment();
 
         return res;
     }
@@ -136,7 +138,7 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
     @Override public E removeFirst() {
         E res = deque.removeFirst();
 
-        cntr.dec();
+        adder.decrement();
 
         return res;
     }
@@ -145,7 +147,7 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
     @Override public E removeLast() {
         E res = deque.removeLast();
 
-        cntr.dec();
+        adder.decrement();
 
         return res;
     }
@@ -155,7 +157,7 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
         E res = deque.pollFirst();
 
         if (res != null)
-            cntr.dec();
+            adder.decrement();
 
         return res;
     }
@@ -165,7 +167,7 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
         E res = deque.pollFirst();
 
         if (res != null)
-            cntr.dec();
+            adder.decrement();
 
         return res;
     }
@@ -195,7 +197,7 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
         boolean res = deque.removeFirstOccurrence(o);
 
         if (res)
-            cntr.dec();
+            adder.decrement();
 
         return res;
     }
@@ -205,7 +207,7 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
         boolean res = deque.removeLastOccurrence(o);
 
         if (res)
-            cntr.dec();
+            adder.decrement();
 
         return res;
     }
@@ -214,7 +216,7 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
     @Override public boolean add(E e) {
         boolean alwaysTrue = deque.add(e);
 
-        cntr.inc();
+        adder.increment();
 
         return alwaysTrue;
     }
@@ -224,7 +226,7 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
         boolean res = deque.offer(e);
 
         if (res)
-            cntr.inc();
+            adder.increment();
 
         return res;
     }
@@ -233,7 +235,7 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
     @Override public E remove() {
         E res = deque.remove();
 
-        cntr.dec();
+        adder.decrement();
 
         return res;
     }
@@ -243,7 +245,7 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
         E res = deque.poll();
 
         if (res != null)
-            cntr.dec();
+            adder.decrement();
 
         return res;
     }
@@ -262,14 +264,14 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
     @Override public void push(E e) {
         deque.push(e);
 
-        cntr.inc();
+        adder.increment();
     }
 
     /** {@inheritDoc} */
     @Override public E pop() {
         E res = deque.pop();
 
-        cntr.dec();
+        adder.decrement();
 
         return res;
     }
@@ -279,7 +281,7 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
         boolean res = deque.remove(o);
 
         if (res)
-            cntr.dec();
+            adder.decrement();
 
         return res;
     }
@@ -304,7 +306,7 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
         boolean res = deque.addAll(col);
 
         if (res)
-            cntr.add(colSize);
+            adder.add(colSize);
 
         return res;
     }
@@ -340,12 +342,12 @@ public class SizeCountingDeque<E, N extends Number> implements Deque<E> {
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return cntr.get().intValue();
+        return deque.size();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
-        return cntr.get().intValue() == 0;
+        return deque.isEmpty();
     }
 
     /** {@inheritDoc} */

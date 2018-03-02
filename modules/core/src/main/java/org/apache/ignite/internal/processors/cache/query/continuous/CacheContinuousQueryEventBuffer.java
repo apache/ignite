@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.jetbrains.annotations.Nullable;
-import org.apache.ignite.util.deque.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.FastSizeDeque;
 
 /**
  *
@@ -51,7 +50,7 @@ public class CacheContinuousQueryEventBuffer {
     private AtomicReference<Batch> curBatch = new AtomicReference<>();
 
     /** */
-    private Deque<CacheContinuousQueryEntry> backupQ = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
+    private FastSizeDeque<CacheContinuousQueryEntry> backupQ = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
     /** */
     private ConcurrentSkipListMap<Long, CacheContinuousQueryEntry> pending = new ConcurrentSkipListMap<>();
@@ -83,7 +82,7 @@ public class CacheContinuousQueryEventBuffer {
     @Nullable Collection<CacheContinuousQueryEntry> flushOnExchange() {
         TreeMap<Long, CacheContinuousQueryEntry> ret = null;
 
-        int size = backupQ.size();
+        int size = backupQ.sizex();
 
         if (size > 0) {
             ret = new TreeMap<>();

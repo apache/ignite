@@ -23,9 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.HashSet;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.regex.Pattern;
@@ -38,7 +36,8 @@ import org.apache.ignite.internal.processors.cache.CacheEvictableEntryImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
 import org.jetbrains.annotations.Nullable;
-import org.apache.ignite.util.deque.LongSizeCountingDeque;
+import org.jsr166.ConcurrentLinkedDeque8;
+import org.jsr166.ConcurrentLinkedDeque8.Node;
 
 /**
  * IGFS eviction policy which evicts particular blocks.
@@ -64,8 +63,8 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
     private final AtomicBoolean excludeRecompile = new AtomicBoolean(true);
 
     /** Queue. */
-    private final Deque<EvictableEntry<IgfsBlockKey, byte[]>> queue =
-        new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<EvictableEntry<IgfsBlockKey, byte[]>>());
+    private final ConcurrentLinkedDeque8<EvictableEntry<IgfsBlockKey, byte[]>> queue =
+        new ConcurrentLinkedDeque8<>();
 
     /** Current size of all enqueued blocks in bytes. */
     private final LongAdder curSize = new LongAdder();
@@ -112,7 +111,7 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
         else {
             MetaEntry meta = entry.removeMeta();
 
-            if (meta != null && queue.remove(meta.entry()))
+            if (meta != null && queue.unlinkx(meta.node()))
                 changeSize(-meta.size());
         }
     }
@@ -130,47 +129,64 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
 
         // Entry has not been enqueued yet.
         if (meta == null) {
-            queue.offerLast(entry);
+            while (true) {
+                Node<EvictableEntry<IgfsBlockKey, byte[]>> node = queue.offerLastx(entry);
 
-            // 1 - put entry to the queue, 2 - mark entry as queued through CAS on entry meta.
-            if (!entry.isCached() || entry.putMetaIfAbsent(new MetaEntry(entry, blockSize)) != null) {
-                queue.remove(entry);
+                meta = new MetaEntry(node, blockSize);
 
-                return false;
-            }
+                if (entry.putMetaIfAbsent(meta) != null) {
+                    // Was concurrently added, need to clear it from queue.
+                    queue.unlinkx(node);
 
-            // Increment current size.
-            changeSize(blockSize);
+                    // Queue has not been changed.
+                    return false;
+                }
+                else if (node.item() != null) {
+                    if (!entry.isCached()) {
+                        // Was concurrently evicted, need to clear it from queue.
+                        queue.unlinkx(node);
 
-            return true;
-        }
+                        return false;
+                    }
 
-        int oldBlockSize = meta.size();
+                    // Increment current size.
+                    changeSize(blockSize);
 
-        EvictableEntry<IgfsBlockKey, byte[]> metaEntry = meta.entry();
-
-        if (queue.remove(metaEntry)) {
-            // Move entry to tail.
-            queue.offerLast(entry);
-
-            int delta = blockSize - oldBlockSize;
-
-            if (!entry.replaceMeta(meta, new MetaEntry(entry, blockSize))) {
-                // Was concurrently added, need to clear it from queue.
-                if (queue.remove(entry))
-                    // Now old entry is removed, but new is not added, delta is -oldBlockSize
-                    delta -= blockSize;
-            }
-
-            if (delta != 0) {
-                changeSize(delta);
-
-               if (delta > 0)
-                   // Total size increased, so shrinking could be needed.
-                   return true;
+                    return true;
+                }
+                // If node was unlinked by concurrent shrink() call, we must repeat the whole cycle.
+                else if (!entry.removeMeta(node))
+                    return false;
             }
         }
+        else {
+            int oldBlockSize = meta.size();
 
+            Node<EvictableEntry<IgfsBlockKey, byte[]>> node = meta.node();
+
+            if (queue.unlinkx(node)) {
+                // Move node to tail.
+                Node<EvictableEntry<IgfsBlockKey, byte[]>> newNode = queue.offerLastx(entry);
+
+                int delta = blockSize - oldBlockSize;
+
+                if (!entry.replaceMeta(meta, new MetaEntry(newNode, blockSize))) {
+                    // Was concurrently added, need to clear it from queue.
+                    if (queue.unlinkx(newNode))
+                        delta -= blockSize;
+                }
+
+                if (delta != 0) {
+                    changeSize(delta);
+
+                   if (delta > 0)
+                       // Total size increased, so shrinking could be needed.
+                       return true;
+                }
+            }
+        }
+
+        // Entry is already in queue.
         return false;
     }
 
@@ -189,9 +205,9 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
         long maxSize = this.maxSize;
         int maxBlocks = this.maxBlocks;
 
-        int cnt = queue.size();
+        int cnt = queue.sizex();
 
-        for (int i = 0; i < cnt && (maxBlocks > 0 && queue.size() > maxBlocks ||
+        for (int i = 0; i < cnt && (maxBlocks > 0 && queue.sizex() > maxBlocks ||
             maxSize > 0 && curSize.longValue() > maxSize); i++) {
             EvictableEntry<IgfsBlockKey, byte[]> entry = queue.poll();
 
@@ -381,8 +397,8 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
      * Meta entry.
      */
     private static class MetaEntry {
-        /** Queue entry. */
-        private final EvictableEntry<IgfsBlockKey, byte[]> entry;
+        /** Queue node. */
+        private final Node<EvictableEntry<IgfsBlockKey, byte[]>> node;
 
         /** Data size. */
         private final int size;
@@ -390,22 +406,22 @@ public class IgfsPerBlockLruEvictionPolicy implements EvictionPolicy<IgfsBlockKe
         /**
          * Constructor.
          *
-         * @param entry Queue entry.
+         * @param node Queue node.
          * @param size Data size.
          */
-        private MetaEntry(EvictableEntry<IgfsBlockKey, byte[]> entry, int size) {
-            assert entry != null;
+        private MetaEntry(Node<EvictableEntry<IgfsBlockKey, byte[]>> node, int size) {
+            assert node != null;
             assert size >= 0;
 
-            this.entry = entry;
+            this.node = node;
             this.size = size;
         }
 
         /**
-         * @return Queue entry.
+         * @return Queue node.
          */
-        private EvictableEntry<IgfsBlockKey, byte[]> entry() {
-            return entry;
+        private Node<EvictableEntry<IgfsBlockKey, byte[]>> node() {
+            return node;
         }
 
         /**

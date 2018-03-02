@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,7 +57,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.apache.ignite.util.deque.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.FastSizeDeque;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
@@ -141,7 +140,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
 
     /** Remove queue. */
     @GridToStringExclude
-    private final Deque<RemovedEntryHolder> rmvQueue = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
+    private final FastSizeDeque<RemovedEntryHolder> rmvQueue = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
     /** Group reservations. */
     @GridToStringExclude
@@ -385,7 +384,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
      *
      */
     public void cleanupRemoveQueue() {
-        while (rmvQueue.size() >= rmvQueueMaxSize) {
+        while (rmvQueue.sizex() >= rmvQueueMaxSize) {
             RemovedEntryHolder item = rmvQueue.pollFirst();
 
             if (item != null)

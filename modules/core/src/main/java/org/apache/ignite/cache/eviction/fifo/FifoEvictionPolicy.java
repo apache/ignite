@@ -19,13 +19,12 @@ package org.apache.ignite.cache.eviction.fifo;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Deque;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.cache.eviction.AbstractEvictionPolicy;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
-import org.apache.ignite.util.deque.LongSizeCountingDeque;
+import org.jsr166.ConcurrentLinkedDeque8;
+import org.jsr166.ConcurrentLinkedDeque8.Node;
 
 /**
  * Eviction policy based on {@code First In First Out (FIFO)} algorithm and supports batch eviction.
@@ -50,8 +49,8 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
     private static final long serialVersionUID = 0L;
 
     /** FIFO queue. */
-    private final Deque<EvictableEntry<K, V>> queue =
-        new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<EvictableEntry<K, V>>());
+    private final ConcurrentLinkedDeque8<EvictableEntry<K, V>> queue =
+        new ConcurrentLinkedDeque8<>();
 
     /**
      * Constructs FIFO eviction policy with all defaults.
@@ -82,7 +81,7 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
 
     /** {@inheritDoc} */
     @Override public int getCurrentSize() {
-        return queue.size();
+        return queue.sizex();
     }
 
     /** {@inheritDoc} */
@@ -118,7 +117,7 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected boolean removeMeta(Object meta) {
-        return queue.remove(meta);
+        return queue.unlinkx((Node<EvictableEntry<K, V>>)meta);
     }
 
     /**
@@ -126,31 +125,46 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
      * @return {@code True} if queue has been changed by this call.
      */
     protected boolean touch(EvictableEntry<K, V> entry) {
-        // Entry is already in queue.
-        if (entry.meta() != null)
-            return false;
+        Node<EvictableEntry<K, V>> node = entry.meta();
 
-        // 1 - put entry to the queue, 2 - mark entry as queued through CAS on entry meta.
-        // Strictly speaking, this order does not provides correct concurrency,
-        // but inconsistency effect is negligible, unlike the opposite order.
-        // See shrink0 and super.onEntryAccessed().
-        queue.offerLast(entry);
+        // Entry has not been enqueued yet.
+        if (node == null) {
+            while (true) {
+                node = queue.offerLastx(entry);
 
-        if (!entry.isCached() || entry.putMetaIfAbsent(entry) != null) {
-            queue.remove(entry);
+                if (entry.putMetaIfAbsent(node) != null) {
+                    // Was concurrently added, need to clear it from queue.
+                    queue.unlinkx(node);
 
-            return false;
+                    // Queue has not been changed.
+                    return false;
+                }
+                else if (node.item() != null) {
+                    if (!entry.isCached()) {
+                        // Was concurrently evicted, need to clear it from queue.
+                        queue.unlinkx(node);
+
+                        return false;
+                    }
+
+                    memSize.add(entry.size());
+
+                    return true;
+                }
+                // If node was unlinked by concurrent shrink() call, we must repeat the whole cycle.
+                else if (!entry.removeMeta(node))
+                    return false;
+            }
         }
 
-        memSize.add(entry.size());
-
-        return true;
+        // Entry is already in queue.
+        return false;
     }
 
     /**
      * Tries to remove one item from queue.
      *
-     * @return number of bytes freed or {@code -1} if queue is empty.
+     * @return number of bytes that was free. {@code -1} if queue is empty.
      */
     @Override protected int shrink0() {
         EvictableEntry<K, V> entry = queue.poll();
@@ -160,9 +174,9 @@ public class FifoEvictionPolicy<K, V> extends AbstractEvictionPolicy<K, V> imple
 
         int size = 0;
 
-        EvictableEntry<K, V> self = entry.removeMeta();
+        Node<EvictableEntry<K, V>> meta = entry.removeMeta();
 
-        if (self != null) {
+        if (meta != null) {
             size = entry.size();
 
             memSize.add(-size);

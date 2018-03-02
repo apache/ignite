@@ -19,7 +19,6 @@ package org.apache.ignite.spi.communication.tcp;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +60,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
-import org.apache.ignite.util.deque.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.FastSizeDeque;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 
@@ -133,7 +132,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
         private final UUID locNodeId;
 
         /** Received messages by node. */
-        private Deque<GridTestMessage> rcvdMsgs = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
+        private FastSizeDeque<GridTestMessage> rcvdMsgs = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
         /** Count of messages received from remote nodes */
         private AtomicInteger rmtMsgCnt = new AtomicInteger();
@@ -175,7 +174,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
         /**
          * @return Queue containing received messages in receive order.
          */
-        public Deque<GridTestMessage> receivedMsgs() {
+        public FastSizeDeque<GridTestMessage> receivedMsgs() {
             return rcvdMsgs;
         }
 
@@ -188,7 +187,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         /** {@inheritDoc} */
         @Override public String toString() {
-            return "MessageListener [nodeId=" + locNodeId + ", rcvd=" + rcvdMsgs.size() + ']';
+            return "MessageListener [nodeId=" + locNodeId + ", rcvd=" + rcvdMsgs.sizex() + ']';
         }
     }
 
@@ -202,7 +201,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         assertEquals("Invalid listener count", getSpiCount(), lsnrs.size());
 
-        final ConcurrentMap<UUID, Deque<GridTestMessage>> msgs = new ConcurrentHashMap<>();
+        final ConcurrentMap<UUID, FastSizeDeque<GridTestMessage>> msgs = new ConcurrentHashMap<>();
 
         final int iterationCnt = 5000;
 
@@ -223,11 +222,11 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
                         spis.get(from.id()).sendMessage(to, msg);
 
-                        Deque<GridTestMessage> queue = msgs.get(to.id());
+                        FastSizeDeque<GridTestMessage> queue = msgs.get(to.id());
 
                         if (queue == null) {
-                            Deque<GridTestMessage> old = msgs.putIfAbsent(to.id(),
-                                queue = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>()));
+                            FastSizeDeque<GridTestMessage> old = msgs.putIfAbsent(to.id(),
+                                queue = new FastSizeDeque<>(new ConcurrentLinkedDeque<>()));
 
                             if (old != null)
                                 queue = old;
@@ -253,25 +252,25 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
         U.sleep(IDLE_CONN_TIMEOUT * 2);
 
         // Now validate all sent and received messages.
-        for (Entry<UUID, Deque<GridTestMessage>> e : msgs.entrySet()) {
+        for (Entry<UUID, FastSizeDeque<GridTestMessage>> e : msgs.entrySet()) {
             UUID to = e.getKey();
 
-            Deque<GridTestMessage> sent = e.getValue();
+            FastSizeDeque<GridTestMessage> sent = e.getValue();
 
             MessageListener lsnr = lsnrs.get(to);
 
-            Deque<GridTestMessage> rcvd = lsnr.receivedMsgs();
+            FastSizeDeque<GridTestMessage> rcvd = lsnr.receivedMsgs();
 
             info(">>> Node " + to + " received " + lsnr.remoteMessageCount() + " remote messages of " +
-                rcvd.size() + " total");
+                rcvd.sizex() + " total");
 
-            for (int i = 0; i < 3 && sent.size() != rcvd.size(); i++) {
-                info("Check failed for node [node=" + to + ", sent=" + sent.size() + ", rcvd=" + rcvd.size() + ']');
+            for (int i = 0; i < 3 && sent.sizex() != rcvd.sizex(); i++) {
+                info("Check failed for node [node=" + to + ", sent=" + sent.sizex() + ", rcvd=" + rcvd.sizex() + ']');
 
                 U.sleep(2000);
             }
 
-            assertEquals("Sent and received messages count mismatch.", sent.size(), rcvd.size());
+            assertEquals("Sent and received messages count mismatch.", sent.sizex(), rcvd.sizex());
 
             assertTrue("Listener did not receive some messages: " + lsnr, rcvd.containsAll(sent));
             assertTrue("Listener received extra messages: " + lsnr, sent.containsAll(rcvd));

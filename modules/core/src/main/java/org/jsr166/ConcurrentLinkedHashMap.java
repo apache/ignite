@@ -17,7 +17,6 @@ import java.util.AbstractSet;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
-import java.util.Deque;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -26,13 +25,11 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.util.deque.LongSizeCountingDeque;
 import org.jetbrains.annotations.Nullable;
 
 import static org.jsr166.ConcurrentLinkedHashMap.QueuePolicy.PER_SEGMENT_Q;
@@ -196,7 +193,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
     private Collection<V> descVals;
 
     /** Queue containing order of entries. */
-    private final Deque<HashEntry<K, V>> entryQ;
+    private final ConcurrentLinkedDeque8<HashEntry<K, V>> entryQ;
 
     /** Atomic variable containing map size. */
     private final LongAdder size = new LongAdder();
@@ -269,9 +266,9 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
         /** Value. */
         private volatile V val;
 
-        /** Reference to corresponding queue element. */
+        /** Reference to a node in queue for fast removal operations. */
         @GridToStringExclude
-        private volatile HashEntry<K, V> queueElem;
+        private volatile ConcurrentLinkedDeque8.Node node;
 
         /** Modification count of the map for duplicates exclusion. */
         private volatile int modCnt;
@@ -298,15 +295,15 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
          * @param hash Key hash.
          * @param next Link to next.
          * @param val Value.
-         * @param queueElem Queue element
+         * @param node Queue node.
          * @param modCnt Mod count.
          */
-        HashEntry(K key, int hash, HashEntry<K, V> next, V val, HashEntry<K, V> queueElem, int modCnt) {
+        HashEntry(K key, int hash, HashEntry<K, V> next, V val, ConcurrentLinkedDeque8.Node node, int modCnt) {
             this.key = key;
             this.hash = hash;
             this.next = next;
             this.val = val;
-            this.queueElem = queueElem;
+            this.node = node;
             this.modCnt = modCnt;
         }
 
@@ -432,9 +429,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
             this.loadFactor = loadFactor;
 
             segEntryQ = qPlc == PER_SEGMENT_Q ? new ArrayDeque<HashEntry<K, V>>() :
-                qPlc == PER_SEGMENT_Q_OPTIMIZED_RMV
-                    ? new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>())
-                    : null;
+                qPlc == PER_SEGMENT_Q_OPTIMIZED_RMV ? new ConcurrentLinkedDeque8<HashEntry<K, V>>() : null;
 
             setTable(HashEntry.<K, V>newArray(initCap));
         }
@@ -726,10 +721,14 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
                     if (!onlyIfAbsent) {
                         e.val = val;
 
-                        HashEntry<K, V> qEntry = e.queueElem;
+                        ConcurrentLinkedDeque8.Node node = e.node;
 
-                        if (qEntry != null && qEntry != e)
-                            qEntry.val = val;
+                        if (node != null) {
+                            HashEntry<K, V> qEntry = (HashEntry<K, V>)node.item();
+
+                            if (qEntry != null && qEntry != e)
+                                qEntry.val = val;
+                        }
 
                         modified = true;
                     }
@@ -757,7 +756,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
                 if (added) {
                     switch (qPlc) {
                         case PER_SEGMENT_Q_OPTIMIZED_RMV:
-                            recordInsert(e, segEntryQ);
+                            recordInsert(e, (ConcurrentLinkedDeque8)segEntryQ);
 
                             if (maxCap > 0)
                                 checkRemoveEldestEntrySegment(c);
@@ -878,7 +877,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
 
                             HashEntry<K, V> n = newTbl[k];
 
-                            HashEntry<K, V> e0 = new HashEntry<>(p.key, p.hash, n, p.val, p.queueElem, p.modCnt);
+                            HashEntry<K, V> e0 = new HashEntry<>(p.key, p.hash, n, p.val, p.node, p.modCnt);
 
                             newTbl[k] = e0;
                         }
@@ -953,7 +952,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
                     HashEntry<K, V> newFirst = e.next;
 
                     for (HashEntry<K, V> p = first; p != e; p = p.next)
-                        newFirst = new HashEntry<>(p.key, p.hash, newFirst, p.val, p.queueElem, p.modCnt);
+                        newFirst = new HashEntry<>(p.key, p.hash, newFirst, p.val, p.node, p.modCnt);
 
                     tab[idx] = newFirst;
 
@@ -966,9 +965,9 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
             if (oldVal != null && cleanupQ) {
                 switch (qPlc) {
                     case PER_SEGMENT_Q_OPTIMIZED_RMV:
-                        segEntryQ.remove(e.queueElem);
+                        ((ConcurrentLinkedDeque8)segEntryQ).unlinkx(e.node);
 
-                        e.queueElem = null;
+                        e.node = null;
 
                         break;
 
@@ -981,9 +980,9 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
                     default:
                         assert qPlc == SINGLE_Q;
 
-                        entryQ.remove(e.queueElem);
+                        entryQ.unlinkx(e.node);
 
-                        e.queueElem = null;
+                        e.node = null;
                 }
             }
 
@@ -1045,7 +1044,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
         this.maxCap = maxCap;
         this.qPlc = qPlc;
 
-        entryQ = qPlc == SINGLE_Q ? new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>()) : null;
+        entryQ = qPlc == SINGLE_Q ? new ConcurrentLinkedDeque8<HashEntry<K, V>>() : null;
 
         // Find power-of-two sizes best matching arguments
         int sshift = 0;
@@ -1759,10 +1758,8 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
      * @param e The new inserted entry.
      */
     @SuppressWarnings({"unchecked"})
-    private void recordInsert(HashEntry e, Queue q) {
-        q.add(e);
-
-        e.queueElem = e;
+    private void recordInsert(HashEntry e, ConcurrentLinkedDeque8 q) {
+        e.node = q.addx(e);
     }
 
     /**
@@ -1792,7 +1789,7 @@ public class ConcurrentLinkedHashMap<K, V> extends AbstractMap<K, V> implements 
      *
      * @return Queue.
      */
-    public Queue<HashEntry<K, V>> queue() {
+    public ConcurrentLinkedDeque8<HashEntry<K, V>> queue() {
         return entryQ;
     }
 

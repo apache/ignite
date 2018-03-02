@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.igfs;
 import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
-import java.util.Deque;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
@@ -44,7 +42,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-import org.apache.ignite.util.deque.LongSizeCountingDeque;
+import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.spi.IgnitePortProtocol.TCP;
 
@@ -74,7 +72,7 @@ public class IgfsServer {
     private AcceptWorker acceptWorker;
 
     /** Started client workers. */
-    private Deque<ClientWorker> clientWorkers = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
+    private ConcurrentLinkedDeque8<ClientWorker> clientWorkers = new ConcurrentLinkedDeque8<>();
 
     /** Flag indicating if this a management endpoint. */
     private final boolean mgmt;
@@ -261,6 +259,9 @@ public class IgfsServer {
         /** Client session object. */
         private final IgfsClientSession ses;
 
+        /** Queue node for fast unlink. */
+        private ConcurrentLinkedDeque8.Node<ClientWorker> node;
+
         /**
          * Creates client worker.
          *
@@ -383,6 +384,13 @@ public class IgfsServer {
             }
         }
 
+        /**
+         * @param node Node in queue for this worker.
+         */
+        public void node(ConcurrentLinkedDeque8.Node<ClientWorker> node) {
+            this.node = node;
+        }
+
         /** {@inheritDoc} */
         @Override public void cancel() {
             super.cancel();
@@ -414,7 +422,7 @@ public class IgfsServer {
             endpoint.close();
 
             // Finally, remove from queue.
-            if (clientWorkers.remove(this))
+            if (clientWorkers.unlinkx(node))
                 hnd.onClosed(ses);
         }
     }
@@ -447,7 +455,9 @@ public class IgfsServer {
 
                     IgniteThread workerThread = new IgniteThread(worker);
 
-                    clientWorkers.add(worker);
+                    ConcurrentLinkedDeque8.Node<ClientWorker> node = clientWorkers.addx(worker);
+
+                    worker.node(node);
 
                     workerThread.start();
                 }

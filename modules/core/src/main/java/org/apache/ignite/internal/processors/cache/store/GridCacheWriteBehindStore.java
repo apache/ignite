@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.store;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -52,7 +51,7 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
-import org.apache.ignite.util.deque.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.FastSizeDeque;
 
 import static javax.cache.Cache.Entry;
 
@@ -881,7 +880,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      */
     private class Flusher extends GridWorker {
         /** Queue to flush. */
-        private final Deque<IgniteBiTuple<K, StatefulValue<K,V>>> queue;
+        private final FastSizeDeque<IgniteBiTuple<K, StatefulValue<K,V>>> queue;
 
         /** Flusher write map. */
         private final ConcurrentHashMap<K, StatefulValue<K,V>> flusherWriteMap;
@@ -919,7 +918,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 flusherWriteMap = null;
             }
             else {
-                queue = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
+                queue = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
                 flusherWriteMap = new ConcurrentHashMap<>(initCap, 0.75f, concurLvl);
             }
         }
@@ -943,7 +942,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             throws IgniteInterruptedCheckedException {
             assert !writeCoalescing : "Unexpected write coalescing.";
 
-            if (queue.size() > flusherCacheCriticalSize) {
+            if (queue.sizex() > flusherCacheCriticalSize) {
                 while (queue.size() > flusherCacheCriticalSize) {
                     wakeUp();
 
@@ -951,7 +950,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
 
                     try {
                         // Wait for free space in flusher queue
-                        while (queue.size() >= flusherCacheCriticalSize && !stopping.get()) {
+                        while (queue.sizex() >= flusherCacheCriticalSize && !stopping.get()) {
                             if (cacheFlushFreq > 0)
                                 flusherWriterCanWrite.await(cacheFlushFreq, TimeUnit.MILLISECONDS);
                             else
@@ -989,7 +988,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             if (writeCoalescing)
                 return writeCache.sizex() > cacheCriticalSize;
             else
-                return queue.size() > flusherCacheCriticalSize;
+                return queue.sizex() > flusherCacheCriticalSize;
         }
 
         /**
@@ -998,7 +997,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
          * @return Flusher write behind size.
          */
         public int size() {
-            return writeCoalescing ? writeCache.sizex() : queue.size();
+            return writeCoalescing ? writeCache.sizex() : queue.sizex();
         }
 
         /**
@@ -1020,7 +1019,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                 }
             }
             else {
-                while (!stopping.get() || queue.size() > 0) {
+                while (!stopping.get() || queue.sizex() > 0) {
                     awaitOperationsAvailableNonCoalescing();
 
                     flushCacheNonCoalescing();
@@ -1058,14 +1057,14 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
          * @throws InterruptedException If awaiting was interrupted.
          */
         private void awaitOperationsAvailableNonCoalescing() throws InterruptedException {
-            if (queue.size() >= batchSize)
+            if (queue.sizex() >= batchSize)
                 return;
 
             parked = true;
 
             try {
                 for (;;) {
-                    if (queue.size() >= batchSize)
+                    if (queue.sizex() >= batchSize)
                         return;
 
                     if (cacheFlushFreq > 0)
@@ -1073,7 +1072,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
                     else
                         LockSupport.park();
 
-                    if (queue.size() > 0)
+                    if (queue.sizex() > 0)
                         return;
 
                     if (Thread.interrupted())

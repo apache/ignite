@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Semaphore;
@@ -32,7 +31,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-import org.apache.ignite.util.deque.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.FastSizeDeque;
 
 /**
  * Session implementation bound to selector API and socket API.
@@ -41,7 +40,7 @@ import org.apache.ignite.util.deque.LongSizeCountingDeque;
  */
 class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKeyAttachment {
     /** Pending write requests. */
-    private final Deque<SessionWriteRequest> queue = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
+    private final FastSizeDeque<SessionWriteRequest> queue = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
     /** Selection key associated with this session. */
     @GridToStringExclude
@@ -278,7 +277,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
 
         assert res : "Future was not added to queue";
 
-        return queue.size();
+        return queue.sizex();
     }
 
     /**
@@ -303,7 +302,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
 
         assert res : "Future was not added to queue";
 
-        return queue.size();
+        return queue.sizex();
     }
 
     /**
@@ -363,7 +362,7 @@ class GridSelectorNioSessionImpl extends GridNioSessionImpl implements GridNioKe
      * @return Number of write requests.
      */
     int writeQueueSize() {
-        return queue.size();
+        return queue.sizex();
     }
 
     /**

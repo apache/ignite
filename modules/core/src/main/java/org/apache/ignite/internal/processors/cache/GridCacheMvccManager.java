@@ -66,7 +66,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import org.apache.ignite.util.deque.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.FastSizeDeque;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MAX_NESTED_LISTENER_CALLS;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
@@ -123,7 +123,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     private final ConcurrentMap<GridCacheVersion, GridCacheVersion> near2dht = newMap();
 
     /** Finish futures. */
-    private final Deque<FinishLockFuture> finishFuts = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
+    private final FastSizeDeque<FinishLockFuture> finishFuts = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
     /** Nested listener calls. */
     private final ThreadLocal<Integer> nestedLsnrCalls = new ThreadLocal<Integer>() {
@@ -243,7 +243,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         else if (log.isDebugEnabled())
             log.debug("Failed to find transaction for changed owner: " + owner);
 
-        if (!finishFuts.isEmpty()) {
+        if (!finishFuts.isEmptyx()) {
             for (FinishLockFuture f : finishFuts)
                 f.recheck(entry);
         }
@@ -1012,7 +1012,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         X.println(">>>   lockedSize: " + locked.size());
         X.println(">>>   futsSize: " + (verFuts.size() + futs.size()));
         X.println(">>>   near2dhtSize: " + near2dht.size());
-        X.println(">>>   finishFutsSize: " + finishFuts.size());
+        X.println(">>>   finishFutsSize: " + finishFuts.sizex());
     }
 
     /**

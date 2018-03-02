@@ -17,13 +17,12 @@
 
 package org.apache.ignite.lang.utils;
 
-import java.util.Deque;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.apache.ignite.util.deque.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.FastSizeDeque;
 
 /**
  *
@@ -145,8 +144,8 @@ public class GridCircularBufferSelfTest extends GridCommonAbstractTest {
         info("Created buffer: " + buf);
 
         final int iterCnt = 10_000;
-        final Deque<Integer> evictedQ = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
-        final Deque<Integer> putQ = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
+        final FastSizeDeque<Integer> evictedQ = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
+        final FastSizeDeque<Integer> putQ = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
         multithreaded(
             new Callable<Object>() {
@@ -170,7 +169,7 @@ public class GridCircularBufferSelfTest extends GridCommonAbstractTest {
         evictedQ.addAll(buf.items());
 
         assert putQ.containsAll(evictedQ);
-        assert evictedQ.size() == putQ.size();
+        assert evictedQ.sizex() == putQ.size();
 
         info("Buffer: " + buf);
     }

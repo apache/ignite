@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
-import java.util.Deque;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -30,7 +29,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.util.deque.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.FastSizeDeque;
 
 /**
  *
@@ -119,7 +118,7 @@ public abstract class GridDeferredAckMessageSender<T> {
         private AtomicBoolean guard = new AtomicBoolean(false);
 
         /** Versions. */
-        private Deque<T> vers = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
+        private FastSizeDeque<T> vers = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
         /** Node ID. */
         private final UUID nodeId;
@@ -187,7 +186,7 @@ public abstract class GridDeferredAckMessageSender<T> {
 
                 vers.add(ver);
 
-                if (vers.size() > getBufferSize() && guard.compareAndSet(false, true))
+                if (vers.sizex() > getBufferSize() && guard.compareAndSet(false, true))
                     snd = true;
             }
             finally {

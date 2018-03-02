@@ -101,8 +101,8 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
 
         assertTrue("Invalid map size: " + linkedMap.size(), U.safeAbs(maxSize - linkedMap.size()) <= diff);
         assertTrue("Invalid map sizex: " + linkedMap.sizex(), U.safeAbs(maxSize - linkedMap.sizex()) <= diff);
-        assertTrue("Invalid map queue size: " + linkedMap.queue().size(),
-            U.safeAbs(maxSize - linkedMap.queue().size()) <= diff);
+        assertTrue("Invalid map queue size: " + linkedMap.queue().sizex(),
+            U.safeAbs(maxSize - linkedMap.queue().sizex()) <= diff);
 
         while (!keys.isEmpty()) {
             boolean found = false;

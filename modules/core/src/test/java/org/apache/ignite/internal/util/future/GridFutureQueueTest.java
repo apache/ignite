@@ -22,7 +22,7 @@ import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.util.deque.LongSizeCountingDeque;
+import org.apache.ignite.util.deque.FastSizeDeque;
 
 /**
  * Performance tests added to compare the same functionality in .Net.
@@ -77,7 +77,7 @@ public class GridFutureQueueTest {
         private AtomicLong qSize = new AtomicLong();
 
         /** */
-        private final Deque<Future> queue = new LongSizeCountingDeque<>(new ConcurrentLinkedDeque<>());
+        private final Deque<Future> queue = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
         /** */
         private volatile boolean stop;
