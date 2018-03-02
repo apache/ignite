@@ -1052,7 +1052,8 @@ export default class {
                     unit: 60000,
                     installed: false
                 },
-                qryType: 'query'
+                qryType: 'query',
+                lazy: true
             });
 
             $scope.addParagraph(paragraph, sz);
