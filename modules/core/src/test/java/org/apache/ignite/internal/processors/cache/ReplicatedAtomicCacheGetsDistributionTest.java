@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -130,7 +129,7 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
 
         cache = grid("client").getOrCreateCache(CACHE_NAME);
 
-        getAndValidateData(cache, new HashSet<>(keys), batchMode);
+        getAndValidateData(cache, keys, batchMode);
 
         int expected = PRIMARY_KEYS_NUMBER / gridCount();
 
@@ -192,7 +191,7 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
 
         cache = grid("client").getOrCreateCache(CACHE_NAME);
 
-        getAndValidateData(cache, new HashSet<>(keys), batchMode);
+        getAndValidateData(cache, keys, batchMode);
 
         validateRequestsDistribution(destId);
     }
