@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
-import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
@@ -852,7 +851,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      *
      * @return {@code true} If future was changed.
      */
-    public boolean updateLockFuture(IgniteInternalFuture<Boolean> oldFut, IgniteInternalFuture<Boolean> newFut) {
+    public boolean updateLockFuture(IgniteInternalFuture<?> oldFut, IgniteInternalFuture<?> newFut) {
         return LOCK_FUT_UPD.compareAndSet(this, oldFut, newFut);
     }
 
@@ -868,7 +867,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      *
      * @return Current lock future or null if it's safe to roll back.
      */
-    public IgniteInternalFuture<Boolean> prepareAsyncRollback() {
+    public IgniteInternalFuture<?> tryRollbackAsync() {
         IgniteInternalFuture<Boolean> fut;
 
         while(true) {

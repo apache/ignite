@@ -241,8 +241,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         valMap = new ConcurrentHashMap<>();
 
         if (tx != null && !tx.updateLockFuture(null, this)) {
-            onError(new IgniteTxRollbackCheckedException("Failed to acquire lock because transaction " +
-                "has started to roll back [tx=" + CU.txString(tx) + ']'));
+            onError(tx.rollbackException());
 
             onComplete(false, false);
         }
@@ -672,12 +671,14 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         return false;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Cancellation has special meaning for lock futures. It's called then lock must be released on rollback.
+     */
     @Override public boolean cancel() {
-        if (onCancelled())
-            onComplete(false, true);
+        if (inTx())
+            onError(tx.rollbackException());
 
-        return isCancelled();
+        return onComplete(false, true);
     }
 
     /** {@inheritDoc} */
@@ -700,16 +701,6 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
             success = false;
 
         return onComplete(success, true);
-    }
-
-    /**
-     *
-     * @param err Lock removal reason.
-     */
-    public boolean onRollback(Throwable err) {
-        onError(err);
-
-        return onComplete(false, false);
     }
 
     /**

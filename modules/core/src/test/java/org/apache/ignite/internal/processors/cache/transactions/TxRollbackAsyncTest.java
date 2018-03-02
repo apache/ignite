@@ -725,11 +725,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         checkFutures();
     }
 
-    public void testRollbackInPreparedState() {
-
-    }
-
-    private void testRollbackInPreparedState0(TransactionConcurrency concurrency, TransactionIsolation isolation) {
+    public void testRollbackWhileDhtPreparing() {
 
     }
 

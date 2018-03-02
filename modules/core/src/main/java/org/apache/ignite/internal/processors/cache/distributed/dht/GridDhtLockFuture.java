@@ -266,6 +266,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                         // Wait for collocated lock future
                         assert fut instanceof GridDhtColocatedLockFuture : fut;
 
+                        // Terminate this future if parent(collocated) future is terminated by rollback.
                         fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                             @Override public void apply(IgniteInternalFuture<Boolean> fut) {
                                 try {

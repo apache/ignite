@@ -39,17 +39,17 @@ import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheReturnCompletableWrapper;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxLocalAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedLockFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -418,32 +418,58 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             return;
         }
 
-        // Handle possible concurrent locking in case of asynchronous rollback.
-        if (!commit && !clearThreadMap) {
-            IgniteInternalFuture<Boolean> lockFut = tx.prepareAsyncRollback();
+        // Handle possible concurrent transactional operations in case of async rollback (clearThreadMap==false).
+        if (!commit && !clearThreadMap)
+            tryRollbackAsync(onTimeout);
+        else
+            doFinish(commit, clearThreadMap);
+    }
 
-            if (lockFut != null) {
-                if (onTimeout) {
-                    // Wait for lock future completion. This allows deadlock detection to kick in.
-                    lockFut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
-                        @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                            doFinish(false, false);
-                        }
-                    });
+    /**
+     * Does async rollback when it's safe.
+     * If current future is not lock future, wait until completion and try rollback again.
+     * Else terminate or wait for lock future depending on rollback mode.
+     *
+     * @param onTimeout If {@code true} called from timeout handler.
+     */
+    private void tryRollbackAsync(boolean onTimeout) {
+        IgniteInternalFuture<?> curFut = tx.tryRollbackAsync();
 
-                    return;
-                }
-                else {
-                    // Abort lock futures.
-                    if (lockFut instanceof GridDhtColocatedLockFuture)
-                        ((GridDhtColocatedLockFuture)lockFut).onRollback(tx.rollbackException());
-                    else if (lockFut instanceof GridNearLockFuture)
-                        ((GridNearLockFuture)lockFut).onRollback(tx.rollbackException());
-                }
-            }
+        if (curFut == null || curFut.isDone()) {
+            doFinish(false, false);
+
+            return;
         }
 
-        doFinish(commit, clearThreadMap);
+        if (!(curFut instanceof GridCacheVersionedFuture)) {
+            curFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> fut) {
+                    // Rollback and terminate user code execution.
+                    doFinish(false, false);
+                }
+            });
+
+            return;
+        }
+
+        if (onTimeout) {
+            // Wait for lock future completion. This allows deadlock detection to kick in.
+            curFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                @Override public void apply(IgniteInternalFuture<?> fut) {
+                    tryRollbackAsync(true);
+                }
+            });
+        }
+        else {
+            try {
+                curFut.cancel();
+            }
+            catch (IgniteCheckedException e) {
+                assert false : "This shouldn't happen";
+            }
+
+            tryRollbackAsync(true);
+        }
     }
 
     /**
