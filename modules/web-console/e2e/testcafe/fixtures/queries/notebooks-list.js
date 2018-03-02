@@ -23,7 +23,7 @@ const regularUser = createRegularUser();
 const notebooksListPage = new PageQueriesNotebooksList();
 const notebookName = 'test_notebook';
 
-fixture.only('Checking Ignite queries notebooks list')
+fixture('Checking Ignite queries notebooks list')
     .before(async() => {
         await dropTestDB();
         await insertTestUser();
