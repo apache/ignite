@@ -1032,7 +1032,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     public Map<IgniteTxKey, Collection<GridCacheMvccCandidate>> unfinishedLocks(AffinityTopologyVersion topVer) {
         Map<IgniteTxKey, Collection<GridCacheMvccCandidate>> cands = new HashMap<>();
 
-        if (!finishFuts.isEmpty()) {
+        if (!finishFuts.isEmptyx()) {
             for (FinishLockFuture fut : finishFuts) {
                 if (fut.topologyVersion().equals(topVer))
                     cands.putAll(fut.pendingLocks());
@@ -1162,7 +1162,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         if (exchLog.isDebugEnabled())
             exchLog.debug("Rechecking pending locks for completion.");
 
-        if (!finishFuts.isEmpty()) {
+        if (!finishFuts.isEmptyx()) {
             for (FinishLockFuture fut : finishFuts)
                 fut.recheck();
         }

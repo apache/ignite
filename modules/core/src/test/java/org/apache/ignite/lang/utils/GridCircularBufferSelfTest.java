@@ -169,7 +169,7 @@ public class GridCircularBufferSelfTest extends GridCommonAbstractTest {
         evictedQ.addAll(buf.items());
 
         assert putQ.containsAll(evictedQ);
-        assert evictedQ.sizex() == putQ.size();
+        assert evictedQ.sizex() == putQ.sizex();
 
         info("Buffer: " + buf);
     }

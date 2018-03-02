@@ -58,7 +58,7 @@ public class GridConcurrentLinkedHashMapMultiThreadedSelfTest extends GridCommon
 
         assert linkedMap.size() == keyCnt;
         assert linkedMap.sizex() == keyCnt;
-        assert linkedMap.queue().size() == keyCnt;
+        assert linkedMap.queue().sizex() == keyCnt;
     }
 
     /**

@@ -943,7 +943,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             assert !writeCoalescing : "Unexpected write coalescing.";
 
             if (queue.sizex() > flusherCacheCriticalSize) {
-                while (queue.size() > flusherCacheCriticalSize) {
+                while (queue.sizex() > flusherCacheCriticalSize) {
                     wakeUp();
 
                     flusherWriterLock.lock();
