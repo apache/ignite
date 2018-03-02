@@ -30,10 +30,9 @@ module.exports = {
 };
 
 const defineSchema = (mongoose, schemas) => {
-    const ObjectId = mongoose.Schema.Types.ObjectId;
     const result = { connection: mongoose.connection };
 
-    result.ObjectId = ObjectId;
+    result.ObjectId = mongoose.Types.ObjectId;
 
     result.errCodes = {
         DUPLICATE_KEY_ERROR: 11000,
