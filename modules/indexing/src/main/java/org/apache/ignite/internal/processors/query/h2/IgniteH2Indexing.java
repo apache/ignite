@@ -1494,7 +1494,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result or {@code null} if cannot parse/process this query.
      */
     private List<FieldsQueryCursor<List<?>>> tryQueryDistributedSqlFieldsNative(String schemaName, String sql,
-        SqlClientContext cliCtx) {
+        @Nullable SqlClientContext cliCtx) {
         // Heuristic check for fast return.
         if (!INTERNAL_CMD_RE.matcher(sql.trim()).find())
             return null;
@@ -1545,11 +1545,15 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return Collections.singletonList(cursor);
         }
         else if (cmd instanceof SqlSetStreamingCommand) {
+            if (cliCtx == null)
+                throw new IgniteSQLException("SET STREAMING command may be executed only in context of client driver" +
+                    " connection and not via cache API.");
+
             SqlSetStreamingCommand setCmd = (SqlSetStreamingCommand)cmd;
 
             boolean on = setCmd.isTurnOn();
 
-            if (cliCtx != null && cliCtx.isStream() != on) {
+            if (cliCtx.isStream() != on) {
                 if (on)
                     cliCtx.enableStreaming(setCmd.isAllowOverwrite(), setCmd.flushFrequency(),
                         setCmd.perNodeBufferSize(), setCmd.perNodeParallelOperations());
@@ -1590,7 +1594,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** {@inheritDoc} */
     @SuppressWarnings({"StringEquality", "unchecked"})
     @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
-        SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, GridQueryCancel cancel) {
+        @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts, GridQueryCancel cancel) {
         List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry.getSql(), cliCtx);
 
         if (res != null)
