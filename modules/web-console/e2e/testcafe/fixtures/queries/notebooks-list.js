@@ -14,12 +14,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import { Selector } from 'testcafe';
 import { dropTestDB, insertTestUser, resolveUrl } from '../../envtools';
 import { createRegularUser } from '../../roles';
 import { PageQueriesNotebooksList } from '../../page-models/PageQueries';
 
 const regularUser = createRegularUser();
+const notebooksListPage = new PageQueriesNotebooksList();
+const notebookName = 'test_notebook';
 
 fixture.only('Checking Ignite queries notebooks list')
     .before(async() => {
@@ -35,10 +37,13 @@ fixture.only('Checking Ignite queries notebooks list')
     });
 
 test('Testing creating notebook', async(t) => {
-    const notebookName = 'test_notebook';
-    const notebooksListPage = new PageQueriesNotebooksList();
-
     await notebooksListPage.createNotebook(notebookName);
 
-    await t.expect(notebooksListPage.notebookListTable.findCell(0, 'Name').textContent).contains(notebookName);
+    await t.expect(Selector('.notebook-name a').withText(notebookName).exists).ok();
+});
+
+test('Testing cloning notebook', async(t) => {
+    await notebooksListPage.cloneNotebook(notebookName);
+
+    await t.expect(Selector('.notebook-name a').withText(`${notebookName}_1`).exists).ok();
 });

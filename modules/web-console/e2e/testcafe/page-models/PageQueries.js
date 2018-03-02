@@ -18,20 +18,35 @@
 
 import { Selector, t } from 'testcafe';
 import { ModalInput } from '../components/modalInput';
-import { Table } from '../components/Table';
+import { confirmation } from '../components/confirmation';
+import _ from 'lodash';
 
 export class PageQueriesNotebooksList {
     constructor() {
         this.createNotebookButton = Selector('#createNotebookBtn');
-        this.notebookListTable = new Table(Selector('.queries-notebooks-list'));
+        this.createNotebookModal = new ModalInput();
     }
 
     async createNotebook(notebookName) {
         await t.click(this.createNotebookButton);
 
-        const createNotebookModal = new ModalInput();
-        await createNotebookModal.enterValue(notebookName);
-        return createNotebookModal.confirm();
+        await this.createNotebookModal.enterValue(notebookName);
+
+        return this.createNotebookModal.confirm();
+    }
+
+    async selectNotebookByName(notebookName) {
+        const notebookRows = await Selector('.notebook-name');
+        const notebookRowsIndices = _.range(await notebookRows.count + 1);
+        // console.log(notebookRows.count);
+        // console.log(notebookRowsIndices);
+        const notebookRowIndex = notebookRowsIndices.findIndex((i) => notebookRows.nth(i) === notebookName);
+
+        return t.click(Selector('.ui-grid-selection-row-header-buttons').nth(notebookRowIndex + 1).parent());
+    }
+
+    selectAllNotebooks() {
+        return t.click(Selector('.ui-grid-selection-row-header-buttons').nth(0));
     }
 
     deleteNotebook() {
@@ -42,7 +57,11 @@ export class PageQueriesNotebooksList {
 
     }
 
-    cloneNotebook() {
+    async cloneNotebook(notebookName) {
+        await this.selectNotebookByName(notebookName);
+        await t.click(Selector('.btn-ignite').withText('Actions'));
+        await t.click(Selector('a').withText('Clone'));
 
+        return this.createNotebookModal.confirm();
     }
 }
