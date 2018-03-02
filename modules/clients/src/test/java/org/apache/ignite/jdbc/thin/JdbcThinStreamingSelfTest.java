@@ -24,15 +24,21 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Tests for streaming via thin driver.
@@ -43,6 +49,8 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        GridQueryProcessor.idxCls = IndexingWithContext.class;
+
         super.beforeTestsStarted();
 
         batchSize = 17;
@@ -53,6 +61,8 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
         try (Connection c = createOrdinaryConnection()) {
             execute(c, "DROP TABLE PUBLIC.T IF EXISTS");
         }
+
+        IndexingWithContext.cliCtx = null;
 
         super.afterTest();
     }
@@ -84,7 +94,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
             try (PreparedStatement stmt = conn.prepareStatement("insert into Person(\"id\", \"name\") values (?, ?), " +
                 "(?, ?)")) {
-                for (int i = 1; i <= 100; i+=2) {
+                for (int i = 1; i <= 100; i+= 2) {
                     stmt.setInt(1, i);
                     stmt.setString(2, nameForId(i));
                     stmt.setInt(3, i + 1);
@@ -298,40 +308,35 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
     }
 
     /**
-     * @throws Exception if failed.
+     *
      */
-    public void testNonPreparedStatementBatch() throws Exception {
-        try (Connection conn = createOrdinaryConnection()) {
-            try (Statement s = conn.createStatement()) {
-                for (int i = 1; i <= 100; i++)
-                    s.addBatch(String.format("insert into Person(\"id\", \"name\")values (%d, '%s')", i, nameForId(i)));
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testNonStreamedBatch() {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                try (Connection conn = createOrdinaryConnection()) {
+                    try (Statement s = conn.createStatement()) {
+                        for (int i = 1; i <= 10; i++)
+                            s.addBatch(String.format("insert into Person(\"id\", \"name\")values (%d, '%s')", i,
+                                nameForId(i)));
 
-                execute(conn, "SET STREAMING 1");
+                        execute(conn, "SET STREAMING 1");
 
-                assertStreamingState(true);
+                        s.addBatch(String.format("insert into Person(\"id\", \"name\")values (%d, '%s')", 11,
+                            nameForId(11)));
+                    }
+                }
 
-                s.executeBatch();
-
-                assertCacheEmpty();
-
-                execute(conn,"SET STREAMING off");
-
-                U.sleep(1000);
-
-                assertStreamingState(false);
-
-                // Now let's check it's all there.
-                for (int i = 51; i <= 100; i++)
-                    assertEquals(nameForId(i), nameForIdInCache(i));
+                return null;
             }
-        }
+        }, SQLException.class, "Statement batch must be empty for the statement to be used in streaming mode.");
     }
 
     /**
-     * @throws Exception if failed.
+     *
      */
     @SuppressWarnings("ThrowableNotThrown")
-    public void testStreamingStatementInTheMiddleOfNonPreparedBatch() throws Exception {
+    public void testStreamingStatementInTheMiddleOfNonPreparedBatch() {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 try (Connection conn = createOrdinaryConnection()) {
@@ -370,13 +375,9 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
      * @return Active SQL client context.
      */
     private SqlClientContext sqlClientContext() {
-        Set<SqlClientContext> ctxs = U.field(grid(0).context().query(), "cliCtxs");
+        assertNotNull(IndexingWithContext.cliCtx);
 
-        assertFalse(F.isEmpty(ctxs));
-
-        assertEquals(1, ctxs.size());
-
-        return ctxs.iterator().next();
+        return IndexingWithContext.cliCtx;
     }
 
     /**
@@ -394,5 +395,30 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
         batchSize = 1;
 
         super.assertStatementForbidden(sql);
+    }
+
+    /**
+     *
+     */
+    private static final class IndexingWithContext extends IgniteH2Indexing {
+        /** Client context. */
+        static SqlClientContext cliCtx;
+
+        /** {@inheritDoc} */
+        @Override public List<Long> streamBatchedUpdateQuery(String schemaName, String qry, List<Object[]> params,
+            SqlClientContext cliCtx) throws IgniteCheckedException {
+            IndexingWithContext.cliCtx = cliCtx;
+
+            return super.streamBatchedUpdateQuery(schemaName, qry, params, cliCtx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
+            @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts,
+            GridQueryCancel cancel) {
+            IndexingWithContext.cliCtx = cliCtx;
+
+            return super.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, cancel);
+        }
     }
 }

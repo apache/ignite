@@ -1030,10 +1030,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         final Connection conn = connectionForSchema(schemaName);
 
-        // SET returns 0 anyway, anything else will throw an exception in streaming mode.
-        if (tryQueryDistributedSqlFieldsNative(schemaName, qry, cliCtx) != null)
-            return Collections.singletonList(0L);
-
         final PreparedStatement stmt = prepareStatementAndCaches(conn, qry);
 
         if (GridSqlQueryParser.checkMultipleStatements(stmt))

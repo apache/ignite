@@ -100,7 +100,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.T3;
-import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -263,11 +262,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (cancel && idx != null) {
             try {
-                while (!busyLock.tryBlock(500)) {
+                while (!busyLock.tryBlock(500))
                     idx.cancelAllQueries();
-
-                    closeAllSqlStreams();
-                }
 
                 return;
             }
@@ -352,32 +348,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     onSchemaProposeDiscovery0(activeProposal);
             }
         }
-    }
-
-    /**
-     * @param cliCtx Client context to register.
-     */
-    void registerClientContext(SqlClientContext cliCtx) {
-        A.notNull(cliCtx, "cliCtx");
-
-        cliCtxs.add(cliCtx);
-    }
-
-    /**
-     * @param cliCtx Client context to register.
-     */
-    void unregisterClientContext(SqlClientContext cliCtx) {
-        A.notNull(cliCtx, "cliCtx");
-
-        cliCtxs.remove(cliCtx);
-    }
-
-    /**
-     * Flush streamers on all currently open client contexts.
-     */
-    private void closeAllSqlStreams() {
-        for (SqlClientContext cliCtx : cliCtxs)
-            U.close(cliCtx, log);
     }
 
     /**

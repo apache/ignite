@@ -86,8 +86,6 @@ public class SqlClientContext implements AutoCloseable {
         this.skipReducerOnUpdate = skipReducerOnUpdate;
 
         log = ctx.log(SqlClientContext.class.getName());
-
-        ctx.query().registerClientContext(this);
     }
 
     /**
@@ -204,8 +202,6 @@ public class SqlClientContext implements AutoCloseable {
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
-        ctx.query().unregisterClientContext(this);
-
         if (streamers == null)
             return;
 

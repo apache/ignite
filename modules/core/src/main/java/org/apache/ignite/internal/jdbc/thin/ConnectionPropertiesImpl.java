@@ -798,38 +798,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /**
      *
      */
-    private static class LongProperty extends NumberProperty {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param name Name.
-         * @param desc Description.
-         * @param dfltVal Default value.
-         * @param required {@code true} if the property is required.
-         * @param min Lower bound of allowed range.
-         * @param max Upper bound of allowed range.
-         */
-        LongProperty(String name, String desc, Number dfltVal, boolean required, long min, long max) {
-            super(name, desc, dfltVal, required, min, max);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Number parse(String str) throws NumberFormatException {
-            return Long.parseLong(str);
-        }
-
-        /**
-         * @return Property value.
-         */
-        long value() {
-            return val.longValue();
-        }
-    }
-
-    /**
-     *
-     */
     private static class StringProperty extends ConnectionProperty {
         /** */
         private static final long serialVersionUID = 0L;

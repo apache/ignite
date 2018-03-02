@@ -583,6 +583,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         if (qry != null)
             executeBatchedQuery(qry, updCntsAcc, firstErr);
 
+        if (req.isLastStreamBatch())
+            cliCtx.disableStreaming();
+
         int updCnts[] = U.toIntArray(updCntsAcc);
 
         if (firstErr.isEmpty())

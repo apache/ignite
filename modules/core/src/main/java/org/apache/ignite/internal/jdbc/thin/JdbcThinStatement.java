@@ -30,7 +30,6 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
@@ -47,6 +46,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResultInfo;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcStatementType;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlParseException;
 import org.apache.ignite.internal.sql.SqlParser;
@@ -133,9 +133,6 @@ public class JdbcThinStatement implements Statement {
      * @return Native {@link SqlCommand}, or {@code null} if parsing was not successful.
      */
     private SqlCommand tryParseNative(String sql) {
-        if (!isEligibleForNativeParsing(sql))
-            return null;
-
         try {
             return new SqlParser(schema, sql).nextCommand();
         }
@@ -180,7 +177,7 @@ public class JdbcThinStatement implements Statement {
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty.");
 
-        drainBatchToStreamIfNeeded();
+        checkStatementBatchEmpty();
 
         SqlCommand nativeCmd = null;
 
@@ -260,26 +257,13 @@ public class JdbcThinStatement implements Statement {
     }
 
     /**
-     * Job to do when user turns on streaming on a connection and this statement already has some batch of its own.
+     * Check that user has not added anything to this statement's batch prior to turning streaming on.
      * @throws SQLException if failed.
      */
-    synchronized void drainBatchToStreamIfNeeded() throws SQLException {
-        if (!conn.isStream() || F.isEmpty(batch))
-            return;
-
-        Iterator<JdbcQuery> it = batch.iterator();
-
-        while (it.hasNext()) {
-            JdbcQuery q = it.next();
-
-            conn.addBatch(q.sql(), q.args() != null ? Arrays.asList(q.args()) : null);
-
-            it.remove();
-        }
-
-        batch = null;
-
-        batchSize = 0;
+    void checkStatementBatchEmpty() throws SQLException {
+        if (conn.isStream() && !F.isEmpty(batch))
+            throw new IgniteSQLException("Statement batch must be empty for the statement to be used " +
+                "in streaming mode.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION).toJdbcException();
     }
 
     /**
@@ -589,7 +573,7 @@ public class JdbcThinStatement implements Statement {
                 SqlStateCode.UNSUPPORTED_OPERATION);
         }
 
-        drainBatchToStreamIfNeeded();
+        checkStatementBatchEmpty();
 
         batchSize++;
 
@@ -620,7 +604,7 @@ public class JdbcThinStatement implements Statement {
 
         closeResults();
 
-        drainBatchToStreamIfNeeded();
+        checkStatementBatchEmpty();
 
         if (conn.isStream()) {
             int[] res = new int[batchSize];
@@ -634,7 +618,7 @@ public class JdbcThinStatement implements Statement {
             throw new SQLException("Batch is empty.");
 
         try {
-            JdbcBatchExecuteResult res = conn.sendRequest(new JdbcBatchExecuteRequest(conn.getSchema(), batch));
+            JdbcBatchExecuteResult res = conn.sendRequest(new JdbcBatchExecuteRequest(conn.getSchema(), batch, false));
 
             if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
                 throw new BatchUpdateException(res.errorMessage(), IgniteQueryErrorCode.codeToSqlState(res.errorCode()),

@@ -166,18 +166,11 @@ public class JdbcThinConnection implements Connection {
     }
 
     /**
-     * @param stream Whether this connection is streamed or not.
-     */
-    void setStream(boolean stream) {
-        this.stream = stream;
-    }
-
-    /**
      * @param sql Statement.
      * @param cmd Parsed form of {@code sql}.
      * @throws SQLException if failed.
      */
-    synchronized void executeNative(String sql, SqlCommand cmd) throws SQLException {
+    void executeNative(String sql, SqlCommand cmd) throws SQLException {
         if (cmd instanceof SqlSetStreamingCommand) {
             boolean newVal = ((SqlSetStreamingCommand)cmd).isTurnOn();
 
@@ -191,13 +184,8 @@ public class JdbcThinConnection implements Connection {
                 stream = true;
             }
             else if (stream && !newVal) {
-                // Server will handle streaming OFF as part of this batch.
-                addBatch(sql, null);
-
-                // executeBatch may have implicitly occurred in addBatch, so let's make sure there still is
-                // a batch to send.
-                if (!F.isEmpty(streamBatch))
-                    executeBatch();
+                // We have to send request regardless of actual batch size.
+                executeBatch(true);
 
                 stream = false;
             }
@@ -212,7 +200,7 @@ public class JdbcThinConnection implements Connection {
      * @param sql Query.
      * @param args Arguments.
      */
-    synchronized void addBatch(String sql, List<Object> args) throws SQLException {
+    void addBatch(String sql, List<Object> args) throws SQLException {
         boolean newQry = (args == null || !F.eq(lastStreamQry, sql));
 
         // Providing null as SQL here allows for recognizing subbatches on server and handling them more efficiently.
@@ -228,14 +216,15 @@ public class JdbcThinConnection implements Connection {
         lastStreamQry = (args != null ? sql : null);
 
         if (streamBatch.size() == streamBatchSize)
-            executeBatch();
+            executeBatch(false);
     }
 
     /**
+     * @param lastBatch Whether open data streamers must be flushed and closed after this batch.
      * @throws SQLException if failed.
      */
-    private void executeBatch() throws SQLException {
-        JdbcBatchExecuteResult res = sendRequest(new JdbcBatchExecuteRequest(schema, streamBatch));
+    private void executeBatch(boolean lastBatch) throws SQLException {
+        JdbcBatchExecuteResult res = sendRequest(new JdbcBatchExecuteRequest(schema, streamBatch, lastBatch));
 
         streamBatch = null;
 
@@ -391,7 +380,7 @@ public class JdbcThinConnection implements Connection {
 
         if (!F.isEmpty(streamBatch)) {
             try {
-                executeBatch();
+                executeBatch(true);
             }
             catch (SQLException e) {
                 LOG.log(Level.WARNING, "Exception during batch send on streamed connection close", e);
