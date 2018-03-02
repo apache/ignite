@@ -122,7 +122,7 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
 
         IgniteCache<Integer, String> cache = grid(0).createCache(replicatedCache());
 
-        List<Integer> keys = primaryKeys(dest.cache(CACHE_NAME), PRIMARY_KEYS_NUMBER);
+        List<Integer> keys = primaryKeys(cache, PRIMARY_KEYS_NUMBER);
 
         for (Integer key : keys)
             cache.put(key, VAL_PREFIX + key);
