@@ -355,14 +355,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         public void TestQueryEntityKeyTypeAssignment()
         {
             var cache = Ignition.GetIgnite().GetOrCreateCache<string, Person>(
-                    new CacheConfiguration(PersonThirdCacheName, typeof(Person))
+                    new CacheConfiguration("Person", typeof(Person))
                     {
                         SqlEscapeAll = GetSqlEscapeAll()
                     });
 
             cache.Put(@"TST-1/1", new Person(10, "Man"));
 
-            var queryable = GetThirdPersonCache().AsCacheQueryable();
+            var queryable = cache.AsCacheQueryable();
 
             var res = queryable.FirstOrDefault(p => p.Key == @"TST-1/1");
 
