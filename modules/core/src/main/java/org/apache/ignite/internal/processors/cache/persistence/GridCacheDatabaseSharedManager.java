@@ -679,16 +679,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteOutClosure<Float> fillFactorProvider(final DataRegionConfiguration dataRegCfg) {
+    @Override protected IgniteOutClosure<Long> freeSpaceProvider(final DataRegionConfiguration dataRegCfg) {
         if (!dataRegCfg.isPersistenceEnabled())
-            return super.fillFactorProvider(dataRegCfg);
+            return super.freeSpaceProvider(dataRegCfg);
 
         final String dataRegName = dataRegCfg.getName();
 
-        return new IgniteOutClosure<Float>() {
-            @Override public Float apply() {
-                long loadSize = 0L;
-                long totalSize = 0L;
+        return new IgniteOutClosure<Long>() {
+            @Override public Long apply() {
+                long freeSpace = 0L;
 
                 for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
                     if (!grpCtx.dataRegion().config().getName().equals(dataRegName))
@@ -696,16 +695,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     assert grpCtx.offheap() instanceof GridCacheOffheapManager;
 
-                    T2<Long, Long> fillFactor = ((GridCacheOffheapManager)grpCtx.offheap()).fillFactor();
-
-                    loadSize += fillFactor.get1();
-                    totalSize += fillFactor.get2();
+                    freeSpace += ((GridCacheOffheapManager)grpCtx.offheap()).freeSpace();
                 }
 
-                if (totalSize == 0)
-                    return (float)0;
-
-                return (float)loadSize / totalSize;
+                return freeSpace;
             }
         };
     }
@@ -2092,54 +2085,56 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param partStates Partition to restore state.
      */
     public void applyUpdatesOnRecovery(
-        WALIterator it,
+        @Nullable WALIterator it,
         IgnitePredicate<IgniteBiTuple<WALPointer, WALRecord>> recPredicate,
         IgnitePredicate<DataEntry> entryPredicate,
         Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
     ) throws IgniteCheckedException {
-        while (it.hasNextX()) {
-            IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
+        if (it != null) {
+            while (it.hasNextX()) {
+                IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
 
-            WALRecord rec = next.get2();
+                WALRecord rec = next.get2();
 
-            if (!recPredicate.apply(next))
-                break;
+                if (!recPredicate.apply(next))
+                    break;
 
-            switch (rec.type()) {
-                case DATA_RECORD:
-                    checkpointReadLock();
+                switch (rec.type()) {
+                    case DATA_RECORD:
+                        checkpointReadLock();
 
-                    try {
-                        DataRecord dataRec = (DataRecord) rec;
+                        try {
+                            DataRecord dataRec = (DataRecord)rec;
 
-                        for (DataEntry dataEntry : dataRec.writeEntries()) {
-                            if (entryPredicate.apply(dataEntry)) {
-                                checkpointReadLock();
+                            for (DataEntry dataEntry : dataRec.writeEntries()) {
+                                if (entryPredicate.apply(dataEntry)) {
+                                    checkpointReadLock();
 
-                                try {
-                                    int cacheId = dataEntry.cacheId();
+                                    try {
+                                        int cacheId = dataEntry.cacheId();
 
-                                    GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+                                        GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-                                    if (cacheCtx != null)
-                                        applyUpdate(cacheCtx, dataEntry);
-                                    else if (log != null)
-                                        log.warning("Cache (cacheId=" + cacheId + ") is not started, can't apply updates.");
-                                }
-                                finally {
-                                    checkpointReadUnlock();
+                                        if (cacheCtx != null)
+                                            applyUpdate(cacheCtx, dataEntry);
+                                        else if (log != null)
+                                            log.warning("Cache (cacheId=" + cacheId + ") is not started, can't apply updates.");
+                                    }
+                                    finally {
+                                        checkpointReadUnlock();
+                                    }
                                 }
                             }
                         }
-                    }
-                    finally {
-                        checkpointReadUnlock();
-                    }
+                        finally {
+                            checkpointReadUnlock();
+                        }
 
-                    break;
+                        break;
 
-                default:
-                    // Skip other records.
+                    default:
+                        // Skip other records.
+                }
             }
         }
 

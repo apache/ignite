@@ -176,10 +176,6 @@ struct QueriesTestSuiteFixture : odbc::OdbcTestSuite
         BOOST_CHECK_EQUAL(columnLens[5], static_cast<SQLLEN>(sizeof(T)));
         BOOST_CHECK_EQUAL(columnLens[6], static_cast<SQLLEN>(sizeof(T)));
         BOOST_CHECK_EQUAL(columnLens[7], static_cast<SQLLEN>(sizeof(T)));
-        BOOST_CHECK_EQUAL(columnLens[8], SQL_NO_TOTAL);
-        BOOST_CHECK_EQUAL(columnLens[9], SQL_NO_TOTAL);
-        BOOST_CHECK_EQUAL(columnLens[10], SQL_NO_TOTAL);
-        BOOST_CHECK_EQUAL(columnLens[11], SQL_NO_TOTAL);
 
         ret = SQLFetch(stmt);
         BOOST_CHECK(ret == SQL_NO_DATA);

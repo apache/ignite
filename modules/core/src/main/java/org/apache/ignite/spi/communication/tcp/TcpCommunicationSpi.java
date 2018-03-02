@@ -671,6 +671,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 }
             }
 
+            @Override public void onMessageSent(GridNioSession ses, Message msg) {
+                ConnectionKey connKey = ses.meta(CONN_IDX_META);
+
+                if (connKey != null) {
+                    UUID nodeId = connKey.nodeId();
+
+                    metricsLsnr.onMessageSent(msg, nodeId);
+                }
+            }
+
             @Override public void onMessage(final GridNioSession ses, Message msg) {
                 ConnectionKey connKey = ses.meta(CONN_IDX_META);
 
@@ -2619,9 +2629,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                     client.release();
 
-                    if (!retry)
-                        metricsLsnr.onMessageSent(msg, node.id());
-                    else {
+                    if (retry) {
                         removeNodeClient(node.id(), client);
 
                         ClusterNode node0 = getSpiContext().node(node.id());
