@@ -111,6 +111,11 @@ public abstract class GridTcpRouterNioListenerAdapter implements GridNioServerLi
     }
 
     /** {@inheritDoc} */
+    @Override public void onMessageSent(GridNioSession ses, GridClientMessage msg) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @SuppressWarnings("TypeMayBeWeakened")
     @Override public void onMessage(final GridNioSession ses, final GridClientMessage msg) {
         if (msg instanceof GridRouterRequest) {
