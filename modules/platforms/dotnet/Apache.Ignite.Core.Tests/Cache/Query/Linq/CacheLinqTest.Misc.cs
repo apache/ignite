@@ -347,5 +347,29 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             Assert.IsTrue(ex.ToString().Contains("QueryCancelledException: The query was cancelled while executing."));
         }
+
+        /// <summary>
+        /// Tests that QueryEntity.KeyType is assigned to Cache key type.
+        /// </summary>
+        [Test]
+        public void TestQueryEntityKeyTypeAssignment()
+        {
+            var cache = Ignition.GetIgnite().GetOrCreateCache<string, Person>(
+                    new CacheConfiguration(PersonThirdCacheName, typeof(Person))
+                    {
+                        SqlEscapeAll = GetSqlEscapeAll()
+                    });
+
+            cache.Put(@"TST-1/1", new Person(10, "Man"));
+
+            var queryable = GetThirdPersonCache().AsCacheQueryable();
+
+            var res = queryable.FirstOrDefault(p => p.Key == @"TST-1/1");
+
+            Assert.NotNull(res);
+
+            Assert.AreEqual("Man", res.Value.Name);
+        }
+
     }
 }

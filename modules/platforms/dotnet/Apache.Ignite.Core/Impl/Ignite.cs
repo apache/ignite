@@ -485,6 +485,18 @@ namespace Apache.Ignite.Core.Impl
             IgniteArgumentCheck.NotNull(configuration.Name, "CacheConfiguration.Name");
             configuration.Validate(Logger);
 
+            if (configuration.QueryEntities != null)
+            {
+                foreach (var entity in configuration.QueryEntities)
+                {
+                    // Fix QueryEntity KeyType when it is not set by <see cref="CacheConfiguration"/> constructor.
+                    if (entity.KeyType == null)
+                    {
+                        entity.KeyType = typeof(TK);
+                    }
+                }
+            }
+
             var cacheTarget = DoOutOpObject((int) op, s =>
             {
                 var w = BinaryUtils.Marshaller.StartMarshal(s);
