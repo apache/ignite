@@ -18,7 +18,7 @@
 
 import { Selector, t } from 'testcafe';
 import { ModalInput } from '../components/modalInput';
-import { confirmation } from '../components/confirmation';
+import { mouseenterTrigger } from '../helpers';
 import _ from 'lodash';
 
 export class PageQueriesNotebooksList {
@@ -36,11 +36,11 @@ export class PageQueriesNotebooksList {
     }
 
     async selectNotebookByName(notebookName) {
-        const notebookRows = await Selector('.notebook-name');
+        const notebookRows = await Selector('.notebook-name a');
         const notebookRowsIndices = _.range(await notebookRows.count + 1);
-        // console.log(notebookRows.count);
-        // console.log(notebookRowsIndices);
-        const notebookRowIndex = notebookRowsIndices.findIndex((i) => notebookRows.nth(i) === notebookName);
+        const notebookRowIndex = notebookRowsIndices.findIndex(async(i) => {
+            return notebookName === await notebookRows.nth(i).innerText;
+        });
 
         return t.click(Selector('.ui-grid-selection-row-header-buttons').nth(notebookRowIndex + 1).parent());
     }
@@ -59,7 +59,7 @@ export class PageQueriesNotebooksList {
 
     async cloneNotebook(notebookName) {
         await this.selectNotebookByName(notebookName);
-        await t.click(Selector('.btn-ignite').withText('Actions'));
+        await mouseenterTrigger('.btn-ignite:contains(Actions)');
         await t.click(Selector('a').withText('Clone'));
 
         return this.createNotebookModal.confirm();
