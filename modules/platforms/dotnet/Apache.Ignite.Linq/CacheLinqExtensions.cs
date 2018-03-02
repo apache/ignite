@@ -31,7 +31,7 @@ namespace Apache.Ignite.Linq
     /// <summary>
     /// Extensions methods for <see cref="ICache{TK,TV}"/>.
     /// </summary>
-    public static partial class CacheLinqExtensions
+    public static class CacheLinqExtensions
     {
         /// <summary>
         /// Gets an <see cref="IQueryable{T}"/> instance over this cache.

@@ -152,16 +152,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                 .UpdateAll(d => d.Set(p => p.AliasTest, e => e.Key));
             assertAllCount(updated, e => e.Value.AliasTest == e.Key);
 
-            // Expression value - subquery with same cache
-            updated = personQueryable
-                .UpdateAll(d => d.Set(p => p.AliasTest, e => personQueryable.Where(ie => ie.Key == e.Key).Select(ie => ie.Key).First()));
-            assertAllCount(updated, e => e.Value.AliasTest == e.Key);
-
             // Multiple sets
             var aliasValue = 3;
             updated = personQueryable
                 .UpdateAll(d => d.Set(p => p.AliasTest, aliasValue).Set(p => p.Name, aliasValue.ToString()));
             assertAllCount(updated, e => e.Value.AliasTest == aliasValue && e.Value.Name == aliasValue.ToString());
+
+            // Expression value - subquery with same cache
+            updated = personQueryable
+                .UpdateAll(d => d.Set(p => p.AliasTest,
+                    e => personQueryable.Where(ie => ie.Key == e.Key).Select(ie => ie.Key).First()));
+            assertAllCount(updated, e => e.Value.AliasTest == e.Key);
 
             // Expression value - subquery with other cache
             updated = personQueryable
@@ -169,8 +170,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             assertAllCount(updated, e => e.Value.AliasTest == allOrgs.Count(o => o.Key > e.Key));
 
             updated = personQueryable
-                .UpdateAll(d => d.Set(p => p.Name, e => orgQueryable.Where(o => o.Key == e.Value.OrganizationId).Select(o => o.Value.Name).First()));
-            assertAllCount(updated, e => e.Value.Name == allOrgs.Where(o => o.Key == e.Value.OrganizationId).Select(o => o.Value.Name).First());
+                .UpdateAll(d => d.Set(p => p.Name,
+                    e => orgQueryable.Where(o => o.Key == e.Value.OrganizationId).Select(o => o.Value.Name).First()));
+            assertAllCount(updated,
+                e => e.Value.Name == allOrgs.Where(o => o.Key == e.Value.OrganizationId).Select(o => o.Value.Name)
+                         .First());
 
             // Row number limit.
             var count = 2;
@@ -191,7 +195,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                 .Where(p => p.Key > 8)
                 .UpdateAll(d => d.Set(p => p.AliasTest, aliasValue));
             Assert.AreEqual(2, updated);
-            assertAll(e => (e.Key <=8 && e.Value.AliasTest != aliasValue) || e.Value.AliasTest == aliasValue);
+            assertAll(e => e.Key <= 8 && e.Value.AliasTest != aliasValue || e.Value.AliasTest == aliasValue);
 
             // Conditional with limit
             aliasValue = 8888;
@@ -200,7 +204,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                 .Take(1)
                 .UpdateAll(d => d.Set(p => p.AliasTest, aliasValue));
             Assert.AreEqual(1, updated);
-            assertAll(e => (e.Key != 2  && e.Value.AliasTest != aliasValue) || e.Value.AliasTest == aliasValue);
+            assertAll(e => e.Key != 2 && e.Value.AliasTest != aliasValue || e.Value.AliasTest == aliasValue);
 
             // ***
             // Not supported
@@ -209,14 +213,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             // Skip is not supported with DELETE.
             var nex = Assert.Throws<NotSupportedException>(
                 () => personQueryable.Skip(1).UpdateAll(d => d.Set(p => p.Age, 15)));
-            Assert.AreEqual(
-                "UpdateAll can not be combined with result operators (other than Take): SkipResultOperator",
+            Assert.AreEqual("UpdateAll can not be combined with result operators (other than Take): SkipResultOperator",
                 nex.Message);
 
             // Multiple result operators are not supported with DELETE.
-            nex = Assert.Throws<NotSupportedException>(() => personQueryable.Skip(1).Take(1).UpdateAll(d => d.Set(p => p.Age, 15)));
-            Assert.AreEqual(
-                "UpdateAll can not be combined with result operators (other than Take): SkipResultOperator, " +
+            nex = Assert.Throws<NotSupportedException>(() =>
+                personQueryable.Skip(1).Take(1).UpdateAll(d => d.Set(p => p.Age, 15)));
+            Assert.AreEqual("UpdateAll can not be combined with result operators (other than Take): SkipResultOperator, " +
                 "TakeResultOperator, UpdateAllResultOperator", nex.Message);
 
             // Joins are not supported in H2.
