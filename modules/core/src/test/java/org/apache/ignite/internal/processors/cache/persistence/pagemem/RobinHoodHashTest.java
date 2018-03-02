@@ -25,6 +25,7 @@ import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
@@ -291,7 +292,7 @@ public class RobinHoodHashTest {
                 int pageId = 1;
                 map.put(grpId, pageId, val, ver);
 
-                map.refresh(grpId, pageId, ver+1);
+                map.refresh(grpId, pageId, ver + 1);
 
                 assertEquals(val, map.get(grpId, pageId, ver + 1, -1, -2));
 
@@ -303,13 +304,13 @@ public class RobinHoodHashTest {
 
     @Test
     public void testClearAtWithControlMap() throws Exception {
-        int cap = 10;
+        int cap = 100;
 
         LoadedPagesMap.KeyPredicate pred = new LoadedPagesMap.KeyPredicate() {
             @Override public boolean test(int grpId, long pageId) {
                 int hc = Integer.hashCode(grpId) + 31 * Long.hashCode(pageId);
 
-                return true; //hc % 1 == 0;
+                return hc % 3 == 0;
             }
         };
 
@@ -318,11 +319,67 @@ public class RobinHoodHashTest {
 
             int elems = cap - 1;  //fill with 1 space left;
             for (int i = 0; i < elems; i++) {
-                int ver = i;
-                int grpId = ver + 1;
+                int grpId = i + 1;
                 long val = grpId * grpId;
                 int pageId = 1;
-                map.put(grpId, pageId, val, ver);
+
+                map.put(grpId, pageId, val, i);
+
+                check.put(new FullPageId(pageId, grpId), val);
+            }
+
+            int sz = map.size();
+            for (int i = 0; i < cap; i++) {
+                long val = map.clearAt(i, pred, -1);
+
+                if (dump) {
+                    System.out.println(" +++++++++++++++++++ " + i + " ++++++++++++++++");
+                    System.out.println(map.dump());
+                }
+
+                if (val != -1) {
+                    int newSize = map.size();
+                    assertThat(sz - newSize, Matchers.is(1));
+                    sz = newSize;
+
+                    Map<FullPageId, Long> res = new HashMap<>();
+
+                    map.forEach(res::put);
+
+                    assertThat(newSize, Matchers.is(map.size()));
+                }
+
+                if (val != -1)
+                    i--;
+            }
+
+            check.keySet().removeIf(entry -> pred.test(entry.groupId(), entry.pageId()));
+
+            Map<FullPageId, Long> res = new HashMap<>();
+
+            map.forEach(res::put);
+
+            MatcherAssert.assertThat(res, Matchers.is(check));
+
+        }, cap);
+    }
+
+    @Test
+    public void testClearAllWithControlMap() throws Exception {
+        int cap = 100;
+
+        LoadedPagesMap.KeyPredicate pred = (grpId, pageId) -> true;
+
+        withMap(map -> {
+            Map<FullPageId, Long> check = new HashMap<>();
+
+            int elems = cap - 1;  //fill with 1 space left;
+            for (int i = 0; i < elems; i++) {
+                int grpId = i + 1;
+                long val = grpId * grpId;
+                int pageId = 1;
+
+                map.put(grpId, pageId, val, i);
 
                 check.put(new FullPageId(pageId, grpId), val);
             }
@@ -332,8 +389,10 @@ public class RobinHoodHashTest {
             for (int i = 0; i < cap; i++) {
                 long val = map.clearAt(i, pred, -1);
 
-                System.out.println(" +++++++++++++++++++ " + i + " ++++++++++++++++");
-                System.out.println(map.dump());
+                if (dump) {
+                    System.out.println(" +++++++++++++++++++ " + i + " ++++++++++++++++");
+                    System.out.println(map.dump());
+                }
 
                 if (val != -1) {
                     int newSize = map.size();
@@ -356,7 +415,7 @@ public class RobinHoodHashTest {
             for (int i = 0; i < cap; i++) {
                 long val = map.clearAt(i, pred, -1);
 
-                assertEquals (val, -1);  // clear should not be successful.
+                assertEquals(val, -1);  // clear should not be successful.
             }
             assertEquals(elems, removals);
 
@@ -366,7 +425,7 @@ public class RobinHoodHashTest {
 
             map.forEach(res::put);
 
-            org.hamcrest.MatcherAssert.assertThat(res, org.hamcrest.Matchers.is(check));
+            MatcherAssert.assertThat(res, Matchers.is(check));
 
         }, cap);
     }
