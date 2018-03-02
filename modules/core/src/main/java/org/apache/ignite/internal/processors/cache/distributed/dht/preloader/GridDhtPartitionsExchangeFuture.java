@@ -81,7 +81,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
@@ -830,7 +829,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     top.update(null,
                         clientTop.partitionMap(true),
                         clientTop.fullUpdateCounters(),
-                        Collections.<Integer>emptySet(),
+                        Collections.emptySet(),
                         null);
                 }
             }
@@ -1694,7 +1693,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void logExchange(DiscoveryEvent evt) {
         if (cctx.kernalContext().state().publicApiActiveState(false) && cctx.wal() != null) {
-            if (((FileWriteAheadLogManager)cctx.wal()).serializerVersion() > 1)
+            if (cctx.wal().serializerVersion() > 1)
                 try {
                     ExchangeRecord.Type type = null;
 
@@ -2248,7 +2247,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             CounterWithNodes maxCntr = maxCntrs.get(part.id());
 
             if (maxCntr == null && cntr == 0) {
-                CounterWithNodes cntrObj = new CounterWithNodes(cntr, cctx.localNodeId());
+                CounterWithNodes cntrObj = new CounterWithNodes(0, cctx.localNodeId());
 
                 for (UUID nodeId : msgs.keySet()) {
                     if (top.partitionState(nodeId, part.id()) == GridDhtPartitionState.OWNING)
@@ -3087,7 +3086,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     top.update(resTopVer,
                         entry.getValue(),
                         cntrMap,
-                        Collections.<Integer>emptySet(),
+                        Collections.emptySet(),
                         null);
                 }
             }
