@@ -129,40 +129,48 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
 
             var personQueryable = cache.AsCacheQueryable();
 
+            Action<Func<ICacheEntry<int, Person>, bool>> assertAll = func =>
+                Assert.IsTrue(personQueryable.ToArray().All(func));
+
+            Action<int, Func<ICacheEntry<int, Person>, bool>> assertAllCount = (i, func) =>
+            {
+                Assert.AreEqual(personCount, i);
+                assertAll(func);
+            };
+
             // ***
             // Unconditional
             // ***
 
-            Action<int, Func<ICacheEntry<int, Person>, bool>> assertAll = (i, func) =>
-            {
-                Assert.AreEqual(personCount, i);
-                Assert.IsTrue(personQueryable.ToArray().All(func));
-            };
-
             // Constant value
             var updated = personQueryable
                 .UpdateAll(d => d.Set(p => p.AliasTest, 7));
-            assertAll(updated, e => e.Value.AliasTest == 7);
+            assertAllCount(updated, e => e.Value.AliasTest == 7);
 
             // Expression value - from self
             updated = personQueryable
                 .UpdateAll(d => d.Set(p => p.AliasTest, e => e.Key));
-            assertAll(updated, e => e.Value.AliasTest == e.Key);
+            assertAllCount(updated, e => e.Value.AliasTest == e.Key);
 
             // Expression value - subquery with same cache
             updated = personQueryable
                 .UpdateAll(d => d.Set(p => p.AliasTest, e => personQueryable.Where(ie => ie.Key == e.Key).Select(ie => ie.Key).First()));
-            assertAll(updated, e => e.Value.AliasTest == e.Key);
+            assertAllCount(updated, e => e.Value.AliasTest == e.Key);
+
+            // Multiple sets
+            var aliasValue = 3;
+            updated = personQueryable
+                .UpdateAll(d => d.Set(p => p.AliasTest, aliasValue).Set(p => p.Name, aliasValue.ToString()));
+            assertAllCount(updated, e => e.Value.AliasTest == aliasValue && e.Value.Name == aliasValue.ToString());
 
             // Expression value - subquery with other cache
             updated = personQueryable
                 .UpdateAll(d => d.Set(p => p.AliasTest, e => orgQueryable.Count(o => o.Key > e.Key)));
-            
-            assertAll(updated, e => e.Value.AliasTest == allOrgs.Count(o => o.Key > e.Key));
+            assertAllCount(updated, e => e.Value.AliasTest == allOrgs.Count(o => o.Key > e.Key));
 
             updated = personQueryable
                 .UpdateAll(d => d.Set(p => p.Name, e => orgQueryable.Where(o => o.Key == e.Value.OrganizationId).Select(o => o.Value.Name).First()));
-            assertAll(updated, e => e.Value.Name == allOrgs.Where(o => o.Key == e.Value.OrganizationId).Select(o => o.Value.Name).First());
+            assertAllCount(updated, e => e.Value.Name == allOrgs.Where(o => o.Key == e.Value.OrganizationId).Select(o => o.Value.Name).First());
 
             // Row number limit.
             var count = 2;
@@ -177,13 +185,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             // Conditional
             // ***
 
+            // Simple conditiona
+            aliasValue = 777;
             updated = personQueryable
-                .Where(p => p.Value.Age > 0)
-                .Take(2)
-                .UpdateAll(d => d.Set(p => p.AliasTest, 1)
-                    .Set(p => p.Age, p => p.Value.Age + 1));
-
-            Assert.AreEqual(updated, 2);
+                .Where(p => p.Key > 8)
+                .UpdateAll(d => d.Set(p => p.AliasTest, aliasValue));
+            Assert.AreEqual(2, updated);
+            assertAll(e => (e.Key <=8 && e.Value.AliasTest != aliasValue) || e.Value.AliasTest == aliasValue);
 
             // Skip is not supported with DELETE.
             var nex = Assert.Throws<NotSupportedException>(
