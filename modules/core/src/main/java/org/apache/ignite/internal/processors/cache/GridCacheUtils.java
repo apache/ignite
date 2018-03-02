@@ -470,7 +470,7 @@ public class GridCacheUtils {
      * @param ctx Context.
      * @param affNodes All affinity nodes.
      * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
-     * @return Affinity node to get key from.
+     * @return Affinity node to get key from or {@code null} or {@code null} if there is no suitable alive node.
      */
     @Nullable public static ClusterNode affinityNode(GridCacheContext ctx, List<ClusterNode> affNodes,
         boolean canRemap) {
