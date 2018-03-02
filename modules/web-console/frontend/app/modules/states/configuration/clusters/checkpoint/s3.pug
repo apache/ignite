@@ -55,16 +55,14 @@ include /app/helpers/jade/mixins
         'Custom AWS credentials provider implementation class', checkpointS3Custom)
 .settings-row
     +text('Bucket name suffix:', 'model.S3.bucketNameSuffix', '"checkpointS3BucketNameSuffix"', 'false', 'default-bucket', 'Bucket name suffix')
-.pcb-flex-grid-break(ng-if-start=`$ctrl.available("2.4.0")`)
-.settings-row
+.settings-row(ng-if-start=`$ctrl.available("2.4.0")`)
     +text('Bucket endpoint:', `model.S3.bucketEndpoint`, '"checkpointS3BucketEndpoint"', false, 'Input bucket endpoint',
     'Bucket endpoint for IP finder<br/> \
     For information about possible endpoint names visit <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>')
-.settings-row
+.settings-row(ng-if-end)
     +text('SSE algorithm:', `model.S3.SSEAlgorithm`, '"checkpointS3SseAlgorithm"', false, 'Input SSE algorithm',
     'Server-side encryption algorithm for Amazon S3-managed encryption keys<br/> \
     For information about possible S3-managed encryption keys visit <a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html">docs.aws.amazon.com</a>')
-.pcb-flex-grid-break(ng-if-end)
 .settings-row
     +java-class('Listener:', 'model.S3.checkpointListener', '"checkpointS3Listener" + $index', 'true', 'false',
         'Checkpoint listener implementation class name', checkpointS3)
