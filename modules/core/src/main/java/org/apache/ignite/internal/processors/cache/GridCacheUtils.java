@@ -384,6 +384,9 @@ public class GridCacheUtils {
     /** Cluster nodes' MAC addresses equality filter. */
     private static IgniteBiPredicate<ClusterNode, ClusterNode> macsFilter = U::sameMacs;
 
+    /** ThreadLocalRandom generator closure. */
+    private static IgniteClosure<Integer, Integer> rndClo = bound -> ThreadLocalRandom.current().nextInt(bound);
+
     /**
      * Ensure singleton.
      */
@@ -470,7 +473,7 @@ public class GridCacheUtils {
      * @param ctx Context.
      * @param affNodes All affinity nodes.
      * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
-     * @return Affinity node to get key from or {@code null} or {@code null} if there is no suitable alive node.
+     * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
      */
     @Nullable public static ClusterNode affinityNode(GridCacheContext ctx, List<ClusterNode> affNodes,
         boolean canRemap) {
@@ -479,13 +482,11 @@ public class GridCacheUtils {
 
         ClusterNode locNode = ctx.localNode();
 
-        int r = ThreadLocalRandom.current().nextInt(affNodes.size());
+        int r = rndClo.apply(affNodes.size());
 
         ClusterNode n0 = null;
 
         for (ClusterNode node : affNodes) {
-            r--;
-
             if (canRemap || ctx.discovery().alive(node)) {
                 if (macsFilter.apply(locNode, node))
                     return node;
@@ -493,6 +494,8 @@ public class GridCacheUtils {
                 if (r >= 0 || n0 == null)
                     n0 = node;
             }
+
+            r--;
         }
 
         return n0;

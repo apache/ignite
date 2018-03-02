@@ -18,8 +18,9 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -30,6 +31,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -52,13 +54,25 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
     public static final String VAL_PREFIX = "val";
 
     /** */
-    private static final int PRIMARY_KEYS_NUMBER = 100;
+    private static final int PRIMARY_KEYS_NUMBER = 1_000;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        assert PRIMARY_KEYS_NUMBER % gridCount() == 0;
+
         startGrid(getConfiguration("client").setClientMode(true));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        IgniteCache cache = ignite(0).cache(CACHE_NAME);
+
+        if (cache != null)
+            cache.destroy();
     }
 
     /** {@inheritDoc} */
@@ -81,12 +95,61 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
     }
 
     /**
+     * Test 'get' operations requests generator distribution.
+     *
+     * @throws Exception In case of an error.
+     */
+    public void testGetRequestsGeneratorDistribution() throws Exception {
+        runTestGetRequestsGeneratorDistribution(false);
+    }
+
+    /**
+     * Test 'getAll' operations requests generator distribution.
+     *
+     * @throws Exception In case of an error.
+     */
+    public void testGetAllRequestsGeneratorDistribution() throws Exception {
+        runTestGetRequestsGeneratorDistribution(true);
+    }
+
+    /**
+     * @param batchMode Test mode.
+     * @throws Exception In case of an error.
+     */
+    protected void runTestGetRequestsGeneratorDistribution(boolean batchMode) throws Exception {
+        GridTestUtils.setFieldValue(new GridCacheUtils(), "macsFilter", new NodeIdFilter(null)); // Always false.
+
+        GridTestUtils.setFieldValue(new GridCacheUtils(), "rndClo", new RoundRobinDistributionClosure());
+
+        IgniteCache<Integer, String> cache = grid(0).createCache(replicatedCache());
+
+        Set<Integer> keys = new TreeSet<>(primaryKeys(cache, PRIMARY_KEYS_NUMBER));
+
+        for (Integer key : keys)
+            cache.put(key, VAL_PREFIX + key);
+
+        cache = grid("client").getOrCreateCache(CACHE_NAME);
+
+        getAndValidateData(cache, new HashSet<>(keys), batchMode);
+
+        int expected = PRIMARY_KEYS_NUMBER / gridCount();
+
+        for (int i = 0; i < gridCount(); i++) {
+            IgniteEx ignite = grid(i);
+
+            long getsCount = ignite.cache(CACHE_NAME).localMetrics().getCacheGets();
+
+            assertEquals(expected, getsCount);
+        }
+    }
+
+    /**
      * Test 'get' operations requests distribution.
      *
      * @throws Exception In case of an error.
      */
     public void testGetRequestsDistribution() throws Exception {
-        runTest(false);
+        runTestGetAllRequestsDistribution(false);
     }
 
     /**
@@ -95,16 +158,16 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
      * @throws Exception In case of an error.
      */
     public void testGetAllRequestsDistribution() throws Exception {
-        runTest(true);
+        runTestGetAllRequestsDistribution(true);
     }
 
     /**
      * @param batchMode Test mode.
      * @throws Exception In case of an error.
      */
-    protected void runTest(boolean batchMode) throws Exception {
+    protected void runTestGetAllRequestsDistribution(boolean batchMode) throws Exception {
         for (int idx = 0; idx < gridCount(); idx++) {
-            runTest(ignite(idx), batchMode);
+            runTestGetAllRequestsDistribution(ignite(idx), batchMode);
 
             ignite(0).cache(CACHE_NAME).destroy();
         }
@@ -115,23 +178,34 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
      * @param batchMode Test mode.
      * @throws Exception In case of an error.
      */
-    protected void runTest(final Ignite dest, final boolean batchMode) throws Exception {
+    protected void runTestGetAllRequestsDistribution(final Ignite dest, final boolean batchMode) throws Exception {
         final UUID destId = dest.cluster().localNode().id();
 
         GridTestUtils.setFieldValue(new GridCacheUtils(), "macsFilter", new NodeIdFilter(destId));
 
         IgniteCache<Integer, String> cache = grid(0).createCache(replicatedCache());
 
-        List<Integer> keys = primaryKeys(cache, PRIMARY_KEYS_NUMBER);
+        Set<Integer> keys = new TreeSet<>(primaryKeys(cache, PRIMARY_KEYS_NUMBER));
 
         for (Integer key : keys)
             cache.put(key, VAL_PREFIX + key);
 
         cache = grid("client").getOrCreateCache(CACHE_NAME);
 
+        getAndValidateData(cache, new HashSet<>(keys), batchMode);
+
+        validateRequestsDistribution(destId);
+    }
+
+    /**
+     * @param cache Ignite cache.
+     * @param keys Keys to get.
+     * @param batchMode Test mode.
+     */
+    protected void getAndValidateData(IgniteCache<Integer, String> cache, Set<Integer> keys, boolean batchMode) {
         try (Transaction tx = grid("client").transactions().txStart()) {
             if (batchMode) {
-                Map<Integer, String> results = cache.getAll(new HashSet<>(keys));
+                Map<Integer, String> results = cache.getAll(keys);
 
                 for (Map.Entry<Integer, String> entry : results.entrySet())
                     assertEquals(VAL_PREFIX + entry.getKey(), entry.getValue());
@@ -143,8 +217,6 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
 
             tx.commit();
         }
-
-        validateRequestsDistribution(destId);
     }
 
     /**
@@ -199,6 +271,17 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
      */
     protected TransactionConcurrency transactionConcurrency() {
         return PESSIMISTIC;
+    }
+
+    /** */
+    private static class RoundRobinDistributionClosure implements IgniteClosure<Integer, Integer> {
+        /** Counter. */
+        private int counter;
+
+        /** {@inheritDoc} */
+        @Override public Integer apply(Integer num) {
+            return counter++ % num;
+        }
     }
 
     /** */
