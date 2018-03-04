@@ -210,7 +210,7 @@ namespace Apache.Ignite.Linq
             IgniteArgumentCheck.NotNull(query, "query");
             IgniteArgumentCheck.NotNull(updateDescription, "updateDescription");
 
-            var method = UpdateAllExpressionNode.UpdateAllDescriptorMethodInfo
+            var method = UpdateAllExpressionNode.UpdateAllMethodInfo
                 .MakeGenericMethod(typeof(TKey), typeof(TValue)); // TODO: cache?
 
             return query.Provider.Execute<int>(Expression.Call(null, method, new[]

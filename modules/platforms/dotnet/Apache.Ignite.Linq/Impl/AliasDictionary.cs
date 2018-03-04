@@ -52,13 +52,11 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public void Push(bool copyAliases)
         {
-            var aliasesTemp = copyAliases
-                ? _tableAliases.ToDictionary(p => p.Key, p => p.Value)
-                : new Dictionary<IQuerySource, string>();
-
             _stack.Push(_tableAliases);
 
-            _tableAliases = aliasesTemp;
+            _tableAliases = copyAliases
+                ? _tableAliases.ToDictionary(p => p.Key, p => p.Value)
+                : new Dictionary<IQuerySource, string>();
         }
 
         /// <summary>

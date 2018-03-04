@@ -55,7 +55,7 @@ namespace Apache.Ignite.Linq.Impl
         private readonly bool _includeAllFields;
 
         /** */
-        private readonly bool _visitSubqueryModel;
+        private readonly bool _visitEntireSubQueryModel;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheQueryExpressionVisitor" /> class.
@@ -65,15 +65,15 @@ namespace Apache.Ignite.Linq.Impl
         /// for the whole-table select instead of _key, _val.</param>
         /// <param name="includeAllFields">Flag indicating that star '*' qualifier should be used
         /// for the whole-table select as well as _key, _val.</param>
-        /// <param name="visitSubqueryModel">Flag, indicating that subquery should be visited as full query</param>
-        public CacheQueryExpressionVisitor(CacheQueryModelVisitor modelVisitor, bool useStar, bool includeAllFields, bool visitSubqueryModel)
+        /// <param name="visitEntireSubQueryModel">Flag, indicating that subquery should be visited as full query</param>
+        public CacheQueryExpressionVisitor(CacheQueryModelVisitor modelVisitor, bool useStar, bool includeAllFields, bool visitEntireSubQueryModel)
         {
             Debug.Assert(modelVisitor != null);
 
             _modelVisitor = modelVisitor;
             _useStar = useStar;
             _includeAllFields = includeAllFields;
-            _visitSubqueryModel = visitSubqueryModel;
+            _visitEntireSubQueryModel = visitEntireSubQueryModel;
         }
 
         /// <summary>
@@ -559,7 +559,7 @@ namespace Apache.Ignite.Linq.Impl
             {
                 VisitContains(subQueryModel, contains);
             }
-            else if (_visitSubqueryModel)
+            else if (_visitEntireSubQueryModel)
             {
                 ResultBuilder.Append("(");
                 _modelVisitor.VisitQueryModel(subQueryModel, false, true);
@@ -590,7 +590,7 @@ namespace Apache.Ignite.Linq.Impl
                 Visit(contains.Item);
 
                 ResultBuilder.Append(" IN (");
-                if (_visitSubqueryModel)
+                if (_visitEntireSubQueryModel)
                 {
                     _modelVisitor.VisitQueryModel(subQueryModel, false, true);
                 }

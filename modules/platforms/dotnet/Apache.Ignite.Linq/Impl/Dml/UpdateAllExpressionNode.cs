@@ -38,22 +38,18 @@ namespace Apache.Ignite.Linq.Impl.Dml
     /// </summary>
     internal sealed class UpdateAllExpressionNode : ResultOperatorExpressionNodeBase
     {
-        private readonly LambdaExpression _updateDescription;
-
-        static UpdateAllExpressionNode()
-        {
-            var updateAllMethodInfos = typeof(CacheLinqExtensions)
-                .GetMethods()
-                .Where(x => x.Name == "UpdateAll")
-                .ToArray();
-
-            UpdateAllDescriptorMethodInfo = updateAllMethodInfos.Single();
-        }
-
         /// <summary>
-        /// The UpdateAll(pred) method.
+        /// The UpdateAll method.
         /// </summary>
-        public static readonly MethodInfo UpdateAllDescriptorMethodInfo;
+        public static readonly MethodInfo UpdateAllMethodInfo = typeof(CacheLinqExtensions)
+            .GetMethods()
+            .Single(x => x.Name == "UpdateAll");
+
+        //** */
+        private static readonly MethodInfo[] SupportedMethods = {UpdateAllMethodInfo};
+
+        //** */
+        private readonly LambdaExpression _updateDescription;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="UpdateAllExpressionNode" /> class.
@@ -78,6 +74,10 @@ namespace Apache.Ignite.Linq.Impl.Dml
         /** <inheritdoc /> */
         protected override ResultOperatorBase CreateResultOperator(ClauseGenerationContext clauseGenerationContext)
         {
+            if (_updateDescription.Parameters.Count != 1)
+                throw new NotSupportedException("Expression is not supported for UpdateAll: " +
+                    _updateDescription);
+
             var querySourceRefExpression = (QuerySourceReferenceExpression) Source.Resolve(
                 _updateDescription.Parameters[0],
                 _updateDescription.Parameters[0],
@@ -134,7 +134,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
         /// </summary>
         public static IEnumerable<MethodInfo> GetSupportedMethods()
         {
-            yield return UpdateAllDescriptorMethodInfo;
+            return SupportedMethods;
         }
     }
 }
