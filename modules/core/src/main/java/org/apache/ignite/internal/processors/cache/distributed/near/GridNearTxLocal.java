@@ -175,7 +175,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     @GridToStringExclude
     private TransactionProxyImpl proxy;
 
-    /** Fast finish guard. */
+    /** Used to prevent race between fast finish check and async rollback. */
     @SuppressWarnings("UnusedDeclaration")
     private volatile int fastFinish;
 
@@ -558,21 +558,26 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 opCtx != null && opCtx.recovery(),
                 dataCenterId);
 
+            try {
+                loadFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFuture(e);
+            }
+
+            long timeout = remainingTime();
+
+            if (timeout == -1)
+                return new GridFinishedFuture<>(timeoutException());
+
+            if (isRollbackOnly())
+                return new GridFinishedFuture<>(rollbackException());
+
             if (pessimistic()) {
-                assert loadFut == null || loadFut.isDone() : loadFut;
-
-                if (loadFut != null)
-                    loadFut.get();
-
                 final Collection<KeyCacheObject> enlisted = Collections.singleton(cacheKey);
 
                 if (log.isDebugEnabled())
                     log.debug("Before acquiring transaction lock for put on key: " + enlisted);
-
-                long timeout = remainingTime();
-
-                if (timeout == -1)
-                    return new GridFinishedFuture<>(timeoutException());
 
                 IgniteInternalFuture<Boolean>fut = cacheCtx.cache().txLockAsync(enlisted,
                     timeout,
@@ -938,14 +943,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         finally {
             retFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
                 @Override public void apply(IgniteInternalFuture<Void> fut) {
-                    try {
-                        fut.get();
-
-                        clearLockFuture(); // Cleanup state.
-                    }
-                    catch (IgniteCheckedException e) {
-                        // No-op.
-                    }
+                    clearLockFuture();
                 }
             });
         }
@@ -1153,14 +1151,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         finally {
             retFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
                 @Override public void apply(IgniteInternalFuture<Void> fut) {
-                    try {
-                        fut.get();
-
-                        clearLockFuture(); // Cleanup state.
-                    }
-                    catch (IgniteCheckedException e) {
-                        // No-op.
-                    }
+                    clearLockFuture();
                 }
             });
         }
@@ -1782,19 +1773,40 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             ExpiryPolicy expiryPlc = opCtx != null ? opCtx.expiry() : null;
 
-            final Collection<KeyCacheObject> lockKeys = enlistRead(cacheCtx,
-                entryTopVer,
-                keys,
-                expiryPlc,
-                retMap,
-                missed,
-                keysCnt,
-                deserializeBinary,
-                skipVals,
-                keepCacheObjects,
-                skipStore,
-                recovery,
-                needVer);
+            // Guard against concurrent rollback.
+            GridFutureAdapter<?> enlistFut = new GridFutureAdapter<>();
+
+            if (!updateLockFuture(null, enlistFut))
+                return new GridFinishedFuture<>(rollbackException());
+
+            final Collection<KeyCacheObject> lockKeys;
+
+            try {
+                lockKeys = enlistRead(cacheCtx,
+                    entryTopVer,
+                    keys,
+                    expiryPlc,
+                    retMap,
+                    missed,
+                    keysCnt,
+                    deserializeBinary,
+                    skipVals,
+                    keepCacheObjects,
+                    skipStore,
+                    recovery,
+                    needVer);
+            }
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFuture<>(e);
+            }
+            finally {
+                clearLockFuture();
+            }
+
+            enlistFut.onDone();
+
+            if (isRollbackOnly())
+                return new GridFinishedFuture<>(rollbackException());
 
             if (single && missed.isEmpty())
                 return new GridFinishedFuture<>(retMap);
@@ -2086,6 +2098,9 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         // Transactions that are pessimistic and not read-committed are covered
         // outside of this loop.
         for (KeyCacheObject key : keys) {
+//            if (isRollbackOnly())
+//                throw rollbackException();
+
             if ((pessimistic() || needReadVer) && !readCommitted() && !skipVals)
                 addActiveCache(cacheCtx, recovery);
 

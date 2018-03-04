@@ -445,7 +445,17 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         if (!(curFut instanceof GridCacheVersionedFuture)) {
             curFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
-                    doFinish(false, false);
+                    // Lock future may not be cleaned atm, so retry from another tread.
+                    cctx.time().schedule(new Runnable() {
+                        @Override public void run() {
+                            cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                                @Override public void run() {
+                                    tryRollbackAsync(onTimeout);
+                                }
+                            });
+
+                        }
+                    }, 0, -1);
                 }
             });
 
@@ -461,7 +471,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             });
         }
         else {
-            // Force lock cancel.
+            // Cancel lock.
             try {
                 curFut.cancel();
             }

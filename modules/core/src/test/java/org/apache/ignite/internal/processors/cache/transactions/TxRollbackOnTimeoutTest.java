@@ -559,7 +559,21 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testEnlistMany() throws Exception {
+    public void testEnlistManyRead() throws Exception {
+        testEnlistMany(false);
+    }
+
+    /**
+     *
+     */
+    public void testEnlistManyWrite() throws Exception {
+        testEnlistMany(true);
+    }
+
+    /**
+     *
+     */
+    private void testEnlistMany(boolean write) throws Exception {
         final Ignite client = startClient();
 
         Map<Integer, Integer> entries = new HashMap<>();
@@ -567,15 +581,21 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         for (int i = 0; i < 1000000; i++)
             entries.put(i, i);
 
+        IgniteInternalFuture<?> fut = null;
+
         try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 200, 0)) {
-            client.cache(CACHE_NAME).putAll(entries);
+            if (write)
+                client.cache(CACHE_NAME).putAll(entries);
+            else
+                client.cache(CACHE_NAME).getAll(entries.keySet());
 
             tx.commit();
         }
         catch (Throwable t) {
-            // No-op.
-            assertTrue("Expecting timeout", X.hasCause(t, TransactionTimeoutException.class));
+            assertTrue(X.hasCause(t, TransactionRollbackException.class));
         }
+
+        fut.get();
 
         assertEquals(0, client.cache(CACHE_NAME).size());
     }
