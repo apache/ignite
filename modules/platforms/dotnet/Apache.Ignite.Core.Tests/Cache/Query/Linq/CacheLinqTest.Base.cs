@@ -369,11 +369,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                 AliasTest = reader.ReadInt("AliasTest");
                 Bool = reader.ReadBoolean("Bool");
             }
-
-            public override string ToString()
-            {
-                return String.Format("Age:{0} Name:{1} OrgId:{2} Alias:{3}", Age, Name, OrganizationId, AliasTest);
-            }
         }
 
         public class Address
