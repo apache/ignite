@@ -92,18 +92,18 @@ public class SVMBinaryClassificationExample {
                     LabeledDataset train = split.train();
 
                     System.out.println("\n>>> Create new linear binary SVM trainer object.");
-                    Trainer<SVMLinearBinaryClassificationModel, LabeledDataset> trainer = new SVMLinearBinaryClassificationTrainer();
+                   // Trainer<SVMLinearBinaryClassificationModel, LabeledDataset> trainer = new SVMLinearBinaryClassificationTrainer();
 
                     System.out.println("\n>>> Perform the training to get the model.");
-                    SVMLinearBinaryClassificationModel mdl = trainer.train(train);
+                 //   SVMLinearBinaryClassificationModel mdl = trainer.train(train);
 
-                    System.out.println("\n>>> SVM classification model: " + mdl);
+               //     System.out.println("\n>>> SVM classification model: " + mdl);
 
                     // Clone labels
                     final double[] labels = test.labels();
 
                     // Save predicted classes to test dataset
-                    LabellingMachine.assignLabels(test, mdl);
+                //    LabellingMachine.assignLabels(test, mdl);
 
                     // Calculate amount of errors on test dataset
                     int amountOfErrors = 0;

@@ -59,7 +59,7 @@ public class SVMLinearMultiClassClassificationTrainer implements Trainer<SVMLine
                 .withAmountOfLocIterations(this.amountOfLocIterations())
                 .withLambda(this.lambda());
 
-            multiClsMdl.add(clsLb, trainer.train(binarizedDataset));
+           // multiClsMdl.add(clsLb, trainer.train(binarizedDataset));
         });
 
         return multiClsMdl;
