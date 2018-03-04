@@ -355,9 +355,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param cacheMode Cache mode.
      */
     public void addCacheGroup(CacheGroupDescriptor grpDesc, IgnitePredicate<ClusterNode> filter, CacheMode cacheMode) {
-        log.info("Put groupId=" + grpDesc.groupId());
         CacheGroupAffinity old = registeredCacheGrps.put(grpDesc.groupId(),
             new CacheGroupAffinity(grpDesc.cacheOrGroupName(), filter, cacheMode));
+
+        log.info("registeredCacheGrps = " + registeredCacheGrps);
 
         assert old == null : old;
     }
