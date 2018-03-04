@@ -44,7 +44,8 @@ import org.jetbrains.annotations.NotNull;
  * and +1 labels for two classes and makes binary classification. </p> The paper about this algorithm could be found
  * here https://arxiv.org/abs/1409.1458.
  */
-public class SVMLinearBinaryClassificationTrainer<K, V> implements DatasetTrainer<K, V, SVMLinearBinaryClassificationModel> {
+public class SVMLinearBinaryClassificationTrainer<K, V>
+    implements DatasetTrainer<K, V, SVMLinearBinaryClassificationModel> {
     /** Amount of outer SDCA algorithm iterations. */
     private int amountOfIterations = 200;
 

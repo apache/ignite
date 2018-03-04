@@ -27,21 +27,20 @@ import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.examples.ml.dataset.model.Person;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationPreprocessor;
-import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
 import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
+import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationModel;
+import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Run SVM binary-class classification model over distributed dataset.
  *
- * @see org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel
+ * @see SVMLinearBinaryClassificationModel
  */
-public class SVM2ClassificationExample {
+public class SVM22ClassificationExample {
     /** The Iris dataset. */
 
 
@@ -54,13 +53,13 @@ public class SVM2ClassificationExample {
             System.out.println(">>> Ignite grid started.");
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
-                SVM2ClassificationExample.class.getSimpleName(), () -> {
+                SVM22ClassificationExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
 
-                SVMLinearBinaryClassificationTrainer<Integer, double[]> trainer = new SVMLinearBinaryClassificationTrainer<>();
+                SVMLinearMultiClassClassificationTrainer<Integer, double[]> trainer = new SVMLinearMultiClassClassificationTrainer<>();
 
-                SVMLinearBinaryClassificationModel mdl = trainer.fit(
+                SVMLinearMultiClassClassificationModel mdl = trainer.fit(
                     new CacheBasedDatasetBuilder<>(ignite, dataCache),
                     (k, v) -> Arrays.copyOfRange(v, 1, v.length),
                     (k, v) -> v[0],
@@ -76,7 +75,7 @@ public class SVM2ClassificationExample {
                 int totalAmount = 0;
 
                 // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
-                int[][] confusionMtx = {{0, 0}, {0, 0}};
+                int[][] confusionMtx = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
 
 
                 try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {

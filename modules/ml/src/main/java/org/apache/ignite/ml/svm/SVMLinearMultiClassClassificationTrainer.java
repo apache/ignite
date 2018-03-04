@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.ignite.ml.Trainer;
+import org.apache.ignite.ml.DatasetTrainer;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.structures.LabeledDataset;
 
 /**
@@ -30,7 +32,9 @@ import org.apache.ignite.ml.structures.LabeledDataset;
  *
  * All common parameters are shared with bunch of binary classification trainers.
  */
-public class SVMLinearMultiClassClassificationTrainer implements Trainer<SVMLinearMultiClassClassificationModel, LabeledDataset> {
+public class SVMLinearMultiClassClassificationTrainer
+    <K, V>
+    implements DatasetTrainer<K, V, SVMLinearMultiClassClassificationModel> {
     /** Amount of outer SDCA algorithm iterations. */
     private int amountOfIterations = 20;
 
@@ -40,14 +44,18 @@ public class SVMLinearMultiClassClassificationTrainer implements Trainer<SVMLine
     /** Regularization parameter. */
     private double lambda = 0.2;
 
+
     /**
-     * Returns model based on data.
+     * Trains model based on the specified data.
      *
-     * @param data data to build model.
-     * @return model.
+     * @param datasetBuilder   Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor      Label extractor.
+     * @param cols             Number of columns.
+     * @return Model.
      */
-    @Override public SVMLinearMultiClassClassificationModel train(LabeledDataset data) {
-        List<Double> classes = getClassLabels(data);
+    @Override public SVMLinearMultiClassClassificationModel fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor, int cols) {
+        List<Double> classes = extractClassLabels(datasetBuilder, lbExtractor);
 
         SVMLinearMultiClassClassificationModel multiClsMdl = new SVMLinearMultiClassClassificationModel();
 
@@ -59,12 +67,12 @@ public class SVMLinearMultiClassClassificationTrainer implements Trainer<SVMLine
                 .withAmountOfLocIterations(this.amountOfLocIterations())
                 .withLambda(this.lambda());
 
-           // multiClsMdl.add(clsLb, trainer.train(binarizedDataset));
+            multiClsMdl.add(clsLb, trainer.fit(datasetBuilder, featureExtractor, lbExtractor, cols));
         });
 
         return multiClsMdl;
     }
-
+    
     /**
      * Copies the given data and changes class labels in +1 for chosen class and in -1 for the rest classes.
      *
@@ -82,7 +90,7 @@ public class SVMLinearMultiClassClassificationTrainer implements Trainer<SVMLine
     }
 
     /** Iterates among dataset and collects class labels. */
-    private List<Double> getClassLabels(LabeledDataset data) {
+    private List<Double> extractClassLabels(LabeledDataset data) {
         final Set<Double> clsLabels = new HashSet<>();
 
         for (int i = 0; i < data.rowSize(); i++)
@@ -154,6 +162,8 @@ public class SVMLinearMultiClassClassificationTrainer implements Trainer<SVMLine
         this.amountOfLocIterations = amountOfLocIterations;
         return this;
     }
+
+
 }
 
 
