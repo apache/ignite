@@ -173,7 +173,7 @@ namespace Apache.Ignite.Linq.Impl
 
             _builder.Append("update ");
 
-            // FROM ... WHERE ... JOIN ...
+            // FROM ... WHERE ...
             base.VisitQueryModel(queryModel);
 
             if (resultOps.Count == 2)
@@ -366,23 +366,6 @@ namespace Apache.Ignite.Linq.Impl
         /** <inheritdoc /> */
         protected override void VisitBodyClauses(ObservableCollection<IBodyClause> bodyClauses, QueryModel queryModel)
         {
-            var updateAllResultOperator = queryModel.ResultOperators.LastOrDefault() as UpdateAllResultOperator;
-            if (updateAllResultOperator != null)
-            {
-                _builder.Append("set ");
-                var first = true;
-                foreach (var update in updateAllResultOperator.Updates)
-                {
-                    if (!first) _builder.Append(", ");
-                    first = false;
-                    BuildSqlExpression(update.Selector);
-                    _builder.Append(" = ");
-                    BuildSqlExpression(update.Value, visitSubqueryModel: true);
-                }
-
-                _builder.Append(" ");
-            }
-
             var i = 0;
             foreach (var join in bodyClauses.OfType<JoinClause>())
                 VisitJoinClause(join, queryModel, i++);
@@ -434,7 +417,8 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitMainFromClause(fromClause, queryModel);
 
-            if (!(queryModel.ResultOperators.LastOrDefault() is UpdateAllResultOperator))
+            var isUpdateQuery = queryModel.ResultOperators.LastOrDefault() is UpdateAllResultOperator;
+            if (!isUpdateQuery)
             {
                 _builder.Append("from ");
             }
@@ -449,6 +433,11 @@ namespace Apache.Ignite.Linq.Impl
                 ValidateFromClause(additionalFrom);
 
                 VisitAdditionalFromClause(additionalFrom, queryModel, i++);
+            }
+
+            if (isUpdateQuery)
+            {
+                BuildSetClauseForUpdateAll(queryModel);
             }
         }
 
@@ -697,6 +686,29 @@ namespace Apache.Ignite.Linq.Impl
         private void BuildSqlExpression(Expression expression, bool useStar = false, bool includeAllFields = false, bool visitSubqueryModel = false)
         {
             new CacheQueryExpressionVisitor(this, useStar, includeAllFields, visitSubqueryModel).Visit(expression);
+        }
+
+        /// <summary>
+        /// Builds SET clause of UPDATE statement
+        /// </summary>
+        private void BuildSetClauseForUpdateAll(QueryModel queryModel)
+        {
+            var updateAllResultOperator = queryModel.ResultOperators.LastOrDefault() as UpdateAllResultOperator;
+            if (updateAllResultOperator != null)
+            {
+                _builder.Append("set ");
+                var first = true;
+                foreach (var update in updateAllResultOperator.Updates)
+                {
+                    if (!first) _builder.Append(", ");
+                    first = false;
+                    BuildSqlExpression(update.Selector);
+                    _builder.Append(" = ");
+                    BuildSqlExpression(update.Value, visitSubqueryModel: true);
+                }
+
+                _builder.Append(" ");
+            }
         }
     }
 }
