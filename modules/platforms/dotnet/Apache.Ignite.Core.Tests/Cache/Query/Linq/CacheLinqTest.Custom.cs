@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
@@ -111,23 +112,46 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         [Test]
         public void TestUpdateAll()
         {
-            var orgQueryable = GetOrgCache().AsCacheQueryable();
-            var allOrgs = orgQueryable.ToArray();
 
             // Use new cache to avoid touching static data.
             var personCount = 10;
+            var orgsCount = 3;
 
             var cache = Ignition.GetIgnite().GetOrCreateCache<int, Person>(new CacheConfiguration("updateAllTest",
-                new QueryEntity(typeof(int), typeof(Person)), new QueryEntity(typeof(int), typeof(Organization)))
+                new QueryEntity(typeof(int), typeof(Person)))
             {
                 SqlEscapeAll = GetSqlEscapeAll(),
                 CacheMode = CacheMode.Replicated
             });
 
-            Enumerable.Range(1, personCount).ToList().ForEach(x =>
-                cache.Put(x, new Person(x, x.ToString()) {OrganizationId = 1000 + x % allOrgs.Length}));
+            var orgsCache = Ignition.GetIgnite().GetOrCreateCache<int, Organization>(new CacheConfiguration("updateAllTestOrgs",
+                 new QueryEntity(typeof(int), typeof(Organization)))
+            {
+                SqlEscapeAll = GetSqlEscapeAll(),
+                CacheMode = CacheMode.Replicated
+            });
+
+            Enumerable.Range(1, personCount)
+                .ToList()
+                .ForEach(x => cache.Put(x, new Person(x, x.ToString())
+                {
+                    Birthday = DateTime.UtcNow.AddDays(personCount - x),
+                    OrganizationId = x % orgsCount
+                }));
+
+            var allOrgs = Enumerable.Range(1, orgsCount)
+                .Select(x => new Organization
+                {
+                    Id = x,
+                    Name = x.ToString()
+                })
+                .ToList();
+
+            allOrgs.ForEach(x => orgsCache.Put(x.Id, x));
 
             var personQueryable = cache.AsCacheQueryable();
+
+            var orgsQueryable = orgsCache.AsCacheQueryable();
 
             Action<Func<ICacheEntry<int, Person>, bool>> assertAll = func =>
                 Assert.IsTrue(personQueryable.ToArray().All(func));
@@ -145,45 +169,52 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             // Constant value
             var updated = personQueryable
                 .UpdateAll(d => d.Set(p => p.AliasTest, 7));
-            assertAllCount(updated, e => e.Value.AliasTest == 7);
+            assertAllCount(updated, p => p.Value.AliasTest == 7);
 
             // Expression value - from self
             updated = personQueryable
                 .UpdateAll(d => d.Set(p => p.AliasTest, e => e.Key));
-            assertAllCount(updated, e => e.Value.AliasTest == e.Key);
+            assertAllCount(updated, p => p.Value.AliasTest == p.Key);
 
             // Multiple sets
             var aliasValue = 3;
             updated = personQueryable
                 .UpdateAll(d => d.Set(p => p.AliasTest, aliasValue).Set(p => p.Name, aliasValue.ToString()));
-            assertAllCount(updated, e => e.Value.AliasTest == aliasValue && e.Value.Name == aliasValue.ToString());
+            assertAllCount(updated, p => p.Value.AliasTest == aliasValue && p.Value.Name == aliasValue.ToString());
 
             // Expression value - subquery with same cache
             updated = personQueryable
                 .UpdateAll(d => d.Set(p => p.AliasTest,
                     e => personQueryable.Where(ie => ie.Key == e.Key).Select(ie => ie.Key).First()));
-            assertAllCount(updated, e => e.Value.AliasTest == e.Key);
+            assertAllCount(updated, p => p.Value.AliasTest == p.Key);
 
             // Expression value - subquery with other cache
             updated = personQueryable
-                .UpdateAll(d => d.Set(p => p.AliasTest, e => orgQueryable.Count(o => o.Key > e.Key)));
-            assertAllCount(updated, e => e.Value.AliasTest == allOrgs.Count(o => o.Key > e.Key));
+                .UpdateAll(d => d.Set(p => p.AliasTest, p => orgsQueryable.Count(o => o.Value.Id > p.Key)));
+
+            assertAllCount(updated, p => p.Value.AliasTest == allOrgs.Count(o => o.Id > p.Key));
 
             updated = personQueryable
                 .UpdateAll(d => d.Set(p => p.Name,
-                    e => orgQueryable.Where(o => o.Key == e.Value.OrganizationId).Select(o => o.Value.Name).First()));
+                    e => orgsQueryable.Where(o => o.Key == e.Value.OrganizationId).Select(o => o.Value.Name).First()));
             assertAllCount(updated,
-                e => e.Value.Name == allOrgs.Where(o => o.Key == e.Value.OrganizationId).Select(o => o.Value.Name)
-                         .First());
+                p => p.Value.Name == allOrgs.Where(o => o.Id == p.Value.OrganizationId).Select(o => o.Name)
+                         .FirstOrDefault());
+
+            // Expression value - Contains subquery with other cache
+            updated = personQueryable
+                .UpdateAll(d => d.Set(p => p.Bool,
+                    p => orgsQueryable.Select(o => o.Key).Contains(p.Value.OrganizationId)));
+            assertAllCount(updated,
+                p => p.Value.Bool == allOrgs.Select(o => o.Id).Contains(p.Value.OrganizationId));
 
             // Row number limit.
-            var count = 2;
-            var name = "rowLimit" + count;
+            var name = "rowLimit" + 2;
             updated = personQueryable
-                .Take(count)
+                .Take(2)
                 .UpdateAll(d => d.Set(p => p.Name, name));
-            Assert.AreEqual(count, updated);
-            Assert.AreEqual(count, personQueryable.Count(e => e.Value.Name == name));
+            Assert.AreEqual(2, updated);
+            Assert.AreEqual(2, personQueryable.Count(p => p.Value.Name == name));
 
             // ***
             // Conditional
@@ -195,16 +226,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
                 .Where(p => p.Key > 8)
                 .UpdateAll(d => d.Set(p => p.AliasTest, aliasValue));
             Assert.AreEqual(2, updated);
-            assertAll(e => e.Key <= 8 && e.Value.AliasTest != aliasValue || e.Value.AliasTest == aliasValue);
+            assertAll(p => p.Key <= 8 && p.Value.AliasTest != aliasValue || p.Value.AliasTest == aliasValue);
 
             // Conditional with limit
             aliasValue = 8888;
             updated = personQueryable
                 .Where(p => p.Key > 1)
-                .Take(1)
+                .Take(3)
                 .UpdateAll(d => d.Set(p => p.AliasTest, aliasValue));
-            Assert.AreEqual(1, updated);
-            assertAll(e => e.Key != 2 && e.Value.AliasTest != aliasValue || e.Value.AliasTest == aliasValue);
+            Assert.AreEqual(3, updated);
+            Assert.AreEqual(3, personQueryable.ToArray().Count(p => p.Value.AliasTest == aliasValue));
 
             // ***
             // Not supported

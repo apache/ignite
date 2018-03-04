@@ -554,16 +554,16 @@ namespace Apache.Ignite.Linq.Impl
 
             var contains = subQueryModel.ResultOperators.FirstOrDefault() as ContainsResultOperator;
 
-            if (_visitSubqueryModel)
+            // Check if IEnumerable.Contains is used.
+            if (subQueryModel.ResultOperators.Count == 1 && contains != null) 
+            {
+                VisitContains(subQueryModel, contains);
+            }
+            else if (_visitSubqueryModel)
             {
                 ResultBuilder.Append("(");
                 _modelVisitor.VisitQueryModel(subQueryModel, false, true);
                 ResultBuilder.Append(")");
-            }
-            // Check if IEnumerable.Contains is used.
-            else if (subQueryModel.ResultOperators.Count == 1 && contains != null) 
-            {
-                VisitContains(subQueryModel, contains);
             }
             else
             {
@@ -590,7 +590,15 @@ namespace Apache.Ignite.Linq.Impl
                 Visit(contains.Item);
 
                 ResultBuilder.Append(" IN (");
-                _modelVisitor.VisitQueryModel(subQueryModel);
+                if (_visitSubqueryModel)
+                {
+                    _modelVisitor.VisitQueryModel(subQueryModel, false, true);
+                }
+                else
+                {
+                    _modelVisitor.VisitQueryModel(subQueryModel);
+                }
+                
                 ResultBuilder.Append(")");
             }
             else
