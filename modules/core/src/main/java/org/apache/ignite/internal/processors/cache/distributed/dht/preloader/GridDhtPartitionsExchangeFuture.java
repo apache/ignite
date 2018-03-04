@@ -624,6 +624,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                 DiscoveryCustomMessage msg = ((DiscoveryCustomEvent)firstDiscoEvt).customMessage();
 
+                exchLog.info("DiscoveryCustomMessage [msg=" + msg + "]");
+
                 forceAffReassignment = DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(msg)
                     && firstEventCache().minimumNodeVersion().compareToIgnoreTimestamp(FORCE_AFF_REASSIGNMENT_SINCE) >= 0;
 

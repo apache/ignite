@@ -2633,7 +2633,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         CacheGroupDescriptor group(int grpId) {
             CacheGroupDescriptor desc = registeredGrps.get(grpId);
 
-            assert desc != null : grpId;
+            assert desc != null : "CacheGroupDescriptor not found for grpId=" + grpId;
 
             return desc;
         }
