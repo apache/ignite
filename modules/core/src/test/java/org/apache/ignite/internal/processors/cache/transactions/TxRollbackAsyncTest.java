@@ -418,7 +418,21 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /**
      *
      */
-    public void testEnlistMany() throws Exception {
+    public void testEnlistManyRead() throws Exception {
+        testEnlistMany(false);
+    }
+
+    /**
+     *
+     */
+    public void testEnlistManyWrite() throws Exception {
+        testEnlistMany(true);
+    }
+
+    /**
+     *
+     */
+    private void testEnlistMany(boolean write) throws Exception {
         final Ignite client = startClient();
 
         Map<Integer, Integer> entries = new HashMap<>();
@@ -431,7 +445,10 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         try(Transaction tx = client.transactions().txStart()) {
             fut = rollbackAsync(tx, 200);
 
-            client.cache(CACHE_NAME).putAll(entries);
+            if (write)
+                client.cache(CACHE_NAME).putAll(entries);
+            else
+                client.cache(CACHE_NAME).getAll(entries.keySet());
 
             tx.commit();
         }
@@ -442,6 +459,8 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         fut.get();
 
         assertEquals(0, client.cache(CACHE_NAME).size());
+
+        checkFutures();
     }
 
     /**

@@ -734,27 +734,24 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 opCtx != null && opCtx.recovery(),
                 dataCenterId);
 
+            try {
+                loadFut.get();
+            }
+            catch (IgniteCheckedException e) {
+                return new GridFinishedFuture(e);
+            }
+
+            long timeout = remainingTime();
+
+            if (timeout == -1)
+                return new GridFinishedFuture<>(timeoutException());
+
+            if (isRollbackOnly())
+                return new GridFinishedFuture<>(rollbackException());
+
             if (pessimistic()) {
-                assert loadFut == null || loadFut.isDone() : loadFut;
-
-                if (loadFut != null) {
-                    try {
-                        loadFut.get();
-
-                        clearLockFuture();
-                    }
-                    catch (IgniteCheckedException e) {
-                        return new GridFinishedFuture(e);
-                    }
-                }
-
                 if (log.isDebugEnabled())
                     log.debug("Before acquiring transaction lock for put on keys: " + enlisted);
-
-                long timeout = remainingTime();
-
-                if (timeout == -1)
-                    return new GridFinishedFuture<>(timeoutException());
 
                 IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
                     timeout,
@@ -852,9 +849,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         boolean keepBinary,
         boolean recovery,
         Byte dataCenterId) {
+        GridFutureAdapter<Void> retFut = new GridFutureAdapter<>();
+
         try {
+            if (!updateLockFuture(null, retFut))
+                return completeWithError(retFut, rollbackException());
+
             if (fastFinish == 0 && !fastFinish())
-                return new GridFinishedFuture<>(timedOut() ? timeoutException() : rollbackException());
+                return completeWithError(retFut, timedOut() ? timeoutException() : rollbackException());
 
             addActiveCache(cacheCtx, recovery);
 
@@ -896,7 +898,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 if (topVer == null)
                     topVer = entryTopVer;
 
-                return loadMissing(cacheCtx,
+                IgniteInternalFuture<Void> loadFut = loadMissing(cacheCtx,
                     topVer != null ? topVer : topologyVersion(),
                     Collections.singleton(cacheKey),
                     filter,
@@ -909,12 +911,43 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     keepBinary,
                     recovery,
                     expiryPlc);
+
+                loadFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
+                    @Override public void apply(IgniteInternalFuture<Void> fut) {
+                        try {
+                            fut.get();
+
+                            retFut.onDone();
+                        }
+                        catch (IgniteCheckedException e) {
+                            retFut.onDone(e);
+                        }
+                    }
+                });
+
+                return retFut;
             }
 
-            return new GridFinishedFuture<>();
+            retFut.onDone();
+
+            return retFut;
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
+        }
+        finally {
+            retFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
+                @Override public void apply(IgniteInternalFuture<Void> fut) {
+                    try {
+                        fut.get();
+
+                        clearLockFuture(); // Cleanup state.
+                    }
+                    catch (IgniteCheckedException e) {
+                        // No-op.
+                    }
+                }
+            });
         }
     }
 
@@ -938,7 +971,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param singleRmv {@code True} for single key remove operation ({@link Cache#remove(Object)}.
      * @param keepBinary Keep binary flag.
      * @param dataCenterId Optional data center ID.
-     * @return Future for missing values loading.
+     * @return Future for enlisting writes.
      */
     private <K, V> IgniteInternalFuture<Void> enlistWrite(
         final GridCacheContext cacheCtx,
@@ -992,7 +1025,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             Set<KeyCacheObject> missedForLoad = null;
 
             for (Object key : keys) {
-//                if (state() != ACTIVE)
+//                if (isRollbackOnly())
 //                    return completeWithError(retFut, timedOut() ? timeoutException() : rollbackException());
 
                 if (key == null) {
@@ -1116,6 +1149,20 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         }
         catch (IgniteCheckedException e) {
             return completeWithError(retFut, e);
+        }
+        finally {
+            retFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
+                @Override public void apply(IgniteInternalFuture<Void> fut) {
+                    try {
+                        fut.get();
+
+                        clearLockFuture(); // Cleanup state.
+                    }
+                    catch (IgniteCheckedException e) {
+                        // No-op.
+                    }
+                }
+            });
         }
     }
 
@@ -1578,6 +1625,21 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             dataCenterId
         );
 
+        try {
+            loadFut.get();
+        }
+        catch (IgniteCheckedException e) {
+            return new GridFinishedFuture(e);
+        }
+
+        long timeout = remainingTime();
+
+        if (timeout == -1)
+            return new GridFinishedFuture<>(timeoutException());
+
+        if (isRollbackOnly())
+            return new GridFinishedFuture<>(rollbackException());
+
         if (log.isDebugEnabled())
             log.debug("Remove keys: " + enlisted);
 
@@ -1585,24 +1647,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         // Otherwise, during rollback we will not know whether locks need
         // to be rolled back.
         if (pessimistic()) {
-            assert loadFut == null || loadFut.isDone() : loadFut;
-
-            if (loadFut != null) {
-                try {
-                    loadFut.get();
-                }
-                catch (IgniteCheckedException e) {
-                    return new GridFinishedFuture<>(e);
-                }
-            }
-
             if (log.isDebugEnabled())
                 log.debug("Before acquiring transaction lock for remove on keys: " + enlisted);
-
-            long timeout = remainingTime();
-
-            if (timeout == -1)
-                return new GridFinishedFuture<>(timeoutException());
 
             IgniteInternalFuture<Boolean> fut = cacheCtx.cache().txLockAsync(enlisted,
                 timeout,
@@ -2427,15 +2473,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             // with prepare response, if required.
             assert loadFut.isDone();
 
-            try {
-                loadFut.get();
-
-                clearLockFuture();
-            }
-            catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(e);
-            }
-
             return nonInterruptable(commitNearTxLocalAsync().chain(
                 new CX1<IgniteInternalFuture<IgniteInternalTx>, GridCacheReturn>() {
                     @Override public GridCacheReturn applyx(IgniteInternalFuture<IgniteInternalTx> txFut)
@@ -2467,8 +2504,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return nonInterruptable(loadFut.chain(new CX1<IgniteInternalFuture<Void>, GridCacheReturn>() {
                 @Override public GridCacheReturn applyx(IgniteInternalFuture<Void> f) throws IgniteCheckedException {
                     f.get();
-
-                    clearLockFuture();
 
                     return ret;
                 }

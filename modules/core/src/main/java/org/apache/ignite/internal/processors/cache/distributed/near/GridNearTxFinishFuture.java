@@ -435,16 +435,16 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     private void tryRollbackAsync(boolean onTimeout) {
         IgniteInternalFuture<?> curFut = tx.tryRollbackAsync();
 
-        if (curFut == null || curFut.isDone()) {
+        if (curFut == null) {
             doFinish(false, false);
 
             return;
         }
 
+        // Concurrent enlist.
         if (!(curFut instanceof GridCacheVersionedFuture)) {
             curFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
-                    // Rollback and terminate user code execution.
                     doFinish(false, false);
                 }
             });
@@ -453,14 +453,15 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         }
 
         if (onTimeout) {
-            // Wait for lock future completion. This allows deadlock detection to kick in.
+            // Wait for deadlock detection.
             curFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
                 @Override public void apply(IgniteInternalFuture<?> fut) {
-                    tryRollbackAsync(true);
+                    doFinish(false, false);
                 }
             });
         }
         else {
+            // Force lock cancel.
             try {
                 curFut.cancel();
             }
@@ -468,7 +469,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                 assert false : "This shouldn't happen";
             }
 
-            tryRollbackAsync(true);
+            doFinish(false, false);
         }
     }
 

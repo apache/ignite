@@ -705,6 +705,9 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         if (timeout == -1)
             return new GridFinishedFuture<>(timeoutException());
 
+        if (isRollbackOnly())
+            return new GridFinishedFuture<>(rollbackException());
+
         IgniteInternalFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
             timeout,
             this,
