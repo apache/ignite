@@ -1862,7 +1862,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             pool = new PagePool(idx, poolRegion, null);
 
-            maxDirtyPages = throttlingPlc != ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY
+            maxDirtyPages = throttlingPlc != ThrottlingPolicy.DISABLED
                 ? pool.pages() * 3 / 4
                 : Math.min(pool.pages() * 2 / 3, cpPoolPages);
         }
