@@ -206,12 +206,10 @@ public class FullPageIdTableTest  {
                     }
                 }
 
-                IntervalBasedMeasurement avgPutSteps = U.field(tbl, "avgPutSteps");
                 if (i > 0 && i % 100_000 == 0) {
                     info("Done: " + i
                         + " Size: " + check.size()
-                        + " Capacity: " + tbl.capacity()
-                        + " avg steps " + avgPutSteps.getAverage());
+                        + " Capacity: " + tbl.capacity() );
 
                     verifyLinear(tbl, check);
 
@@ -222,8 +220,6 @@ public class FullPageIdTableTest  {
             }
 
             verifyLinear(tbl, check);
-            IntervalBasedMeasurement avgPutSteps = U.field(tbl, "avgPutSteps");
-            System.out.println("Average put required: " + avgPutSteps.getAverage());
         }
         finally {
             long msPassed = U.currentTimeMillis() - seed;
