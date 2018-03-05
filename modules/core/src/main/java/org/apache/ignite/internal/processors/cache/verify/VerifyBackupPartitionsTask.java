@@ -27,7 +27,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -174,6 +175,9 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
         /** Counter of processed partitions. */
         private final AtomicInteger completionCntr = new AtomicInteger(0);
 
+        /** Calculation executor. */
+        private volatile ExecutorService calcExecutor;
+
         /**
          * @param names Names.
          */
@@ -183,6 +187,20 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
 
         /** {@inheritDoc} */
         @Override public Map<PartitionKey, PartitionHashRecord> execute() throws IgniteException {
+            calcExecutor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
+            try {
+                return execute0();
+            }
+            finally {
+                calcExecutor.shutdown();
+            }
+        }
+
+        /**
+         *
+         */
+        private Map<PartitionKey, PartitionHashRecord> execute0() {
             Set<Integer> grpIds = new HashSet<>();
 
             Set<String> missingCaches = new HashSet<>();
@@ -282,7 +300,7 @@ public class VerifyBackupPartitionsTask extends ComputeTaskAdapter<Set<String>,
             final CacheGroupContext grpCtx,
             final GridDhtLocalPartition part
         ) {
-            return ForkJoinPool.commonPool().submit(new Callable<Map<PartitionKey, PartitionHashRecord>>() {
+            return calcExecutor.submit(new Callable<Map<PartitionKey, PartitionHashRecord>>() {
                 @Override public Map<PartitionKey, PartitionHashRecord> call() throws Exception {
                     return calculatePartitionHash(grpCtx, part);
                 }
