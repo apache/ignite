@@ -42,7 +42,7 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
-import org.apache.ignite.failure.IgniteFailureHandler;
+import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -488,7 +488,7 @@ public class IgniteConfiguration {
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
     /** Ignite failure handler. */
-    private IgniteFailureHandler igniteFailureHnd;
+    private FailureHandler igniteFailureHnd;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -2926,7 +2926,7 @@ public class IgniteConfiguration {
     /**
      * Gets custom failure handler.
      */
-    public IgniteFailureHandler getIgniteFailureHandler() {
+    public FailureHandler getIgniteFailureHandler() {
         return igniteFailureHnd;
     }
 
@@ -2936,7 +2936,7 @@ public class IgniteConfiguration {
      * @param igniteFailureHnd Failure handler.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setIgniteFailureHandler(IgniteFailureHandler igniteFailureHnd) {
+    public IgniteConfiguration setIgniteFailureHandler(FailureHandler igniteFailureHnd) {
         this.igniteFailureHnd = igniteFailureHnd;
 
         return this;

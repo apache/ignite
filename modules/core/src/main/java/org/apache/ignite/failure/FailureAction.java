@@ -18,44 +18,15 @@
 package org.apache.ignite.failure;
 
 /**
- * Failure Context.
+ * List of possible actions on some critical situation.
  */
-public class IgniteFailureContext {
-    /** Type. */
-    private final IgniteFailureType type;
+public enum FailureAction {
+    /** Restart JVM. */
+    RESTART_JVM,
 
-    /** Cause. */
-    private final Throwable cause;
+    /** Stop. */
+    STOP,
 
-    /**
-     * @param type Type.
-     * @param cause Cause.
-     */
-    public IgniteFailureContext(IgniteFailureType type, Throwable cause) {
-        assert type != null;
-
-        this.type = type;
-        this.cause = cause;
-    }
-
-    /**
-     * @return IgniteFailureType value.
-     */
-    public IgniteFailureType type() {
-        return type;
-    }
-
-    /**
-     * @return cause or {@code null}.
-     */
-    public Throwable cause() {
-        return cause;
-    }
-
-    @Override public String toString() {
-        return "IgniteFailureContext{" +
-            "type=" + type +
-            ", cause=" + cause +
-            '}';
-    }
+    /** Noop. */
+    NOOP;
 }

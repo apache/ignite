@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.failure;
 
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.failure.IgniteFailureAction;
-import org.apache.ignite.failure.IgniteFailureContext;
-import org.apache.ignite.failure.IgniteFailureHandler;
+import org.apache.ignite.failure.FailureAction;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.G;
@@ -29,9 +29,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * General failure processing API
  */
-public class IgniteFailureProcessor {
+public class FailureProcessor {
     /** Default failure handler. */
-    private static final IgniteFailureHandler DFLT_FAILURE_HND = new DefaultIgniteFailureHandler();
+    private static final FailureHandler DFLT_FAILURE_HND = new DefaultFailureHandler();
 
     /** Context. */
     private GridKernalContextImpl ctx;
@@ -39,7 +39,7 @@ public class IgniteFailureProcessor {
     /**
      * @param ctx Context.
      */
-    public IgniteFailureProcessor(GridKernalContextImpl ctx) {
+    public FailureProcessor(GridKernalContextImpl ctx) {
         this.ctx = ctx;
     }
 
@@ -49,18 +49,18 @@ public class IgniteFailureProcessor {
      *
      * @param failureCtx Failure context.
      */
-    public synchronized void process(IgniteFailureContext failureCtx) {
+    public synchronized void process(FailureContext failureCtx) {
         if (ctx.invalidationCause() != null) // Node already terminating, no reason to process more errors.
             return;
 
-        IgniteFailureHandler hnd = ctx.config().getIgniteFailureHandler();
+        FailureHandler hnd = ctx.config().getIgniteFailureHandler();
 
         if (hnd == null)
             hnd = DFLT_FAILURE_HND;
 
-        IgniteFailureAction act = hnd.onFailure(failureCtx);
+        FailureAction act = hnd.onFailure(failureCtx);
 
-        if (act == IgniteFailureAction.NOOP)
+        if (act == FailureAction.NOOP)
             return;
 
         ctx.invalidate(failureCtx);
@@ -84,7 +84,7 @@ public class IgniteFailureProcessor {
     /**
      * Restarts JVM.
      */
-    public void restartJvm(final IgniteFailureContext failureCtx) {
+    public void restartJvm(final FailureContext failureCtx) {
         new Thread(
             new Runnable() {
                 @Override public void run() {
@@ -102,7 +102,7 @@ public class IgniteFailureProcessor {
     /**
      * Stops local node.
      */
-    public void stopNode(final IgniteFailureContext failureCtx) {
+    public void stopNode(final FailureContext failureCtx) {
         new Thread(
             new Runnable() {
                 @Override public void run() {

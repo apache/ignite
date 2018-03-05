@@ -17,27 +17,27 @@
 
 package org.apache.ignite.internal.failure;
 
-import org.apache.ignite.failure.IgniteFailureAction;
-import org.apache.ignite.failure.IgniteFailureContext;
-import org.apache.ignite.failure.IgniteFailureHandler;
+import org.apache.ignite.failure.FailureAction;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureHandler;
 
 /**
- * Default implementation of {@link IgniteFailureHandler}
+ * Default implementation of {@link FailureHandler}
  */
-public class DefaultIgniteFailureHandler implements IgniteFailureHandler {
+public class DefaultFailureHandler implements FailureHandler {
     /** {@inheritDoc} */
-    @Override public IgniteFailureAction onFailure(IgniteFailureContext failureCtx) {
+    @Override public FailureAction onFailure(FailureContext failureCtx) {
         switch (failureCtx.type()) {
             case SYSTEM_WORKER_CRASHED:
-                return IgniteFailureAction.STOP;
+                return FailureAction.STOP;
 
             case CRITICAL_ERROR:
-                return IgniteFailureAction.STOP;
+                return FailureAction.STOP;
 
             default:
                 assert false : "Unsupported Ignite failure type: " + failureCtx.type();
 
-                return IgniteFailureAction.STOP;
+                return FailureAction.STOP;
         }
     }
 }

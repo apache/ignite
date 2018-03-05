@@ -17,16 +17,16 @@
 
 package org.apache.ignite.failure;
 
+import org.apache.ignite.configuration.IgniteConfiguration;
+
 /**
- * Types of failures.
+ * Provides facility to handle failures by custom user implementations,
+ * which can be added by {@link IgniteConfiguration#setIgniteFailureHandler(FailureHandler)} method.
  */
-public enum IgniteFailureType {
-    /** Segmentation. */
-    SEGMENTATION,
-
-    /** System worker crashed. */
-    SYSTEM_WORKER_CRASHED,
-
-    /** Critical error. */
-    CRITICAL_ERROR
+public interface FailureHandler {
+    /**
+     * @param failureCtx Failure context.
+     * @return Reaction to failure.
+     */
+    public FailureAction onFailure(FailureContext failureCtx);
 }

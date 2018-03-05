@@ -57,7 +57,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
-import org.apache.ignite.failure.IgniteFailureContext;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -103,7 +103,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
-import static org.apache.ignite.failure.IgniteFailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 
 /**
  * File WAL manager.
@@ -554,7 +554,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         catch (IgniteCheckedException e) {
             U.error(log, "Unable to perform segment rollover: " + e.getMessage(), e);
 
-            cctx.kernalContext().failure().process(new IgniteFailureContext(CRITICAL_ERROR, e));
+            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
         }
     }
 
@@ -1003,7 +1003,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         catch (IOException e) {
             StorageException se = new StorageException("Unable to initialize WAL segment", e);
 
-            cctx.kernalContext().failure().process(new IgniteFailureContext(CRITICAL_ERROR, se));
+            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
 
             throw se;
         }
@@ -1646,7 +1646,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 catch (IgniteCheckedException | IOException e) {
                     U.error(log, "Unexpected error during WAL compression", e);
 
-                    cctx.kernalContext().failure().process(new IgniteFailureContext(CRITICAL_ERROR, e));
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
                 }
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -1770,7 +1770,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 catch (IOException e) {
                     U.error(log, "Unexpected error during WAL decompression", e);
 
-                    cctx.kernalContext().failure().process(new IgniteFailureContext(CRITICAL_ERROR, e));
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
                 }
             }
         }
@@ -2480,7 +2480,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             catch (Throwable e) {
                 StorageException se = new StorageException("Unable to write", new IOException(e));
 
-                cctx.kernalContext().failure().process(new IgniteFailureContext(CRITICAL_ERROR, se));
+                cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
 
                 // All workers waiting for a next segment must be woken up and stopped
                 signalNextAvailable();
@@ -2794,7 +2794,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 catch (IOException e) {
                     StorageException se = new StorageException("Unable to write", e);
 
-                    cctx.kernalContext().failure().process(new IgniteFailureContext(CRITICAL_ERROR, se));
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
 
                     throw se;
                 }

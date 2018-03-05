@@ -18,15 +18,15 @@
 package org.apache.ignite.failure;
 
 /**
- * List of possible actions on some critical situation.
+ * Types of failures.
  */
-public enum IgniteFailureAction {
-    /** Restart JVM. */
-    RESTART_JVM,
+public enum FailureType {
+    /** Segmentation. */
+    SEGMENTATION,
 
-    /** Stop. */
-    STOP,
+    /** System worker crashed. */
+    SYSTEM_WORKER_CRASHED,
 
-    /** Noop. */
-    NOOP;
+    /** Critical error. */
+    CRITICAL_ERROR
 }

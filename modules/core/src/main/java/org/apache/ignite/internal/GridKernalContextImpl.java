@@ -37,8 +37,8 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.failure.IgniteFailureContext;
-import org.apache.ignite.internal.failure.IgniteFailureProcessor;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.internal.failure.FailureProcessor;
 import org.apache.ignite.internal.managers.checkpoint.GridCheckpointManager;
 import org.apache.ignite.internal.managers.collision.GridCollisionManager;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
@@ -390,10 +390,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private GridInternalSubscriptionProcessor internalSubscriptionProc;
 
     /** */
-    private IgniteFailureProcessor failureProcessor;
+    private FailureProcessor failureProcessor;
 
     /** Failure context caused invalidation. */
-    private volatile IgniteFailureContext failureCtx;
+    private volatile FailureContext failureCtx;
     /**
      * No-arg constructor is required by externalization.
      */
@@ -475,7 +475,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.customExecSvcs = customExecSvcs;
 
         marshCtx = new MarshallerContextImpl(plugins, clsFilter);
-        failureProcessor = new IgniteFailureProcessor(this);
+        failureProcessor = new FailureProcessor(this);
 
         try {
             spring = SPRING.create(false);
@@ -1103,16 +1103,16 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      *
      * @param ctx Invalidation context
      */
-    public void invalidate(IgniteFailureContext ctx) {
+    public void invalidate(FailureContext ctx) {
         this.failureCtx = ctx;
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFailureContext invalidationCause() {
+    @Override public FailureContext invalidationCause() {
         return failureCtx;
     }
 
-    @Override public IgniteFailureProcessor failure() {
+    @Override public FailureProcessor failure() {
         return failureProcessor;
     }
 

@@ -58,8 +58,8 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.failure.IgniteFailureContext;
-import org.apache.ignite.failure.IgniteFailureType;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -2750,12 +2750,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             switch (segPlc) {
                 case STOP:
-                    ctx.failure().stopNode(new IgniteFailureContext(IgniteFailureType.SEGMENTATION, null));
+                    ctx.failure().stopNode(new FailureContext(FailureType.SEGMENTATION, null));
 
                     break;
 
                 case RESTART_JVM:
-                    ctx.failure().restartJvm(new IgniteFailureContext(IgniteFailureType.SEGMENTATION, null));
+                    ctx.failure().restartJvm(new FailureContext(FailureType.SEGMENTATION, null));
 
                     break;
 
