@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecora
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -275,7 +276,11 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
      *
      */
     private void awaitStop(final IgniteEx grid) throws IgniteInterruptedCheckedException {
-        GridTestUtils.waitForCondition(() -> grid.context().gateway().getState() == GridKernalState.STOPPED, STOP_TIMEOUT_MS);
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return grid.context().gateway().getState() == GridKernalState.STOPPED;
+            }
+        }, STOP_TIMEOUT_MS);
     }
 
     /**
