@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import org.apache.ignite.internal.util.GridLongList;
+
 /**
  * Interface for storing correspondence of page id in a cache group
  * ->long value (address in offheap segment). Map support versioning of entries.
@@ -86,13 +88,26 @@ public interface LoadedPagesMap {
      */
     public ReplaceCandidate getNearestAt(int idxStart);
 
+
     /**
-     * @param idxToClear Index to clear value at. Bounded with {@link #capacity()}.
+     * Removes entities matching provided predicate at specified mapping range.
+     *
+     * @param startIdxToClear Index to clear value at, inclusive. Bounded with {@link #capacity()}.
+     * @param endIdxToClear Index to clear value at, inclusive. Bounded with {@link #capacity()}.
      * @param keyPred Test predicate for (cache group ID, page ID).
-     * @param absent Value to return if the cell is empty or key is not matching provided predicate.
-     * @return Value at the given index or {@code absent} for empty cell or not matching.
+     * @return List with removed values, value is not added to list for empty cell or if key is not matching to
+     * predicate.
      */
-    public long clearAt(int idxToClear, KeyPredicate keyPred, long absent);
+    public GridLongList removeIf(int startIdxToClear, int endIdxToClear, KeyPredicate keyPred);
+
+
+    /**
+     * @param keyPred
+     * @return
+     */
+    default GridLongList removeIf(KeyPredicate keyPred) {
+        return removeIf(0, capacity(), keyPred);
+    }
 
     /**
      * Interface describing a predicate for Key (cache group ID, page ID). Usage of this predicate prevents odd object

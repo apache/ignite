@@ -23,6 +23,7 @@ import java.util.Random;
 import java.util.function.Consumer;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.hamcrest.MatcherAssert;
@@ -303,73 +304,36 @@ public class RobinHoodHashTest {
     }
 
     @Test
-    public void testClearAtWithControlMap() throws Exception {
+    public void testClearAtWithControlMap3() throws Exception {
         int cap = 100;
 
-        LoadedPagesMap.KeyPredicate pred = new LoadedPagesMap.KeyPredicate() {
-            @Override public boolean test(int grpId, long pageId) {
-                int hc = Integer.hashCode(grpId) + 31 * Long.hashCode(pageId);
+        doRemovalTests(cap, (grpId, pageId) -> {
+            int hc = Integer.hashCode(grpId) + 31 * Long.hashCode(pageId);
 
-                return hc % 3 == 0;
-            }
-        };
-
-        withMap(map -> {
-            Map<FullPageId, Long> check = new HashMap<>();
-
-            int elems = cap - 1;  //fill with 1 space left;
-            for (int i = 0; i < elems; i++) {
-                int grpId = i + 1;
-                long val = grpId * grpId;
-                int pageId = 1;
-
-                map.put(grpId, pageId, val, i);
-
-                check.put(new FullPageId(pageId, grpId), val);
-            }
-
-            int sz = map.size();
-            for (int i = 0; i < cap; i++) {
-                long val = map.clearAt(i, pred, -1);
-
-                if (dump) {
-                    System.out.println(" +++++++++++++++++++ " + i + " ++++++++++++++++");
-                    System.out.println(map.dump());
-                }
-
-                if (val != -1) {
-                    int newSize = map.size();
-                    assertThat(sz - newSize, Matchers.is(1));
-                    sz = newSize;
-
-                    Map<FullPageId, Long> res = new HashMap<>();
-
-                    map.forEach(res::put);
-
-                    assertThat(newSize, Matchers.is(map.size()));
-                }
-
-                if (val != -1)
-                    i--;
-            }
-
-            check.keySet().removeIf(entry -> pred.test(entry.groupId(), entry.pageId()));
-
-            Map<FullPageId, Long> res = new HashMap<>();
-
-            map.forEach(res::put);
-
-            MatcherAssert.assertThat(res, Matchers.is(check));
-
-        }, cap);
+            return hc % 3 == 0;
+        });
     }
+
+    @Test
+    public void testClearAtWithControlMap7() throws Exception {
+        int cap = 100;
+
+        doRemovalTests(cap, (grpId, pageId) -> {
+            int hc = Integer.hashCode(grpId) + 31 * Long.hashCode(pageId);
+
+            return hc % 7 == 0;
+        });
+    }
+
 
     @Test
     public void testClearAllWithControlMap() throws Exception {
         int cap = 100;
 
-        LoadedPagesMap.KeyPredicate pred = (grpId, pageId) -> true;
+        doRemovalTests(cap, (grpId, pageId) -> true);
+    }
 
+    private void doRemovalTests(int cap, LoadedPagesMap.KeyPredicate pred) {
         withMap(map -> {
             Map<FullPageId, Long> check = new HashMap<>();
 
@@ -386,44 +350,30 @@ public class RobinHoodHashTest {
 
             int removals = 0;
             int sz = map.size();
-            for (int i = 0; i < cap; i++) {
-                long val = map.clearAt(i, pred, -1);
 
-                if (dump) {
-                    System.out.println(" +++++++++++++++++++ " + i + " ++++++++++++++++");
-                    System.out.println(map.dump());
-                }
+            GridLongList list = map.removeIf(pred);
+            for (int i = 0; i < list.size(); i++) {
+                long val = list.get(i);
+                assertTrue(val > 0);
 
-                if (val != -1) {
-                    int newSize = map.size();
-                    assertThat(sz - newSize, Matchers.is(1));
-                    sz = newSize;
-
-                    Map<FullPageId, Long> res = new HashMap<>();
-
-                    map.forEach(res::put);
-
-                    assertThat(newSize, Matchers.is(map.size()));
-
-                    removals++;
-                }
-
-                if (val != -1)
-                    i--;
+                removals++;
             }
 
-            for (int i = 0; i < cap; i++) {
-                long val = map.clearAt(i, pred, -1);
-
-                assertEquals(val, -1);  // clear should not be successful.
-            }
-            assertEquals(elems, removals);
-
-            check.keySet().removeIf(entry -> pred.test(entry.groupId(), entry.pageId()));
+            assertThat(sz - map.size(), Matchers.is(list.size()));
 
             Map<FullPageId, Long> res = new HashMap<>();
 
             map.forEach(res::put);
+
+            assertThat(map.size(), Matchers.is(map.size()));
+
+            for (int i = 0; i < cap; i++) {
+                GridLongList list1 = map.removeIf(i, i + 1, pred);
+
+                assertTrue(list1.isEmpty());  // clear should not be successful.
+            }
+
+            check.keySet().removeIf(entry -> pred.test(entry.groupId(), entry.pageId()));
 
             MatcherAssert.assertThat(res, Matchers.is(check));
 

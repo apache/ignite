@@ -24,6 +24,7 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.util.GridIntIterator;
 import org.apache.ignite.internal.util.GridIntList;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -217,8 +218,13 @@ public class FullPageIdTable implements LoadedPagesMap {
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public long clearAt(int idxToClear, KeyPredicate keyPred, long absent) {
+    /**
+     * @param idxToClear Index to clear value at. Bounded with {@link #capacity()}.
+     * @param keyPred Test predicate for (cache group ID, page ID).
+     * @param absent Value to return if the cell is empty or key is not matching provided predicate.
+     * @return Value at the given index or {@code absent} for empty cell or not matching.
+     */
+    private long clearAt(int idxToClear, KeyPredicate keyPred, long absent) {
         long base = entryBase(idxToClear);
 
         int grpId = GridUnsafe.getInt(base);
@@ -236,6 +242,25 @@ public class FullPageIdTable implements LoadedPagesMap {
         }
         else
             return absent;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridLongList removeIf(int startIdxToClear, int endIdxToClear, KeyPredicate keyPred) {
+        assert endIdxToClear > startIdxToClear
+            : "Start and end indexes are not consistent: {" + startIdxToClear + ", " + endIdxToClear + "}";
+
+        int sz = endIdxToClear - startIdxToClear;
+
+        GridLongList list = new GridLongList(sz);
+
+        for (int i = startIdxToClear; i < endIdxToClear; i++) {
+            long l = clearAt(i, keyPred, -1);
+
+            if (l > 0)
+                list.add(l);
+        }
+
+        return list;
     }
 
     /**

@@ -2676,20 +2676,11 @@ public class PageMemoryImpl implements PageMemoryEx {
                     seg.writeLock().lock();
 
                     try {
-                        while (base < boundary) {
-                            long ptr = seg.loadedPages.clearAt(base, clearPred, INVALID_REL_PTR);
+                        GridLongList list = seg.loadedPages.removeIf(base, boundary, clearPred);
 
-                            //todo not excellent code here
-                            if (seg.loadedPages instanceof RobinHoodBackwardShiftHashMap) {
-                                if (ptr != INVALID_REL_PTR)
-                                    base--;
-                            }
+                        ptrs.addAll(list);
 
-                            if (ptr != INVALID_REL_PTR)
-                                ptrs.add(ptr);
-
-                            base++;
-                        }
+                        base = boundary;
                     }
                     finally {
                         seg.writeLock().unlock();

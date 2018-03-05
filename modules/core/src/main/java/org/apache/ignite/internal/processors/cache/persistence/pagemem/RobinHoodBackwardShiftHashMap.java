@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 import java.util.function.BiConsumer;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -41,13 +42,13 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     /** Size of count of entries (value returned by size() method). */
     private static final int MAPSIZE_SIZE = 4;
 
-    /** Count of entries offset starting from base address.  */
+    /** Count of entries offset starting from base address. */
     private static final int MAPSIZE_OFFSET = 0;
 
     /** Size of ideal bucket (cell to store value to avoid probing other cells followed). */
     private static final int IDEAL_BUCKET_SIZE = 4;
 
-    /** Offset of ideal bucket starting from entry base.  */
+    /** Offset of ideal bucket starting from entry base. */
     private static final int IDEAL_BUCKET_OFFSET = 0;
 
     /** Group ID size. */
@@ -69,7 +70,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     private static final int VALUE_OFFSET = PAGE_ID_OFFSET + PAGE_ID_SIZE;
 
     /** Version (tag/generation) offset from entry base. */
-    private static final int VERSION_SIZE  = 4;
+    private static final int VERSION_SIZE = 4;
 
     /** Version (tag/generation) offset from entry base. */
     private static final int VERSION_OFFSET = VALUE_OFFSET + VALUE_SIZE;
@@ -107,8 +108,8 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     }
 
     /**
-     * @return required size to allocate, based on number of buckets (cells) to store in map, its capacity.
      * @param numBuckets Number of buckets (cells) to store, capacity.
+     * @return required size to allocate, based on number of buckets (cells) to store in map, its capacity.
      */
     static long requiredMemoryByBuckets(long numBuckets) {
         return numBuckets * BYTES_PER_CELL + MAPSIZE_SIZE;
@@ -239,14 +240,13 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
         throw new IgniteOutOfMemoryException("No room for a new key");
     }
 
-
     /** {@inheritDoc} */
     @Override public boolean remove(int grpId, long pageId) {
         assert grpId != EMPTY_CACHE_GRP_ID;
 
         int idxInit = U.safeAbs(FullPageId.hashCode(grpId, pageId)) % numBuckets;
 
-        int idxEqualValFound   = -1;
+        int idxEqualValFound = -1;
         for (int i = 0; i < numBuckets; i++) {
             int idxCurr = (idxInit + i) % numBuckets;
 
@@ -387,27 +387,39 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     }
 
     /** {@inheritDoc} */
-    @Override public long clearAt(int idxToClear, KeyPredicate keyPred, long absent) {
-        long base = entryBase(idxToClear);
+    @Override public GridLongList removeIf(int startIdxToClear, int endIdxToClear, KeyPredicate keyPred) {
+        assert endIdxToClear >= startIdxToClear
+            : "Start and end indexes are not consistent: {" + startIdxToClear + ", " + endIdxToClear + "}";
 
-        int grpId = getGrpId(base);
-        long pageId = getPageId(base);
+        int sz = endIdxToClear - startIdxToClear;
 
-        if (isEmpty(grpId, pageId))
-            return absent;
+        GridLongList list = new GridLongList(sz);
 
-        if (!keyPred.test(grpId, pageId))
-            return absent;
+        for (int idx = startIdxToClear; idx < endIdxToClear; idx++) {
+            long base = entryBase(idx);
 
-        long valAt = getValue(base);
+            int grpId = getGrpId(base);
+            long pageId = getPageId(base);
 
-        setSize(size() - 1);
+            if (isEmpty(grpId, pageId))
+                continue; // absent value, no removal required
 
-        doBackwardShift(idxToClear);
+            if (!keyPred.test(grpId, pageId))
+                continue; // not matched value, no removal required
 
-        return valAt;
+            long valAt = getValue(base);
+
+            setSize(size() - 1);
+
+            doBackwardShift(idx);
+
+            list.add(valAt);
+
+            idx--; //Need recheck current cell because of backward shift
+        }
+
+        return list;
     }
-
 
     /** {@inheritDoc} */
     @Override public int capacity() {
@@ -449,6 +461,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
 
     /**
      * Sets cell value to be empty.
+     *
      * @param addr entry base address.
      */
     private void setEmpty(long addr) {
@@ -464,7 +477,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
      * @param idxIdeal number of ideal bucket (cell) to insert this value.
      */
     private void setIdealBucket(long base, long idxIdeal) {
-        assert idxIdeal>=0 && idxIdeal < numBuckets;
+        assert idxIdeal >= 0 && idxIdeal < numBuckets;
 
         putLong(base + IDEAL_BUCKET_OFFSET, idxIdeal);
     }
@@ -517,7 +530,6 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
         sb.append("ver=").append(ver).append(")");
         sb.append("\n");
     }
-
 
     /**
      * @param base Entry base, address in buffer of the entry start.
@@ -614,6 +626,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
 
     /**
      * Changes collection size.
+     *
      * @param sz new size to set.
      */
     private void setSize(int sz) {
