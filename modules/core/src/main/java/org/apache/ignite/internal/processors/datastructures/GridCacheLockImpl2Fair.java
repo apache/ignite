@@ -194,6 +194,16 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean hasQueuedThreads() throws IgniteException {
+        for (Latch latch : sync.latches.values()) {
+            if (latch.hasQueuedThreads())
+                return true;
+        }
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isFair() {
         return true;
     }
@@ -382,7 +392,7 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
         /** */
         private final IgniteInClosure<IgniteInternalFuture<EntryProcessorResult<LockOwner>>> releaseListener;
 
-        /** A counter for reentrant ability. */
+        /** A thread local counter for reentrant ability. */
         private final ReentrantCount reentrantCount = new ReentrantCount();
 
         /** {@link ReleasedThreadMessage} handler. */

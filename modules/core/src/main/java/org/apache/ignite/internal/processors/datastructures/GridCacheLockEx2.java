@@ -77,11 +77,6 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasQueuedThreads() throws IgniteException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean isFailoverSafe() {
         return true;
     }
@@ -240,6 +235,28 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
 
                 lock.unlock();
             }
+        }
+
+        /**
+         * Queries whether any threads are waiting to acquire this lock. Note that
+         * because cancellations may occur at any time, a {@code true}
+         * return does not guarantee that any other thread will ever
+         * acquire this lock.  This method is designed primarily for use in
+         * monitoring of the system state.
+         *
+         * @return {@code true} if there may be other threads waiting to
+         *         acquire the lock
+         */
+        boolean hasQueuedThreads() {
+            if (lock.tryLock()) {
+                try {
+                    return count != 0;
+                }
+                finally {
+                    lock.unlock();
+                }
+            }
+            return true;
         }
     }
 

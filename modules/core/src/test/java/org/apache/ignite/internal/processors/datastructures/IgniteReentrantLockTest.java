@@ -19,13 +19,16 @@ package org.apache.ignite.internal.processors.datastructures;
 
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLock;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -34,8 +37,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Tests for {@link org.apache.ignite.internal.processors.datastructures.GridCacheLockImpl2Fair} and for {@link
- * org.apache.ignite.internal.processors.datastructures.GridCacheLockImpl2Unfair}
+ * Tests for {@link GridCacheLockImpl2Fair} and for {@link GridCacheLockImpl2Unfair}.
  */
 public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     /** IP finder. */
@@ -484,6 +486,61 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
                 return null;
             }
         }, NODES_CNT, "worker").get(30_000L);
+    }
+
+    /**
+     * Test {@link GridCacheLockImpl2Fair#hasQueuedThreads()} and {@link GridCacheLockImpl2Unfair#hasQueuedThreads()}.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testHasQueuedThreads() throws IgniteCheckedException, InterruptedException {
+        testHasQueuedThreads(false);
+        testHasQueuedThreads(true);
+    }
+
+    /**
+     * Test {@link GridCacheLockImpl2Fair#hasQueuedThreads()} or {@link GridCacheLockImpl2Unfair#hasQueuedThreads()}.
+     * @param fair Fair mode on.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testHasQueuedThreads(final boolean fair) throws IgniteCheckedException, InterruptedException {
+        final CountDownLatch holdingLatch = new CountDownLatch(1);
+        final CountDownLatch lockDoneLatch = new CountDownLatch(1);
+        final IgniteLock lock = createReentrantLock(0, fair ? "lockf" : "locku", fair);
+
+        IgniteInternalFuture<Long> future = GridTestUtils.runMultiThreadedAsync(()->{
+            lock.lock();
+
+            try {
+                lockDoneLatch.countDown();
+
+                holdingLatch.await();
+            }
+            catch (InterruptedException ignored) {
+                // No-op.
+            }
+
+            lock.unlock();
+
+        }, 2, "worker");
+
+        lockDoneLatch.await();
+
+        // One thread will acquire the lock and another will waiting.
+        assertTrue(lock.hasQueuedThreads());
+
+        holdingLatch.countDown();
+
+        future.get();
+
+        assertFalse(lock.hasQueuedThreads());
+
+        lock.lock();
+
+        assertFalse(lock.hasQueuedThreads());
+
+        lock.unlock();
+
+        assertFalse(lock.hasQueuedThreads());
     }
 
     /**

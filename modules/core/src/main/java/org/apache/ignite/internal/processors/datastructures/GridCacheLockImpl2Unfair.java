@@ -322,6 +322,11 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean hasQueuedThreads() throws IgniteException {
+        return sync.lock.hasQueuedThreads();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isFair() {
         return false;
     }
@@ -618,7 +623,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
         /** Time when we shoud release global lock after next unlock. */
         private volatile long nextFinish;
 
-        /** A counter for reentrant ability. */
+        /** A thread local counter for reentrant ability. */
         private final ReentrantCount reentrantCount = new ReentrantCount();
 
         /** */
