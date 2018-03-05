@@ -125,7 +125,7 @@ public class IgniteUuidCompatibilityTest extends IgnitePersistenceCompatibilityA
 
             IgniteCache<IgniteUuid, String> cache = ignite.cache(TEST_CACHE_NAME);
 
-            assertEquals(cache.size(CachePeekMode.ALL), 3);
+            assertEquals(cache.size(CachePeekMode.ALL), VALUES.size());
 
             Set<String> values = new HashSet<>();
 
