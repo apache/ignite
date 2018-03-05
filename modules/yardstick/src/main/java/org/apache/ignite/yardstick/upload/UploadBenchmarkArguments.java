@@ -31,7 +31,7 @@ public class UploadBenchmarkArguments {
         description = "Upload benchmark only: " +
             "turn off Write Ahead Log before data uploading " +
             "and turn it on again when upload is done.")
-    private boolean switchWal = false;
+    private boolean disableWal = false;
 
     /**
      * Parameters for jdbc connection, that only uploads data.
@@ -65,8 +65,8 @@ public class UploadBenchmarkArguments {
     /**
      * @return Switch wal.
      */
-    public boolean switchWal() {
-        return switchWal;
+    public boolean disableWal() {
+        return disableWal;
     }
 
     /** @return parameters for jdbc url */
