@@ -41,6 +41,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -257,7 +258,7 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
     public void testClusterActiveWhileBaselineChanging() throws Exception {
         startGrids(NODE_COUNT);
 
-        IgniteEx ig = grid(0);
+        final IgniteEx ig = grid(0);
 
         ig.cluster().active(true);
 
@@ -265,15 +266,18 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         startGrid(NODE_COUNT);
 
-        IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-            try {
-                U.sleep(100);
-            }
-            catch (IgniteInterruptedCheckedException e) {
-                e.printStackTrace();
-            }
-            ig.cluster().setBaselineTopology(NODE_COUNT + 1);
-        });
+        IgniteInternalFuture fut = GridTestUtils.runAsync(
+            new Runnable() {
+                @Override public void run() {
+                    try {
+                        U.sleep(100);
+                    }
+                    catch (IgniteInterruptedCheckedException e) {
+                        e.printStackTrace();
+                    }
+                    ig.cluster().setBaselineTopology(NODE_COUNT + 1);
+                }
+            });
 
         while (!fut.isDone()) {
             assertTrue(grid(0).cluster().active());
@@ -571,14 +575,17 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
         primary = grid(primaryIdx);
         backup = grid(backupIdx);
 
-        boolean activated = GridTestUtils.waitForCondition(() -> {
-            for (int i = 0; i < NODE_COUNT; i++) {
-                if (!grid(i).cluster().active())
-                    return false;
-            }
+        boolean activated = GridTestUtils.waitForCondition(
+            new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    for (int i = 0; i < NODE_COUNT; i++) {
+                        if (!grid(i).cluster().active())
+                            return false;
+                    }
 
-            return true;
-        }, 10_000);
+                    return true;
+                }
+            }, 10_000);
 
         assert activated;
 
@@ -626,7 +633,12 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         startGrids(5);
 
-        GridTestUtils.waitForCondition(() -> grid(0).cluster().active(), getTestTimeout());
+        GridTestUtils.waitForCondition(
+            new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return grid(0).cluster().active();
+                }
+            }, getTestTimeout());
 
         for (int g = 0; g < 5; g++) {
             for (int i = 0; i < 100; i++)
@@ -661,7 +673,12 @@ public class CacheBaselineTopologyTest extends GridCommonAbstractTest {
 
         startGrids(5);
 
-        GridTestUtils.waitForCondition(() -> grid(0).cluster().active(), getTestTimeout());
+        GridTestUtils.waitForCondition(
+            new GridAbsPredicate() {
+                @Override public boolean apply() {
+                    return grid(0).cluster().active();
+                }
+            }, getTestTimeout());
 
         for (int g = 0; g < 5; g++) {
             for (int i = 0; i < 2048; i++)
