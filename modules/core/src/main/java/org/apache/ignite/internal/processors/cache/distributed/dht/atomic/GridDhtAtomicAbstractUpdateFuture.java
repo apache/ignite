@@ -178,9 +178,7 @@ public abstract class GridDhtAtomicAbstractUpdateFuture extends GridCacheFutureA
 
         List<ClusterNode> affNodes = affAssignment.get(entry.partition());
 
-        // Client has seen that rebalancing finished, it is safe to use affinity mapping.
-        List<ClusterNode> dhtNodes = updateReq.affinityMapping() ?
-            affNodes : cctx.dht().topology().nodes(entry.partition(), affAssignment, affNodes);
+        List<ClusterNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), affAssignment, affNodes);
 
         if (dhtNodes == null)
             dhtNodes = affNodes;

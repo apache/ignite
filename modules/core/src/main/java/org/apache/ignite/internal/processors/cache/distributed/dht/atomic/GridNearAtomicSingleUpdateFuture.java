@@ -571,7 +571,6 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
         byte flags = GridNearAtomicAbstractUpdateRequest.flags(nearEnabled,
             topLocked,
             retval,
-            mappingKnown,
             needPrimaryRes,
             skipStore,
             keepBinary,

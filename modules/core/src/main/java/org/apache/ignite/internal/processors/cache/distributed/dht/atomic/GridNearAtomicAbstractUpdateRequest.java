@@ -69,9 +69,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
     /** */
     private static final int NEAR_CACHE_FLAG_MASK = 0x40;
 
-    /** */
-    private static final int AFFINITY_MAPPING_FLAG_MASK = 0x80;
-
     /** Target node ID. */
     @GridDirectTransient
     protected UUID nodeId;
@@ -151,8 +148,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
      * @param nearCache {@code True} if near cache enabled on originating node.
      * @param topLocked Topology locked flag.
      * @param retval Return value required flag.
-     * @param affMapping {@code True} if originating node detected that rebalancing finished and
-     *    expects that update is mapped using current affinity.
      * @param needPrimaryRes {@code True} if near node waits for primary response.
      * @param skipStore Skip write-through to a CacheStore flag.
      * @param keepBinary Keep binary flag.
@@ -163,7 +158,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         boolean nearCache,
         boolean topLocked,
         boolean retval,
-        boolean affMapping,
         boolean needPrimaryRes,
         boolean skipStore,
         boolean keepBinary,
@@ -179,9 +173,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
         if (retval)
             flags |= RET_VAL_FLAG_MASK;
 
-        if (affMapping)
-            flags |= AFFINITY_MAPPING_FLAG_MASK;
-
         if (needPrimaryRes)
             flags |= NEED_PRIMARY_RES_FLAG_MASK;
 
@@ -195,14 +186,6 @@ public abstract class GridNearAtomicAbstractUpdateRequest extends GridCacheIdMes
             flags |= RECOVERY_FLAG_MASK;
 
         return flags;
-    }
-
-    /**
-     * @return {@code True} if originating node detected that rebalancing finished and
-     *    expects that update is mapped using current affinity.
-     */
-    boolean affinityMapping() {
-        return isFlag(AFFINITY_MAPPING_FLAG_MASK);
     }
 
     /**
