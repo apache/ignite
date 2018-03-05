@@ -35,6 +35,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -758,7 +759,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             destId == null || destId.equals(ctx.localNodeId()) || replicatedCacheAvailable(cacheName);
 
         if (locExec) {
-            IgniteInternalCache<?, ?> prj = localCache(cacheName).forSubjectId(clientId).setSkipStore(skipStore);
+            IgniteInternalCache<?, ?> prj = localCache(cacheName)
+                .forSubjectId(clientId)
+                .setSkipStore(skipStore)
+                .keepBinary();
 
             return op.apply((IgniteInternalCache<Object, Object>)prj, ctx).
                 chain(resultWrapper((IgniteInternalCache<Object, Object>)prj, key));
@@ -920,7 +924,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             String cacheName,
             boolean skipStore,
             CacheProjectionCommand op,
-            Object key) {
+            Object key
+        ) {
             this.clientId = clientId;
             this.cacheName = cacheName;
             this.skipStore = skipStore;
@@ -930,7 +935,10 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public GridRestResponse call() throws Exception {
-            IgniteInternalCache<?, ?> prj = cache(g, cacheName).forSubjectId(clientId).setSkipStore(skipStore);
+            IgniteInternalCache<?, ?> prj = cache(g, cacheName)
+                .forSubjectId(clientId)
+                .setSkipStore(skipStore)
+                .keepBinary();
 
             // Need to apply both operation and response transformation remotely
             // as cache could be inaccessible on local node and
