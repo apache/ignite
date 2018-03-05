@@ -18,10 +18,11 @@
 package org.apache.ignite.lang.utils;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jsr166.ConcurrentLinkedDeque8;
+import org.apache.ignite.util.deque.FastSizeDeque;
 
 /**
  *
@@ -143,8 +144,8 @@ public class GridCircularBufferSelfTest extends GridCommonAbstractTest {
         info("Created buffer: " + buf);
 
         final int iterCnt = 10_000;
-        final ConcurrentLinkedDeque8<Integer> evictedQ = new ConcurrentLinkedDeque8<>();
-        final ConcurrentLinkedDeque8<Integer> putQ = new ConcurrentLinkedDeque8<>();
+        final FastSizeDeque<Integer> evictedQ = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
+        final FastSizeDeque<Integer> putQ = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
         multithreaded(
             new Callable<Object>() {

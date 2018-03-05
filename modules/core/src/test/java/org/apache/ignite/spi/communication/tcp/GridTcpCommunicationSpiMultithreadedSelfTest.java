@@ -27,6 +27,7 @@ import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -59,7 +60,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
-import org.jsr166.ConcurrentLinkedDeque8;
+import org.apache.ignite.util.deque.FastSizeDeque;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 
@@ -131,7 +132,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
         private final UUID locNodeId;
 
         /** Received messages by node. */
-        private ConcurrentLinkedDeque8<GridTestMessage> rcvdMsgs = new ConcurrentLinkedDeque8<>();
+        private FastSizeDeque<GridTestMessage> rcvdMsgs = new FastSizeDeque<>(new ConcurrentLinkedDeque<>());
 
         /** Count of messages received from remote nodes */
         private AtomicInteger rmtMsgCnt = new AtomicInteger();
@@ -173,7 +174,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
         /**
          * @return Queue containing received messages in receive order.
          */
-        public ConcurrentLinkedDeque8<GridTestMessage> receivedMsgs() {
+        public FastSizeDeque<GridTestMessage> receivedMsgs() {
             return rcvdMsgs;
         }
 
@@ -200,7 +201,7 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
         assertEquals("Invalid listener count", getSpiCount(), lsnrs.size());
 
-        final ConcurrentMap<UUID, ConcurrentLinkedDeque8<GridTestMessage>> msgs = new ConcurrentHashMap<>();
+        final ConcurrentMap<UUID, FastSizeDeque<GridTestMessage>> msgs = new ConcurrentHashMap<>();
 
         final int iterationCnt = 5000;
 
@@ -221,11 +222,11 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
 
                         spis.get(from.id()).sendMessage(to, msg);
 
-                        ConcurrentLinkedDeque8<GridTestMessage> queue = msgs.get(to.id());
+                        FastSizeDeque<GridTestMessage> queue = msgs.get(to.id());
 
                         if (queue == null) {
-                            ConcurrentLinkedDeque8<GridTestMessage> old = msgs.putIfAbsent(to.id(),
-                                queue = new ConcurrentLinkedDeque8<>());
+                            FastSizeDeque<GridTestMessage> old = msgs.putIfAbsent(to.id(),
+                                queue = new FastSizeDeque<>(new ConcurrentLinkedDeque<>()));
 
                             if (old != null)
                                 queue = old;
@@ -251,14 +252,14 @@ public class GridTcpCommunicationSpiMultithreadedSelfTest extends GridSpiAbstrac
         U.sleep(IDLE_CONN_TIMEOUT * 2);
 
         // Now validate all sent and received messages.
-        for (Entry<UUID, ConcurrentLinkedDeque8<GridTestMessage>> e : msgs.entrySet()) {
+        for (Entry<UUID, FastSizeDeque<GridTestMessage>> e : msgs.entrySet()) {
             UUID to = e.getKey();
 
-            ConcurrentLinkedDeque8<GridTestMessage> sent = e.getValue();
+            FastSizeDeque<GridTestMessage> sent = e.getValue();
 
             MessageListener lsnr = lsnrs.get(to);
 
-            ConcurrentLinkedDeque8<GridTestMessage> rcvd = lsnr.receivedMsgs();
+            FastSizeDeque<GridTestMessage> rcvd = lsnr.receivedMsgs();
 
             info(">>> Node " + to + " received " + lsnr.remoteMessageCount() + " remote messages of " +
                 rcvd.sizex() + " total");
