@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.yardstick.IgniteBenchmarkArguments;
 
 /**
@@ -30,6 +31,7 @@ import org.apache.ignite.yardstick.IgniteBenchmarkArguments;
  *
  * @see IgniteBenchmarkArguments
  */
+@SuppressWarnings({"UnusedDeclaration", "FieldCanBeLocal"})
 public class UploadBenchmarkArguments {
     /** Whither or not temporary disable Write Ahead Log during upload. */
     @Parameter(names = {"--disable-wal"},
@@ -141,5 +143,10 @@ public class UploadBenchmarkArguments {
             throw new IllegalStateException("Jdbc batch size is not specified. Check arguments.");
 
         return jdbcBatchSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return GridToStringBuilder.toString(UploadBenchmarkArguments.class, this);
     }
 }

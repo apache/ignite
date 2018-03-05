@@ -266,6 +266,7 @@ public class IgniteBenchmarkArguments {
     private int clientNodesAfterId = -1;
 
     @ParametersDelegate
+    @GridToStringInclude
     public UploadBenchmarkArguments upload = new UploadBenchmarkArguments();
 
     /**
