@@ -138,8 +138,8 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
                     throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
             }
         }
-        catch (IOException e) {
-            throw new IgniteCheckedException("Handshake error", e);
+        catch (Exception e) {
+            throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
         }
 
         handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder,
