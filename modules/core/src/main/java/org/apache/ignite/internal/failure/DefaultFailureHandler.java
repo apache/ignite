@@ -28,7 +28,7 @@ public class DefaultFailureHandler implements FailureHandler {
     /** {@inheritDoc} */
     @Override public FailureAction onFailure(FailureContext failureCtx) {
         switch (failureCtx.type()) {
-            case SYSTEM_WORKER_CRASHED:
+            case SYSTEM_WORKER_CRASH:
                 return FailureAction.STOP;
 
             case CRITICAL_ERROR:

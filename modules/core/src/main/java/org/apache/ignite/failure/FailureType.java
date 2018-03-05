@@ -24,8 +24,8 @@ public enum FailureType {
     /** Segmentation. */
     SEGMENTATION,
 
-    /** System worker crashed. */
-    SYSTEM_WORKER_CRASHED,
+    /** System worker crash. */
+    SYSTEM_WORKER_CRASH,
 
     /** Critical error. */
     CRITICAL_ERROR
