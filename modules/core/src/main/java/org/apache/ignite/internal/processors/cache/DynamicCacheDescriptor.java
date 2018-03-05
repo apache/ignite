@@ -349,7 +349,11 @@ public class DynamicCacheDescriptor {
         }
     }
 
-    /** Convert DynamicCacheDescriptor to StoredCacheData for persisting */
+    /**
+     * Form a {@link StoredCacheData} with all data to correctly restore cache params when its configuration is read
+     * from page store. Essentially, this method takes from {@link DynamicCacheDescriptor} all that's needed to start
+     * cache correctly, leaving out everything else.
+     */
     public StoredCacheData toStoredData() {
         StoredCacheData res = new StoredCacheData(cacheConfiguration());
 

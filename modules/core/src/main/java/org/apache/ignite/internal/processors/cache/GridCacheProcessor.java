@@ -1848,10 +1848,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             ccfg.setNearConfiguration(reqNearCfg);
         }
 
-        StoredCacheData cacheData = toStoredData(desc);
-
         if (sharedCtx.pageStore() != null && affNode)
-            sharedCtx.pageStore().initializeForCache(desc.groupDescriptor(), cacheData);
+            sharedCtx.pageStore().initializeForCache(desc.groupDescriptor(), desc.toStoredData());
 
         String grpName = startCfg.getGroupName();
 
@@ -3159,30 +3157,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         assert desc != null;
 
         if (sharedCtx.pageStore() != null && !sharedCtx.kernalContext().clientNode() &&
-            CU.isPersistentCache(desc.cacheConfiguration(), sharedCtx.gridConfig().getDataStorageConfiguration())) {
-            StoredCacheData data = toStoredData(desc);
-
-            sharedCtx.pageStore().storeCacheData(data, true);
-        }
-    }
-
-    /**
-     * Form a {@link StoredCacheData} with all data to correctly restore cache params when its configuration is read
-     * from page store. Essentially, this method takes from {@link DynamicCacheDescriptor} all that's needed to start
-     * cache correctly, leaving out everything else.
-     *
-     * @param desc Cache descriptor to process.
-     * @return {@link StoredCacheData} based on {@code desc}.
-     */
-    private static StoredCacheData toStoredData(DynamicCacheDescriptor desc) {
-        A.notNull(desc, "desc");
-
-        StoredCacheData res = new StoredCacheData(desc.cacheConfiguration());
-
-        res.queryEntities(desc.schema() == null ? Collections.<QueryEntity>emptyList() : desc.schema().entities());
-        res.sql(desc.sql());
-
-        return res;
+            CU.isPersistentCache(desc.cacheConfiguration(), sharedCtx.gridConfig().getDataStorageConfiguration()))
+            sharedCtx.pageStore().storeCacheData(desc.toStoredData(), true);
     }
 
     /**
