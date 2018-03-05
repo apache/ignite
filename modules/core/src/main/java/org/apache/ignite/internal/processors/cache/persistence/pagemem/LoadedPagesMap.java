@@ -16,6 +16,8 @@
  */
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.function.BiConsumer;
+import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.GridLongList;
 
 /**
@@ -102,12 +104,22 @@ public interface LoadedPagesMap {
 
 
     /**
-     * @param keyPred
-     * @return
+     * Removes entities matching provided predicate.
+     *
+     * @param keyPred Test predicate for (cache group ID, page ID).
+     * @return List with removed values, value is not added to list for empty cell or if key is not matching to
+     * predicate.
      */
     default GridLongList removeIf(KeyPredicate keyPred) {
         return removeIf(0, capacity(), keyPred);
     }
+
+    /**
+     * Scans all the elements in this table.
+     *
+     * @param act Visitor/action to be applied to each not empty cell.
+     */
+    public void forEach(BiConsumer<FullPageId, Long> act);
 
     /**
      * Interface describing a predicate for Key (cache group ID, page ID). Usage of this predicate prevents odd object

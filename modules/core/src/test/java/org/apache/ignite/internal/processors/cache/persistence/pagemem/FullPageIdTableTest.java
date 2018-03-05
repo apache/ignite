@@ -250,28 +250,16 @@ public class FullPageIdTableTest  {
     private void verifyLinear(LoadedPagesMap tbl, Map<FullPageId, Long> check) {
         final Map<FullPageId, Long> tblSnapshot = new HashMap<>();
 
-        if (tbl instanceof FullPageIdTable)
-            ((FullPageIdTable)tbl).visitAll((fullId, val) -> {
-                if (tblSnapshot.put(fullId, val) != null)
-                    throw new AssertionError("Duplicate full page ID mapping: " + fullId);
-            });
-        else if (tbl instanceof RobinHoodBackwardShiftHashMap) {
-            ((RobinHoodBackwardShiftHashMap)tbl).forEach((fullId, val) -> {
-                if (tblSnapshot.put(fullId, val) != null)
-                    throw new AssertionError("Duplicate full page ID mapping: " + fullId);
-            });
-        }
+        tbl.forEach((fullId, val) -> {
+            if (tblSnapshot.put(fullId, val) != null)
+                throw new AssertionError("Duplicate full page ID mapping: " + fullId);
+        });
 
         int chkSize = check.size();
         int foundTblSize = tblSnapshot.size();
 
         HashMap<FullPageId, Long> cp = new HashMap<>(tblSnapshot);
         check.keySet().forEach(cp::remove);
-
-        if (chkSize != foundTblSize && tbl instanceof FullPageIdTable) {
-            ((FullPageIdTable)tbl).lastDump.set(0);
-            ((FullPageIdTable)tbl).dumpIfNeed();
-        }
 
         assertEquals("Size check failed, check map size " +
             chkSize + " but found in table " + foundTblSize + " elements," +

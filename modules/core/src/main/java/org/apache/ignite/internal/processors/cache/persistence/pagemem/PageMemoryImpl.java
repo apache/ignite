@@ -37,6 +37,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -186,6 +187,10 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /** Number of used pages in checkpoint buffer. */
     private final AtomicInteger cpBufPagesCntr = new AtomicInteger(0);
+
+    /** Use new implementation of loaded pages table:  'Robin Hood hashing: backward shift deletion'. */
+    private final boolean useBackwardShiftMap
+        = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP, true);
 
     /** */
     private ExecutorService asyncRunner = new ThreadPoolExecutor(
@@ -1854,16 +1859,13 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             GridUnsafe.putIntVolatile(null, acquiredPagesPtr, 0);
 
-            boolean newImpl = true; //todo made configurable
-
-            memPerTbl = newImpl
+            memPerTbl = useBackwardShiftMap
                 ? RobinHoodBackwardShiftHashMap.requiredMemory(pages)
                 : requiredSegmentTableMemory(pages);
 
-            loadedPages =
-                newImpl
-                    ? new RobinHoodBackwardShiftHashMap(region.address() + 8, memPerTbl)
-                    : new FullPageIdTable(region.address() + 8, memPerTbl, true);
+            loadedPages = useBackwardShiftMap
+                ? new RobinHoodBackwardShiftHashMap(region.address() + 8, memPerTbl)
+                : new FullPageIdTable(region.address() + 8, memPerTbl, true);
 
             DirectMemoryRegion poolRegion = region.slice(memPerTbl + 8);
 
