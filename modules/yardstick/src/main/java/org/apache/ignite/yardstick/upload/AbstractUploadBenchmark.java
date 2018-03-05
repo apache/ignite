@@ -34,13 +34,13 @@ import org.yardstickframework.BenchmarkUtils;
  */
 public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     /** Total inserts size. */
-    public long insertRowsCnt;
+    long insertRowsCnt;
 
     /** Rows count to be inserted and deleted during warmup */
-    public long warmupRowsCnt;
+    long warmupRowsCnt;
 
     /** Factory that hides all the test data details. */
-    QueryFactory queries = new QueryFactory();
+    protected QueryFactory queries = new QueryFactory();
 
     /** {@inheritDoc} */
     @Override public final void setUp(BenchmarkConfiguration cfg) throws Exception {
