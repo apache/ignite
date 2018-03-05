@@ -526,6 +526,76 @@ public class AuthenticationProcessorSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testInvalidUserNamePassword() throws Exception {
+        AuthorizationContext.context(actxDflt);
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid(CLI_NODE).context().authentication().addUser(null, "test");
+
+                return null;
+            }
+        }, UserManagementException.class, "User name is empty");
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid(CLI_NODE).context().authentication().addUser("", "test");
+
+                return null;
+            }
+        }, UserManagementException.class, "User name is empty");
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid(CLI_NODE).context().authentication().addUser("test", null);
+
+                return null;
+            }
+        }, UserManagementException.class, "Password is empty");
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid(CLI_NODE).context().authentication().addUser("test", "");
+
+                return null;
+            }
+        }, UserManagementException.class, "Password is empty");
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid(CLI_NODE).context().authentication().addUser(
+                    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                    "a");
+
+                return null;
+            }
+        }, UserManagementException.class, "User name is too long");
+    }
+
+    /**
+     * @param name User name to check.
+     */
+    private void checkInvalidUsername(final String name) {
+
+    }
+
+    /**
+     * @param passwd User's password to check.
+     */
+    private void checkInvalidPassword(final String passwd) {
+        AuthorizationContext.context(actxDflt);
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid(CLI_NODE).context().authentication().addUser("test", passwd);
+
+                return null;
+            }
+        }, UserManagementException.class, "Invalid user name");
+    }
+    /**
      * @param createNode Node to execute create operation.
      * @param authNode Node to execute authentication.
      * @throws Exception On error.

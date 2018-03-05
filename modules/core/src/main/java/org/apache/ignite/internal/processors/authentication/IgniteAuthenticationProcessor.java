@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageLifecycleListener;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetastorageTree;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadOnlyMetastorage;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.ReadWriteMetastorage;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -91,6 +92,7 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /** Futures prepared user map. Authentication message ID -> public future. */
     private final ConcurrentMap<IgniteUuid, AuthenticateFuture> authFuts = new ConcurrentHashMap<>();
 
+    /** Random is used to get random server node to authentication from client node. */
     private static final Random RND = new Random(System.currentTimeMillis());
 
     /** Operation mutex. */
@@ -342,6 +344,23 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     }
 
     /**
+     * @param login User's login.
+     * @param passwd Password.
+     * @throws UserManagementException On error.
+     */
+    public static void validate(String login, String passwd) throws UserManagementException {
+        if (F.isEmpty(login))
+            throw new UserManagementException("User name is empty");
+
+        if (F.isEmpty(passwd))
+            throw new UserManagementException("Password is empty");
+
+        if ((STORE_USER_PREFIX + login).getBytes().length > MetastorageTree.MAX_KEY_LEN)
+            throw new UserManagementException("User name is too long. " +
+                "The user name length must be less then 60 bytes in UTF8");
+    }
+
+    /**
      * Adds new user.
      *
      * @param login User's login.
@@ -349,6 +368,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @throws IgniteCheckedException On error.
      */
     public void addUser(String login, String passwd) throws IgniteCheckedException {
+        validate(login, passwd);
+
         UserManagementOperation op = new UserManagementOperation(User.create(login, passwd),
             UserManagementOperation.OperationType.ADD);
 
@@ -1231,7 +1252,15 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
 
                 msg0 = new UserManagementOperationFinishedMessage(op.id(), null);
             }
+            catch (UserManagementException e) {
+                msg0 = new UserManagementOperationFinishedMessage(op.id(), e.toString());
+
+                // Remove failed operation from active operations.
+                activeOps.remove(op.id());
+            }
             catch (Throwable e) {
+                log.warning("Unexpected exception on perform user management operation", e);
+
                 msg0 = new UserManagementOperationFinishedMessage(op.id(), e.toString());
 
                 // Remove failed operation from active operations.
