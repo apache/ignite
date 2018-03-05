@@ -291,7 +291,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 null;
         this.changeTracker = changeTracker;
         this.stateChecker = stateChecker;
-        this.throttlingPlc = throttlingPlc != null ? throttlingPlc : ThrottlingPolicy.NONE;
+        this.throttlingPlc = throttlingPlc != null ? throttlingPlc : ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
         this.cpProgressProvider = cpProgressProvider;
 
         storeMgr = ctx.pageStore();
@@ -363,19 +363,22 @@ public class PageMemoryImpl implements PageMemoryEx {
      *
      */
     private void initWriteThrottle() {
-        if (!isThrottlingEnabled())
-            return;
+        if (isThrottlingEnabled()) {
+            if (cpProgressProvider == null) {
+                log.error("Write throttle can't start. CP progress provider not presented");
 
-        if (cpProgressProvider == null) {
-            log.error("Write throttle can't start. CP progress provider not presented");
-
-            throttlingPlc = ThrottlingPolicy.NONE;
+                throttlingPlc = ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
+            }
         }
+        else
+            throttlingPlc = ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
 
         if (throttlingPlc == ThrottlingPolicy.SPEED_BASED)
             writeThrottle = new PagesWriteSpeedBasedThrottle(this, cpProgressProvider, stateChecker, log);
-        else if(throttlingPlc == ThrottlingPolicy.TARGET_RATIO_BASED)
-            writeThrottle = new PagesWriteThrottle(this, cpProgressProvider, stateChecker);
+        else if (throttlingPlc == ThrottlingPolicy.TARGET_RATIO_BASED)
+            writeThrottle = new PagesWriteThrottle(this, cpProgressProvider, stateChecker, false);
+        else
+            writeThrottle = new PagesWriteThrottle(this, null, stateChecker, true);
     }
 
     /** {@inheritDoc} */
@@ -998,7 +1001,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * @return {@code True} if throttling is enabled.
      */
     private boolean isThrottlingEnabled() {
-        return throttlingPlc != ThrottlingPolicy.NONE;
+        return throttlingPlc != ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
     }
 
     /** {@inheritDoc} */
@@ -1859,7 +1862,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             pool = new PagePool(idx, poolRegion, null);
 
-            maxDirtyPages = throttlingPlc != ThrottlingPolicy.NONE
+            maxDirtyPages = throttlingPlc != ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY
                 ? pool.pages() * 3 / 4
                 : Math.min(pool.pages() * 2 / 3, cpPoolPages);
         }
@@ -2726,7 +2729,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * Throttling enabled and its type enum.
      */
     public enum ThrottlingPolicy {
-        /** Not throttled. */NONE,
+        /** Only exponential throttling is used to protect from CP buffer overflow. */CHECKPOINT_BUFFER_ONLY,
         /** Target ratio based: CP progress is used as border. */ TARGET_RATIO_BASED,
         /** Speed based. CP writting speed and estimated ideal speed are used as border */ SPEED_BASED
     }

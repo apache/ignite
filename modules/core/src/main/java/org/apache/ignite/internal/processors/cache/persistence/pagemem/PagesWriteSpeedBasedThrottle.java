@@ -49,8 +49,11 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
     /** Percent of dirty pages which will not cause throttling. */
     private static final double MIN_RATIO_NO_THROTTLE = 0.03;
 
-    /** Exponential backoff counter. */
-    private final AtomicInteger exponentialBackoffCntr = new AtomicInteger(0);
+    /** Counter for dirty pages ratio throttling. */
+    private final AtomicInteger notInCheckpointBackoffCntr = new AtomicInteger(0);
+
+    /** Counter for checkpoint buffer usage ratio throttling (we need a separate one due to IGNITE-7751). */
+    private final AtomicInteger inCheckpointBackoffCntr = new AtomicInteger(0);
 
     /** Counter of written pages from checkpoint. Value is saved here for detecting checkpoint start. */
     private final AtomicInteger lastObservedWritten = new AtomicInteger(0);
@@ -201,13 +204,15 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
             }
         }
 
+        AtomicInteger cntr = isPageInCheckpoint ? inCheckpointBackoffCntr : notInCheckpointBackoffCntr;
+
         if (level == ThrottleMode.NO) {
-            exponentialBackoffCntr.set(0);
+            cntr.set(0);
 
             throttleParkTimeNs = 0;
         }
         else if (level == ThrottleMode.EXPONENTIAL) {
-            int exponent = exponentialBackoffCntr.getAndIncrement();
+            int exponent = cntr.getAndIncrement();
 
             throttleParkTimeNs = (long)(STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, exponent));
         }
@@ -439,7 +444,8 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
 
     /** {@inheritDoc} */
     @Override public void onFinishCheckpoint() {
-        exponentialBackoffCntr.set(0);
+        inCheckpointBackoffCntr.set(0);
+        notInCheckpointBackoffCntr.set(0);
 
         speedCpWrite.finishInterval();
         speedMarkAndAvgParkTime.finishInterval();
