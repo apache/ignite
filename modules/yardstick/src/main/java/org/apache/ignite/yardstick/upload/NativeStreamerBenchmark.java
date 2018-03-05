@@ -34,7 +34,7 @@ public class NativeStreamerBenchmark extends IgniteAbstractBenchmark {
     private long insertRowsCnt;
 
     /** Number of entries to be uploaded during{@link #test(Map)}. */
-    private static final long WARMUP_ROWS_CNT = 3_000_000;
+    private long warmupRowsCnt;
 
     /** Name of the {@link #cache} */
     private static final String CACHE_NAME = NativeStreamerBenchmark.class.getSimpleName();
@@ -51,14 +51,15 @@ public class NativeStreamerBenchmark extends IgniteAbstractBenchmark {
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        insertRowsCnt = args.range();
+        insertRowsCnt = args.upload.uploadRowsCnt();
+        warmupRowsCnt = args.upload.warmupRowsCnt();
 
         // warmup
         BenchmarkUtils.println(cfg, "Starting custom warmup.");
         String warmupCacheName = CACHE_NAME + "Warmup";
 
         try(IgniteCache<Long, Values10> warmupCache = ignite().createCache(warmupCacheName)) {
-            upload(warmupCacheName, WARMUP_ROWS_CNT);
+            upload(warmupCacheName, warmupRowsCnt);
         }
         finally {
             ignite().destroyCache(warmupCacheName);

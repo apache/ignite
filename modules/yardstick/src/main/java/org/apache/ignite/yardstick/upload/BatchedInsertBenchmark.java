@@ -27,11 +27,11 @@ import java.sql.SQLException;
  */
 public class BatchedInsertBenchmark extends AbstractUploadBenchmark {
     /** Number of inserts in batch */
-    public int BATCH_SIZE;
+    public long BATCH_SIZE;
 
     /** {@inheritDoc} */
     @Override protected void init() {
-        BATCH_SIZE = args.sqlRange();
+        BATCH_SIZE = args.upload.jdbcBatchSize();
     }
 
     /** {@inheritDoc} */

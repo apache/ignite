@@ -23,7 +23,13 @@ import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.yardstick.IgniteBenchmarkArguments;
 
+/**
+ * Represents command line arguments that are specific to upload benchmarks.
+ *
+ * @see IgniteBenchmarkArguments
+ */
 public class UploadBenchmarkArguments {
     /** Whither or not temporary disable Write Ahead Log during upload. */
     @Parameter(names = {"--disable-wal"},
@@ -62,6 +68,18 @@ public class UploadBenchmarkArguments {
             "If set to 1, than entries will be passed directly.")
     private int streamerLocBatchSize = 1;
 
+    /** How many rows to upload during warmup. */
+    @Parameter(names = {"--upload-warmup-rows"})
+    private long warmupRowsCnt = 3_000_000;
+
+    /** How many rows to upload during real test. */
+    @Parameter(names = {"--upload-rows"})
+    private long uploadRowsCnt = -1;
+
+    /** How many rows to include in each batch ({@link BatchedInsertBenchmark} only). */
+    @Parameter(names = {"--upload-jdbc-batch-size"})
+    private long jdbcBatchSize = -1;
+
     /**
      * @return Switch wal.
      */
@@ -69,12 +87,12 @@ public class UploadBenchmarkArguments {
         return disableWal;
     }
 
-    /** @return parameters for jdbc url */
+    /** @return parameters for jdbc url. */
     public List<String> uploadJdbcParams() {
         return uploadJdbcParams;
     }
 
-    /** @return packet_size value for copy command or {@code null} for default value */
+    /** @return packet_size value for copy command or {@code null} for default value. */
     @Nullable
     public Long copyPacketSize() {
         return copyPacketSize;
@@ -89,7 +107,7 @@ public class UploadBenchmarkArguments {
     }
 
     /**
-     * @return Value for {@link IgniteDataStreamer#perNodeParallelOperations(int)}
+     * @return Value for {@link IgniteDataStreamer#perNodeParallelOperations(int)}.
      */
     @Nullable
     public Integer streamerNodeParOps() {
@@ -100,7 +118,28 @@ public class UploadBenchmarkArguments {
      * How many entries to collect before passing map to {@link IgniteDataStreamer#addData(Map)}.
      * If set to 1, {@link IgniteDataStreamer#addData(Object, Object)} method will be used.
      */
-    public int streamerLocBatchSize(){
+    public int streamerLocBatchSize() {
         return streamerLocBatchSize;
+    }
+
+    /** see {@link #warmupRowsCnt} */
+    public long warmupRowsCnt() {
+        return warmupRowsCnt;
+    }
+
+    /** see {@link #uploadRowsCnt} */
+    public long uploadRowsCnt() {
+        if (uploadRowsCnt < 0)
+            throw new IllegalStateException("Upload rows count is not specified. Check arguments.");
+
+        return uploadRowsCnt;
+    }
+
+    /** see {@link #jdbcBatchSize} */
+    public long jdbcBatchSize() {
+        if (jdbcBatchSize < 0)
+            throw new IllegalStateException("Jdbc batch size is not specified. Check arguments.");
+
+        return jdbcBatchSize;
     }
 }

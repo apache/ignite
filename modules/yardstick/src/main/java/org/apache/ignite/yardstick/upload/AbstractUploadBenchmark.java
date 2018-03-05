@@ -37,7 +37,7 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     public long insertRowsCnt;
 
     /** Rows count to be inserted and deleted during warmup */
-    public static final long warmupRowsCnt = 3000_000;
+    public long warmupRowsCnt;
 
     /** Factory that hides all the test data details. */
     QueryFactory queries = new QueryFactory();
@@ -46,7 +46,8 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
     @Override public final void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        insertRowsCnt = args.range();
+        insertRowsCnt = args.upload.uploadRowsCnt();
+        warmupRowsCnt = args.upload.warmupRowsCnt();
 
         init();
 
