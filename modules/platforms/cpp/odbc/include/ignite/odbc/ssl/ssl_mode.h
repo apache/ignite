@@ -31,7 +31,7 @@ namespace ignite
             /** SSL Mode enum. */
             struct SslMode
             {
-                enum T
+                enum Type
                 {
                     DISABLE = 0,
 
@@ -46,7 +46,7 @@ namespace ignite
                  * @param dflt Default value to return on error.
                  * @return Corresponding enum value.
                  */
-                static T FromString(const std::string& val, T dflt = UNKNOWN);
+                static Type FromString(const std::string& val, Type dflt = UNKNOWN);
             };
         }
     }
