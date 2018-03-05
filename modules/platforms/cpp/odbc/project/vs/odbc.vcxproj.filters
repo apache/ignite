@@ -160,9 +160,6 @@
     <ClCompile Include="..\..\src\ssl\ssl_gateway.cpp">
       <Filter>Code\ssl</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\config\connection_string_parser_base.cpp">
-      <Filter>Code\config</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\src\config\connection_string_parser.cpp">
       <Filter>Code\config</Filter>
     </ClCompile>
@@ -316,9 +313,6 @@
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_bindings.h">
       <Filter>Code\ssl</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\odbc\config\connection_string_parser_base.h">
-      <Filter>Code\config</Filter>
     </ClInclude>
     <ClInclude Include="..\..\include\ignite\odbc\config\connection_string_parser.h">
       <Filter>Code\config</Filter>

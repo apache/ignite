@@ -174,7 +174,6 @@
     <ClCompile Include="..\..\src\config\configuration.cpp" />
     <ClCompile Include="..\..\src\config\connection_string_parser.cpp" />
     <ClCompile Include="..\..\src\config\connection_info.cpp" />
-    <ClCompile Include="..\..\src\config\connection_string_parser_base.cpp" />
     <ClCompile Include="..\..\src\connection.cpp" />
     <ClCompile Include="..\..\src\cursor.cpp" />
     <ClCompile Include="..\..\src\diagnostic\diagnosable_adapter.cpp" />
@@ -218,7 +217,6 @@
     <ClInclude Include="..\..\include\ignite\odbc\common_types.h" />
     <ClInclude Include="..\..\include\ignite\odbc\config\configuration.h" />
     <ClInclude Include="..\..\include\ignite\odbc\config\connection_string_parser.h" />
-    <ClInclude Include="..\..\include\ignite\odbc\config\connection_string_parser_base.h" />
     <ClInclude Include="..\..\include\ignite\odbc\config\connection_info.h" />
     <ClInclude Include="..\..\include\ignite\odbc\connection.h" />
     <ClInclude Include="..\..\include\ignite\odbc\cursor.h" />

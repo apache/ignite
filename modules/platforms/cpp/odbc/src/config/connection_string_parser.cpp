@@ -16,14 +16,13 @@
  */
 
 #include <vector>
-#include <string>
 
 #include "ignite/common/utils.h"
 
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/odbc_error.h"
-#include "ignite/odbc/config/connection_string_parser.h"
 #include "ignite/odbc/ssl/ssl_mode.h"
+#include "ignite/odbc/config/connection_string_parser.h"
 
 namespace ignite
 {
@@ -35,6 +34,54 @@ namespace ignite
                 cfg(cfg)
             {
                 // No-op.
+            }
+
+            ConnectionStringParser::~ConnectionStringParser()
+            {
+                // No-op.
+            }
+
+            void ConnectionStringParser::ParseConnectionString(const char* str, size_t len, char delimeter,
+                diagnostic::Diagnosable* diag)
+            {
+                std::string connect_str(str, len);
+
+                while (!connect_str.empty())
+                {
+                    size_t attr_begin = connect_str.rfind(delimeter);
+
+                    if (attr_begin == std::string::npos)
+                        attr_begin = 0;
+                    else
+                        ++attr_begin;
+
+                    size_t attr_eq_pos = connect_str.rfind('=');
+
+                    if (attr_eq_pos == std::string::npos)
+                        attr_eq_pos = 0;
+
+                    if (attr_begin < attr_eq_pos)
+                    {
+                        const char* key_begin = connect_str.data() + attr_begin;
+                        const char* key_end = connect_str.data() + attr_eq_pos;
+
+                        const char* value_begin = connect_str.data() + attr_eq_pos + 1;
+                        const char* value_end = connect_str.data() + connect_str.size();
+
+                        std::string key = utility::RemoveSurroundingSpaces(key_begin, key_end);
+                        std::string value = utility::RemoveSurroundingSpaces(value_begin, value_end);
+
+                        if (value[0] == '{' && value[value.size() - 1] == '}')
+                            value = value.substr(1, value.size() - 2);
+
+                        HandleAttributePair(key, value, diag);
+                    }
+
+                    if (!attr_begin)
+                        break;
+
+                    connect_str.erase(attr_begin - 1);
+                }
             }
 
             void ConnectionStringParser::HandleAttributePair(const std::string &key, const std::string &value,

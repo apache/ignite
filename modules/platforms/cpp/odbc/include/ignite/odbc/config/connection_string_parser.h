@@ -20,8 +20,8 @@
 
 #include <string>
 
-#include "connection_string_parser_base.h"
-#include "configuration.h"
+#include "ignite/odbc/config/configuration.h"
+#include "ignite/odbc/diagnostic/diagnosable.h"
 
 namespace ignite
 {
@@ -32,7 +32,7 @@ namespace ignite
             /**
              * ODBC configuration parser abstraction.
              */
-            class ConnectionStringParser : public ConnectionStringParserBase
+            class ConnectionStringParser
             {
             public:
 
@@ -46,10 +46,16 @@ namespace ignite
                 /**
                  * Destructor.
                  */
-                virtual ~ConnectionStringParser()
-                {
-                    // No-op.
-                }
+                ~ConnectionStringParser();
+
+                /**
+                 * Parse connect string.
+                 *
+                 * @param str String to parse.
+                 * @param len String length.
+                 * @param delimeter Delimeter.
+                 */
+                void ParseConnectionString(const char* str, size_t len, char delimeter, diagnostic::Diagnosable* diag);
 
             private:
                 /**
@@ -74,7 +80,7 @@ namespace ignite
                  * @param value Value.
                  * @param diag Diagnostics collector.
                  */
-                virtual void HandleAttributePair(const std::string& key, const std::string& value,
+                void HandleAttributePair(const std::string& key, const std::string& value,
                     diagnostic::Diagnosable* diag);
 
                 /**
