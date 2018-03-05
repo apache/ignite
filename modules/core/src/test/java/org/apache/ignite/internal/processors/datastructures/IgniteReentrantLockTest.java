@@ -491,6 +491,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
 
     /**
      * Test {@link GridCacheLockImpl2Fair#hasQueuedThreads()} and {@link GridCacheLockImpl2Unfair#hasQueuedThreads()}.
+     *
      * @throws IgniteCheckedException If failed.
      */
     public void testHasQueuedThreads() throws IgniteCheckedException, InterruptedException {
@@ -500,6 +501,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
 
     /**
      * Test {@link GridCacheLockImpl2Fair#hasQueuedThreads()} or {@link GridCacheLockImpl2Unfair#hasQueuedThreads()}.
+     *
      * @param fair Fair mode on.
      * @throws IgniteCheckedException If failed.
      */
@@ -508,7 +510,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
         final CountDownLatch lockDoneLatch = new CountDownLatch(1);
         final IgniteLock lock = createReentrantLock(0, fair ? "lockf" : "locku", fair);
 
-        IgniteInternalFuture<Long> future = GridTestUtils.runMultiThreadedAsync(()->{
+        IgniteInternalFuture<Long> future = GridTestUtils.runMultiThreadedAsync(() -> {
             lock.lock();
 
             try {
