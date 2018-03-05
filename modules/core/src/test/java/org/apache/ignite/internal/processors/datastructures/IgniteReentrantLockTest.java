@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.datastructures;
 
 import java.util.Random;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -541,6 +542,74 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
         lock.unlock();
 
         assertFalse(lock.hasQueuedThreads());
+    }
+
+    /**
+     * Test {@link GridCacheLockImpl2Fair#hasQueuedThread(Thread)} or
+     * {@link GridCacheLockImpl2Unfair#hasQueuedThread(Thread)}.
+     *
+     * @throws IgniteCheckedException If failed.
+     * @throws InterruptedException If failed.
+     */
+    public void testHasQueuedThread() throws IgniteCheckedException, InterruptedException {
+        testHasQueuedThread(false);
+        testHasQueuedThread(true);
+    }
+
+    /**
+     * Test {@link GridCacheLockImpl2Fair#hasQueuedThread(Thread)} or
+     * {@link GridCacheLockImpl2Unfair#hasQueuedThread(Thread)}.
+     *
+     * @param fair Fair mode on.
+     * @throws IgniteCheckedException If failed.
+     * @throws InterruptedException If failed.
+     */
+    public void testHasQueuedThread(final boolean fair) throws IgniteCheckedException, InterruptedException {
+        final CountDownLatch holdingLatch = new CountDownLatch(1);
+        final CountDownLatch lockDoneLatch = new CountDownLatch(1);
+        final IgniteLock lock = createReentrantLock(0, fair ? "lockf" : "locku", fair);
+        final ConcurrentLinkedQueue<Thread> threads = new ConcurrentLinkedQueue<>();
+
+        IgniteInternalFuture<Long> future = GridTestUtils.runMultiThreadedAsync(() -> {
+            threads.add(Thread.currentThread());
+
+            lock.lock();
+
+            try {
+                lockDoneLatch.countDown();
+
+                holdingLatch.await();
+            }
+            catch (InterruptedException ignored) {
+                // No-op.
+            }
+
+            lock.unlock();
+
+        }, 2, "worker");
+
+        lockDoneLatch.await();
+
+        Thread[] ts = threads.toArray(new Thread[2]);
+
+        assertEquals(2, ts.length);
+
+        // One thread will acquire the lock and another will waiting.
+        assertTrue(lock.hasQueuedThread(ts[0]) ^ lock.hasQueuedThread(ts[1]));
+
+        holdingLatch.countDown();
+
+        future.get();
+
+        assertFalse(lock.hasQueuedThread(ts[0]) || lock.hasQueuedThread(ts[1]));
+
+        lock.lock();
+
+        assertFalse(lock.hasQueuedThread(ts[0]) || lock.hasQueuedThread(ts[1]));
+
+        lock.unlock();
+
+        assertFalse(lock.hasQueuedThread(ts[0]) || lock.hasQueuedThread(ts[1]));
     }
 
     /**

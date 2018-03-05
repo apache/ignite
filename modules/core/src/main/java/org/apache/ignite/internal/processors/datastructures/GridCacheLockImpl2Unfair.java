@@ -327,6 +327,11 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean hasQueuedThread(Thread thread) throws IgniteException {
+        return sync.lock.hasQueuedThread(thread);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isFair() {
         return false;
     }

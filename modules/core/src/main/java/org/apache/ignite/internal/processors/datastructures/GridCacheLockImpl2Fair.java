@@ -204,6 +204,11 @@ public final class GridCacheLockImpl2Fair extends GridCacheLockEx2 {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean hasQueuedThread(Thread thread) throws IgniteException {
+        return sync.latches.get(thread.getId()).hasQueuedThreads();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isFair() {
         return true;
     }
