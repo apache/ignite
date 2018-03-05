@@ -218,6 +218,7 @@
     <ClInclude Include="..\..\include\ignite\odbc\config\configuration.h" />
     <ClInclude Include="..\..\include\ignite\odbc\config\connection_string_parser.h" />
     <ClInclude Include="..\..\include\ignite\odbc\config\connection_info.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\config\settable_value.h" />
     <ClInclude Include="..\..\include\ignite\odbc\connection.h" />
     <ClInclude Include="..\..\include\ignite\odbc\cursor.h" />
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnosable.h" />

@@ -317,5 +317,8 @@
     <ClInclude Include="..\..\include\ignite\odbc\config\connection_string_parser.h">
       <Filter>Code\config</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\odbc\config\settable_value.h">
+      <Filter>Code\config</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
