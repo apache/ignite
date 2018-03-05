@@ -26,6 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.NodeInvalidator;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -1095,6 +1096,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     }
 
                     delegate = delegate0;
+                }
+                catch (Throwable ex) {
+                    log.error("Unhandled exception during page store initialization. All further operations will " +
+                        "be failed and local node will be stopped.");
+
+                    NodeInvalidator.INSTANCE.invalidate(ctx.kernalContext(), ex);
+
+                    throw ex;
                 }
                 finally {
                     latch.countDown();
