@@ -131,7 +131,7 @@ public class StandaloneGridKernalContext implements GridKernalContext {
             throw new IllegalStateException("Must not fail on empty providers list.", e);
         }
 
-        this.marshallerContext = new MarshallerContextImpl(null);
+        this.marshallerContext = new MarshallerContextImpl(null, null);
         this.cfg = prepareIgniteConfiguration();
         this.cacheObjProcessor = binaryMetadataFileStoreDir != null ? binaryProcessor(this, binaryMetadataFileStoreDir) : null;
 

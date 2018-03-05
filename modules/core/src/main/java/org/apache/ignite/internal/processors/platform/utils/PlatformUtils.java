@@ -856,7 +856,7 @@ public class PlatformUtils {
 
         BinaryMarshaller marsh = new BinaryMarshaller();
 
-        marsh.setContext(new MarshallerContextImpl(null));
+        marsh.setContext(new MarshallerContextImpl(null, null));
 
         ctx.configure(marsh, new IgniteConfiguration());
 
