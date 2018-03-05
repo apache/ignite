@@ -189,6 +189,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         // Clean-up in case of client reconnect.
         caches.clear();
 
+        log.info("initCachesOnLocalJoin cacheGroupDescriptors = " + cacheGroupDescriptors);
+
         caches.init(cacheGroupDescriptors, cacheDescriptors);
     }
 
@@ -2612,10 +2614,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             return registeredCaches.put(desc.cacheId(), desc);
         }
 
+
         /**
          * @param grpDesc Group description.
          */
         private CacheGroupDescriptor registerGroup(CacheGroupDescriptor grpDesc) {
+            log.info("Put SharedAffinity registeredGrps = " + registeredGrps);
             return registeredGrps.put(grpDesc.groupId(), grpDesc);
         }
 
@@ -2632,7 +2636,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          */
         CacheGroupDescriptor group(int grpId) {
             CacheGroupDescriptor desc = registeredGrps.get(grpId);
-
+            log.info("Get SharedAffinity registeredGrps = " + registeredGrps);
             assert desc != null : "CacheGroupDescriptor not found for grpId=" + grpId;
 
             return desc;

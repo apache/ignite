@@ -1097,8 +1097,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         for (CacheGroupContext grp : cacheGrps.values()) {
             if (stoppedGrps.contains(grp.groupId())) {
-                log.info("Removed cacheGrps groupId=" + grp.groupId());
                 cacheGrps.remove(grp.groupId());
+                log.info("Removed groupId = " + grp.groupId());
+                log.info("After removed: cacheGrps = " + cacheGrps);
             }
             else
                 grp.onReconnected();
