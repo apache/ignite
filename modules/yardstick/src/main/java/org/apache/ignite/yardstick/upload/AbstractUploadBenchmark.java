@@ -138,10 +138,14 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
 
                 throw new RuntimeException(msg);
             }
+
+            BenchmarkUtils.println(cfg, "Test table contains " + count + " rows.");
         }
         finally {
             super.tearDown();
         }
+
+        BenchmarkUtils.println(cfg, "TearDown successfully finished.");
     }
 
     /** Facility method for executing update queries */
