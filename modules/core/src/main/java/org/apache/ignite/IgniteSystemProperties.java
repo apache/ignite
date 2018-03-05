@@ -19,6 +19,7 @@ package org.apache.ignite;
 
 import java.io.Serializable;
 import java.lang.management.RuntimeMXBean;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
@@ -769,6 +770,12 @@ public final class IgniteSystemProperties {
      * (such as coding mistakes in code using Ignite) will not be logged.
      */
     public static final String IGNITE_DEV_ONLY_LOGGING_DISABLED = "IGNITE_DEV_ONLY_LOGGING_DISABLED";
+
+    /**
+     * Property allowing to serialize a singleton collections obtained by {@link Collections#singleton(Object)}
+     * and {@link Collections#singletonMap(Object, Object)}.
+     */
+    public static final String IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION = "IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION";
 
     /**
      * Enforces singleton.
