@@ -395,7 +395,7 @@ public class IgnitionEx {
      *
      * @param timeoutMs Timeout to wait graceful stopping.
      */
-    public static boolean stop(@Nullable String name, boolean cancel, boolean stopNotStarted, long timeoutMs) {
+    public static boolean stop(@Nullable final String name, boolean cancel, boolean stopNotStarted, final long timeoutMs) {
         final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
 
         // Schedule delayed node killing if graceful stopping will be not finished within timeout.

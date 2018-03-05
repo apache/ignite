@@ -783,7 +783,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     top.update(null,
                         clientTop.partitionMap(true),
                         clientTop.fullUpdateCounters(),
-                        Collections.emptySet(),
+                        Collections.<Integer>emptySet(),
                         null);
                 }
             }
@@ -2960,7 +2960,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     top.update(resTopVer,
                         entry.getValue(),
                         cntrMap,
-                        Collections.emptySet(),
+                        Collections.<Integer>emptySet(),
                         null);
                 }
             }
