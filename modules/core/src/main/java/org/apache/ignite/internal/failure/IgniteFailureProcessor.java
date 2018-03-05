@@ -21,14 +21,13 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.IgniteFailureAction;
 import org.apache.ignite.failure.IgniteFailureContext;
 import org.apache.ignite.failure.IgniteFailureHandler;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridKernalContextImpl;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- *
+ * General failure processing API
  */
 public class IgniteFailureProcessor {
     /** Default failure handler. */
