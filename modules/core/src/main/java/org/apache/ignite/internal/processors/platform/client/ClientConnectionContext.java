@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.processors.security.SecurityContext;
 
 /**
  * Thin Client connection context.
@@ -61,6 +62,9 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
 
     /** Cursor counter. */
     private final AtomicLong curCnt = new AtomicLong();
+
+    /** Security context or {@code null} if security is disabled. */
+    private final SecurityContext secCtx = null;
 
     /**
      * Ctor.
@@ -137,6 +141,21 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
             else if (kernalCtx.authentication().enabled())
                 throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
         }
+
+        /*
+        private SecurityContext authenticate(String user, String pwd) throws IgniteCheckedException {
+        SecurityCredentials cred = new SecurityCredentials(user, pwd);
+
+        AuthenticationContext authCtx = new AuthenticationContext();
+
+        authCtx.subjectType(REMOTE_CLIENT);
+        authCtx.subjectId(UUID.randomUUID());
+        authCtx.nodeAttributes(Collections.emptyMap());
+        authCtx.credentials(cred);
+
+        return ctx.security().authenticate(authCtx);
+    }
+         */
     }
 
     /** {@inheritDoc} */
@@ -175,5 +194,12 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
      */
     public void decrementCursors() {
         curCnt.decrementAndGet();
+    }
+
+    /**
+     * @return Security context or {@code null} if security is disabled.
+     */
+    public SecurityContext securityContext() {
+        return secCtx;
     }
 }

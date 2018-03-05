@@ -24,6 +24,9 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
+import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.plugin.security.SecurityException;
+import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Cache get request.
@@ -118,5 +121,27 @@ class ClientCacheRequest extends ClientRequest {
      */
     protected int cacheId() {
         return cacheId;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void authorize(ClientConnectionContext ctx, SecurityPermission... perm)
+        throws IgniteClientException {
+        SecurityContext secCtx = ctx.securityContext();
+
+        if (secCtx != null) {
+            DynamicCacheDescriptor cacheDesc = cacheDescriptor(ctx, cacheId);
+
+            try {
+                for (SecurityPermission p : perm)
+                    ctx.kernalContext().security().authorize(cacheDesc.cacheName(), p, secCtx);
+            }
+            catch (SecurityException ex) {
+                throw new IgniteClientException(
+                    ClientStatus.SECURITY_VIOLATION,
+                    "Client is not authorized to perform this operation",
+                    ex
+                );
+            }
+        }
     }
 }
