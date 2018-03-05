@@ -754,18 +754,22 @@ public class PageMemoryImpl implements PageMemoryEx {
                 assert lockedPageAbsPtr != -1 : "Page is expected to have a valid address [pageId=" + fullId +
                     ", lockedPageAbsPtr=" + U.hexLong(lockedPageAbsPtr) + ']';
 
+                assert isPageWriteLocked(lockedPageAbsPtr) : "Page is expected to be locked: [pageId=" + fullId + "]";
+
+                long pageAddr = lockedPageAbsPtr + PAGE_OVERHEAD;
+
+                ByteBuffer buf = wrapPointer(pageAddr, pageSize());
+
                 try {
-                    long pageAddr = lockedPageAbsPtr + PAGE_OVERHEAD;
-
-                    ByteBuffer buf = wrapPointer(pageAddr, pageSize());
-
                     storeMgr.read(cacheId, pageId, buf);
                 }
                 catch (IgniteDataIntegrityViolationException ignore) {
                     U.warn(log, "Failed to read page (data integrity violation encountered, will try to " +
                         "restore using existing WAL) [fullPageId=" + fullId + ']');
 
-                    tryToRestorePage(fullId, lockedPageAbsPtr);
+                    buf.rewind();
+
+                    tryToRestorePage(fullId, buf);
                 }
                 finally {
                     rwLock.writeUnlock(lockedPageAbsPtr + PAGE_LOCK_OFFSET, OffheapReadWriteLock.TAG_LOCK_ALWAYS);
@@ -820,12 +824,17 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /**
-     * @param fullId Full id.
-     * @param absPtr Absolute pointer.
+     * Restores page from WAL page snapshot & delta records.
+     *
+     * @param fullId Full page ID.
+     * @param buf Destination byte buffer. Note: synchronization to provide ByteBuffer safety should be done outside
+     * this method.
+     *
+     * @throws IgniteCheckedException If failed to start WAL iteration, if incorrect page type observed in data, etc.
+     * @throws AssertionError if it was not possible to restore page, page not found in WAL.
      */
-    private void tryToRestorePage(FullPageId fullId, long absPtr) throws IgniteCheckedException {
+    private void tryToRestorePage(FullPageId fullId, ByteBuffer buf) throws IgniteCheckedException {
         Long tmpAddr = null;
-
         try {
             ByteBuffer curPage = null;
             ByteBuffer lastValidPage = null;
@@ -892,14 +901,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                     fullId.groupId(), fullId.pageId()
                 ));
 
-            long pageAddr = writeLockPage(absPtr, fullId, false);
-
-            try {
-                pageBuffer(pageAddr).put(restored);
-            }
-            finally {
-                writeUnlockPage(absPtr, fullId, null, true, false);
-            }
+            buf.put(restored);
         }
         finally {
             if (tmpAddr != null)

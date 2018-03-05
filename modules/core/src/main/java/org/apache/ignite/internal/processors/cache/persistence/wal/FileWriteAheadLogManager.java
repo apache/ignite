@@ -646,10 +646,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         cctx.time().addTimeoutObject(nextAutoArchiveTimeoutObj);
     }
 
-    /**
-     * @return Latest serializer version.
-     */
-    public int serializerVersion() {
+    /** {@inheritDoc} */
+    @Override public int serializerVersion() {
         return serializerVer;
     }
 
@@ -2307,7 +2305,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * @return True if segment is ZIP compressed.
          */
-        public boolean isCompressed() {
+        @Override public boolean isCompressed() {
             return file.getName().endsWith(".zip");
         }
 
@@ -2379,7 +2377,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * @throws IgniteCheckedException If failed to close the WAL segment file.
          */
-        public void close() throws IgniteCheckedException {
+        @Override public void close() throws IgniteCheckedException {
             try {
                 fileIO.close();
             }

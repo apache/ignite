@@ -268,15 +268,16 @@ public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTr
         if (metricsEnabled) {
             totalAllocatedPages.add(delta);
 
-            updateAllocationRateMetrics();
+            if (delta > 0)
+                updateAllocationRateMetrics(delta);
         }
     }
 
     /**
      *
      */
-    private void updateAllocationRateMetrics() {
-        allocRate.onHit();
+    private void updateAllocationRateMetrics(long hits) {
+        allocRate.onHits(hits);
     }
 
     /**
