@@ -86,7 +86,8 @@ public class PageMemoryImplNoLoadTest extends PageMemoryNoLoadSelfTest {
                 }
             },
             new DataRegionMetricsImpl(new DataRegionConfiguration()),
-            PageMemoryImpl.ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY, null
+            PageMemoryImpl.ThrottlingPolicy.DISABLED,
+            null
         );
     }
 

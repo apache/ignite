@@ -74,11 +74,6 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
     @Override public void onMarkDirty(boolean isPageInCheckpoint) {
         assert stateChecker.checkpointLockIsHeldByThread();
 
-        AtomicInteger writtenPagesCntr = cpProgress.writtenPagesCounter();
-
-        if (writtenPagesCntr == null)
-            return; // Don't throttle if checkpoint is not running.
-
         boolean shouldThrottle = false;
 
         if (isPageInCheckpoint) {
@@ -88,6 +83,11 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
         }
 
         if (!shouldThrottle && !throttleOnlyPagesInCheckpoint) {
+            AtomicInteger writtenPagesCntr = cpProgress.writtenPagesCounter();
+
+            if (writtenPagesCntr == null)
+                return; // Don't throttle if checkpoint is not running.
+
             int cpWrittenPages = writtenPagesCntr.get();
 
             int cpTotalPages = cpProgress.currentCheckpointPagesCount();

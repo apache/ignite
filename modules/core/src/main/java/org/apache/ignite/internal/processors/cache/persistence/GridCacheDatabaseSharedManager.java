@@ -944,6 +944,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 plc = PageMemoryImpl.ThrottlingPolicy.TARGET_RATIO_BASED;
             else if ("speed".equalsIgnoreCase(val) || Boolean.valueOf(val))
                 plc = PageMemoryImpl.ThrottlingPolicy.SPEED_BASED;
+            else if ("disabled".equalsIgnoreCase(val))
+                plc = PageMemoryImpl.ThrottlingPolicy.DISABLED;
         }
 
         GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
