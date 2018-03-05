@@ -23,7 +23,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
     /// <summary>
     /// Contains information about member update
     /// </summary>
-    public struct MemberUpdateContainer
+    internal struct MemberUpdateContainer
     {
         /// <summary>
         /// Gets or sets member selector

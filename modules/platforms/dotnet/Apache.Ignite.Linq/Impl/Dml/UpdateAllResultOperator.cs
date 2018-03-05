@@ -22,7 +22,6 @@ namespace Apache.Ignite.Linq.Impl.Dml
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Linq.Expressions;
-    using Apache.Ignite.Core.Cache;
     using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.ResultOperators;
     using Remotion.Linq.Clauses.StreamedData;

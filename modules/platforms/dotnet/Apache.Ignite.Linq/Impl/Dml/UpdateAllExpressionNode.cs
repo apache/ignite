@@ -23,7 +23,6 @@ namespace Apache.Ignite.Linq.Impl.Dml
     using System.Linq;
     using System.Linq.Expressions;
     using System.Reflection;
-    using Apache.Ignite.Core.Cache;
     using Remotion.Linq.Clauses;
     using Remotion.Linq.Clauses.Expressions;
     using Remotion.Linq.Parsing.ExpressionVisitors;

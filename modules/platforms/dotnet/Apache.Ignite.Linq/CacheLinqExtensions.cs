@@ -23,6 +23,8 @@ namespace Apache.Ignite.Linq
     using System.Linq.Expressions;
     using System.Reflection;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Linq.Impl;
