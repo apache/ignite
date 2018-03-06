@@ -32,13 +32,10 @@ export default {
         }
 
         $onInit() {
-            this.countItems();
-
-            if (this.$rootScope.IgniteDemoMode)
-                this.$state.go('base.sql.tabs.demo');
+            this.loadNotebooks();
         }
 
-        async countItems() {
+        async loadNotebooks() {
             const fetchNotebooksPromise = this.IgniteNotebook.read();
 
             this.notebooks = await fetchNotebooksPromise || [];

@@ -102,20 +102,5 @@ export default angular.module('ignite-console.sql', [
                 tfMetaTags: {
                     title: 'Query notebook'
                 }
-            })
-            .state('base.sql.tabs.demo', {
-                url: '/demo',
-                views: {
-                    '@': {
-                        template: legacyTemplate
-                    },
-                    '@base.sql.tabs.demo': {
-                        component: 'queriesNotebook'
-                    }
-                },
-                permission: 'query',
-                tfMetaTags: {
-                    title: 'SQL demo'
-                }
             });
     }]);

@@ -14,18 +14,17 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.row.page-data-replication
-    header.header-with-selector
-        div
-            .queries-title
-            cluster-selector
-        .queries-buttons
-
+header.header-with-selector
     div
-        ul.tabs.tabs--blue
-            li(role='presentation' ui-sref-active='active')
-                a(ui-sref='base.sql.tabs.notebooks-list')
-                    span Notebooks
-                    span.badge.badge--blue {{ $ctrl.notebooks.length }}
+        .queries-title
+        cluster-selector
+    .queries-buttons
 
-        ui-view
+div
+    ul.tabs.tabs--blue
+        li(role='presentation' ui-sref-active='active')
+            a(ui-sref='base.sql.tabs.notebooks-list')
+                span Notebooks
+                span.badge.badge--blue {{ $ctrl.notebooks.length }}
+
+    ui-view

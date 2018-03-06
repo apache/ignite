@@ -27,12 +27,6 @@ const mouseenterTrigger = ClientFunction((selector = '') => {
 
 const baseURL = process.env.APP_URL || 'http://localhost:9001/'
 
-/**
- * Builds absolute page URL
- * @param {string} relativePath Page relative path, without / at start
- */
-const pageURL = (relativePath = '') => `${baseURL}${relativePath}`
-
 const getLocationPathname = ClientFunction(() => Promise.resolve(location.pathname))
 
 /**
@@ -41,4 +35,4 @@ const getLocationPathname = ClientFunction(() => Promise.resolve(location.pathna
  */
 const isVisible = (node) => !!node.getBoundingClientRect().width
 
-module.exports = { mouseenterTrigger, pageURL, getLocationPathname, isVisible };
+module.exports = { mouseenterTrigger, getLocationPathname, isVisible };
