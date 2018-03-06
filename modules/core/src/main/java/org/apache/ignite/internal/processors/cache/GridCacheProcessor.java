@@ -2894,7 +2894,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ccfg.config().getName(),
                     null,
                     resolveCacheType(ccfg.config(), cacheType),
-                    false,
+                    ccfg.sql(),
                     failIfExists,
                     true,
                     disabledAfterStart,
