@@ -114,6 +114,7 @@ import webConsoleNavbar from './components/web-console-navbar';
 import igniteIcon from './components/ignite-icon';
 import versionPicker from './components/version-picker';
 import userNotifications from './components/user-notifications';
+import pageAdmin from './components/page-admin';
 import pageConfigure from './components/page-configure';
 import pageConfigureBasic from './components/page-configure-basic';
 import pageConfigureAdvanced from './components/page-configure-advanced';
@@ -201,6 +202,7 @@ angular.module('ignite-console', [
     igniteServices.name,
     versionPicker.name,
     userNotifications.name,
+    pageAdmin.name,
     pageConfigure.name,
     pageConfigureBasic.name,
     pageConfigureAdvanced.name,

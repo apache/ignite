@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -58,7 +59,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskState.CRASHED;
 import static org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopTaskState.FAILED;
@@ -760,7 +760,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
         private Collection<Integer> reducers;
 
         /** Tasks. */
-        private final Collection<HadoopTaskInfo> tasks = new ConcurrentLinkedDeque8<>();
+        private final Collection<HadoopTaskInfo> tasks = new ConcurrentLinkedDeque<>();
 
         /** Terminated flag. */
         private volatile boolean terminated;
