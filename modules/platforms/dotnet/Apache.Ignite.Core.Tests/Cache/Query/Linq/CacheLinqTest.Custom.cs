@@ -252,6 +252,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
             return cache.AsCacheQueryable();
         }
 
+        /// <summary>
+        /// Asserts that all values in cache correspond to predicate
+        /// </summary>
         private void AssertAll(
             IQueryable<ICacheEntry<int, Person>> personQueryable, 
             Func<ICacheEntry<int, Person>, bool> predicate)

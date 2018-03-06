@@ -111,7 +111,8 @@ namespace Apache.Ignite.Linq.Impl.Dml
                             querySourceRefExpression, newValueLambda.Body);
                         break;
                     default:
-                        throw new NotSupportedException("Value expression is not supported for UpdateAll: " + newValue);
+                        throw new NotSupportedException("Value expression is not supported for UpdateAll: "
+                                                        + newValue);
                 }
 
                 updates.Add(new MemberUpdateContainer
