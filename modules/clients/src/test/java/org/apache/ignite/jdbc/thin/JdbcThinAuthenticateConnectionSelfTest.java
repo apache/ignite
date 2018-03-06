@@ -155,14 +155,38 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
      * @throws SQLException On error.
      */
     public void testQuotedUsername() throws SQLException {
+        // Spaces
+        checkUserPassword(" test", "    ");
+        checkUserPassword(" test ", " test ");
+        checkUserPassword("test ", " ");
+        checkUserPassword(" ", " ");
+        checkUserPassword("user", "&/:=?");
+        checkUserPassword("user", "&");
+        checkUserPassword("user", "/");
+        checkUserPassword("user", ":");
+        checkUserPassword("user", "=");
+        checkUserPassword("user", "?");
+
+        // Nationals "user / password" in Russian.
+        checkUserPassword("\\u044E\\u0437\\u0435\\u0440", "\\u043F\\u0430\\u0440\\u043E\\u043B\\u044C");
+
+        // Nationals "user / password" in Chinese.
+        checkUserPassword("\\u7528\\u6236", "\\u5BC6\\u78BC");
+    }
+
+    /**
+     * @param user User name.
+     * @param passwd User's password.
+     * @throws SQLException On error.
+     */
+    private void checkUserPassword(String user, String passwd) throws SQLException {
         try (Connection conn = DriverManager.getConnection(URL, "ignite", "ignite")) {
+            conn.createStatement().execute(String.format("CREATE USER \"%s\" WITH PASSWORD '%s'", user, passwd));
 
-            conn.createStatement().execute("CREATE USER \"test\" WITH PASSWORD 'test'");
-            conn.createStatement().execute("CREATE USER \" test\" WITH PASSWORD 'test'");
-            conn.createStatement().execute("CREATE USER \"test \" WITH PASSWORD 'test'");
-            conn.createStatement().execute("CREATE USER \" test \" WITH PASSWORD 'test'");
+            checkConnection(URL, user, passwd);
+            checkConnection(URL + String.format("?user={%s}&password={%s}", user, passwd), null, null);
 
-            conn.createStatement().execute("CREATE USER \"111\" WITH PASSWORD 'test'");
+            conn.createStatement().execute(String.format("DROP USER \"%s\"", user));
         }
     }
 
@@ -181,7 +205,7 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
     /**
      * @param url Connection URL.
      * @param user User name.
-     * @param passwd User pasword.
+     * @param passwd User password.
      * @param err Error message pattern.
      */
     private void checkInvalidUserPassword(final String url, final String user, final String passwd, String err) {

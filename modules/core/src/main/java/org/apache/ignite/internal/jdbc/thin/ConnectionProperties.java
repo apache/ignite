@@ -30,6 +30,27 @@ public interface ConnectionProperties {
     public static final String SSL_MODE_REQUIRE = "require";
 
     /**
+     * @return Schema name of the connection.
+     */
+    public String getSchema();
+
+    /**
+     * @param schema Schema name of the connection.
+     */
+    public void setSchema(String schema);
+
+    /**
+     * @return The URL of the connection.
+     */
+    public String getUrl();
+
+    /**
+     * @param url The URL of the connection.
+     * @throws SQLException On invalid URL.
+     */
+    public void setUrl(String url) throws SQLException;
+
+    /**
      * @return Host name or host's IP to connect.
      */
     public String getHost();

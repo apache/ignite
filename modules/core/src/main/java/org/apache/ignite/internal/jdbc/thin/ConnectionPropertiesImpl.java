@@ -18,10 +18,13 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.io.Serializable;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Properties;
+import java.util.StringTokenizer;
 import javax.naming.RefAddr;
 import javax.naming.Reference;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -38,12 +41,19 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** Prefix for property names. */
     public static final String PROP_PREFIX = "ignite.jdbc.";
 
-    /** Host name property. */
+    /** Connection URL. */
+    private String url;
+
+    /** Schema name. Hidden property. Is used to set default schema name part of the URL. */
+    private StringProperty schema = new StringProperty("schema",
+        "Schema name of the connection", "PUBLIC", null, false, null);
+
+    /** Host name property. Hidden property. Is used to validate host name part of the URL. */
     private StringProperty host = new StringProperty(
         "host", "Ignite node IP to connect", null, null, true,
         new EmptyStringValidator("Host name is empty"));
 
-    /** Connection port property. */
+    /** Connection port property. Hidden property. Is used to validate port number part of the URL. */
     private IntegerProperty port = new IntegerProperty(
         "port", "Ignite node IP to connect", ClientConnectorConfiguration.DFLT_PORT, false, 1, 0xFFFF);
 
@@ -98,49 +108,49 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** SSL: Client certificate key store url. */
     private StringProperty sslProtocol = new StringProperty("sslProtocol",
-        "SSL protocol name", null,  null, false, null);
+        "SSL protocol name", null, null, false, null);
 
     /** SSL: Key algorithm name. */
     private StringProperty sslKeyAlgorithm = new StringProperty("sslKeyAlgorithm",
-        "SSL key algorithm name", "SunX509",  null, false, null);
+        "SSL key algorithm name", "SunX509", null, false, null);
 
     /** SSL: Client certificate key store url. */
     private StringProperty sslClientCertificateKeyStoreUrl =
         new StringProperty("sslClientCertificateKeyStoreUrl",
-        "Client certificate key store URL",
-        null, null, false, null);
+            "Client certificate key store URL",
+            null, null, false, null);
 
     /** SSL: Client certificate key store password. */
     private StringProperty sslClientCertificateKeyStorePassword =
         new StringProperty("sslClientCertificateKeyStorePassword",
-        "Client certificate key store password",
+            "Client certificate key store password",
             null, null, false, null);
 
     /** SSL: Client certificate key store type. */
     private StringProperty sslClientCertificateKeyStoreType =
         new StringProperty("sslClientCertificateKeyStoreType",
-        "Client certificate key store type",
+            "Client certificate key store type",
             null, null, false, null);
 
     /** SSL: Trusted certificate key store url. */
     private StringProperty sslTrustCertificateKeyStoreUrl =
         new StringProperty("sslTrustCertificateKeyStoreUrl",
-        "Trusted certificate key store URL", null, null, false, null);
+            "Trusted certificate key store URL", null, null, false, null);
 
     /** SSL Trusted certificate key store password. */
     private StringProperty sslTrustCertificateKeyStorePassword =
         new StringProperty("sslTrustCertificateKeyStorePassword",
-        "Trusted certificate key store password", null, null, false, null);
+            "Trusted certificate key store password", null, null, false, null);
 
     /** SSL: Trusted certificate key store type. */
     private StringProperty sslTrustCertificateKeyStoreType =
         new StringProperty("sslTrustCertificateKeyStoreType",
-        "Trusted certificate key store type",
+            "Trusted certificate key store type",
             null, null, false, null);
 
     /** SSL: Trust all certificates. */
     private BooleanProperty sslTrustAll = new BooleanProperty("sslTrustAll",
-        "Trust all certificates",false, false);
+        "Trust all certificates", false, false);
 
     /** SSL: Custom class name that implements Factory&lt;SSLSocketFactory&gt;. */
     private StringProperty sslFactory = new StringProperty("sslFactory",
@@ -156,7 +166,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** Properties array. */
     private final ConnectionProperty [] propsArray = {
-        host, port,
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
         tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
         sslMode, sslProtocol, sslKeyAlgorithm,
@@ -165,6 +174,31 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         sslTrustAll, sslFactory,
         user, passwd
     };
+
+    /** {@inheritDoc} */
+    @Override public String getSchema() {
+        return schema.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setSchema(String schema) {
+        this.schema.setValue(schema);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getUrl() {
+        if (url != null)
+            return url;
+        else
+            return host.value() + ":" + port.value();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setUrl(String url) throws SQLException {
+        this.url = url;
+
+        init(url, new Properties());
+    }
 
     /** {@inheritDoc} */
     @Override public String getHost() {
@@ -417,39 +451,158 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /**
+     * @param url URL connection.
      * @param props Environment properties.
      * @throws SQLException On error.
      */
-    void init(Properties props) throws SQLException {
+    public void init(String url, Properties props) throws SQLException {
         Properties props0 = (Properties)props.clone();
+
+        if (!F.isEmpty(url))
+            parseUrl(url, props0);
 
         for (ConnectionProperty aPropsArray : propsArray)
             aPropsArray.init(props0);
+
+        if (!F.isEmpty(props.getProperty("user"))) {
+            setUsername(props.getProperty("user"));
+            setPassword(props.getProperty("password"));
+        }
+    }
+
+    /**
+     * Validates and parses connection URL.
+     *
+     * @param url URL.
+     * @param props Properties.
+     * @throws SQLException On error.
+     */
+    private void parseUrl(String url, Properties props) throws SQLException {
+        if (F.isEmpty(url))
+            throw new SQLException("URL cannot be null or empty.");
+
+        if (!url.startsWith(JdbcThinUtils.URL_PREFIX))
+            throw new SQLException("URL must start with \"" + JdbcThinUtils.URL_PREFIX + "\"");
+
+        String nakedUrl = url.substring(JdbcThinUtils.URL_PREFIX.length()).trim();
+
+        int pathPartEndPos = nakedUrl.indexOf('?');
+
+        if (pathPartEndPos == -1)
+            pathPartEndPos = nakedUrl.length();
+
+        String pathPart = nakedUrl.substring(0, pathPartEndPos);
+
+        String paramPart = null;
+
+        if (pathPartEndPos > 0 && pathPartEndPos < nakedUrl.length())
+            paramPart = nakedUrl.substring(pathPartEndPos + 1, nakedUrl.length());
+
+        String[] pathParts = pathPart.split("/");
+
+        String[] endpointParts = pathParts[0].split(":");
+
+        if (endpointParts.length > 2)
+            throw new SQLException("Invalid endpoint format (should be \"host[:port]\"): " + pathParts[0]);
+
+        host.init(endpointParts[0]);
+
+        if (endpointParts.length == 2)
+            port.init(endpointParts[1]);
+        else
+            port.init((String)null);
+
+        if (pathParts.length > 2) {
+            throw new SQLException("Invalid URL format (only schema name is allowed in URL path parameter " +
+                "'host:port[/schemaName]'): " + url);
+        }
+
+        setSchema(pathParts.length == 2 ? pathParts[1] : null);
+
+        if (!F.isEmpty(paramPart))
+            parseParameters(paramPart, props);
+    }
+
+    /**
+     * @param hostname Host name.
+     * @return An array of all the IP addresses for a given host name.
+     * @throws UnknownHostException On error.
+     */
+    protected InetAddress[] getAllAddressesByHost(String hostname) throws UnknownHostException {
+        return InetAddress.getAllByName(hostname);
+    }
+
+    /**
+     * Validates and parses URL parameters.
+     *
+     * @param paramStr Parameters string.
+     * @param props Properties.
+     * @throws SQLException If failed.
+     */
+    private void parseParameters(String paramStr, Properties props) throws SQLException {
+        StringTokenizer st = new StringTokenizer(paramStr, "&");
+
+        boolean insideBrace = false;
+
+        String key = null;
+        String val = null;
+
+        while (st.hasMoreTokens()) {
+            String token = st.nextToken();
+
+            if (!insideBrace) {
+                int eqSymPos = token.indexOf('=');
+
+                if (eqSymPos < 0) {
+                    throw new SQLException("Invalid parameter format " +
+                        "(URL properties format: key0=value0&key1=value1&... etc. pair: " + token);
+                }
+
+                if (eqSymPos == token.length())
+                    throw new SQLException("Invalid parameter format (key and value cannot be empty): " + token);
+
+                key = token.substring(0, eqSymPos);
+                val = token.substring(eqSymPos + 1, token.length());
+
+                if (val.startsWith("{")) {
+                    val = val.substring(1);
+
+                    insideBrace = true;
+                }
+            }
+            else
+                val += "&" + token;
+
+            if (val.endsWith("}")) {
+                insideBrace = false;
+
+                val = val.substring(0, val.length() - 1);
+            }
+
+            if (val.contains("{") || val.contains("}")) {
+                throw new SQLException("Braces cannot be escaped in the value. " +
+                    "Please use the connection Properties for such values. [property=" + key + ']');
+            }
+
+            if (!insideBrace) {
+                if (key.isEmpty() || val.isEmpty())
+                    throw new SQLException("Invalid parameter format (key and value cannot be empty): " + token);
+
+                props.setProperty(PROP_PREFIX + key, val);
+            }
+        }
     }
 
     /**
      * @return Driver's properties info array.
      */
-    private DriverPropertyInfo[] getDriverPropertyInfo() {
+    public DriverPropertyInfo[] getDriverPropertyInfo() {
         DriverPropertyInfo[] dpis = new DriverPropertyInfo[propsArray.length];
 
         for (int i = 0; i < propsArray.length; ++i)
             dpis[i] = propsArray[i].getDriverPropertyInfo();
 
         return dpis;
-    }
-
-    /**
-     * @param props Environment properties.
-     * @return Driver's properties info array.
-     * @throws SQLException On error.
-     */
-    public static DriverPropertyInfo[] getDriverPropertyInfo(Properties props) throws SQLException {
-        ConnectionPropertiesImpl cpi = new ConnectionPropertiesImpl();
-
-        cpi.init(props);
-
-        return cpi.getDriverPropertyInfo();
     }
 
     /**
@@ -524,7 +677,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          */
         ConnectionProperty(String name, String desc, Object dfltVal, String[] choices, boolean required) {
             this.name = name;
-            this.desc= desc;
+            this.desc = desc;
             this.dfltVal = dfltVal;
             this.choices = choices;
             this.required = required;
@@ -541,7 +694,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         ConnectionProperty(String name, String desc, Object dfltVal, String[] choices, boolean required,
             PropertyValidator validator) {
             this.name = name;
-            this.desc= desc;
+            this.desc = desc;
             this.dfltVal = dfltVal;
             this.choices = choices;
             this.required = required;
@@ -865,6 +1018,9 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         /** {@inheritDoc} */
         @Override void init(String str) throws SQLException {
+            if (validator != null)
+                validator.validate(str);
+
             if (str == null)
                 val = (String)dfltVal;
             else

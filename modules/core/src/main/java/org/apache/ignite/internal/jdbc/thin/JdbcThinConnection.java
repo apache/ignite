@@ -61,9 +61,6 @@ public class JdbcThinConnection implements Connection {
     /** Logger. */
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
-    /** Connection URL. */
-    private String url;
-
     /** Schema name. */
     private String schema;
 
@@ -97,30 +94,17 @@ public class JdbcThinConnection implements Connection {
     /**
      * Creates new connection.
      *
-     * @param url Connection URL.
-     * @param schema Schema name.
-     * @param props Connection properties.
+     * @param connProps Connection properties.
      * @throws SQLException In case Ignite client failed to start.
      */
-    public JdbcThinConnection(String url, String schema, Properties props) throws SQLException {
-        assert url != null;
-
-        this.url = url;
-
-        connProps = new ConnectionPropertiesImpl();
-
-        ((ConnectionPropertiesImpl)connProps).init(props);
-
-        if (!F.isEmpty(props.getProperty("user"))) {
-            connProps.setUsername(props.getProperty("user"));
-            connProps.setPassword(props.getProperty("password"));
-        }
+    public JdbcThinConnection(ConnectionProperties connProps) throws SQLException {
+        this.connProps = connProps;
 
         holdability = HOLD_CURSORS_OVER_COMMIT;
         autoCommit = true;
         txIsolation = Connection.TRANSACTION_NONE;
 
-        this.schema = normalizeSchema(schema);
+        schema = normalizeSchema(connProps.getSchema());
 
         try {
             cliIo = new JdbcThinTcpIo(connProps);
@@ -673,7 +657,7 @@ public class JdbcThinConnection implements Connection {
      * @return Connection URL.
      */
     public String url() {
-        return url;
+        return connProps.getUrl();
     }
 
     /**
