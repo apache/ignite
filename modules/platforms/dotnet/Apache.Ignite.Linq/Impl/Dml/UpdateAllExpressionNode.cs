@@ -30,9 +30,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
 
     /// <summary>
     /// Represents a <see cref="MethodCallExpression" /> for
-    /// <see
-    ///     cref="CacheLinqExtensions.UpdateAll{TKey,TValue}(IQueryable{Core.Cache.ICacheEntry{TKey,TValue}},Expression{Func{IUpdateDescriptor{TKey,TValue},IUpdateDescriptor{TKey,TValue}}})" />
-    /// .
+    /// <see cref="CacheLinqExtensions.UpdateAll{TKey,TValue}" />.
     /// When user calls UpdateAll, this node is generated.
     /// </summary>
     internal sealed class UpdateAllExpressionNode : ResultOperatorExpressionNodeBase
@@ -75,7 +73,7 @@ namespace Apache.Ignite.Linq.Impl.Dml
         {
             if (_updateDescription.Parameters.Count != 1)
                 throw new NotSupportedException("Expression is not supported for UpdateAll: " +
-                    _updateDescription);
+                                                _updateDescription);
 
             var querySourceRefExpression = (QuerySourceReferenceExpression) Source.Resolve(
                 _updateDescription.Parameters[0],

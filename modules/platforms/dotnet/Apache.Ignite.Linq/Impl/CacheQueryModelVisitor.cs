@@ -201,13 +201,13 @@ namespace Apache.Ignite.Linq.Impl
         /// </summary>
         public void VisitSelectors(QueryModel queryModel, bool includeAllFields)
         {
-            var parentCount = ProcessResultOperatorsBegin(queryModel);
+            var parenCount = ProcessResultOperatorsBegin(queryModel);
 
-            if (parentCount >= 0)
+            if (parenCount >= 0)
             {
                 // FIELD1, FIELD2
-                BuildSqlExpression(queryModel.SelectClause.Selector, parentCount > 0, includeAllFields);
-                _builder.Append(')', parentCount).Append(" ");
+                BuildSqlExpression(queryModel.SelectClause.Selector, parenCount > 0, includeAllFields);
+                _builder.Append(')', parenCount).Append(" ");
             }
         }
 
@@ -217,34 +217,34 @@ namespace Apache.Ignite.Linq.Impl
         [SuppressMessage("Microsoft.Performance", "CA1800:DoNotCastUnnecessarily")]
         private int ProcessResultOperatorsBegin(QueryModel queryModel)
         {
-            int parentCount = 0;
+            int parenCount = 0;
 
             foreach (var op in queryModel.ResultOperators.Reverse())
             {
                 if (op is CountResultOperator || op is AnyResultOperator)
                 {
                     _builder.Append("count (");
-                    parentCount++;
+                    parenCount++;
                 }
                 else if (op is SumResultOperator)
                 {
                     _builder.Append("sum (");
-                    parentCount++;
+                    parenCount++;
                 }
                 else if (op is MinResultOperator)
                 {
                     _builder.Append("min (");
-                    parentCount++;
+                    parenCount++;
                 }
                 else if (op is MaxResultOperator)
                 {
                     _builder.Append("max (");
-                    parentCount++;
+                    parenCount++;
                 }
                 else if (op is AverageResultOperator)
                 {
                     _builder.Append("avg (");
-                    parentCount++;
+                    parenCount++;
                 }
                 else if (op is DistinctResultOperator)
                     _builder.Append("distinct ");
@@ -260,7 +260,7 @@ namespace Apache.Ignite.Linq.Impl
                 else
                     throw new NotSupportedException("Operator is not supported: " + op);
             }
-            return parentCount;
+            return parenCount;
         }
 
         /// <summary>
@@ -683,7 +683,8 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Builds the SQL expression.
         /// </summary>
-        private void BuildSqlExpression(Expression expression, bool useStar = false, bool includeAllFields = false, bool visitSubqueryModel = false)
+        private void BuildSqlExpression(Expression expression, bool useStar = false, bool includeAllFields = false,
+            bool visitSubqueryModel = false)
         {
             new CacheQueryExpressionVisitor(this, useStar, includeAllFields, visitSubqueryModel).Visit(expression);
         }

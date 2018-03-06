@@ -50,6 +50,7 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Pushes current aliases to stack.
         /// </summary>
+        /// <param name="copyAliases">Flag indicating that current aliases should be copied</param>
         public void Push(bool copyAliases)
         {
             _stack.Push(_tableAliases);

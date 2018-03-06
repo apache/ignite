@@ -31,8 +31,15 @@ namespace Apache.Ignite.Linq.Impl.Dml
     /// </summary>
     internal sealed class UpdateAllResultOperator : ValueFromSequenceResultOperatorBase
     {
+        /// <summary>
+        /// Gets the members updates
+        /// </summary>
         public MemberUpdateContainer[] Updates { get; private set; }
 
+        /// <summary>
+        /// Initializes a new instance of <see cref="UpdateAllResultOperator" />
+        /// </summary>
+        /// <param name="updates">members updates</param>
         public UpdateAllResultOperator(IEnumerable<MemberUpdateContainer> updates)
         {
             Updates = updates.ToArray();

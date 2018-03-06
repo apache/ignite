@@ -21,14 +21,16 @@ namespace Apache.Ignite.Linq
     using Apache.Ignite.Core.Cache;
 
     /// <summary>
-    /// Dummy interface to provide update description for <see cref="CacheLinqExtensions.UpdateAll{TKey,TValue}(System.Linq.IQueryable{ICacheEntry{TKey,TValue}},System.Linq.Expressions.Expression{Func{IUpdateDescriptor{TKey,TValue},IUpdateDescriptor{TKey,TValue}}})"/>
+    /// Dummy interface to provide update description for
+    /// <see
+    ///     cref="CacheLinqExtensions.UpdateAll{TKey,TValue}" />
     /// </summary>
     /// <typeparam name="TKey">Key type.</typeparam>
     /// <typeparam name="TValue">Value type.</typeparam>
     public interface IUpdateDescriptor<out TKey, out TValue>
     {
         /// <summary>
-        /// Allows to specifify member update with constant
+        /// Specifies member update with constant
         /// </summary>
         /// <typeparam name="TProp">Member type</typeparam>
         /// <param name="selector">Member selector</param>
@@ -37,11 +39,11 @@ namespace Apache.Ignite.Linq
         IUpdateDescriptor<TKey, TValue> Set<TProp>(Func<TValue, TProp> selector, TProp value);
 
         /// <summary>
-        /// Allows to specifify member update with expression
+        /// Specifies member update with expression
         /// </summary>
         /// <typeparam name="TProp">Member type</typeparam>
         /// <param name="selector">Member selector</param>
-        /// <param name="valueBuilder">New value expression</param>
+        /// <param name="valueBuilder">New value generator</param>
         /// <returns></returns>
         IUpdateDescriptor<TKey, TValue> Set<TProp>(Func<TValue, TProp> selector,
             Func<ICacheEntry<TKey, TValue>, TProp> valueBuilder);
