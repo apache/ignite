@@ -35,6 +35,63 @@ namespace ignite
             class ConnectionStringParser
             {
             public:
+                /** Connection attribute keywords. */
+                struct Key
+                {
+                    /** Connection attribute keyword for DSN attribute. */
+                    static const std::string dsn;
+
+                    /** Connection attribute keyword for Driver attribute. */
+                    static const std::string driver;
+
+                    /** Connection attribute keyword for schema attribute. */
+                    static const std::string schema;
+
+                    /** Connection attribute keyword for address attribute. */
+                    static const std::string address;
+
+                    /** Connection attribute keyword for server attribute. */
+                    static const std::string server;
+
+                    /** Connection attribute keyword for port attribute. */
+                    static const std::string port;
+
+                    /** Connection attribute keyword for distributed joins attribute. */
+                    static const std::string distributedJoins;
+
+                    /** Connection attribute keyword for enforce join order attribute. */
+                    static const std::string enforceJoinOrder;
+
+                    /** Connection attribute keyword for protocol version attribute. */
+                    static const std::string protocolVersion;
+
+                    /** Connection attribute keyword for fetch results page size attribute. */
+                    static const std::string pageSize;
+
+                    /** Connection attribute keyword for replicated only attribute. */
+                    static const std::string replicatedOnly;
+
+                    /** Connection attribute keyword for collocated attribute. */
+                    static const std::string collocated;
+
+                    /** Connection attribute keyword for lazy attribute. */
+                    static const std::string lazy;
+
+                    /** Connection attribute keyword for skipReducerOnUpdate attribute. */
+                    static const std::string skipReducerOnUpdate;
+
+                    /** Connection attribute keyword for sslMode attribute. */
+                    static const std::string sslMode;
+
+                    /** Connection attribute keyword for sslKeyFile attribute. */
+                    static const std::string sslKeyFile;
+
+                    /** Connection attribute keyword for sslCertFile attribute. */
+                    static const std::string sslCertFile;
+
+                    /** Connection attribute keyword for sslCaFile attribute. */
+                    static const std::string sslCaFile;
+                };
 
                 /**
                  * Default constructor.

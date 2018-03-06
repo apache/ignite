@@ -30,6 +30,25 @@ namespace ignite
     {
         namespace config
         {
+            const std::string ConnectionStringParser::Key::dsn                    = "dsn";
+            const std::string ConnectionStringParser::Key::driver                 = "driver";
+            const std::string ConnectionStringParser::Key::schema                 = "schema";
+            const std::string ConnectionStringParser::Key::address                = "address";
+            const std::string ConnectionStringParser::Key::server                 = "server";
+            const std::string ConnectionStringParser::Key::port                   = "port";
+            const std::string ConnectionStringParser::Key::distributedJoins       = "distributed_joins";
+            const std::string ConnectionStringParser::Key::enforceJoinOrder       = "enforce_join_order";
+            const std::string ConnectionStringParser::Key::protocolVersion        = "protocol_version";
+            const std::string ConnectionStringParser::Key::pageSize               = "page_size";
+            const std::string ConnectionStringParser::Key::replicatedOnly         = "replicated_only";
+            const std::string ConnectionStringParser::Key::collocated             = "collocated";
+            const std::string ConnectionStringParser::Key::lazy                   = "lazy";
+            const std::string ConnectionStringParser::Key::skipReducerOnUpdate    = "skip_reducer_on_update";
+            const std::string ConnectionStringParser::Key::sslMode                = "ssl_mode";
+            const std::string ConnectionStringParser::Key::sslKeyFile             = "ssl_key_file";
+            const std::string ConnectionStringParser::Key::sslCertFile            = "ssl_cert_file";
+            const std::string ConnectionStringParser::Key::sslCaFile              = "ssl_ca_file";
+
             ConnectionStringParser::ConnectionStringParser(Configuration& cfg):
                 cfg(cfg)
             {
@@ -89,15 +108,15 @@ namespace ignite
             {
                 std::string lKey = common::ToLower(key);
 
-                if (lKey == Configuration::Key::dsn)
+                if (lKey == Key::dsn)
                 {
                     cfg.SetDsn(value);
                 }
-                else if (lKey == Configuration::Key::schema)
+                else if (lKey == Key::schema)
                 {
                     cfg.SetSchema(value);
                 }
-                else if (lKey == Configuration::Key::address)
+                else if (lKey == Key::address)
                 {
                     std::vector<Configuration::EndPoint> endPoints;
 
@@ -111,11 +130,11 @@ namespace ignite
 
                     cfg.SetAddresses(endPoints);
                 }
-                else if (lKey == Configuration::Key::server)
+                else if (lKey == Key::server)
                 {
-                    cfg.SetServer(value);
+                    cfg.SetHost(value);
                 }
-                else if (lKey == Configuration::Key::port)
+                else if (lKey == Key::port)
                 {
                     if (!common::AllOf(value.begin(), value.end(), std::isdigit))
                     {
@@ -150,7 +169,7 @@ namespace ignite
 
                     cfg.SetTcpPort(static_cast<uint16_t>(numValue));
                 }
-                else if (lKey == Configuration::Key::distributedJoins)
+                else if (lKey == Key::distributedJoins)
                 {
                     BoolParseResult::Type res = StringToBool(value);
 
@@ -162,7 +181,7 @@ namespace ignite
 
                     cfg.SetDistributedJoins(res == BoolParseResult::AI_TRUE);
                 }
-                else if (lKey == Configuration::Key::enforceJoinOrder)
+                else if (lKey == Key::enforceJoinOrder)
                 {
                     BoolParseResult::Type res = StringToBool(value);
 
@@ -174,7 +193,7 @@ namespace ignite
 
                     cfg.SetEnforceJoinOrder(res == BoolParseResult::AI_TRUE);
                 }
-                else if (lKey == Configuration::Key::protocolVersion)
+                else if (lKey == Key::protocolVersion)
                 {
                     ProtocolVersion version = ProtocolVersion::FromString(value);
 
@@ -186,7 +205,7 @@ namespace ignite
                     else
                         cfg.SetProtocolVersion(version);
                 }
-                else if (lKey == Configuration::Key::pageSize)
+                else if (lKey == Key::pageSize)
                 {
                     if (!common::AllOf(value.begin(), value.end(), std::isdigit))
                     {
@@ -223,7 +242,7 @@ namespace ignite
 
                     cfg.SetPageSize(numValue);
                 }
-                else if (lKey == Configuration::Key::replicatedOnly)
+                else if (lKey == Key::replicatedOnly)
                 {
                     BoolParseResult::Type res = StringToBool(value);
 
@@ -235,7 +254,7 @@ namespace ignite
 
                     cfg.SetReplicatedOnly(res == BoolParseResult::AI_TRUE);
                 }
-                else if (lKey == Configuration::Key::collocated)
+                else if (lKey == Key::collocated)
                 {
                     BoolParseResult::Type res = StringToBool(value);
 
@@ -247,7 +266,7 @@ namespace ignite
 
                     cfg.SetCollocated(res == BoolParseResult::AI_TRUE);
                 }
-                else if (lKey == Configuration::Key::lazy)
+                else if (lKey == Key::lazy)
                 {
                     BoolParseResult::Type res = StringToBool(value);
 
@@ -259,7 +278,7 @@ namespace ignite
 
                     cfg.SetLazy(res == BoolParseResult::AI_TRUE);
                 }
-                else if (lKey == Configuration::Key::skipReducerOnUpdate)
+                else if (lKey == Key::skipReducerOnUpdate)
                 {
                     BoolParseResult::Type res = StringToBool(value);
 
@@ -271,7 +290,7 @@ namespace ignite
 
                     cfg.SetSkipReducerOnUpdate(res == BoolParseResult::AI_TRUE);
                 }
-                else if (lKey == Configuration::Key::sslMode)
+                else if (lKey == Key::sslMode)
                 {
                     ssl::SslMode::Type mode = ssl::SslMode::FromString(value);
 
@@ -283,19 +302,19 @@ namespace ignite
                     else
                         cfg.SetSslMode(mode);
                 }
-                else if (lKey == Configuration::Key::sslKeyFile)
+                else if (lKey == Key::sslKeyFile)
                 {
                     cfg.SetSslKeyFile(value);
                 }
-                else if (lKey == Configuration::Key::sslCertFile)
+                else if (lKey == Key::sslCertFile)
                 {
                     cfg.SetSslCertFile(value);
                 }
-                else if (lKey == Configuration::Key::sslCaFile)
+                else if (lKey == Key::sslCaFile)
                 {
                     cfg.SetSslCaFile(value);
                 }
-                else if (lKey != Configuration::Key::driver)
+                else if (lKey != Key::driver)
                 {
                     if (diag)
                     {

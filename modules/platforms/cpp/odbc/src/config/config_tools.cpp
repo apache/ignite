@@ -15,45 +15,34 @@
  * limitations under the License.
  */
 
-#include "ignite/common/utils.h"
-#include "ignite/odbc/ssl/ssl_mode.h"
+#include "ignite/odbc/config/config_tools.h"
 
 namespace ignite
 {
     namespace odbc
     {
-        namespace ssl
+        namespace config
         {
-            SslMode::Type SslMode::FromString(const std::string& val, Type dflt)
+            std::string AddressesToString(const std::vector<EndPoint>& addresses)
             {
-                std::string lowerVal = common::ToLower(val);
+                std::stringstream stream;
 
-                common::StripSurroundingWhitespaces(lowerVal);
+                std::vector<EndPoint>::const_iterator it = addresses.begin();
 
-                if (lowerVal == "disable")
-                    return SslMode::DISABLE;
-
-                if (lowerVal == "require")
-                    return SslMode::REQUIRE;
-
-                return dflt;
-            }
-
-            std::string SslMode::ToString(Type val)
-            {
-                switch (val)
+                if (it != addresses.end())
                 {
-                    case SslMode::DISABLE:
-                        return "disable";
-
-                    case SslMode::REQUIRE:
-                        return "require";
-
-                    case SslMode::UNKNOWN:
-                    default:
-                        return "unknown";
+                    stream << it->host << ':' << it->port;
+                    ++it;
                 }
+
+                for (; it != addresses.end(); ++it)
+                {
+                    stream << ',' << it->host << ':' << it->port;
+                }
+
+                return stream.str();
             }
         }
     }
 }
+

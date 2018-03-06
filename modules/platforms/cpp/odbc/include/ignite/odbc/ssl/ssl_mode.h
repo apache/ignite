@@ -42,11 +42,20 @@ namespace ignite
 
                 /**
                  * Convert mode from string. 
+                 *
                  * @param val String value.
                  * @param dflt Default value to return on error.
                  * @return Corresponding enum value.
                  */
                 static Type FromString(const std::string& val, Type dflt = UNKNOWN);
+
+                /**
+                 * Convert mode to string. 
+                 *
+                 * @param val Value to convert.
+                 * @return String value.
+                 */
+                static std::string SslMode::ToString(Type val);
             };
         }
     }
