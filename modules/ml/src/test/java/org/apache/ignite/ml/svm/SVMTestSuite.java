@@ -27,8 +27,6 @@ import org.junit.runners.Suite;
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    LocalLinearSVMMultiClassClassificationTrainerTest.class,
-    DistributedLinearSVMMultiClassClassificationTrainerTest.class,
     SVMModelTest.class
 })
 public class SVMTestSuite {

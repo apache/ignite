@@ -17,110 +17,93 @@
 
 package org.apache.ignite.examples.ml.svm;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.UUID;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.examples.ExampleNodeStartup;
-import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.Trainer;
-import org.apache.ignite.ml.structures.LabeledDataset;
-import org.apache.ignite.ml.structures.LabeledDatasetTestTrainPair;
-import org.apache.ignite.ml.structures.preprocessing.LabeledDatasetLoader;
-import org.apache.ignite.ml.structures.preprocessing.LabellingMachine;
-import org.apache.ignite.ml.structures.preprocessing.Normalizer;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
- * <p>
- * Example of using {@link org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel} with Titanic dataset.</p>
- * <p>
- * Note that in this example we cannot guarantee order in which nodes return results of intermediate
- * computations and therefore algorithm can return different results.</p>
- * <p>
- * Remote nodes should always be started with special configuration file which
- * enables P2P class loading: {@code 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p>
- * <p>
- * Alternatively you can run {@link ExampleNodeStartup} in another JVM which will start node
- * with {@code examples/config/example-ignite.xml} configuration.</p>
+ * Run SVM binary-class classification model over distributed dataset.
+ *
+ * @see org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel
  */
 public class SVMBinaryClassificationExample {
-    /** Separator. */
-    private static final String SEPARATOR = ",";
+    /** The Iris dataset. */
 
-    /** Path to the Iris dataset. */
-    private static final String TITANIC_DATASET = "examples/src/main/resources/datasets/titanic.txt";
 
-    /**
-     * Executes example.
-     *
-     * @param args Command line arguments, none required.
-     */
+    /** Run example. */
     public static void main(String[] args) throws InterruptedException {
-        System.out.println(">>> SVM Binary classification example started.");
+        System.out.println();
+        System.out.println(">>> SVM Binary classification model over cached dataset usage example started.");
         // Start ignite grid.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
             System.out.println(">>> Ignite grid started.");
 
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 SVMBinaryClassificationExample.class.getSimpleName(), () -> {
+                IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-                try {
-                    // Prepare path to read
-                    File file = IgniteUtils.resolveIgnitePath(TITANIC_DATASET);
-                    if (file == null)
-                        throw new RuntimeException("Can't find file: " + TITANIC_DATASET);
+                SVMLinearBinaryClassificationTrainer<Integer, double[]> trainer = new SVMLinearBinaryClassificationTrainer<>();
 
-                    Path path = file.toPath();
+                SVMLinearBinaryClassificationModel mdl = trainer.fit(
+                    new CacheBasedDatasetBuilder<>(ignite, dataCache),
+                    (k, v) -> Arrays.copyOfRange(v, 1, v.length),
+                    (k, v) -> v[0],
+                    4);
 
-                    // Read dataset from file
-                    LabeledDataset dataset = LabeledDatasetLoader.loadFromTxtFile(path, SEPARATOR, true, false);
+                System.out.println(mdl.toString());
 
-                    // Normalize dataset
-                    Normalizer.normalizeWithMiniMax(dataset);
+                System.out.println(">>> ---------------------------------");
+                System.out.println(">>> | Prediction\t| Ground Truth\t|");
+                System.out.println(">>> ---------------------------------");
 
-                    // Random splitting of the given data as 70% train and 30% test datasets
-                    LabeledDatasetTestTrainPair split = new LabeledDatasetTestTrainPair(dataset, 0.3);
+                int amountOfErrors = 0;
+                int totalAmount = 0;
 
-                    System.out.println("\n>>> Amount of observations in train dataset " + split.train().rowSize());
-                    System.out.println("\n>>> Amount of observations in test dataset " + split.test().rowSize());
+                // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
+                int[][] confusionMtx = {{0, 0}, {0, 0}};
 
-                    LabeledDataset test = split.test();
-                    LabeledDataset train = split.train();
 
-                    System.out.println("\n>>> Create new linear binary SVM trainer object.");
-                   // Trainer<SVMLinearBinaryClassificationModel, LabeledDataset> trainer = new SVMLinearBinaryClassificationTrainer();
+                try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
+                    for (Cache.Entry<Integer, double[]> observation : observations) {
+                        double[] val = observation.getValue();
+                        double[] inputs = Arrays.copyOfRange(val, 1, val.length);
+                        double groundTruth = val[0];
 
-                    System.out.println("\n>>> Perform the training to get the model.");
-                 //   SVMLinearBinaryClassificationModel mdl = trainer.train(train);
+                        double prediction = mdl.apply(new DenseLocalOnHeapVector(inputs));
 
-               //     System.out.println("\n>>> SVM classification model: " + mdl);
-
-                    // Clone labels
-                    final double[] labels = test.labels();
-
-                    // Save predicted classes to test dataset
-                //    LabellingMachine.assignLabels(test, mdl);
-
-                    // Calculate amount of errors on test dataset
-                    int amountOfErrors = 0;
-                    for (int i = 0; i < test.rowSize(); i++) {
-                        if (test.label(i) != labels[i])
+                        totalAmount++;
+                        if(groundTruth != prediction)
                             amountOfErrors++;
+
+
+                        int idx1 = (int)prediction == -1.0 ? 0 : 1;
+                        int idx2 = (int)groundTruth == -1.0 ? 0 : 1;
+                        confusionMtx[idx1][idx2]++;
+
+                        System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
                     }
 
-                    System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
-                    System.out.println("\n>>> Prediction percentage " + (1 - amountOfErrors / (double) test.rowSize()));
+                    System.out.println(">>> ---------------------------------");
 
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    System.out.println("\n>>> Unexpected exception, check resources: " + e);
-                } finally {
-                    System.out.println("\n>>> SVM binary classification example completed.");
+                    System.out.println("\n>>> Absolute amount of errors " + amountOfErrors);
+                    System.out.println("\n>>> Accuracy " + (1 - amountOfErrors / (double)totalAmount));
                 }
+
+                System.out.println("\n>>> Confusion matrix is " + Arrays.deepToString(confusionMtx));
+
+
 
             });
 
@@ -128,4 +111,129 @@ public class SVMBinaryClassificationExample {
             igniteThread.join();
         }
     }
+
+    /**
+     * Fills cache with data and returns it.
+     *
+     * @param ignite Ignite instance.
+     * @return Filled Ignite Cache.
+     */
+    private static IgniteCache<Integer, double[]> getTestCache(Ignite ignite) {
+        CacheConfiguration<Integer, double[]> cacheConfiguration = new CacheConfiguration<>();
+        cacheConfiguration.setName("TEST_" + UUID.randomUUID());
+        cacheConfiguration.setAffinity(new RendezvousAffinityFunction(false, 10));
+
+        IgniteCache<Integer, double[]> cache = ignite.createCache(cacheConfiguration);
+
+        for (int i = 0; i < data.length; i++)
+            cache.put(i, data[i]);
+
+        return cache;
+    }
+
+
+    /** The Iris dataset. */
+    private static final double[][] data = {
+        {-1, 5.1, 3.5, 1.4, 0.2},
+        {-1, 4.9, 3, 1.4, 0.2},
+        {-1, 4.7, 3.2, 1.3, 0.2},
+        {-1, 4.6, 3.1, 1.5, 0.2},
+        {-1, 5, 3.6, 1.4, 0.2},
+        {-1, 5.4, 3.9, 1.7, 0.4},
+        {-1, 4.6, 3.4, 1.4, 0.3},
+        {-1, 5, 3.4, 1.5, 0.2},
+        {-1, 4.4, 2.9, 1.4, 0.2},
+        {-1, 4.9, 3.1, 1.5, 0.1},
+        {-1, 5.4, 3.7, 1.5, 0.2},
+        {-1, 4.8, 3.4, 1.6, 0.2},
+        {-1, 4.8, 3, 1.4, 0.1},
+        {-1, 4.3, 3, 1.1, 0.1},
+        {-1, 5.8, 4, 1.2, 0.2},
+        {-1, 5.7, 4.4, 1.5, 0.4},
+        {-1, 5.4, 3.9, 1.3, 0.4},
+        {-1, 5.1, 3.5, 1.4, 0.3},
+        {-1, 5.7, 3.8, 1.7, 0.3},
+        {-1, 5.1, 3.8, 1.5, 0.3},
+        {-1, 5.4, 3.4, 1.7, 0.2},
+        {-1, 5.1, 3.7, 1.5, 0.4},
+        {-1, 4.6, 3.6, 1, 0.2},
+        {-1, 5.1, 3.3, 1.7, 0.5},
+        {-1, 4.8, 3.4, 1.9, 0.2},
+        {-1, 5, 3, 1.6, 0.2},
+        {-1, 5, 3.4, 1.6, 0.4},
+        {-1, 5.2, 3.5, 1.5, 0.2},
+        {-1, 5.2, 3.4, 1.4, 0.2},
+        {-1, 4.7, 3.2, 1.6, 0.2},
+        {-1, 4.8, 3.1, 1.6, 0.2},
+        {-1, 5.4, 3.4, 1.5, 0.4},
+        {-1, 5.2, 4.1, 1.5, 0.1},
+        {-1, 5.5, 4.2, 1.4, 0.2},
+        {-1, 4.9, 3.1, 1.5, 0.1},
+        {-1, 5, 3.2, 1.2, 0.2},
+        {-1, 5.5, 3.5, 1.3, 0.2},
+        {-1, 4.9, 3.1, 1.5, 0.1},
+        {-1, 4.4, 3, 1.3, 0.2},
+        {-1, 5.1, 3.4, 1.5, 0.2},
+        {-1, 5, 3.5, 1.3, 0.3},
+        {-1, 4.5, 2.3, 1.3, 0.3},
+        {-1, 4.4, 3.2, 1.3, 0.2},
+        {-1, 5, 3.5, 1.6, 0.6},
+        {-1, 5.1, 3.8, 1.9, 0.4},
+        {-1, 4.8, 3, 1.4, 0.3},
+        {-1, 5.1, 3.8, 1.6, 0.2},
+        {-1, 4.6, 3.2, 1.4, 0.2},
+        {-1, 5.3, 3.7, 1.5, 0.2},
+        {-1, 5, 3.3, 1.4, 0.2},
+        {1, 7, 3.2, 4.7, 1.4},
+        {1, 6.4, 3.2, 4.5, 1.5},
+        {1, 6.9, 3.1, 4.9, 1.5},
+        {1, 5.5, 2.3, 4, 1.3},
+        {1, 6.5, 2.8, 4.6, 1.5},
+        {1, 5.7, 2.8, 4.5, 1.3},
+        {1, 6.3, 3.3, 4.7, 1.6},
+        {1, 4.9, 2.4, 3.3, 1},
+        {1, 6.6, 2.9, 4.6, 1.3},
+        {1, 5.2, 2.7, 3.9, 1.4},
+        {1, 5, 2, 3.5, 1},
+        {1, 5.9, 3, 4.2, 1.5},
+        {1, 6, 2.2, 4, 1},
+        {1, 6.1, 2.9, 4.7, 1.4},
+        {1, 5.6, 2.9, 3.6, 1.3},
+        {1, 6.7, 3.1, 4.4, 1.4},
+        {1, 5.6, 3, 4.5, 1.5},
+        {1, 5.8, 2.7, 4.1, 1},
+        {1, 6.2, 2.2, 4.5, 1.5},
+        {1, 5.6, 2.5, 3.9, 1.1},
+        {1, 5.9, 3.2, 4.8, 1.8},
+        {1, 6.1, 2.8, 4, 1.3},
+        {1, 6.3, 2.5, 4.9, 1.5},
+        {1, 6.1, 2.8, 4.7, 1.2},
+        {1, 6.4, 2.9, 4.3, 1.3},
+        {1, 6.6, 3, 4.4, 1.4},
+        {1, 6.8, 2.8, 4.8, 1.4},
+        {1, 6.7, 3, 5, 1.7},
+        {1, 6, 2.9, 4.5, 1.5},
+        {1, 5.7, 2.6, 3.5, 1},
+        {1, 5.5, 2.4, 3.8, 1.1},
+        {1, 5.5, 2.4, 3.7, 1},
+        {1, 5.8, 2.7, 3.9, 1.2},
+        {1, 6, 2.7, 5.1, 1.6},
+        {1, 5.4, 3, 4.5, 1.5},
+        {1, 6, 3.4, 4.5, 1.6},
+        {1, 6.7, 3.1, 4.7, 1.5},
+        {1, 6.3, 2.3, 4.4, 1.3},
+        {1, 5.6, 3, 4.1, 1.3},
+        {1, 5.5, 2.5, 4, 1.3},
+        {1, 5.5, 2.6, 4.4, 1.2},
+        {1, 6.1, 3, 4.6, 1.4},
+        {1, 5.8, 2.6, 4, 1.2},
+        {1, 5, 2.3, 3.3, 1},
+        {1, 5.6, 2.7, 4.2, 1.3},
+        {1, 5.7, 3, 4.2, 1.2},
+        {1, 5.7, 2.9, 4.2, 1.3},
+        {1, 6.2, 2.9, 4.3, 1.3},
+        {1, 5.1, 2.5, 3, 1.1},
+        {1, 5.7, 2.8, 4.1, 1.3},
+    };
+
 }

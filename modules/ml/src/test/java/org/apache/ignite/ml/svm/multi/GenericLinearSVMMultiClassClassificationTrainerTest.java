@@ -23,7 +23,6 @@ import org.apache.ignite.ml.Trainer;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.svm.BaseSVMTest;
-import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationModel;
 import org.junit.Test;
 
 /**
