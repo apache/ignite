@@ -58,7 +58,6 @@ public class SVMLinearBinaryClassificationTrainer<K, V>
     /** Dataset. */
     private Dataset<SVMPartitionContext, LabeledDataset<Double, LabeledVector>> dataset;
 
-
     /**
      * Trains model based on the specified data.
      *

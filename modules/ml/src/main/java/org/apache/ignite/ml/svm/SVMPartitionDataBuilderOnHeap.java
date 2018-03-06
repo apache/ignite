@@ -26,7 +26,7 @@ import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
- * kNN partition data builder that builds {@link LabeledDataset}.
+ * SVM partition data builder that builds {@link LabeledDataset}.
  *
  * @param <K> Type of a key in <tt>upstream</tt> data.
  * @param <V> Type of a value in <tt>upstream</tt> data.
@@ -47,7 +47,7 @@ public class SVMPartitionDataBuilderOnHeap<K, V, C extends Serializable>
     private final int cols;
 
     /**
-     * Constructs a new instance of kNN partition data builder.
+     * Constructs a new instance of SVM partition data builder.
      *
      * @param xExtractor Extractor of X matrix row.
      * @param yExtractor Extractor of Y vector value.
