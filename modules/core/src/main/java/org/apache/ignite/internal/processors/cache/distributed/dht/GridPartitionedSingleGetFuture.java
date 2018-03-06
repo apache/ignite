@@ -326,15 +326,18 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
     @Nullable private ClusterNode mapKeyToNode(AffinityTopologyVersion topVer) {
         int part = cctx.affinity().partition(key);
 
-        List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
+        List<ClusterNode> dhtNodes = cctx.dht().topology().nodes(part, topVer);
 
-        if (affNodes.isEmpty()) {
+        if (dhtNodes == null)
+            dhtNodes = cctx.affinity().nodesByPartition(part, topVer);
+
+        if (dhtNodes.isEmpty()) {
             onDone(serverNotFoundError(topVer));
 
             return null;
         }
 
-        boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) &&
+        boolean fastLocGet = (!forcePrimary || dhtNodes.get(0).isLocal()) &&
             cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {
@@ -347,7 +350,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             }
         }
 
-        ClusterNode affNode = affinityNode(affNodes);
+        ClusterNode affNode = affinityNode(dhtNodes);
 
         if (affNode == null) {
             onDone(serverNotFoundError(topVer));

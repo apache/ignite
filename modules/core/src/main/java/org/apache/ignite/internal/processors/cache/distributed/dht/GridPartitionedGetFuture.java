@@ -386,15 +386,18 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
     ) {
         int part = cctx.affinity().partition(key);
 
-        List<ClusterNode> affNodes = cctx.affinity().nodesByPartition(part, topVer);
+        List<ClusterNode> dhtNodes = cctx.dht().topology().nodes(part, topVer);
 
-        if (affNodes.isEmpty()) {
+        if (dhtNodes == null)
+            dhtNodes = cctx.affinity().nodesByPartition(part, topVer);
+
+        if (dhtNodes.isEmpty()) {
             onDone(serverNotFoundError(topVer));
 
             return false;
         }
 
-        boolean fastLocGet = (!forcePrimary || affNodes.get(0).isLocal()) &&
+        boolean fastLocGet = (!forcePrimary || dhtNodes.get(0).isLocal()) &&
             cctx.reserveForFastLocalGet(part, topVer);
 
         if (fastLocGet) {
@@ -407,7 +410,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             }
         }
 
-        ClusterNode node = affinityNode(affNodes);
+        ClusterNode node = affinityNode(dhtNodes);
 
         if (node == null) {
             onDone(serverNotFoundError(topVer));
