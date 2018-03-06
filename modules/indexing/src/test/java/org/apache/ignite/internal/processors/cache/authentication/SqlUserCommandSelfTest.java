@@ -263,6 +263,23 @@ public class SqlUserCommandSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testQuotedUsername() throws Exception {
+        AuthorizationContext.context(actxDflt);
+
+        userSql(0, "CREATE USER \"test\" with password 'test'");
+
+        userSql(0, "CREATE USER \" test\" with password 'test'");
+
+        userSql(0, "CREATE USER \" test \" with password 'test'");
+
+        userSql(0, "CREATE USER \"test \" with password 'test'");
+
+        userSql(0, "CREATE USER \"111\" with password 'test'");
+    }
+
+    /**
      * @param nodeIdx Node index.
      * @param sql Sql query.
      */

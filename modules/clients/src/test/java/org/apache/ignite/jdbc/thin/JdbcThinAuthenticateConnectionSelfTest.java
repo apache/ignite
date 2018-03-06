@@ -152,6 +152,21 @@ public class JdbcThinAuthenticateConnectionSelfTest extends JdbcThinAbstractSelf
     }
 
     /**
+     * @throws SQLException On error.
+     */
+    public void testQuotedUsername() throws SQLException {
+        try (Connection conn = DriverManager.getConnection(URL, "ignite", "ignite")) {
+
+            conn.createStatement().execute("CREATE USER \"test\" WITH PASSWORD 'test'");
+            conn.createStatement().execute("CREATE USER \" test\" WITH PASSWORD 'test'");
+            conn.createStatement().execute("CREATE USER \"test \" WITH PASSWORD 'test'");
+            conn.createStatement().execute("CREATE USER \" test \" WITH PASSWORD 'test'");
+
+            conn.createStatement().execute("CREATE USER \"111\" WITH PASSWORD 'test'");
+        }
+    }
+
+    /**
      * @param url Connection URL.
      * @param user User name.
      * @param passwd User password.

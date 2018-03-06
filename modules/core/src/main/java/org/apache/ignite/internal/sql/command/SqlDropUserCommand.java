@@ -18,9 +18,8 @@
 package org.apache.ignite.internal.sql.command;
 
 import org.apache.ignite.internal.sql.SqlLexer;
+import org.apache.ignite.internal.sql.SqlParserUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
 
 /**
  * DROP USER command.
@@ -48,7 +47,7 @@ public class SqlDropUserCommand implements SqlCommand {
 
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
-        userName = parseIdentifier(lex);
+        userName = SqlParserUtils.parseUsername(lex);
 
         return this;
     }

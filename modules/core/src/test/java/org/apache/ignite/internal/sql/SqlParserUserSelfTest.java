@@ -41,7 +41,7 @@ public class SqlParserUserSelfTest extends SqlParserAbstractSelfTest {
             "TEST", "~!'@#$%^&*()_+=-`:\"|?.,/");
 
         assertParseError(null, "CREATE USER 'test' WITH PASSWORD 'test'",
-            "Unexpected token: \"test\" (expected: \"[identifier]\")");
+            "Unexpected token: \"test\" (expected: \"[username identifier]\")");
         assertParseError(null, "CREATE USER \"PUBLIC\".\"test\" WITH PASSWORD 'test'",
             "Unexpected token: \".\" (expected: \"WITH\")");
     }
@@ -61,7 +61,7 @@ public class SqlParserUserSelfTest extends SqlParserAbstractSelfTest {
             "TEST", "~!'@#$%^&*()_+=-`:\"|?.,/");
 
         assertParseError(null, "ALTER USER 'test' WITH PASSWORD 'test'",
-            "Unexpected token: \"test\" (expected: \"[identifier]\")");
+            "Unexpected token: \"test\" (expected: \"[username identifier]\")");
         assertParseError(null, "ALTER USER \"PUBLIC\".\"test\" WITH PASSWORD 'test'",
             "Unexpected token: \".\" (expected: \"WITH\")");
     }
@@ -78,7 +78,7 @@ public class SqlParserUserSelfTest extends SqlParserAbstractSelfTest {
         parseValidateDrop("DROP USER \"Test Name\"", "Test Name");
 
         assertParseError(null, "DROP USER 'test'",
-            "Unexpected token: \"test\" (expected: \"[identifier]\")");
+            "Unexpected token: \"test\" (expected: \"[username identifier]\")");
         assertParseError(null, "DROP USER \"PUBLIC\".\"test\"",
             "Unexpected token: \".\"");
     }
