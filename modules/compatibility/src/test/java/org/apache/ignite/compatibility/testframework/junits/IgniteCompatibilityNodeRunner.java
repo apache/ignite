@@ -109,6 +109,7 @@ public class IgniteCompatibilityNodeRunner extends IgniteNodeRunner {
             watchdog.interrupt();
         }
         catch (Throwable e) {
+            e.printStackTrace();
             X.println("Dumping classpath, error occurred: " + e);
             dumpClasspath();
             throw e;
