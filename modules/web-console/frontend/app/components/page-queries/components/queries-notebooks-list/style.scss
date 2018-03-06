@@ -15,6 +15,12 @@
  * limitations under the License.
  */
 
+#createNotebookBtn {
+  svg {
+    height: 12px;
+  }
+}
+
 .queries-notebooks-list {
   grid-no-data {
     top: -6px;
