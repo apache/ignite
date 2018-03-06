@@ -268,7 +268,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     void checkRebalanceState(GridDhtPartitionTopology top, Integer checkGrpId) {
         CacheAffinityChangeMessage msg = null;
-        log.info("checkRebalanceState top=" + top + ", checkGrpId=" + checkGrpId);
+        log.info("checkRebalanceState top=" + top + ", checkGrpId=" + checkGrpId + ", waitInfo=" + waitInfo);
         synchronized (mux) {
             if (waitInfo == null || !waitInfo.topVer.equals(lastAffVer) )
                 return;
@@ -280,6 +280,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             if (partWait != null) {
                 CacheGroupHolder grpHolder = grpHolders.get(checkGrpId);
 
+                log.info("checkRebalanceState grpHolder=" + grpHolder);
+
                 if (grpHolder != null) {
                     for (Iterator<Map.Entry<Integer, UUID>> it = partWait.entrySet().iterator(); it.hasNext(); ) {
                         Map.Entry<Integer, UUID> e = it.next();
@@ -288,6 +290,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         UUID waitNode = e.getValue();
 
                         GridDhtPartitionState state = top.partitionState(waitNode, part);
+
+                        log.info("checkRebalanceState state=" + state + ", part=" + part + ", waitNode=" + waitNode);
+
 
                         if (state != GridDhtPartitionState.OWNING) {
                             rebalanced = false;
@@ -2576,16 +2581,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assignments.put(grpId, cacheAssignment = new HashMap<>());
 
             cacheAssignment.put(part, assignment);
-
-            log.info("Add waitGrps = " + this.toString());
         }
 
         /** {@inheritDoc} */
         @Override public String toString() {
             return "WaitRebalanceInfo [topVer=" + topVer +
-                ", grps=" + (waitGrps != null ? waitGrps.keySet() : null) +
-                ", assignments=" + assignments +
-                ", deploymentIds=" + deploymentIds + ']';
+                ", grps=" + (waitGrps != null ? waitGrps.keySet() : null) + ']';
         }
     }
 
