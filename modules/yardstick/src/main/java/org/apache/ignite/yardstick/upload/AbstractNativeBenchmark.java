@@ -19,6 +19,7 @@ package org.apache.ignite.yardstick.upload;
 
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.upload.model.Values10;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -73,14 +74,26 @@ public abstract class AbstractNativeBenchmark extends IgniteAbstractBenchmark {
     /** {@inheritDoc} */
     @Override public void tearDown() throws Exception {
         try {
-            if (cache != null) {
-                cache.close();
+            if (cache == null)
+                throw new IllegalStateException("Cache is null, probably an error during setUp or warmup");
 
-                ignite().destroyCache(cacheName);
+            long size = cache.sizeLong();
+
+            if (size != insertRowsCnt) {
+                String msg = "Incorrect cache size: [actual=" + size + ", expected=" + insertRowsCnt +"].";
+
+                BenchmarkUtils.println(cfg, "TearDown: " + msg);
+
+                throw new RuntimeException(msg);
             }
+
+            cache.close();
+
+            ignite().destroyCache(cacheName);
+
         }
-        catch (RuntimeException ex) {
-            BenchmarkUtils.println(cfg, "Could not close and destroy cache: " + ex);
+        catch (IgniteException ex) {
+            BenchmarkUtils.println(cfg, "Could not close or destroy cache: " + ex);
 
             throw ex;
         }
