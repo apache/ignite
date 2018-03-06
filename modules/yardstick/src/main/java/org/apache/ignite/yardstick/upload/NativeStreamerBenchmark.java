@@ -19,10 +19,10 @@ package org.apache.ignite.yardstick.upload;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import org.apache.ignite.yardstick.upload.model.Values10;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
@@ -41,6 +41,7 @@ public class NativeStreamerBenchmark extends IgniteAbstractBenchmark {
 
     /**
      * Sets up benchmark: performs warmup on one cache and creates another for {@link #test(Map)} method.
+     *
      * @param cfg Benchmark configuration.
      * @throws Exception - on error.
      */
@@ -56,7 +57,7 @@ public class NativeStreamerBenchmark extends IgniteAbstractBenchmark {
         BenchmarkUtils.println(cfg, "Starting custom warmup.");
         String warmupCacheName = CACHE_NAME + "Warmup";
 
-        try(IgniteCache<Long, Values10> warmupCache = ignite().createCache(warmupCacheName)) {
+        try (IgniteCache<Long, Values10> warmupCache = ignite().createCache(warmupCacheName)) {
             upload(warmupCacheName, warmupRowsCnt);
         }
         finally {
@@ -97,12 +98,13 @@ public class NativeStreamerBenchmark extends IgniteAbstractBenchmark {
 
     /**
      * Uploads randomly generated entries to specified cache
+     *
      * @param cacheName - name of the cache
      * @param insertsCnt - how many entries should be uploaded
      */
-    private void upload(String cacheName,  long insertsCnt) {
+    private void upload(String cacheName, long insertsCnt) {
         try (IgniteDataStreamer<Long, Values10> streamer = ignite().dataStreamer(cacheName)) {
-            if (args.upload.streamerBufSize() !=null)
+            if (args.upload.streamerBufSize() != null)
                 streamer.perNodeBufferSize(args.upload.streamerBufSize());
 
             if (args.upload.streamerNodeParOps() != null)
@@ -129,62 +131,6 @@ public class NativeStreamerBenchmark extends IgniteAbstractBenchmark {
                     }
                 }
             }
-        }
-    }
-
-    /**
-     * Describes data model.
-     * Matches data model, defined in {@link QueryFactory#createTable()}
-     */
-    private static class Values10 {
-        /** */
-        final String val1;
-
-        /** */
-        final long val2;
-
-        /** */
-        final String val3;
-
-        /** */
-        final long val4;
-
-        /** */
-        final String val5;
-
-        /** */
-        final long val6;
-
-        /** */
-        final String val7;
-
-        /** */
-        final long val8;
-
-        /** */
-        final String val9;
-
-        /** */
-        final long val10;
-
-        /** Creates new object with randomly initialized fields */
-        Values10(){
-            ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-            val1 = String.valueOf(rnd.nextLong());
-            val2 = rnd.nextLong();
-
-            val3 = String.valueOf(rnd.nextLong());
-            val4 = rnd.nextLong();
-
-            val5 = String.valueOf(rnd.nextLong());
-            val6 = rnd.nextLong();
-
-            val7 = String.valueOf(rnd.nextLong());
-            val8 = rnd.nextLong();
-
-            val9 = String.valueOf(rnd.nextLong());
-            val10 = rnd.nextLong();
         }
     }
 }

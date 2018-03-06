@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.upload;
+package org.apache.ignite.yardstick.upload.model;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;

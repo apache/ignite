@@ -24,6 +24,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.yardstick.jdbc.AbstractJdbcBenchmark;
+import org.apache.ignite.yardstick.upload.model.QueryFactory;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
