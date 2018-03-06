@@ -291,9 +291,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                         GridDhtPartitionState state = top.partitionState(waitNode, part);
 
-                        log.info("checkRebalanceState state=" + state + ", part=" + part + ", waitNode=" + waitNode);
-
-
                         if (state != GridDhtPartitionState.OWNING) {
                             rebalanced = false;
 
