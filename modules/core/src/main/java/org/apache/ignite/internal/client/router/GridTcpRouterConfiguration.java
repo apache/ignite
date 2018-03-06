@@ -20,12 +20,10 @@ package org.apache.ignite.internal.client.router;
 import java.net.Socket;
 import java.util.Collection;
 import java.util.Collections;
-import net.jpountz.lz4.LZ4Factory;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
-import org.apache.ignite.internal.util.nio.compress.CompressionType;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.security.SecurityCredentialsProvider;
@@ -58,9 +56,6 @@ public class GridTcpRouterConfiguration {
     /** Default nodelay. */
     public static final boolean DFLT_TCP_NODELAY = true;
 
-    /** Default nodelay. */
-    public static final CompressionType DFLT_COMPRESSION_TYPE = CompressionType.LZ4;
-
     /** Host. */
     private String host = DFLT_TCP_HOST;
 
@@ -73,9 +68,6 @@ public class GridTcpRouterConfiguration {
 
     /** No delay. */
     private boolean noDelay = DFLT_TCP_NODELAY;
-
-    /** Network compression. */
-    private CompressionType compressionType = DFLT_COMPRESSION_TYPE;
 
     /** Idle timeout. */
     private long idleTimeout = ConnectorConfiguration.DFLT_IDLE_TIMEOUT;
@@ -142,18 +134,6 @@ public class GridTcpRouterConfiguration {
      */
     public boolean isNoDelay() {
         return noDelay;
-    }
-
-    /**
-     * Returns network compression type.
-     *
-     * If not provided, then default value
-     * {@link #DFLT_COMPRESSION_TYPE} is used.
-     *
-     * @return Network compression type.
-     */
-    public CompressionType getCompressionType() {
-        return compressionType;
     }
 
     /**
@@ -273,21 +253,6 @@ public class GridTcpRouterConfiguration {
      */
     public GridTcpRouterConfiguration setNoDelay(boolean noDelay) {
         this.noDelay = noDelay;
-
-        return this;
-    }
-
-    /**
-     * Set network compression type.
-     * <p>
-     * If not provided, then default value
-     * {@link #DFLT_COMPRESSION_TYPE} is used.
-     *
-     * @param compressionType Compression type.
-     * @return {@code this} for chaining.
-     */
-    public GridTcpRouterConfiguration setCompressionType(CompressionType compressionType) {
-        this.compressionType = compressionType;
 
         return this;
     }

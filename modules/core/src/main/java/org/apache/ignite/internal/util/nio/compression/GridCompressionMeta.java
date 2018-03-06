@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio.compress;
+package org.apache.ignite.internal.util.nio.compression;
 
 import java.nio.ByteBuffer;
 

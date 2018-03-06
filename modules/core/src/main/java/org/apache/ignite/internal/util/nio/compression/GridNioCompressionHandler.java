@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio.compress;
+package org.apache.ignite.internal.util.nio.compression;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,8 +29,8 @@ import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.lang.IgniteInClosure;
 
-import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.BUFFER_OVERFLOW;
-import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.OK;
+import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.BUFFER_OVERFLOW;
+import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.OK;
 
 /**
  * Class that encapsulate the per-session compression state, compress and decompress logic.

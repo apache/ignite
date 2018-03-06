@@ -15,29 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio.compress;
+package org.apache.ignite.internal.util.nio.compression;
 
 /**
- * Network compression types.
- * <p>
- * The following compression types are supported:
- * <ul>
- * <li>{@link #NO_COMPRESSION}</li>
- * <li>{@link #DEFLATER}</li>
- * <li>{@link #ZSTD}</li>
- * <li>{@link #LZ4}</li>
- * </ul>
+ * Enum that represents a result of compression.
  */
-public enum CompressionType {
-    /** */
-    NO_COMPRESSION,
+public enum CompressionEngineResult {
+    /**
+     * Can't to process the operation because there are not enough bytes available in the destination buffer
+     * to hold the result.
+     */
+    BUFFER_OVERFLOW,
+
+    /**
+     * Can't to decompress the incoming data because there were not enough source bytes available
+     * to make a complete packet.
+     */
+    BUFFER_UNDERFLOW,
 
     /** */
-    DEFLATER,
-
-    /** */
-    ZSTD,
-
-    /** */
-    LZ4
+    OK
 }

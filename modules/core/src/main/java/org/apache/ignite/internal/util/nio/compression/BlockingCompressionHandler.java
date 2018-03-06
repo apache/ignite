@@ -1,4 +1,4 @@
-package org.apache.ignite.internal.util.nio.compress;
+package org.apache.ignite.internal.util.nio.compression;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -7,8 +7,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.nio.GridNioException;
 
-import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.BUFFER_OVERFLOW;
-import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.OK;
+import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.BUFFER_OVERFLOW;
+import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.OK;
 
 /**
  *

@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio.compress;
+package org.apache.ignite.internal.util.nio.compression;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.nio.GridNioException;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFinishedFuture;
@@ -48,25 +50,27 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
     private boolean directMode;
 
     /** */
-    private final CompressionType compressionType;
+    private final Factory<CompressionEngine> compressionFactory;
 
     /**
      * Creates compress filter.
      *
+     * @param compressionFactory Factory.
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
      * @param log Logger to use.
      */
-    public GridNioCompressionFilter(CompressionType compressionType,
+    public GridNioCompressionFilter(Factory<CompressionEngine> compressionFactory,
         boolean directBuf,
         ByteOrder order,
         IgniteLogger log) {
-        super("Compress filter");
+        super("Compression filter");
+        System.out.println("Create compress filter:"+compressionFactory);
 
         this.log = log;
         this.directBuf = directBuf;
         this.order = order;
-        this.compressionType = compressionType;
+        this.compressionFactory = compressionFactory;
     }
 
     /**
@@ -83,25 +87,6 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
         return directMode;
     }
 
-    /**
-     * @return New instance of compression engine.
-     */
-    public static CompressionEngine createEngine(CompressionType compressionType) {
-        switch (compressionType) {
-            case LZ4:
-                return new LZ4Engine();
-
-            case ZSTD:
-                return new ZstdEngine();
-
-            case DEFLATER:
-                return new DeflaterEngine();
-
-            default:
-                throw new IllegalArgumentException("Wrong compression type: " + compressionType);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
         if (log.isDebugEnabled())
@@ -112,7 +97,7 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
         GridCompressionMeta compressMeta = ses.meta(COMPRESSION_META.ordinal());
 
         if (compressMeta == null) {
-            engine = createEngine(compressionType);
+            engine = compressionFactory.create();
 
             compressMeta = new GridCompressionMeta();
 

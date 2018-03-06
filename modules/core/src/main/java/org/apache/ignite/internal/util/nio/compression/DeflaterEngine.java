@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio.compress;
+package org.apache.ignite.internal.util.nio.compression;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -25,9 +25,9 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.BUFFER_OVERFLOW;
-import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.BUFFER_UNDERFLOW;
-import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.OK;
+import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.BUFFER_OVERFLOW;
+import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.BUFFER_UNDERFLOW;
+import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.OK;
 
 /**
  * Implementation of Deflater algorithm.

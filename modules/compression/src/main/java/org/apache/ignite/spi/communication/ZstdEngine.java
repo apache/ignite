@@ -15,15 +15,17 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio.compress;
+package org.apache.ignite.spi.communication;
 
 import com.github.luben.zstd.Zstd;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.util.nio.compression.CompressionEngine;
+import org.apache.ignite.internal.util.nio.compression.CompressionEngineResult;
 
-import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.BUFFER_OVERFLOW;
-import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.BUFFER_UNDERFLOW;
-import static org.apache.ignite.internal.util.nio.compress.CompressionEngineResult.OK;
+import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.BUFFER_OVERFLOW;
+import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.BUFFER_UNDERFLOW;
+import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.OK;
 
 /**
  * Implementation of Zstd algorithm.

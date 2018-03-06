@@ -35,7 +35,7 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.benchmarks.jmh.cache.JmhCacheAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
-import org.apache.ignite.internal.util.nio.compress.CompressionType;
+import org.apache.ignite.internal.util.nio.compression.CompressionType;
 import org.apache.ignite.messaging.MessagingListenActor;
 import org.openjdk.jmh.annotations.AuxCounters;
 import org.openjdk.jmh.annotations.Benchmark;

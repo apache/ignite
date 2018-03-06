@@ -91,10 +91,9 @@ import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
 import org.apache.ignite.internal.util.nio.GridShmemCommunicationClient;
 import org.apache.ignite.internal.util.nio.GridTcpNioCommunicationClient;
-import org.apache.ignite.internal.util.nio.compress.BlockingCompressionHandler;
-import org.apache.ignite.internal.util.nio.compress.CompressionType;
-import org.apache.ignite.internal.util.nio.compress.GridCompressionMeta;
-import org.apache.ignite.internal.util.nio.compress.GridNioCompressionFilter;
+import org.apache.ignite.internal.util.nio.compression.BlockingCompressionHandler;
+import org.apache.ignite.internal.util.nio.compression.GridCompressionMeta;
+import org.apache.ignite.internal.util.nio.compression.GridNioCompressionFilter;
 import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.nio.ssl.GridSslMeta;
@@ -1154,6 +1153,13 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      */
     private boolean isSslEnabled() {
         return ignite.configuration().getSslContextFactory() != null;
+    }
+
+    /**
+     * @return {@code True} if network compression enabled.
+     */
+    private boolean isNetCompressionEnabled() {
+        return ignite.configuration().getNetworkCompressionFactory() != null;
     }
 
     /**
@@ -2304,11 +2310,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 filterList.add(new GridNioCodecFilter(parser, log, true));
                 filterList.add(new GridConnectionBytesVerifyFilter(log));
 
-                CompressionType compressionType = ignite().configuration().getCompressionType();
-
-                if (compressionType != CompressionType.NO_COMPRESSION) {
+                if (isNetCompressionEnabled()) {
                     GridNioCompressionFilter compressFilter =
-                        new GridNioCompressionFilter(compressionType, true, ByteOrder.nativeOrder(), log);
+                        new GridNioCompressionFilter(ignite().configuration().getNetworkCompressionFactory(),
+                            true, ByteOrder.nativeOrder(), log);
 
                     compressFilter.directMode(true);
 
@@ -3168,7 +3173,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     Map<Integer, Object> meta = new HashMap<>();
 
                     GridSslMeta sslMeta = null;
-                    GridCompressionMeta compressMeta = null;
+                    GridCompressionMeta compressionMeta = null;
 
                     try {
                         ch.socket().connect(addr, (int)timeoutHelper.nextTimeoutChunk(connTimeout));
@@ -3183,12 +3188,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             sslMeta.sslEngine(sslEngine);
                         }
 
-                        boolean isCompressed = isCompressionEnabled(getLocalNode(), node);
+                        if (isNetCompressionEnabled() && isSesCompressed(getLocalNode(), node)) {
+                            meta.put(COMPRESSION_META.ordinal(), compressionMeta = new GridCompressionMeta());
 
-                        if (isCompressed) {
-                            meta.put(COMPRESSION_META.ordinal(), compressMeta = new GridCompressionMeta());
-
-                            compressMeta.compressionEngine(GridNioCompressionFilter.createEngine(CompressionType.LZ4));
+                            compressionMeta.compressionEngine(
+                                ignite.configuration().getNetworkCompressionFactory().create());
                         }
 
                         Integer handshakeConnIdx = connIdx;
@@ -3198,9 +3202,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                             node.id(),
                             timeoutHelper.nextTimeoutChunk(connTimeout0),
                             sslMeta,
-                            compressMeta,
-                            handshakeConnIdx,
-                            isCompressed);
+                            compressionMeta,
+                            handshakeConnIdx);
 
                         if (rcvCnt == ALREADY_CONNECTED) {
                             return null;
@@ -3401,18 +3404,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
     }
 
     /**
-     * @param locNode ClusterNode.
-     * @param rmtNode ClusterNode.
-     * @return {@code True} if compression enabled.
+     * @param locNode Local clusterNode.
+     * @param rmtNode Remote clusterNode.
+     * @return {@code True} if network between locNode and rmtNode is compressed.
      */
-    private boolean isCompressionEnabled(ClusterNode locNode, ClusterNode rmtNode) {
+    private boolean isSesCompressed(ClusterNode locNode, ClusterNode rmtNode) {
         assert locNode != null;
         assert rmtNode != null;
 
-        Object flag1 = locNode.attribute(ATTR_COMPRESSION_ENABLED);
-        Object flag2 = rmtNode.attribute(ATTR_COMPRESSION_ENABLED);
+        Object locAttr = locNode.attribute(ATTR_COMPRESSION_ENABLED);
+        Object rmtAttr = rmtNode.attribute(ATTR_COMPRESSION_ENABLED);
 
-        return flag1 != null && flag2 != null && ((boolean)flag1 || (boolean)flag2);
+        return locAttr != null && rmtAttr != null && ((boolean)locAttr || (boolean)rmtAttr);
 
     }
 
@@ -3472,6 +3475,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @param rmtNodeId Remote node.
      * @param timeout Timeout for handshake.
      * @param sslMeta Session meta.
+     * @param compressionMeta Session meta.
      * @param handshakeConnIdx Non null connection index if need send it in handshake.
      * @throws IgniteCheckedException If handshake failed or wasn't completed withing timeout.
      * @return Handshake response.
@@ -3483,9 +3487,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         UUID rmtNodeId,
         long timeout,
         GridSslMeta sslMeta,
-        GridCompressionMeta compressMeta,
-        @Nullable Integer handshakeConnIdx,
-        boolean isCompressed
+        GridCompressionMeta compressionMeta,
+        @Nullable Integer handshakeConnIdx
     ) throws IgniteCheckedException {
         HandshakeTimeoutObject obj = new HandshakeTimeoutObject<>(ch, U.currentTimeMillis() + timeout);
 
@@ -3499,10 +3502,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             ByteBuffer buf;
 
-            if (isCompressed) {
-                assert compressMeta != null;
+            boolean isCompressed = compressionMeta != null;
 
-                compressHnd = new BlockingCompressionHandler(compressMeta.compressionEngine(), directBuf, ByteOrder.nativeOrder(), log);
+            if (isCompressed) {
+                compressHnd = new BlockingCompressionHandler(compressionMeta.compressionEngine(), directBuf, ByteOrder.nativeOrder(), log);
 
                 assert compressHnd.applicationBuffer().remaining() == 0;
             }
@@ -3671,7 +3674,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         decode.position(RecoveryLastReceivedMessage.MESSAGE_FULL_SIZE);
 
                         if (isCompressed)
-                            compressMeta.decodedBuffer(decode);
+                            compressionMeta.decodedBuffer(decode);
                         else if (isSslEnabled())
                             sslMeta.decodedBuffer(decode);
                     }
@@ -3687,7 +3690,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         ByteBuffer inBuf = compressHnd.inputBuffer();
 
                         if (inBuf.position() > 0)
-                            compressMeta.encodedBuffer(inBuf);
+                            compressionMeta.encodedBuffer(inBuf);
                     }
                 }
                 else {

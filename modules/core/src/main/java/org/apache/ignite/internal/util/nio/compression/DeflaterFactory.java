@@ -15,24 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio.compress;
+package org.apache.ignite.internal.util.nio.compression;
 
-/**
- * Enum that represents a result of compression.
- */
-enum CompressionEngineResult {
-    /**
-     * Can't to process the operation because there are not enough bytes available in the destination buffer
-     * to hold the result.
-     */
-    BUFFER_OVERFLOW,
+import javax.cache.configuration.Factory;
 
-    /**
-     * Can't to decompress the incoming data because there were not enough source bytes available
-     * to make a complete packet.
-     */
-    BUFFER_UNDERFLOW,
-
+/** */
+public class DeflaterFactory implements Factory<CompressionEngine> {
     /** */
-    OK
+    @Override public CompressionEngine create() {
+        return new DeflaterEngine();
+    }
 }

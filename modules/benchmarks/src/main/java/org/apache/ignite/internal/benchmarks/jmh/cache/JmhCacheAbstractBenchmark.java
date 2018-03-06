@@ -28,7 +28,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.tcp.GridTestUtils;
-import org.apache.ignite.internal.util.nio.compress.CompressionType;
+import org.apache.ignite.internal.util.nio.compression.CompressionType;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
