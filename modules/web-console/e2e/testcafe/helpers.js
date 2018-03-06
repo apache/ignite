@@ -25,8 +25,6 @@ const mouseenterTrigger = ClientFunction((selector = '') => {
     });
 });
 
-const baseURL = process.env.APP_URL || 'http://localhost:9001/'
-
 const getLocationPathname = ClientFunction(() => Promise.resolve(location.pathname))
 
 /**
