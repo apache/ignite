@@ -33,6 +33,16 @@ import static org.apache.ignite.internal.util.GridUnsafe.putInt;
 import static org.apache.ignite.internal.util.GridUnsafe.putLong;
 
 /**
+ * Loaded pages mapping to relative pointer based on Robin Hood hashing: backward shift deletion algorithm. <br>
+ * Performance of initial Robin Hood hashing could be greatly improved with only a little change to the removal
+ * method.<br> Instead of replacing entries with 'Removed' fake entries on deletion, backward shift deletion variant
+ * for the Robin Hood hashing algorithm does shift backward all the entries following the entry to delete until
+ * either an empty bucket, or a bucket with a DIB of 0 (distance to initial bucket).<br>
+ *
+ * Every deletion will shift backwards entries and therefore decrease their respective DIBs by 1
+ * (all their initial DIB values would be >= 1)<br>
+ *
+ * This implementation stores ideal bucket with entry value itself.<br>
  *
  */
 public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
@@ -42,13 +52,19 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     /** Size of count of entries (value returned by size() method). */
     private static final int MAPSIZE_SIZE = 4;
 
+    /** Padding to provide read/write from word beginning for each cell. Change this to 0 if padding is not required. */
+    private static final int CELL_PADDING = 4;
+
+    /** Padding to provide read/write from word beginning. Change this to 0 if padding is not required. */
+    private static final int MAPSIZE_PADDING = 4;
+
     /** Count of entries offset starting from base address. */
     private static final int MAPSIZE_OFFSET = 0;
 
-    /** Size of ideal bucket (cell to store value to avoid probing other cells followed). */
+    /** Size of initial/ideal bucket (cell to store value to avoid probing other cells followed). */
     private static final int IDEAL_BUCKET_SIZE = 4;
 
-    /** Offset of ideal bucket starting from entry base. */
+    /** Offset of initial/ideal bucket starting from entry base. */
     private static final int IDEAL_BUCKET_OFFSET = 0;
 
     /** Group ID size. */
@@ -60,7 +76,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     /** Page ID size. */
     private static final int PAGE_ID_SIZE = 8;
 
-    /** Page id offset from entry base. */
+    /** Page ID offset from entry base. */
     private static final int PAGE_ID_OFFSET = GRP_ID_OFFSET + GRP_ID_SIZE;
 
     /** Value size. */
@@ -82,7 +98,10 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     private static final int EMPTY_CACHE_GRP_ID = 0;
 
     /** Bytes required for storing one entry (cell). */
-    private static final int BYTES_PER_CELL = IDEAL_BUCKET_SIZE + GRP_ID_SIZE + PAGE_ID_SIZE + VALUE_SIZE + VERSION_SIZE;
+    private static final int BYTES_PER_CELL = IDEAL_BUCKET_SIZE
+        + GRP_ID_SIZE + PAGE_ID_SIZE
+        + VALUE_SIZE + VERSION_SIZE
+        + CELL_PADDING;
 
     /** Number of buckets, indicates range of scan memory, max probe count and maximum map size. */
     private final int numBuckets;
@@ -96,6 +115,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
      */
     public static long requiredMemory(long elementsCnt) {
         float loadFactor = LOAD_FACTOR;
+
         assert loadFactor != 0;
 
         return requiredMemoryByBuckets((long)(elementsCnt * loadFactor));
@@ -106,7 +126,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
      * @return required size to allocate, based on number of buckets (cells) to store in map, its capacity.
      */
     static long requiredMemoryByBuckets(long numBuckets) {
-        return numBuckets * BYTES_PER_CELL + MAPSIZE_SIZE;
+        return numBuckets * BYTES_PER_CELL + MAPSIZE_SIZE + MAPSIZE_PADDING;
     }
 
     /**
@@ -116,7 +136,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
      * @param size Size available for map, number of buckets (cells) to store will be determined accordingly.
      */
     public RobinHoodBackwardShiftHashMap(long baseAddr, long size) {
-        this.numBuckets = (int)((size - MAPSIZE_SIZE) / BYTES_PER_CELL);
+        this.numBuckets = (int)((size - MAPSIZE_SIZE - MAPSIZE_PADDING) / BYTES_PER_CELL);
         this.baseAddr = baseAddr;
 
         GridUnsafe.setMemory(baseAddr, size, (byte)0);
@@ -129,7 +149,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     private long entryBase(int idx) {
         assert idx >= 0 && idx < numBuckets;
 
-        return baseAddr + MAPSIZE_SIZE + (long)idx * BYTES_PER_CELL;
+        return baseAddr + MAPSIZE_SIZE + MAPSIZE_PADDING + (long)idx * BYTES_PER_CELL;
     }
 
     /** {@inheritDoc} */

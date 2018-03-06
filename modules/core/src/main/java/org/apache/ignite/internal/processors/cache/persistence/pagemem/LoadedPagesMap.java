@@ -21,11 +21,11 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.GridLongList;
 
 /**
- * Interface for storing correspondence of page id in a cache group
- * ->long value (address in offheap segment). Map support versioning of entries.
- * Outdated entry (entry having version lower than requested). is not provided in case of get.
+ * Interface for storing correspondence of page ID in a cache group to long value (address in offheap segment). <br>
+ * Map support versioning of entries. Outdated entry (entry having version lower than requested),
+ * is not provided in case of get, outdated return value is provided instead.<br>
  *
- * This mapping is not thread safe and should be protected by outside locking.
+ * This mapping is not thread safe. Operations should be protected by outside locking.<br>
  */
 public interface LoadedPagesMap {
     /**

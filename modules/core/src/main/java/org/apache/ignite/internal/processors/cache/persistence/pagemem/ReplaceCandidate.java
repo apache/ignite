@@ -24,11 +24,12 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Some page from loaded pages found during random {@link LoadedPagesMap} touch.
+ * Replacement removal candidate. Class represents some page from loaded pages table. Usually candidate is found during
+ * random {@link LoadedPagesMap} touch.
  */
 public class ReplaceCandidate {
-    /** */
-    private int tag;
+    /** Partition generation saved in map, too old value means page may be safely cleared. */
+    private int gen;
 
     /** */
     @GridToStringExclude
@@ -39,12 +40,12 @@ public class ReplaceCandidate {
     private FullPageId fullId;
 
     /**
-     * @param tag Tag.
-     * @param relPtr Relative pointer.
+     * @param gen Partition generation.
+     * @param relPtr Relative pointer to page.
      * @param fullId Full page ID.
      */
-    public ReplaceCandidate(int tag, long relPtr, FullPageId fullId) {
-        this.tag = tag;
+    public ReplaceCandidate(int gen, long relPtr, FullPageId fullId) {
+        this.gen = gen;
         this.relPtr = relPtr;
         this.fullId = fullId;
     }
@@ -53,11 +54,11 @@ public class ReplaceCandidate {
      * @return Partition generation saved in map, too old value means page may be safely cleared.
      */
     public int generation() {
-        return tag;
+        return gen;
     }
 
     /**
-     * @return Relative pointer.
+     * @return Relative pointer to page.
      */
     public long relativePointer() {
         return relPtr;

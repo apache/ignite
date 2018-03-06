@@ -67,7 +67,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
     private static final int OBJECT_SIZE = 40000;
 
     /** Records count to continuous put into cache. */
-    private static final int CONTINUOUS_PUT_RECS_CNT = 600_000;
+    private static final int CONTINUOUS_PUT_RECS_CNT = 300_000;
 
     /** Put thread: client threads naming for put operation. */
     private static final String PUT_THREAD = "put-thread";
@@ -110,7 +110,7 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
         DataRegionConfiguration regCfg = new DataRegionConfiguration()
             .setName("dfltMemPlc")
             .setMetricsEnabled(true)
-            .setMaxSize(256L * 1024 * 1024)
+            .setMaxSize(2 * 1024L * 1024 * 1024)
             .setPersistenceEnabled(true);
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();

@@ -38,10 +38,9 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
- *
+ * Unit tests of {@link RobinHoodBackwardShiftHashMap} implementation.
  */
-public class RobinHoodHashTest {
-    private boolean dump = false;
+public class RobinHoodBackwardShiftHashMapTest {
 
     /**
      * @param tester map test code
@@ -66,6 +65,9 @@ public class RobinHoodHashTest {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testSimplestPutGet() throws Exception {
         int cnt = 100;
@@ -88,6 +90,9 @@ public class RobinHoodHashTest {
             , cnt);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test(expected = IgniteOutOfMemoryException.class)
     public void testSimplestOverflow() throws Exception {
         withMap(map -> {
@@ -107,6 +112,11 @@ public class RobinHoodHashTest {
             , 10);
     }
 
+    /**
+     * @param msg message to dump in case assertion failed.
+     * @param map page map to check.
+     * @param act action during which size is expected to be changed.
+     */
     private static void assertSizeChanged(String msg, LoadedPagesMap map, Runnable act) {
         int size = map.size();
         act.run();
@@ -115,6 +125,11 @@ public class RobinHoodHashTest {
         assertNotEquals(msg, size, newSize);
     }
 
+    /**
+     * @param msg message to dump in case assertion failed.
+     * @param map page map to check.
+     * @param act action during which size is expected to constant.
+     */
     private static void assertSizeNotChanged(String msg, LoadedPagesMap map, Runnable act) {
         int size = map.size();
         act.run();
@@ -123,6 +138,9 @@ public class RobinHoodHashTest {
         assertEquals(msg, size, newSize);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testPutRemoveOnSamePlaces() throws Exception {
         withMap(map -> {
@@ -141,7 +159,10 @@ public class RobinHoodHashTest {
             , 100);
     }
 
-    private void doAddRemove(RobinHoodBackwardShiftHashMap map) {
+    /**
+     * @param map tested map implementation
+     */
+    private void doAddRemove(LoadedPagesMap map) {
         for (int i = 0; i < 100; i++) {
             int grpId = i + 1;
             int val = grpId * grpId;
@@ -153,9 +174,12 @@ public class RobinHoodHashTest {
         }
     }
 
+    /**
+     *
+     */
     @Test
     public void testCollisionOnRemove() {
-        LinkedHashMap<FullPageId, Long> ctrl = new LinkedHashMap<>();
+        Map<FullPageId, Long> ctrl = new LinkedHashMap<>();
         int cap = 10;
         FullPageId baseId = new FullPageId(0, 1);
 
@@ -189,11 +213,17 @@ public class RobinHoodHashTest {
         return -1;
     }
 
+    /**
+     *
+     */
     @Test
     public void testRandomOpsPutRemove() {
         doPutRemoveTest(System.currentTimeMillis());
     }
 
+    /**
+     * @param seed random seed, use timer to random run.
+     */
     private void doPutRemoveTest(long seed) {
         System.setProperty(IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR, "11");
 
@@ -205,7 +235,7 @@ public class RobinHoodHashTest {
             Map<FullPageId, Long> check = new HashMap<>();
 
             int tag = 0;
-            for (int i = 0; i < 1_000_000; i++) {
+            for (int i = 0; i < 20_000_000; i++) {
                 int op = rnd.nextInt(5);
 
                 int cacheId = rnd.nextInt(100) + 1;
@@ -232,19 +262,17 @@ public class RobinHoodHashTest {
                     long val = U.safeAbs(rnd.nextInt(30));
 
                     check.put(fullId, val);
-                    tbl.put(cacheId, pageId, val, tag);
 
-                    if (dump)
-                        System.out.println("put " + getPageString(fullId) + " -> " + val);
+                    tbl.put(cacheId, pageId, val, tag);
                 }
                 else if ((op == 3) && check.size() >= elementsCnt * 2 / 3) {
                     tbl.remove(cacheId, pageId);
-                    check.remove(fullId);
 
-                    System.out.println("remove " + getPageString(fullId) + " ");
+                    check.remove(fullId);
                 }
                 else if (check.size() >= elementsCnt * 2 / 3) {
-                    ReplaceCandidate ec = null; //tbl.getNearestAt(rnd.nextInt(tbl.capacity()));
+                    ReplaceCandidate ec = tbl.getNearestAt(rnd.nextInt(tbl.capacity()));
+
                     if (ec != null) {
                         FullPageId fullPageId = ec.fullId();
 
@@ -260,11 +288,18 @@ public class RobinHoodHashTest {
         }, elementsCnt);
     }
 
+    /**
+     * @param fullId page ID.
+     * @return Printable string for page ID.
+     */
     @NotNull private String getPageString(FullPageId fullId) {
         return "(grp=" + fullId.groupId() + "," +
             "page=" + fullId.pageId() + ")";
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testPutAndCantGetOutdatedValue() throws Exception {
         withMap(map -> {
@@ -282,6 +317,9 @@ public class RobinHoodHashTest {
         }, 100);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testPutAndRefreshValue() throws Exception {
         withMap(map -> {
@@ -303,6 +341,9 @@ public class RobinHoodHashTest {
         }, 100);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testClearAtWithControlMap3() throws Exception {
         int cap = 100;
@@ -314,6 +355,9 @@ public class RobinHoodHashTest {
         });
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     @Test
     public void testClearAtWithControlMap7() throws Exception {
         int cap = 100;
@@ -325,7 +369,9 @@ public class RobinHoodHashTest {
         });
     }
 
-
+    /**
+     * @throws Exception  If failed.
+     */
     @Test
     public void testClearAllWithControlMap() throws Exception {
         int cap = 100;
@@ -333,6 +379,10 @@ public class RobinHoodHashTest {
         doRemovalTests(cap, (grpId, pageId) -> true);
     }
 
+    /**
+     * @param cap capacity of map
+     * @param pred predicate to filter entries to be removed.
+     */
     private void doRemovalTests(int cap, LoadedPagesMap.KeyPredicate pred) {
         withMap(map -> {
             Map<FullPageId, Long> check = new HashMap<>();
@@ -348,15 +398,13 @@ public class RobinHoodHashTest {
                 check.put(new FullPageId(pageId, grpId), val);
             }
 
-            int removals = 0;
             int sz = map.size();
 
             GridLongList list = map.removeIf(pred);
             for (int i = 0; i < list.size(); i++) {
                 long val = list.get(i);
-                assertTrue(val > 0);
 
-                removals++;
+                assertTrue(val > 0);
             }
 
             assertThat(sz - map.size(), Matchers.is(list.size()));

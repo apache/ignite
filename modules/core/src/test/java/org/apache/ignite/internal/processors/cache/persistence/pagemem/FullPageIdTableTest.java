@@ -111,14 +111,8 @@ public class FullPageIdTableTest  {
     @Test
     public void putRemoveScenario() throws Exception {
         long seed = U.currentTimeMillis();
-        doPutRemoveTest(seed, false, 2_000_000);
-    }
 
-    //@Test
-    public void putRemoveScenarioFixedSeed() throws Exception {
-        long seed = 1518082843319L;
-
-        doPutRemoveTest(seed, false, 2_000_000);
+        doPutRemoveTest(seed, false, 1_000_000);
     }
 
     /**

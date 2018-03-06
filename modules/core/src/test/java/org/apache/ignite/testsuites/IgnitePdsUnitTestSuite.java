@@ -19,7 +19,7 @@ package org.apache.ignite.testsuites;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.FullPageIdTableTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IgnitePageMemReplaceDelayedWriteUnitTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.IgniteThrottlingUnitTest;
-import org.apache.ignite.internal.processors.cache.persistence.pagemem.RobinHoodHashTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.RobinHoodBackwardShiftHashMapTest;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
@@ -32,7 +32,7 @@ import org.junit.runners.Suite;
     IgnitePageMemReplaceDelayedWriteUnitTest.class,
     IgniteThrottlingUnitTest.class,
     FullPageIdTableTest.class,
-    RobinHoodHashTest.class
+    RobinHoodBackwardShiftHashMapTest.class
 })
 public class IgnitePdsUnitTestSuite {
 }

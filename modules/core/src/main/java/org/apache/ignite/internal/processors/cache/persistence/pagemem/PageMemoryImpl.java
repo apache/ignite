@@ -156,7 +156,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Page lock offset. */
     public static final int PAGE_LOCK_OFFSET = 32;
 
-    /** Page lock offset. */
+    /** Page temp copy buffer relative pointer offset. */
     public static final int PAGE_TMP_BUF_OFFSET = 40;
 
     /**
@@ -1029,7 +1029,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         int tag;
 
-        boolean tmpBuffer = false;
+        boolean pageSingleAcquire = false;
 
         seg.readLock().lock();
 
@@ -1058,7 +1058,7 @@ public class PageMemoryImpl implements PageMemoryEx {
                 if (PageHeader.tempBufferPointer(absPtr) == INVALID_REL_PTR)
                     PageHeader.acquirePage(absPtr);
                 else
-                    tmpBuffer = true;
+                    pageSingleAcquire = true;
             }
         }
         finally {
@@ -1102,21 +1102,22 @@ public class PageMemoryImpl implements PageMemoryEx {
             }
         }
         else
-            return copyPageForCheckpoint(absPtr, fullId, outBuf, tmpBuffer, tracker) ? tag : null;
+            return copyPageForCheckpoint(absPtr, fullId, outBuf, pageSingleAcquire, tracker) ? tag : null;
     }
 
     /**
      * @param absPtr Absolute ptr.
      * @param fullId Full id.
-     * @param tmpBuf Tmp buffer.
-     * @param tmpBuffer
-     * @param tracker
+     * @param outBuf Output buffer to write page content into.
+     * @param pageSingleAcquire Page is acquired only once. We don't pin the page second time (until page will not be
+     * copied) in case checkpoint temporary buffer is used.
+     * @param tracker Checkpoint statistics tracker.
      */
     private boolean copyPageForCheckpoint(
         long absPtr,
         FullPageId fullId,
-        ByteBuffer tmpBuf,
-        boolean tmpBuffer,
+        ByteBuffer outBuf,
+        boolean pageSingleAcquire,
         CheckpointMetricsTracker tracker
     ) {
         assert absPtr != 0;
@@ -1136,7 +1137,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 long tmpAbsPtr = checkpointPool.absolute(tmpRelPtr);
 
-                copyInBuffer(tmpAbsPtr, tmpBuf);
+                copyInBuffer(tmpAbsPtr, outBuf);
 
                 GridUnsafe.setMemory(tmpAbsPtr + PAGE_OVERHEAD, pageSize(), (byte)0);
 
@@ -1150,12 +1151,12 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 // Need release again because we pin page when resolve abs pointer,
                 // and page did not have tmp buffer page.
-                if (!tmpBuffer)
+                if (!pageSingleAcquire)
                     PageHeader.releasePage(absPtr);
 
             }
             else {
-                copyInBuffer(absPtr, tmpBuf);
+                copyInBuffer(absPtr, outBuf);
 
                 PageHeader.dirty(absPtr, false);
 
@@ -1163,8 +1164,8 @@ public class PageMemoryImpl implements PageMemoryEx {
                 PageHeader.releasePage(absPtr);
             }
 
-            assert PageIO.getType(tmpBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(fullId.pageId());
-            assert PageIO.getVersion(tmpBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(fullId.pageId());
+            assert PageIO.getType(outBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(fullId.pageId());
+            assert PageIO.getVersion(outBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(fullId.pageId());
 
             return true;
         }
@@ -1816,16 +1817,22 @@ public class PageMemoryImpl implements PageMemoryEx {
         /** */
         private static final double FULL_SCAN_THRESHOLD = 0.4;
 
+        /** Pointer to acquired pages integer counter. */
+        private static final int ACQUIRED_PAGES_SIZEOF = 4;
+
+        /** Padding to read from word beginning. */
+        private static final int ACQUIRED_PAGES_PADDING = 4;
+
         /** Page ID to relative pointer map. */
         private LoadedPagesMap loadedPages;
 
-        /** */
+        /** Pointer to acquired pages integer counter. */
         private long acquiredPagesPtr;
 
         /** */
         private PagePool pool;
 
-        /** */
+        /** Bytes required to store {@link #loadedPages}. */
         private long memPerTbl;
 
         /** Pages marked as dirty since the last checkpoint. */
@@ -1859,15 +1866,19 @@ public class PageMemoryImpl implements PageMemoryEx {
 
             GridUnsafe.putIntVolatile(null, acquiredPagesPtr, 0);
 
+            int ldPagesMapOffInRegion = ACQUIRED_PAGES_SIZEOF + ACQUIRED_PAGES_PADDING;
+
+            long ldPagesAddr = region.address() + ldPagesMapOffInRegion;
+
             memPerTbl = useBackwardShiftMap
                 ? RobinHoodBackwardShiftHashMap.requiredMemory(pages)
                 : requiredSegmentTableMemory(pages);
 
             loadedPages = useBackwardShiftMap
-                ? new RobinHoodBackwardShiftHashMap(region.address() + 8, memPerTbl)
-                : new FullPageIdTable(region.address() + 8, memPerTbl, true);
+                ? new RobinHoodBackwardShiftHashMap(ldPagesAddr, memPerTbl)
+                : new FullPageIdTable(ldPagesAddr, memPerTbl, true);
 
-            DirectMemoryRegion poolRegion = region.slice(memPerTbl + 8);
+            DirectMemoryRegion poolRegion = region.slice(memPerTbl + ldPagesMapOffInRegion);
 
             pool = new PagePool(idx, poolRegion, null);
 
@@ -2245,13 +2256,13 @@ public class PageMemoryImpl implements PageMemoryEx {
 
                 final long addr = nearest.relativePointer();
 
-                int partTag = nearest.generation();
+                int partGen = nearest.generation();
 
                 final long absPageAddr = absolute(addr);
 
                 FullPageId fullId = PageHeader.fullPageId(absPageAddr);
 
-                if (partTag < partGeneration(fullId.groupId(), PageIdUtils.partId(fullId.pageId())))
+                if (partGen < partGeneration(fullId.groupId(), PageIdUtils.partId(fullId.pageId())))
                     return refreshOutdatedPage(this, fullId.groupId(), fullId.pageId(), true);
 
                 boolean pinned = PageHeader.isAcquired(absPageAddr);
@@ -2321,7 +2332,6 @@ public class PageMemoryImpl implements PageMemoryEx {
             Integer tag = partGenerationMap.get(new GroupPartitionId(grpId, partId));
 
             return tag == null ? INIT_PART_GENERATION : tag;
-
         }
 
         /**
@@ -2548,14 +2558,19 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         /**
+         * Sets pointer to checkpoint buffer.
+         *
          * @param absPtr Page absolute pointer.
-         * @param tmpRelPtr Temp buffer relative pointer.
+         * @param tmpRelPtr Temp buffer relative pointer or {@link #INVALID_REL_PTR} if page is not copied to checkpoint
+         * buffer.
          */
         private static void tempBufferPointer(long absPtr, long tmpRelPtr) {
             GridUnsafe.putLong(absPtr + PAGE_TMP_BUF_OFFSET, tmpRelPtr);
         }
 
         /**
+         * Gets pointer to checkpoint buffer or {@link #INVALID_REL_PTR} if page is not copied to checkpoint buffer.
+         *
          * @param absPtr Page absolute pointer.
          * @return Temp buffer relative pointer.
          */
