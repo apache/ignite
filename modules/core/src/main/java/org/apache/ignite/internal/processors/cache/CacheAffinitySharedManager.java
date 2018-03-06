@@ -240,6 +240,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     private void onCacheGroupStopped(AffinityTopologyVersion topVer) {
         CacheAffinityChangeMessage msg = null;
 
+        log.info("onCacheGroupStopped topVer = " + topVer);
+        log.info("onCacheGroupStopped waitInfo = " + waitInfo);
         synchronized (mux) {
             if (waitInfo == null || !waitInfo.topVer.equals(topVer))
                 return;
@@ -266,7 +268,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     void checkRebalanceState(GridDhtPartitionTopology top, Integer checkGrpId) {
         CacheAffinityChangeMessage msg = null;
-
+        log.info("checkRebalanceState top=" + top + ", checkGrpId=" + checkGrpId);
         synchronized (mux) {
             if (waitInfo == null || !waitInfo.topVer.equals(lastAffVer) )
                 return;
@@ -300,6 +302,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (rebalanced) {
                     waitInfo.waitGrps.remove(checkGrpId);
 
+                    log.info("checkRebalanceState waitInfo=" + waitInfo);
                     if (waitInfo.waitGrps.isEmpty()) {
                         msg = affinityChangeMessage(waitInfo);
 
@@ -2580,7 +2583,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         /** {@inheritDoc} */
         @Override public String toString() {
             return "WaitRebalanceInfo [topVer=" + topVer +
-                ", grps=" + (waitGrps != null ? waitGrps.keySet() : null) + ']';
+                ", grps=" + (waitGrps != null ? waitGrps.keySet() : null) +
+                ", assignments=" + assignments +
+                ", deploymentIds=" + deploymentIds + ']';
         }
     }
 
