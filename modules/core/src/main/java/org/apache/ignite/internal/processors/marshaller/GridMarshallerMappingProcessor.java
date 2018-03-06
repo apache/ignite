@@ -332,8 +332,14 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
             for (int i = 0; i < mappings.size(); i++) {
                 Map<Integer, MappedName> map;
 
-                if ((map = mappings.get(i)) != null)
-                    marshallerCtx.onMappingDataReceived((byte) i, map);
+                if ((map = mappings.get(i)) != null) {
+                    try {
+                        marshallerCtx.onMappingDataReceived((byte) i, map);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to process marshaller mapping data", e);
+                    }
+                }
             }
         }
     }
