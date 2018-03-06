@@ -20,7 +20,7 @@ package org.apache.ignite.ml.svm;
 import java.io.Serializable;
 
 /**
- * Partition context of the kNN classification algorithm.
+ * Partition context of the SVM classification algorithm.
  */
 public class SVMPartitionContext implements Serializable {
     /** */

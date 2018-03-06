@@ -217,6 +217,7 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> i
         return res;
     }
 
+    /** Closes LabeledDataset. */
     @Override public void close() throws Exception {
 
     }

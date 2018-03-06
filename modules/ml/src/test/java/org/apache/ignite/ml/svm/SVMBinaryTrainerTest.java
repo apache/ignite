@@ -24,22 +24,17 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
 import org.junit.Test;
 
 /**
  * Tests for {@link SVMLinearBinaryClassificationTrainer}.
-*/
+ */
 public class SVMBinaryTrainerTest {
     /** Fixed size of Dataset. */
     private static final int AMOUNT_OF_OBSERVATIONS = 1000;
 
     /** Fixed size of columns in Dataset. */
     private static final int AMOUNT_OF_FEATURES = 2;
-
-    /** Prediction precision. */
-    private double PRECISION = 1e-2;
 
     /**
      * Test trainer on classification model y = x.
@@ -71,8 +66,9 @@ public class SVMBinaryTrainerTest {
             (k, v) -> v[0],
             AMOUNT_OF_FEATURES);
 
-        TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[] {100, 10})), PRECISION);
-        TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[] {10, 100})), 1e-2);
+        double precision = 1e-2;
 
+        TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[]{100, 10})), precision);
+        TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[]{10, 100})), precision);
     }
 }
