@@ -2573,6 +2573,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 assignments.put(grpId, cacheAssignment = new HashMap<>());
 
             cacheAssignment.put(part, assignment);
+
+            log.info("Add waitGrps = " + this.toString());
         }
 
         /** {@inheritDoc} */
