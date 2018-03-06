@@ -25,15 +25,23 @@ export default {
         queriesTitle: '?queriesTitle'
     },
     controller: class Ctrl {
-        static $inject = ['$element', '$rootScope', '$state'];
+        static $inject = ['$element', '$rootScope', '$state', 'IgniteNotebook'];
 
-        constructor($element, $rootScope, $state) {
-            Object.assign(this, {$element, $rootScope, $state});
+        constructor($element, $rootScope, $state, IgniteNotebook) {
+            Object.assign(this, {$element, $rootScope, $state, IgniteNotebook});
         }
 
         $onInit() {
+            this.countItems();
+
             if (this.$rootScope.IgniteDemoMode)
                 this.$state.go('base.sql.tabs.demo');
+        }
+
+        async countItems() {
+            const fetchNotebooksPromise = this.IgniteNotebook.read();
+
+            this.notebooks = await fetchNotebooksPromise || [];
         }
 
         $postLink() {

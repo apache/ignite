@@ -24,6 +24,8 @@
     div
         ul.tabs.tabs--blue
             li(role='presentation' ui-sref-active='active')
-                a(ui-sref='base.sql.tabs.notebooks-list') Notebooks
+                a(ui-sref='base.sql.tabs.notebooks-list')
+                    span Notebooks
+                    span.badge.badge--blue {{ $ctrl.notebooks.length }}
 
         ui-view
