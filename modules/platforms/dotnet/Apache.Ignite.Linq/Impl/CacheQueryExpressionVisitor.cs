@@ -69,7 +69,10 @@ namespace Apache.Ignite.Linq.Impl
         /// Flag indicating that star '*' qualifier should be used
         /// for the whole-table select as well as _key, _val.
         /// </param>
-        /// <param name="visitEntireSubQueryModel">Flag, indicating that subquery should be visited as full query</param>
+        /// <param name="visitEntireSubQueryModel">
+        /// Flag indicating that subquery 
+        /// should be visited as full query
+        /// </param>
         public CacheQueryExpressionVisitor(CacheQueryModelVisitor modelVisitor, bool useStar, bool includeAllFields,
             bool visitEntireSubQueryModel)
         {

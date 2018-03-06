@@ -238,7 +238,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Linq
         /// <summary>
         /// Gets filled persons cache  queryable
         /// </summary>
-        private IQueryable<ICacheEntry<int, Person>> GetPersonCacheQueryable(string cacheName, int personCount, int? orgCount = null)
+        private IQueryable<ICacheEntry<int, Person>> GetPersonCacheQueryable(string cacheName, int personCount,
+            int? orgCount = null)
         {
             var cache = GetCache<Person>(cacheName);
             Enumerable.Range(1, personCount)
