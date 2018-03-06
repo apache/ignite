@@ -49,7 +49,9 @@ public class QueryFactory {
     /** Parametrised query to insert new row. */
     private String insert = newInsertQuery();
 
-    /** see {@link #createTable}. */
+    /**
+     * See {@link #createTable}.
+     */
     private String newCreateTableQuery() {
         StringBuilder create = new StringBuilder("CREATE TABLE test_upload (id LONG PRIMARY KEY");
 
@@ -68,7 +70,9 @@ public class QueryFactory {
         return create.toString();
     }
 
-    /** see {@link #insert}. */
+    /**
+     * See {@link #insert}.
+     */
     private String newInsertQuery() {
         StringBuilder insert = new StringBuilder("INSERT INTO test_upload VALUES (?");
         for (int vi = 1; vi <= valFieldsCnt; vi++)
@@ -78,12 +82,16 @@ public class QueryFactory {
         return insert.toString();
     }
 
-    /** see {@link #createTable}. */
+    /**
+     * See {@link #createTable}.
+     */
     public String createTable() {
         return createTable;
     }
 
-    /** see {@link #insert} */
+    /**
+     * See {@link #insert}.
+     */
     public String insert() {
         return insert;
     }

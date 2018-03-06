@@ -30,18 +30,14 @@ import org.yardstickframework.BenchmarkUtils;
  * Benchmark that performs single upload of number of entries using {@link IgniteDataStreamer}.
  */
 public class NativeStreamerBenchmark extends IgniteAbstractBenchmark {
-    /** Number of entries to be uploaded during warmup. */
-    private long insertRowsCnt;
-
-    /** Number of entries to be uploaded during{@link #test(Map)}. */
-    private long warmupRowsCnt;
-
     /** Name of the {@link #cache} */
     private static final String CACHE_NAME = NativeStreamerBenchmark.class.getSimpleName();
 
+    /** Number of entries to be uploaded during warmup. */
+    private long insertRowsCnt;
+
     /** Cache method {@link test(Map)} uploads data to */
     private IgniteCache<Long, Values10> cache;
-
 
     /**
      * Sets up benchmark: performs warmup on one cache and creates another for {@link #test(Map)} method.
@@ -52,7 +48,9 @@ public class NativeStreamerBenchmark extends IgniteAbstractBenchmark {
         super.setUp(cfg);
 
         insertRowsCnt = args.upload.uploadRowsCnt();
-        warmupRowsCnt = args.upload.warmupRowsCnt();
+
+        // Number of entries to be uploaded during test().
+        long warmupRowsCnt = args.upload.warmupRowsCnt();
 
         // warmup
         BenchmarkUtils.println(cfg, "Starting custom warmup.");
@@ -82,6 +80,7 @@ public class NativeStreamerBenchmark extends IgniteAbstractBenchmark {
         }
         catch (RuntimeException ex) {
             BenchmarkUtils.println(cfg, "Could not close and destroy cache: " + ex);
+
             throw ex;
         }
         finally {
@@ -133,50 +132,59 @@ public class NativeStreamerBenchmark extends IgniteAbstractBenchmark {
         }
     }
 
-}
+    /**
+     * Describes data model.
+     * Matches data model, defined in {@link QueryFactory#createTable()}
+     */
+    private static class Values10 {
+        /** */
+        final String val1;
 
-/**
- * Describes data model.
- * Matches data model, defined in {@link QueryFactory#createTable()}
- */
-class Values10 {
-    final String val1;
+        /** */
+        final long val2;
 
-    final long val2;
+        /** */
+        final String val3;
 
-    final String val3;
+        /** */
+        final long val4;
 
-    final long val4;
+        /** */
+        final String val5;
 
-    final String val5;
+        /** */
+        final long val6;
 
-    final long val6;
+        /** */
+        final String val7;
 
-    final String val7;
+        /** */
+        final long val8;
 
-    final long val8;
+        /** */
+        final String val9;
 
-    final String val9;
+        /** */
+        final long val10;
 
-    final long val10;
+        /** Creates new object with randomly initialized fields */
+        Values10(){
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-    /** Creates new object with randomly initialized fields */
-    Values10(){
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+            val1 = String.valueOf(rnd.nextLong());
+            val2 = rnd.nextLong();
 
-        val1 = String.valueOf(rnd.nextLong());
-        val2 = rnd.nextLong();
+            val3 = String.valueOf(rnd.nextLong());
+            val4 = rnd.nextLong();
 
-        val3 = String.valueOf(rnd.nextLong());
-        val4 = rnd.nextLong();
+            val5 = String.valueOf(rnd.nextLong());
+            val6 = rnd.nextLong();
 
-        val5 = String.valueOf(rnd.nextLong());
-        val6 = rnd.nextLong();
+            val7 = String.valueOf(rnd.nextLong());
+            val8 = rnd.nextLong();
 
-        val7 = String.valueOf(rnd.nextLong());
-        val8 = rnd.nextLong();
-
-        val9 = String.valueOf(rnd.nextLong());
-        val10 = rnd.nextLong();
+            val9 = String.valueOf(rnd.nextLong());
+            val10 = rnd.nextLong();
+        }
     }
 }

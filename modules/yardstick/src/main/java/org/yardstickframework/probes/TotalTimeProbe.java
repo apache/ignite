@@ -29,13 +29,13 @@ import org.yardstickframework.BenchmarkTotalsOnlyProbe;
 import static org.yardstickframework.BenchmarkUtils.println;
 
 /**
- * Probe that measures total execution time of action for each thread
+ * Probe that measures total execution time of action for each thread.
  */
 public class TotalTimeProbe implements BenchmarkExecutionAwareProbe, BenchmarkTotalsOnlyProbe {
-    /** Thread local agents */
+    /** Thread local agents. */
     private volatile ThreadAgent[] agents;
 
-    /** Benchmark configuration */
+    /** Benchmark configuration. */
     private BenchmarkConfiguration cfg;
 
     /** {@inheritDoc} */
@@ -68,17 +68,15 @@ public class TotalTimeProbe implements BenchmarkExecutionAwareProbe, BenchmarkTo
     /**
      * This probe producing two-dimension points:
      * Number of thread that executed {@code test} method and
-     * time it took to finish
+     * time it took to finish.
      *
-     * @return meta information about each point
+     * @return meta information about each point.
      */
     @Override public Collection<String> metaInfo() {
         return Arrays.asList("Thread ID", "Duration, ms");
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override public Collection<BenchmarkProbePoint> points() {
         Collection<BenchmarkProbePoint> points = new ArrayList<>();
 
@@ -94,13 +92,15 @@ public class TotalTimeProbe implements BenchmarkExecutionAwareProbe, BenchmarkTo
         return points;
     }
 
-    /** Useless for {@link BenchmarkTotalsOnlyProbe}. */
+    /**
+     * Useless for {@link BenchmarkTotalsOnlyProbe}.
+     */
     @Override public void buildPoint(long time) {
         // No-op
     }
 
     /**
-     * Measures execution time. Used in thread local context
+     * Measures execution time. Used in thread local context.
      */
     static class ThreadAgent {
         /** Start time of {@link org.yardstickframework.BenchmarkDriver#test(java.util.Map)} method. */
@@ -109,12 +109,16 @@ public class TotalTimeProbe implements BenchmarkExecutionAwareProbe, BenchmarkTo
         /** Finish time. */
         private volatile long finishTs;
 
-        /** Start measuring. */
+        /**
+         * Start measuring.
+         */
         public void before(){
             startTs = System.nanoTime();
         }
 
-        /** Stop measuring. */
+        /**
+         * Stop measuring.
+         */
         public void after(){
             finishTs = System.nanoTime();
         }

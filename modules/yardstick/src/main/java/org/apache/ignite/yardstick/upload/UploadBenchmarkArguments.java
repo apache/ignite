@@ -42,7 +42,7 @@ public class UploadBenchmarkArguments {
     private boolean disableWal = false;
 
     /**
-     * Parameters for jdbc connection, that only uploads data.
+     * Parameters for JDBC connection, that only uploads data.
      *
      * We can't just pass entire params string, due to yardstick, which relies on bash,
      * has some troubles with escaping ampersand character.
@@ -50,7 +50,7 @@ public class UploadBenchmarkArguments {
     @Parameter(names = {"--sql-jdbc-params"},
         variableArity = true,
         description = "Upload benchmark only: " +
-            "Additional url parameters (space separated key=value) for special jdbc connection that only uploads data. ")
+            "Additional url parameters (space separated key=value) for special JDBC connection that only uploads data. ")
     private List<String> uploadJdbcParams = Collections.emptyList();
 
     @Parameter(names = {"--sql-copy-packet-size"},
@@ -89,7 +89,7 @@ public class UploadBenchmarkArguments {
         return disableWal;
     }
 
-    /** @return parameters for jdbc url. */
+    /** @return parameters for JDBC url. */
     public List<String> uploadJdbcParams() {
         return uploadJdbcParams;
     }
@@ -124,12 +124,16 @@ public class UploadBenchmarkArguments {
         return streamerLocBatchSize;
     }
 
-    /** see {@link #warmupRowsCnt} */
+    /**
+     * See {@link #warmupRowsCnt}.
+     */
     public long warmupRowsCnt() {
         return warmupRowsCnt;
     }
 
-    /** see {@link #uploadRowsCnt} */
+    /**
+     * See {@link #uploadRowsCnt}.
+     */
     public long uploadRowsCnt() {
         if (uploadRowsCnt < 0)
             throw new IllegalStateException("Upload rows count is not specified. Check arguments.");
@@ -137,10 +141,12 @@ public class UploadBenchmarkArguments {
         return uploadRowsCnt;
     }
 
-    /** see {@link #jdbcBatchSize} */
+    /**
+     * See {@link #jdbcBatchSize}.
+     */
     public long jdbcBatchSize() {
         if (jdbcBatchSize < 0)
-            throw new IllegalStateException("Jdbc batch size is not specified. Check arguments.");
+            throw new IllegalStateException("JDBC batch size is not specified. Check arguments.");
 
         return jdbcBatchSize;
     }

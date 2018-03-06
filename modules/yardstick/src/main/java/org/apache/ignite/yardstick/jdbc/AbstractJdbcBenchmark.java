@@ -37,7 +37,7 @@ import static org.yardstickframework.BenchmarkUtils.println;
 /**
  * JDBC benchmark that performs query operations.
  */
-abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
+public abstract class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
     /** All {@link Connection}s associated with threads. */
     private final List<Connection> threadConnections = new ArrayList<>();
 

@@ -69,7 +69,9 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         dropAndCreate();
     }
 
-    /** Method to init benchmark fields. */
+    /**
+     * Inits benchmark fields.
+     */
     protected void init() {
         // No-op.
     }
@@ -81,7 +83,9 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
      */
     protected abstract void warmup(Connection warmupConn) throws Exception;
 
-    /** create empty table */
+    /**
+     * Creates empty table.
+     */
     @Override protected void setupData() throws Exception{
         dropAndCreate();
     }
@@ -107,40 +111,43 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         return true;
     }
 
-    /** Drops and re-creates test table. */
-    protected final void dropAndCreate() throws SQLException {
+    /**
+     * Drops and re-creates test table.
+     */
+    private final void dropAndCreate() throws SQLException {
         executeUpdate(QueryFactory.DROP_TABLE_IF_EXISTS);
         executeUpdate(queries.createTable());
     }
 
-    /** Retrieves records count in the test table. */
+    /**
+     * Retrieves records count in the test table.
+     */
     public long count() throws SQLException {
-        try(PreparedStatement count = conn.get().prepareStatement(QueryFactory.COUNT)){
-            try (ResultSet rs = count.executeQuery()) {
+        try(PreparedStatement cnt = conn.get().prepareStatement(QueryFactory.COUNT)){
+            try (ResultSet rs = cnt.executeQuery()) {
                 rs.next();
-                long size = rs.getLong(1);
 
-                return size;
+                return rs.getLong(1);
             }
         }
     }
 
     /** {@inheritDoc} */
-    public void tearDown() throws Exception {
+    @Override public void tearDown() throws Exception {
         BenchmarkUtils.println(cfg, "Tearing down");
 
         try {
-            long count = count();
+            long cnt = count();
 
-            if (count != insertRowsCnt) {
-                String msg = "Rows count is incorrect: [actual=" + count + ", expected=" + insertRowsCnt + "]";
+            if (cnt != insertRowsCnt) {
+                String msg = "Rows count is incorrect: [actual=" + cnt + ", expected=" + insertRowsCnt + "]";
 
                 BenchmarkUtils.println(cfg, "TearDown: " + msg);
 
                 throw new RuntimeException(msg);
             }
 
-            BenchmarkUtils.println(cfg, "Test table contains " + count + " rows.");
+            BenchmarkUtils.println(cfg, "Test table contains " + cnt + " rows.");
         }
         finally {
             super.tearDown();
@@ -149,7 +156,9 @@ public abstract class AbstractUploadBenchmark extends AbstractJdbcBenchmark {
         BenchmarkUtils.println(cfg, "TearDown successfully finished.");
     }
 
-    /** Facility method for executing update queries */
+    /**
+     * Facility method for executing update queries.
+     */
     private int executeUpdate(String updQry) throws SQLException {
         try(PreparedStatement update = conn.get().prepareStatement(updQry)){
             return update.executeUpdate();
