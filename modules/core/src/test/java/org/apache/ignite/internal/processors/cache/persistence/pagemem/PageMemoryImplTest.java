@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -34,6 +37,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointLockStateChecker;
+import org.apache.ignite.internal.processors.cache.persistence.CheckpointWriteProgressSupplier;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
@@ -44,6 +48,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
+import org.mockito.Mockito;
 
 import static org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImpl.CHECKPOINT_POOL_OVERFLOW_ERROR_MSG;
 
@@ -56,6 +61,9 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
 
     /** Page size. */
     private static final int PAGE_SIZE = 1024;
+
+    /** Max memory size. */
+    private static final int MAX_SIZE = 128;
 
     /**
      * @throws Exception if failed.
@@ -127,51 +135,85 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    public void testCheckpointBufferCantOverflowMixedLoad() throws Exception {
+        testCheckpointBufferCantOverflowWithThrottlingMixedLoad(PageMemoryImpl.ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY);
+    }
+
+    /**
+     *
+     */
+    public void testCheckpointBufferCantOverflowMixedLoadSpeedBased() throws Exception {
+        testCheckpointBufferCantOverflowWithThrottlingMixedLoad(PageMemoryImpl.ThrottlingPolicy.SPEED_BASED);
+    }
+
+    /**
+     *
+     */
+    public void testCheckpointBufferCantOverflowMixedLoadRatioBased() throws Exception {
+        testCheckpointBufferCantOverflowWithThrottlingMixedLoad(PageMemoryImpl.ThrottlingPolicy.TARGET_RATIO_BASED);
+    }
+
+    /**
      * @throws Exception if failed
      */
-    public void testCheckpointBufferCantOverflowWithThrottling() throws Exception {
-        PageMemoryImpl memory = createPageMemory(PageMemoryImpl.ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY);
+    private void testCheckpointBufferCantOverflowWithThrottlingMixedLoad(PageMemoryImpl.ThrottlingPolicy plc) throws Exception {
+        PageMemoryImpl memory = createPageMemory(plc);
 
         List<FullPageId> pages = new ArrayList<>();
 
-        try {
-            while (!Thread.currentThread().isInterrupted()) {
-                long pageId = memory.allocatePage(1, PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX);
+        for (int i = 0; i < (MAX_SIZE - 10) * MB / PAGE_SIZE / 2; i++) {
+            long pageId = memory.allocatePage(1, PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX);
 
-                FullPageId fullPageId = new FullPageId(pageId, 1);
+            FullPageId fullPageId = new FullPageId(pageId, 1);
 
-                pages.add(fullPageId);
+            pages.add(fullPageId);
 
-                acquireAndReleaseWriteLock(memory, fullPageId); //to set page id, otherwise we would fail with assertion error
-            }
-        }
-        catch (IgniteOutOfMemoryException ignore) {
-            //Success
+            acquireAndReleaseWriteLock(memory, fullPageId);
         }
 
         memory.beginCheckpoint();
 
-        final AtomicReference<FullPageId> lastPage = new AtomicReference<>();
+        CheckpointMetricsTracker mockTracker = Mockito.mock(CheckpointMetricsTracker.class);
+
+        for (FullPageId checkpointPage : pages)
+            memory.getForCheckpoint(checkpointPage, ByteBuffer.allocate(PAGE_SIZE), mockTracker);
+
+        memory.finishCheckpoint();
+
+        for (int i = (int)((MAX_SIZE - 10) * MB / PAGE_SIZE / 2); i < (MAX_SIZE - 20) * MB / PAGE_SIZE; i++) {
+            long pageId = memory.allocatePage(1, PageIdAllocator.INDEX_PARTITION, PageIdAllocator.FLAG_IDX);
+
+            FullPageId fullPageId = new FullPageId(pageId, 1);
+
+            pages.add(fullPageId);
+
+            acquireAndReleaseWriteLock(memory, fullPageId);
+        }
+
+        memory.beginCheckpoint();
+
+        Collections.shuffle(pages); // Mix pages in checkpoint with clean pages
 
         AtomicBoolean stop = new AtomicBoolean(false);
 
         try {
             GridTestUtils.runAsync(new Runnable() {
                 @Override public void run() {
-                    for (FullPageId fullPageId : pages) {
-                        lastPage.set(fullPageId);
+                    for (FullPageId page : pages) {
+                        if (ThreadLocalRandom.current().nextDouble() < 0.5) // Mark dirty 50% of pages
+                            try {
+                                acquireAndReleaseWriteLock(memory, page);
 
-                        try {
-                            acquireAndReleaseWriteLock(memory, fullPageId);
+                                if (stop.get())
+                                    break;
+                            }
+                            catch (IgniteCheckedException e) {
+                                e.printStackTrace();
 
-                            if (stop.get())
-                                break;
-                        }
-                        catch (IgniteCheckedException e) {
-                            e.printStackTrace();
-
-                            fail();
-                        }
+                                fail();
+                            }
                     }
                 }
             }).get(5_000);
@@ -214,7 +256,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
         long[] sizes = new long[5];
 
         for (int i = 0; i < sizes.length; i++)
-            sizes[i] = 128 * MB / 4;
+            sizes[i] = MAX_SIZE * MB / 4;
 
         sizes[4] = 5 * MB;
 
@@ -245,6 +287,13 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             null
         );
 
+        CheckpointWriteProgressSupplier noThrottle = Mockito.mock(CheckpointWriteProgressSupplier.class);
+
+        Mockito.when(noThrottle.currentCheckpointPagesCount()).thenReturn(1_000_000);
+        Mockito.when(noThrottle.evictedPagesCntr()).thenReturn(new AtomicInteger(0));
+        Mockito.when(noThrottle.syncedPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
+        Mockito.when(noThrottle.writtenPagesCounter()).thenReturn(new AtomicInteger(1_000_000));
+
         PageMemoryImpl mem = new PageMemoryImpl(
             provider,
             sizes,
@@ -263,7 +312,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             },
             new DataRegionMetricsImpl(igniteCfg.getDataStorageConfiguration().getDefaultDataRegionConfiguration()),
             throttlingPlc,
-            null
+            noThrottle
         );
 
         mem.start();
