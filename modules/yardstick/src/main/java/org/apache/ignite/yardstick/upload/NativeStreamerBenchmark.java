@@ -19,90 +19,20 @@ package org.apache.ignite.yardstick.upload;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
-import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.upload.model.Values10;
-import org.yardstickframework.BenchmarkConfiguration;
-import org.yardstickframework.BenchmarkUtils;
 
 /**
  * Benchmark that performs single upload of number of entries using {@link IgniteDataStreamer}.
  */
-public class NativeStreamerBenchmark extends IgniteAbstractBenchmark {
-    /** Name of the {@link #cache} */
-    private static final String CACHE_NAME = NativeStreamerBenchmark.class.getSimpleName();
-
-    /** Number of entries to be uploaded during warmup. */
-    private long insertRowsCnt;
-
-    /** Cache method {@link test(Map)} uploads data to */
-    private IgniteCache<Long, Values10> cache;
-
+public class NativeStreamerBenchmark extends AbstractNativeBenchmark {
     /**
-     * Sets up benchmark: performs warmup on one cache and creates another for {@link #test(Map)} method.
+     * Uploads randomly generated entries to specified cache.
      *
-     * @param cfg Benchmark configuration.
-     * @throws Exception - on error.
+     * @param cacheName - name of the cache.
+     * @param insertsCnt - how many entries should be uploaded.
      */
-    @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
-        super.setUp(cfg);
-
-        insertRowsCnt = args.upload.uploadRowsCnt();
-
-        // Number of entries to be uploaded during test().
-        long warmupRowsCnt = args.upload.warmupRowsCnt();
-
-        // warmup
-        BenchmarkUtils.println(cfg, "Starting custom warmup.");
-        String warmupCacheName = CACHE_NAME + "Warmup";
-
-        try (IgniteCache<Long, Values10> warmupCache = ignite().createCache(warmupCacheName)) {
-            upload(warmupCacheName, warmupRowsCnt);
-        }
-        finally {
-            ignite().destroyCache(warmupCacheName);
-        }
-
-        BenchmarkUtils.println(cfg, "Custom warmup finished.");
-
-        // cache for benchmarked action
-        cache = ignite().createCache(CACHE_NAME);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void tearDown() throws Exception {
-        try {
-            if (cache != null) {
-                cache.close();
-
-                ignite().destroyCache(CACHE_NAME);
-            }
-        }
-        catch (RuntimeException ex) {
-            BenchmarkUtils.println(cfg, "Could not close and destroy cache: " + ex);
-
-            throw ex;
-        }
-        finally {
-            super.tearDown();
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-        upload(CACHE_NAME, insertRowsCnt);
-
-        return true;
-    }
-
-    /**
-     * Uploads randomly generated entries to specified cache
-     *
-     * @param cacheName - name of the cache
-     * @param insertsCnt - how many entries should be uploaded
-     */
-    private void upload(String cacheName, long insertsCnt) {
+    @Override protected void upload(String cacheName, long insertsCnt) {
         try (IgniteDataStreamer<Long, Values10> streamer = ignite().dataStreamer(cacheName)) {
             if (args.upload.streamerBufSize() != null)
                 streamer.perNodeBufferSize(args.upload.streamerBufSize());
