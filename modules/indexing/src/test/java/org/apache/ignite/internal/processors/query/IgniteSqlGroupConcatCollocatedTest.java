@@ -146,6 +146,13 @@ public class IgniteSqlGroupConcatCollocatedTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    public void testGroupConcatWithCountDistinct() {
+
+    }
+
+    /**
      * @param res Result collection.
      * @return Map ro result compare.
      */
