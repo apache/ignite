@@ -2163,7 +2163,10 @@ public class GridSqlQuerySplitter {
                         "for not collocated data.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                 }
 
-                mapAgg = agg;
+                if (hasDistinctAggregate)
+                    mapAgg = agg.child();
+                else
+                    mapAgg = aggregate(agg.distinct(), agg.type()).resultType(GridSqlType.STRING).addChild(agg.child());
 
                 rdcAgg = aggregate(false, GROUP_CONCAT)
                     .setGroupConcatSeparator(agg.getGroupConcatSeparator())

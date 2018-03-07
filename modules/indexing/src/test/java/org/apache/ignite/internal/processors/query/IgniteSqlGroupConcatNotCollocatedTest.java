@@ -104,8 +104,7 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends GridCommonAbstractTes
         IgniteCache c = ignite(CLIENT).cache(CACHE_NAME);
 
         List<List<Object>> res = c.query(
-            new SqlFieldsQuery("select grp, GROUP_CONCAT(str0) from Value group by grp")
-                .setCollocated(true)).getAll();
+            new SqlFieldsQuery("select grp, GROUP_CONCAT(str0) from Value group by grp")).getAll();
 
         for (List<Object> row : res) {
             int grp = (int)row.get(0);
@@ -114,6 +113,29 @@ public class IgniteSqlGroupConcatNotCollocatedTest extends GridCommonAbstractTes
 
             for (int i = 0; i < grp; ++i) {
                 String s = "" + (char)('A' + i + (grp == 1 ? 0 : (grp - 1) * grp / 2));
+
+                assertTrue("Invalid group_concat result: string doesn't contain value: " +
+                    "[str=" + str + ", val=" + s , str.contains(s));
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    public void testGroupConcatCountDistinct() {
+        IgniteCache c = ignite(CLIENT).cache(CACHE_NAME);
+
+        List<List<Object>> res = c.query(
+            new SqlFieldsQuery("select count(distinct str0), group_concat(str0) from Value group by grp")).getAll();
+
+        for (List<Object> row : res) {
+            long cnt = (long)row.get(0);
+
+            String str = (String)row.get(1);
+
+            for (int i = 0; i < cnt; ++i) {
+                String s = "" + (char)('A' + i + (cnt == 1 ? 0 : (cnt - 1) * cnt / 2));
 
                 assertTrue("Invalid group_concat result: string doesn't contain value: " +
                     "[str=" + str + ", val=" + s , str.contains(s));
