@@ -189,6 +189,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         // Clean-up in case of client reconnect.
         caches.clear();
 
+        log.info("initCachesOnLocalJoin cacheGroupDescriptors = " + cacheGroupDescriptors);
+
         caches.init(cacheGroupDescriptors, cacheDescriptors);
     }
 
@@ -238,6 +240,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     private void onCacheGroupStopped(AffinityTopologyVersion topVer) {
         CacheAffinityChangeMessage msg = null;
 
+        log.info("onCacheGroupStopped topVer = " + topVer);
+        log.info("onCacheGroupStopped waitInfo = " + waitInfo);
         synchronized (mux) {
             if (waitInfo == null || !waitInfo.topVer.equals(topVer))
                 return;
@@ -264,7 +268,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      */
     void checkRebalanceState(GridDhtPartitionTopology top, Integer checkGrpId) {
         CacheAffinityChangeMessage msg = null;
-
+        log.info("checkRebalanceState top=" + top + ", checkGrpId=" + checkGrpId + ", waitInfo=" + waitInfo);
         synchronized (mux) {
             if (waitInfo == null || !waitInfo.topVer.equals(lastAffVer) )
                 return;
@@ -275,6 +279,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             if (partWait != null) {
                 CacheGroupHolder grpHolder = grpHolders.get(checkGrpId);
+
+                log.info("checkRebalanceState grpHolder=" + grpHolder);
 
                 if (grpHolder != null) {
                     for (Iterator<Map.Entry<Integer, UUID>> it = partWait.entrySet().iterator(); it.hasNext(); ) {
@@ -298,6 +304,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 if (rebalanced) {
                     waitInfo.waitGrps.remove(checkGrpId);
 
+                    log.info("checkRebalanceState waitInfo=" + waitInfo);
                     if (waitInfo.waitGrps.isEmpty()) {
                         msg = affinityChangeMessage(waitInfo);
 
@@ -2612,10 +2619,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             return registeredCaches.put(desc.cacheId(), desc);
         }
 
+
         /**
          * @param grpDesc Group description.
          */
         private CacheGroupDescriptor registerGroup(CacheGroupDescriptor grpDesc) {
+            log.info("Put SharedAffinity registeredGrps = " + registeredGrps);
             return registeredGrps.put(grpDesc.groupId(), grpDesc);
         }
 
@@ -2632,8 +2641,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
          */
         CacheGroupDescriptor group(int grpId) {
             CacheGroupDescriptor desc = registeredGrps.get(grpId);
-
-            assert desc != null : grpId;
+            log.info("Get SharedAffinity registeredGrps = " + registeredGrps);
+            assert desc != null : "CacheGroupDescriptor not found for grpId=" + grpId;
 
             return desc;
         }

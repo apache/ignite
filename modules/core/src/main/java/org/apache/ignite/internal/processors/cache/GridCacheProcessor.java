@@ -1096,8 +1096,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         final Set<Integer> stoppedGrps = reconnectRes.stoppedCacheGroups();
 
         for (CacheGroupContext grp : cacheGrps.values()) {
-            if (stoppedGrps.contains(grp.groupId()))
+            if (stoppedGrps.contains(grp.groupId())) {
                 cacheGrps.remove(grp.groupId());
+                log.info("Removed groupId = " + grp.groupId());
+                log.info("After removed: cacheGrps = " + cacheGrps);
+            }
             else
                 grp.onReconnected();
         }
@@ -1985,6 +1988,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         grp.start();
 
         CacheGroupContext old = cacheGrps.put(desc.groupId(), grp);
+
+        log.info("cacheGrps = " + cacheGrps);
 
         if (!grp.systemCache()  && !U.IGNITE_MBEANS_DISABLED) {
             try {

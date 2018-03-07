@@ -358,6 +358,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         CacheGroupAffinity old = registeredCacheGrps.put(grpDesc.groupId(),
             new CacheGroupAffinity(grpDesc.cacheOrGroupName(), filter, cacheMode));
 
+        log.info("registeredCacheGrps = " + registeredCacheGrps);
+
         assert old == null : old;
     }
 
@@ -366,7 +368,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public void removeCacheGroup(CacheGroupDescriptor grpDesc) {
         CacheGroupAffinity rmvd = registeredCacheGrps.remove(grpDesc.groupId());
-
+        log.info("Removed groupId=" + grpDesc.groupId());
         assert rmvd != null : grpDesc.cacheOrGroupName();
     }
 
@@ -2121,6 +2123,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public void sendCustomEvent(DiscoveryCustomMessage msg) throws IgniteCheckedException {
         try {
             getSpi().sendCustomEvent(new CustomMessageWrapper(msg));
+            log.info("sendCustomEvent msg = " + msg);
         }
         catch (IgniteClientDisconnectedException e) {
             IgniteFuture<?> reconnectFut = ctx.cluster().clientReconnectFuture();
