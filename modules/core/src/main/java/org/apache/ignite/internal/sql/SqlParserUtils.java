@@ -128,7 +128,7 @@ public class SqlParserUtils {
      * @param lex Lexer.
      * @return Boolean parameter value.
      */
-    public static boolean parseBooleanParameter(SqlLexer lex) {
+    public static boolean parseBoolean(SqlLexer lex) {
         if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
             switch (lex.token()) {
                 case SqlKeyword.ON:

@@ -23,7 +23,7 @@ import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
 
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
-import static org.apache.ignite.internal.sql.SqlParserUtils.parseBooleanParameter;
+import static org.apache.ignite.internal.sql.SqlParserUtils.parseBoolean;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
 
 /**
@@ -43,44 +43,54 @@ public class SqlSetStreamingCommand implements SqlCommand {
     private int batchSize = DFLT_STREAM_BATCH_SIZE;
 
     /** Per node number of parallel operations. */
-    private int parOps;
+    private int perNodeParOps;
 
     /** Per node buffer size. */
-    private int bufSize;
+    private int perNodeBufSize;
 
     /** Streamer flush timeout. */
     private long flushFreq;
 
     /** {@inheritDoc} */
     @Override public SqlCommand parse(SqlLexer lex) {
-        turnOn = parseBooleanParameter(lex);
+        turnOn = parseBoolean(lex);
 
         while (lex.lookAhead().tokenType() == SqlLexerTokenType.DEFAULT) {
             switch (lex.lookAhead().token()) {
-                case SqlKeyword.ALLOW_OVERWRITE:
-                    lex.shift();
-
-                    allowOverwrite = parseBooleanParameter(lex);
-
-                    break;
-
-                case SqlKeyword.PER_NODE_PARALLEL_OPERATIONS:
-                    lex.shift();
-
-                    parOps = parseInt(lex);
-
-                    if (parOps <= 0)
-                        throw error(lex, "Invalid per node parallel operations number - must be positive.");
-
-                    break;
-
                 case SqlKeyword.BATCH_SIZE:
                     lex.shift();
 
                     batchSize = parseInt(lex);
 
                     if (batchSize <= 0)
-                        throw error(lex, "Invalid driver batch size - must be positive.");
+                        throw error(lex, "Invalid batch size (must be positive).");
+
+                    break;
+
+                case SqlKeyword.PER_NODE_BUFFER_SIZE:
+                    lex.shift();
+
+                    perNodeBufSize = parseInt(lex);
+
+                    if (perNodeBufSize <= 0)
+                        throw error(lex, "Invalid per node buffer size (must be positive).");
+
+                    break;
+
+                case SqlKeyword.PER_NODE_PARALLEL_OPERATIONS:
+                    lex.shift();
+
+                    perNodeParOps = parseInt(lex);
+
+                    if (perNodeParOps <= 0)
+                        throw error(lex, "Invalid per node parallel operations number (must be positive).");
+
+                    break;
+
+                case SqlKeyword.ALLOW_OVERWRITE:
+                    lex.shift();
+
+                    allowOverwrite = parseBoolean(lex);
 
                     break;
 
@@ -90,17 +100,7 @@ public class SqlSetStreamingCommand implements SqlCommand {
                     flushFreq = parseInt(lex);
 
                     if (flushFreq <= 0)
-                        throw error(lex, "Invalid streamer flush frequency - must be positive.");
-
-                    break;
-
-                case SqlKeyword.PER_NODE_BUFFER_SIZE:
-                    lex.shift();
-
-                    bufSize = parseInt(lex);
-
-                    if (bufSize <= 0)
-                        throw error(lex, "Invalid per node buffer size - must be positive.");
+                        throw error(lex, "Invalid flush frequency (must be positive).");
 
                     break;
 
@@ -122,7 +122,7 @@ public class SqlSetStreamingCommand implements SqlCommand {
     /**
      * @return Whether existing values should be overwritten on keys duplication.
      */
-    public boolean isAllowOverwrite() {
+    public boolean allowOverwrite() {
         return allowOverwrite;
     }
 
@@ -137,14 +137,14 @@ public class SqlSetStreamingCommand implements SqlCommand {
      * @return Per node number of parallel operations.
      */
     public int perNodeParallelOperations() {
-        return parOps;
+        return perNodeParOps;
     }
 
     /**
      * @return Per node streamer buffer size.
      */
     public int perNodeBufferSize() {
-        return bufSize;
+        return perNodeBufSize;
     }
 
     /**

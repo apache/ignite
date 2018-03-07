@@ -1551,7 +1551,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             if (cliCtx.isStream() != on) {
                 if (on)
-                    cliCtx.enableStreaming(setCmd.isAllowOverwrite(), setCmd.flushFrequency(),
+                    cliCtx.enableStreaming(setCmd.allowOverwrite(), setCmd.flushFrequency(),
                         setCmd.perNodeBufferSize(), setCmd.perNodeParallelOperations());
                 else
                     cliCtx.disableStreaming();
