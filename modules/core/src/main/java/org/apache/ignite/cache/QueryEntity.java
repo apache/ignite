@@ -42,7 +42,10 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
+
+import static java.util.Collections.unmodifiableMap;
 
 /**
  * Query entity is a description of {@link org.apache.ignite.IgniteCache cache} entry (composed of key and value)
@@ -88,6 +91,9 @@ public class QueryEntity implements Serializable {
 
     /** Fields default values. */
     private Map<String, Object> defaultFieldValues = new HashMap<>();
+
+    /** Decimal fields information. */
+    private Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
 
     /**
      * Creates an empty query entity.
@@ -386,6 +392,27 @@ public class QueryEntity implements Serializable {
      */
     public QueryEntity setNotNullFields(@Nullable Set<String> notNullFields) {
         this._notNullFields = notNullFields;
+
+        return this;
+    }
+
+    /**
+     * Gets set of field name to scale and precision.
+     *
+     * @return Set of names of fields that must have non-null values.
+     */
+    public Map<String, IgniteBiTuple<Integer, Integer>> getDecimalInfo() {
+        return unmodifiableMap(decimalInfo);
+    }
+
+    /**
+     * Sets decimal fields info.
+     *
+     * @param decimalInfo Set of name to scale and precision for decimal fields.
+     * @return {@code this} for chaining.
+     */
+    public QueryEntity setDecimalInfo(Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo) {
+        this.decimalInfo = decimalInfo;
 
         return this;
     }
