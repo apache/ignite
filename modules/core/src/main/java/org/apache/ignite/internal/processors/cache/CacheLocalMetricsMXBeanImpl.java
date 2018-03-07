@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 
 /**
@@ -404,6 +406,11 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getRebalanceClearingPartitionsLeft() {
+        return cache.metrics0().getRebalanceClearingPartitionsLeft();
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isValidForReading() {
         return cache.metrics0().isValidForReading();
     }
@@ -411,5 +418,25 @@ class CacheLocalMetricsMXBeanImpl implements CacheMetricsMXBean {
     /** {@inheritDoc} */
     @Override public boolean isValidForWriting() {
         return cache.metrics0().isValidForWriting();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void enableStatistics() {
+        try {
+            cache.context().shared().cache().enableStatistics(Collections.singleton(cache.name()), true);
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void disableStatistics() {
+        try {
+            cache.context().shared().cache().enableStatistics(Collections.singleton(cache.name()), false);
+        }
+        catch (IgniteCheckedException e) {
+            throw new RuntimeException(e.getMessage());
+        }
     }
 }

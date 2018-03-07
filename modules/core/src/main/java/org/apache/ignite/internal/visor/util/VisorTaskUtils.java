@@ -50,13 +50,12 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cache.eviction.EvictionPolicy;
-import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicyMBean;
-import org.apache.ignite.cache.eviction.lru.LruEvictionPolicyMBean;
+import org.apache.ignite.cache.eviction.AbstractEvictionPolicyFactory;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
@@ -759,12 +758,9 @@ public class VisorTaskUtils {
      * @param plc Eviction policy.
      * @return Extracted max size.
      */
-    public static Integer evictionPolicyMaxSize(@Nullable EvictionPolicy plc) {
-        if (plc instanceof LruEvictionPolicyMBean)
-            return ((LruEvictionPolicyMBean)plc).getMaxSize();
-
-        if (plc instanceof FifoEvictionPolicyMBean)
-            return ((FifoEvictionPolicyMBean)plc).getMaxSize();
+    public static Integer evictionPolicyMaxSize(@Nullable Factory plc) {
+        if (plc instanceof AbstractEvictionPolicyFactory)
+            return ((AbstractEvictionPolicyFactory) plc).getMaxSize();
 
         return null;
     }
@@ -844,7 +840,7 @@ public class VisorTaskUtils {
      * @param start Start time.
      */
     public static void logFinish(@Nullable IgniteLogger log, Class<?> clazz, long start) {
-        final long end = U.currentTimeMillis();
+        final long end = System.currentTimeMillis();
 
         log0(log, end, String.format("[%s]: FINISHED, duration: %s", clazz.getSimpleName(), formatDuration(end - start)));
     }
@@ -857,7 +853,7 @@ public class VisorTaskUtils {
      * @param nodes Mapped nodes.
      */
     public static void logMapped(@Nullable IgniteLogger log, Class<?> clazz, Collection<ClusterNode> nodes) {
-        log0(log, U.currentTimeMillis(),
+        log0(log, System.currentTimeMillis(),
             String.format("[%s]: MAPPED: %s", clazz.getSimpleName(), U.toShortString(nodes)));
     }
 
@@ -871,7 +867,7 @@ public class VisorTaskUtils {
      * @return Time when message was logged.
      */
     public static long log(@Nullable IgniteLogger log, String msg, Class<?> clazz, long start) {
-        final long end = U.currentTimeMillis();
+        final long end = System.currentTimeMillis();
 
         log0(log, end, String.format("[%s]: %s, duration: %s", clazz.getSimpleName(), msg, formatDuration(end - start)));
 
@@ -885,7 +881,7 @@ public class VisorTaskUtils {
      * @param msg Message.
      */
     public static void log(@Nullable IgniteLogger log, String msg) {
-        log0(log, U.currentTimeMillis(), " " + msg);
+        log0(log, System.currentTimeMillis(), " " + msg);
     }
 
     /**

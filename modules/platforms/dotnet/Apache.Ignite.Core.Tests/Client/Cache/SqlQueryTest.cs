@@ -100,9 +100,8 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
             Assert.AreEqual("ID", cursor.FieldNames.Single());
 
             // All items local.
-            // TODO: IGNITE-5571 - exception should be fixed.
             qry.Local = true;
-            Assert.Throws<IgniteClientException>(() => Assert.Greater(Count, cache.Query(qry).Count()));
+            Assert.Greater(Count, cache.Query(qry).Count());
 
             // Filter.
             qry = new SqlFieldsQuery("select Name from Person where Id = ?", 1)
@@ -114,7 +113,9 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
 
             // DateTime.
             qry = new SqlFieldsQuery("select Id, DateTime from Person where DateTime > ?", DateTime.UtcNow.AddDays(9));
-            Assert.AreEqual(cache[Count].DateTime, cache.Query(qry).Single().Last());
+            cursor = cache.Query(qry);
+            Assert.AreEqual(new[] {"ID", "DATETIME" }, cursor.FieldNames);
+            Assert.AreEqual(cache[Count].DateTime, cursor.Single().Last());
 
             // Invalid args.
             qry.Sql = null;

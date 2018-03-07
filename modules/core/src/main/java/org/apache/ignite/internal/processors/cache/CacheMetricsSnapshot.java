@@ -209,6 +209,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Estimate rebalance finish time. */
     private long rebalanceFinishTime;
 
+    /** The number of clearing partitions need to await before rebalance. */
+    private long rebalanceClearingPartitionsLeft;
+
     /** */
     private String keyType;
 
@@ -248,7 +251,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
      *
      * @param m Cache metrics.
      */
-    public CacheMetricsSnapshot(CacheMetrics m) {
+    public CacheMetricsSnapshot(CacheMetricsImpl m) {
         reads = m.getCacheGets();
         puts = m.getCachePuts();
         hits = m.getCacheHits();
@@ -272,15 +275,20 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapEvicts = m.getOffHeapEvictions();
         offHeapHits = m.getOffHeapHits();
         offHeapMisses = m.getOffHeapMisses();
-        offHeapEntriesCnt = m.getOffHeapEntriesCount();
-        heapEntriesCnt = m.getHeapEntriesCount();
-        offHeapPrimaryEntriesCnt = m.getOffHeapPrimaryEntriesCount();
-        offHeapBackupEntriesCnt = m.getOffHeapBackupEntriesCount();
+
+        CacheMetricsImpl.EntriesStatMetrics entriesStat = m.getEntriesStat();
+
+        offHeapEntriesCnt = entriesStat.offHeapEntriesCount();
+        heapEntriesCnt = entriesStat.heapEntriesCount();
+        offHeapPrimaryEntriesCnt = entriesStat.offHeapPrimaryEntriesCount();
+        offHeapBackupEntriesCnt = entriesStat.offHeapBackupEntriesCount();
+
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
 
-        size = m.getSize();
-        keySize = m.getKeySize();
-        isEmpty = m.isEmpty();
+        size = entriesStat.size();
+        keySize = entriesStat.keySize();
+        isEmpty = entriesStat.isEmpty();
+
         dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();
         txThreadMapSize = m.getTxThreadMapSize();
         txXidMapSize = m.getTxXidMapSize();
@@ -316,13 +324,15 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         isValidForReading = m.isValidForReading();
         isValidForWriting = m.isValidForWriting();
 
-        totalPartitionsCnt = m.getTotalPartitionsCount();
-        rebalancingPartitionsCnt = m.getRebalancingPartitionsCount();
+        totalPartitionsCnt = entriesStat.totalPartitionsCount();
+        rebalancingPartitionsCnt = entriesStat.rebalancingPartitionsCount();
+
         keysToRebalanceLeft = m.getKeysToRebalanceLeft();
         rebalancingBytesRate = m.getRebalancingBytesRate();
         rebalancingKeysRate = m.getRebalancingKeysRate();
         rebalanceStartTime = m.rebalancingStartTime();
         rebalanceFinishTime = m.estimateRebalancingFinishTime();
+        rebalanceClearingPartitionsLeft = m.getRebalanceClearingPartitionsLeft();
     }
 
     /**
@@ -751,6 +761,11 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** {@inheritDoc} */
     @Override public long getRebalancingStartTime() {
         return rebalanceStartTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalanceClearingPartitionsLeft() {
+        return rebalanceClearingPartitionsLeft;
     }
 
     /** {@inheritDoc} */

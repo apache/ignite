@@ -21,6 +21,8 @@ import java.net.InetAddress;
 import java.nio.ByteOrder;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import javax.cache.configuration.Factory;
+import javax.net.ssl.SSLContext;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -35,10 +37,12 @@ import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.nio.GridNioSession;
+import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.IgnitePortProtocol;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -73,6 +77,13 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
         IgniteConfiguration cfg = ctx.config();
+
+        // Daemon node should not open client port
+        if (cfg.isDaemon()) {
+            log.debug("Client connection configuration ignored for daemon node.");
+
+            return;
+        }
 
         ClientConnectorConfiguration cliConnCfg = prepareConfiguration(cfg);
 
@@ -110,24 +121,17 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                 if (portTo <= 0) // Handle int overflow.
                     portTo = Integer.MAX_VALUE;
 
+                GridNioFilter[] filters = makeFilters(cliConnCfg);
+
+                int maxOpenCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
+                long idleTimeout = cliConnCfg.getIdleTimeout();
+
                 for (int port = cliConnCfg.getPort(); port <= portTo && port <= 65535; port++) {
                     try {
-                        GridNioFilter[] filters = new GridNioFilter[] {
-                            new GridNioAsyncNotifyFilter(ctx.igniteInstanceName(), execSvc, log) {
-                                @Override public void onSessionOpened(GridNioSession ses)
-                                    throws IgniteCheckedException {
-                                    proceedSessionOpened(ses);
-                                }
-                            },
-                            new GridNioCodecFilter(new ClientListenerBufferedParser(), log, false)
-                        };
-
-                        int maxOpenCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
-
                         GridNioServer<byte[]> srv0 = GridNioServer.<byte[]>builder()
                             .address(hostAddr)
                             .port(port)
-                            .listener(new ClientListenerNioListener(ctx, busyLock, maxOpenCursors))
+                            .listener(new ClientListenerNioListener(ctx, busyLock, cliConnCfg))
                             .logger(log)
                             .selectorCount(DFLT_SELECTOR_CNT)
                             .igniteInstanceName(ctx.igniteInstanceName())
@@ -139,7 +143,7 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
                             .socketReceiveBufferSize(cliConnCfg.getSocketReceiveBufferSize())
                             .filters(filters)
                             .directMode(false)
-                            .idleTimeout(Long.MAX_VALUE)
+                            .idleTimeout(idleTimeout > 0 ? idleTimeout : Long.MAX_VALUE)
                             .build();
 
                         srv0.start();
@@ -173,6 +177,54 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
         }
     }
 
+     /**
+      * Make NIO server filters.
+      * @param cliConnCfg Client configuration.
+      * @return Array of filters, suitable for the configuration.
+      * @throws IgniteCheckedException if provided SslContextFactory is null.
+      */
+    @NotNull private GridNioFilter[] makeFilters(@NotNull ClientConnectorConfiguration cliConnCfg)
+        throws IgniteCheckedException {
+        GridNioFilter openSesFilter = new GridNioAsyncNotifyFilter(ctx.igniteInstanceName(), execSvc, log) {
+            @Override public void onSessionOpened(GridNioSession ses)
+                throws IgniteCheckedException {
+                proceedSessionOpened(ses);
+            }
+        };
+
+        GridNioFilter codecFilter = new GridNioCodecFilter(new ClientListenerBufferedParser(), log, false);
+
+        if (cliConnCfg.isSslEnabled()) {
+            Factory<SSLContext> sslCtxFactory = cliConnCfg.isUseIgniteSslContextFactory() ?
+                ctx.config().getSslContextFactory() : cliConnCfg.getSslContextFactory();
+
+            if (sslCtxFactory == null)
+                throw new IgniteCheckedException("Failed to create client listener " +
+                    "(SSL is enabled but factory is null). Check the ClientConnectorConfiguration");
+
+            GridNioSslFilter sslFilter = new GridNioSslFilter(sslCtxFactory.create(),
+                    true, ByteOrder.nativeOrder(), log);
+
+            sslFilter.directMode(false);
+
+            boolean auth = cliConnCfg.isSslClientAuth();
+
+            sslFilter.wantClientAuth(auth);
+            sslFilter.needClientAuth(auth);
+
+            return new GridNioFilter[] {
+                openSesFilter,
+                codecFilter,
+                sslFilter
+            };
+        } else {
+            return new GridNioFilter[] {
+                openSesFilter,
+                codecFilter
+            };
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void onKernalStop(boolean cancel) {
         if (srv != null) {
@@ -194,9 +246,16 @@ public class ClientListenerProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @return Server port.
+     */
+    public int port() {
+        return srv.port();
+    }
+
+    /**
      * Prepare connector configuration.
      *
-     * @param cfg Ignote configuration.
+     * @param cfg Ignite configuration.
      * @return Connector configuration.
      * @throws IgniteCheckedException If failed.
      */

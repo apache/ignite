@@ -17,17 +17,18 @@
 
 package org.apache.ignite.visor.commands.cache
 
-import java.util.{Collection => JavaCollection, List => JavaList, Collections, UUID}
+import java.util.{Collections, UUID, Collection => JavaCollection, List => JavaList}
 
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.internal.util.lang.{GridFunc => F}
+import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.typedef.X
 import org.apache.ignite.internal.visor.cache._
 import org.apache.ignite.internal.visor.util.VisorTaskUtils._
 import org.apache.ignite.visor.VisorTag
 import org.apache.ignite.visor.commands.cache.VisorCacheCommand._
-import org.apache.ignite.visor.commands.common.VisorTextTable
+import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
 import org.jetbrains.annotations._
 
@@ -70,7 +71,7 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *     cache -i {-system}
  *     cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|rd|wr|cn} {-a} {-r} {-system}
  *     cache -clear {-c=<cache-name>}
- *     cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>} {-system}
+ *     cache -scan -c=<cache-name> {-near} {-id=<node-id>|id8=<node-id8>} {-p=<page size>} {-system}
  *     cache -stop -c=<cache-name>
  *     cache -reset -c=<cache-name>
  *     cache -rebalance -c=<cache-name>
@@ -111,9 +112,11 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *     -system
  *         Enable showing of information about system caches.
  *     -clear
- *          Clears cache.
+ *         Clears cache.
  *     -scan
- *          Prints list of all entries from cache.
+ *         Prints list of all entries from cache.
+ *     -near
+ *         Prints list of all entries from near cache of cache.
  *     -stop
  *          Stop cache with specified name.
  *     -reset
@@ -152,6 +155,8 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *         with page of 50 items from all nodes with this cache.
  *     cache -scan -c=cache -id8=12345678
  *         Prints list entries from cache with name 'cache' and node '12345678' ID8.
+ *     cache -scan -c=cache -near -id8=12345678
+ *         Prints list entries from near cache of cache with name 'cache' and node '12345678' ID8.
  *     cache -stop -c=cache
  *         Stops cache with name 'cache'.
  *     cache -reset -c=cache
@@ -161,18 +166,8 @@ import scala.language.{implicitConversions, reflectiveCalls}
  *
  * }}}
  */
-class VisorCacheCommand {
-    /**
-     * Prints error message and advise.
-     *
-     * @param errMsgs Error messages.
-     */
-    private def scold(errMsgs: Any*) {
-        assert(errMsgs != null)
-
-        warn(errMsgs: _*)
-        warn("Type 'help cache' to see how to use this command.")
-    }
+class VisorCacheCommand extends VisorConsoleCommand {
+    @impl protected val name: String = "cache"
 
     /**
      * ===Command===
@@ -205,6 +200,9 @@ class VisorCacheCommand {
      * <ex>cache -scan -c=cache -id8=12345678</ex>
      *     Prints list entries from cache with name 'cache' and node '12345678' ID8.
      * <br>
+     * <ex>cache -scan -c=cache -near -id8=12345678</ex>
+     *     Prints list entries from near cache of cache with name 'cache' and node '12345678' ID8.
+     * <br>
      * <ex>cache -stop -c=@c0</ex>
      *     Stop cache with name taken from 'c0' memory variable.
      * <br>
@@ -214,14 +212,7 @@ class VisorCacheCommand {
      * @param args Command arguments.
      */
     def cache(args: String) {
-        if (!isConnected)
-            adviseToConnect()
-        else if (!isActive) {
-            warn("Can not perform the operation because the cluster is inactive.",
-                "Note, that the cluster is considered inactive by default if Ignite Persistent Store is used to let all the nodes join the cluster.",
-                "To activate the cluster execute following command: top -activate.")
-        }
-        else {
+        if (checkConnected() && checkActiveState()) {
             var argLst = parseArgs(args)
 
             if (hasArgFlag("i", argLst)) {
@@ -243,7 +234,16 @@ class VisorCacheCommand {
 
                     return
 
-                case Right(n) => n
+                case Right(n) => n match {
+                    case None if hasArgName("scan", argLst) && hasArgName("near", argLst) =>
+                        askForNode("Select node from:") match {
+                            case None => return
+
+                            case nidOpt => nidOpt.map(ignite.cluster.node(_))
+                        }
+
+                    case _ => n
+                }
             }
 
             val showSystem = hasArgFlag("system", argLst)
@@ -639,7 +639,6 @@ class VisorCacheCommand {
     def askForCache(title: String, node: Option[ClusterNode], showSystem: Boolean = false,
         aggrData: Seq[VisorCacheAggregatedMetrics]): Option[String] = {
         assert(title != null)
-        assert(visor.visor.isConnected)
 
         if (aggrData.isEmpty) {
             scold("No caches found.")
@@ -724,7 +723,7 @@ object VisorCacheCommand {
             "cache -i",
             "cache {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>} {-s=hi|mi|rd|wr} {-a} {-r}",
             "cache -clear {-c=<cache-name>} {-id=<node-id>|id8=<node-id8>}",
-            "cache -scan -c=<cache-name> {-id=<node-id>|id8=<node-id8>} {-p=<page size>}",
+            "cache -scan -c=<cache-name> {-near} {-id=<node-id>|id8=<node-id8>} {-p=<page size>}",
             "cache -stop -c=<cache-name>",
             "cache -reset -c=<cache-name>",
             "cache -rebalance -c=<cache-name>"
@@ -750,6 +749,7 @@ object VisorCacheCommand {
             "-clear" -> "Clears cache.",
             "-system" -> "Enable showing of information about system caches.",
             "-scan" -> "Prints list of all entries from cache.",
+            "-near" -> "Prints list of all entries from near cache of cache.",
             "-stop" -> "Stop cache with specified name.",
             "-reset" -> "Reset metrics of cache with specified name.",
             "-rebalance" -> "Re-balance partitions for cache with specified name.",
@@ -808,6 +808,8 @@ object VisorCacheCommand {
             "cache -scan -c=@c0 -p=50" -> ("Prints list entries from cache with name taken from 'c0' memory variable" +
                 " with page of 50 items from all nodes with this cache."),
             "cache -scan -c=cache -id8=12345678" -> "Prints list entries from cache with name 'cache' and node '12345678' ID8.",
+            "cache -scan -near -c=cache -id8=12345678" ->
+                "Prints list entries from near cache of cache with name 'cache' and node '12345678' ID8.",
             "cache -stop -c=@c0" -> "Stop cache with name taken from 'c0' memory variable.",
             "cache -reset -c=@c0" -> "Reset metrics for cache with name taken from 'c0' memory variable.",
             "cache -rebalance -c=cache" -> "Re-balance partitions for cache with name 'cache'."
@@ -892,13 +894,13 @@ object VisorCacheCommand {
         cacheT += ("Rebalance Cache Order", rebalanceCfg.getRebalanceOrder)
 
         cacheT += ("Eviction Policy Enabled", bool2Str(evictCfg.getPolicy != null))
-        cacheT += ("Eviction Policy", safe(evictCfg.getPolicy))
+        cacheT += ("Eviction Policy Factory", safe(evictCfg.getPolicy))
         cacheT += ("Eviction Policy Max Size", safe(evictCfg.getPolicyMaxSize))
         cacheT += ("Eviction Filter", safe(evictCfg.getFilter))
 
         cacheT += ("Near Cache Enabled", bool2Str(nearCfg.isNearEnabled))
         cacheT += ("Near Start Size", nearCfg.getNearStartSize)
-        cacheT += ("Near Eviction Policy", safe(nearCfg.getNearEvictPolicy))
+        cacheT += ("Near Eviction Policy Factory", safe(nearCfg.getNearEvictPolicy))
         cacheT += ("Near Eviction Policy Max Size", safe(nearCfg.getNearEvictMaxSize))
 
         cacheT += ("Default Lock Timeout", cfg.getDefaultLockTimeout)

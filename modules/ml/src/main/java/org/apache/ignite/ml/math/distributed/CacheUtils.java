@@ -374,7 +374,7 @@ public class CacheUtils {
             else if (key instanceof VectorBlockKey)
                 return ((VectorBlockKey)key).dataStructureId().equals(matrixUuid);
             else
-                throw new UnsupportedOperationException(); // TODO: handle my poor doubles
+                throw new UnsupportedOperationException();
         };
     }
 

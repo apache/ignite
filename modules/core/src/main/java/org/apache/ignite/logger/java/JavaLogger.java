@@ -88,7 +88,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  *      ...
  *      cfg.setGridLogger(log);
  * </pre>
- * Please take a look at <a target=_new href="http://docs.oracle.com/javase/7/docs/api/java/util/logging/Logger.html">Logger javadoc</a>
+ * Please take a look at {@link java.util.logging.Logger} javadoc
  * for additional information.
  * <p>
  * It's recommended to use Ignite logger injection instead of using/instantiating

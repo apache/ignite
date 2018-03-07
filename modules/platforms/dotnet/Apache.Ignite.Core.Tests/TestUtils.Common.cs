@@ -20,15 +20,16 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
+    using System.Reflection;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Static;
-#if !NETCOREAPP2_0
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
-#endif
     using NUnit.Framework;
 
     /// <summary>
@@ -44,6 +45,11 @@ namespace Apache.Ignite.Core.Tests
 
         /** */
         private const int DfltBusywaitSleepInterval = 200;
+
+        /** Work dir. */
+        private static readonly string WorkDir = 
+            // ReSharper disable once AssignNullToNotNullAttribute
+            Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "ignite_work");
 
         /** */
         private static readonly IList<string> TestJvmOpts = Environment.Is64BitProcess
@@ -319,7 +325,6 @@ namespace Apache.Ignite.Core.Tests
         /// <param name="timeout">Timeout, in milliseconds.</param>
         public static void AssertHandleRegistryHasItems(IIgnite grid, int expectedCount, int timeout)
         {
-#if !NETCOREAPP2_0
             var handleRegistry = ((Ignite)grid).HandleRegistry;
 
             expectedCount++;  // Skip default lifecycle bean
@@ -335,32 +340,54 @@ namespace Apache.Ignite.Core.Tests
                     grid.Name, expectedCount, handleRegistry.Count,
                     items.Select(x => x.ToString()).Aggregate((x, y) => x + "\n" + y));
             }
-#endif
         }
 
         /// <summary>
         /// Serializes and deserializes back an object.
         /// </summary>
-        public static T SerializeDeserialize<T>(T obj)
+        public static T SerializeDeserialize<T>(T obj, bool raw = false)
         {
-#if NETCOREAPP2_0
-            var marshType = typeof(IIgnite).Assembly.GetType("Apache.Ignite.Core.Impl.Binary.Marshaller");
-            var marsh = Activator.CreateInstance(marshType, new object[] { null, null });
-            marshType.GetProperty("CompactFooter").SetValue(marsh, false);
+            var cfg = new BinaryConfiguration
+            {
+                Serializer = raw ? new BinaryReflectiveSerializer {RawMode = true} : null
+            };
 
-            var bytes = marshType.GetMethod("Marshal").MakeGenericMethod(typeof(object))
-                .Invoke(marsh, new object[] { obj });
-
-            var res = marshType.GetMethods().Single(mi =>
-                    mi.Name == "Unmarshal" && mi.GetParameters().First().ParameterType == typeof(byte[]))
-                .MakeGenericMethod(typeof(object)).Invoke(marsh, new[] { bytes, 0 });
-
-            return (T)res;
-#else
-            var marsh = new Marshaller(null) { CompactFooter = false };
+            var marsh = new Marshaller(cfg) { CompactFooter = false };
 
             return marsh.Unmarshal<T>(marsh.Marshal(obj));
-#endif
+        }
+
+        /// <summary>
+        /// Clears the work dir.
+        /// </summary>
+        public static void ClearWorkDir()
+        {
+            if (!Directory.Exists(WorkDir))
+            {
+                return;
+            }
+
+            // Delete everything we can. Some files may be locked.
+            foreach (var e in Directory.GetFileSystemEntries(WorkDir, "*", SearchOption.AllDirectories))
+            {
+                try
+                {
+                    File.Delete(e);
+                }
+                catch (Exception)
+                {
+                    // Ignore
+                }
+
+                try
+                {
+                    Directory.Delete(e, true);
+                }
+                catch (Exception)
+                {
+                    // Ignore
+                }
+            }
         }
     }
 }
