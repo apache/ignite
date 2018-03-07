@@ -69,21 +69,20 @@ public class WalDeletionArchiveTest extends GridCommonAbstractTest {
         return ex.getCause() == null ? ex.getMessage() : findSourceMessage(ex.getCause());
     }
 
-    @Ignore
     /** correct delete archived wal files. */
     public void testCorrectDeletedArchivedWalFiles() throws Exception {
         try {
             //given: configured grid with max wal archive size = 1MB, wal segment size = 128KB
-            int maxWalArchiveSize = 1;
+            long maxWalArchiveSize = 1 * 1024 * 1024;
             Ignite ignite = startGrid(dbCfg -> {
-                dbCfg.setMaxWalArchiveSize(1);// 1 Mbytes
+                dbCfg.setMaxWalArchiveSize(maxWalArchiveSize);// 1 Mbytes
                 dbCfg.setWalSegmentSize(128 * 1024);
                 dbCfg.setCheckpointFrequency(60 * 1000);
             });
 
             GridCacheDatabaseSharedManager dbMgr = gridDatabase(ignite);
 
-            long allowedThresholdWalArchiveSize = maxWalArchiveSize * 1024 * 1024 / 2;
+            long allowedThresholdWalArchiveSize = maxWalArchiveSize / 2;
 
             IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache("SomeCache");
 
@@ -102,7 +101,7 @@ public class WalDeletionArchiveTest extends GridCommonAbstractTest {
                 .reduce(0L, Long::sum);
 
             assertThat(files.length, greaterThanOrEqualTo(1));
-            assertThat(totalSize, lessThan(allowedThresholdWalArchiveSize));
+            assertThat(totalSize, lessThanOrEqualTo(allowedThresholdWalArchiveSize));
 
             GridCacheDatabaseSharedManager.CheckpointHistory hist = dbMgr.checkpointHistory();
             assertThat(hist.checkpoints(), hasSize(greaterThan(0)));
@@ -117,7 +116,7 @@ public class WalDeletionArchiveTest extends GridCommonAbstractTest {
         try {
             //given: configured grid with max wal archive size = 1MB, wal segment size = 128KB
             Ignite ignite = startGrid(dbCfg -> {
-                dbCfg.setMaxWalArchiveSize(1);// 1 Mbytes
+                dbCfg.setMaxWalArchiveSize(1 * 1024 * 1024);// 1 Mbytes
                 dbCfg.setWalSegmentSize(128 * 1024);
                 dbCfg.setCheckpointFrequency(60 * 1000);
             });
@@ -163,7 +162,7 @@ public class WalDeletionArchiveTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test for check deprecated removing checkpoint by walHistorySize parameter
+     * Test for check deprecated removing checkpoint by deprecated walHistorySize parameter
      */
     public void testCheckpointHistoryRemovingByWalHistorySize() throws Exception {
         try {

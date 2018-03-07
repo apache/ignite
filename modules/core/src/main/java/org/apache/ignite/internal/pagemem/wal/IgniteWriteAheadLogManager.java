@@ -117,7 +117,7 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public int walArchiveSegments();
 
     /**
-     * @return Total size of segments in the WAL archive.
+     * @return files from archive WAL directory.
      */
     public FileDescriptor[] walArchiveFiles();
 

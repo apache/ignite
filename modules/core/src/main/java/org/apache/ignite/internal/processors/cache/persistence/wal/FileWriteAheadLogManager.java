@@ -112,6 +112,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_MMAP;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.configuration.WALMode.LOG_ONLY;
@@ -213,10 +214,11 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         AtomicLongFieldUpdater.newUpdater(FileWriteHandle.class, "written");
 
     /**
-     * Part number of wal archive size. Need for calculate max size of wall after last checkpoint. If it equal to 4,
-     * checkpoint should be triggered when max size of wall after last checkpoint more than maxWallArchiveSize/4
+     * Percentage of archive size for checkpoint trigger. Need for calculate max size of WAL after last checkpoint.
+     * Checkpoint should be triggered when max size of WAL after last checkpoint more than maxWallArchiveSize * thisValue
      */
-    private static final int CHECKPOINT_TRIGGER_BY_ARCHIVE_SIZE_DIVIDER = 4;
+    private static final double CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE =
+        IgniteSystemProperties.getDouble(IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE, 0.25);
 
     /** Interrupted flag. */
     private final ThreadLocal<Boolean> interrupted = new ThreadLocal<Boolean>() {
@@ -233,7 +235,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
     /**
      * Maximum number of allowed segments without checkpoint. If we have their more checkpoint should be triggered.
-     * It is simple way to calculate wal size without checkpoint instead fair wal size calculating.
+     * It is simple way to calculate WAL size without checkpoint instead fair WAL size calculating.
      */
     private final long maxSegCountWithoutCheckpoint;
 
@@ -358,10 +360,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         ioFactory = new RandomAccessFileIOFactory();
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
 
-        long walArchiveMaxSize = dsCfg.getMaxWalArchiveSize() * 1024 * 1024;//MB to bytes
-
         maxSegCountWithoutCheckpoint =
-            (walArchiveMaxSize / CHECKPOINT_TRIGGER_BY_ARCHIVE_SIZE_DIVIDER) / dsCfg.getWalSegmentSize();
+            (long)((dsCfg.getMaxWalArchiveSize() * CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE) / dsCfg.getWalSegmentSize());
 
         evt = ctx.event();
     }
@@ -1061,7 +1061,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             next.writeHeader();
 
             if (next.idx - lashCheckpointFileIdx() >= maxSegCountWithoutCheckpoint)
-                cctx.database().forceCheckpoint("too big size of wal without checkpoint");
+                cctx.database().forceCheckpoint("too big size of WAL without checkpoint");
 
             boolean swapped = CURR_HND_UPD.compareAndSet(this, hnd, next);
 
@@ -1079,7 +1079,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         return currentHandle();
     }
 
-    /** Give last checkpoint file idx */
+    /**
+     * Give last checkpoint file idx
+     */
     private long lashCheckpointFileIdx() {
         WALPointer lastCheckpointMark = cctx.database().lastCheckpointMarkWalPointer();
 
@@ -1383,7 +1385,9 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         return new File(walWorkDir, FileDescriptor.fileName(segmentIdx));
     }
 
-    /** Return wal archive files */
+    /**
+     * {@inheritDoc}
+     */
     public FileDescriptor[] walArchiveFiles() {
         return scan(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
     }

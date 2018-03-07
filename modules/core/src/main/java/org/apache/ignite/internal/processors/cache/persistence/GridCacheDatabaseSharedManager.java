@@ -161,9 +161,11 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static java.nio.file.StandardOpenOption.READ;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_WAL_HISTORY_SIZE;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 
@@ -285,10 +287,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     };
 
     /**
-     * Value on which should be divided maxWalArchiveSize to calculate threshold since which removing of old archive
-     * should be started
+     * Percentage of WAL archive size to calculate threshold since which removing of old archive should be started.
      */
-    private static final int ALLOWED_WAL_ARCHIVE_SIZE_DIVIDER = 2;
+    private static final double THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE =
+        IgniteSystemProperties.getDouble(IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE, 0.5);
 
     /** Checkpoint thread. Needs to be volatile because it is created in exchange worker. */
     private volatile Checkpointer checkpointer;
@@ -406,9 +408,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             persistenceCfg.getMetricsSubIntervalCount()
         );
 
-        long maxWalArchiveSize = persistenceCfg.getMaxWalArchiveSize() * 1024 * 1024;
-
-        allowedThresholdWalArchiveSize = maxWalArchiveSize / ALLOWED_WAL_ARCHIVE_SIZE_DIVIDER;
+        allowedThresholdWalArchiveSize = (long)(persistenceCfg.getMaxWalArchiveSize() * THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE);
 
         metastorageLifecycleLsnrs = ctx.internalSubscriptionProcessor().getMetastorageSubscribers();
 
@@ -1774,7 +1774,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return checkpointHist;
     }
 
-    /** Return last checkpoint WAL pointer */
+    /**
+     * {@inheritDoc}
+     */
     public WALPointer lastCheckpointMarkWalPointer() {
         CheckpointEntry lastCheckpointEntry = checkpointHist.lastCheckpointEntry;
 

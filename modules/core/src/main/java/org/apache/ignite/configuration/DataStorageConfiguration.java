@@ -113,8 +113,8 @@ public class DataStorageConfiguration implements Serializable {
     /** Default number of checkpoints to be kept in WAL after checkpoint is finished */
     public static final int DFLT_WAL_HISTORY_SIZE = 20;
 
-    /** Default number of checkpoints to be kept in WAL after checkpoint is finished, in MBytes */
-    public static final int DFLT_WAL_ARCHIVE_MAX_SIZE = 1024;
+    /** Default number of checkpoints to be kept in WAL after checkpoint is finished, in bytes */
+    public static final long DFLT_WAL_ARCHIVE_MAX_SIZE = 1024 * 1024 * 1024;
 
     /** */
     public static final int DFLT_WAL_SEGMENTS = 10;
@@ -191,8 +191,8 @@ public class DataStorageConfiguration implements Serializable {
     /** Number of checkpoints to keep */
     private int walHistSize = DFLT_WAL_HISTORY_SIZE;
 
-    /** Maximum size of wal archive folder, in MBytes */
-    private int maxWalArchiveSize = DFLT_WAL_ARCHIVE_MAX_SIZE;
+    /** Maximum size of wal archive folder, in bytes */
+    private long maxWalArchiveSize = DFLT_WAL_ARCHIVE_MAX_SIZE;
 
     /** Number of work WAL segments. */
     private int walSegments = DFLT_WAL_SEGMENTS;
@@ -511,17 +511,17 @@ public class DataStorageConfiguration implements Serializable {
      *
      * @return max size of WAL archive directory.
      */
-    public int getMaxWalArchiveSize() {
+    public long getMaxWalArchiveSize() {
         return maxWalArchiveSize <= 0 ? DFLT_WAL_ARCHIVE_MAX_SIZE : maxWalArchiveSize;
     }
 
     /**
-     * Sets a max allowed size of WAL archives. In MBytes
+     * Sets a max allowed size of WAL archives. In bytes
      *
      * @param walArchiveMaxSize max size of WAL archive directory.
      * @return {@code this} for chaining.
      */
-    public DataStorageConfiguration setMaxWalArchiveSize(int walArchiveMaxSize) {
+    public DataStorageConfiguration setMaxWalArchiveSize(long walArchiveMaxSize) {
         this.maxWalArchiveSize = walArchiveMaxSize;
 
         return this;

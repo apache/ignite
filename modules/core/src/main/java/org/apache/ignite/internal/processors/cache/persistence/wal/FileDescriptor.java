@@ -27,10 +27,13 @@ import java.io.File;
  * WAL file descriptor.
  */
 public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRecordsIterator.AbstractFileDescriptor {
-    /** */
+    /** file extension of WAL segment */
     private static final String WAL_SEGMENT_FILE_EXT = ".wal";
 
-    /** */
+    /** Length of WAL segment file name */
+    private static final int WAL_SEGMENT_FILE_NAME_LENGTH = 16;
+
+    /** File represented by this class */
     protected final File file;
 
     /** Absolute WAL segment file index */
@@ -56,7 +59,7 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
 
         assert fileName.contains(WAL_SEGMENT_FILE_EXT);
 
-        this.idx = idx == null ? Long.parseLong(fileName.substring(0, 16)) : idx;
+        this.idx = idx == null ? Long.parseLong(fileName.substring(0, WAL_SEGMENT_FILE_NAME_LENGTH)) : idx;
     }
 
     /**
@@ -68,7 +71,7 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
 
         String segmentStr = Long.toString(segment);
 
-        for (int i = segmentStr.length(); i < 16; i++)
+        for (int i = segmentStr.length(); i < WAL_SEGMENT_FILE_NAME_LENGTH; i++)
             b.a('0');
 
         b.a(segmentStr).a(WAL_SEGMENT_FILE_EXT);
@@ -85,7 +88,7 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
 
         String segmentStr = Long.toString(segment);
 
-        for (int i = segmentStr.length(); i < 16; i++)
+        for (int i = segmentStr.length(); i < WAL_SEGMENT_FILE_NAME_LENGTH; i++)
             b.a('0');
 
         b.a(segmentStr);

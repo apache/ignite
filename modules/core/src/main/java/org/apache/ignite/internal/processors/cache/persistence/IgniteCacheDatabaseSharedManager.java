@@ -377,7 +377,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         checkWalArchiveSizeConfiguration(memCfg);
     }
 
-    /** Check wal archive size configuration for correctness */
+    /**
+     * Check wal archive size configuration for correctness
+     */
     private void checkWalArchiveSizeConfiguration(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         if (memCfg.getWalHistorySize() == DFLT_WAL_HISTORY_SIZE || memCfg.getWalHistorySize() == Integer.MAX_VALUE)
             LT.warn(log, "DataRegionConfiguration.maxWalArchiveSize instead DataRegionConfiguration.walHistorySize " +
@@ -387,6 +389,11 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         else
             throw new IgniteCheckedException("Should be used only one of wal history size or max wal archive size." +
                 "(use DataRegionConfiguration.maxWalArchiveSize because DataRegionConfiguration.walHistorySize was deprecated)"
+            );
+
+        if(memCfg.getMaxWalArchiveSize() < memCfg.getWalSegmentSize())
+            throw new IgniteCheckedException(
+                "DataRegionConfiguration.maxWalArchiveSize should be greater than DataRegionConfiguration.walSegmentSize"
             );
     }
 

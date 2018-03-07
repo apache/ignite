@@ -101,6 +101,7 @@ import org.jetbrains.annotations.Nullable;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 
 /**
@@ -165,11 +166,11 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     private static final int LATEST_SERIALIZER_VERSION = 2;
 
     /**
-     * Part number of wal archive size. Need for calculate max size of wall after last checkpoint. For example:
-     * If it equal to 4, checkpoint should be triggered when max size of wall after last checkpoint
-     * more than maxWallArchiveSize/4
+     * Percentage of archive size for checkpoint trigger. Need for calculate max size of WAL after last checkpoint.
+     * Checkpoint should be triggered when max size of WAL after last checkpoint more than maxWallArchiveSize * thisValue
      */
-    private static final int CHECKPOINT_TRIGGER_BY_ARCHIVE_SIZE_DIVIDER = 4;
+    private static final double CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE =
+        IgniteSystemProperties.getDouble(IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE, 0.25);
 
     /** */
     private final boolean alwaysWriteFullPages;
@@ -311,10 +312,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         walAutoArchiveAfterInactivity = dsCfg.getWalAutoArchiveAfterInactivity();
         evt = ctx.event();
 
-        int walArchiveMaxSize = dsCfg.getMaxWalArchiveSize() * 1024 * 1024;//MB to bytes
-
         maxSegCountWithoutCheckpoint =
-            (walArchiveMaxSize / CHECKPOINT_TRIGGER_BY_ARCHIVE_SIZE_DIVIDER) / dsCfg.getWalSegmentSize();
+            (long)((dsCfg.getMaxWalArchiveSize() * CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE) / dsCfg.getWalSegmentSize());
 
         assert mode == WALMode.FSYNC : dsCfg;
     }
@@ -779,7 +778,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         return res >= 0 ? res : 0;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * {@inheritDoc}
+     */
     public FileDescriptor[] walArchiveFiles() {
         return scan(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
     }
@@ -910,7 +911,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             FileWriteHandle next = initNextWriteHandle(cur.idx);
 
             if (next.idx - lashCheckpointFileIdx() >= maxSegCountWithoutCheckpoint)
-                cctx.database().forceCheckpoint("too big size of wal without checkpoint");
+                cctx.database().forceCheckpoint("too big size of WAL without checkpoint");
 
             boolean swapped = currentHndUpd.compareAndSet(this, hnd, next);
 
@@ -928,7 +929,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         return currentHandle();
     }
 
-    /** Give last checkpoint file idx */
+    /**
+     * Give last checkpoint file idx
+     */
     private long lashCheckpointFileIdx() {
         WALPointer lastCheckpointMark = cctx.database().lastCheckpointMarkWalPointer();
 
