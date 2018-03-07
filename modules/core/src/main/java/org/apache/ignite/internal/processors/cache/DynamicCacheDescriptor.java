@@ -355,9 +355,11 @@ public class DynamicCacheDescriptor {
      * cache correctly, leaving out everything else.
      */
     public StoredCacheData toStoredData() {
+        assert schema != null;
+
         StoredCacheData res = new StoredCacheData(cacheConfiguration());
 
-        res.queryEntities(schema() == null ? Collections.<QueryEntity>emptyList() : schema().entities());
+        res.queryEntities(schema().entities());
         res.sql(sql());
 
         return res;

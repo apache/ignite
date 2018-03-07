@@ -2839,9 +2839,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public IgniteInternalFuture<?> dynamicStartCaches(Collection<CacheConfiguration> ccfgList, boolean failIfExists,
         boolean checkThreadTx, boolean disabledAfterStart) {
-        return dynamicStartCaches(
+        return dynamicStartCachesByStoredConf(
             ccfgList.stream().map(StoredCacheData::new).collect(Collectors.toList()),
-            null,
             failIfExists,
             checkThreadTx,
             disabledAfterStart
@@ -2862,25 +2861,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean failIfExists,
         boolean checkThreadTx,
         boolean disabledAfterStart) {
-        return dynamicStartCaches(storedCacheDataList, null, failIfExists, checkThreadTx, disabledAfterStart);
-    }
-
-    /**
-     * Dynamically starts multiple caches.
-     *
-     * @param storedCacheDataList Collection of stored cache data.
-     * @param cacheType Cache type.
-     * @param failIfExists Fail if exists flag.
-     * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
-     * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
-     * @return Future that will be completed when all caches are deployed.
-     */
-    private IgniteInternalFuture<?> dynamicStartCaches(
-        Collection<StoredCacheData> storedCacheDataList,
-        CacheType cacheType,
-        boolean failIfExists,
-        boolean checkThreadTx,
-        boolean disabledAfterStart) {
         if (checkThreadTx)
             checkEmptyTransactions();
 
@@ -2893,12 +2873,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     ccfg.config(),
                     ccfg.config().getName(),
                     null,
-                    resolveCacheType(ccfg.config(), cacheType),
+                    resolveCacheType(ccfg.config()),
                     ccfg.sql(),
                     failIfExists,
                     true,
                     disabledAfterStart,
-                    ccfg);
+                    ccfg.queryEntities());
 
                 if (req != null) {
                     if (req.clientStartOnly()) {
@@ -2944,10 +2924,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** Resolve cache type for input cacheType */
-    @NotNull private CacheType resolveCacheType(CacheConfiguration ccfg, CacheType ct) {
-        if (ct != null)
-            return ct;
-
+    @NotNull private CacheType resolveCacheType(CacheConfiguration ccfg) {
         if (CU.isUtilityCache(ccfg.getName()))
             return CacheType.UTILITY;
         else if (internalCaches.contains(ccfg.getName()))
@@ -4148,7 +4125,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param failIfExists Fail if exists flag.
      * @param failIfNotStarted If {@code true} fails if cache is not started.
      * @param disabledAfterStart If true, cache proxies will be only activated after {@link #restartProxies()}.
-     * @param storedCacheData Stored cache data.
+     * @param qryEntities Query entities.
      * @return Request or {@code null} if cache already exists.
      * @throws IgniteCheckedException if some of pre-checks failed
      * @throws CacheExistsException if cache exists and failIfExists flag is {@code true}
@@ -4162,7 +4139,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         boolean failIfExists,
         boolean failIfNotStarted,
         boolean disabledAfterStart,
-        StoredCacheData storedCacheData
+        @Nullable Collection<QueryEntity> qryEntities
     ) throws IgniteCheckedException {
         DynamicCacheDescriptor desc = cacheDescriptor(cacheName);
 
@@ -4217,7 +4194,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 initialize(cfg, cacheObjCtx);
 
                 req.startCacheConfiguration(cfg);
-                req.schema(new QuerySchema(storedCacheData != null ? storedCacheData.queryEntities() : cfg.getQueryEntities()));
+                req.schema(new QuerySchema(qryEntities != null ? qryEntities : cfg.getQueryEntities()));
             }
         }
         else {
