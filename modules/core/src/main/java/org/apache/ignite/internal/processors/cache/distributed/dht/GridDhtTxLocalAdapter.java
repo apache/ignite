@@ -865,7 +865,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * Clears lock future.
      */
     public void clearLockFuture() {
-        log.error("Clear fut: " + lockFut, new Exception());
+        //log.error("Clear fut: " + lockFut, new Exception());
 
         IgniteInternalFuture f = lockFut;
 
