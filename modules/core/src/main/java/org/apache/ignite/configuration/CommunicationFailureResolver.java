@@ -18,7 +18,7 @@
 package org.apache.ignite.configuration;
 
 /**
- *
+ * Communication Failure Resolver.
  */
 public interface CommunicationFailureResolver {
     /**

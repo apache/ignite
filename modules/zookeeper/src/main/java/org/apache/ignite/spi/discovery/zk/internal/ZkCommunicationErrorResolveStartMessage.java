@@ -23,7 +23,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Zk Communication Error Resolve Start Message.
  */
 public class ZkCommunicationErrorResolveStartMessage implements DiscoverySpiCustomMessage, ZkInternalMessage {
     /** */

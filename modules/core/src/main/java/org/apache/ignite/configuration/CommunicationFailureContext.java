@@ -23,7 +23,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 
 /**
- *
+ * Communication Failure Context.
  */
 public interface CommunicationFailureContext {
     /**

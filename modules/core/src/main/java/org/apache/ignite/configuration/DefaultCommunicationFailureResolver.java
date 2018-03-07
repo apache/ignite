@@ -27,7 +27,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 
 /**
- *
+ * Default Communication Failure Resolver.
  */
 public class DefaultCommunicationFailureResolver implements CommunicationFailureResolver {
     /** */

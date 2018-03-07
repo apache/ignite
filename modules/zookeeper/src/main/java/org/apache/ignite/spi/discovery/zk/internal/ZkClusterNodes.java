@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import org.apache.ignite.cluster.ClusterNode;
 
 /**
- *
+ * Zk Cluster Nodes.
  */
 public class ZkClusterNodes {
     /** */

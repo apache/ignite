@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.NotNull;
 
 /**
- *
+ * Connection Key.
  */
 public class ConnectionKey {
     /** */
