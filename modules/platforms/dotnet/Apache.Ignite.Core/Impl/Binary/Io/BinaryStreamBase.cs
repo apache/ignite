@@ -1055,6 +1055,9 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
         /// </returns>
         public abstract byte[] GetArray();
 
+        /** <inheritdoc /> */
+        public abstract bool CanGetArray { get; }
+
         /// <summary>
         /// Gets underlying data in a new array.
         /// </summary>
