@@ -26,7 +26,6 @@ import java.util.Set;
  * Map that contains only one key/value. By default the map contains null/null entry.
  */
 public class MutableSingletonMap<K, V> extends AbstractMap<K, V> {
-
     /** The key of single entry. */
     protected K key;
 

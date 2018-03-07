@@ -9419,15 +9419,14 @@ public abstract class IgniteUtils {
      * Returns an immutable map if argument is singleton mutable map,
      * otherwise returns argument.
      *
-     * @param map map
-     * @param <K> type of map keys
-     * @param <V> type of map values
-     * @return argument or singleton map
+     * @param map map.
+     * @param <K> type of map keys.
+     * @param <V> type of map values.
+     * @return argument or singleton map.
      */
-    public static <K,V> Map<K,V> unwrapSingletonMap(Map<K,V> map) {
-        if(map instanceof MutableSingletonMap){
-            return ((MutableSingletonMap<K,V>)map).singletonMap();
-        }
+    public static <K, V> Map<K, V> unwrapSingletonMap(Map<K, V> map) {
+        if (map instanceof MutableSingletonMap)
+            return ((MutableSingletonMap<K, V>)map).singletonMap();
 
         return map;
     }
@@ -9436,18 +9435,16 @@ public abstract class IgniteUtils {
      * Returns an immutable collection if argument is singleton mutable collection,
      * otherwise returns argument.
      *
-     * @param col collection
-     * @param <T> type of collection elements
-     * @return argument or immutable singleton collection
+     * @param col collection.
+     * @param <T> type of collection elements.
+     * @return argument or immutable singleton collection.
      */
     public static <T> Collection<T> unwrapSingletonCollection(Collection<T> col) {
-        if(col instanceof MutableSingletonList){
+        if (col instanceof MutableSingletonList)
             return ((MutableSingletonList<T>)col).singletonList();
-        }
 
-        if(col instanceof MutableSingletonSet){
+        if (col instanceof MutableSingletonSet)
             return ((MutableSingletonSet<T>)col).singletonSet();
-        }
 
         return col;
     }

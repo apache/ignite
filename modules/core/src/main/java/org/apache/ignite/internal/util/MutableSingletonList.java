@@ -25,7 +25,6 @@ import java.util.Collections;
  * List that contains only one element. By default the list contains null element.
  */
 public class MutableSingletonList<E> extends AbstractList<E> {
-
     /** The only element of collection. */
     private E element;
 
@@ -40,6 +39,7 @@ public class MutableSingletonList<E> extends AbstractList<E> {
     /** {@inheritDoc} */
     @Override public boolean add(E e) {
         add(0, e);
+
         return true;
     }
 
@@ -63,9 +63,6 @@ public class MutableSingletonList<E> extends AbstractList<E> {
      */
     @SuppressWarnings("unchecked")
     public Collection<E> singletonList() {
-        if (element == null) {
-            throw new IllegalStateException("Singleton list is empty");
-        }
         return Collections.singletonList(element);
     }
 }

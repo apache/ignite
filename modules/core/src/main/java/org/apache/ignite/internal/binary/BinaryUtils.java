@@ -658,11 +658,8 @@ public class BinaryUtils {
         else if (cls == ConcurrentHashMap.class)
             return new ConcurrentHashMap<>(U.capacity(((Map)map).size()));
 
-        if (isSingletonCollectionSerializationEnabled()) {
-            if(cls == SINGLETON_MAP_CLS){
-                return new MutableSingletonMap<>();
-            }
-        }
+        if (isSingletonCollectionSerializationEnabled() && cls == SINGLETON_MAP_CLS)
+            return new MutableSingletonMap<>();
 
         return null;
     }

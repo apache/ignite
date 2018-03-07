@@ -27,7 +27,6 @@ import java.util.Set;
  * Set that contains only one element. By default the set contains null element.
  */
 public class MutableSingletonSet<E> extends AbstractSet<E> {
-
     /** The only element of set. */
     private E element;
 

@@ -479,12 +479,18 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
             TestObject obj = new TestObject(123);
             c.put(0, Collections.singletonMap(obj, obj));
+            c.put(1, Collections.singletonMap(null, null));
 
             assertEquals(1, c.get(0).size());
+            assertEquals(1, c.get(1).size());
 
             Map.Entry<TestObject, TestObject> entry = c.get(0).entrySet().iterator().next();
             assertEquals(123, entry.getKey().val);
             assertEquals(123, entry.getValue().val);
+
+            Map.Entry<TestObject, TestObject> nullEntry = c.get(1).entrySet().iterator().next();
+            assertNull(nullEntry.getKey());
+            assertNull(nullEntry.getValue());
 
             IgniteCache<Integer, Map<BinaryObject, BinaryObject>> kpc = keepBinaryCache();
 
@@ -496,8 +502,14 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
             assertTrue(binaryEntry.getKey() instanceof BinaryObject);
             assertTrue(binaryEntry.getValue() instanceof BinaryObject);
+
             assertEquals(Integer.valueOf(123), ((BinaryObject)binaryEntry.getKey()).field("val"));
             assertEquals(Integer.valueOf(123), ((BinaryObject)binaryEntry.getValue()).field("val"));
+
+            Map.Entry<?, ?> nullBinaryEntry = kpc.get(1).entrySet().iterator().next();
+
+            assertNull(nullBinaryEntry.getKey());
+            assertNull(nullBinaryEntry.getValue());
         }
         finally {
             System.clearProperty(IgniteSystemProperties.IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION);
@@ -516,12 +528,20 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
             c.put(0, Collections.singletonList(new TestObject(123)));
             c.put(1, Collections.singleton(new TestObject(123)));
+            c.put(3, Collections.singletonList(null));
+            c.put(4, Collections.singleton(null));
 
             assertEquals(1, c.get(0).size());
             assertEquals(123,c.get(0).iterator().next().val);
 
             assertEquals(1, c.get(1).size());
             assertEquals(123,c.get(1).iterator().next().val);
+
+            assertEquals(1, c.get(3).size());
+            assertNull(c.get(3).iterator().next());
+
+            assertEquals(1, c.get(4).size());
+            assertNull(c.get(4).iterator().next());
 
             IgniteCache<Integer, Collection<BinaryObject>> kpc = keepBinaryCache();
 
@@ -541,6 +561,9 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
             Object obj2 = binaryList.iterator().next();
             assertTrue(obj2 instanceof BinaryObject);
             assertEquals(Integer.valueOf(123), ((BinaryObject)obj2).field("val"));
+
+            assertNull(kpc.get(3).iterator().next());
+            assertNull(kpc.get(4).iterator().next());
         }
         finally {
             System.clearProperty(IgniteSystemProperties.IGNITE_SUPPORT_SINGLETON_COLLECTION_SERIALIZATION);
