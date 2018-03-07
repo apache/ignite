@@ -2287,8 +2287,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (localReserved != null) {
                 Long localCntr = localReserved.get(p);
 
-                if (localCntr != null && localCntr <= minCntr &&
-                    maxCntrObj.nodes.contains(cctx.localNodeId())) {
+                if (localCntr != null && localCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
                     partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, minCntr);
 
                     haveHistory.add(p);
