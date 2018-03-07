@@ -21,7 +21,7 @@
 #
 
 # Fail on error.
-#set -e
+set -e
 
 # Build Java.
 pushd .
