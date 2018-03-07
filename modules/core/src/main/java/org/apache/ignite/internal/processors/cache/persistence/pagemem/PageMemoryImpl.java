@@ -2729,9 +2729,13 @@ public class PageMemoryImpl implements PageMemoryEx {
      * Throttling enabled and its type enum.
      */
     public enum ThrottlingPolicy {
-        /** All ways of throttling are disabled. */DISABLED,
-        /** Only exponential throttling is used to protect from CP buffer overflow. */CHECKPOINT_BUFFER_ONLY,
-        /** Target ratio based: CP progress is used as border. */ TARGET_RATIO_BASED,
-        /** Speed based. CP writting speed and estimated ideal speed are used as border */ SPEED_BASED
+        /** All ways of throttling are disabled. */
+        DISABLED,
+        /** Only exponential throttling is used to protect from CP buffer overflow. */
+        CHECKPOINT_BUFFER_ONLY,
+        /** Target ratio based: CP progress is used as border. */
+        TARGET_RATIO_BASED,
+        /** Speed based. CP writting speed and estimated ideal speed are used as border */
+        SPEED_BASED
     }
 }
