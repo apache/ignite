@@ -201,6 +201,8 @@ public class ZookeeperClient implements Watcher {
                         break;
 
                     case Expired:
+                        U.warn(log, "Session expired, changing state to Lost");
+
                         newState = ConnectionState.Lost;
 
                         break;

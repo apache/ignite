@@ -998,6 +998,7 @@ public class ZookeeperDiscoveryImpl {
             if (log.isInfoEnabled()) {
                 log.info("Node started join [nodeId=" + locNode.id() +
                     ", instanceName=" + locNode.attribute(ATTR_IGNITE_INSTANCE_NAME) +
+                    ", zkSessionId=0x" + Long.toHexString(rtState.zkClient.zk().getSessionId()) +
                     ", joinDataSize=" + joinDataBytes.length +
                     (rtState.joinDataPartCnt > 1 ? (", joinDataPartCnt=" + rtState.joinDataPartCnt) : "") +
                     ", consistentId=" + locNode.consistentId() +
