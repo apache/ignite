@@ -151,7 +151,6 @@ import org.jsr166.ConcurrentLinkedDeque8;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
-import static org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnectionCheckFuture.CONN_CHECK_DUMMY_KEY;
 import static org.apache.ignite.spi.communication.tcp.internal.TcpCommunicationConnectionCheckFuture.SES_FUT_META;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.ALREADY_CONNECTED;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.NEED_WAIT;
@@ -414,10 +413,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             @Override public void onDisconnected(GridNioSession ses, @Nullable Exception e) {
                 ConnectionKey connId = ses.meta(CONN_IDX_META);
 
-                if (connId == CONN_CHECK_DUMMY_KEY)
-                    return;
-
                 if (connId != null) {
+                    if (connId.dummy())
+                        return;
+
                     UUID id = connId.nodeId();
 
                     GridCommunicationClient[] nodeClients = clients.get(id);
@@ -748,7 +747,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                                 recovery.lastAcknowledged(rcvCnt);
                             }
                         }
-                        else if (connKey == CONN_CHECK_DUMMY_KEY) {
+                        else if (connKey.dummy()) {
                             assert msg instanceof NodeIdMessage : msg;
 
                             TcpCommunicationNodeConnectionCheckFuture fut = ses.meta(SES_FUT_META);

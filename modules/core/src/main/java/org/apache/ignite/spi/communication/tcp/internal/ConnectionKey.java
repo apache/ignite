@@ -19,6 +19,7 @@ package org.apache.ignite.spi.communication.tcp.internal;
 
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.NotNull;
 
 /**
  *
@@ -33,15 +34,32 @@ public class ConnectionKey {
     /** */
     private final long connCnt;
 
+    /** */
+    private final boolean dummy;
+
     /**
-     * @param nodeId Node ID.
+     * Creates ConnectionKey with false value of dummy flag.
+     *
+     * @param nodeId Node ID. Should be not null.
      * @param idx Connection index.
      * @param connCnt Connection counter (set only for incoming connections).
      */
-    public ConnectionKey(UUID nodeId, int idx, long connCnt) {
+    public ConnectionKey(@NotNull UUID nodeId, int idx, long connCnt) {
+        this(nodeId, idx, connCnt, false);
+    }
+
+    /**
+     * @param nodeId Node ID. Should be not null.
+     * @param idx Connection index.
+     * @param connCnt Connection counter (set only for incoming connections).
+     * @param dummy Indicates that session with this ConnectionKey is temporary
+     *              (for now dummy sessions are used only for Communication Failure Resolving process).
+     */
+    public ConnectionKey(@NotNull UUID nodeId, int idx, long connCnt, boolean dummy) {
         this.nodeId = nodeId;
         this.idx = idx;
         this.connCnt = connCnt;
+        this.dummy = dummy;
     }
 
     /**
@@ -63,6 +81,13 @@ public class ConnectionKey {
      */
     public int connectionIndex() {
         return idx;
+    }
+
+    /**
+     * @return {@code True} if this ConnectionKey is dummy and serves temporary session.
+     */
+    public boolean dummy() {
+        return dummy;
     }
 
     /** {@inheritDoc} */

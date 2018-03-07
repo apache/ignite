@@ -55,9 +55,6 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
     public static final int SES_FUT_META = GridNioSessionMetaKey.nextUniqueKey();
 
     /** */
-    public static final ConnectionKey CONN_CHECK_DUMMY_KEY = new ConnectionKey(null, -1, -1);
-
-    /** */
     private static final AtomicIntegerFieldUpdater<SingleAddressConnectFuture> connFutDoneUpdater =
         AtomicIntegerFieldUpdater.newUpdater(SingleAddressConnectFuture.class, "done");
 
@@ -145,14 +142,14 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
                 if (addrs.size() == 1) {
                     SingleAddressConnectFuture fut = new SingleAddressConnectFuture(i);
 
-                    fut.init(addrs.iterator().next());
+                    fut.init(addrs.iterator().next(), node.id());
 
                     futs[i] = fut;
                 }
                 else {
                     MultipleAddressesConnectFuture fut = new MultipleAddressesConnectFuture(i);
 
-                    fut.init(addrs);
+                    fut.init(addrs, node.id());
 
                     futs[i] = fut;
                 }
@@ -295,8 +292,9 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
 
         /**
          * @param addr Node address.
+         * @param rmtNodeId Id of node to open connection check session with.
          */
-        public void init(InetSocketAddress addr) {
+        public void init(InetSocketAddress addr, UUID rmtNodeId) {
             boolean connect;
 
             try {
@@ -319,7 +317,7 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
                 sesMeta = new GridLeanMap<>(3);
 
                 // Set dummy key to identify connection-check outgoing connection.
-                sesMeta.put(TcpCommunicationSpi.CONN_IDX_META, CONN_CHECK_DUMMY_KEY);
+                sesMeta.put(TcpCommunicationSpi.CONN_IDX_META, new ConnectionKey(rmtNodeId, -1, -1, true));
                 sesMeta.put(SES_FUT_META, this);
 
                 nioSrvr.createSession(ch, sesMeta, true, new IgniteInClosure<IgniteInternalFuture<GridNioSession>>() {
@@ -424,8 +422,9 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
 
         /**
          * @param addrs Node addresses.
+         * @param rmtNodeId Id of node to open connection check session with.
          */
-        void init(Collection<InetSocketAddress> addrs) {
+        void init(Collection<InetSocketAddress> addrs, UUID rmtNodeId) {
             SingleAddressConnectFuture[] futs = new SingleAddressConnectFuture[addrs.size()];
 
             for (int i = 0; i < addrs.size(); i++) {
@@ -443,7 +442,7 @@ public class TcpCommunicationConnectionCheckFuture extends GridFutureAdapter<Bit
             int idx = 0;
 
             for (InetSocketAddress addr : addrs) {
-                futs[idx++].init(addr);
+                futs[idx++].init(addr, rmtNodeId);
 
                 if (resCnt == Integer.MAX_VALUE)
                     return;
