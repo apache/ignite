@@ -288,7 +288,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
 
                 int txTimeout = 500 + txCnt * 100;
 
-                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, txTimeout, 0)) {
+                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, threadNum == 1 ? txTimeout : 0, 0)) {
                     involvedTxs.add(((TransactionProxyImpl)tx).tx());
 
                     Object key = keys.get(0);
