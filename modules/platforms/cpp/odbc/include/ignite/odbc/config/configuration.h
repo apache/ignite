@@ -434,34 +434,34 @@ namespace ignite
                 /** SSL certificate authority file path. */
                 SettableValue<std::string> sslCaFile;
             };
-//
-//            template<>
-//            void Configuration::AddToMap<std::string>(ArgumentMap& map, const std::string& key,
-//                const SettableValue<std::string>& value);
-//
-//            template<>
-//            void Configuration::AddToMap<uint16_t>(ArgumentMap& map, const std::string& key,
-//                const SettableValue<uint16_t>& value);
-//
-//            template<>
-//            void Configuration::AddToMap<int32_t>(ArgumentMap& map, const std::string& key,
-//                const SettableValue<int32_t>& value);
-//
-//            template<>
-//            void Configuration::AddToMap<bool>(ArgumentMap& map, const std::string& key,
-//                const SettableValue<bool>& value);
-//
-//            template<>
-//            void Configuration::AddToMap<ProtocolVersion>(ArgumentMap& map, const std::string& key,
-//                const SettableValue<ProtocolVersion>& value);
-//
-//            template<>
-//            void Configuration::AddToMap< std::vector<EndPoint> >(ArgumentMap& map, const std::string& key,
-//                const SettableValue< std::vector<EndPoint> >& value);
-//
-//            template<>
-//            void Configuration::AddToMap<ssl::SslMode::Type>(ArgumentMap& map, const std::string& key,
-//                const SettableValue<ssl::SslMode::Type>& value);
+
+            template<>
+            void Configuration::AddToMap<std::string>(ArgumentMap& map, const std::string& key,
+                const SettableValue<std::string>& value);
+
+            template<>
+            void Configuration::AddToMap<uint16_t>(ArgumentMap& map, const std::string& key,
+                const SettableValue<uint16_t>& value);
+
+            template<>
+            void Configuration::AddToMap<int32_t>(ArgumentMap& map, const std::string& key,
+                const SettableValue<int32_t>& value);
+
+            template<>
+            void Configuration::AddToMap<bool>(ArgumentMap& map, const std::string& key,
+                const SettableValue<bool>& value);
+
+            template<>
+            void Configuration::AddToMap<ProtocolVersion>(ArgumentMap& map, const std::string& key,
+                const SettableValue<ProtocolVersion>& value);
+
+            template<>
+            void Configuration::AddToMap< std::vector<EndPoint> >(ArgumentMap& map, const std::string& key,
+                const SettableValue< std::vector<EndPoint> >& value);
+
+            template<>
+            void Configuration::AddToMap<ssl::SslMode::Type>(ArgumentMap& map, const std::string& key,
+                const SettableValue<ssl::SslMode::Type>& value);
         }
     }
 }

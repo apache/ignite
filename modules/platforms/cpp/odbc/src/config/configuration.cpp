@@ -306,8 +306,17 @@ namespace ignite
                 AddToMap(res, ConnectionStringParser::Key::sslCaFile, sslCaFile);
             }
 
-            template<typename T>
-            void Configuration::AddToMap(ArgumentMap& map, const std::string& key, const SettableValue<T>& value)
+            template<>
+            void Configuration::AddToMap(ArgumentMap& map, const std::string& key, const SettableValue<uint16_t>& value)
+            {
+                if (value.IsSet())
+                {
+                    map[key] = common::LexicalCast<std::string>(value.GetValue());
+                }
+            }
+
+            template<>
+            void Configuration::AddToMap(ArgumentMap& map, const std::string& key, const SettableValue<int32_t>& value)
             {
                 if (value.IsSet())
                 {

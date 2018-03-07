@@ -23,6 +23,7 @@
 #include "ignite/odbc/odbc_error.h"
 #include "ignite/odbc/ssl/ssl_mode.h"
 #include "ignite/odbc/config/connection_string_parser.h"
+#include "ignite/odbc/config/config_tools.h"
 
 namespace ignite
 {
@@ -61,7 +62,7 @@ namespace ignite
             }
 
             void ConnectionStringParser::ParseConnectionString(const char* str, size_t len, char delimeter,
-                diagnostic::Diagnosable* diag)
+                diagnostic::DiagnosticRecordStorage* diag)
             {
                 std::string connect_str(str, len);
 
@@ -103,8 +104,28 @@ namespace ignite
                 }
             }
 
+            void ConnectionStringParser::ParseConnectionString(const std::string& str,
+                diagnostic::DiagnosticRecordStorage* diag)
+            {
+                ParseConnectionString(str.data(), str.size(), ';', diag);
+            }
+
+            void ConnectionStringParser::ParseConfigAttributes(const char* str,
+                diagnostic::DiagnosticRecordStorage* diag)
+            {
+                size_t len = 0;
+
+                // Getting list length. List is terminated by two '\0'.
+                while (str[len] || str[len + 1])
+                    ++len;
+
+                ++len;
+
+                ParseConnectionString(str, len, '\0', diag);
+            }
+
             void ConnectionStringParser::HandleAttributePair(const std::string &key, const std::string &value,
-                diagnostic::Diagnosable* diag)
+                diagnostic::DiagnosticRecordStorage* diag)
             {
                 std::string lKey = common::ToLower(key);
 
@@ -118,7 +139,7 @@ namespace ignite
                 }
                 else if (lKey == Key::address)
                 {
-                    std::vector<Configuration::EndPoint> endPoints;
+                    std::vector<EndPoint> endPoints;
 
                     ParseAddress(value, endPoints, diag);
 
@@ -240,7 +261,7 @@ namespace ignite
                         return;
                     }
 
-                    cfg.SetPageSize(numValue);
+                    cfg.SetPageSize(static_cast<int32_t>(numValue));
                 }
                 else if (lKey == Key::replicatedOnly)
                 {
@@ -325,131 +346,6 @@ namespace ignite
                         diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());
                     }
                 }
-            }
-
-            void ConnectionStringParser::ParseAddress(const std::string& value,
-                std::vector<Configuration::EndPoint>& endPoints, diagnostic::Diagnosable* diag)
-            {
-                size_t addrNum = std::count(value.begin(), value.end(), ',') + 1;
-
-                endPoints.reserve(endPoints.size() + addrNum);
-
-                std::string parsedAddr(value);
-
-                while (!parsedAddr.empty())
-                {
-                    size_t addrBeginPos = parsedAddr.rfind(',');
-
-                    if (addrBeginPos == std::string::npos)
-                        addrBeginPos = 0;
-                    else
-                        ++addrBeginPos;
-
-                    const char* addrBegin = parsedAddr.data() + addrBeginPos;
-                    const char* addrEnd = parsedAddr.data() + parsedAddr.size();
-
-                    std::string addr = utility::RemoveSurroundingSpaces(addrBegin, addrEnd);
-
-                    if (!addr.empty())
-                    {
-                        Configuration::EndPoint endPoint;
-
-                        bool success = ParseSingleAddress(addr, endPoint, diag);
-
-                        if (success)
-                            endPoints.push_back(endPoint);
-                    }
-
-                    if (!addrBeginPos)
-                        break;
-
-                    parsedAddr.erase(addrBeginPos - 1);
-                }
-            }
-
-            bool ConnectionStringParser::ParseSingleAddress(const std::string& value, Configuration::EndPoint& endPoint,
-                diagnostic::Diagnosable* diag)
-            {
-                int64_t colonNum = std::count(value.begin(), value.end(), ':');
-
-                if (colonNum == 0)
-                {
-                    endPoint.host = value;
-                    endPoint.port = Configuration::DefaultValue::port;
-
-                    return true;
-                }
-
-                if (colonNum != 1)
-                {
-                    std::stringstream stream;
-
-                    stream << "Unexpected number of ':' characters in the following address: '"
-                        << value << "'. Ignoring address.";
-
-                    diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());
-
-                    return false;
-                }
-
-                size_t pos = value.find(':');
-
-                endPoint.host = value.substr(0, pos);
-
-                if (pos == value.size() - 1)
-                {
-                    endPoint.port = Configuration::DefaultValue::port;
-
-                    return true;
-                }
-
-                std::string port = value.substr(pos + 1);
-
-                if (!common::AllOf(port.begin(), port.end(), std::isdigit))
-                {
-                    std::stringstream stream;
-
-                    stream << "Unexpected port characters: '" << port 
-                        << "' in the following address: '" << value << "'. Ignoring address.";
-
-                    diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());
-
-                    return false;
-                }
-
-                if (port.size() >= sizeof("65535"))
-                {
-                    std::stringstream stream;
-
-                    stream << "Port value is too large: '" << port
-                        << "' in the following address: '" << value << "'. Ignoring address.";
-
-                    diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());
-
-                    return false;
-                }
-
-                int32_t intPort = 0;
-                std::stringstream conv;
-
-                conv << port;
-                conv >> intPort;
-
-                if (intPort <= 0 || intPort > 0xFFFF)
-                {
-                    std::stringstream stream;
-
-                    stream << "Port value is too large: '" << port
-                        << "' in the following address: '" << value << "'. Ignoring address.";
-
-                    diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());
-
-                    return false;
-                }
-
-                endPoint.port = static_cast<uint16_t>(intPort);
-
-                return true;
             }
 
             ConnectionStringParser::BoolParseResult::Type ConnectionStringParser::StringToBool(const std::string& value)

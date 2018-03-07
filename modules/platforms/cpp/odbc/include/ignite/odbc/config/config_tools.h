@@ -28,6 +28,12 @@ namespace ignite
 {
     namespace odbc
     {
+        namespace diagnostic
+        {
+            // Forward declaration.
+            class DiagnosticRecordStorage;
+        }
+
         namespace config
         {
             /**
@@ -37,6 +43,27 @@ namespace ignite
              * @return Resulting string.
              */
             std::string AddressesToString(const std::vector<EndPoint>& addresses);
+
+            /**
+             * Parse address.
+             *
+             * @param value String value to parse.
+             * @param endPoints End ponts list.
+             * @param diag Diagnostics collector.
+             */
+            void ParseAddress(const std::string& value, std::vector<EndPoint>& endPoints,
+                diagnostic::DiagnosticRecordStorage* diag);
+
+            /**
+             * Parse single address.
+             *
+             * @param value String value to parse.
+             * @param endPoint End pont.
+             * @param diag Diagnostics collector.
+             * @return @c true, if parsed successfully, and @c false otherwise.
+             */
+            bool ParseSingleAddress(const std::string& value, EndPoint& endPoint,
+                diagnostic::DiagnosticRecordStorage* diag);
         }
     }
 }

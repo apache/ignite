@@ -18,11 +18,15 @@
 #include <set>
 
 #include "ignite/odbc/utility.h"
+#include "ignite/odbc/config/connection_string_parser.h"
 #include "ignite/odbc/system/odbc_constants.h"
 
 #include "ignite/odbc/dsn_config.h"
+#include "ignite/odbc/config/config_tools.h"
+
 
 using ignite::odbc::config::Configuration;
+using ignite::odbc::config::ConnectionStringParser;
 
 #define BUFFER_SIZE 1024
 #define CONFIG_FILE "ODBC.INI"
@@ -90,44 +94,66 @@ namespace ignite
 
         void ReadDsnConfiguration(const char* dsn, Configuration& config)
         {
-            std::string address = ReadDsnString(dsn, Configuration::Key::address, config.GetAddress());
+            std::string address = ReadDsnString(dsn, ConnectionStringParser::Key::address,
+                Configuration::DefaultValue::address);
 
-            std::string server = ReadDsnString(dsn, Configuration::Key::server, config.GetHost());
+            std::string server = ReadDsnString(dsn, ConnectionStringParser::Key::server,
+                Configuration::DefaultValue::server);
 
-            uint16_t port = ReadDsnInt(dsn, Configuration::Key::port, config.GetTcpPort());
+            uint16_t port = ReadDsnInt(dsn, ConnectionStringParser::Key::port, Configuration::DefaultValue::port);
 
-            std::string schema = ReadDsnString(dsn, Configuration::Key::schema, config.GetSchema());
+            std::string schema = ReadDsnString(dsn, ConnectionStringParser::Key::schema,
+                Configuration::DefaultValue::schema);
 
-            bool distributedJoins = ReadDsnBool(dsn, Configuration::Key::distributedJoins, config.IsDistributedJoins());
+            bool distributedJoins = ReadDsnBool(dsn, ConnectionStringParser::Key::distributedJoins,
+                Configuration::DefaultValue::distributedJoins);
 
-            bool enforceJoinOrder = ReadDsnBool(dsn, Configuration::Key::enforceJoinOrder, config.IsEnforceJoinOrder());
+            bool enforceJoinOrder = ReadDsnBool(dsn, ConnectionStringParser::Key::enforceJoinOrder,
+                Configuration::DefaultValue::enforceJoinOrder);
 
-            bool replicatedOnly = ReadDsnBool(dsn, Configuration::Key::replicatedOnly, config.IsReplicatedOnly());
+            bool replicatedOnly = ReadDsnBool(dsn, ConnectionStringParser::Key::replicatedOnly,
+                Configuration::DefaultValue::replicatedOnly);
 
-            bool collocated = ReadDsnBool(dsn, Configuration::Key::collocated, config.IsCollocated());
+            bool collocated = ReadDsnBool(dsn, ConnectionStringParser::Key::collocated,
+                Configuration::DefaultValue::collocated);
 
-            bool lazy = ReadDsnBool(dsn, Configuration::Key::lazy, config.IsLazy());
+            bool lazy = ReadDsnBool(dsn, ConnectionStringParser::Key::lazy, Configuration::DefaultValue::lazy);
 
-            bool skipReducerOnUpdate =
-                ReadDsnBool(dsn, Configuration::Key::skipReducerOnUpdate, config.IsSkipReducerOnUpdate());
+            bool skipReducerOnUpdate = ReadDsnBool(dsn, ConnectionStringParser::Key::skipReducerOnUpdate,
+                Configuration::DefaultValue::skipReducerOnUpdate);
 
-            std::string version = ReadDsnString(dsn, Configuration::Key::protocolVersion,
-                config.GetProtocolVersion().ToString());
+            std::string versionStr = ReadDsnString(dsn, ConnectionStringParser::Key::protocolVersion,
+                Configuration::DefaultValue::protocolVersion.ToString());
 
-            int32_t pageSize = ReadDsnInt(dsn, Configuration::Key::pageSize, config.GetPageSize());
+            int32_t pageSize = ReadDsnInt(dsn, ConnectionStringParser::Key::pageSize,
+                Configuration::DefaultValue::pageSize);
 
             if (pageSize <= 0)
                 pageSize = config.GetPageSize();
 
-            std::string sslMode = ReadDsnString(dsn, Configuration::Key::sslMode, config.GetSslMode());
+            std::string sslModeStr = ReadDsnString(dsn, ConnectionStringParser::Key::sslMode,
+                ssl::SslMode::ToString(Configuration::DefaultValue::sslMode));
 
-            std::string sslKeyFile = ReadDsnString(dsn, Configuration::Key::sslKeyFile, config.GetSslKeyFile());
+            std::string sslKeyFile = ReadDsnString(dsn, ConnectionStringParser::Key::sslKeyFile,
+                Configuration::DefaultValue::sslKeyFile);
 
-            std::string sslCertFile = ReadDsnString(dsn, Configuration::Key::sslCertFile, config.GetSslCertFile());
+            std::string sslCertFile = ReadDsnString(dsn, ConnectionStringParser::Key::sslCertFile,
+                Configuration::DefaultValue::sslCertFile);
 
-            std::string sslCaFile = ReadDsnString(dsn, Configuration::Key::sslCaFile, config.GetSslCaFile());
+            std::string sslCaFile = ReadDsnString(dsn, ConnectionStringParser::Key::sslCaFile,
+                Configuration::DefaultValue::sslCaFile);
 
-            config.SetAddress(address);
+            std::vector<EndPoint> endPoints;
+            config::ParseAddress(address, endPoints, 0);
+
+            ProtocolVersion version = ProtocolVersion::FromString(versionStr);
+
+            if (!version.IsSupported())
+                version = Configuration::DefaultValue::protocolVersion;
+
+            ssl::SslMode::Type sslMode = ssl::SslMode::FromString(sslModeStr, ssl::SslMode::DISABLE);
+
+            config.SetAddresses(endPoints);
             config.SetHost(server);
             config.SetTcpPort(port);
             config.SetSchema(schema);

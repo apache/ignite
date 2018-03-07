@@ -25,8 +25,11 @@
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/odbc/config/configuration.h>
+#include <ignite/odbc/config/connection_string_parser.h>
+#include <ignite/odbc/config/config_tools.h>
 #include <ignite/ignite_error.h>
 #include <ignite/common/utils.h>
+#include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 
 using namespace ignite::odbc::config;
 
@@ -45,7 +48,9 @@ namespace
     const bool testLazy = true;
     const bool testSkipReducerOnUpdate = true;
 
-    const std::string testAddress = testServerHost + ':' + ignite::common::LexicalCast<std::string>(testServerPort);
+    const std::string testAddressStr = testServerHost + ':' + ignite::common::LexicalCast<std::string>(testServerPort);
+
+    const ignite::odbc::EndPoint testAddress = { testServerHost, testServerPort };
 }
 
 const char* BoolToStr(bool val, bool lowerCase = true)
@@ -56,11 +61,33 @@ const char* BoolToStr(bool val, bool lowerCase = true)
     return val ? "TRUE" : "FALSE";
 }
 
+void ParseValidConnectString(const std::string& connectStr, Configuration& cfg)
+{
+    ConnectionStringParser parser(cfg);
+
+    ignite::odbc::diagnostic::DiagnosticRecordStorage diag;
+
+    BOOST_CHECK_NO_THROW(parser.ParseConnectionString(connectStr, &diag));
+
+    BOOST_CHECK_EQUAL(diag.GetStatusRecordsNumber(), 0);
+}
+
+void ParseInvalidConnectString(const std::string& connectStr, Configuration& cfg)
+{
+    ConnectionStringParser parser(cfg);
+
+    ignite::odbc::diagnostic::DiagnosticRecordStorage diag;
+
+    BOOST_CHECK_NO_THROW(parser.ParseConnectionString(connectStr, &diag));
+
+    BOOST_CHECK_NE(diag.GetStatusRecordsNumber(), 0);
+}
+
 void CheckValidAddress(const char* connectStr, uint16_t port)
 {
     Configuration cfg;
 
-    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(connectStr));
+    ParseValidConnectString(connectStr, cfg);
 
     BOOST_CHECK_EQUAL(cfg.GetTcpPort(), port);
 }
@@ -69,7 +96,7 @@ void CheckValidProtocolVersion(const char* connectStr, ignite::odbc::ProtocolVer
 {
     Configuration cfg;
 
-    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(connectStr));
+    ParseValidConnectString(connectStr, cfg);
 
     BOOST_CHECK(cfg.GetProtocolVersion() == version);
 }
@@ -78,7 +105,7 @@ void CheckSupportedProtocolVersion(const char* connectStr)
 {
     Configuration cfg;
 
-    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(connectStr));
+    ParseValidConnectString(connectStr, cfg);
 
     BOOST_CHECK(cfg.GetProtocolVersion().IsSupported());
 }
@@ -87,36 +114,35 @@ void CheckInvalidProtocolVersion(const char* connectStr)
 {
     Configuration cfg;
 
-    cfg.FillFromConnectString(connectStr);
+    ParseInvalidConnectString(connectStr, cfg);
 
-    BOOST_CHECK_THROW(cfg.GetProtocolVersion(), ignite::IgniteError);
-}
-
-void CheckUnsupportedProtocolVersion(const char* connectStr)
-{
-    Configuration cfg;
-
-    cfg.FillFromConnectString(connectStr);
-
-    BOOST_CHECK(!cfg.GetProtocolVersion().IsSupported());
+    BOOST_CHECK(cfg.GetProtocolVersion() == Configuration::DefaultValue::protocolVersion);
 }
 
 void CheckValidBoolValue(const std::string& connectStr, const std::string& key, bool val)
 {
     Configuration cfg;
 
-    BOOST_CHECK_NO_THROW(cfg.FillFromConnectString(connectStr));
+    ParseValidConnectString(connectStr, cfg);
 
-    BOOST_CHECK_EQUAL(cfg.GetBoolValue(key, val), val);
+    Configuration::ArgumentMap map;
+    cfg.ToMap(map);
+
+    std::string expected = val ? "true" : "false";
+
+    BOOST_CHECK_EQUAL(map[key], expected);
 }
 
 void CheckInvalidBoolValue(const std::string& connectStr, const std::string& key)
 {
     Configuration cfg;
 
-    cfg.FillFromConnectString(connectStr);
+    ParseInvalidConnectString(connectStr, cfg);
 
-    BOOST_CHECK_THROW(cfg.GetBoolValue(key, false), ignite::IgniteError);
+    Configuration::ArgumentMap map;
+    cfg.ToMap(map);
+
+    BOOST_CHECK(map[key].empty());
 }
 
 void CheckConnectionConfig(const Configuration& cfg)
@@ -124,7 +150,6 @@ void CheckConnectionConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.GetDriver(), testDriverName);
     BOOST_CHECK_EQUAL(cfg.GetHost(), testServerHost);
     BOOST_CHECK_EQUAL(cfg.GetTcpPort(), testServerPort);
-    BOOST_CHECK_EQUAL(cfg.GetAddress(), testAddress);
     BOOST_CHECK_EQUAL(cfg.GetSchema(), testSchemaName);
     BOOST_CHECK_EQUAL(cfg.GetDsn(), std::string());
     BOOST_CHECK_EQUAL(cfg.GetPageSize(), testPageSize);
@@ -135,9 +160,13 @@ void CheckConnectionConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.IsLazy(), testLazy);
     BOOST_CHECK_EQUAL(cfg.IsSkipReducerOnUpdate(), testSkipReducerOnUpdate);
 
+    BOOST_REQUIRE_EQUAL(cfg.GetAddresses().size(), 1);
+    BOOST_CHECK_EQUAL(cfg.GetAddresses()[0].host, testAddress.host);
+    BOOST_CHECK_EQUAL(cfg.GetAddresses()[0].port, testAddress.port);
+
     std::stringstream constructor;
 
-    constructor << "address=" << testAddress << ';'
+    constructor << "address=" << testAddressStr << ';'
                 << "collocated=" << BoolToStr(testCollocated) << ';'
                 << "distributed_joins=" << BoolToStr(testDistributedJoins) << ';'
                 << "driver={" << testDriverName << "};"
@@ -158,7 +187,6 @@ void CheckDsnConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.GetDriver(), testDriverName);
     BOOST_CHECK_EQUAL(cfg.GetDsn(), testDsn);
     BOOST_CHECK_EQUAL(cfg.GetSchema(), Configuration::DefaultValue::schema);
-    BOOST_CHECK_EQUAL(cfg.GetAddress(), Configuration::DefaultValue::address);
     BOOST_CHECK_EQUAL(cfg.GetHost(), std::string());
     BOOST_CHECK_EQUAL(cfg.GetTcpPort(), Configuration::DefaultValue::port);
     BOOST_CHECK_EQUAL(cfg.GetPageSize(), Configuration::DefaultValue::pageSize);
@@ -168,6 +196,7 @@ void CheckDsnConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.IsCollocated(), false);
     BOOST_CHECK_EQUAL(cfg.IsLazy(), false);
     BOOST_CHECK_EQUAL(cfg.IsSkipReducerOnUpdate(), false);
+    BOOST_CHECK(cfg.GetAddresses().empty());
 }
 
 BOOST_AUTO_TEST_SUITE(ConfigurationTestSuite)
@@ -175,7 +204,7 @@ BOOST_AUTO_TEST_SUITE(ConfigurationTestSuite)
 BOOST_AUTO_TEST_CASE(CheckTestValuesNotEquealDefault)
 {
     BOOST_CHECK_NE(testDriverName, Configuration::DefaultValue::driver);
-    BOOST_CHECK_NE(testAddress, Configuration::DefaultValue::address);
+    BOOST_CHECK_NE(testAddressStr, Configuration::DefaultValue::address);
     BOOST_CHECK_NE(testServerPort, Configuration::DefaultValue::port);
     BOOST_CHECK_NE(testSchemaName, Configuration::DefaultValue::schema);
     BOOST_CHECK_NE(testDsn, Configuration::DefaultValue::dsn);
@@ -196,7 +225,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)
 
     constructor << "DRIVER={" << testDriverName << "};"
                 << "LAZY=" << BoolToStr(testLazy, false) << ';'
-                << "ADDRESS=" << testAddress << ';'
+                << "ADDRESS=" << testAddressStr << ';'
                 << "DISTRIBUTED_JOINS=" << BoolToStr(testDistributedJoins, false) << ';'
                 << "ENFORCE_JOIN_ORDER=" << BoolToStr(testEnforceJoinOrder, false) << ';'
                 << "COLLOCATED=" << BoolToStr(testCollocated, false) << ';'
@@ -207,7 +236,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringUppercase)
 
     const std::string& connectStr = constructor.str();
 
-    cfg.FillFromConnectString(connectStr);
+    ParseValidConnectString(connectStr, cfg);
 
     CheckConnectionConfig(cfg);
 }
@@ -220,7 +249,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringLowercase)
 
     constructor << "driver={" << testDriverName << "};"
                 << "lazy=" << BoolToStr(testLazy) << ';'
-                << "address=" << testAddress << ';'
+                << "address=" << testAddressStr << ';'
                 << "page_size=" << testPageSize << ';'
                 << "distributed_joins=" << BoolToStr(testDistributedJoins) << ';'
                 << "enforce_join_order=" << BoolToStr(testEnforceJoinOrder) << ';'
@@ -231,7 +260,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringLowercase)
 
     const std::string& connectStr = constructor.str();
 
-    cfg.FillFromConnectString(connectStr);
+    ParseValidConnectString(connectStr, cfg);
 
     CheckConnectionConfig(cfg);
 }
@@ -243,7 +272,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringZeroTerminated)
     std::stringstream constructor;
 
     constructor << "driver={" << testDriverName << "};"
-                << "address=" << testAddress << ';'
+                << "address=" << testAddressStr << ';'
                 << "lazy=" << BoolToStr(testLazy) << ';'
                 << "page_size=" << testPageSize << ';'
                 << "replicated_only=" << BoolToStr(testReplicatedOnly) << ';'
@@ -253,9 +282,11 @@ BOOST_AUTO_TEST_CASE(TestConnectStringZeroTerminated)
                 << "schema=" << testSchemaName << ';'
                 << "skip_reducer_on_update=" << BoolToStr(testSkipReducerOnUpdate);
 
-    const std::string& connectStr = constructor.str();
+    std::string connectStr = constructor.str();
 
-    cfg.FillFromConnectString(connectStr.c_str(), connectStr.size() + 1);
+    connectStr.push_back(0);
+
+    ParseValidConnectString(connectStr, cfg);
 
     CheckConnectionConfig(cfg);
 }
@@ -268,7 +299,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringMixed)
 
     constructor << "Driver={" << testDriverName << "};"
                 << "Lazy=" << BoolToStr(testLazy) << ';'
-                << "Address=" << testAddress << ';'
+                << "Address=" << testAddressStr << ';'
                 << "Page_Size=" << testPageSize << ';'
                 << "Distributed_Joins=" << BoolToStr(testDistributedJoins, false) << ';'
                 << "Enforce_Join_Order=" << BoolToStr(testEnforceJoinOrder) << ';'
@@ -279,7 +310,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringMixed)
 
     const std::string& connectStr = constructor.str();
 
-    cfg.FillFromConnectString(connectStr);
+    ParseValidConnectString(connectStr, cfg);
 
     CheckConnectionConfig(cfg);
 }
@@ -291,7 +322,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringWhitepaces)
     std::stringstream constructor;
 
     constructor << "DRIVER = {" << testDriverName << "} ;\n"
-                << " ADDRESS =" << testAddress << "; "
+                << " ADDRESS =" << testAddressStr << "; "
                 << "   PAGE_SIZE= " << testPageSize << ';'
                 << "   DISTRIBUTED_JOINS=" << BoolToStr(testDistributedJoins, false) << ';'
                 << "LAZY=" << BoolToStr(testLazy, false) << ';'
@@ -303,7 +334,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringWhitepaces)
 
     const std::string& connectStr = constructor.str();
 
-    cfg.FillFromConnectString(connectStr);
+    ParseValidConnectString(connectStr, cfg);
 
     CheckConnectionConfig(cfg);
 }
@@ -312,13 +343,13 @@ BOOST_AUTO_TEST_CASE(TestConnectStringInvalidAddress)
 {
     Configuration cfg;
 
-    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:0;"), ignite::IgniteError);
-    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:00000;"), ignite::IgniteError);
-    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:fdsf;"), ignite::IgniteError);
-    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:123:1;"), ignite::IgniteError);
-    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:12322221;"), ignite::IgniteError);
-    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:12322a;"), ignite::IgniteError);
-    BOOST_CHECK_THROW(cfg.FillFromConnectString("Address=example.com:;"), ignite::IgniteError);
+    ParseInvalidConnectString("Address=example.com:0;", cfg);
+    ParseInvalidConnectString("Address=example.com:00000;", cfg);
+    ParseInvalidConnectString("Address=example.com:fdsf;", cfg);
+    ParseInvalidConnectString("Address=example.com:123:1;", cfg);
+    ParseInvalidConnectString("Address=example.com:12322221;", cfg);
+    ParseInvalidConnectString("Address=example.com:12322a;", cfg);
+    ParseInvalidConnectString("Address=example.com:;", cfg);
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringValidAddress)
@@ -340,9 +371,9 @@ BOOST_AUTO_TEST_CASE(TestConnectStringInvalidVersion)
 
 BOOST_AUTO_TEST_CASE(TestConnectStringUnsupportedVersion)
 {
-    CheckUnsupportedProtocolVersion("Protocol_Version=1.6.1;");
-    CheckUnsupportedProtocolVersion("Protocol_Version=1.7.0;");
-    CheckUnsupportedProtocolVersion("Protocol_Version=1.8.1;");
+    CheckInvalidProtocolVersion("Protocol_Version=1.6.1;");
+    CheckInvalidProtocolVersion("Protocol_Version=1.7.0;");
+    CheckInvalidProtocolVersion("Protocol_Version=1.8.1;");
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringValidVersion)
@@ -424,7 +455,7 @@ BOOST_AUTO_TEST_CASE(TestDsnStringUppercase)
 
     const std::string& configStr = constructor.str();
 
-    cfg.FillFromConfigAttributes(configStr.data());
+    ParseValidConnectString(configStr, cfg);
 
     CheckDsnConfig(cfg);
 }
@@ -440,7 +471,7 @@ BOOST_AUTO_TEST_CASE(TestDsnStringLowercase)
 
     const std::string& configStr = constructor.str();
 
-    cfg.FillFromConfigAttributes(configStr.data());
+    ParseValidConnectString(configStr, cfg);
 
     CheckDsnConfig(cfg);
 }
@@ -456,7 +487,7 @@ BOOST_AUTO_TEST_CASE(TestDsnStringMixed)
 
     const std::string& configStr = constructor.str();
 
-    cfg.FillFromConfigAttributes(configStr.data());
+    ParseValidConnectString(configStr, cfg);
 
     CheckDsnConfig(cfg);
 }
@@ -472,7 +503,7 @@ BOOST_AUTO_TEST_CASE(TestDsnStringWhitespaces)
 
     const std::string& configStr = constructor.str();
 
-    cfg.FillFromConfigAttributes(configStr.data());
+    ParseValidConnectString(configStr, cfg);
 
     CheckDsnConfig(cfg);
 }

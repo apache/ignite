@@ -27,11 +27,13 @@
 #include "ignite/odbc/statement.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
-#include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/ssl/ssl_mode.h"
 #include "ignite/odbc/ssl/ssl_gateway.h"
 #include "ignite/odbc/ssl/secure_socket_client.h"
 #include "ignite/odbc/system/tcp_socket_client.h"
+#include "ignite/odbc/dsn_config.h"
+#include "ignite/odbc/config/configuration.h"
+#include "ignite/odbc/config/connection_string_parser.h"
 
 // Uncomment for per-byte debug.
 //#define PER_BYTE_DEBUG
@@ -106,11 +108,18 @@ namespace ignite
 
             try
             {
-                config.FillFromConnectString(connectStr);
+                config::ConnectionStringParser parser(config);
+
+                parser.ParseConnectionString(connectStr, &GetDiagnosticRecords());
+
+                std::string dsn = config.GetDsn();
+
+                if (!dsn.empty())
+                    odbc::ReadDsnConfiguration(dsn.c_str(), config);
             }
-            catch (IgniteError& e)
+            catch (OdbcError& e)
             {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, e.GetText());
+                AddStatusRecord(e);
 
                 return SqlResult::AI_ERROR;
             }
@@ -136,7 +145,7 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            SslMode::T sslMode = SslMode::FromString(cfg.GetSslMode(), SslMode::DISABLE);
+            SslMode::Type sslMode = cfg.GetSslMode();
 
             if (sslMode != SslMode::DISABLE)
             {

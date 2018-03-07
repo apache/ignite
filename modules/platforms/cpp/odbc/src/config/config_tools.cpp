@@ -15,7 +15,11 @@
  * limitations under the License.
  */
 
+#include <algorithm>
+
+#include "ignite/odbc/utility.h"
 #include "ignite/odbc/config/config_tools.h"
+#include "ignite/odbc/config/configuration.h"
 
 namespace ignite
 {
@@ -41,6 +45,135 @@ namespace ignite
                 }
 
                 return stream.str();
+            }
+
+            void ParseAddress(const std::string& value, std::vector<EndPoint>& endPoints,
+                diagnostic::DiagnosticRecordStorage* diag)
+            {
+                size_t addrNum = std::count(value.begin(), value.end(), ',') + 1;
+
+                endPoints.reserve(endPoints.size() + addrNum);
+
+                std::string parsedAddr(value);
+
+                while (!parsedAddr.empty())
+                {
+                    size_t addrBeginPos = parsedAddr.rfind(',');
+
+                    if (addrBeginPos == std::string::npos)
+                        addrBeginPos = 0;
+                    else
+                        ++addrBeginPos;
+
+                    const char* addrBegin = parsedAddr.data() + addrBeginPos;
+                    const char* addrEnd = parsedAddr.data() + parsedAddr.size();
+
+                    std::string addr = utility::RemoveSurroundingSpaces(addrBegin, addrEnd);
+
+                    if (!addr.empty())
+                    {
+                        EndPoint endPoint;
+
+                        bool success = ParseSingleAddress(addr, endPoint, diag);
+
+                        if (success)
+                            endPoints.push_back(endPoint);
+                    }
+
+                    if (!addrBeginPos)
+                        break;
+
+                    parsedAddr.erase(addrBeginPos - 1);
+                }
+            }
+
+            bool ParseSingleAddress(const std::string& value, EndPoint& endPoint,
+                diagnostic::DiagnosticRecordStorage* diag)
+            {
+                int64_t colonNum = std::count(value.begin(), value.end(), ':');
+
+                if (colonNum == 0)
+                {
+                    endPoint.host = value;
+                    endPoint.port = Configuration::DefaultValue::port;
+
+                    return true;
+                }
+
+                if (colonNum != 1)
+                {
+                    std::stringstream stream;
+
+                    stream << "Unexpected number of ':' characters in the following address: '"
+                        << value << "'. Ignoring address.";
+
+                    if (diag)
+                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());
+
+                    return false;
+                }
+
+                size_t pos = value.find(':');
+
+                endPoint.host = value.substr(0, pos);
+
+                if (pos == value.size() - 1)
+                {
+                    endPoint.port = Configuration::DefaultValue::port;
+
+                    return true;
+                }
+
+                std::string port = value.substr(pos + 1);
+
+                if (!common::AllOf(port.begin(), port.end(), std::isdigit))
+                {
+                    std::stringstream stream;
+
+                    stream << "Unexpected port characters: '" << port
+                        << "' in the following address: '" << value << "'. Ignoring address.";
+
+                    if (diag)
+                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());
+
+                    return false;
+                }
+
+                if (port.size() >= sizeof("65535"))
+                {
+                    std::stringstream stream;
+
+                    stream << "Port value is too large: '" << port
+                        << "' in the following address: '" << value << "'. Ignoring address.";
+
+                    if (diag)
+                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());
+
+                    return false;
+                }
+
+                int32_t intPort = 0;
+                std::stringstream conv;
+
+                conv << port;
+                conv >> intPort;
+
+                if (intPort <= 0 || intPort > 0xFFFF)
+                {
+                    std::stringstream stream;
+
+                    stream << "Port value is too large: '" << port
+                        << "' in the following address: '" << value << "'. Ignoring address.";
+
+                    if (diag)
+                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());
+
+                    return false;
+                }
+
+                endPoint.port = static_cast<uint16_t>(intPort);
+
+                return true;
             }
         }
     }

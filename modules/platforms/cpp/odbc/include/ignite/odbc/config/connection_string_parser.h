@@ -21,7 +21,7 @@
 #include <string>
 
 #include "ignite/odbc/config/configuration.h"
-#include "ignite/odbc/diagnostic/diagnosable.h"
+#include "ignite/odbc/diagnostic/diagnostic_record_storage.h"
 
 namespace ignite
 {
@@ -111,8 +111,26 @@ namespace ignite
                  * @param str String to parse.
                  * @param len String length.
                  * @param delimeter Delimeter.
+                 * @param diag Diagnostics collector.
                  */
-                void ParseConnectionString(const char* str, size_t len, char delimeter, diagnostic::Diagnosable* diag);
+                void ParseConnectionString(const char* str, size_t len, char delimeter,
+                    diagnostic::DiagnosticRecordStorage* diag);
+
+                /**
+                 * Parse connect string.
+                 *
+                 * @param str String to parse.
+                 * @param diag Diagnostics collector.
+                 */
+                void ParseConnectionString(const std::string& str, diagnostic::DiagnosticRecordStorage* diag);
+
+                /**
+                 * Parse config attributes.
+                 *
+                 * @param str String to parse.
+                 * @param diag Diagnostics collector.
+                 */
+                void ParseConfigAttributes(const char* str, diagnostic::DiagnosticRecordStorage* diag);
 
             private:
                 /**
@@ -138,28 +156,7 @@ namespace ignite
                  * @param diag Diagnostics collector.
                  */
                 void HandleAttributePair(const std::string& key, const std::string& value,
-                    diagnostic::Diagnosable* diag);
-
-                /**
-                 * Parse address.
-                 *
-                 * @param value String value to parse.
-                 * @param endPoints End ponts list.
-                 * @param diag Diagnostics collector.
-                 */
-                static void ParseAddress(const std::string& value, std::vector<Configuration::EndPoint>& endPoints,
-                    diagnostic::Diagnosable* diag);
-
-                /**
-                 * Parse single address.
-                 *
-                 * @param value String value to parse.
-                 * @param endPoint End pont.
-                 * @param diag Diagnostics collector.
-                 * @return @c true, if parsed successfully, and @c false otherwise.
-                 */
-                static bool ParseSingleAddress(const std::string& value, Configuration::EndPoint& endPoint,
-                    diagnostic::Diagnosable* diag);
+                    diagnostic::DiagnosticRecordStorage* diag);
 
                 /**
                  * Convert string to boolean value.
