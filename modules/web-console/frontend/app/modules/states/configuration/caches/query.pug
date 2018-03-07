@@ -124,7 +124,7 @@ include /app/helpers/jade/mixins
                         +number('Query parallelism', model + '.queryParallelism', '"queryParallelism"', 'true', '1', '1',
                             'A hint to query execution engine on desired degree of parallelism within a single node')
                     .settings-row
-                        +number('SQL index max inline size:', model + '.sqlIndexMaxInlineSize', '"sqlIndexMaxInlineSize"', 'true', '-1', '0',
+                        +number('SQL index max inline size:', model + '.sqlIndexMaxInlineSize', '"sqlIndexMaxInlineSize"', 'true', '-1', '-1',
                             'Maximum inline size for sql indexes')
 
             .col-sm-6

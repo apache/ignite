@@ -15,26 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.lang.gridfunc;
-
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteCallable;
-import org.jsr166.ConcurrentLinkedDeque8;
-
 /**
- * Deque factory.
+ * Contains utils for GA Grid
  */
-public class ConcurrentDequeFactoryCallable implements IgniteCallable<ConcurrentLinkedDeque8> {
-    /** */
-    private static final long serialVersionUID = 0L;
-
-    /** {@inheritDoc} */
-    @Override public ConcurrentLinkedDeque8 call() {
-        return new ConcurrentLinkedDeque8();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(ConcurrentDequeFactoryCallable.class, this);
-    }
-}
+package org.apache.ignite.ml.genetic.utils;
