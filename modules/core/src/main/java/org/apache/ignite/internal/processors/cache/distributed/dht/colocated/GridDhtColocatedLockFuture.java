@@ -457,7 +457,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             }
 
             U.warn(msgLog, "Collocated lock fut, failed to find mini future [txId=" + lockVer +
-                ", inTx=" + inTx() +
+                ", tx=" + (inTx() ? CU.txString(tx) : "N/A") +
                 ", node=" + nodeId +
                 ", res=" + res +
                 ", fut=" + this + ']');
@@ -1428,6 +1428,8 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     if (!txEntry.locked())
                         keys.add(txEntry.txKey());
                 }
+
+                log.info(">>> Timeout: " + U.id8(cctx.localNodeId()));
 
                 IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx, keys);
 

@@ -860,7 +860,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (!updateLockFuture(null, retFut))
                 return completeWithError(retFut, rollbackException());
 
-            if (fastFinish == 0 && !fastFinish())
+            if (fastFinish == -1 || fastFinish == 0 && !fastFinish(1))
                 return completeWithError(retFut, timedOut() ? timeoutException() : rollbackException());
 
             addActiveCache(cacheCtx, recovery);
@@ -999,8 +999,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (!updateLockFuture(null, retFut))
             return completeWithError(retFut, rollbackException());
 
-        if (fastFinish == 0 && !fastFinish())
+        if (fastFinish == -1 || fastFinish == 0 && !fastFinish(1))
             return completeWithError(retFut, timedOut() ? timeoutException() : rollbackException());
+
+        assert fastFinish == 1;
 
         try {
             addActiveCache(cacheCtx, recovery);
@@ -1762,7 +1764,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         try {
             checkValid();
 
-            if (fastFinish == 0 && !fastFinish())
+            // Guard against concurrent rollback.
+            GridFutureAdapter<?> enlistFut = new GridFutureAdapter<>();
+
+            if (!updateLockFuture(null, enlistFut))
+                return new GridFinishedFuture<>(rollbackException());
+
+            if (fastFinish == -1 || fastFinish == 0 && !fastFinish(1))
                 return new GridFinishedFuture<>(timedOut() ? timeoutException() : rollbackException());
 
             final Map<K, V> retMap = new GridLeanMap<>(keysCnt);
@@ -1772,12 +1780,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 
             ExpiryPolicy expiryPlc = opCtx != null ? opCtx.expiry() : null;
-
-            // Guard against concurrent rollback.
-            GridFutureAdapter<?> enlistFut = new GridFutureAdapter<>();
-
-            if (!updateLockFuture(null, enlistFut))
-                return new GridFinishedFuture<>(rollbackException());
 
             final Collection<KeyCacheObject> lockKeys;
 
@@ -3300,7 +3302,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (fut != null)
             return chainFinishFuture(fut, true, true, false);
 
-        if (fastFinish()) {
+        if (fastFinish(-1)) {
             GridNearTxFastFinishFuture fut0;
 
             if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, true)))
@@ -3388,7 +3390,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (fut != null)
             return chainFinishFuture(finishFut, false, clearThreadMap, onTimeout);
 
-        if (fastFinish()) {
+        // Prevents race with concurrent fast finish and enlist.
+        if (fastFinish(-1)) {
             GridNearTxFastFinishFuture fut0;
 
             if (!FINISH_FUT_UPD.compareAndSet(this, null, fut0 = new GridNearTxFastFinishFuture(this, false)))
@@ -3507,10 +3510,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
+     * @param val Fast finish state.
+     *
      * @return {@code True} if 'fast finish' path can be used for transaction completion.
      */
-    private boolean fastFinish() {
-        return FAST_FINISH_UPD.compareAndSet(this, 0, 1);
+    private boolean fastFinish(int val) {
+        return FAST_FINISH_UPD.compareAndSet(this, 0, val);
     }
 
     /**
@@ -3525,13 +3530,11 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         if (state() != PREPARING) {
             if (timeout == -1)
-                return new GridFinishedFuture<>(
-                    new IgniteTxTimeoutCheckedException("Transaction timed out: " + this));
+                return new GridFinishedFuture<>(timeoutException());
 
             setRollbackOnly();
 
-            return new GridFinishedFuture<>(
-                new IgniteCheckedException("Invalid transaction state for prepare [state=" + state() + ", tx=" + this + ']'));
+            return new GridFinishedFuture<>(rollbackException());
         }
 
         if (timeout == -1)
@@ -3566,19 +3569,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             setRollbackOnly();
 
             fut.onError(new IgniteTxRollbackCheckedException("Failed to prepare transaction: " + this, e));
-
-            try {
-                rollback();
-            }
-            catch (IgniteTxOptimisticCheckedException e1) {
-                if (log.isDebugEnabled())
-                    log.debug("Failed optimistically to prepare transaction [tx=" + this + ", e=" + e1 + ']');
-
-                fut.onError(e);
-            }
-            catch (IgniteCheckedException e1) {
-                U.error(log, "Failed to rollback transaction: " + this, e1);
-            }
         }
 
         return chainOnePhasePrepare(fut);

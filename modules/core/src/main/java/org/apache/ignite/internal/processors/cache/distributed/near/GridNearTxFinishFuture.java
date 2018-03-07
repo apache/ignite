@@ -464,11 +464,15 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
         if (onTimeout) {
             // Wait for deadlock detection.
-            curFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> fut) {
-                    doFinish(false, false);
-                }
-            });
+//            curFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+//                @Override public void apply(IgniteInternalFuture<?> fut) {
+//                    cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+//                        @Override public void run() {
+//                            doFinish(false, false);
+//                        }
+//                    });
+//                }
+//            });
         }
         else {
             // Cancel lock.
@@ -509,7 +513,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                 markInitialized();
             }
             else
-                onDone(new IgniteCheckedException("Failed to commit transaction: " + CU.txString(tx)));
+                onDone(new IgniteCheckedException("Failed to " + (commit ? "commit" : "rollback") +
+                    " transaction: " + CU.txString(tx)));
         }
         catch (Error | RuntimeException e) {
             onDone(e);
@@ -822,7 +827,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
             add(fut); // Append new future.
 
-            if (tx.pessimistic())
+            if (tx.pessimistic() && !useCompletedVer) // Shouldn't use finishSync for async rollback.
                 cctx.tm().beforeFinishRemote(n.id(), tx.threadId(), tx.xidVersion());
 
             try {

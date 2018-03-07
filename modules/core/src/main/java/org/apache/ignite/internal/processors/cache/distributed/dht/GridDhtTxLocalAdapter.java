@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -110,6 +111,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
     protected volatile IgniteInternalFuture<Boolean> lockFut;
+
+    private ConcurrentLinkedQueue q = new ConcurrentLinkedQueue();
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -862,6 +865,12 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      * Clears lock future.
      */
     public void clearLockFuture() {
+        log.error("Clear fut: " + lockFut, new Exception());
+
+        IgniteInternalFuture f = lockFut;
+
+        q.add(f);
+
         lockFut = null;
     }
 
