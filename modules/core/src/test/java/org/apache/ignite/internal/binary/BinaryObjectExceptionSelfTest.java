@@ -24,6 +24,9 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -147,6 +150,62 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
         }
 
         assertEquals("Fields count must match \"Unexpected field type\" exception count", fields.length, unexpectedCnt);
+    }
+
+    public void testFailedSerializationLogging() throws Exception {
+        BinaryMarshaller marshaller = createStandaloneBinaryMarshaller();
+
+        StringBuilder sb = new StringBuilder(4 << 10);
+
+        try {
+            marshaller.marshal(new Value1());
+        }catch (Exception ex) {
+            Throwable root = ex;
+
+            sb.setLength(0);
+
+            sb.append(root.getMessage());
+
+            while (root.getCause() != null) {
+                root = root.getCause();
+
+                sb.append(". ").append(root.getMessage());
+            }
+            if (root instanceof BinaryObjectException) {
+                log().info(sb.toString());
+
+                Field f = Value1.class.getDeclaredField("objVal");
+
+                Throwable t = ex;
+
+                assertTrue(t.getMessage(), t.getMessage().contains(
+                        "object [typeName=org.apache.ignite.internal.binary.BinaryObjectExceptionSelfTest$Value1"));
+
+                t = t.getCause();
+
+                assertTrue(t.getMessage(), t.getMessage().contains("field [name=" + f.getName()));
+
+            }
+            else
+                log().info("Ignored exception: " + sb);
+        }
+    }
+
+    private static class Value1{
+
+        Value2 objVal = new Value2();
+
+        static class Value2 implements Binarylizable {
+            @Override
+            public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+                throw new BinaryObjectException("bad object");
+            }
+
+            @Override
+            public void readBinary(BinaryReader reader) throws BinaryObjectException {
+                throw new BinaryObjectException("bad object");
+            }
+        }
     }
 
     /** */
