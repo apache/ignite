@@ -48,7 +48,7 @@ public class SqlClientContext implements AutoCloseable {
     private final boolean lazy;
 
     /** Skip reducer on update flag. */
-    private boolean skipReducerOnUpdate;
+    private final boolean skipReducerOnUpdate;
 
     /** Allow overwrites for duplicate keys on streamed {@code INSERT}s. */
     private boolean streamAllowOverwrite;
