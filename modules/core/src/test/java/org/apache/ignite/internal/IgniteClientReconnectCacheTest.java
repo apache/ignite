@@ -1460,8 +1460,12 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         /** {@inheritDoc} */
         @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
             throws IgniteSpiException {
-            if (msg instanceof GridIoMessage) {
-                Object msg0 = ((GridIoMessage)msg).message();
+
+            Object msg0 = ((GridIoMessage)msg).message();
+
+            log.info("Record message [thread=" + Thread.currentThread().getName() + ", msg=" + msg0 + ']');
+
+            if (msg0 instanceof GridIoMessage) {
 
                 synchronized (this) {
                     Set<UUID> blockNodes = blockCls.get(msg0.getClass());
