@@ -13,28 +13,27 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package org.apache.ignite.internal.util.lang.gridfunc;
+package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteCallable;
-import org.jsr166.ConcurrentLinkedDeque8;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 
 /**
- * Deque factory.
+ * Iterator that provides history of updates for a subset of partitions.
  */
-public class ConcurrentDequeFactoryCallable implements IgniteCallable<ConcurrentLinkedDeque8> {
-    /** */
-    private static final long serialVersionUID = 0L;
+public interface IgniteHistoricalIterator extends GridCloseableIterator<CacheDataRow> {
+    /**
+     * @param partId Partition ID.
+     * @return {@code True} if iterator contains data for given partition.
+     */
+    public boolean contains(int partId);
 
-    /** {@inheritDoc} */
-    @Override public ConcurrentLinkedDeque8 call() {
-        return new ConcurrentLinkedDeque8();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(ConcurrentDequeFactoryCallable.class, this);
-    }
+    /**
+     * @param partId Partition ID.
+     * @return {@code True} if all data for given partition has already been returned.
+     */
+    public boolean isDone(int partId);
 }
