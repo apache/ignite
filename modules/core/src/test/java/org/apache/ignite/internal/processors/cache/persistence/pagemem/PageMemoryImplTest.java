@@ -117,7 +117,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
             }
         }
         catch (Exception ex) {
-            assertEquals(CHECKPOINT_POOL_OVERFLOW_ERROR_MSG, ex.getMessage());
+            assertTrue(ex.getMessage().startsWith(CHECKPOINT_POOL_OVERFLOW_ERROR_MSG));
         }
 
         memory.finishCheckpoint();
