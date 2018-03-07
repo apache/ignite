@@ -39,7 +39,7 @@ import org.apache.zookeeper.data.Stat;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Zookeeper Client.
  */
 public class ZookeeperClient implements Watcher {
     /** */

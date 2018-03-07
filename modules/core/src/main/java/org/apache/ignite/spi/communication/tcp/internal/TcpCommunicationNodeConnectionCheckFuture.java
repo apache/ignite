@@ -20,7 +20,7 @@ package org.apache.ignite.spi.communication.tcp.internal;
 import java.util.UUID;
 
 /**
- *
+ * Tcp Communication Node Connection Check Future.
  */
 public interface TcpCommunicationNodeConnectionCheckFuture {
     /**
