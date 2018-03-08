@@ -872,7 +872,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         assertEquals(ATOMIC,
             clientCache.getConfiguration(CacheConfiguration.class).getAtomicityMode());
 
-        awaitPartitionMapExchange();
+        //awaitPartitionMapExchange();
 
         reconnectClientNode(client, srv, new Runnable() {
             @Override public void run() {
