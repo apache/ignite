@@ -22,10 +22,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -35,6 +41,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
+import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -53,16 +60,13 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
     /** */
-    public static final int DURATION = 15_000;
+    public static final int DURATION = 10_000;
 
     /** */
     public static final int ROLLBACK_TIMEOUT = 500;
 
     /** */
     private static final String CACHE_NAME = "test";
-
-    /** */
-    private static final String CACHE_NAME_2 = "test2";
 
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -93,12 +97,9 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
         cfg.setCommunicationSpi(new TestRecordingCommunicationSpi());
 
-        cfg.setClientMode(getTestIgniteInstanceIndex(igniteInstanceName) < SRV_CNT);
+        cfg.setClientMode(getTestIgniteInstanceIndex(igniteInstanceName) >= SRV_CNT);
 
         CacheConfiguration ccfg = new CacheConfiguration(CACHE_NAME);
-
-        if (nearCacheEnabled())
-            ccfg.setNearConfiguration(new NearCacheConfiguration());
 
         ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setBackups(2);
@@ -107,13 +108,6 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
-    }
-
-    /**
-     * @return Near cache flag.
-     */
-    protected boolean nearCacheEnabled() {
-        return false;
     }
 
     /** {@inheritDoc} */
@@ -151,39 +145,74 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
         final CyclicBarrier b = new CyclicBarrier(cardinality);
 
+        AtomicInteger idGen = new AtomicInteger();
+
+        LongAdder cntr = new LongAdder();
+
         final IgniteInternalFuture<?> txFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
+                int key = idGen.getAndIncrement();
+
                 List<Integer> keys = new ArrayList<>();
 
                 for (int k = 0; k < cardinality; k++)
                     keys.add(k);
 
-                while (!stop.get()) {
+                outer: while (!stop.get()) {
+                    cntr.increment();
+
                     final int nodeId = r.nextInt(TOTAL_CNT);
 
-                    if (idx.get(nodeId) == 0) {
-                        final IgniteEx grid = grid(nodeId);
+                    if (!idx.compareAndSet(nodeId, 0, 1)) {
+                        yield();
 
-                        try(final Transaction tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
-                            // Construct deadlock
-                            Collections.shuffle(keys);
-
-                            for (Integer key : keys)
-                                grid.cache(CACHE_NAME).get(key);
-
-                            U.awaitQuiet(b);
-
-                            // Should block.
-                            grid.cache(CACHE_NAME).get(r.nextInt(cardinality));
-
-                            fail("Deadlock expected");
-
-                            tx.commit();
-                        }
+                        continue;
                     }
+
+                    U.awaitQuiet(b);
+
+                    final IgniteEx grid = grid(nodeId);
+
+                    try (final Transaction tx = grid.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 0, 0)) {
+                        idx.set(nodeId, 0);
+
+                        // Construct deadlock
+                        grid.cache(CACHE_NAME).get(keys.get(key));
+
+                        while(true) {
+                            try {
+                                b.await(5000, TimeUnit.MILLISECONDS);
+
+                                break;
+                            }
+                            catch (InterruptedException e) {
+                                fail("Not expected");
+                            }
+                            catch (BrokenBarrierException e) {
+                                fail("Not expected");
+                            }
+                            catch (TimeoutException e) {
+                                if (stop.get()) {
+                                    tx.rollback();
+
+                                    break outer;
+                                }
+                            }
+                        }
+
+                        // Should block.
+                        grid.cache(CACHE_NAME).get(keys.get((key + 1) % cardinality));
+
+                        fail("Deadlock expected");
+                    }
+                    catch (Throwable t) {
+                        // No-op.
+                    }
+
+                    log.info("Rolled back: " + cntr.sum());
                 }
             }
-        }, cardinality, "tx-thread");
+        }, cardinality, "tx-lock-thread");
 
         final IgniteInternalFuture<?> restartFut = multithreadedAsync(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -207,7 +236,7 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, RESTART_CNT, "tx-thread");
+        }, RESTART_CNT, "tx-restart-thread");
 
         doSleep(DURATION);
 

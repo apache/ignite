@@ -21,14 +21,15 @@ import java.io.Externalizable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -63,7 +64,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
@@ -111,8 +111,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
     protected volatile IgniteInternalFuture<Boolean> lockFut;
-
-    private ConcurrentLinkedQueue q = new ConcurrentLinkedQueue();
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -724,9 +722,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             skipStore,
             keepBinary);
 
-        if (fut.error() != null)
-            return new GridFinishedFuture<>(fut.error());
-
         return new GridEmbeddedFuture<>(
             fut,
             new PLC1<GridCacheReturn>(ret) {
@@ -863,13 +858,16 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
 
     /**
      * Clears lock future.
+     *
+     * @param cond Clear lock condition.
      */
-    public void clearLockFuture() {
-        //log.error("Clear fut: " + lockFut, new Exception());
-
+    public void clearLockFuture(@Nullable IgniteInternalFuture cond) {
         IgniteInternalFuture f = lockFut;
 
-        q.add(f);
+        assert f != null : "Future can't be null before clear";
+
+        if (cond != null && f != cond)
+            return;
 
         lockFut = null;
     }

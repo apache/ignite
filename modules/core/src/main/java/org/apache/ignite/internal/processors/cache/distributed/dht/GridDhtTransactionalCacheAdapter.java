@@ -1124,9 +1124,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     req.keepBinary(),
                     req.nearCache());
 
-                if (txFut.isDone() && txFut.error() != null)
-                    return new GridDhtFinishedFuture<>(txFut.error());
-
                 final GridDhtTxLocal t = tx;
 
                 return new GridDhtEmbeddedFuture(
@@ -1137,7 +1134,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             if (e != null)
                                 e = U.unwrap(e);
 
-                            assert !t.empty();
+                            assert e != null || !t.empty();
 
                             // Create response while holding locks.
                             final GridNearLockResponse resp = createLockReply(nearNode,

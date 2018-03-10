@@ -126,21 +126,10 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
      * @throws Exception If failed.
      */
     public void testDeadlocksPartitioned() throws Exception {
-        //for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
-            doTestDeadlocks(createCache(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, false), ORDINAL_START_KEY);
-//        doTestDeadlocks(createCache(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, false), ORDINAL_START_KEY);
-//        doTestDeadlocks(createCache(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, false), ORDINAL_START_KEY);
-//        doTestDeadlocks(createCache(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, false), ORDINAL_START_KEY);
-//        doTestDeadlocks(createCache(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, false), ORDINAL_START_KEY);
-//        doTestDeadlocks(createCache(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, false), ORDINAL_START_KEY);
-//        doTestDeadlocks(createCache(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, false), ORDINAL_START_KEY);
-//        doTestDeadlocks(createCache(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, false), ORDINAL_START_KEY);
-//        doTestDeadlocks(createCache(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, false), ORDINAL_START_KEY);
-//        doTestDeadlocks(createCache(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, false), ORDINAL_START_KEY);
-//        doTestDeadlocks(createCache(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, false), ORDINAL_START_KEY);
-//        doTestDeadlocks(createCache(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, false), ORDINAL_START_KEY);
-
-        //}
+        for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
+            doTestDeadlocks(createCache(PARTITIONED, syncMode, false), ORDINAL_START_KEY);
+            doTestDeadlocks(createCache(PARTITIONED, syncMode, false), CUSTOM_START_KEY);
+        }
     }
 
     /**
@@ -229,16 +218,16 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
             awaitPartitionMapExchange();
 
             doTestDeadlock(2, false, true, true, startKey);
-//            doTestDeadlock(2, false, false, false, startKey);
-//            doTestDeadlock(2, false, false, true, startKey);
-//
-//            doTestDeadlock(3, false, true, true, startKey);
-//            doTestDeadlock(3, false, false, false, startKey);
-//            doTestDeadlock(3, false, false, true, startKey);
+            doTestDeadlock(2, false, false, false, startKey);
+            doTestDeadlock(2, false, false, true, startKey);
 
-//            doTestDeadlock(4, false, true, true, startKey);
-//            doTestDeadlock(4, false, false, false, startKey);
-//            doTestDeadlock(4, false, false, true, startKey);
+            doTestDeadlock(3, false, true, true, startKey);
+            doTestDeadlock(3, false, false, false, startKey);
+            doTestDeadlock(3, false, false, true, startKey);
+
+            doTestDeadlock(4, false, true, true, startKey);
+            doTestDeadlock(4, false, false, false, startKey);
+            doTestDeadlock(4, false, false, true, startKey);
         }
         catch (Exception e) {
             U.error(log, "Unexpected exception: ", e);
@@ -288,7 +277,7 @@ public class TxPessimisticDeadlockDetectionTest extends AbstractDeadlockDetectio
 
                 int txTimeout = 500 + txCnt * 100;
 
-                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, threadNum == 1 ? txTimeout : 0, 0)) {
+                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, txTimeout, 0)) {
                     involvedTxs.add(((TransactionProxyImpl)tx).tx());
 
                     Object key = keys.get(0);

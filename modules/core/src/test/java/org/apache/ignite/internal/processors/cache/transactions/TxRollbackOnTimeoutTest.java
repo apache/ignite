@@ -581,8 +581,6 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
         for (int i = 0; i < 1000000; i++)
             entries.put(i, i);
 
-        IgniteInternalFuture<?> fut = null;
-
         try(Transaction tx = client.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 200, 0)) {
             if (write)
                 client.cache(CACHE_NAME).putAll(entries);
@@ -592,10 +590,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
             tx.commit();
         }
         catch (Throwable t) {
-            assertTrue(X.hasCause(t, TransactionRollbackException.class));
+            assertTrue(X.hasCause(t, TransactionTimeoutException.class));
         }
-
-        fut.get();
 
         assertEquals(0, client.cache(CACHE_NAME).size());
     }

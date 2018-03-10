@@ -596,7 +596,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
             cctx.tm().txContext(tx);
 
             if (success)
-                tx.clearLockFuture();
+                tx.clearLockFuture(null);
         }
 
         if (super.onDone(success, err)) {
@@ -1428,8 +1428,6 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
                     if (!txEntry.locked())
                         keys.add(txEntry.txKey());
                 }
-
-                log.info(">>> Timeout: " + U.id8(cctx.localNodeId()));
 
                 IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx, keys);
 

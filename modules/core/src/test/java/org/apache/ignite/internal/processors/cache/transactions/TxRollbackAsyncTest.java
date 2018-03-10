@@ -67,7 +67,6 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
-import static java.lang.Thread.sleep;
 import static java.lang.Thread.yield;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -331,7 +330,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final CountDownLatch rollbackLatch = new CountDownLatch(1);
 
-        final int txCnt = 1000;
+        final int txCnt = 10000;
 
         final IgniteKernal k = (IgniteKernal)tryLockNode;
 
@@ -366,7 +365,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 stop.set(true);
             }
-        }, 1, "tx-lock-thread");
+        }, 1, "tx-get-thread");
 
         IgniteInternalFuture<?> rollbackFut = multithreadedAsync(new Runnable() {
             @Override public void run() {
@@ -376,20 +375,32 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 Set<IgniteUuid> rolledBackVers = new HashSet<>();
 
+                int proc = 1;
+
                 while(!stop.get()) {
                     for (Transaction tx : tryLockNode.transactions().localActiveTransactions()) {
                         TransactionProxyImpl tx0 = (TransactionProxyImpl)tx;
 
-                        // Roll back only read transactions to prevent rollback of writing tx.
-                        if (!tx0.tx().writeMap().isEmpty())
-                            continue;
-
                         if (rolledBackVers.contains(tx.xid()))
                             fail("Rollback version is expected");
 
-                        tx.rollback();
+                        // Roll back only read transactions to prevent rollback of writing tx which holds lock.
+                        if (!tx0.tx().writeMap().isEmpty())
+                            continue;
+
+                        try {
+                            tx.rollback();
+                        }
+                        catch (IgniteException e) {
+                            log.warning("Got exception while rolling back a transaction", e);
+                        }
 
                         rolledBackVers.add(tx.xid());
+
+                        if (proc % 1000 == 0)
+                            log.info("Rolled back: " + proc);
+
+                        proc++;
                     }
                 }
 
@@ -785,49 +796,44 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                     Collection<Transaction> transactions = node.transactions().localActiveTransactions();
 
-                    for (Transaction transaction : transactions) {
+                    for (Transaction tx : transactions) {
                         rolledBack.add(1);
 
                         if (rolledBack.sum() % 1000 == 0)
                             info("Processed: " + rolledBack.sum());
 
                         try {
-                            transaction.rollback();
+                            futs.add(tx.rollbackAsync());
                         }
-                        catch (IgniteException e) {
-                            // Expected.
+                        catch (Throwable t) {
+                            log.error("Exception on async rollback", t);
+
+                            fail("Exception is not expected");
                         }
 
-//                        try {
-//                            futs.add(transaction.rollbackAsync());
-//                        }
-//                        catch (Throwable t) {
-//                            t.printStackTrace();
-//                        }
-//
-//                        if (futs.size() == concurrentRollbackCnt) {
-//                            for (IgniteFuture<?> fut : futs)
-//                                try {
-//                                    fut.get();
-//                                }
-//                                catch (Throwable t) {
-//                                    t.printStackTrace();
-//                                }
-//
-//                            futs.clear();
-//                        }
+                        if (futs.size() == concurrentRollbackCnt) {
+                            for (IgniteFuture<?> fut : futs)
+                                try {
+                                    fut.get();
+                                }
+                                catch (IgniteException e) {
+                                    log.warning("Future was rolled back with error", e);
+                                }
+
+                            futs.clear();
+                        }
                     }
 
                     idx.set(nodeId, 0);
                 }
 
-//                for (IgniteFuture<?> fut : futs)
-//                    try {
-//                        fut.get();
-//                    }
-//                    catch (Throwable t) {
-//                        t.printStackTrace();
-//                    }
+                for (IgniteFuture<?> fut : futs)
+                    try {
+                        fut.get();
+                    }
+                    catch (Throwable t) {
+                        // No-op.
+                    }
 
             }
         }, 3, "rollback-thread"); // Rollback by multiple threads.

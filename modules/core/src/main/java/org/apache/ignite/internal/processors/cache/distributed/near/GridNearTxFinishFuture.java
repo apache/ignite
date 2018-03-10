@@ -427,7 +427,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
     /**
      * Does async rollback when it's safe.
-     * If current future is not lock future, wait until completion and try rollback again.
+     * If current future is not lock future (enlist future), wait until completion and try rollback again.
      * Else terminate or wait for lock future depending on rollback mode.
      *
      * @param onTimeout If {@code true} called from timeout handler.
@@ -441,40 +441,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             return;
         }
 
-        // Concurrent enlist.
-        if (!(curFut instanceof GridCacheVersionedFuture)) {
-            curFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-                @Override public void apply(IgniteInternalFuture<?> fut) {
-                    // Lock future may not be cleaned atm, so retry from another tread.
-                    cctx.time().schedule(new Runnable() {
-                        @Override public void run() {
-                            cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-                                @Override public void run() {
-                                    tryRollbackAsync(onTimeout);
-                                }
-                            });
-
-                        }
-                    }, 0, -1);
-                }
-            });
-
-            return;
-        }
-
-        if (onTimeout) {
-            // Wait for deadlock detection.
-//            curFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
-//                @Override public void apply(IgniteInternalFuture<?> fut) {
-//                    cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-//                        @Override public void run() {
-//                            doFinish(false, false);
-//                        }
-//                    });
-//                }
-//            });
-        }
-        else {
+        if (curFut instanceof GridCacheVersionedFuture && !onTimeout) {
             // Cancel lock.
             try {
                 curFut.cancel();
@@ -482,9 +449,20 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             catch (IgniteCheckedException e) {
                 assert false : "This shouldn't happen";
             }
-
-            doFinish(false, false);
         }
+
+        curFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+            @Override public void apply(IgniteInternalFuture<?> fut) {
+                try {
+                    fut.get();
+
+                    tryRollbackAsync(onTimeout);
+                }
+                catch (IgniteCheckedException e) {
+                    doFinish(false, false);
+                }
+            }
+        });
     }
 
     /**
@@ -512,9 +490,10 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                 markInitialized();
             }
-            else
+            else {
                 onDone(new IgniteCheckedException("Failed to " + (commit ? "commit" : "rollback") +
                     " transaction: " + CU.txString(tx)));
+            }
         }
         catch (Error | RuntimeException e) {
             onDone(e);
@@ -827,7 +806,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
             add(fut); // Append new future.
 
-            if (tx.pessimistic() && !useCompletedVer) // Shouldn't use finishSync for async rollback.
+            if (tx.pessimistic() && !useCompletedVer)
                 cctx.tm().beforeFinishRemote(n.id(), tx.threadId(), tx.xidVersion());
 
             try {
@@ -1231,5 +1210,11 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         @Override public String toString() {
             return S.toString(CheckRemoteTxMiniFuture.class, this);
         }
+    }
+
+    volatile IgniteInternalFuture f;
+
+    public void setFut(IgniteInternalFuture f) {
+        this.f = f;
     }
 }
