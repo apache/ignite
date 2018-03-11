@@ -993,7 +993,9 @@ public class QueryUtils {
      * @throws BinaryObjectException if failed.
      */
     public static String geometryToWkt(Object obj) throws BinaryObjectException {
-        if(!isGeometryClass(obj.getClass()))
+        if(obj == null)
+            return null;
+        else if(!isGeometryClass(obj.getClass()))
             throw new BinaryObjectException("Object is not geometry");
         else {
             try {

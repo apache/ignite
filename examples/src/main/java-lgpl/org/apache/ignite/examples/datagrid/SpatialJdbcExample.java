@@ -53,7 +53,7 @@ public class SpatialJdbcExample {
                     "WITH \"template=replicated\"");
 
                 // Create an index.
-                stmt.executeUpdate("CREATE INDEX on Point (geom)");
+                stmt.executeUpdate("CREATE SPATIAL INDEX on Point (geom)");
             }
 
 
@@ -71,6 +71,10 @@ public class SpatialJdbcExample {
 
                 }
 
+                stmt.setLong(1, 10001);
+                stmt.setObject(2, null);
+                stmt.addBatch();
+
                 stmt.executeBatch();
             }
             print("Populated data.");
@@ -86,6 +90,15 @@ public class SpatialJdbcExample {
 
                 try(ResultSet rs = stmt.executeQuery()){
                     print("Query results:");
+                    while(rs.next())
+                        print("id:" + rs.getInt(1) + " " + " geom: " + rs.getObject(2));
+                }
+            }
+
+            try(PreparedStatement stmt = conn.prepareStatement("SELECT id, geom FROM Point where id = ?")){
+                stmt.setLong(1, 1001);
+
+                try(ResultSet rs = stmt.executeQuery()){
                     while(rs.next())
                         print("id:" + rs.getInt(1) + " " + " geom: " + rs.getObject(2));
                 }
