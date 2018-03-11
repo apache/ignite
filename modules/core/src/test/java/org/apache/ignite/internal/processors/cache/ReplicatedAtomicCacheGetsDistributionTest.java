@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -29,9 +32,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.lang.IgniteBiPredicate;
-import org.apache.ignite.lang.IgniteClosure;
-import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -39,6 +41,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -47,10 +50,16 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstractSelfTest {
     /** Cache name. */
-    public static final String CACHE_NAME = "replicatedCache";
+    private static final String CACHE_NAME = "replicatedCache";
+
+    /** Client nodes instance's name. */
+    private static final String CLIENT_NAME = "client";
 
     /** Value prefix. */
-    public static final String VAL_PREFIX = "val";
+    private static final String VAL_PREFIX = "val";
+
+    /** Mapping MAC addresses to nodes ids. */
+    private static Map<UUID, String> macs;
 
     /** */
     private static final int PRIMARY_KEYS_NUMBER = 1_000;
@@ -59,9 +68,18 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
+        startGrid(getConfiguration(CLIENT_NAME).setClientMode(true));
+
         assert PRIMARY_KEYS_NUMBER % gridCount() == 0;
 
-        startGrid(getConfiguration("client").setClientMode(true));
+        Map<UUID, String> newMacs = new HashMap<>();
+
+        for (int idx = 0; idx < gridCount(); idx++)
+            newMacs.put(grid(idx).localNode().id(), "x2-xx-xx-xx-xx-x" + idx);
+
+        newMacs.put(grid(CLIENT_NAME).localNode().id(), "x2-xx-xx-xx-xx-x" + (gridCount() + 1));
+
+        macs = Collections.unmodifiableMap(newMacs);
     }
 
     /** {@inheritDoc} */
@@ -72,6 +90,28 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
 
         if (cache != null)
             cache.destroy();
+
+        // Setting different MAC addresses for all nodes
+        setMacAddress(G.allGrids(), macs);
+    }
+
+    /**
+     * @param instances Started Ignite instances.
+     * @param macs Mapping MAC addresses to UUID.
+     */
+    private void setMacAddress(List<Ignite> instances, Map<UUID, String> macs) {
+        for (Ignite ignite : instances) {
+            for (ClusterNode node : ignite.cluster().nodes()) {
+                String mac = macs.get(node.id());
+
+                assert mac != null;
+
+                Map<String, Object> attrs = new HashMap<>(node.attributes());
+                attrs.put(ATTR_MACS, mac);
+
+                ((TcpDiscoveryNode)node).setAttributes(attrs);
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -97,6 +137,7 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
      * Test 'get' operations requests generator distribution.
      *
      * @throws Exception In case of an error.
+     * @see #runTestGetRequestsGeneratorDistribution(boolean)
      */
     public void testGetRequestsGeneratorDistribution() throws Exception {
         runTestGetRequestsGeneratorDistribution(false);
@@ -106,6 +147,7 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
      * Test 'getAll' operations requests generator distribution.
      *
      * @throws Exception In case of an error.
+     * @see #runTestGetRequestsGeneratorDistribution(boolean)
      */
     public void testGetAllRequestsGeneratorDistribution() throws Exception {
         runTestGetRequestsGeneratorDistribution(true);
@@ -116,10 +158,6 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
      * @throws Exception In case of an error.
      */
     protected void runTestGetRequestsGeneratorDistribution(boolean batchMode) throws Exception {
-        GridTestUtils.setFieldValue(new GridCacheUtils(), "macsFilter", new NodeIdFilter(null)); // Always false.
-
-        GridTestUtils.setFieldValue(new GridCacheUtils(), "rndClo", new RoundRobinDistributionClosure());
-
         IgniteCache<Integer, String> cache = grid(0).createCache(replicatedCache());
 
         Set<Integer> keys = new TreeSet<>(primaryKeys(cache, PRIMARY_KEYS_NUMBER));
@@ -127,60 +165,58 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
         for (Integer key : keys)
             cache.put(key, VAL_PREFIX + key);
 
-        cache = grid("client").getOrCreateCache(CACHE_NAME);
+        cache = grid(CLIENT_NAME).getOrCreateCache(CACHE_NAME);
 
         getAndValidateData(cache, keys, batchMode);
-
-        int expected = PRIMARY_KEYS_NUMBER / gridCount();
 
         for (int i = 0; i < gridCount(); i++) {
             IgniteEx ignite = grid(i);
 
             long getsCount = ignite.cache(CACHE_NAME).localMetrics().getCacheGets();
 
-            assertEquals(expected, getsCount);
+            assertTrue(getsCount > 0);
         }
     }
 
     /**
-     * Test 'get' operations requests distribution.
+     * Tests that the 'get' operation requests are routed to node with same MAC address as at requester.
      *
      * @throws Exception In case of an error.
+     * @see #runTestGetAllRequestsDistribution(UUID, boolean)
      */
     public void testGetRequestsDistribution() throws Exception {
-        runTestGetAllRequestsDistribution(false);
+        UUID destId = grid(0).localNode().id();
+
+        runTestGetAllRequestsDistribution(destId, false);
     }
 
     /**
-     * Test 'getAll' operations requests distribution.
+     * Tests that the 'getAll' operation requests are routed to node with same MAC address as at requester.
      *
      * @throws Exception In case of an error.
+     * @see #runTestGetAllRequestsDistribution(UUID, boolean)
      */
     public void testGetAllRequestsDistribution() throws Exception {
-        runTestGetAllRequestsDistribution(true);
+        UUID destId = grid(gridCount() - 1).localNode().id();
+
+        runTestGetAllRequestsDistribution(destId, true);
     }
 
     /**
+     * Tests that the 'get' and 'getAll requests are routed to node with same MAC address as at requester.
+     *
+     * @param destId Destination Ignite instance id for requests distribution.
      * @param batchMode Test mode.
      * @throws Exception In case of an error.
      */
-    protected void runTestGetAllRequestsDistribution(boolean batchMode) throws Exception {
-        for (int idx = 0; idx < gridCount(); idx++) {
-            runTestGetAllRequestsDistribution(ignite(idx), batchMode);
+    protected void runTestGetAllRequestsDistribution(final UUID destId, final boolean batchMode) throws Exception {
+        String clientMac = macs.get(grid(CLIENT_NAME).localNode().id());
 
-            ignite(0).cache(CACHE_NAME).destroy();
-        }
-    }
+        Map<UUID, String> newMacs = new HashMap<>(macs);
 
-    /**
-     * @param dest Destination Ignite instance for requests distribution.
-     * @param batchMode Test mode.
-     * @throws Exception In case of an error.
-     */
-    protected void runTestGetAllRequestsDistribution(final Ignite dest, final boolean batchMode) throws Exception {
-        final UUID destId = dest.cluster().localNode().id();
+        assert newMacs.put(destId, clientMac) != null;
 
-        GridTestUtils.setFieldValue(new GridCacheUtils(), "macsFilter", new NodeIdFilter(destId));
+        setMacAddress(G.allGrids(), newMacs);
 
         IgniteCache<Integer, String> cache = grid(0).createCache(replicatedCache());
 
@@ -189,7 +225,7 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
         for (Integer key : keys)
             cache.put(key, VAL_PREFIX + key);
 
-        cache = grid("client").getOrCreateCache(CACHE_NAME);
+        cache = grid(CLIENT_NAME).getOrCreateCache(CACHE_NAME);
 
         getAndValidateData(cache, keys, batchMode);
 
@@ -202,7 +238,7 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
      * @param batchMode Test mode.
      */
     protected void getAndValidateData(IgniteCache<Integer, String> cache, Set<Integer> keys, boolean batchMode) {
-        try (Transaction tx = grid("client").transactions().txStart()) {
+        try (Transaction tx = grid(CLIENT_NAME).transactions().txStart()) {
             if (batchMode) {
                 Map<Integer, String> results = cache.getAll(keys);
 
@@ -270,34 +306,5 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
      */
     protected TransactionConcurrency transactionConcurrency() {
         return PESSIMISTIC;
-    }
-
-    /** */
-    private static class RoundRobinDistributionClosure implements IgniteClosure<Integer, Integer> {
-        /** Counter. */
-        private int counter;
-
-        /** {@inheritDoc} */
-        @Override public Integer apply(Integer num) {
-            return counter++ % num;
-        }
-    }
-
-    /** */
-    protected static class NodeIdFilter implements IgniteBiPredicate<ClusterNode, ClusterNode> {
-        /** Priority node id. */
-        private UUID id;
-
-        /**
-         * @param id Priority node id.
-         */
-        public NodeIdFilter(UUID id) {
-            this.id = id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean apply(ClusterNode n1, ClusterNode n2) {
-            return n2.id().equals(id);
-        }
     }
 }

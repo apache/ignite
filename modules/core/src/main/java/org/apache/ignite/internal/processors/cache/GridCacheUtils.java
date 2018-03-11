@@ -92,7 +92,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -118,6 +117,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_MODE;
 import static org.apache.ignite.internal.GridTopic.TOPIC_REPLICATION;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 
 /**
@@ -381,19 +381,8 @@ public class GridCacheUtils {
         }
     };
 
-    /** Cluster nodes' MAC addresses equality filter. */
-    private static IgniteBiPredicate<ClusterNode, ClusterNode> macsFilter = new IgniteBiPredicate<ClusterNode, ClusterNode>() {
-        @Override public boolean apply(ClusterNode n1, ClusterNode n2) {
-            return U.sameMacs(n1, n2);
-        }
-    };
-
-    /** ThreadLocalRandom generator closure. */
-    private static IgniteClosure<Integer, Integer> rndClo = new IgniteClosure<Integer, Integer>() {
-        @Override public Integer apply(Integer bound) {
-            return ThreadLocalRandom.current().nextInt(bound);
-        }
-    };
+    /** Random generator. */
+    private static final ThreadLocalRandom RND = ThreadLocalRandom.current();
 
     /**
      * Ensure singleton.
@@ -488,15 +477,17 @@ public class GridCacheUtils {
         if (!ctx.config().isReadFromBackup())
             return affNodes.get(0);
 
-        ClusterNode locNode = ctx.localNode();
+        String locMacs = ctx.localNode().attribute(ATTR_MACS);
 
-        int r = rndClo.apply(affNodes.size());
+        assert locMacs != null;
+
+        int r = RND.nextInt(affNodes.size());
 
         ClusterNode n0 = null;
 
         for (ClusterNode node : affNodes) {
             if (canRemap || ctx.discovery().alive(node)) {
-                if (macsFilter.apply(locNode, node))
+                if (locMacs.equals(node.attribute(ATTR_MACS)))
                     return node;
 
                 if (r >= 0 || n0 == null)
