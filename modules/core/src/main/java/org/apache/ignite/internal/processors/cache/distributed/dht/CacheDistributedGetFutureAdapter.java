@@ -152,16 +152,6 @@ public abstract class CacheDistributedGetFutureAdapter<K, V> extends GridCacheCo
     }
 
     /**
-     * Affinity node to send get request to.
-     *
-     * @param affNodes All affinity nodes.
-     * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
-     */
-    @Nullable protected final ClusterNode affinityNode(List<ClusterNode> affNodes) {
-        return CU.affinityNode(cctx, affNodes, canRemap);
-    }
-
-    /**
      * @param part Partition.
      * @return {@code True} if partition is in owned state.
      */
