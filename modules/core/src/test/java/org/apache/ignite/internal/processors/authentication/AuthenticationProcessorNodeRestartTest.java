@@ -40,7 +40,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Nodes count. */
-    protected static final int NODES_COUNT = 4;
+    protected static final int NODES_COUNT = 2;
 
     /** Nodes restarts count. */
     private static final int RESTARTS = 10;
@@ -257,6 +257,44 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
                 }
             }
         });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void test1kUsersNodeRestartServer() throws Exception {
+        final AtomicInteger usrCnt = new AtomicInteger();
+
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                AuthorizationContext.context(actxDflt);
+
+                try {
+                    while (usrCnt.get() < 100) {
+                        String user = "test" + usrCnt.getAndIncrement();
+
+                        System.out.println("+++ USR " + user);
+                        grid(0).context().authentication().addUser(user, "init");
+
+                        grid(0).context().authentication().updateUser(user, "passwd_" + user);
+                    }
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                    fail("Unexpected exception on add / remove");
+                }
+            }
+        }, 3, "user-op");
+
+        System.out.println("+++ STOP");
+        stopGrid(0, true);
+
+        U.sleep(1000);
+
+        System.out.println("+++ START");
+        startGrid(0);
+
+        AuthorizationContext actx = grid(0).context().authentication().authenticate("ignite", "ignite");
     }
 
     /**

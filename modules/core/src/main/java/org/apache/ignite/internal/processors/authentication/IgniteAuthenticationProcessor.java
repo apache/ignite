@@ -92,6 +92,9 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
     /** Futures prepared user map. Authentication message ID -> public future. */
     private final ConcurrentMap<IgniteUuid, AuthenticateFuture> authFuts = new ConcurrentHashMap<>();
 
+    /** Whan the future is done the node is ready for authentication. */
+    private final GridFutureAdapter<Void> readyForAuthFut = new GridFutureAdapter<>();
+
     /** Random is used to get random server node to authentication from client node. */
     private static final Random RND = new Random(System.currentTimeMillis());
 
@@ -298,7 +301,6 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      * @throws IgniteAccessControlException On authentication error.
      */
     public AuthorizationContext authenticate(String login, String passwd) throws IgniteCheckedException {
-        checkActivate();
         checkEnabled();
 
         if (F.isEmpty(login))
@@ -521,6 +523,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
      */
     private User authenticateOnServer(String login, String passwd) throws IgniteCheckedException {
         assert !ctx.clientNode() : "Must be used on server node";
+
+        readyForAuthFut.get();
 
         User usr;
 
@@ -904,6 +908,8 @@ public class IgniteAuthenticationProcessor extends GridProcessorAdapter implemen
             for (UserManagementOperation op : initUsrs.activeOps)
                 submitOperation(op);
         }
+
+        readyForAuthFut.onDone();
     }
 
     /**
