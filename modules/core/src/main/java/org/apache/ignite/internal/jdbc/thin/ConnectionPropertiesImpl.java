@@ -147,7 +147,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         "Custom class name that implements Factory<SSLSocketFactory>", null, null, false, null);
 
     /** Properties array. */
-    private final ConnectionProperty [] props = {
+    private final ConnectionProperty [] propsArray = {
         host, port,
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
         tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
@@ -394,7 +394,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     void init(Properties props) throws SQLException {
         Properties props0 = (Properties)props.clone();
 
-        for (ConnectionProperty aPropsArray : this.props)
+        for (ConnectionProperty aPropsArray : propsArray)
             aPropsArray.init(props0);
     }
 
@@ -402,10 +402,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
      * @return Driver's properties info array.
      */
     private DriverPropertyInfo[] getDriverPropertyInfo() {
-        DriverPropertyInfo[] dpis = new DriverPropertyInfo[props.length];
+        DriverPropertyInfo[] dpis = new DriverPropertyInfo[propsArray.length];
 
-        for (int i = 0; i < props.length; ++i)
-            dpis[i] = props[i].getDriverPropertyInfo();
+        for (int i = 0; i < propsArray.length; ++i)
+            dpis[i] = propsArray[i].getDriverPropertyInfo();
 
         return dpis;
     }
@@ -722,8 +722,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
             else {
                 try {
                     setValue(parse(str));
-                }
-                catch (NumberFormatException e) {
+                } catch (NumberFormatException e) {
                     throw new SQLException("Failed to parse int property [name=" + name +
                         ", value=" + str + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
                 }

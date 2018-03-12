@@ -70,15 +70,15 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
 
         assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming on per_node_parallel_operations -4",
             "Failed to parse SQL statement \"set streaming on per_node_parallel_operations -[*]4\": " +
-                "Invalid per node parallel operations number - must be positive.");
+                "Invalid per node parallel operations number (must be positive)");
 
         assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming on per_node_buffer_size -4",
             "Failed to parse SQL statement \"set streaming on per_node_buffer_size -[*]4\": " +
-                "Invalid per node buffer size - must be positive.");
+                "Invalid per node buffer size (must be positive)");
 
         assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming on flush_frequency -4",
             "Failed to parse SQL statement \"set streaming on flush_frequency -[*]4\": " +
-                "Invalid streamer flush frequency - must be positive.");
+                "Invalid flush frequency (must be positive)");
 
         assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming off allow_overwrite",
             "Failed to parse SQL statement \"set streaming off [*]allow_overwrite\": Unexpected token: " +
@@ -108,12 +108,12 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
      * Parse and validate SQL script.
      *
      * @param sql SQL.
-     * @param expOn Expected return value of {@link  SqlSetStreamingCommand#turnOn}.
-     * @param expAllowOverwrite Expected return value of {@link  SqlSetStreamingCommand#allowOverwrite}.
-     * @param expBatchSize Expected return value of {@link  SqlSetStreamingCommand#batchSize}.
-     * @param expParOps Expected return value of {@link  SqlSetStreamingCommand#parOps}.
-     * @param expBufSize Expected return value of {@link  SqlSetStreamingCommand#bufSize}.
-     * @param expFlushFreq Expected return value of {@link  SqlSetStreamingCommand#flushFreq}.
+     * @param expOn Expected on/off value.
+     * @param expAllowOverwrite Expected allow overwrite flag.
+     * @param expBatchSize Expected batch size.
+     * @param expParOps Expected per-node parallael operations.
+     * @param expBufSize Expected per node buffer size.
+     * @param expFlushFreq Expected flush frequency.
      */
     private static void parseValidate(String sql, boolean expOn, boolean expAllowOverwrite, int expBatchSize,
         int expParOps, int expBufSize, long expFlushFreq) {
@@ -121,7 +121,7 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
 
         assertEquals(expOn, cmd.isTurnOn());
 
-        assertEquals(expAllowOverwrite, cmd.isAllowOverwrite());
+        assertEquals(expAllowOverwrite, cmd.allowOverwrite());
 
         assertEquals(expBatchSize, cmd.batchSize());
 

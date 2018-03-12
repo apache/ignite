@@ -1542,15 +1542,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         else if (cmd instanceof SqlSetStreamingCommand) {
             if (cliCtx == null)
-                throw new IgniteSQLException("SET STREAMING command may be executed only in context of client driver" +
-                    " connection and not via cache API.");
+                throw new IgniteSQLException("SET STREAMING command can only be executed from JDBC or ODBC driver.");
 
             SqlSetStreamingCommand setCmd = (SqlSetStreamingCommand)cmd;
 
             boolean on = setCmd.isTurnOn();
 
             if (on)
-                cliCtx.enableStreaming(setCmd.isAllowOverwrite(), setCmd.flushFrequency(),
+                cliCtx.enableStreaming(setCmd.allowOverwrite(), setCmd.flushFrequency(),
                     setCmd.perNodeBufferSize(), setCmd.perNodeParallelOperations());
             else
                 cliCtx.disableStreaming();
