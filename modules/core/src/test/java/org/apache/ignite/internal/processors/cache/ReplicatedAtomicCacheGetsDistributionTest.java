@@ -65,8 +65,6 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
         super.beforeTestsStarted();
 
         startGrid(getConfiguration(CLIENT_NAME).setClientMode(true));
-
-        assert PRIMARY_KEYS_NUMBER % gridCount() == 0;
     }
 
     /** {@inheritDoc} */
