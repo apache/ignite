@@ -4096,8 +4096,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 }
                 catch (IgniteCheckedException e) {
                     if (!(e instanceof IgniteTxRollbackCheckedException)) {
-                        log.error("Implicit transaction operation has failed to complete", e);
-
                         try {
                             tx.rollback();
 

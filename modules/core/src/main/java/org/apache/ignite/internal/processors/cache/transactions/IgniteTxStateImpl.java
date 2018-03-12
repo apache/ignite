@@ -180,14 +180,8 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         for (int i = 0; i < activeCacheIds.size(); i++) {
             int cacheId = activeCacheIds.get(i);
 
-            GridCacheContext ctx = cctx.cacheContext(cacheId);
-
-            if (ctx == null) {
-                System.out.println();
-            }
-
             CacheWriteSynchronizationMode cacheSyncMode =
-                ctx.config().getWriteSynchronizationMode();
+                cctx.cacheContext(cacheId).config().getWriteSynchronizationMode();
 
             switch (cacheSyncMode) {
                 case FULL_SYNC:

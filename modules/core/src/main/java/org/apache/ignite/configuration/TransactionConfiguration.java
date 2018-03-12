@@ -200,7 +200,7 @@ public class TransactionConfiguration implements Serializable {
 
     /**
      * Gets rollback on topology change timeout. Default value is defined by
-     * {@link #DFLT_ROLLBACK_ON_TOPOLOGY_CHANGE_TIMEOUT} and means that transactions will never time out.
+     * {@link #DFLT_ROLLBACK_ON_TOPOLOGY_CHANGE_TIMEOUT} which means transactions will never be rolled back.
      *
      * @return Rollback on topology change timeout.
      */
@@ -209,8 +209,8 @@ public class TransactionConfiguration implements Serializable {
     }
 
     /**
-     * Sets rollback on topology change timeout in milliseconds. By default this value is defined by
-     * {@link #DFLT_ROLLBACK_ON_TOPOLOGY_CHANGE_TIMEOUT}
+     * Sets rollback on topology change timeout in milliseconds.
+     * If not set, default value is {@link #DFLT_ROLLBACK_ON_TOPOLOGY_CHANGE_TIMEOUT}
      *
      * @param rollbackOnTopChangeTimeout Rollback on topology change timeout.
      * @return {@code this} for chaining.

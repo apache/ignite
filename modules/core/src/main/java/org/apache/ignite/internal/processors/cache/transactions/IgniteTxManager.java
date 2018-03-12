@@ -1531,13 +1531,13 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param rmtNodeId Remote node ID for which finish request is being sent.
      * @param threadId Near tx thread ID.
      */
-    public void beforeFinishRemote(UUID rmtNodeId, long threadId, GridCacheVersion ver) {
+    public void beforeFinishRemote(UUID rmtNodeId, long threadId) {
         if (finishSyncDisabled)
             return;
 
         assert txFinishSync != null;
 
-        txFinishSync.onFinishSend(rmtNodeId, threadId, ver);
+        txFinishSync.onFinishSend(rmtNodeId, threadId);
     }
 
     /**

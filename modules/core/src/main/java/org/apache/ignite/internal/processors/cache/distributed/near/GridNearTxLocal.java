@@ -857,10 +857,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         try {
             if (!updateLockFuture(null, enlistFut))
-                return finishFuture(enlistFut, rollbackException());
+                return finishFuture(enlistFut, rollbackException(), false);
 
             if (fastFinish == -1 || fastFinish == 0 && !fastFinish(1))
-                return finishFuture(enlistFut, timedOut() ? timeoutException() : rollbackException());
+                return finishFuture(enlistFut, timedOut() ? timeoutException() : rollbackException(), false);
 
             addActiveCache(cacheCtx, recovery);
 
@@ -927,6 +927,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 return enlistFut;
             }
 
+            // It's important to clear lock future before finishing enlist future, otherwise async finish may hang.
             clearLockFuture(null);
 
             enlistFut.onDone();
@@ -988,10 +989,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         GridFutureAdapter<Void> enlistFut = new GridFutureAdapter<>();
 
         if (!updateLockFuture(null, enlistFut))
-            return finishFuture(enlistFut, rollbackException());
+            return finishFuture(enlistFut, rollbackException(), false);
 
         if (fastFinish == -1 || fastFinish == 0 && !fastFinish(1))
-            return finishFuture(enlistFut, timedOut() ? timeoutException() : rollbackException());
+            return finishFuture(enlistFut, timedOut() ? timeoutException() : rollbackException(), false);
 
         assert fastFinish == 1;
 
@@ -999,7 +1000,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             addActiveCache(cacheCtx, recovery);
         }
         catch (IgniteCheckedException e) {
-            return finishFuture(enlistFut, e);
+            return finishFuture(enlistFut, e, false);
         }
 
         boolean rmv = lookup == null && invokeMap == null;
@@ -1017,7 +1018,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
             for (Object key : keys) {
                 if (isRollbackOnly())
-                    return finishFuture(enlistFut, timedOut() ? timeoutException() : rollbackException());
+                    return finishFuture(enlistFut, timedOut() ? timeoutException() : rollbackException(), false);
 
                 if (key == null) {
                     rollback();
@@ -1120,25 +1121,17 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 loadFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
                     @Override public void apply(IgniteInternalFuture<Void> fut) {
-                        clearLockFuture(null);
-
-                        enlistFut.onDone();
+                        finishFuture(enlistFut, null, true);
                     }
                 });
 
                 return enlistFut;
             }
 
-            clearLockFuture(null);
-
-            enlistFut.onDone();
-
-            return enlistFut;
+            return finishFuture(enlistFut, null, true);
         }
         catch (IgniteCheckedException e) {
-            clearLockFuture(null);
-
-            return finishFuture(enlistFut, e);
+            return finishFuture(enlistFut, e, true);
         }
     }
 
@@ -3448,8 +3441,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             if (!commit) {
                 final GridNearTxFinishFuture rollbackFut = new GridNearTxFinishFuture<>(cctx, this, false);
 
-                rollbackFut.setFut(fut);
-
                 fut.listen(new IgniteInClosure<IgniteInternalFuture<IgniteInternalTx>>() {
                     @Override public void apply(IgniteInternalFuture<IgniteInternalTx> fut0) {
                         if (FINISH_FUT_UPD.compareAndSet(tx, fut, rollbackFut)) {
@@ -4236,10 +4227,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      *
      * @param f Future to finish.
      * @param t Error.
+     * @param clearLockFut {@code true} If need to clear lock future.
      *
      * @return Finished future.
      */
-    private <T> GridFutureAdapter<T> finishFuture(GridFutureAdapter<T> f, Throwable t) {
+    private <T> GridFutureAdapter<T> finishFuture(GridFutureAdapter<T> f, Throwable t, boolean clearLockFut) {
+        if (clearLockFut)
+            clearLockFuture(null);
+
         f.onDone(t);
 
         return f;

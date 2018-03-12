@@ -108,7 +108,7 @@ public interface IgniteTransactions {
     /**
      * Returns list of active transactions started on local node.
      *
-     * @return Transactions.
+     * @return Transactions started on local node.
      */
     public Collection<Transaction> localActiveTransactions();
 }

@@ -62,13 +62,13 @@ public class GridCacheTxFinishSync<K, V> {
      * @param nodeId Node ID request being sent to.
      * @param threadId Thread ID started transaction.
      */
-    public void onFinishSend(UUID nodeId, long threadId, GridCacheVersion ver) {
+    public void onFinishSend(UUID nodeId, long threadId) {
         ThreadFinishSync threadSync = threadMap.get(threadId);
 
         if (threadSync == null)
             threadSync = F.addIfAbsent(threadMap, threadId, new ThreadFinishSync(threadId));
 
-        threadSync.onSend(nodeId, ver);
+        threadSync.onSend(nodeId);
     }
 
     /**
@@ -138,7 +138,7 @@ public class GridCacheTxFinishSync<K, V> {
         /**
          * @param nodeId Node ID request being sent to.
          */
-        public void onSend(UUID nodeId, GridCacheVersion ver) {
+        public void onSend(UUID nodeId) {
             TxFinishSync sync = nodeMap.get(nodeId);
 
             if (sync == null) {
@@ -161,7 +161,7 @@ public class GridCacheTxFinishSync<K, V> {
                 }
             }
 
-            sync.onSend(ver);
+            sync.onSend();
         }
 
         /**
@@ -242,13 +242,13 @@ public class GridCacheTxFinishSync<K, V> {
          * Callback invoked before sending finish request to remote nodes.
          * Will synchronously wait for previous finish response.
          */
-        public void onSend(GridCacheVersion ver) {
+        public void onSend() {
             synchronized (this) {
                 if (log.isTraceEnabled())
                     log.trace("Moved transaction synchronizer to waiting state [nodeId=" + nodeId +
-                        ", threadId=" + threadId + ", ver=" + ver + ']');
+                        ", threadId=" + threadId + ']');
 
-                assert cnt == 0 || nodeLeft : "nodeId=" + nodeId + ", threadId=" + threadId + ", ver=" + ver + ", cnt=" + cnt;
+                assert cnt == 0 || nodeLeft;
 
                 if (nodeLeft)
                     return;

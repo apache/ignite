@@ -149,10 +149,8 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridLocalLockFuture.class);
 
-        if (tx != null && tx instanceof GridNearTxLocal && !((GridNearTxLocal)tx).updateLockFuture(null, this)) {
-            onError(new IgniteTxRollbackCheckedException("Failed to acquire lock because transaction " +
-                "has started to roll back [tx=" + CU.txString(tx) + ']'));
-        }
+        if (tx != null && tx instanceof GridNearTxLocal && !((GridNearTxLocal)tx).updateLockFuture(null, this))
+            onError(((GridNearTxLocal)tx).rollbackException());
     }
 
     /**
@@ -444,8 +442,8 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
         if (!success)
             undoLocks();
 
-        if (tx != null && tx instanceof GridNearTxLocal)
-            ((GridNearTxLocal)tx).updateLockFuture(this, null);
+        if (tx != null && success)
+            ((GridNearTxLocal)tx).clearLockFuture(null);
 
         if (onDone(success, err)) {
             if (log.isDebugEnabled())

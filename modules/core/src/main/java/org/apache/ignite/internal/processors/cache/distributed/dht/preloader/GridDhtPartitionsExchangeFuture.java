@@ -1227,12 +1227,13 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         boolean rollbackEnabled = cfg.getTransactionConfiguration().getRollbackOnTopologyChangeTimeout() > 0;
 
-        long dumpTimeout = 2 * cfg.getNetworkTimeout();
+        long waitTimeout = 2 * cfg.getNetworkTimeout();
 
         while (true) {
             try {
-                partReleaseFut.get(rollbackEnabled ? cfg.getTransactionConfiguration().
-                    getRollbackOnTopologyChangeTimeout() : dumpTimeout, TimeUnit.MILLISECONDS);
+                partReleaseFut.get(rollbackEnabled ?
+                    cfg.getTransactionConfiguration().getRollbackOnTopologyChangeTimeout() :
+                    waitTimeout, TimeUnit.MILLISECONDS);
 
                 break;
             }
@@ -1241,7 +1242,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 if (nextDumpTime <= U.currentTimeMillis()) {
                     dumpPendingObjects(partReleaseFut);
 
-                    nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, dumpTimeout);
+                    nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, waitTimeout);
                 }
 
                 if (rollbackEnabled) {
@@ -1272,7 +1273,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         while (true) {
             try {
-                locksFut.get(dumpTimeout, TimeUnit.MILLISECONDS);
+                locksFut.get(waitTimeout, TimeUnit.MILLISECONDS);
 
                 break;
             }
@@ -1295,7 +1296,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     for (Map.Entry<IgniteTxKey, Collection<GridCacheMvccCandidate>> e : locks.entrySet())
                         U.warn(log, "Awaited locked entry [key=" + e.getKey() + ", mvcc=" + e.getValue() + ']');
 
-                    nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, dumpTimeout);
+                    nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, waitTimeout);
 
                     if (getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
                         U.dumpThreads(log);

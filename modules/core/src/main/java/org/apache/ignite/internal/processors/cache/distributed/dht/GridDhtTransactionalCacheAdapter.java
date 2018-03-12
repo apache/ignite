@@ -85,7 +85,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionState.ACTIVE;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 
 /**
@@ -675,12 +674,16 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             f = lockAllAsync(ctx, nearNode, req, null);
 
         // Register listener just so we print out errors.
-        // Exclude lock timeout exception since it's not a fatal exception.
+        // Exclude lock timeout and rollback exceptions since it's not a fatal exception.
         f.listen(CU.errorLogger(log, GridCacheLockTimeoutException.class,
             GridDistributedLockCancelledException.class, IgniteTxTimeoutCheckedException.class,
             IgniteTxRollbackCheckedException.class));
     }
 
+    /**
+     * @param node Node.
+     * @param req Request.
+     */
     private boolean waitForExchangeFuture(final ClusterNode node, final GridNearLockRequest req) {
         assert req.firstClientRequest() : req;
 
@@ -829,7 +832,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             skipStore,
             keepBinary);
 
-        if (fut.error() != null)
+        if (fut.isDone())
             return fut;
 
         for (KeyCacheObject key : keys) {
@@ -840,7 +843,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                     try {
                         fut.addEntry(entry);
 
-                        // Possible in case of cancellation or time out.
+                        // Possible in case of cancellation or time out or rollback.
                         if (fut.isDone())
                             return fut;
 
@@ -1134,6 +1137,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             if (e != null)
                                 e = U.unwrap(e);
 
+                            // Transaction can be emptied by asynchronous rollback.
                             assert e != null || !t.empty();
 
                             // Create response while holding locks.

@@ -49,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -418,33 +417,31 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             return;
         }
 
-        // Handle possible concurrent transactional operations in case of async rollback (clearThreadMap==false).
         if (!commit && !clearThreadMap)
-            tryRollbackAsync(onTimeout);
+            tryRollbackAsync(onTimeout); // Asynchronous rollback.
         else
             doFinish(commit, clearThreadMap);
     }
 
     /**
      * Does async rollback when it's safe.
-     * If current future is not lock future (enlist future), wait until completion and try rollback again.
-     * Else terminate or wait for lock future depending on rollback mode.
+     * If current future is not lock future (enlist future) waits until completion and tries again.
+     * Else terminates or waits for lock future depending on rollback mode.
      *
      * @param onTimeout If {@code true} called from timeout handler.
      */
     private void tryRollbackAsync(boolean onTimeout) {
         IgniteInternalFuture<?> curFut = tx.tryRollbackAsync();
 
-        if (curFut == null) {
+        if (curFut == null) { // Safe to rollback.
             doFinish(false, false);
 
             return;
         }
 
         if (curFut instanceof GridCacheVersionedFuture && !onTimeout) {
-            // Cancel lock.
             try {
-                curFut.cancel();
+                curFut.cancel(); // Force cancellation.
             }
             catch (IgniteCheckedException e) {
                 assert false : "This shouldn't happen";
@@ -490,10 +487,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
 
                 markInitialized();
             }
-            else {
+            else
                 onDone(new IgniteCheckedException("Failed to " + (commit ? "commit" : "rollback") +
                     " transaction: " + CU.txString(tx)));
-            }
         }
         catch (Error | RuntimeException e) {
             onDone(e);
@@ -739,6 +735,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
     /**
      * @param mappings Mappings.
      * @param commit Commit flag.
+     * @param {@code true} If need to add completed version on finish.
      */
     private void finish(Iterable<GridDistributedTxMapping> mappings, boolean commit, boolean useCompletedVer) {
         assert !hasFutures() : futures();
@@ -754,6 +751,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param miniId Mini future ID.
      * @param m Mapping.
      * @param commit Commit flag.
+     * @param {@code true} If need to add completed version on finish.
      */
     private void finish(int miniId, GridDistributedTxMapping m, boolean commit, boolean useCompletedVer) {
         ClusterNode n = m.primary();
@@ -807,7 +805,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
             add(fut); // Append new future.
 
             if (tx.pessimistic() && !useCompletedVer)
-                cctx.tm().beforeFinishRemote(n.id(), tx.threadId(), tx.xidVersion());
+                cctx.tm().beforeFinishRemote(n.id(), tx.threadId());
 
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
@@ -1061,6 +1059,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         void onNearFinishResponse(GridNearTxFinishResponse res) {
             if (res.error() != null)
                 if (res.error() instanceof IgniteTxRollbackCheckedException) {
+                    // This exception is expected on asynchronous rollback.
                     if (log.isDebugEnabled())
                         log.debug("Transaction was rolled back: " + tx);
 
@@ -1210,11 +1209,5 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         @Override public String toString() {
             return S.toString(CheckRemoteTxMiniFuture.class, this);
         }
-    }
-
-    volatile IgniteInternalFuture f;
-
-    public void setFut(IgniteInternalFuture f) {
-        this.f = f;
     }
 }

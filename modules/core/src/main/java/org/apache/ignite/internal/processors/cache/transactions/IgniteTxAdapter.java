@@ -714,8 +714,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
      * @return Rollback exception.
      */
     public final IgniteCheckedException rollbackException() {
-        return new IgniteTxRollbackCheckedException("Failed to acquire lock within provided timeout because " +
-            "operation was rolled back for transaction [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
+        return new IgniteTxRollbackCheckedException("Failed to finish transaction because it has been rolled back [timeout=" + timeout() + ", tx=" + CU.txString(this) + ']');
     }
 
     /** {@inheritDoc} */
