@@ -381,9 +381,6 @@ public class GridCacheUtils {
         }
     };
 
-    /** Random generator. */
-    private static final ThreadLocalRandom RND = ThreadLocalRandom.current();
-
     /**
      * Ensure singleton.
      */
@@ -481,7 +478,7 @@ public class GridCacheUtils {
 
         assert locMacs != null;
 
-        int r = RND.nextInt(affNodes.size());
+        int r = ThreadLocalRandom.current().nextInt(affNodes.size());
 
         ClusterNode n0 = null;
 
