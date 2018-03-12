@@ -20,8 +20,10 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -104,7 +106,7 @@ public class JdbcThinTcpIo {
     private IgniteProductVersion igniteVer;
 
     /** Address index. */
-    private int addrIdx;
+    private int srvIdx;
 
     /**
      * Constructor.
@@ -115,7 +117,7 @@ public class JdbcThinTcpIo {
         this.connProps = connProps;
 
         // Try to connect to random address then round robin.
-        addrIdx = RND.nextInt(connProps.getAddresses().length);
+        srvIdx = RND.nextInt(connProps.getAddresses().length);
     }
 
     /**
@@ -136,33 +138,41 @@ public class JdbcThinTcpIo {
 
         List<Exception> exceptions = null;
 
-        InetSocketAddress [] addrs = connProps.getAddresses();
+        HostAndPort[] srvs = connProps.getAddresses();
 
-        for (int i = 0; i < addrs.length; i++, addrIdx = (addrIdx + 1) % addrs.length) {
-            InetSocketAddress addr = addrs[addrIdx];
+        boolean connected = false;
 
-            try {
-                connect(addr, timeout);
+        for (int i = 0; i < srvs.length; i++, srvIdx = (srvIdx + 1) % srvs.length) {
+            HostAndPort srv = srvs[srvIdx];
 
-                closed = false;
+            InetAddress[] addrs = getAllAddressesByHost(srv.host());
 
+            for (InetAddress addr : addrs) {
+                try {
+                    connect(new InetSocketAddress(addr, srv.port()), timeout);
+
+                    connected = true;
+
+                    break;
+                }
+                catch (IOException | SQLException exception) {
+                    if (inaccessibleAddrs == null)
+                        inaccessibleAddrs = new ArrayList<>();
+
+                    inaccessibleAddrs.add(addr.getHostName());
+
+                    if (exceptions == null)
+                        exceptions = new ArrayList<>();
+
+                    exceptions.add(exception);
+                }
+            }
+
+            if (connected)
                 break;
-            }
-            catch (IOException | SQLException exception) {
-                if (inaccessibleAddrs == null)
-                    inaccessibleAddrs = new ArrayList<>();
-
-                inaccessibleAddrs.add(addr.getHostName());
-
-                if (exceptions == null)
-                    exceptions = new ArrayList<>();
-
-                exceptions.add(exception);
-            }
         }
 
-        if ((inaccessibleAddrs != null) && (inaccessibleAddrs.size() == connProps.getAddresses().length)
-            && (exceptions != null)) {
+        if (!connected && inaccessibleAddrs != null && exceptions != null) {
             if (exceptions.size() == 1) {
                 Exception ex = exceptions.get(0);
 
@@ -234,6 +244,17 @@ public class JdbcThinTcpIo {
     }
 
     /**
+     * Get all addresses by host name.
+     *
+     * @param host Host name.
+     * @return Addresses.
+     * @throws UnknownHostException If host is unavailable.
+     */
+    protected InetAddress[] getAllAddressesByHost(String host) throws UnknownHostException {
+        return InetAddress.getAllByName(host);
+    }
+
+    /**
      * Used for versions: 2.1.5 and 2.3.0. The protocol version is changed but handshake format isn't changed.
      *
      * @param ver JDBC client version.
@@ -244,7 +265,7 @@ public class JdbcThinTcpIo {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
-        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
+        writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
         writer.writeShort(ver.major());
         writer.writeShort(ver.minor());
@@ -314,7 +335,7 @@ public class JdbcThinTcpIo {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
-        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
+        writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
         writer.writeShort(VER_2_1_0.major());
         writer.writeShort(VER_2_1_0.minor());
@@ -425,7 +446,7 @@ public class JdbcThinTcpIo {
     private byte[] read() throws IOException {
         byte[] sizeBytes = read(4);
 
-        int msgSize  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
+        int msgSize = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
             | ((0xFF & sizeBytes[1]) << 8) + (0xFF & sizeBytes[0]));
 
         return read(msgSize);
@@ -436,7 +457,7 @@ public class JdbcThinTcpIo {
      * @return Read bytes.
      * @throws IOException On error.
      */
-    private byte [] read(int size) throws IOException {
+    private byte[] read(int size) throws IOException {
         int off = 0;
 
         byte[] data = new byte[size];

@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.io.Serializable;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -46,7 +43,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private String url;
 
     /** Addresses. */
-    private ArrayList<InetSocketAddress> addrs = new ArrayList<>();
+    private ArrayList<HostAndPort> addrs = new ArrayList<>();
 
     /** Schema name. Hidden property. Is used to set default schema name part of the URL. */
     private StringProperty schema = new StringProperty("schema",
@@ -190,13 +187,13 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
             StringBuilder sbUrl = new StringBuilder(JdbcThinUtils.URL_PREFIX);
 
-            InetSocketAddress [] addrs = getAddresses();
+            HostAndPort [] addrs = getAddresses();
 
             for (int i = 0; i < addrs.length; i++) {
-                sbUrl.append(addrs[i].getHostName());
+                sbUrl.append(addrs[i].host());
 
-                if (addrs[i].getPort() > 0)
-                    sbUrl.append(':').append(addrs[i].getPort());
+                if (addrs[i].port() > 0)
+                    sbUrl.append(':').append(addrs[i].port());
 
                 if (i < addrs.length - 1)
                     sbUrl.append(',');
@@ -221,26 +218,21 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         if (addrs.isEmpty())
             return null;
 
-        return addrs.get(0).getHostName();
+        return addrs.get(0).host();
     }
 
     /** {@inheritDoc} */
     @Override public void setHost(String host) throws SQLException {
-        int port = 0;
+        if (!addrs.isEmpty()) {
+            if (addrs.size() > 1) {
+                throw new SQLException("Cannot override multiple addresses with host property. " +
+                    "Please use addresses property");
+            }
 
-        if (!addrs.isEmpty())
-            port = addrs.get(0).getPort();
-
-        addrs.clear();
-
-        try {
-            for (InetAddress addr : getAllAddressesByHost(host))
-                addrs.add(new InetSocketAddress(addr, port));
+            addrs.get(0).host(host);
         }
-        catch (UnknownHostException e) {
-            throw new SQLException("Failed to address lookup [host=" + host + ']',
-                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-        }
+        else
+            addrs.add(new HostAndPort(host));
     }
 
     /** {@inheritDoc} */
@@ -248,29 +240,30 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         if (addrs.isEmpty())
             return 0;
 
-        return addrs.get(0).getPort();
+        return addrs.get(0).port();
     }
 
     /** {@inheritDoc} */
     @Override public void setPort(int port) throws SQLException {
-        ArrayList<InetSocketAddress> addrs0 = new ArrayList<>(addrs.size());
+        if (!addrs.isEmpty()) {
+            if (addrs.size() > 1) {
+                throw new SQLException("Cannot override multiple addresses with port property. " +
+                    "Please use addresses property");
+            }
 
-        for (InetSocketAddress addr : addrs)
-            addrs0.add(new InetSocketAddress(addr.getAddress(), port));
-
-        if (addrs0.isEmpty())
-            addrs0.add(new InetSocketAddress("", port));
-
-        addrs = addrs0;
+            addrs.get(0).port(port);
+        }
+        else
+            addrs.add(new HostAndPort(null, port));
     }
 
     /** {@inheritDoc} */
-    @Override public InetSocketAddress[] getAddresses() {
-        return addrs.toArray(new InetSocketAddress[addrs.size()]);
+    @Override public HostAndPort[] getAddresses() {
+        return addrs.toArray(new HostAndPort[addrs.size()]);
     }
 
     /** {@inheritDoc} */
-    @Override public void setAddresses(InetSocketAddress[] addrs) {
+    @Override public void setAddresses(HostAndPort[] addrs) {
         this.addrs = new ArrayList<>(Arrays.asList(addrs));
     }
 
@@ -539,18 +532,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
             else
                 port.init((String)null);
 
-            try {
-                for (InetAddress addr : getAllAddressesByHost(host.value()))
-                    addrs.add(new InetSocketAddress(addr, port.value()));
-            }
-            catch (UnknownHostException e) {
-                if (hostErr == null) {
-                    hostErr = new SQLException("Failed to connect to server [host=" + host.value() +
-                        ", port=" + port.value() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
-                }
-                else
-                    hostErr.addSuppressed(e);
-            }
+            addrs.add(new HostAndPort(host.value(), port.value()));
         }
 
         if (addrs.isEmpty())
@@ -565,15 +547,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         }
 
         setSchema(pathParts.length == 2 ? pathParts[1] : null);
-    }
-
-    /**
-     * @param hostname Host name.
-     * @return An array of all the IP addresses for a given host name.
-     * @throws UnknownHostException On error.
-     */
-    protected InetAddress[] getAllAddressesByHost(String hostname) throws UnknownHostException {
-        return InetAddress.getAllByName(hostname);
     }
 
     /**

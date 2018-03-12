@@ -76,12 +76,12 @@ public interface ConnectionProperties {
     /**
      * @return Ignite nodes addresses.
      */
-    public InetSocketAddress[] getAddresses();
+    public HostAndPort[] getAddresses();
 
     /**
      * @param addrs Ignite nodes addresses.
      */
-    public void setAddresses(InetSocketAddress[] addrs);
+    public void setAddresses(HostAndPort[] addrs);
 
     /**
      * @return Distributed joins flag.
