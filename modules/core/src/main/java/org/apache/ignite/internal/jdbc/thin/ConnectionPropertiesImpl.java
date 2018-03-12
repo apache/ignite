@@ -456,7 +456,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
      * @throws SQLException On error.
      */
     public void init(String url, Properties props) throws SQLException {
-        System.out.println("JDBC URL: " + url);
         Properties props0 = (Properties)props.clone();
 
         if (!F.isEmpty(url))
