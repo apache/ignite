@@ -332,7 +332,13 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
     @SuppressWarnings("unchecked")
     private void unblockAll(Node head) {
         while (head != null) {
-            unblock(head.val);
+            try {
+                unblock(head.val);
+            } catch (Throwable t) {
+                assert head.next == null : "unblock() failed and some listeners weren't notified";
+
+                throw t;
+            }
             head = head.next;
         }
     }
