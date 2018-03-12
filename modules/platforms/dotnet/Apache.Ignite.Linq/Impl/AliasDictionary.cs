@@ -20,6 +20,7 @@ namespace Apache.Ignite.Linq.Impl
     using System;
     using System.Collections.Generic;
     using System.Diagnostics;
+    using System.Linq;
     using System.Linq.Expressions;
     using System.Text;
     using Remotion.Linq.Clauses;
@@ -49,11 +50,14 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Pushes current aliases to stack.
         /// </summary>
-        public void Push()
+        /// <param name="copyAliases">Flag indicating that current aliases should be copied</param>
+        public void Push(bool copyAliases)
         {
             _stack.Push(_tableAliases);
 
-            _tableAliases = new Dictionary<IQuerySource, string>();
+            _tableAliases = copyAliases
+                ? _tableAliases.ToDictionary(p => p.Key, p => p.Value)
+                : new Dictionary<IQuerySource, string>();
         }
 
         /// <summary>
