@@ -139,14 +139,14 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
 
         cache = grid(CLIENT_NAME).getOrCreateCache(CACHE_NAME);
 
-        getAndValidateData(cache, keys, batchMode);
+        validateData(cache, keys, batchMode);
 
         for (int i = 0; i < gridCount(); i++) {
             IgniteEx ignite = grid(i);
 
-            long getsCount = ignite.cache(CACHE_NAME).localMetrics().getCacheGets();
+            long getsCnt = ignite.cache(CACHE_NAME).localMetrics().getCacheGets();
 
-            assertTrue(getsCount > 0);
+            assertTrue(getsCnt > 0);
         }
     }
 
@@ -199,7 +199,7 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
 
         cache = grid(CLIENT_NAME).getOrCreateCache(CACHE_NAME);
 
-        getAndValidateData(cache, keys, batchMode);
+        validateData(cache, keys, batchMode);
 
         validateRequestsDistribution(destId);
     }
@@ -209,7 +209,7 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
      * @param keys Keys to get.
      * @param batchMode Test mode.
      */
-    protected void getAndValidateData(IgniteCache<Integer, String> cache, List<Integer> keys, boolean batchMode) {
+    protected void validateData(IgniteCache<Integer, String> cache, List<Integer> keys, boolean batchMode) {
         try (Transaction tx = grid(CLIENT_NAME).transactions().txStart()) {
             if (batchMode) {
                 Map<Integer, String> results = cache.getAll(new TreeSet<>(keys));
@@ -233,12 +233,12 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
         for (int i = 0; i < gridCount(); i++) {
             IgniteEx ignite = grid(i);
 
-            long getsCount = ignite.cache(CACHE_NAME).localMetrics().getCacheGets();
+            long getsCnt = ignite.cache(CACHE_NAME).localMetrics().getCacheGets();
 
             if (destId.equals(ignite.localNode().id()))
-                assertEquals(PRIMARY_KEYS_NUMBER, getsCount);
+                assertEquals(PRIMARY_KEYS_NUMBER, getsCnt);
             else
-                assertEquals(0L, getsCount);
+                assertEquals(0L, getsCnt);
         }
     }
 
