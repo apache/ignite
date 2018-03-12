@@ -44,6 +44,9 @@ public class SqlClientContext implements AutoCloseable {
     /** Collocated flag. */
     private final boolean collocated;
 
+    /** Replicated caches only flag. */
+    private final boolean replicatedOnly;
+
     /** Lazy query execution flag. */
     private final boolean lazy;
 
@@ -73,15 +76,17 @@ public class SqlClientContext implements AutoCloseable {
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
      * @param collocated Collocated flag.
+     * @param replicatedOnly Replicated caches only flag.
      * @param lazy Lazy query execution flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
      */
     public SqlClientContext(GridKernalContext ctx, boolean distributedJoins, boolean enforceJoinOrder,
-        boolean collocated, boolean lazy, boolean skipReducerOnUpdate) {
+        boolean collocated, boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate) {
         this.ctx = ctx;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
         this.collocated = collocated;
+        this.replicatedOnly = replicatedOnly;
         this.lazy = lazy;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
 
@@ -147,6 +152,13 @@ public class SqlClientContext implements AutoCloseable {
      */
     public boolean isEnforceJoinOrder() {
         return enforceJoinOrder;
+    }
+
+    /**
+     * @return Replicated caches only flag.
+     */
+    public boolean isReplicatedOnly() {
+        return replicatedOnly;
     }
 
     /**

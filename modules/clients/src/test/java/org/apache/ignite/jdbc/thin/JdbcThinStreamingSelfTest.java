@@ -372,7 +372,8 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
                 return null;
             }
-        }, SQLException.class, "Statement batch must be empty for the statement to be used in streaming mode.");
+        }, SQLException.class, "Statement has non-empty batch (call executeBatch() or clearBatch() before " +
+            "enabling streaming).");
     }
 
     /**
@@ -388,6 +389,24 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
                             nameForId(1)));
 
                         s.addBatch("SET STREAMING 1 FLUSH_FREQUENCY 10000");
+                    }
+                }
+
+                return null;
+            }
+        }, SQLException.class, "Streaming control commands must be executed explicitly");
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testBatchingSetStreamingStatement() {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                try (Connection conn = createOrdinaryConnection()) {
+                    try (PreparedStatement s = conn.prepareStatement("SET STREAMING 1 FLUSH_FREQUENCY 10000")) {
+                        s.addBatch();
                     }
                 }
 

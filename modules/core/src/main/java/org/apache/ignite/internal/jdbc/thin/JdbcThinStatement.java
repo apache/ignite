@@ -262,8 +262,8 @@ public class JdbcThinStatement implements Statement {
      */
     void checkStatementBatchEmpty() throws SQLException {
         if (conn.isStream() && !F.isEmpty(batch))
-            throw new IgniteSQLException("Statement batch must be empty for the statement to be used " +
-                "in streaming mode.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION).toJdbcException();
+            throw new IgniteSQLException("Statement has non-empty batch (call executeBatch() or clearBatch() " +
+                "before enabling streaming).", IgniteQueryErrorCode.UNSUPPORTED_OPERATION).toJdbcException();
     }
 
     /**
@@ -560,18 +560,7 @@ public class JdbcThinStatement implements Statement {
     @Override public void addBatch(String sql) throws SQLException {
         ensureNotClosed();
 
-        SqlCommand nativeCmd = null;
-
-        if (isEligibleForNativeParsing(sql))
-            nativeCmd = tryParseNative(sql);
-
-        if (nativeCmd != null) {
-            assert nativeCmd instanceof SqlSetStreamingCommand;
-
-            throw new SQLException("Streaming control commands must be executed explicitly - " +
-                "either via Statement.execute(String), or via using prepared statements.",
-                SqlStateCode.UNSUPPORTED_OPERATION);
-        }
+        checkStatementEligibleForBatching(sql);
 
         checkStatementBatchEmpty();
 
@@ -587,6 +576,26 @@ public class JdbcThinStatement implements Statement {
             batch = new ArrayList<>();
 
         batch.add(new JdbcQuery(sql, null));
+    }
+
+    /**
+     * Check that we're not trying to add to connection's batch a native command (it should be executed explicitly).
+     * @param sql SQL command.
+     * @throws SQLException if there's an attempt to add a native command to JDBC batch.
+     */
+    void checkStatementEligibleForBatching(String sql) throws SQLException {
+        SqlCommand nativeCmd = null;
+
+        if (isEligibleForNativeParsing(sql))
+            nativeCmd = tryParseNative(sql);
+
+        if (nativeCmd != null) {
+            assert nativeCmd instanceof SqlSetStreamingCommand;
+
+            throw new SQLException("Streaming control commands must be executed explicitly - " +
+                "either via Statement.execute(String), or via using prepared statements.",
+                SqlStateCode.UNSUPPORTED_OPERATION);
+        }
     }
 
     /** {@inheritDoc} */

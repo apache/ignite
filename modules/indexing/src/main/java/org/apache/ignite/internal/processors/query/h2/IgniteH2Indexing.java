@@ -1627,7 +1627,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 // We may use this cached statement only for local queries and non queries.
                 if (qry.isLocal() || !prepared.isQuery())
                     return (List<FieldsQueryCursor<List<?>>>)doRunPrepared(schemaName, prepared, qry, null,
-                        cliCtx, null, keepBinary, cancel);
+                        null, keepBinary, cancel);
             }
         }
 
@@ -1657,7 +1657,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             firstArg += prepared.getParameters().size();
 
-            res.addAll(doRunPrepared(schemaName, prepared, newQry, twoStepQry, cliCtx, meta, keepBinary, cancel));
+            res.addAll(doRunPrepared(schemaName, prepared, newQry, twoStepQry, meta, keepBinary, cancel));
 
             if (parseRes.twoStepQuery() != null && parseRes.twoStepQueryKey() != null &&
                     !parseRes.twoStepQuery().explain())
@@ -1673,13 +1673,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @param prepared H2 command.
      * @param qry Fields query with flags.
      * @param twoStepQry Two-step query if this query must be executed in a distributed way.
-     * @param cliCtx Client context, or {@code null} if not applicable.
      * @param meta Metadata for {@code twoStepQry}.
      * @param keepBinary Whether binary objects must not be deserialized automatically.
      * @param cancel Query cancel state holder.    @return Query result.
      */
     private List<? extends FieldsQueryCursor<List<?>>> doRunPrepared(String schemaName, Prepared prepared,
-        SqlFieldsQuery qry, GridCacheTwoStepQuery twoStepQry, @Nullable SqlClientContext cliCtx,
+        SqlFieldsQuery qry, GridCacheTwoStepQuery twoStepQry,
         List<GridQueryFieldMetadata> meta, boolean keepBinary, GridQueryCancel cancel) {
         String sqlQry = qry.getSql();
 

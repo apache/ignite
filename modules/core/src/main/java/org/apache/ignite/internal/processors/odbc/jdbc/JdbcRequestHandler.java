@@ -107,9 +107,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Current bulk load processors. */
     private final ConcurrentHashMap<Long, JdbcBulkLoadProcessor> bulkLoadRequests = new ConcurrentHashMap<>();
 
-    /** Replicated only flag. */
-    private final boolean replicatedOnly;
-
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
 
@@ -141,13 +138,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             distributedJoins,
             enforceJoinOrder,
             collocated,
+            replicatedOnly,
             lazy,
             skipReducerOnUpdate
         );
 
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
-        this.replicatedOnly = replicatedOnly;
         this.autoCloseCursors = autoCloseCursors;
         this.protocolVer = protocolVer;
 
@@ -353,7 +350,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             qry.setDistributedJoins(cliCtx.isDistributedJoins());
             qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
             qry.setCollocated(cliCtx.isCollocated());
-            qry.setReplicatedOnly(replicatedOnly);
+            qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
             qry.setLazy(cliCtx.isLazy());
 
             if (req.pageSize() <= 0)
@@ -569,7 +566,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 qry.setDistributedJoins(cliCtx.isDistributedJoins());
                 qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
                 qry.setCollocated(cliCtx.isCollocated());
-                qry.setReplicatedOnly(replicatedOnly);
+                qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
                 qry.setLazy(cliCtx.isLazy());
 
                 qry.setSchema(schemaName);
