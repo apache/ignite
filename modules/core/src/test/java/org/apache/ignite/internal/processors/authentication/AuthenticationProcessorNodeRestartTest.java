@@ -270,11 +270,31 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
                 AuthorizationContext.context(actxDflt);
 
                 try {
-                    while (usrCnt.get() < 100) {
+                    while (usrCnt.get() < 200) {
                         String user = "test" + usrCnt.getAndIncrement();
 
-                        System.out.println("+++ USR " + user);
+                        System.out.println("+++ CREATE  " + user);
                         grid(0).context().authentication().addUser(user, "init");
+                    }
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                    fail("Unexpected exception on add / remove");
+                }
+            }
+        }, 3, "user-op");
+
+        usrCnt.set(0);
+
+        GridTestUtils.runMultiThreaded(new Runnable() {
+            @Override public void run() {
+                AuthorizationContext.context(actxDflt);
+
+                try {
+                    while (usrCnt.get() < 200) {
+                        String user = "test" + usrCnt.getAndIncrement();
+
+                        System.out.println("+++ ALTER " + user);
 
                         grid(0).context().authentication().updateUser(user, "passwd_" + user);
                     }
