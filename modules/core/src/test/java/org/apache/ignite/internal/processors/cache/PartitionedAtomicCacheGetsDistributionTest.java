@@ -34,6 +34,7 @@ public class PartitionedAtomicCacheGetsDistributionTest extends ReplicatedAtomic
     /** {@inheritDoc} */
     @Override protected <K, V> CacheConfiguration<K, V> cacheConfiguration() {
         CacheConfiguration<K, V> cacheCfg = super.cacheConfiguration();
+
         cacheCfg.setBackups(backupsCount());
 
         return cacheCfg;

@@ -64,7 +64,11 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid(getConfiguration(CLIENT_NAME).setClientMode(true));
+        IgniteConfiguration clientCfg = getConfiguration(CLIENT_NAME);
+
+        clientCfg.setClientMode(true);
+
+        startGrid(clientCfg);
     }
 
     /** {@inheritDoc} */
@@ -277,12 +281,15 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
      * @return Cache configuration.
      */
     protected <K, V> CacheConfiguration<K, V> cacheConfiguration() {
-        return new CacheConfiguration<K, V>(CACHE_NAME)
-            .setCacheMode(cacheMode())
-            .setAtomicityMode(atomicityMode())
-            .setWriteSynchronizationMode(FULL_SYNC)
-            .setReadFromBackup(true)
-            .setStatisticsEnabled(true);
+        CacheConfiguration<K, V> cfg = new CacheConfiguration<K, V>(CACHE_NAME);
+
+        cfg.setCacheMode(cacheMode());
+        cfg.setAtomicityMode(atomicityMode());
+        cfg.setWriteSynchronizationMode(FULL_SYNC);
+        cfg.setReadFromBackup(true);
+        cfg.setStatisticsEnabled(true);
+
+        return cfg;
     }
 
     /**
