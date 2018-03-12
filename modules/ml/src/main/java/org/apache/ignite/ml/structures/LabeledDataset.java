@@ -27,7 +27,7 @@ import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 /**
  * Class for set of labeled vectors.
  */
-public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
+public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> implements AutoCloseable {
     /**
      * Default constructor (required by Externalizable).
      */
@@ -68,6 +68,15 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
         super(rowSize, colSize, featureNames, isDistributed);
 
         initializeDataWithLabeledVectors();
+    }
+
+    /**
+     * Creates new Labeled Dataset by given data.
+     *
+     * @param data Should be initialized with one vector at least.
+     */
+    public LabeledDataset(Row[] data) {
+        super(data);
     }
 
     /** */
@@ -206,5 +215,10 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> {
             res.setLabel(i, this.label(i));
 
         return res;
+    }
+
+    /** Closes LabeledDataset. */
+    @Override public void close() throws Exception {
+
     }
 }

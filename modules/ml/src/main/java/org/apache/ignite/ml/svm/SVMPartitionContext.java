@@ -15,21 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm.binary;
+package org.apache.ignite.ml.svm;
 
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
+import java.io.Serializable;
 
 /**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
+ * Partition context of the SVM classification algorithm.
  */
-public class DistributedLinearSVMBinaryClassificationTrainerTest extends GenericLinearSVMBinaryClassificationTrainerTest {
+public class SVMPartitionContext implements Serializable {
     /** */
-    public DistributedLinearSVMBinaryClassificationTrainerTest() {
-        super(
-            new SVMLinearBinaryClassificationTrainer(),
-            true,
-            1e-2);
-    }
+    private static final long serialVersionUID = -7212307112344430126L;
 }
