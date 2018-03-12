@@ -30,6 +30,7 @@ import java.util.Map.Entry;
 import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
@@ -56,7 +57,6 @@ import org.apache.ignite.spi.collision.CollisionContext;
 import org.apache.ignite.spi.collision.CollisionExternalListener;
 import org.apache.ignite.spi.collision.CollisionJobContext;
 import org.apache.ignite.spi.collision.CollisionSpi;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -288,7 +288,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     private final ConcurrentMap<UUID, MessageInfo> rcvMsgMap = new ConcurrentHashMap<>();
 
     /** */
-    private final Queue<ClusterNode> nodeQueue = new ConcurrentLinkedDeque8<>();
+    private final Queue<ClusterNode> nodeQueue = new ConcurrentLinkedDeque<>();
 
     /** */
     private CollisionExternalListener extLsnr;

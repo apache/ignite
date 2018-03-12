@@ -50,6 +50,7 @@ import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridPartitionStateMap;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -1107,23 +1108,21 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         try {
             for (Map.Entry<UUID, GridDhtPartitionMap> e : node2part.entrySet()) {
                 GridDhtPartitionMap partMap = e.getValue();
+                UUID remoteNodeId = e.getKey();
 
                 if (!partMap.containsKey(p))
                     continue;
 
-                if (partMap.get(p) == OWNING && !owners.contains(e.getKey())) {
-                    if (haveHistory)
-                        partMap.put(p, MOVING);
-                    else {
-                        partMap.put(p, RENTING);
+                if (partMap.get(p) == OWNING && !owners.contains(remoteNodeId)) {
+                    partMap.put(p, MOVING);
 
-                        result.add(e.getKey());
-                    }
+                    if (!haveHistory)
+                        result.add(remoteNodeId);
 
                     partMap.updateSequence(partMap.updateSequence() + 1, partMap.topologyVersion());
 
                     U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
-                        "[nodeId=" + e.getKey() + ", groupId=" + grpId +
+                        "[nodeId=" + remoteNodeId + ", groupId=" + grpId +
                         ", partId=" + p + ", haveHistory=" + haveHistory + "]");
                 }
             }

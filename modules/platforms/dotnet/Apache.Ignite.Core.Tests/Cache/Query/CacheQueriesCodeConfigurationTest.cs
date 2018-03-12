@@ -161,7 +161,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
             using (var ignite = Ignition.Start(cfg))
             {
                 var cache = ignite.GetOrCreateCache<int, AttributeQueryPerson>(new CacheConfiguration(CacheName,
-                        typeof (AttributeQueryPerson)));
+                        new QueryEntity(typeof(int), typeof(AttributeQueryPerson))));
 
                 Assert.IsNotNull(cache);
 
