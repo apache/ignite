@@ -21,8 +21,10 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.sql.SqlKeyword;
 import org.apache.ignite.internal.sql.SqlLexer;
 import org.apache.ignite.internal.sql.SqlLexerTokenType;
+import org.apache.ignite.internal.sql.SqlParseException;
 
 import static org.apache.ignite.internal.sql.SqlParserUtils.error;
+import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseBooleanParameter;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
 
@@ -60,12 +62,16 @@ public class SqlSetStreamingCommand implements SqlCommand {
                 case SqlKeyword.ALLOW_OVERWRITE:
                     lex.shift();
 
+                    checkOffLast(lex);
+
                     allowOverwrite = parseBooleanParameter(lex);
 
                     break;
 
                 case SqlKeyword.PER_NODE_PARALLEL_OPERATIONS:
                     lex.shift();
+
+                    checkOffLast(lex);
 
                     parOps = parseInt(lex);
 
@@ -77,6 +83,8 @@ public class SqlSetStreamingCommand implements SqlCommand {
                 case SqlKeyword.BATCH_SIZE:
                     lex.shift();
 
+                    checkOffLast(lex);
+
                     batchSize = parseInt(lex);
 
                     if (batchSize <= 0)
@@ -87,6 +95,8 @@ public class SqlSetStreamingCommand implements SqlCommand {
                 case SqlKeyword.FLUSH_FREQUENCY:
                     lex.shift();
 
+                    checkOffLast(lex);
+
                     flushFreq = parseInt(lex);
 
                     if (flushFreq <= 0)
@@ -96,6 +106,8 @@ public class SqlSetStreamingCommand implements SqlCommand {
 
                 case SqlKeyword.PER_NODE_BUFFER_SIZE:
                     lex.shift();
+
+                    checkOffLast(lex);
 
                     bufSize = parseInt(lex);
 
@@ -110,6 +122,19 @@ public class SqlSetStreamingCommand implements SqlCommand {
         }
 
         return this;
+    }
+
+    /**
+     * Throw an unexpected token exception if this command turns streaming off.
+     * @param lex Lexer to take unexpected token from.
+     * @throws SqlParseException if {@link #turnOn} is {@code false}.
+     */
+    private void checkOffLast(SqlLexer lex) throws SqlParseException {
+        if (!turnOn) {
+            assert lex.tokenType() == SqlLexerTokenType.DEFAULT;
+
+            throw errorUnexpectedToken(lex);
+        }
     }
 
     /**

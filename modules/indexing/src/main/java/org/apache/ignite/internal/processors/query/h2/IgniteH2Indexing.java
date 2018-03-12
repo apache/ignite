@@ -1549,15 +1549,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             boolean on = setCmd.isTurnOn();
 
-            if (cliCtx.isStream() != on) {
-                if (on)
-                    cliCtx.enableStreaming(setCmd.isAllowOverwrite(), setCmd.flushFrequency(),
-                        setCmd.perNodeBufferSize(), setCmd.perNodeParallelOperations());
-                else
-                    cliCtx.disableStreaming();
-            }
+            if (on)
+                cliCtx.enableStreaming(setCmd.isAllowOverwrite(), setCmd.flushFrequency(),
+                    setCmd.perNodeBufferSize(), setCmd.perNodeParallelOperations());
+            else
+                cliCtx.disableStreaming();
 
-            return Collections.singletonList(DdlStatementsProcessor.zeroCursor());
+            return Collections.singletonList(H2Utils.zeroCursor());
         }
         else {
             try {

@@ -308,6 +308,49 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
     }
 
     /**
+     * @throws SQLException if failed.
+     */
+    public void testStreamingReEnabled() throws Exception {
+        try (Connection conn = createStreamedConnection(false, 10000)) {
+            assertStreamingState(true);
+
+            try (PreparedStatement stmt = conn.prepareStatement("insert into Person(\"id\", \"name\") values (?, ?)")) {
+                for (int i = 1; i <= 100; i++) {
+                    stmt.setInt(1, i);
+                    stmt.setString(2, nameForId(i));
+
+                    stmt.executeUpdate();
+                }
+            }
+
+            assertCacheEmpty();
+
+            execute(conn, "set streaming 1 batch_size 111 allow_overwrite 0 per_node_buffer_size 512 " +
+                "per_node_parallel_operations 4 flush_frequency 5000");
+
+            U.sleep(500);
+
+            assertEquals((Integer)111, U.field(conn, "streamBatchSize"));
+
+            SqlClientContext cliCtx = sqlClientContext();
+
+            assertTrue(cliCtx.isStream());
+
+            assertFalse(U.field(cliCtx, "streamAllowOverwrite"));
+
+            assertEquals((Integer)512, U.field(cliCtx, "streamNodeBufSize"));
+
+            assertEquals((Long)5000L, U.field(cliCtx, "streamFlushTimeout"));
+
+            assertEquals((Integer)4, U.field(cliCtx, "streamNodeParOps"));
+
+            // Now let's check it's all there - SET STREAMING 1 repeated call must also have caused flush.
+            for (int i = 1; i <= 100; i++)
+                assertEquals(nameForId(i), nameForIdInCache(i));
+        }
+    }
+
+    /**
      *
      */
     @SuppressWarnings("ThrowableNotThrown")

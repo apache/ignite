@@ -189,9 +189,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** Pending status messages. */
     private final LinkedList<SchemaOperationStatusMessage> pendingMsgs = new LinkedList<>();
 
-    /** All currently open client contexts. */
-    private final Set<SqlClientContext> cliCtxs = Collections.newSetFromMap(new ConcurrentHashMap<>());
-
     /** Current cache that has a query running on it. */
     private final ThreadLocal<GridCacheContext> curCache = new ThreadLocal<>();
 

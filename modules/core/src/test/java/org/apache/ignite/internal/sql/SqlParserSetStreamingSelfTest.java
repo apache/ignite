@@ -28,16 +28,16 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
      *
      */
     public void testParseSetStreaming() {
-        parseValidate("set streaming on", true, false, 0, 0, 0, 0);
-        parseValidate("set streaming 1", true, false, 0, 0, 0, 0);
-        parseValidate("set streaming off", false, false, 0, 0, 0, 0);
-        parseValidate("set streaming 0", false, false, 0, 0, 0, 0);
+        parseValidate("set streaming on", true, false, 2048, 0, 0, 0);
+        parseValidate("set streaming 1", true, false, 2048, 0, 0, 0);
+        parseValidate("set streaming off", false, false, 2048, 0, 0, 0);
+        parseValidate("set streaming 0", false, false, 2048, 0, 0, 0);
         parseValidate("set streaming on batch_size 100", true, false, 100, 0, 0, 0);
-        parseValidate("set streaming on flush_frequency 500", true, false, 0, 0, 0, 500);
-        parseValidate("set streaming on per_node_buffer_size 100", true, false, 0, 0, 100, 0);
-        parseValidate("set streaming on per_node_parallel_operations 4", true, false, 0, 4, 0, 0);
-        parseValidate("set streaming on allow_overwrite on", true, true, 0, 0, 0, 0);
-        parseValidate("set streaming on allow_overwrite off", true, false, 0, 0, 0, 0);
+        parseValidate("set streaming on flush_frequency 500", true, false, 2048, 0, 0, 500);
+        parseValidate("set streaming on per_node_buffer_size 100", true, false, 2048, 0, 100, 0);
+        parseValidate("set streaming on per_node_parallel_operations 4", true, false, 2048, 4, 0, 0);
+        parseValidate("set streaming on allow_overwrite on", true, true, 2048, 0, 0, 0);
+        parseValidate("set streaming on allow_overwrite off", true, false, 2048, 0, 0, 0);
         parseValidate("set streaming on per_node_buffer_size 50 flush_frequency 500 " +
             "per_node_parallel_operations 4 allow_overwrite on batch_size 100", true, true, 100, 4, 50, 500);
 
@@ -60,8 +60,8 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
             "Failed to parse SQL statement \"set streaming [*]500\": Unexpected token: \"500\" (expected: " +
                 "\"ON\", \"OFF\", \"1\", \"0\")");
 
-        assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming off allow_overwrite",
-            "set streaming off allow_overwrite[*]\": Unexpected end of command (expected: \"ON\", \"OFF\", \"1\", " +
+        assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming on allow_overwrite",
+            "set streaming on allow_overwrite[*]\": Unexpected end of command (expected: \"ON\", \"OFF\", \"1\", " +
                 "\"0\")");
 
         assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming 1 batch_size",
@@ -79,6 +79,29 @@ public class SqlParserSetStreamingSelfTest extends SqlParserAbstractSelfTest {
         assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming on flush_frequency -4",
             "Failed to parse SQL statement \"set streaming on flush_frequency -[*]4\": " +
                 "Invalid streamer flush frequency - must be positive.");
+
+        assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming off allow_overwrite",
+            "Failed to parse SQL statement \"set streaming off [*]allow_overwrite\": Unexpected token: " +
+                "\"ALLOW_OVERWRITE\"");
+
+        assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming off batch_size",
+            "Failed to parse SQL statement \"set streaming off [*]batch_size\": Unexpected token: " +
+                "\"BATCH_SIZE\"");
+
+        assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming off flush_frequency",
+            "Failed to parse SQL statement \"set streaming off [*]flush_frequency\": Unexpected token: " +
+                "\"FLUSH_FREQUENCY\"");
+
+        assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming off per_node_buffer_size",
+            "Failed to parse SQL statement \"set streaming off [*]per_node_buffer_size\": Unexpected token: " +
+                "\"PER_NODE_BUFFER_SIZE\"");
+
+        assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming off per_node_parallel_operations",
+            "Failed to parse SQL statement \"set streaming off [*]per_node_parallel_operations\": Unexpected token: " +
+                "\"PER_NODE_PARALLEL_OPERATIONS\"");
+
+        assertParseError(QueryUtils.DFLT_SCHEMA, "set streaming off table",
+            "Failed to parse SQL statement \"set streaming off [*]table\": Unexpected token: \"TABLE\"");
     }
 
     /**

@@ -172,22 +172,24 @@ public class JdbcThinConnection implements Connection {
      */
     void executeNative(String sql, SqlCommand cmd) throws SQLException {
         if (cmd instanceof SqlSetStreamingCommand) {
+            // If streaming is already on, we have to disable it first.
+            if (stream) {
+                // We have to send request regardless of actual batch size.
+                executeBatch(true);
+
+                stream = false;
+            }
+
             boolean newVal = ((SqlSetStreamingCommand)cmd).isTurnOn();
 
-            if (!stream && newVal) {
-                // Actual ON.
+            // Actual ON, if needed.
+            if (newVal) {
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
                     schema, 1, 1, sql, null));
 
                 streamBatchSize = ((SqlSetStreamingCommand)cmd).batchSize();
 
                 stream = true;
-            }
-            else if (stream && !newVal) {
-                // We have to send request regardless of actual batch size.
-                executeBatch(true);
-
-                stream = false;
             }
         }
         else
