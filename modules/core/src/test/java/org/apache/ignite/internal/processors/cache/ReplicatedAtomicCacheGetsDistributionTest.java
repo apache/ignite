@@ -274,7 +274,7 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
     }
 
     /**
-     * @return Replicated cache configuration.
+     * @return Cache configuration.
      */
     protected <K, V> CacheConfiguration<K, V> cacheConfiguration() {
         return new CacheConfiguration<K, V>(CACHE_NAME)
