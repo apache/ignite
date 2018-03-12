@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,9 +57,6 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
     /** Value prefix. */
     private static final String VAL_PREFIX = "val";
 
-    /** Mapping MAC addresses to nodes ids. */
-    private static Map<UUID, String> macs;
-
     /** */
     private static final int PRIMARY_KEYS_NUMBER = 1_000;
 
@@ -71,15 +67,6 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
         startGrid(getConfiguration(CLIENT_NAME).setClientMode(true));
 
         assert PRIMARY_KEYS_NUMBER % gridCount() == 0;
-
-        Map<UUID, String> newMacs = new HashMap<>();
-
-        for (int idx = 0; idx < gridCount(); idx++)
-            newMacs.put(grid(idx).localNode().id(), "x2-xx-xx-xx-xx-x" + idx);
-
-        newMacs.put(grid(CLIENT_NAME).localNode().id(), "x2-xx-xx-xx-xx-x" + (gridCount() + 1));
-
-        macs = Collections.unmodifiableMap(newMacs);
     }
 
     /** {@inheritDoc} */
@@ -92,26 +79,14 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
             cache.destroy();
 
         // Setting different MAC addresses for all nodes
+        Map<UUID, String> macs = getClusterMacs();
+
+        int idx = 0;
+
+        for (Map.Entry<UUID, String> entry : macs.entrySet())
+            entry.setValue("x2-xx-xx-xx-xx-x" + idx++);
+
         setMacAddress(G.allGrids(), macs);
-    }
-
-    /**
-     * @param instances Started Ignite instances.
-     * @param macs Mapping MAC addresses to UUID.
-     */
-    private void setMacAddress(List<Ignite> instances, Map<UUID, String> macs) {
-        for (Ignite ignite : instances) {
-            for (ClusterNode node : ignite.cluster().nodes()) {
-                String mac = macs.get(node.id());
-
-                assert mac != null;
-
-                Map<String, Object> attrs = new HashMap<>(node.attributes());
-                attrs.put(ATTR_MACS, mac);
-
-                ((TcpDiscoveryNode)node).setAttributes(attrs);
-            }
-        }
     }
 
     /** {@inheritDoc} */
@@ -210,13 +185,13 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
      * @throws Exception In case of an error.
      */
     protected void runTestGetAllRequestsDistribution(final UUID destId, final boolean batchMode) throws Exception {
+        Map<UUID, String> macs = getClusterMacs();
+
         String clientMac = macs.get(grid(CLIENT_NAME).localNode().id());
 
-        Map<UUID, String> newMacs = new HashMap<>(macs);
+        assert macs.put(destId, clientMac) != null;
 
-        assert newMacs.put(destId, clientMac) != null;
-
-        setMacAddress(G.allGrids(), newMacs);
+        setMacAddress(G.allGrids(), macs);
 
         IgniteCache<Integer, String> cache = grid(0).createCache(replicatedCache());
 
@@ -271,18 +246,6 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
     }
 
     /**
-     * @return Replicated cache configuration.
-     */
-    private <K, V> CacheConfiguration<K, V> replicatedCache() {
-        return new CacheConfiguration<K, V>(CACHE_NAME)
-            .setCacheMode(REPLICATED)
-            .setWriteSynchronizationMode(FULL_SYNC)
-            .setAtomicityMode(atomicityMode())
-            .setReadFromBackup(true)
-            .setStatisticsEnabled(true);
-    }
-
-    /**
      * @return Transaction configuration.
      */
     protected TransactionConfiguration transactionConfiguration() {
@@ -306,5 +269,55 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
      */
     protected TransactionConcurrency transactionConcurrency() {
         return PESSIMISTIC;
+    }
+
+    /**
+     * @return Replicated cache configuration.
+     */
+    private <K, V> CacheConfiguration<K, V> replicatedCache() {
+        return new CacheConfiguration<K, V>(CACHE_NAME)
+            .setCacheMode(REPLICATED)
+            .setWriteSynchronizationMode(FULL_SYNC)
+            .setAtomicityMode(atomicityMode())
+            .setReadFromBackup(true)
+            .setStatisticsEnabled(true);
+    }
+
+    /**
+     * @param instances Started Ignite instances.
+     * @param macs Mapping MAC addresses to UUID.
+     */
+    private void setMacAddress(List<Ignite> instances, Map<UUID, String> macs) {
+        for (Ignite ignite : instances) {
+            for (ClusterNode node : ignite.cluster().nodes()) {
+                String mac = macs.get(node.id());
+
+                assert mac != null;
+
+                Map<String, Object> attrs = new HashMap<>(node.attributes());
+                attrs.put(ATTR_MACS, mac);
+
+                ((TcpDiscoveryNode)node).setAttributes(attrs);
+            }
+        }
+    }
+
+    /**
+     * @return Cluster nodes MAC addresses.
+     */
+    private Map<UUID, String> getClusterMacs() {
+        Map<UUID, String> macs = new HashMap<>();
+
+        for (Ignite ignite : G.allGrids()) {
+            ClusterNode node = ignite.cluster().localNode();
+
+            String mac = node.attribute(ATTR_MACS);
+
+            assert mac != null;
+
+            macs.put(node.id(), mac);
+        }
+
+        return macs;
     }
 }
