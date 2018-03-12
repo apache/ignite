@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -48,7 +49,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstractSelfTest {
     /** Cache name. */
-    private static final String CACHE_NAME = "replicatedCache";
+    private static final String CACHE_NAME = "getsDistributionTest";
 
     /** Client nodes instance's name. */
     private static final String CLIENT_NAME = "client";
@@ -130,16 +131,14 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
      * @throws Exception In case of an error.
      */
     protected void runTestGetRequestsGeneratorDistribution(boolean batchMode) throws Exception {
-        IgniteCache<Integer, String> cache = grid(0).createCache(replicatedCache());
+        IgniteCache<Integer, String> cache = grid(0).createCache(cacheConfiguration());
 
         List<Integer> keys = primaryKeys(cache, PRIMARY_KEYS_NUMBER);
 
         for (Integer key : keys)
             cache.put(key, VAL_PREFIX + key);
 
-        cache = grid(CLIENT_NAME).getOrCreateCache(CACHE_NAME);
-
-        validateData(cache, keys, batchMode);
+        validateData(keys, batchMode);
 
         for (int i = 0; i < gridCount(); i++) {
             IgniteEx ignite = grid(i);
@@ -186,30 +185,29 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
 
         String clientMac = macs.get(grid(CLIENT_NAME).localNode().id());
 
-        assert macs.put(destId, clientMac) != null;
+        macs.put(destId, clientMac);
 
         replaceMacAddresses(G.allGrids(), macs);
 
-        IgniteCache<Integer, String> cache = grid(0).createCache(replicatedCache());
+        IgniteCache<Integer, String> cache = grid(0).createCache(cacheConfiguration());
 
         List<Integer> keys = primaryKeys(cache, PRIMARY_KEYS_NUMBER);
 
         for (Integer key : keys)
             cache.put(key, VAL_PREFIX + key);
 
-        cache = grid(CLIENT_NAME).getOrCreateCache(CACHE_NAME);
-
-        validateData(cache, keys, batchMode);
+        validateData(keys, batchMode);
 
         validateRequestsDistribution(destId);
     }
 
     /**
-     * @param cache Ignite cache.
      * @param keys Keys to get.
      * @param batchMode Test mode.
      */
-    protected void validateData(IgniteCache<Integer, String> cache, List<Integer> keys, boolean batchMode) {
+    protected void validateData(List<Integer> keys, boolean batchMode) {
+        IgniteCache<Integer, String> cache = grid(CLIENT_NAME).getOrCreateCache(CACHE_NAME);
+
         try (Transaction tx = grid(CLIENT_NAME).transactions().txStart()) {
             if (batchMode) {
                 Map<Integer, String> results = cache.getAll(new TreeSet<>(keys));
@@ -269,13 +267,20 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
     }
 
     /**
+     * @return Caching mode.
+     */
+    protected CacheMode cacheMode() {
+        return REPLICATED;
+    }
+
+    /**
      * @return Replicated cache configuration.
      */
-    private <K, V> CacheConfiguration<K, V> replicatedCache() {
+    protected <K, V> CacheConfiguration<K, V> cacheConfiguration() {
         return new CacheConfiguration<K, V>(CACHE_NAME)
-            .setCacheMode(REPLICATED)
-            .setWriteSynchronizationMode(FULL_SYNC)
+            .setCacheMode(cacheMode())
             .setAtomicityMode(atomicityMode())
+            .setWriteSynchronizationMode(FULL_SYNC)
             .setReadFromBackup(true)
             .setStatisticsEnabled(true);
     }
