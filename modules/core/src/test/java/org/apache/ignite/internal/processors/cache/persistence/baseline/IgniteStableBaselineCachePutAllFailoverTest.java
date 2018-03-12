@@ -28,7 +28,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 
 /**
- *
+ * Failover cache test with putAll operations executed with presence of BaselineTopology
+ * when one random node from BLT is constantly restarted during the load.
  */
 public class IgniteStableBaselineCachePutAllFailoverTest extends CachePutAllFailoverAbstractTest {
     /** */

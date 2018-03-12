@@ -188,7 +188,7 @@ public abstract class WALRecord {
         /**
          * Fake record type, causes stop iterating and indicates segment EOF
          * <b>Note:</b> regular record type is incremented by 1 and minimal value written to file is also 1
-         * For {@link WALMode#DEFAULT} this value is at least came from padding
+         * For {@link WALMode#FSYNC} this value is at least came from padding
          */
         public static final int STOP_ITERATION_RECORD_TYPE = 0;
     }
@@ -197,11 +197,28 @@ public abstract class WALRecord {
     private int size;
 
     /** */
+    private int chainSize;
+
+    /** */
     @GridToStringExclude
     private WALRecord prev;
 
     /** */
     private WALPointer pos;
+
+    /**
+     * @param chainSize Chain size in bytes.
+     */
+    public void chainSize(int chainSize) {
+        this.chainSize = chainSize;
+    }
+
+    /**
+     * @return Get chain size in bytes.
+     */
+    public int chainSize() {
+        return chainSize;
+    }
 
     /**
      * @return Previous record in chain.

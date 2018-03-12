@@ -159,7 +159,8 @@ final class BinaryMetadataTransport {
         MetadataUpdateResultFuture resFut = new MetadataUpdateResultFuture();
 
         if (log.isDebugEnabled())
-            log.debug("Requesting metadata update for " + metadata.typeId());
+            log.debug("Requesting metadata update for " + metadata.typeId() + "; caller thread is blocked on future "
+                + resFut);
 
         synchronized (this) {
             unlabeledFutures.add(resFut);
@@ -418,6 +419,9 @@ final class BinaryMetadataTransport {
 
         /** {@inheritDoc} */
         @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MetadataUpdateAcceptedMessage msg) {
+            if (log.isDebugEnabled())
+                log.debug("Received MetadataUpdateAcceptedMessage " + msg);
+
             if (msg.duplicated())
                 return;
 
@@ -468,7 +472,7 @@ final class BinaryMetadataTransport {
             GridFutureAdapter<MetadataUpdateResult> fut = syncMap.get(new SyncKey(typeId, newAcceptedVer));
 
             if (log.isDebugEnabled())
-                log.debug("Completing future for " + metaLocCache.get(typeId));
+                log.debug("Completing future " + fut + " for " + metaLocCache.get(typeId));
 
             if (fut != null)
                 fut.onDone(MetadataUpdateResult.createSuccessfulResult());

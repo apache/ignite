@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
-    using Apache.Ignite.Core.Cluster.Ssl;
+    using Apache.Ignite.Core.Ssl;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Configuration;

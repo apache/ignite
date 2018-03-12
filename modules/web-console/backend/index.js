@@ -20,7 +20,9 @@
 const fs = require('fs');
 const path = require('path');
 
-require('app-module-path').addPath(path.join(__dirname, 'node_modules'));
+const appPath = require('app-module-path');
+appPath.addPath(__dirname);
+appPath.addPath(path.join(__dirname, 'node_modules'));
 
 const _ = require('lodash');
 const getos = require('getos');

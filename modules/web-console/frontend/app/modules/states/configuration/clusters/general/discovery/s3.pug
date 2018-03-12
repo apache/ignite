@@ -24,5 +24,13 @@ mixin discovery-s3(modelAt = 'backupItem')
 
     .details-row
         +text('Bucket name:', `${model}.bucketName`, `'${discoveryKind}BucketName'`, required, 'Input bucket name', 'Bucket name for IP finder')
+    .details-row(ng-if-start=`$ctrl.available("2.4.0")`)
+        +text('Bucket endpoint:', `${model}.bucketEndpoint`, `'${discoveryKind}BucketEndpoint'`, false, 'Input bucket endpoint',
+        'Bucket endpoint for IP finder<br/> \
+        For information about possible endpoint names visit <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">docs.aws.amazon.com</a>')
+    .details-row(ng-if-end)
+        +text('SSE algorithm:', `${model}.SSEAlgorithm`, `'${discoveryKind}SSEAlgorithm'`, false, 'Input SSE algorithm',
+        'Server-side encryption algorithm for Amazon S3-managed encryption keys<br/> \
+        For information about possible S3-managed encryption keys visit <a href="http://docs.aws.amazon.com/AmazonS3/latest/dev/UsingServerSideEncryption.html">docs.aws.amazon.com</a>')
     .details-row
         label Note, AWS credentials will be generated as stub
