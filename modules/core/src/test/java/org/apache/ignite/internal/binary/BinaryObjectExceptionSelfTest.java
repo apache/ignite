@@ -152,7 +152,12 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
         assertEquals("Fields count must match \"Unexpected field type\" exception count", fields.length, unexpectedCnt);
     }
 
-    public void testFailedSerializationLogging() throws Exception {
+    /**
+     * Test verbose logging of object marshalling.
+     *
+     * @throws Exception If failed.
+     */
+    public void testFailedMarshallingLogging() throws Exception {
         BinaryMarshaller marshaller = createStandaloneBinaryMarshaller();
 
         StringBuilder sb = new StringBuilder(4 << 10);
@@ -191,18 +196,20 @@ public class BinaryObjectExceptionSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** */
     private static class Value1{
-
+        /** */
         Value2 objVal = new Value2();
 
+        /** */
         static class Value2 implements Binarylizable {
-            @Override
-            public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            /** */
+            @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
                 throw new BinaryObjectException("bad object");
             }
 
-            @Override
-            public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            /** */
+            @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
                 throw new BinaryObjectException("bad object");
             }
         }
