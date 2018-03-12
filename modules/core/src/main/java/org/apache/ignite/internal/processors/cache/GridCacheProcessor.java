@@ -34,7 +34,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.stream.Collectors;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -2776,8 +2775,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     public IgniteInternalFuture<?> dynamicStartCaches(Collection<CacheConfiguration> ccfgList, boolean failIfExists,
         boolean checkThreadTx, boolean disabledAfterStart) {
+        List<StoredCacheData> storedCacheDataList = new ArrayList<>(ccfgList.size());
+
+        for (CacheConfiguration cfg : ccfgList)
+            storedCacheDataList.add(new StoredCacheData(cfg));
+
         return dynamicStartCachesByStoredConf(
-            ccfgList.stream().map(StoredCacheData::new).collect(Collectors.toList()),
+            storedCacheDataList,
             failIfExists,
             checkThreadTx,
             disabledAfterStart
