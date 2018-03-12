@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
@@ -84,7 +83,7 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
         for (Map.Entry<UUID, String> entry : macs.entrySet())
             entry.setValue("x2-xx-xx-xx-xx-x" + idx++);
 
-        setMacAddress(G.allGrids(), macs);
+        replaceMacAddresses(G.allGrids(), macs);
     }
 
     /** {@inheritDoc} */
@@ -133,7 +132,7 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
     protected void runTestGetRequestsGeneratorDistribution(boolean batchMode) throws Exception {
         IgniteCache<Integer, String> cache = grid(0).createCache(replicatedCache());
 
-        Set<Integer> keys = new TreeSet<>(primaryKeys(cache, PRIMARY_KEYS_NUMBER));
+        List<Integer> keys = primaryKeys(cache, PRIMARY_KEYS_NUMBER);
 
         for (Integer key : keys)
             cache.put(key, VAL_PREFIX + key);
@@ -189,11 +188,11 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
 
         assert macs.put(destId, clientMac) != null;
 
-        setMacAddress(G.allGrids(), macs);
+        replaceMacAddresses(G.allGrids(), macs);
 
         IgniteCache<Integer, String> cache = grid(0).createCache(replicatedCache());
 
-        Set<Integer> keys = new TreeSet<>(primaryKeys(cache, PRIMARY_KEYS_NUMBER));
+        List<Integer> keys = primaryKeys(cache, PRIMARY_KEYS_NUMBER);
 
         for (Integer key : keys)
             cache.put(key, VAL_PREFIX + key);
@@ -210,10 +209,10 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
      * @param keys Keys to get.
      * @param batchMode Test mode.
      */
-    protected void getAndValidateData(IgniteCache<Integer, String> cache, Set<Integer> keys, boolean batchMode) {
+    protected void getAndValidateData(IgniteCache<Integer, String> cache, List<Integer> keys, boolean batchMode) {
         try (Transaction tx = grid(CLIENT_NAME).transactions().txStart()) {
             if (batchMode) {
-                Map<Integer, String> results = cache.getAll(keys);
+                Map<Integer, String> results = cache.getAll(new TreeSet<>(keys));
 
                 for (Map.Entry<Integer, String> entry : results.entrySet())
                     assertEquals(VAL_PREFIX + entry.getKey(), entry.getValue());
@@ -285,7 +284,7 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
      * @param instances Started Ignite instances.
      * @param macs Mapping MAC addresses to UUID.
      */
-    private void setMacAddress(List<Ignite> instances, Map<UUID, String> macs) {
+    private void replaceMacAddresses(List<Ignite> instances, Map<UUID, String> macs) {
         for (Ignite ignite : instances) {
             for (ClusterNode node : ignite.cluster().nodes()) {
                 String mac = macs.get(node.id());
