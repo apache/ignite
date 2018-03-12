@@ -343,6 +343,9 @@ public class GridMarshallerMappingProcessor extends GridProcessorAdapter {
         processIncomingMappings(mappings);
     }
 
+    /**
+     * @param mappings Incoming marshaller mappings.
+     */
     private void processIncomingMappings(List<Map<Integer, MappedName>> mappings) {
         if (mappings != null) {
             for (int i = 0; i < mappings.size(); i++) {
