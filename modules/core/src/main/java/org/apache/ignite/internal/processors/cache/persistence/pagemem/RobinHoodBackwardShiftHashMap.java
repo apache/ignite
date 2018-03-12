@@ -436,16 +436,6 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
     }
 
     /**
-     * @param i index probably outsize internal array of cells.
-     * @return corresponding index inside cells array.
-     */
-    private int normalizeIndex(int i) {
-        assert i < 2 * numBuckets;
-
-        return i < numBuckets ? i : i - numBuckets;
-    }
-
-    /**
      * @param curr current selected index to store value.
      * @param baseIdx base or ideal bucket to store entry value to avoid probing.
      * @return distance between cells, or 0 if cell is ideal.
