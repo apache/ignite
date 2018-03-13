@@ -18,6 +18,8 @@
 package org.apache.ignite.yardstick;
 
 import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParametersDelegate;
+import java.util.Collections;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -29,6 +31,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.yardstick.cache.IgniteStreamerBenchmark;
+import org.apache.ignite.yardstick.upload.UploadBenchmarkArguments;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -262,6 +265,10 @@ public class IgniteBenchmarkArguments {
     @GridToStringInclude
     private int clientNodesAfterId = -1;
 
+    @ParametersDelegate
+    @GridToStringInclude
+    public UploadBenchmarkArguments upload = new UploadBenchmarkArguments();
+
     /**
      * @return {@code True} if need set {@link DataStorageConfiguration}.
      */
@@ -384,7 +391,7 @@ public class IgniteBenchmarkArguments {
     /**
      * @return {@code True} if flag for native benchmarking is set.
      */
-    public boolean isNative(){
+    public boolean isNative() {
         return ntv;
     }
 
