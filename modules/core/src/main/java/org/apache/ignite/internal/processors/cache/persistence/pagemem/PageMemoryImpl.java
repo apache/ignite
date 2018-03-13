@@ -935,29 +935,15 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /**
-     * @return max dirty ratio from the segments.
+     * @param dirtyRatioThreshold Throttle threshold.
      */
-    double getDirtyPagesRatio() {
-        double res = 0;
-
+    boolean shouldThrottle(double dirtyRatioThreshold) {
         for (Segment segment : segments) {
-            res = Math.max(res, segment.getDirtyPagesRatio());
+            if (segment.shouldThrottle(dirtyRatioThreshold))
+                return true;
         }
 
-        return res;
-    }
-
-    /**
-     * @return total pages can be placed in all segments
-     */
-    public long totalPages() {
-        long res = 0;
-
-        for (Segment segment : segments) {
-            res += segment.pages();
-        }
-
-        return res;
+        return false;
     }
 
     /**
@@ -987,7 +973,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /** {@inheritDoc} */
-    @Override public  PageIdCollection[] beginCheckpoint() throws IgniteException {
+    @Override public PageIdCollection[] beginCheckpoint() throws IgniteException {
         if (segments == null)
             return new PageIdCollection[] {};
 
@@ -1951,9 +1937,9 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         /**
-         * @return  dirtyRatio to be compared with Throttle threshold.
+         * @param dirtyRatioThreshold Throttle threshold.
          */
-        private double getDirtyPagesRatio() {
+        private boolean shouldThrottle(double dirtyRatioThreshold) {
             return getDirtyPagesRatio() > dirtyRatioThreshold;
         }
 

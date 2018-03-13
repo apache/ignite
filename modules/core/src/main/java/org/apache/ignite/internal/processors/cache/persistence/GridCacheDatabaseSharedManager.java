@@ -2610,15 +2610,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return writtenPagesCntr;
     }
 
-
-    /**
-     * Counter for fsynced checkpoint pages. Not null only if checkpoint is running.
-     */
-    public AtomicInteger syncedPagesCounter() {
-        return syncedPagesCntr;
-    }
-
-
     /** {@inheritDoc} */
     @Override public AtomicInteger syncedPagesCounter() {
         return syncedPagesCntr;
@@ -3263,7 +3254,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 scope.addDataRegionCpPages(((PageMemoryEx)region.pageMemory()).beginCheckpoint());
             }
 
-            currCheckpointPagesCnt = pagesNum;
+            currCheckpointPagesCnt = scope.totalCpPages();
 
             return scope;
         }

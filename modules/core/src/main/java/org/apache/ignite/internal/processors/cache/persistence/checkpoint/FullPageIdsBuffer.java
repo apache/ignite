@@ -77,7 +77,7 @@ public class FullPageIdsBuffer {
      * @param comp the comparator to determine the order of elements in the buffer.
      */
     public void sort(Comparator<FullPageId> comp) {
-        Arrays.sort(arr, position, limit, comp);
+        Arrays.parallelSort(arr, position, limit, comp);
 
         setSortedUsingComparator(comp);
     }
