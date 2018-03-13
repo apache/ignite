@@ -79,13 +79,6 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /** */
     private static Ignite ignite;
 
-    /**
-     *
-     */
-    public GridEventStorageCheckAllEventsSelfTest() {
-        super(/*start grid*/true);
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
@@ -97,8 +90,20 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid();
+
         ignite = G.ignite(getTestIgniteInstanceName());
+
+        long tstamp = startTimestamp();
+
+        ignite.compute().localDeployTask(GridAllEventsTestTask.class, GridAllEventsTestTask.class.getClassLoader());
+
+        List<Event> evts = pullEvents(tstamp, 1);
+
+        assertEvent(evts.get(0).type(), EVT_TASK_DEPLOYED, evts);
     }
 
     /** {@inheritDoc} */
@@ -116,19 +121,6 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     private void assertEvent(int evtType, int expType, List<Event> evts) {
         assert evtType == expType : "Invalid event [evtType=" + evtType + ", expectedType=" + expType +
             ", evts=" + evts + ']';
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testSingleEvtDeployed() throws Exception {
-        long ts = startTimestamp();
-
-        ignite.compute().localDeployTask(GridAllEventsTestTask.class, GridAllEventsTestTask.class.getClassLoader());
-
-        List<Event> evts = pullEvents(ts, 1);
-
-        assertEvent(evts.get(0).type(), EVT_TASK_DEPLOYED, evts);
     }
 
     /**
@@ -357,7 +349,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
         assert false;
 
-        return new ArrayList<>();
+        return null;
     }
 
     /**

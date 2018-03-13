@@ -776,7 +776,9 @@ public abstract class GridAbstractTest extends TestCase {
             ", actualTopology=" + grid(0).cluster().nodes() + ']');
     }
 
-    /** */
+    /**
+     * Stop single Ignite instance using auto-generated instance name.
+     */
     protected void stopGrid() {
         stopGrid(getTestIgniteInstanceName());
     }
@@ -1085,7 +1087,9 @@ public abstract class GridAbstractTest extends TestCase {
         }
     }
 
-    /** Stop all grids and throw {@link Exception} if some of them failed to stop */
+    /**
+     * Stop all grids and throw {@link Exception} if some of them failed to stop.
+     */
     private void stopAllGridsSilently() throws Exception {
         final Map<String, Throwable> stopGridErrors = new HashMap<>();
 
@@ -1107,7 +1111,9 @@ public abstract class GridAbstractTest extends TestCase {
         }
     }
 
-    /** Stop all grid nodes with canceling all jobs currently active */
+    /**
+     * Stop all grid nodes with canceling all jobs currently active.
+     */
     protected void stopAllGrids() {
         stopAllGrids(true);
     }
@@ -1131,7 +1137,9 @@ public abstract class GridAbstractTest extends TestCase {
         }
     }
 
-    /** Stop all server grid nodes */
+    /**
+     * Stop all server grid nodes.
+     */
     protected void stopAllServers() {
         G.allGrids().stream().filter(g -> !g.configuration().getDiscoverySpi().isClientMode())
             .forEach(g -> stopGrid(g.name(), false, true));

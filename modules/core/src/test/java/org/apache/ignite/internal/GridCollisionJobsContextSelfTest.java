@@ -40,13 +40,13 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
  */
 @GridCommonTest(group = "Kernal Self")
 public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
-    /** */
-    public GridCollisionJobsContextSelfTest() {
-        super(/*start grid*/true);
-    }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid();
+
         Ignite ignite = G.ignite(getTestIgniteInstanceName());
 
         assert ignite != null;
