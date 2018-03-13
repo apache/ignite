@@ -31,6 +31,7 @@
 #include <ignite/common/utils.h>
 #include "ignite/odbc/diagnostic/diagnostic_record_storage.h"
 
+using namespace ignite::odbc;
 using namespace ignite::odbc::config;
 
 namespace
@@ -50,7 +51,7 @@ namespace
 
     const std::string testAddressStr = testServerHost + ':' + ignite::common::LexicalCast<std::string>(testServerPort);
 
-    const ignite::odbc::EndPoint testAddress = { testServerHost, testServerPort };
+    const EndPoint testAddress(testServerHost, testServerPort);
 }
 
 const char* BoolToStr(bool val, bool lowerCase = true)
@@ -65,7 +66,7 @@ void ParseValidDsnString(const std::string& dsnStr, Configuration& cfg)
 {
     ConnectionStringParser parser(cfg);
 
-    ignite::odbc::diagnostic::DiagnosticRecordStorage diag;
+    diagnostic::DiagnosticRecordStorage diag;
 
     BOOST_CHECK_NO_THROW(parser.ParseConfigAttributes(dsnStr.c_str(), &diag));
 
@@ -77,7 +78,7 @@ void ParseValidConnectString(const std::string& connectStr, Configuration& cfg)
 {
     ConnectionStringParser parser(cfg);
 
-    ignite::odbc::diagnostic::DiagnosticRecordStorage diag;
+    diagnostic::DiagnosticRecordStorage diag;
 
     BOOST_CHECK_NO_THROW(parser.ParseConnectionString(connectStr, &diag));
 
@@ -89,7 +90,7 @@ void ParseConnectStringWithError(const std::string& connectStr, Configuration& c
 {
     ConnectionStringParser parser(cfg);
 
-    ignite::odbc::diagnostic::DiagnosticRecordStorage diag;
+    diagnostic::DiagnosticRecordStorage diag;
 
     BOOST_CHECK_NO_THROW(parser.ParseConnectionString(connectStr, &diag));
 
@@ -100,24 +101,42 @@ void ParseInvalidConnectString(const std::string& connectStr, Configuration& cfg
 {
     ConnectionStringParser parser(cfg);
 
-    ignite::odbc::diagnostic::DiagnosticRecordStorage diag;
+    diagnostic::DiagnosticRecordStorage diag;
 
-    BOOST_CHECK_THROW(parser.ParseConnectionString(connectStr, &diag), ignite::odbc::OdbcError);
+    BOOST_CHECK_THROW(parser.ParseConnectionString(connectStr, &diag), OdbcError);
 }
 
-void CheckValidAddress(const char* connectStr, uint16_t port)
+void CheckValidAddress(const char* connectStr, const EndPoint& endPoint)
 {
     Configuration cfg;
 
     ParseValidConnectString(connectStr, cfg);
 
-    const std::vector<ignite::odbc::EndPoint>& addrs = cfg.GetAddresses();
+    const std::vector<EndPoint>& addrs = cfg.GetAddresses();
 
-    BOOST_REQUIRE(!addrs.empty());
-    BOOST_CHECK_EQUAL(addrs[0].port, port);
+    BOOST_REQUIRE_EQUAL(addrs.size(), 1);
+    BOOST_CHECK_EQUAL(addrs[0].host, endPoint.host);
+    BOOST_CHECK_EQUAL(addrs[0].port, endPoint.port);
 }
 
-void CheckValidProtocolVersion(const char* connectStr, ignite::odbc::ProtocolVersion version)
+void CheckValidAddresses(const char* connectStr, const std::vector<EndPoint>& endPoints)
+{
+    Configuration cfg;
+
+    ParseValidConnectString(connectStr, cfg);
+
+    const std::vector<EndPoint>& addrs = cfg.GetAddresses();
+
+    BOOST_REQUIRE_EQUAL(addrs.size(), endPoints.size());
+
+    for (size_t i = 0; i < addrs.size(); ++i)
+    {
+        BOOST_CHECK_EQUAL(addrs[i].host, endPoints[i].host);
+        BOOST_CHECK_EQUAL(addrs[i].port, endPoints[i].port);
+    }
+}
+
+void CheckValidProtocolVersion(const char* connectStr, ProtocolVersion version)
 {
     Configuration cfg;
 
@@ -188,7 +207,7 @@ void CheckConnectionConfig(const Configuration& cfg)
 
     BOOST_CHECK(cfg.IsAddressesSet());
 
-    const std::vector<ignite::odbc::EndPoint>& addrs = cfg.GetAddresses();
+    const std::vector<EndPoint>& addrs = cfg.GetAddresses();
 
     BOOST_REQUIRE(!addrs.empty());
     BOOST_CHECK_EQUAL(addrs[0].host, testAddress.host);
@@ -384,11 +403,35 @@ BOOST_AUTO_TEST_CASE(TestConnectStringInvalidAddress)
 
 BOOST_AUTO_TEST_CASE(TestConnectStringValidAddress)
 {
-    CheckValidAddress("Address=example.com:1;", 1);
-    CheckValidAddress("Address=example.com:31242;", 31242);
-    CheckValidAddress("Address=example.com:55555;", 55555);
-    CheckValidAddress("Address=example.com:110;", 110);
-    CheckValidAddress("Address=example.com;", Configuration::DefaultValue::port);
+    CheckValidAddress("Address=example.com:1;", EndPoint("example.com", 1));
+    CheckValidAddress("Address=example.com:31242;", EndPoint("example.com", 31242));
+    CheckValidAddress("Address=example.com:55555;", EndPoint("example.com", 55555));
+    CheckValidAddress("Address=example.com:110;", EndPoint("example.com", 110));
+    CheckValidAddress("Address=example.com;", EndPoint("example.com", Configuration::DefaultValue::port));
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectStringValidAddress4)
+{
+    std::vector<EndPoint> addrs;
+
+    addrs.push_back(EndPoint("one.com", 1234));
+    addrs.push_back(EndPoint("two.net", 42));
+    addrs.push_back(EndPoint("three.eu", Configuration::DefaultValue::port));
+    addrs.push_back(EndPoint("some.long.name.org", 50141));
+
+    CheckValidAddresses("Address=some.long.name.org:50141,three.eu,two.net:42,one.com:1234", addrs);
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectStringValidAddress4Spaces)
+{
+    std::vector<EndPoint> addrs;
+
+    addrs.push_back(EndPoint("one.com", 1234));
+    addrs.push_back(EndPoint("two.net", 42));
+    addrs.push_back(EndPoint("three.eu", Configuration::DefaultValue::port));
+    addrs.push_back(EndPoint("some.long.name.org", 50141));
+
+    CheckValidAddresses("Address = some.long.name.org:50141, three.eu, two.net:42, one.com:1234", addrs);
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringInvalidVersion)

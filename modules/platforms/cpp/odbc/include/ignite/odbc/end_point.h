@@ -30,6 +30,29 @@ namespace ignite
          */
         struct EndPoint
         {
+            /**
+             * Default constructor.
+             */
+            EndPoint() :
+                host(),
+                port()
+            {
+                // No-op.
+            }
+
+            /**
+             * Constructor.
+             *
+             * @param host Host.
+             * @param port Port.
+             */
+            EndPoint(const std::string& host, uint16_t port) :
+                host(host),
+                port(port)
+            {
+                // No-op.
+            }
+
             /** Remote host. */
             std::string host;
 
