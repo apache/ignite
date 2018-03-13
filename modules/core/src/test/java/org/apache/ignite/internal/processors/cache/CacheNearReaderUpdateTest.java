@@ -111,34 +111,34 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoBackups() throws Exception {
-        testGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, false, false));
+        getUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, false, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOneBackup() throws Exception {
-        testGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false));
+        getUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOneBackupNearEnabled() throws Exception {
-        testGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, true));
+        getUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOneBackupStoreEnabled() throws Exception {
-        testGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, true, false));
+        getUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, true, false));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGetUpdateMultithreaded(CacheConfiguration<Integer, Integer> ccfg) throws Exception {
+    private void getUpdateMultithreaded(CacheConfiguration<Integer, Integer> ccfg) throws Exception {
         final List<Ignite> putNodes = new ArrayList<>();
 
         for (int i = 0; i < SRVS + CLIENTS - 1; i++)
