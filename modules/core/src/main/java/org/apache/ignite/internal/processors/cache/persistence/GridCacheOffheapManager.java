@@ -158,7 +158,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     @Override public void onCheckpointBegin(Context ctx) throws IgniteCheckedException {
         assert grp.dataRegion().pageMemory() instanceof PageMemoryEx;
 
-        long start = System.currentTimeMillis();
         reuseList.saveMetadata();
 
         boolean metaWasUpdated = false;
@@ -171,11 +170,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
             metaWasUpdated |= saveStoreMetadata(store, ctx, !metaWasUpdated, false);
         }
-        //todo remove
-        long duration = System.currentTimeMillis() - start;
-
-        System.err.println("onCheckpointBegin->saveStoreMetadata required " + duration + "ms" );
-
     }
 
     /**

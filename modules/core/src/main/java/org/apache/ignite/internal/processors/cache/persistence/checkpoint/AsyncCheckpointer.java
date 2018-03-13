@@ -165,6 +165,7 @@ public class AsyncCheckpointer {
         };
 
         CheckpointFsyncScope scope = new CheckpointFsyncScope();
+
         cpScope.independentSets().forEach(set -> {
             CheckpointFsyncScope.Stripe stripeScope = scope.newStripe();
 

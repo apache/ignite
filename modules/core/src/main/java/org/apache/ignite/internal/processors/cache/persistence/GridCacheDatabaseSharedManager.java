@@ -2837,12 +2837,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
                         else {
                             fsyncScope = new CheckpointFsyncScope();
+
                             CheckpointFsyncScope.Stripe stripe = fsyncScope.newStripe();
+
                             stripe.incrementTasksCount();
                             // Single-threaded checkpoint.
                             for (FullPageIdsBuffer next : chp.cpScope.splitAndSortCpPagesIfNeeded(persistenceCfg)) {
                                 ((WriteCheckpointPages)wrCpPagesFactory.apply(next, stripe.fsyncScope)).call();
                             }
+
                             stripe.decrementTasksCount(); //emulate end of async exec
                         }
 
@@ -2855,57 +2858,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
 
                         if (!skipSync) {
-                            //todo
-                            /*fsyncScope.get();
+                            boolean fsyncStartReported = false;
 
-                            tracker.onFsyncStart();
-
-                            for (Map.Entry<PageStore, LongAdder> entry : fsyncScope.updatedStores()) {
-                                entry.getKey().sync();
-
-                                syncedPagesCntr.addAndGet(entry.getValue().intValue());
-                            }*/
-
-                            //todo
-                           /* fsyncScope.stripes().stream()
-                                .parallel()
-                                .map(stripe -> {
-                                    try {
-                                        Set<Map.Entry<PageStore, LongAdder>> entries = stripe.waitAndCheckForErrors();
-
-                                        if (log.isInfoEnabled()) {
-                                            log.info("Starting fsync for [" + entries.size() + "] page stores " +
-                                                "for one from [" + fsyncScope.stripesCount() + "] remaining stripes");
-                                        }
-
-                                        return entries;
-                                    }
-                                    catch (IgniteCheckedException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                })
-                                .flatMap(Collection::stream)
-                                .forEach(
-                                    updStoreEntry -> {
-                                        try {
-
-                                            updStoreEntry.getKey().sync();
-
-                                            syncedPagesCntr.addAndGet(updStoreEntry.getValue().intValue());
-                                        }
-                                        catch (IgniteCheckedException e) {
-                                            throw new RuntimeException(e);
-                                        }
-                                    }
-                                );*/
-
-                            ///*
                             List<CheckpointFsyncScope.Stripe> stripes = fsyncScope.stripes();
-                            while (!stripes.isEmpty()) {
-                                for (Iterator<CheckpointFsyncScope.Stripe> iterator = stripes.iterator(); iterator.hasNext(); ) {
-                                    CheckpointFsyncScope.Stripe stripe = iterator.next();
 
-                                    Set<Map.Entry<PageStore, LongAdder>> entries = null;
+                            while (!stripes.isEmpty()) {
+                                for (Iterator<CheckpointFsyncScope.Stripe> iter = stripes.iterator(); iter.hasNext(); ) {
+                                    CheckpointFsyncScope.Stripe stripe = iter.next();
+
+                                    Set<Map.Entry<PageStore, LongAdder>> entries;
+
                                     try {
                                         entries = stripe.tryWaitAndCheckForErrors(10);
                                     }
@@ -2923,18 +2885,26 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                             log.info("Starting fsync for [" + entries.size() + "] page stores " +
                                                 "for one from [" + fsyncScope.stripesCount() + "] remaining stripes");
                                         }
+
+                                        if(!fsyncStartReported) {
+                                            tracker.onFsyncStart();
+
+                                            fsyncStartReported = true;
+                                        }
+
                                         for (Map.Entry<PageStore, LongAdder> updStoreEntry : entries) {
                                             PageStore pageStore = updStoreEntry.getKey();
-                                            LongAdder value = updStoreEntry.getValue();
+                                            LongAdder val = updStoreEntry.getValue();
 
-                                            int pagesUpdated = value.intValue();
+                                            int pagesUpdated = val.intValue();
+
                                             if (pagesUpdated > 0)
                                                 pageStore.sync();
 
                                             syncedPagesCntr.addAndGet(pagesUpdated);
                                         }
 
-                                        iterator.remove();
+                                        iter.remove();
                                     }
 
                                     if (shutdownNow) {
@@ -2944,30 +2914,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                     }
                                 }
 
-                                //todo bad code, just for test
-                                if(false && !stripes.isEmpty()) {
-                                    Iterator<CheckpointFsyncScope.Stripe> stripeIterator = stripes.iterator();
-                                    if(stripeIterator.hasNext()) {
-                                        CheckpointFsyncScope.Stripe next = stripeIterator.next();
-                                        Iterator<PageStore> iterator = next.fsyncScope.keySet().iterator();
-                                        if (iterator.hasNext()) {
-                                            PageStore somePageStore = iterator.next();
-                                            LongAdder adder = next.fsyncScope.get(somePageStore);
-                                            LongAdder replace = next.fsyncScope.replace(somePageStore, new LongAdder());
-                                            if(replace.intValue()>0) {
-                                                somePageStore.sync();
-
-                                                syncedPagesCntr.addAndGet(replace.intValue());
-                                            }
-                                        }
-                                    }
-                                }
                             }
-                            //*/
-
-                        } else {
+                        } else
                             fsyncScope.get();
-                        }
                     }
                     else {
                         tracker.onPagesWriteStart();
