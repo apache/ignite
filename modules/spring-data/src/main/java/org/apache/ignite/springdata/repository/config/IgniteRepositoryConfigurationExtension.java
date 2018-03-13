@@ -38,7 +38,7 @@ public class IgniteRepositoryConfigurationExtension extends RepositoryConfigurat
     }
 
     /** {@inheritDoc} */
-    @Override public String getRepositoryFactoryClassName() {
+    @Override public String getRepositoryFactoryBeanClassName() {
         return IgniteRepositoryFactoryBean.class.getName();
     }
 
