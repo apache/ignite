@@ -39,6 +39,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** Prefix for property names. */
     public static final String PROP_PREFIX = "ignite.jdbc.";
 
+    /** Host name property. Hidden property. Is used to validate host name part of the URL. */
+    /** Default socket buffer size. */
+    private static final int DFLT_SOCK_BUFFER_SIZE = 64 * 1024;
+
     /** Connection URL. */
     private String url;
 
@@ -49,7 +53,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private StringProperty schema = new StringProperty("schema",
         "Schema name of the connection", "PUBLIC", null, false, null);
 
-    /** Host name property. Hidden property. Is used to validate host name part of the URL. */
+    /** Host name property. */
     private StringProperty host = new StringProperty(
         "host", "Ignite node IP to connect", null, null, true,
         new EmptyStringValidator("Host name is empty"));
@@ -91,12 +95,12 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** Socket send buffer size property. */
     private IntegerProperty socketSendBuffer = new IntegerProperty(
         "socketSendBuffer", "Socket send buffer size",
-        0, false, 0, Integer.MAX_VALUE);
+        DFLT_SOCK_BUFFER_SIZE, false, 0, Integer.MAX_VALUE);
 
     /** Socket receive buffer size property. */
     private IntegerProperty socketReceiveBuffer = new IntegerProperty(
         "socketReceiveBuffer", "Socket send buffer size",
-        0, false, 0, Integer.MAX_VALUE);
+        DFLT_SOCK_BUFFER_SIZE, false, 0, Integer.MAX_VALUE);
 
     /** Executes update queries on ignite server nodes flag. */
     private BooleanProperty skipReducerOnUpdate = new BooleanProperty(

@@ -155,6 +155,8 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testSocketBuffers() throws Exception {
+        final int dfltDufSize = 64 * 1024;
+
         assertInvalid("jdbc:ignite:thin://127.0.0.1?socketSendBuffer=-1",
             "Property cannot be lower than 0 [name=socketSendBuffer, value=-1]");
 
@@ -162,18 +164,18 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             "Property cannot be lower than 0 [name=socketReceiveBuffer, value=-1]");
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1")) {
-            assertEquals(0, io(conn).connectionProperties().getSocketSendBuffer());
-            assertEquals(0, io(conn).connectionProperties().getSocketReceiveBuffer());
+            assertEquals(dfltDufSize, io(conn).connectionProperties().getSocketSendBuffer());
+            assertEquals(dfltDufSize, io(conn).connectionProperties().getSocketReceiveBuffer());
         }
 
         // Note that SO_* options are hints, so we check that value is equals to either what we set or to default.
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?socketSendBuffer=1024")) {
             assertEquals(1024, io(conn).connectionProperties().getSocketSendBuffer());
-            assertEquals(0, io(conn).connectionProperties().getSocketReceiveBuffer());
+            assertEquals(dfltDufSize, io(conn).connectionProperties().getSocketReceiveBuffer());
         }
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1?socketReceiveBuffer=1024")) {
-            assertEquals(0, io(conn).connectionProperties().getSocketSendBuffer());
+            assertEquals(dfltDufSize, io(conn).connectionProperties().getSocketSendBuffer());
             assertEquals(1024, io(conn).connectionProperties().getSocketReceiveBuffer());
         }
 
