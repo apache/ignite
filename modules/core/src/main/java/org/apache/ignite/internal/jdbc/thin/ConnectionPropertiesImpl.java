@@ -20,13 +20,14 @@ package org.apache.ignite.internal.jdbc.thin;
 import java.io.Serializable;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Properties;
 import javax.naming.RefAddr;
 import javax.naming.Reference;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -39,7 +40,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** Prefix for property names. */
     public static final String PROP_PREFIX = "ignite.jdbc.";
 
-    /** Host name property. Hidden property. Is used to validate host name part of the URL. */
     /** Default socket buffer size. */
     private static final int DFLT_SOCK_BUFFER_SIZE = 64 * 1024;
 
@@ -47,20 +47,11 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     private String url;
 
     /** Addresses. */
-    private ArrayList<HostAndPort> addrs = new ArrayList<>();
+    private HostAndPortRange [] addrs;
 
     /** Schema name. Hidden property. Is used to set default schema name part of the URL. */
     private StringProperty schema = new StringProperty("schema",
         "Schema name of the connection", "PUBLIC", null, false, null);
-
-    /** Host name property. */
-    private StringProperty host = new StringProperty(
-        "host", "Ignite node IP to connect", null, null, true,
-        new EmptyStringValidator("Host name is empty"));
-
-    /** Connection port property. Hidden property. Is used to validate port number part of the URL. */
-    private IntegerProperty port = new IntegerProperty(
-        "port", "Ignite node IP to connect", ClientConnectorConfiguration.DFLT_PORT, false, 1, 0xFFFF);
 
     /** Distributed joins property. */
     private BooleanProperty distributedJoins = new BooleanProperty(
@@ -191,17 +182,10 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
             StringBuilder sbUrl = new StringBuilder(JdbcThinUtils.URL_PREFIX);
 
-            HostAndPort [] addrs = getAddresses();
+            HostAndPortRange [] addrs = getAddresses();
 
-            for (int i = 0; i < addrs.length; i++) {
-                sbUrl.append(addrs[i].host());
-
-                if (addrs[i].port() > 0)
-                    sbUrl.append(':').append(addrs[i].port());
-
-                if (i < addrs.length - 1)
-                    sbUrl.append(',');
-            }
+            for (int i = 0; i < addrs.length; i++)
+                sbUrl.append(addrs[i].toString());
 
             if (!F.isEmpty(getSchema()))
                 sbUrl.append('/').append(getSchema());
@@ -218,57 +202,13 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     }
 
     /** {@inheritDoc} */
-    @Override public String getHost() {
-        if (addrs.isEmpty())
-            return null;
-
-        return addrs.get(0).host();
+    @Override public HostAndPortRange[] getAddresses() {
+        return addrs;
     }
 
     /** {@inheritDoc} */
-    @Override public void setHost(String host) throws SQLException {
-        if (!addrs.isEmpty()) {
-            if (addrs.size() > 1) {
-                throw new SQLException("Cannot override multiple addresses with host property. " +
-                    "Please use addresses property");
-            }
-
-            addrs.get(0).host(host);
-        }
-        else
-            addrs.add(new HostAndPort(host));
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getPort() {
-        if (addrs.isEmpty())
-            return 0;
-
-        return addrs.get(0).port();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setPort(int port) throws SQLException {
-        if (!addrs.isEmpty()) {
-            if (addrs.size() > 1) {
-                throw new SQLException("Cannot override multiple addresses with port property. " +
-                    "Please use addresses property");
-            }
-
-            addrs.get(0).port(port);
-        }
-        else
-            addrs.add(new HostAndPort(null, port));
-    }
-
-    /** {@inheritDoc} */
-    @Override public HostAndPort[] getAddresses() {
-        return addrs.toArray(new HostAndPort[addrs.size()]);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setAddresses(HostAndPort[] addrs) {
-        this.addrs = new ArrayList<>(Arrays.asList(addrs));
+    @Override public void setAddresses(HostAndPortRange[] addrs) {
+        this.addrs = addrs;
     }
 
     /** {@inheritDoc} */
@@ -521,33 +461,29 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         String [] endpoints = pathParts[0].split(",");
 
-        SQLException hostErr = null;
+        if (endpoints.length > 0)
+            addrs = new HostAndPortRange[endpoints.length];
 
-        for (String endpoint : endpoints) {
-            String[] endpointParts = endpoint.split(":");
-
-            if (endpointParts.length > 2)
-                throw new SQLException("Invalid endpoint format (should be \"host[:port]\"): " + endpoint);
-
-            host.init(endpointParts[0]);
-
-            if (endpointParts.length == 2)
-                port.init(endpointParts[1]);
-            else
-                port.init((String)null);
-
-            addrs.add(new HostAndPort(host.value(), port.value()));
+        for (int i = 0; i < endpoints.length; ++i ) {
+            try {
+                addrs[i] = HostAndPortRange.parse(endpoints[i],
+                    ClientConnectorConfiguration.DFLT_PORT, ClientConnectorConfiguration.DFLT_PORT,
+                    "Invalid endpoint format (should be \"host[:portRangeFrom[..portRangeTo]]\")");
+            }
+            catch (IgniteCheckedException e) {
+                throw new SQLException(e.getMessage(), SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            }
         }
 
-        if (addrs.isEmpty())
-            throw hostErr;
+        if (F.isEmpty(addrs) || F.isEmpty(addrs[0].host()))
+            throw new SQLException("Host name is empty", SqlStateCode.CLIENT_CONNECTION_FAILED);
 
         if (nakedUrlParts.length == 2)
             parseParameters(nakedUrlParts[1], props);
 
         if (pathParts.length > 2) {
             throw new SQLException("Invalid URL format (only schema name is allowed in URL path parameter " +
-                "'host:port[/schemaName]'): " + url);
+                "'host:port[/schemaName]'): " + url, SqlStateCode.CLIENT_CONNECTION_FAILED);
         }
 
         setSchema(pathParts.length == 2 ? pathParts[1] : null);
@@ -568,13 +504,14 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
             if (pair.length != 2)
                 throw new SQLException("Invalid parameter format (only one = character is allowed per key/value " +
-                    "pair: " + param);
+                    "pair: " + param, SqlStateCode.CLIENT_CONNECTION_FAILED);
 
             String key = pair[0].trim();
             String val = pair[1].trim();
 
             if (key.isEmpty() || val.isEmpty())
-                throw new SQLException("Invalid parameter format (key and value cannot be empty): " + param);
+                throw new SQLException("Invalid parameter format (key and value cannot be empty): " + param,
+                    SqlStateCode.CLIENT_CONNECTION_FAILED);
 
             props.setProperty(PROP_PREFIX + key, val);
         }

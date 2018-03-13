@@ -143,8 +143,8 @@ public class JdbcThinConnection implements Connection {
         catch (Exception e) {
             close();
 
-            throw new SQLException("Failed to connect to Ignite cluster [host=" + connProps.getHost() +
-                ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            throw new SQLException("Failed to connect to Ignite cluster [url=" + connProps.getUrl() + ']',
+                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
     }
 

@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
+import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -91,9 +92,7 @@ public class JdbcThinTcpIoTest extends GridCommonAbstractTest {
     private JdbcThinTcpIo createTcpIo(String[] addrs, int port) throws SQLException {
         ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();
 
-        connProps.setHost("test.domain.name");
-
-        connProps.setPort(port);
+        connProps.setAddresses(new HostAndPortRange[]{new HostAndPortRange("test.domain.name", port, port)});
 
         return new JdbcThinTcpIo(connProps) {
             @Override protected InetAddress[] getAllAddressesByHost(String host) throws UnknownHostException {

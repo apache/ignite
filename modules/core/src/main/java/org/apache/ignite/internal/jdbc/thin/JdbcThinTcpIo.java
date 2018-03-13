@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
+import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -138,33 +139,35 @@ public class JdbcThinTcpIo {
 
         List<Exception> exceptions = null;
 
-        HostAndPort[] srvs = connProps.getAddresses();
+        HostAndPortRange[] srvs = connProps.getAddresses();
 
         boolean connected = false;
 
         for (int i = 0; i < srvs.length; i++, srvIdx = (srvIdx + 1) % srvs.length) {
-            HostAndPort srv = srvs[srvIdx];
+            HostAndPortRange srv = srvs[srvIdx];
 
             InetAddress[] addrs = getAllAddressesByHost(srv.host());
 
             for (InetAddress addr : addrs) {
-                try {
-                    connect(new InetSocketAddress(addr, srv.port()), timeout);
+                for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
+                    try {
+                        connect(new InetSocketAddress(addr, port), timeout);
 
-                    connected = true;
+                        connected = true;
 
-                    break;
-                }
-                catch (IOException | SQLException exception) {
-                    if (inaccessibleAddrs == null)
-                        inaccessibleAddrs = new ArrayList<>();
+                        break;
+                    }
+                    catch (IOException | SQLException exception) {
+                        if (inaccessibleAddrs == null)
+                            inaccessibleAddrs = new ArrayList<>();
 
-                    inaccessibleAddrs.add(addr.getHostName());
+                        inaccessibleAddrs.add(addr.getHostName());
 
-                    if (exceptions == null)
-                        exceptions = new ArrayList<>();
+                        if (exceptions == null)
+                            exceptions = new ArrayList<>();
 
-                    exceptions.add(exception);
+                        exceptions.add(exception);
+                    }
                 }
             }
 
@@ -238,8 +241,8 @@ public class JdbcThinTcpIo {
             in = new BufferedInputStream(endpoint.inputStream());
         }
         catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to connect to server [host=" + connProps.getHost() +
-                ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            throw new SQLException("Failed to connect to server [url=" + connProps.getUrl() + ']',
+                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
     }
 
