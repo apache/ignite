@@ -827,6 +827,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_BPLUS_TREE_LOCK_RETRIES = "IGNITE_BPLUS_TREE_LOCK_RETRIES";
 
     /**
+     * When set to {@code false}, loaded pages implementation is switched to previous version of implementation,
+     * FullPageIdTable. {@code True} value enables 'Robin Hood hashing: backward shift deletion'.
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP = "IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
