@@ -2149,55 +2149,6 @@ html,body,.splash-screen {
     }
 }
 
-.admin-page {
-    .docs-header {
-        display: flex;
-        flex-direction: row;
-        align-items: baseline;
-
-        margin: 40px 0 20px 0;
-
-        h1 {
-            font-size: 24px;
-            margin: 0 10px 0 0;
-        }
-    }
-
-    .panel-heading {
-        height: 38px;
-
-        border-bottom: 0;
-        padding-bottom: 0;
-
-        cursor: default;
-
-        i {
-            margin-top: 2px;
-            margin-right: 10px;
-        }
-
-        sub {
-            bottom: 0;
-        }
-    }
-
-    .ui-grid-header-cell input {
-      font-weight: normal;
-    }
-
-    .ui-grid-header-cell input {
-      font-weight: normal;
-    }
-
-    .ui-grid-filter-select {
-        width: calc(100% - 10px);
-    }
-
-    .ui-grid-cell-contents > i {
-        line-height: $line-height-base;
-    }
-}
-
 .center-container {
     position: absolute !important;
 }

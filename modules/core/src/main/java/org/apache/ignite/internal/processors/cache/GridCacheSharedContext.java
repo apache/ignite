@@ -23,8 +23,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
+import java.util.function.BiFunction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -68,7 +70,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.PluginProvider;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY;
 
@@ -126,7 +127,7 @@ public class GridCacheSharedContext<K, V> {
     private GridCacheSharedTtlCleanupManager ttlMgr;
 
     /** Cache contexts map. */
-    private ConcurrentHashMap8<Integer, GridCacheContext<K, V>> ctxMap;
+    private ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
 
     /** Tx metrics. */
     private volatile TransactionMetricsAdapter txMetrics;
@@ -210,7 +211,7 @@ public class GridCacheSharedContext<K, V> {
 
         txMetrics = new TransactionMetricsAdapter();
 
-        ctxMap = new ConcurrentHashMap8<>();
+        ctxMap = new ConcurrentHashMap<>();
 
         locStoreCnt = new AtomicInteger();
 
@@ -464,12 +465,10 @@ public class GridCacheSharedContext<K, V> {
     void forAllCaches(final IgniteInClosure<GridCacheContext> c) {
         for (Integer cacheId : ctxMap.keySet()) {
             ctxMap.computeIfPresent(cacheId,
-                new ConcurrentHashMap8.BiFun<Integer, GridCacheContext<K, V>, GridCacheContext<K, V>>() {
-                    @Override public GridCacheContext<K, V> apply(Integer cacheId, GridCacheContext<K, V> ctx) {
-                        c.apply(ctx);
+                (cacheId1, ctx) -> {
+                    c.apply(ctx);
 
-                        return ctx;
-                    }
+                    return ctx;
                 }
             );
         }

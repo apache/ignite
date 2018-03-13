@@ -36,7 +36,7 @@ public class SVMModelTest {
     @Test
     public void testPredictWithRawLabels() {
         Vector weights = new DenseLocalOnHeapVector(new double[]{2.0, 3.0});
-        SVMLinearClassificationModel mdl = new SVMLinearClassificationModel(weights, 1.0).withRawLabels(true);
+        SVMLinearBinaryClassificationModel mdl = new SVMLinearBinaryClassificationModel(weights, 1.0).withRawLabels(true);
 
         Vector observation = new DenseLocalOnHeapVector(new double[]{1.0, 1.0});
         TestUtils.assertEquals(1.0 + 2.0 * 1.0 + 3.0 * 1.0, mdl.apply(observation), PRECISION);
@@ -56,11 +56,12 @@ public class SVMModelTest {
         Assert.assertEquals(true, mdl.isKeepingRawLabels());
     }
 
+
     /** */
     @Test
     public void testPredictWithErasedLabels() {
         Vector weights = new DenseLocalOnHeapVector(new double[]{1.0, 1.0});
-        SVMLinearClassificationModel mdl = new SVMLinearClassificationModel(weights, 1.0);
+        SVMLinearBinaryClassificationModel mdl = new SVMLinearBinaryClassificationModel(weights, 1.0);
 
         Vector observation = new DenseLocalOnHeapVector(new double[]{1.0, 1.0});
         TestUtils.assertEquals(1.0, mdl.apply(observation), PRECISION);
@@ -87,7 +88,7 @@ public class SVMModelTest {
     @Test
     public void testPredictWithErasedLabelsAndChangedThreshold() {
         Vector weights = new DenseLocalOnHeapVector(new double[]{1.0, 1.0});
-        SVMLinearClassificationModel mdl = new SVMLinearClassificationModel(weights, 1.0).withThreshold(5);
+        SVMLinearBinaryClassificationModel mdl = new SVMLinearBinaryClassificationModel(weights, 1.0).withThreshold(5);
 
         Vector observation = new DenseLocalOnHeapVector(new double[]{1.0, 1.0});
         TestUtils.assertEquals(-1.0, mdl.apply(observation), PRECISION);
@@ -103,7 +104,7 @@ public class SVMModelTest {
     public void testPredictOnAnObservationWithWrongCardinality() {
         Vector weights = new DenseLocalOnHeapVector(new double[]{2.0, 3.0});
 
-        SVMLinearClassificationModel mdl = new SVMLinearClassificationModel(weights, 1.0);
+        SVMLinearBinaryClassificationModel mdl = new SVMLinearBinaryClassificationModel(weights, 1.0);
 
         Vector observation = new DenseLocalOnHeapVector(new double[]{1.0});
 

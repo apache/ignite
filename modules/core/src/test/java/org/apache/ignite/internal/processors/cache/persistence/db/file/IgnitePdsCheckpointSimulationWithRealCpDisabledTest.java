@@ -82,8 +82,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
-
 /**
  * Test simulated chekpoints,
  * Disables integrated check pointer thread
@@ -132,14 +130,14 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
     @Override protected void beforeTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        deleteWorkFiles();
+        cleanPersistenceDir();
     }
 
     /**
@@ -707,11 +705,17 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
                 try {
                     for (int i = PageIO.COMMON_HEADER_END; i < mem.pageSize(); i++) {
-                        assertEquals("Invalid state [pageId=" + fullId + ", pos=" + i + ']',
-                            state & 0xFF, PageUtils.getByte(pageAddr, i) & 0xFF);
+                        int expState = state & 0xFF;
+                        int pageState = PageUtils.getByte(pageAddr, i) & 0xFF;
+                        int walState = walData[i] & 0xFF;
 
-                        assertEquals("Invalid WAL state [pageId=" + fullId + ", pos=" + i + ']',
-                            state & 0xFF, walData[i] & 0xFF);
+                        if (expState != pageState)
+                            assertEquals("Invalid state [pageId=" + fullId + ", pos=" + i + ']',
+                                expState, pageState);
+
+                        if (expState != walState)
+                            assertEquals("Invalid WAL state [pageId=" + fullId + ", pos=" + i + ']',
+                                expState, walState);
                     }
                 }
                 finally {
@@ -997,13 +1001,6 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
         }
 
         return F.t((Map<FullPageId, Integer>)resMap, start);
-    }
-
-    /**
-     *
-     */
-    private void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**

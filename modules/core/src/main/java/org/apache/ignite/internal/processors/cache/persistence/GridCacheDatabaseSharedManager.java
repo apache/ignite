@@ -69,6 +69,7 @@ import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
@@ -138,7 +139,6 @@ import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P3;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -166,7 +166,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.metastorag
  *
  */
 @SuppressWarnings({"unchecked", "NonPrivateFieldAccessedInSynchronizedContext"})
-public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager {
+public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedManager implements CheckpointWriteProgressSupplier {
     /** */
     public static final String IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC = "IGNITE_PDS_CHECKPOINT_TEST_SKIP_SYNC";
 
@@ -369,7 +369,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Counter for fsynced checkpoint pages. Not null only if checkpoint is running. */
     private volatile AtomicInteger syncedPagesCntr = null;
 
-    /** Number of pages in current checkpoint. */
+    /** Counter for evicted checkpoint pages. Not null only if checkpoint is running. */
+    private volatile AtomicInteger evictedPagesCntr = null;
+
+    /** Number of pages in current checkpoint at the beginning of checkpoint. */
     private volatile int currCheckpointPagesCnt;
 
     /** */
@@ -678,16 +681,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteOutClosure<Float> fillFactorProvider(final DataRegionConfiguration dataRegCfg) {
+    @Override protected IgniteOutClosure<Long> freeSpaceProvider(final DataRegionConfiguration dataRegCfg) {
         if (!dataRegCfg.isPersistenceEnabled())
-            return super.fillFactorProvider(dataRegCfg);
+            return super.freeSpaceProvider(dataRegCfg);
 
         final String dataRegName = dataRegCfg.getName();
 
-        return new IgniteOutClosure<Float>() {
-            @Override public Float apply() {
-                long loadSize = 0L;
-                long totalSize = 0L;
+        return new IgniteOutClosure<Long>() {
+            @Override public Long apply() {
+                long freeSpace = 0L;
 
                 for (CacheGroupContext grpCtx : cctx.cache().cacheGroups()) {
                     if (!grpCtx.dataRegion().config().getName().equals(dataRegName))
@@ -695,16 +697,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     assert grpCtx.offheap() instanceof GridCacheOffheapManager;
 
-                    T2<Long, Long> fillFactor = ((GridCacheOffheapManager)grpCtx.offheap()).fillFactor();
-
-                    loadSize += fillFactor.get1();
-                    totalSize += fillFactor.get2();
+                    freeSpace += ((GridCacheOffheapManager)grpCtx.offheap()).freeSpace();
                 }
 
-                if (totalSize == 0)
-                    return (float)0;
-
-                return (float)loadSize / totalSize;
+                return freeSpace;
             }
         };
     }
@@ -941,10 +937,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             chpBufSize = cacheSize;
         }
 
-        boolean writeThrottlingEnabled = persistenceCfg.isWriteThrottlingEnabled();
+        PageMemoryImpl.ThrottlingPolicy plc = persistenceCfg.isWriteThrottlingEnabled()
+            ? PageMemoryImpl.ThrottlingPolicy.SPEED_BASED
+            : PageMemoryImpl.ThrottlingPolicy.NONE;
 
-        if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED, false))
-            writeThrottlingEnabled = true;
+        String val = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED);
+
+        if (val != null) {
+            if ("ratio".equalsIgnoreCase(val))
+                plc = PageMemoryImpl.ThrottlingPolicy.TARGET_RATIO_BASED;
+            else if ("speed".equalsIgnoreCase(val) || Boolean.valueOf(val))
+                plc = PageMemoryImpl.ThrottlingPolicy.SPEED_BASED;
+        }
 
         GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
 
@@ -971,23 +975,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             ),
             cctx,
             memCfg.getPageSize(),
-            new GridInClosure3X<FullPageId, ByteBuffer, Integer>() {
-                @Override public void applyx(
-                    FullPageId fullId,
-                    ByteBuffer pageBuf,
-                    Integer tag
-                ) throws IgniteCheckedException {
-                    // First of all, write page to disk.
-                    storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);
+            (fullId, pageBuf, tag) -> {
+                // First of all, write page to disk.
+                storeMgr.write(fullId.groupId(), fullId.pageId(), pageBuf, tag);
 
-                    // Only after write we can write page into snapshot.
-                    snapshotMgr.flushDirtyPageHandler(fullId, pageBuf, tag);
-                }
+                // Only after write we can write page into snapshot.
+                snapshotMgr.flushDirtyPageHandler(fullId, pageBuf, tag);
+
+                AtomicInteger cntr = evictedPagesCntr;
+
+                if (cntr != null)
+                    cntr.incrementAndGet();
             },
             changeTracker,
             this,
             memMetrics,
-            writeThrottlingEnabled
+            plc,
+            this
         );
 
         memMetrics.pageMemory(pageMem);
@@ -1133,17 +1137,32 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (cctx.kernalContext().query().moduleEnabled()) {
             ExchangeActions acts = fut.exchangeActions();
 
-            if (acts != null && !F.isEmpty(acts.cacheStartRequests())) {
-                for (ExchangeActions.CacheActionData actionData : acts.cacheStartRequests()) {
-                    int cacheId = CU.cacheId(actionData.request().cacheName());
-
-                    GridFutureAdapter<Void> old = idxRebuildFuts.put(cacheId, new GridFutureAdapter<>());
-
-                    if (old != null)
-                        old.onDone();
+            if (acts != null) {
+                if (!F.isEmpty(acts.cacheStartRequests())) {
+                    for (ExchangeActions.CacheActionData actionData : acts.cacheStartRequests())
+                        prepareIndexRebuildFuture(CU.cacheId(actionData.request().cacheName()));
+                }
+                else if (acts.localJoinContext() != null && !F.isEmpty(acts.localJoinContext().caches())) {
+                    for (T2<DynamicCacheDescriptor, NearCacheConfiguration> tup : acts.localJoinContext().caches())
+                        prepareIndexRebuildFuture(tup.get1().cacheId());
                 }
             }
         }
+    }
+
+    /**
+     * Creates a new index rebuild future that should be completed later after exchange is done. The future
+     * has to be created before exchange is initialized to guarantee that we will capture a correct future
+     * after activation or restore completes.
+     * If there was an old future for the given ID, it will be completed.
+     *
+     * @param cacheId Cache ID.
+     */
+    private void prepareIndexRebuildFuture(int cacheId) {
+        GridFutureAdapter<Void> old = idxRebuildFuts.put(cacheId, new GridFutureAdapter<>());
+
+        if (old != null)
+            old.onDone();
     }
 
     /** {@inheritDoc} */
@@ -1226,11 +1245,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         for (Map.Entry<PageMemoryEx, Collection<Integer>> entry : destroyed.entrySet()) {
             final Collection<Integer> grpIds = entry.getValue();
 
-            clearFuts.add(entry.getKey().clearAsync(new P3<Integer, Long, Integer>() {
-                @Override public boolean apply(Integer grpId, Long pageId, Integer tag) {
-                    return grpIds.contains(grpId);
-                }
-            }, false));
+            clearFuts.add(entry.getKey().clearAsync((grpId, pageIdg) -> grpIds.contains(grpId), false));
         }
 
         for (IgniteInternalFuture<Void> clearFut : clearFuts) {
@@ -1960,12 +1975,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             PageMemoryEx pageMem = gId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(gId);
 
-                            pageMem.clearAsync(new P3<Integer, Long, Integer>() {
-                                @Override public boolean apply(Integer cacheId, Long pageId, Integer tag) {
-                                    return cacheId == gId && PageIdUtils.partId(pageId) == pId;
-                                }
-                            }, true).get();
-
+                            pageMem.clearAsync(
+                                (grpId, pageId) -> grpId == gId && PageIdUtils.partId(pageId) == pId,
+                                true).get();
                         }
 
                         break;
@@ -2060,54 +2072,56 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @param partStates Partition to restore state.
      */
     public void applyUpdatesOnRecovery(
-        WALIterator it,
+        @Nullable WALIterator it,
         IgnitePredicate<IgniteBiTuple<WALPointer, WALRecord>> recPredicate,
         IgnitePredicate<DataEntry> entryPredicate,
         Map<T2<Integer, Integer>, T2<Integer, Long>> partStates
     ) throws IgniteCheckedException {
-        while (it.hasNextX()) {
-            IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
+        if (it != null) {
+            while (it.hasNextX()) {
+                IgniteBiTuple<WALPointer, WALRecord> next = it.nextX();
 
-            WALRecord rec = next.get2();
+                WALRecord rec = next.get2();
 
-            if (!recPredicate.apply(next))
-                break;
+                if (!recPredicate.apply(next))
+                    break;
 
-            switch (rec.type()) {
-                case DATA_RECORD:
-                    checkpointReadLock();
+                switch (rec.type()) {
+                    case DATA_RECORD:
+                        checkpointReadLock();
 
-                    try {
-                        DataRecord dataRec = (DataRecord) rec;
+                        try {
+                            DataRecord dataRec = (DataRecord)rec;
 
-                        for (DataEntry dataEntry : dataRec.writeEntries()) {
-                            if (entryPredicate.apply(dataEntry)) {
-                                checkpointReadLock();
+                            for (DataEntry dataEntry : dataRec.writeEntries()) {
+                                if (entryPredicate.apply(dataEntry)) {
+                                    checkpointReadLock();
 
-                                try {
-                                    int cacheId = dataEntry.cacheId();
+                                    try {
+                                        int cacheId = dataEntry.cacheId();
 
-                                    GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+                                        GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-                                    if (cacheCtx != null)
-                                        applyUpdate(cacheCtx, dataEntry);
-                                    else if (log != null)
-                                        log.warning("Cache (cacheId=" + cacheId + ") is not started, can't apply updates.");
-                                }
-                                finally {
-                                    checkpointReadUnlock();
+                                        if (cacheCtx != null)
+                                            applyUpdate(cacheCtx, dataEntry);
+                                        else if (log != null)
+                                            log.warning("Cache (cacheId=" + cacheId + ") is not started, can't apply updates.");
+                                    }
+                                    finally {
+                                        checkpointReadUnlock();
+                                    }
                                 }
                             }
                         }
-                    }
-                    finally {
-                        checkpointReadUnlock();
-                    }
+                        finally {
+                            checkpointReadUnlock();
+                        }
 
-                    break;
+                        break;
 
-                default:
-                    // Skip other records.
+                    default:
+                        // Skip other records.
+                }
             }
         }
 
@@ -2329,6 +2343,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     updateState(part, restore.get1());
                 }
             }
+
+            // After partition states are restored, it is necessary to update internal data structures in topology.
+            grp.topology().afterStateRestored(grp.topology().lastTopologyChangeVersion());
         }
     }
 
@@ -2588,10 +2605,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    /**
-     * Counter for written checkpoint pages. Not null only if checkpoint is running.
-     */
-    public AtomicInteger writtenPagesCounter() {
+    /** {@inheritDoc} */
+    @Override public AtomicInteger writtenPagesCounter() {
         return writtenPagesCntr;
     }
 
@@ -2604,10 +2619,18 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
 
-    /**
-     * @return Number of pages in current checkpoint. If checkpoint is not running, returns 0.
-     */
-    public int currentCheckpointPagesCount() {
+    /** {@inheritDoc} */
+    @Override public AtomicInteger syncedPagesCounter() {
+        return syncedPagesCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public AtomicInteger evictedPagesCntr() {
+        return evictedPagesCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int currentCheckpointPagesCount() {
         return currCheckpointPagesCnt;
     }
 
@@ -2795,6 +2818,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                 writtenPagesCntr = new AtomicInteger();
                 syncedPagesCntr = new AtomicInteger();
+                evictedPagesCntr = new AtomicInteger();
 
                 boolean interrupted = true;
 
@@ -3112,9 +3136,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (grp.isLocal() || !grp.walEnabled())
                         continue;
 
-                    //Create temporary collection with basic fields to preallocate CacheState's internal arrays later
-                    Collection<PartitionState> partsState = new ArrayList<>();
+                    int locPartsSize = 0;
 
+                    for (GridDhtLocalPartition ignored : grp.topology().currentLocalPartitions())
+                        locPartsSize++;
+
+                    CacheState state = new CacheState(locPartsSize);
                     int prevPartId = -1;
 
                     for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
@@ -3124,21 +3151,16 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             throw new IllegalStateException("Broken order of GridDhtPartitionTopology" +
                                 ".currentLocalPartitions(): [prev=" + prevPartId + ", cur=" + partId + "]");
 
-                        partsState.add(
-                            new PartitionState(partId,
-                                part.dataStore().fullSize(),
-                                part.updateCounter(),
-                                (byte)part.state().ordinal()));
-                    }
+                        prevPartId = partId;
 
-                    CacheState state = new CacheState(partsState.size());
-
-                    for (PartitionState part : partsState) {
-                        state.addPartitionState(part.partId(),
-                            part.dataStoreSize(),
+                        state.addPartitionState(
+                            partId,
+                            part.dataStore().fullSize(),
                             part.updateCounter(),
-                            part.partState());
+                            (byte)part.state().ordinal()
+                        );
                     }
+
 
                     cpRec.addCacheGroupState(grp.groupId(), state);
                 }
@@ -3241,6 +3263,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 scope.addDataRegionCpPages(((PageMemoryEx)region.pageMemory()).beginCheckpoint());
             }
 
+            currCheckpointPagesCnt = pagesNum;
+
             return scope;
         }
 
@@ -3251,6 +3275,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             synchronized (this) {
                 writtenPagesCntr = null;
                 syncedPagesCntr = null;
+                evictedPagesCntr = null;
 
                 for (DataRegion memPlc : dataRegions()) {
                     if (!memPlc.config().isPersistenceEnabled())
@@ -3267,7 +3292,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         chp.cpEntry.checkpointMark(),
                         null,
                         CheckpointEntryType.END);
-
 
                 currCheckpointPagesCnt = 0;
             }
@@ -3302,60 +3326,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
     }
 
-    /**
-     * Wrapper class to collect partition state for checkpoint record.
-     */
-    private static class PartitionState {
-        /** Partition ID. */
-        private final int partId;
-        /** Data storage size. */
-        private final int dsSize;
-        /** Update counter. */
-        private final long updateCntr;
-        /** Partition state enum value id. */
-        private byte partState;
 
-        /**
-         * @param partId Partition id.
-         * @param dsSize Ds size.
-         * @param updateCntr Update counter.
-         * @param partState Partition state enum value id.
-         */
-        public PartitionState(int partId, int dsSize, long updateCntr, byte partState) {
-            this.partId = partId;
-            this.dsSize = dsSize;
-            this.updateCntr = updateCntr;
-            this.partState = partState;
-        }
-
-        /**
-         * @return {@link #partId}
-         */
-        public int partId() {
-            return partId;
-        }
-
-        /**
-         * @return {@link #dsSize}
-         */
-        public int dataStoreSize() {
-            return dsSize;
-        }
-
-        /**
-         * @return {@link #updateCntr}
-         */
-        public long updateCounter() {
-            return updateCntr;
-        }
-
-        /**
-         * @return {@link #partState}
-         */
-        public byte partState() {
-            return partState;
-        }
-    }
 
 
     /** Pages write task. Contains array of page IDs to write to page store. */
@@ -3459,11 +3430,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     PageStore store = storeMgr.writeInternal(grpId, fullId.pageId(), tmpWriteBuf, tag, false);
 
-                    updStores
-                        .computeIfAbsent(store, k -> new LongAdder())
+                        updStores.computeIfAbsent(store, k -> new LongAdder())
                         .increment();
+                    }
                 }
-            }
 
             if (log.isDebugEnabled())
                 log.debug("Completed write of chunk [" + writePageIds.remaining() + "] pages," +

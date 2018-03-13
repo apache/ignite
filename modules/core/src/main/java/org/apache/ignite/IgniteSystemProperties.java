@@ -770,6 +770,18 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID = "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
 
+    /** Ignite JVM pause detector disabled. */
+    public static final String IGNITE_JVM_PAUSE_DETECTOR_DISABLED = "IGNITE_JVM_PAUSE_DETECTOR_DISABLED";
+
+    /** Ignite JVM pause detector precision. */
+    public static final String IGNITE_JVM_PAUSE_DETECTOR_PRECISION = "IGNITE_JVM_PAUSE_DETECTOR_PRECISION";
+
+    /** Ignite JVM pause detector threshold. */
+    public static final String IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD = "IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD";
+
+    /** Ignite JVM pause detector last events count. */
+    public static final String IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT = "IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT";
+
     /**
      * Default value is {@code false}.
      */
@@ -797,6 +809,25 @@ public final class IgniteSystemProperties {
      * (such as coding mistakes in code using Ignite) will not be logged.
      */
     public static final String IGNITE_DEV_ONLY_LOGGING_DISABLED = "IGNITE_DEV_ONLY_LOGGING_DISABLED";
+
+    /**
+     * When set to {@code true} (default), pages are written to page store without holding segment lock (with delay).
+     * Because other thread may require exactly the same page to be loaded from store, reads are protected by locking.
+     */
+    public static final String IGNITE_DELAYED_REPLACED_PAGE_WRITE = "IGNITE_DELAYED_REPLACED_PAGE_WRITE";
+
+    /**
+     * When set to {@code true}, WAL implementation with dedicated worker will be used even in FSYNC mode.
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER = "IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER";
+
+    /**
+     * When set to {@code false}, loaded pages implementation is switched to previous version of implementation,
+     * FullPageIdTable. {@code True} value enables 'Robin Hood hashing: backward shift deletion'.
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP = "IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP";
 
     /**
      * Enables striped parallel processing of dirty pages during checkpoint. Using this mode may speed up checkpoint
