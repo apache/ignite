@@ -37,18 +37,18 @@ import static org.yardstickframework.BenchmarkUtils.println;
 /**
  * JDBC benchmark that performs query operations.
  */
-abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
+public abstract class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
     /** All {@link Connection}s associated with threads. */
     private final List<Connection> threadConnections = new ArrayList<>();
 
     /** JDBC URL. */
-    private String url;
+    protected String url;
 
     /** Each connection is also a transaction, so we better pin them to threads. */
     protected ThreadLocal<Connection> conn = new ThreadLocal<Connection>() {
         @Override protected Connection initialValue() {
             try {
-                Connection conn = connection();
+                Connection conn = connection(url);
 
                 synchronized (threadConnections) {
                     threadConnections.add(conn);
@@ -66,6 +66,9 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
+        // activate cluster if it is not auto activated
+        ignite().cluster().active(true);
+
         if (url == null) {
             if (args.jdbcUrl().startsWith(JdbcThinUtils.URL_PREFIX)) {
                 String addr = findThinAddress();
@@ -77,9 +80,19 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
 
         println("Using jdbc url:" + url);
 
-        fillData(cfg, (IgniteEx)ignite(), args.range());
+        setupData();
 
         ignite().close();
+    }
+
+    /**
+     * Sets up test data
+     *
+     * Gets executed before local Ignite node is closed
+     * @throws Exception On error.
+     */
+    protected void setupData() throws Exception {
+        fillData(cfg, (IgniteEx)ignite(), args.range());
     }
 
     /**
@@ -128,7 +141,7 @@ abstract public class AbstractJdbcBenchmark extends IgniteAbstractBenchmark {
      * @return JDBC connection.
      * @throws SQLException On error.
      */
-    private Connection connection() throws SQLException {
+    protected final Connection connection(String url) throws SQLException {
         println("JDBC connect to: " + url);
 
         Connection conn = DriverManager.getConnection(url);
