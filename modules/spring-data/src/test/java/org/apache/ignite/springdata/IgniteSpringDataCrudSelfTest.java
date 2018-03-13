@@ -20,6 +20,7 @@ package org.apache.ignite.springdata;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Optional;
 import java.util.TreeSet;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.Person;
@@ -90,7 +91,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
 
         assertTrue(repo.existsById(id));
 
-        assertEquals(person, repo.findById(id));
+        assertEquals(person, repo.findById(id).get());
 
         try {
             repo.save(person);
@@ -168,7 +169,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         repo.deleteById(0);
 
         assertEquals(CACHE_SIZE - 1, repo.count());
-        assertNull(repo.findById(0));
+        assertEquals(Optional.empty(),repo.findById(0));
 
         try {
             repo.delete(new Person("", ""));

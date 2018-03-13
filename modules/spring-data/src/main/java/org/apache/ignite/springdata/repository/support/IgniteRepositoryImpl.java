@@ -71,7 +71,7 @@ public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteR
 
 
     @Override public Optional<T> findById(ID id) {
-        return Optional.of(cache.get(id));
+        return Optional.ofNullable(cache.get(id));
     }
 
     /** {@inheritDoc} */
