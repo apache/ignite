@@ -288,4 +288,13 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
      * @throws IgniteException If suspension failed.
      */
     public void suspend() throws IgniteException;
+
+    /**
+     * Adds label to a transaction.
+     *
+     * @param label Transaction label, useful for debugging.
+     *
+     * @return This transaction with defined label.
+     */
+    public Transaction withLabel(String label);
 }

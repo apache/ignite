@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
@@ -433,6 +434,14 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
         return isCancelled();
     }
 
+    private ConcurrentLinkedQueue<StackTraceElement[]> q = new ConcurrentLinkedQueue<>();
+
+    @Override protected boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
+        q.add(new Exception().getStackTrace());
+
+        return super.onDone(res, err, cancel);
+    }
+
     /**
      * Completeness callback.
      *
@@ -443,7 +452,7 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
             undoLocks();
 
         if (tx != null && success)
-            ((GridNearTxLocal)tx).clearLockFuture(null);
+            ((GridNearTxLocal)tx).clearLockFuture(this);
 
         if (onDone(success, err)) {
             if (log.isDebugEnabled())

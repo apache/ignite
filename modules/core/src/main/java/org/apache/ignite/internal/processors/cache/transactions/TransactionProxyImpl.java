@@ -377,6 +377,14 @@ public class TransactionProxyImpl<K, V> implements TransactionProxy, Externaliza
         }
     }
 
+    /** {@inheritDoc}
+     * @param label*/
+    @Override public Transaction withLabel(String label) {
+        tx.label(label);
+
+        return this;
+    }
+
     /**
      * @param res Result to convert to finished future.
      */

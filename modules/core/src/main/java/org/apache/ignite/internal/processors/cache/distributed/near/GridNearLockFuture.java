@@ -724,7 +724,8 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         if (tx != null) {
             cctx.tm().txContext(tx);
 
-            tx.updateLockFuture(this, null);
+            if (success)
+                tx.clearLockFuture(this);
         }
 
         if (super.onDone(success, err)) {

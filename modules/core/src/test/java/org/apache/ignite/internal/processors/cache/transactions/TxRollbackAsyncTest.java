@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
@@ -568,120 +569,6 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         doSleep(500);
 
         checkFutures();
-    }
-
-    /**
-     *
-
-     java.lang.AssertionError: nodeId=74e89b92-4bcb-4c20-9dfa-0f8478f00000, threadId=285, ver=GridCacheVersion [topVer=131139538, order=1519659541636, nodeOrder=2], cnt=1
-     at org.apache.ignite.internal.processors.cache.distributed.GridCacheTxFinishSync$TxFinishSync.onSend(GridCacheTxFinishSync.java:251)
-     at org.apache.ignite.internal.processors.cache.distributed.GridCacheTxFinishSync$ThreadFinishSync.onSend(GridCacheTxFinishSync.java:164)
-     */
-    public void testDelayFinishResponse() throws Exception {
-        final Ignite client = startClient();
-
-        Ignite prim = primaryNode(0, CACHE_NAME);
-
-        final TestRecordingCommunicationSpi spi = (TestRecordingCommunicationSpi)prim.configuration().getCommunicationSpi();
-
-        IgniteInternalFuture f;
-
-        try(Transaction tx = client.transactions().txStart()) {
-            client.cache(CACHE_NAME).put(0, 0);
-
-            //spi.blockMessages(GridNearTxFinishResponse.class, client.name());
-
-            rollbackAsync(tx).get();
-        }
-
-
-
-//        try(Transaction tx = client.transactions().txStart()) {
-//            client.cache(CACHE_NAME).put(1, 1);
-//
-//            rollbackAsync(tx);
-//        }
-    }
-
-    public void testUnlockSameKey() throws Exception {
-        IgniteEx grid = grid(0);
-
-        List<Integer> ids = primaryKeys(grid.cache(CACHE_NAME), 10000);
-
-        TreeMap<Integer, Integer> map = new TreeMap<>();
-
-        for (Integer id : ids)
-            map.put(id, id);
-
-        grid.cache(CACHE_NAME).put(ids.get(0), 0);
-
-        CountDownLatch l0 = new CountDownLatch(1);
-        CountDownLatch l1 = new CountDownLatch(1);
-        CountDownLatch l2 = new CountDownLatch(1);
-
-        AtomicReference<Transaction> t1 = new AtomicReference<>();
-        AtomicReference<Transaction> t2 = new AtomicReference<>();
-
-        IgniteInternalFuture<?> fut1 = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                try (Transaction tx = grid.transactions().txStart()) {
-                    t1.set(tx);
-
-                    grid.cache(CACHE_NAME).removeAll(map.keySet());
-
-                    l0.countDown();
-                    U.awaitQuiet(l1);
-                }
-            }
-        }, 1, "remove-thread");
-
-        IgniteInternalFuture<?> fut2 = multithreadedAsync(new Runnable() {
-            @Override public void run() {
-                try (Transaction tx = grid.transactions().txStart()) {
-                    t2.set(tx);
-
-                    U.awaitQuiet(l0);
-
-                    l2.countDown();
-
-                    grid.cache(CACHE_NAME).putAll(map);
-                }
-            }
-        }, 1, "lock-thread");
-
-        U.awaitQuiet(l2);
-
-        // Give time enqueuing locks.
-        doSleep(1000);
-
-        t1.get().rollback();
-
-        l1.countDown(); // Release remove thread.
-
-//        doSleep(10);
-//
-//        t2.get().rollback();
-//
-//        IgniteInternalFuture<?> fut3 = multithreadedAsync(new Runnable() {
-//            @Override public void run() {
-//                doSleep(1000);
-//
-//                // putall waits in queue
-//
-//                // start commit
-//                l1.countDown();
-//
-//                doSleep(100);
-//
-//                // do rollback
-//                Transaction tx = t1.get();
-//                tx.rollback();
-//            }
-//        }, 1, "unlock-thread");
-
-        fut1.get();
-        fut2.get();
-        //fut3.get();
     }
 
     /**

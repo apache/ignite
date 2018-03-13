@@ -862,8 +862,6 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     public void clearLockFuture(@Nullable IgniteInternalFuture cond) {
         IgniteInternalFuture f = lockFut;
 
-        assert f != null : "Future can't be null before clear";
-
         if (cond != null && f != cond)
             return;
 
