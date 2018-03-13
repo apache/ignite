@@ -228,7 +228,7 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
 
                 if (cache.lostPartitions().contains(i)) {
                     if (safe)
-                        fail("Reading from a lost partition should have failed: " + i);
+                        fail("Reading from a lost partition should have failed: " + i + " " + ig.name());
                     // else we could have read anything.
                 }
                 else

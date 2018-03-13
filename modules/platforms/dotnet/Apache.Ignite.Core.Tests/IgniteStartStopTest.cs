@@ -47,7 +47,6 @@ namespace Apache.Ignite.Core.Tests
         /// 
         /// </summary>
         [Test]
-        [Ignore("IGNITE-7878")]
         public void TestStartDefault()
         {
             var cfg = new IgniteConfiguration {JvmClasspath = TestUtils.CreateTestClasspath()};

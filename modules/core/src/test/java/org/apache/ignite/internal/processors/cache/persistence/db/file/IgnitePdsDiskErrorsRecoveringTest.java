@@ -279,21 +279,6 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
     /**
      *
      */
-    private void forceCheckpoint() throws Exception {
-        for (Ignite ignite : G.allGrids()) {
-            if (ignite.cluster().localNode().isClient())
-                continue;
-
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
-                    .cache().context().database();
-
-            dbMgr.waitForCheckpoint("test");
-        }
-    }
-
-    /**
-     *
-     */
     private static class LimitedSizeFileIO extends FileIODecorator {
         /** */
         private final AtomicLong availableSpaceBytes;

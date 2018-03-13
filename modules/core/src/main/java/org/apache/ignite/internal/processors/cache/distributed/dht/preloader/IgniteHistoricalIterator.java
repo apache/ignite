@@ -13,23 +13,27 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package org.apache.ignite.ml.svm.multi;
+package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
-import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationTrainer;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 
 /**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
+ * Iterator that provides history of updates for a subset of partitions.
  */
-public class DistributedLinearSVMMultiClassClassificationTrainerTest extends GenericLinearSVMMultiClassClassificationTrainerTest {
-    /** */
-    public DistributedLinearSVMMultiClassClassificationTrainerTest() {
-        super(
-            new SVMLinearMultiClassClassificationTrainer(),
-            true,
-            1e-2);
-    }
+public interface IgniteHistoricalIterator extends GridCloseableIterator<CacheDataRow> {
+    /**
+     * @param partId Partition ID.
+     * @return {@code True} if iterator contains data for given partition.
+     */
+    public boolean contains(int partId);
+
+    /**
+     * @param partId Partition ID.
+     * @return {@code True} if all data for given partition has already been returned.
+     */
+    public boolean isDone(int partId);
 }
