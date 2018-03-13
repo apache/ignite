@@ -65,7 +65,7 @@ export default class AgentModal {
 
         this.status = 'agentMissing';
 
-        return this.modal.$promise.then(this.modal.show);
+        this.modal.$promise.then(this.modal.show);
     }
 
     /**
@@ -78,6 +78,6 @@ export default class AgentModal {
 
         this.status = 'nodeMissing';
 
-        return this.modal.$promise.then(this.modal.show);
+        this.modal.$promise.then(this.modal.show);
     }
 }
