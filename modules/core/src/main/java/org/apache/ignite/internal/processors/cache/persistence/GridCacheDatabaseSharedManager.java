@@ -194,6 +194,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private final int walRebalanceThreshold = IgniteSystemProperties.getInteger(
         IGNITE_PDS_WAL_REBALANCE_THRESHOLD, 500_000);
 
+    /** Value of property for throttling policy override. */
+    private final String throttlingPolicyOverride = IgniteSystemProperties.getString(
+        IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED);
+
     /** Checkpoint lock hold count. */
     private static final ThreadLocal<Integer> CHECKPOINT_LOCK_HOLD_COUNT = new ThreadLocal<Integer>() {
         @Override protected Integer initialValue() {
@@ -933,22 +937,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             chpBufSize = cacheSize;
         }
 
-        PageMemoryImpl.ThrottlingPolicy plc = persistenceCfg.isWriteThrottlingEnabled()
-            ? PageMemoryImpl.ThrottlingPolicy.SPEED_BASED
-            : PageMemoryImpl.ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
-
-        String val = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED);
-
-        if (val != null) {
-            try {
-                plc = PageMemoryImpl.ThrottlingPolicy.valueOf(val);
-            }
-            catch (IllegalArgumentException e) {
-                log.error("Incorrect value of IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED property: " + val +
-                    ". Default throttling policy " + plc + " will be used.");
-            }
-        }
-
         GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
 
         if (trackable)
@@ -989,13 +977,33 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             changeTracker,
             this,
             memMetrics,
-            plc,
+            resolveThrottlingPolicy(),
             this
         );
 
         memMetrics.pageMemory(pageMem);
 
         return pageMem;
+    }
+
+    /**
+     * Resolves throttling policy according to the settings.
+     */
+    @NotNull private PageMemoryImpl.ThrottlingPolicy resolveThrottlingPolicy() {
+        PageMemoryImpl.ThrottlingPolicy plc = persistenceCfg.isWriteThrottlingEnabled()
+            ? PageMemoryImpl.ThrottlingPolicy.SPEED_BASED
+            : PageMemoryImpl.ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
+
+        if (throttlingPolicyOverride != null) {
+            try {
+                plc = PageMemoryImpl.ThrottlingPolicy.valueOf(throttlingPolicyOverride.toUpperCase());
+            }
+            catch (IllegalArgumentException e) {
+                log.error("Incorrect value of IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED property: " +
+                    throttlingPolicyOverride + ". Default throttling policy " + plc + " will be used.");
+            }
+        }
+        return plc;
     }
 
     /** {@inheritDoc} */
