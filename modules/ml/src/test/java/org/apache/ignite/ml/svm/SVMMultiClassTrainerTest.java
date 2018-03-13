@@ -29,7 +29,7 @@ import org.junit.Test;
 /**
  * Tests for {@link SVMLinearBinaryClassificationTrainer}.
  */
-public class SVMBinaryTrainerTest {
+public class SVMMultiClassTrainerTest {
     /** Fixed size of Dataset. */
     private static final int AMOUNT_OF_OBSERVATIONS = 1000;
 
@@ -58,9 +58,9 @@ public class SVMBinaryTrainerTest {
         }
 
 
-        SVMLinearBinaryClassificationTrainer<Integer, double[]> trainer = new SVMLinearBinaryClassificationTrainer<>();
+        SVMLinearMultiClassClassificationTrainer<Integer, double[]> trainer = new SVMLinearMultiClassClassificationTrainer<>();
 
-        SVMLinearBinaryClassificationModel mdl = trainer.fit(
+        SVMLinearMultiClassClassificationModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 10),
             (k, v) -> Arrays.copyOfRange(v, 1, v.length),
             (k, v) -> v[0],
