@@ -88,9 +88,9 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
 
         assertEquals(person, repo.save(id, person));
 
-        assertTrue(repo.exists(id));
+        assertTrue(repo.existsById(id));
 
-        assertEquals(person, repo.findOne(id));
+        assertEquals(person, repo.findById(id));
 
         try {
             repo.save(person);
@@ -121,7 +121,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
             assertEquals(origPersons.next(), persons.next());
 
         try {
-            repo.save(map.values());
+            repo.saveAll(map.values());
 
             fail("Managed to save a list of Persons with ids");
         }
@@ -129,7 +129,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
             //expected
         }
 
-        persons = repo.findAll(map.keySet()).iterator();
+        persons = repo.findAllById(map.keySet()).iterator();
 
         int counter = 0;
 
@@ -165,10 +165,10 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     public void testDelete() {
         assertEquals(CACHE_SIZE, repo.count());
 
-        repo.delete(0);
+        repo.deleteById(0);
 
         assertEquals(CACHE_SIZE - 1, repo.count());
-        assertNull(repo.findOne(0));
+        assertNull(repo.findById(0));
 
         try {
             repo.delete(new Person("", ""));
@@ -191,7 +191,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHE_SIZE / 2; i++)
             ids.add(i);
 
-        repo.deleteAll(ids);
+        repo.deleteAllById(ids);
 
         assertEquals(CACHE_SIZE / 2, repo.count());
 
@@ -201,7 +201,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 3; i++)
                 persons.add(new Person(String.valueOf(i), String.valueOf(i)));
 
-            repo.delete(persons);
+            repo.deleteAll(persons);
 
             fail("Managed to delete Persons without ids");
         }

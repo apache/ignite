@@ -54,5 +54,5 @@ public interface IgniteRepository<T, ID extends Serializable> extends CrudReposi
      *
      * @param ids List of ids to delete.
      */
-    void deleteAll(Iterable<ID> ids);
+    void deleteAllById(Iterable<ID> ids);
 }
