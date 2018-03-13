@@ -264,6 +264,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         netTimeout = TcpDiscoverySpi.DFLT_NETWORK_TIMEOUT;
         clientFailureDetectionTimeout = 1000;
         longSockTimeouts = false;
+
+        assert G.allGrids().isEmpty();
     }
 
     /**
