@@ -574,6 +574,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             storePageMem.stop();
         }
         catch (StorageException e) {
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
             throw new IgniteCheckedException(e);
         }
     }
@@ -749,6 +751,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             notifyMetastorageReadyForReadWrite();
         }
         catch (StorageException e) {
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
             throw new IgniteCheckedException(e);
         }
         finally {
