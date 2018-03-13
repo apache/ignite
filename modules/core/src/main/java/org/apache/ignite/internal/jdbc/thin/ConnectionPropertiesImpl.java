@@ -543,30 +543,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /**
      *
      */
-    private static class EmptyStringValidator implements PropertyValidator {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Error message. */
-        private final String errMsg;
-
-        /**
-         * @param msg Error message.
-         */
-        private EmptyStringValidator(String msg) {
-            errMsg = msg;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void validate(String val) throws SQLException {
-            if (F.isEmpty(val))
-                throw new SQLException(errMsg, SqlStateCode.CLIENT_CONNECTION_FAILED);
-        }
-    }
-
-    /**
-     *
-     */
     private abstract static class ConnectionProperty implements Serializable {
         /** */
         private static final long serialVersionUID = 0L;
