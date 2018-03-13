@@ -15,24 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm.multi;
-
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
-import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationTrainer;
-
 /**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
+ * Additional classes for yardstick framework
+ * This package name chosen so, according to default package, yardstick
+ * searches for classes to load
  */
-public class LocalLinearSVMMultiClassClassificationTrainerTest extends GenericLinearSVMMultiClassClassificationTrainerTest {
-    /** */
-    public LocalLinearSVMMultiClassClassificationTrainerTest() {
-        super(
-            new SVMLinearMultiClassClassificationTrainer()
-                .withLambda(0.2)
-                .withAmountOfIterations(10)
-                .withAmountOfLocIterations(20),
-            false,
-            1e-2);
-    }
-}
+
+package org.yardstickframework;
+

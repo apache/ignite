@@ -86,6 +86,16 @@ public class Dataset<Row extends DatasetRow> implements Serializable, Externaliz
     }
 
     /**
+     * Creates new Dataset by given data.
+     *
+     * @param data Should be initialized with one vector at least.
+     */
+    public Dataset(Row[] data) {
+        this.data = data;
+        this.rowSize = data.length;
+    }
+
+    /**
      * Creates new Dataset and initialized with empty data structure.
      *
      * @param rowSize Amount of instances. Should be > 0.

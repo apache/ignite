@@ -15,21 +15,25 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm.multi;
+package org.apache.ignite.yardstick.upload;
 
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
-import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationTrainer;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.yardstick.upload.model.Values10;
 
 /**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
+ * Benchmark that inserts single upload of number of entries using {@link IgniteCache#put(Object, Object)}.
  */
-public class DistributedLinearSVMMultiClassClassificationTrainerTest extends GenericLinearSVMMultiClassClassificationTrainerTest {
-    /** */
-    public DistributedLinearSVMMultiClassClassificationTrainerTest() {
-        super(
-            new SVMLinearMultiClassClassificationTrainer(),
-            true,
-            1e-2);
+public class NativePutBenchmark extends AbstractNativeBenchmark {
+    /**
+     * Uploads randomly generated data using simple put.
+     *
+     * @param cacheName - name of the cache.
+     * @param insertsCnt - how many entries should be uploaded.
+     */
+    @Override protected void upload(String cacheName, long insertsCnt) {
+        IgniteCache<Object, Object> c = ignite().cache(cacheName);
+
+        for (long id = 1; id <= insertsCnt; id++)
+            c.put(id, new Values10() );
     }
 }
