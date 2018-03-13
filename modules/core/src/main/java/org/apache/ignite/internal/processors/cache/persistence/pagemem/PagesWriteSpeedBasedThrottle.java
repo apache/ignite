@@ -196,20 +196,22 @@ public class PagesWriteSpeedBasedThrottle implements PagesWriteThrottlePolicy {
                         markDirtySpeed,
                         curCpWriteSpeed);
 
-                    level = ThrottleMode.LIMITED;
+                    level = throttleParkTimeNs == 0 ? ThrottleMode.NO : ThrottleMode.LIMITED;
                 }
             }
         }
 
-        if (level == ThrottleMode.NO) {
-            exponentialBackoffCntr.set(0);
-
-            throttleParkTimeNs = 0;
-        }
-        else if (level == ThrottleMode.EXPONENTIAL) {
+        if (level == ThrottleMode.EXPONENTIAL) {
             int exponent = exponentialBackoffCntr.getAndIncrement();
 
             throttleParkTimeNs = (long)(STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, exponent));
+        }
+        else {
+            if (isPageInCheckpoint)
+                exponentialBackoffCntr.set(0);
+
+            if (level == ThrottleMode.NO)
+                throttleParkTimeNs = 0;
         }
 
         if (throttleParkTimeNs > 0) {
