@@ -135,21 +135,24 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * Tests that checkpoint buffer won't be overflowed with enabled CHECKPOINT_BUFFER_ONLY throttling.
+     * @throws Exception if failed
      */
     public void testCheckpointBufferCantOverflowMixedLoad() throws Exception {
         testCheckpointBufferCantOverflowWithThrottlingMixedLoad(PageMemoryImpl.ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY);
     }
 
     /**
-     *
+     * Tests that checkpoint buffer won't be overflowed with enabled SPEED_BASED throttling.
+     * @throws Exception if failed
      */
     public void testCheckpointBufferCantOverflowMixedLoadSpeedBased() throws Exception {
         testCheckpointBufferCantOverflowWithThrottlingMixedLoad(PageMemoryImpl.ThrottlingPolicy.SPEED_BASED);
     }
 
     /**
-     *
+     * Tests that checkpoint buffer won't be overflowed with enabled TARGET_RATIO_BASED throttling.
+     * @throws Exception if failed
      */
     public void testCheckpointBufferCantOverflowMixedLoadRatioBased() throws Exception {
         testCheckpointBufferCantOverflowWithThrottlingMixedLoad(PageMemoryImpl.ThrottlingPolicy.TARGET_RATIO_BASED);
@@ -210,7 +213,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
                                     break;
                             }
                             catch (IgniteCheckedException e) {
-                                e.printStackTrace();
+                                log.error("runAsync ended with exception", e);
 
                                 fail();
                             }
@@ -231,6 +234,7 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
     /**
      * @param memory Memory.
      * @param fullPageId Full page id.
+     * @throws IgniteCheckedException If acquiring lock failed.
      */
     private void acquireAndReleaseWriteLock(PageMemoryImpl memory, FullPageId fullPageId) throws IgniteCheckedException {
         long page = memory.acquirePage(1, fullPageId.pageId());
@@ -249,8 +253,8 @@ public class PageMemoryImplTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
      * @param throttlingPlc Throttling Policy.
+     * @throws Exception If creating mock failed.
      */
     private PageMemoryImpl createPageMemory(PageMemoryImpl.ThrottlingPolicy throttlingPlc) throws Exception {
         long[] sizes = new long[5];

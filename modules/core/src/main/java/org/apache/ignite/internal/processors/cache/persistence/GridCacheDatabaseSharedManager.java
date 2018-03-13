@@ -940,12 +940,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         String val = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED);
 
         if (val != null) {
-            if ("ratio".equalsIgnoreCase(val))
-                plc = PageMemoryImpl.ThrottlingPolicy.TARGET_RATIO_BASED;
-            else if ("speed".equalsIgnoreCase(val) || Boolean.valueOf(val))
-                plc = PageMemoryImpl.ThrottlingPolicy.SPEED_BASED;
-            else if ("disabled".equalsIgnoreCase(val))
-                plc = PageMemoryImpl.ThrottlingPolicy.DISABLED;
+            try {
+                plc = PageMemoryImpl.ThrottlingPolicy.valueOf(val);
+            }
+            catch (IllegalArgumentException e) {
+                log.error("Incorrect value of IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED property: " + val +
+                    ". Default throttling policy " + plc + " will be used.");
+            }
         }
 
         GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;

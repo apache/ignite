@@ -67,7 +67,7 @@ public class PagesWriteThrottle implements PagesWriteThrottlePolicy {
         this.throttleOnlyPagesInCheckpoint = throttleOnlyPagesInCheckpoint;
 
         if (!throttleOnlyPagesInCheckpoint)
-            assert cpProgress != null : "cpProgress";
+            assert cpProgress != null : "cpProgress must be not null if ratio based throttling mode is used";
     }
 
     /** {@inheritDoc} */

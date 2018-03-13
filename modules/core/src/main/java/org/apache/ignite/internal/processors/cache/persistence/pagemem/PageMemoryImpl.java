@@ -81,6 +81,7 @@ import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Boolean.FALSE;
@@ -148,7 +149,7 @@ public class PageMemoryImpl implements PageMemoryEx {
     /** Page ID offset */
     public static final int PAGE_ID_OFFSET = 16;
 
-    /** Page cache ID offset. */
+    /** Page cache group ID offset. */
     public static final int PAGE_CACHE_ID_OFFSET = 24;
 
     /** Page pin counter offset. */
@@ -164,7 +165,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * 8b Marker/timestamp
      * 8b Relative pointer
      * 8b Page ID
-     * 4b Cache ID
+     * 4b Cache group ID
      * 4b Pin count
      * 8b Lock
      * 8b Temporary buffer
@@ -278,7 +279,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         CheckpointLockStateChecker stateChecker,
         DataRegionMetricsImpl memMetrics,
         @Nullable ThrottlingPolicy throttlingPlc,
-        @Nullable CheckpointWriteProgressSupplier cpProgressProvider
+        @NotNull CheckpointWriteProgressSupplier cpProgressProvider
     ) {
         assert ctx != null;
         assert pageSize > 0;
@@ -364,17 +365,9 @@ public class PageMemoryImpl implements PageMemoryEx {
     }
 
     /**
-     *
+     * Resolves instance of {@link PagesWriteThrottlePolicy} according to chosen throttle policy.
      */
     private void initWriteThrottle() {
-        if (isThrottlingEnabled()) {
-            if (cpProgressProvider == null) {
-                log.error("Write throttle can't start. CP progress provider not presented");
-
-                throttlingPlc = ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
-            }
-        }
-
         if (throttlingPlc == ThrottlingPolicy.SPEED_BASED)
             writeThrottle = new PagesWriteSpeedBasedThrottle(this, cpProgressProvider, stateChecker, log);
         else if (throttlingPlc == ThrottlingPolicy.TARGET_RATIO_BASED)
@@ -785,7 +778,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
     /**
      * @param seg Segment.
-     * @param grpId Cache ID.
+     * @param grpId Cache group ID.
      * @param pageId Page ID.
      * @param rmv {@code True} if page should be removed.
      * @return Relative pointer to refreshed page.
@@ -993,7 +986,7 @@ public class PageMemoryImpl implements PageMemoryEx {
 
         memMetrics.resetDirtyPages();
 
-        if (writeThrottle != null)
+        if (throttlingPlc != ThrottlingPolicy.DISABLED)
             writeThrottle.onBeginCheckpoint();
 
         return new GridMultiCollectionWrapper<>(collections);
@@ -1015,7 +1008,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         for (Segment seg : segments)
             seg.segCheckpointPages = null;
 
-        if (writeThrottle != null)
+        if (throttlingPlc != ThrottlingPolicy.DISABLED)
             writeThrottle.onFinishCheckpoint();
     }
 
@@ -1469,7 +1462,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         try {
             rwLock.writeUnlock(page + PAGE_LOCK_OFFSET, PageIdUtils.tag(pageId));
 
-            if (writeThrottle != null && !restore && markDirty && !wasDirty)
+            if (throttlingPlc != ThrottlingPolicy.DISABLED && !restore && markDirty && !wasDirty)
                 writeThrottle.onMarkDirty(isInCheckpoint(fullId));
         }
         catch (AssertionError ex) {
@@ -2591,27 +2584,27 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         /**
-         * Reads cache ID from the page at the given absolute pointer.
+         * Reads cache group ID from the page at the given absolute pointer.
          *
          * @param absPtr Absolute memory pointer to the page header.
-         * @return Cache ID written to the page.
+         * @return Cache group ID written to the page.
          */
         private static int readPageGroupId(final long absPtr) {
             return GridUnsafe.getInt(absPtr + PAGE_CACHE_ID_OFFSET);
         }
 
         /**
-         * Writes cache ID from the page at the given absolute pointer.
+         * Writes cache group ID from the page at the given absolute pointer.
          *
          * @param absPtr Absolute memory pointer to the page header.
-         * @param grpId Cache Group ID to write.
+         * @param grpId Cache group ID to write.
          */
         private static void pageGroupId(final long absPtr, final int grpId) {
             GridUnsafe.putInt(absPtr + PAGE_CACHE_ID_OFFSET, grpId);
         }
 
         /**
-         * Reads page ID and cache ID from the page at the given absolute pointer.
+         * Reads page ID and cache group ID from the page at the given absolute pointer.
          *
          * @param absPtr Absolute memory pointer to the page header.
          * @return Full page ID written to the page.
@@ -2621,7 +2614,7 @@ public class PageMemoryImpl implements PageMemoryEx {
         }
 
         /**
-         * Writes page ID and cache ID from the page at the given absolute pointer.
+         * Writes page ID and cache group ID from the page at the given absolute pointer.
          *
          * @param absPtr Absolute memory pointer to the page header.
          * @param fullPageId Full page ID to write.
