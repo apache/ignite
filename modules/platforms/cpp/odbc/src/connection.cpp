@@ -132,7 +132,7 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalEstablish(cfg));
         }
 
-        SqlResult::Type Connection::InternalEstablish(const config::Configuration cfg)
+        SqlResult::Type Connection::InternalEstablish(const config::Configuration& cfg)
         {
             using ssl::SslMode;
 
@@ -164,7 +164,11 @@ namespace ignite
             else
                 socket.reset(new system::TcpSocketClient());
 
-            bool connected = socket->Connect(cfg.GetHost().c_str(), cfg.GetTcpPort(), *this);
+            EndPoint addr;
+
+            GetRandomEndPoint(cfg, addr);
+
+            bool connected = socket->Connect(addr.host.c_str(), addr.port, *this);
 
             if (!connected)
             {
@@ -607,6 +611,31 @@ namespace ignite
             }
 
             return SqlResult::AI_SUCCESS;
+        }
+
+        void Connection::GetRandomEndPoint(const config::Configuration& cfg, EndPoint& endPoint) const
+        {
+            if (cfg.IsHostSet())
+            {
+                LOG_MSG("Host is set. Using legacy connection method.");
+
+                endPoint.host = cfg.GetHost();
+                endPoint.port = cfg.GetTcpPort();
+
+                return;
+            }
+
+            LOG_MSG("Getting random end point.");
+
+            const std::vector<EndPoint>& addrs = cfg.GetAddresses();
+
+            size_t idx = rand() % addrs.size();
+
+            LOG_MSG("Addresses:    " << addrs.size());
+            LOG_MSG("Chosen index: " << idx);
+
+            endPoint.host = addrs[idx].host;
+            endPoint.port = addrs[idx].port;
         }
     }
 }

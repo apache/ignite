@@ -116,12 +116,22 @@ namespace ignite
                 this->port.SetValue(port);
             }
 
+            bool Configuration::IsTcpPortSet() const
+            {
+                return port.IsSet();
+            }
+
             const std::string& Configuration::GetDsn(const std::string& dflt) const
             {
                 if (!dsn.IsSet())
                     return dflt;
 
                 return dsn.GetValue();
+            }
+
+            bool Configuration::IsDsnSet() const
+            {
+                return dsn.IsSet();
             }
 
             void Configuration::SetDsn(const std::string& dsn)
@@ -134,6 +144,11 @@ namespace ignite
                 return driver.GetValue();
             }
 
+            void Configuration::SetDriver(const std::string& driver)
+            {
+                this->driver.SetValue(driver);
+            }
+
             const std::string& Configuration::GetHost() const
             {
                 return server.GetValue();
@@ -142,6 +157,11 @@ namespace ignite
             void Configuration::SetHost(const std::string& server)
             {
                 this->server.SetValue(server);
+            }
+
+            bool Configuration::IsHostSet() const
+            {
+                return server.IsSet();
             }
 
             const std::string& Configuration::GetSchema() const
@@ -154,6 +174,11 @@ namespace ignite
                 this->schema.SetValue(schema);
             }
 
+            bool Configuration::IsSchemaSet() const
+            {
+                return schema.IsSet();
+            }
+
             const std::vector<EndPoint>& Configuration::GetAddresses() const
             {
                 return endPoints.GetValue();
@@ -162,6 +187,11 @@ namespace ignite
             void Configuration::SetAddresses(const std::vector<EndPoint>& endPoints)
             {
                 this->endPoints.SetValue(endPoints);
+            }
+
+            bool Configuration::IsAddressesSet() const
+            {
+                return endPoints.IsSet();
             }
 
             ssl::SslMode::Type Configuration::GetSslMode() const
@@ -174,6 +204,11 @@ namespace ignite
                 this->sslMode.SetValue(sslMode);
             }
 
+            bool Configuration::IsSslModeSet() const
+            {
+                return sslMode.IsSet();
+            }
+
             const std::string& Configuration::GetSslKeyFile() const
             {
                 return sslKeyFile.GetValue();
@@ -182,6 +217,11 @@ namespace ignite
             void Configuration::SetSslKeyFile(const std::string& sslKeyFile)
             {
                 this->sslKeyFile.SetValue(sslKeyFile);
+            }
+
+            bool Configuration::IsSslKeyFileSet() const
+            {
+                return sslKeyFile.IsSet();
             }
 
             const std::string& Configuration::GetSslCertFile() const
@@ -194,6 +234,11 @@ namespace ignite
                 this->sslCertFile.SetValue(sslCertFile);
             }
 
+            bool Configuration::IsSslCertFileSet() const
+            {
+                return sslCertFile.IsSet();
+            }
+
             const std::string& Configuration::GetSslCaFile() const
             {
                 return sslCaFile.GetValue();
@@ -202,6 +247,11 @@ namespace ignite
             void Configuration::SetSslCaFile(const std::string& sslCaFile)
             {
                 this->sslCaFile.SetValue(sslCaFile);
+            }
+
+            bool Configuration::IsSslCaFileSet() const
+            {
+                return sslCaFile.IsSet();
             }
 
             bool Configuration::IsDistributedJoins() const
@@ -214,6 +264,11 @@ namespace ignite
                 this->distributedJoins.SetValue(val);
             }
 
+            bool Configuration::IsDistributedJoinsSet() const
+            {
+                return distributedJoins.IsSet();
+            }
+
             bool Configuration::IsEnforceJoinOrder() const
             {
                 return enforceJoinOrder.GetValue();
@@ -222,6 +277,11 @@ namespace ignite
             void Configuration::SetEnforceJoinOrder(bool val)
             {
                 this->enforceJoinOrder.SetValue(val);
+            }
+
+            bool Configuration::IsEnforceJoinOrderSet() const
+            {
+                return enforceJoinOrder.IsSet();
             }
 
             bool Configuration::IsReplicatedOnly() const
@@ -234,6 +294,11 @@ namespace ignite
                 this->replicatedOnly.SetValue(val);
             }
 
+            bool Configuration::IsReplicatedOnlySet() const
+            {
+                return replicatedOnly.IsSet();
+            }
+
             bool Configuration::IsCollocated() const
             {
                 return collocated.GetValue();
@@ -242,6 +307,11 @@ namespace ignite
             void Configuration::SetCollocated(bool val)
             {
                 this->collocated.SetValue(val);
+            }
+
+            bool Configuration::IsCollocatedSet() const
+            {
+                return collocated.IsSet();
             }
 
             bool Configuration::IsLazy() const
@@ -254,6 +324,11 @@ namespace ignite
                 this->lazy.SetValue(val);
             }
 
+            bool Configuration::IsLazySet() const
+            {
+                return lazy.IsSet();
+            }
+
             bool Configuration::IsSkipReducerOnUpdate() const
             {
                 return skipReducerOnUpdate.GetValue();
@@ -262,6 +337,11 @@ namespace ignite
             void Configuration::SetSkipReducerOnUpdate(bool val)
             {
                 this->skipReducerOnUpdate.SetValue(val);
+            }
+
+            bool Configuration::IsSkipReducerOnUpdateSet() const
+            {
+                return skipReducerOnUpdate.IsSet();
             }
 
             ProtocolVersion Configuration::GetProtocolVersion() const
@@ -274,9 +354,19 @@ namespace ignite
                 this->protocolVersion.SetValue(version);
             }
 
+            bool Configuration::IsProtocolVersionSet() const
+            {
+                return protocolVersion.IsSet();
+            }
+
             void Configuration::SetPageSize(int32_t size)
             {
                 this->pageSize.SetValue(size);
+            }
+
+            bool Configuration::IsPageSizeSet() const
+            {
+                return pageSize.IsSet();
             }
 
             int32_t Configuration::GetPageSize() const
@@ -310,18 +400,14 @@ namespace ignite
             void Configuration::AddToMap(ArgumentMap& map, const std::string& key, const SettableValue<uint16_t>& value)
             {
                 if (value.IsSet())
-                {
                     map[key] = common::LexicalCast<std::string>(value.GetValue());
-                }
             }
 
             template<>
             void Configuration::AddToMap(ArgumentMap& map, const std::string& key, const SettableValue<int32_t>& value)
             {
                 if (value.IsSet())
-                {
                     map[key] = common::LexicalCast<std::string>(value.GetValue());
-                }
             }
 
             template<>
@@ -329,9 +415,7 @@ namespace ignite
                 const SettableValue<std::string>& value)
             {
                 if (value.IsSet())
-                {
                     map[key] = value.GetValue();
-                }
             }
 
             template<>
@@ -339,9 +423,7 @@ namespace ignite
                 const SettableValue<bool>& value)
             {
                 if (value.IsSet())
-                {
                     map[key] = value.GetValue() ? "true" : "false";
-                }
             }
 
             template<>
@@ -349,9 +431,7 @@ namespace ignite
                 const SettableValue<ProtocolVersion>& value)
             {
                 if (value.IsSet())
-                {
                     map[key] = value.GetValue().ToString();
-                }
             }
 
             template<>
@@ -359,9 +439,7 @@ namespace ignite
                 const SettableValue< std::vector<EndPoint> >& value)
             {
                 if (value.IsSet())
-                {
                     map[key] = AddressesToString(value.GetValue());
-                }
             }
 
             template<>
@@ -369,9 +447,7 @@ namespace ignite
                 const SettableValue<ssl::SslMode::Type>& value)
             {
                 if (value.IsSet())
-                {
                     map[key] = ssl::SslMode::ToString(value.GetValue());
-                }
             }
         }
     }

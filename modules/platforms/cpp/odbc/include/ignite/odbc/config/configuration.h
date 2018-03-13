@@ -132,11 +132,25 @@ namespace ignite
                 void SetTcpPort(uint16_t port);
 
                 /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsTcpPortSet() const;
+
+                /**
                  * Get DSN.
                  *
                  * @return Data Source Name.
                  */
                 const std::string& GetDsn(const std::string& dflt = DefaultValue::dsn) const;
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsDsnSet() const;
 
                 /**
                  * Set DSN.
@@ -153,6 +167,13 @@ namespace ignite
                 const std::string& GetDriver() const;
 
                 /**
+                 * Set driver.
+                 *
+                 * @param driver Driver.
+                 */
+                void SetDriver(const std::string& driver);
+
+                /**
                  * Get server host.
                  *
                  * @return Server host.
@@ -165,6 +186,13 @@ namespace ignite
                  * @param server Server host.
                  */
                 void SetHost(const std::string& server);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsHostSet() const;
 
                 /**
                  * Get schema.
@@ -181,6 +209,13 @@ namespace ignite
                 void SetSchema(const std::string& schema);
 
                 /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsSchemaSet() const;
+
+                /**
                  * Get addresses.
                  *
                  * @return Addresses.
@@ -193,6 +228,13 @@ namespace ignite
                  * @param endPoints Addresses.
                  */
                 void SetAddresses(const std::vector<EndPoint>& endPoints);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsAddressesSet() const;
 
                 /**
                  * Get SSL mode.
@@ -209,6 +251,13 @@ namespace ignite
                 void SetSslMode(ssl::SslMode::Type sslMode);
 
                 /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsSslModeSet() const;
+
+                /**
                  * Get SSL key file path.
                  *
                  * @return SSL key file path.
@@ -221,6 +270,13 @@ namespace ignite
                  * @param sslKeyFile SSL key file path.
                  */
                 void SetSslKeyFile(const std::string& sslKeyFile);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsSslKeyFileSet() const;
 
                 /**
                  * Get SSL certificate file path.
@@ -237,6 +293,13 @@ namespace ignite
                 void SetSslCertFile(const std::string& sslCertFile);
 
                 /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsSslCertFileSet() const;
+
+                /**
                  * Get SSL certificate authority file path.
                  *
                  * @return SSL certificate authority file path.
@@ -249,6 +312,13 @@ namespace ignite
                  * @param sslCaFile SSL certificate authority file path.
                  */
                 void SetSslCaFile(const std::string& sslCaFile);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsSslCaFileSet() const;
 
                 /**
                  * Check distributed joins flag.
@@ -265,6 +335,13 @@ namespace ignite
                 void SetDistributedJoins(bool val);
 
                 /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsDistributedJoinsSet() const;
+
+                /**
                  * Check enforce join order flag.
                  *
                  * @return True if enforcing of join order is enabled.
@@ -277,6 +354,13 @@ namespace ignite
                  * @param val Value to set.
                  */
                 void SetEnforceJoinOrder(bool val);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsEnforceJoinOrderSet() const;
 
                 /**
                  * Check replicated only flag.
@@ -293,6 +377,13 @@ namespace ignite
                 void SetReplicatedOnly(bool val);
 
                 /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsReplicatedOnlySet() const;
+
+                /**
                  * Check collocated flag.
                  *
                  * @return True if collocated is enabled.
@@ -305,6 +396,13 @@ namespace ignite
                  * @param val Value to set.
                  */
                 void SetCollocated(bool val);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsCollocatedSet() const;
 
                 /**
                  * Check lazy flag.
@@ -321,6 +419,13 @@ namespace ignite
                 void SetLazy(bool val);
 
                 /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsLazySet() const;
+
+                /**
                  * Check update on server flag.
                  *
                  * @return True if update on server.
@@ -333,6 +438,13 @@ namespace ignite
                  * @param val Value to set.
                  */
                 void SetSkipReducerOnUpdate(bool val);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsSkipReducerOnUpdateSet() const;
 
                 /**
                  * Get protocol version.
@@ -349,11 +461,11 @@ namespace ignite
                 void SetProtocolVersion(const ProtocolVersion& version);
 
                 /**
-                 * Get argument map.
+                 * Check if the value set.
                  *
-                 * @param res Resulting argument map.
+                 * @return @true if the value set.
                  */
-                void ToMap(ArgumentMap& res) const;
+                bool IsProtocolVersionSet() const;
 
                 /**
                  * Get fetch results page size.
@@ -368,6 +480,20 @@ namespace ignite
                  * @param size Fetch results page size.
                  */
                 void SetPageSize(int32_t size);
+
+                /**
+                 * Check if the value set.
+                 *
+                 * @return @true if the value set.
+                 */
+                bool IsPageSizeSet() const;
+
+                /**
+                 * Get argument map.
+                 *
+                 * @param res Resulting argument map.
+                 */
+                void ToMap(ArgumentMap& res) const;
 
             private:
                 /**

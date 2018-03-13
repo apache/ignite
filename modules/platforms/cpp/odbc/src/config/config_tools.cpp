@@ -119,9 +119,14 @@ namespace ignite
 
                 if (pos == value.size() - 1)
                 {
-                    endPoint.port = Configuration::DefaultValue::port;
+                    std::stringstream stream;
 
-                    return true;
+                    stream << "Port is missing in the following address: '" << value << "'. Ignoring address.";
+
+                    if (diag)
+                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());
+
+                    return false;
                 }
 
                 std::string port = value.substr(pos + 1);

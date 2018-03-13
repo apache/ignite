@@ -260,7 +260,7 @@ namespace ignite
              * @param cfg Configuration.
              * @return Operation result.
              */
-            SqlResult::Type InternalEstablish(const config::Configuration cfg);
+            SqlResult::Type InternalEstablish(const config::Configuration& cfg);
 
             /**
              * Release established connection.
@@ -361,6 +361,14 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult::Type MakeRequestHandshake();
+
+            /**
+             * Get random end point from config.
+             *
+             * @param cfg Configuration.
+             * @param endPoint End point.
+             */
+            void GetRandomEndPoint(const config::Configuration& cfg, EndPoint& endPoint) const;
 
             /**
              * Constructor.

@@ -66,6 +66,9 @@ namespace ignite
             {
                 std::string connect_str(str, len);
 
+                while (connect_str.back() == 0)
+                    connect_str.pop_back();
+
                 while (!connect_str.empty())
                 {
                     size_t attr_begin = connect_str.rfind(delimeter);
@@ -157,19 +160,36 @@ namespace ignite
                 }
                 else if (lKey == Key::port)
                 {
+                    if (value.empty())
+                    {
+                        if (diag)
+                        {
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                MakeErrorMessage("Port attribute value is empty. Using default value.", key, value));
+                        }
+
+                        return;
+                    }
+
                     if (!common::AllOf(value.begin(), value.end(), std::isdigit))
                     {
-                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                            MakeErrorMessage("Port attribute value contains unexpected characters."
-                                " Using default value.", key, value));
+                        if (diag)
+                        {
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                MakeErrorMessage("Port attribute value contains unexpected characters."
+                                    " Using default value.", key, value));
+                        }
 
                         return;
                     }
 
                     if (value.size() >= sizeof("65535"))
                     {
-                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                            MakeErrorMessage("Port attribute value is too large. Using default value.", key, value));
+                        if (diag)
+                        {
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                MakeErrorMessage("Port attribute value is too large. Using default value.", key, value));
+                        }
 
                         return;
                     }
@@ -182,8 +202,12 @@ namespace ignite
 
                     if (numValue <= 0 || numValue > 0xFFFF)
                     {
-                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                            MakeErrorMessage("Port attribute value is out of range. Using default value.", key, value));
+                        if (diag)
+                        {
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                MakeErrorMessage("Port attribute value is out of range. "
+                                    "Using default value.", key, value));
+                        }
 
                         return;
                     }
@@ -194,10 +218,15 @@ namespace ignite
                 {
                     BoolParseResult::Type res = StringToBool(value);
 
-                    if (res == BoolParseResult::AI_UNRECOGNIZED && diag)
+                    if (res == BoolParseResult::AI_UNRECOGNIZED)
                     {
-                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                            MakeErrorMessage("Unrecognized bool value. Defaulting to 'false'.", key, value));
+                        if (diag)
+                        {
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                MakeErrorMessage("Unrecognized bool value. Using default value.", key, value));
+                        }
+
+                        return;
                     }
 
                     cfg.SetDistributedJoins(res == BoolParseResult::AI_TRUE);
@@ -206,42 +235,66 @@ namespace ignite
                 {
                     BoolParseResult::Type res = StringToBool(value);
 
-                    if (res == BoolParseResult::AI_UNRECOGNIZED && diag)
+                    if (res == BoolParseResult::AI_UNRECOGNIZED)
                     {
-                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                            MakeErrorMessage("Unrecognized bool value. Defaulting to 'false'.", key, value));
+                        if (diag)
+                        {
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                MakeErrorMessage("Unrecognized bool value. Using default value.", key, value));
+                        }
+
+                        return;
                     }
 
                     cfg.SetEnforceJoinOrder(res == BoolParseResult::AI_TRUE);
                 }
                 else if (lKey == Key::protocolVersion)
                 {
-                    ProtocolVersion version = ProtocolVersion::FromString(value);
-
-                    if (!version.IsSupported())
+                    try
                     {
-                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                            "Specified version is not supported. Default value used.");
-                    }
-                    else
+                        ProtocolVersion version = ProtocolVersion::FromString(value);
+
+                        if (!version.IsSupported())
+                        {
+                            if (diag)
+                            {
+                                diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                    "Specified version is not supported. Default value used.");
+                            }
+
+                            return;
+                        }
+
                         cfg.SetProtocolVersion(version);
+                    }
+                    catch (IgniteError& err)
+                    {
+                        if (diag)
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, err.GetText());
+                    }
                 }
                 else if (lKey == Key::pageSize)
                 {
                     if (!common::AllOf(value.begin(), value.end(), std::isdigit))
                     {
-                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                            MakeErrorMessage("Page size attribute value contains unexpected characters."
-                                " Using default value.", key, value));
+                        if (diag)
+                        {
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                MakeErrorMessage("Page size attribute value contains unexpected characters."
+                                    " Using default value.", key, value));
+                        }
 
                         return;
                     }
 
                     if (value.size() >= sizeof("4294967295"))
                     {
-                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                            MakeErrorMessage("Page size attribute value is too large."
-                                " Using default value.", key, value));
+                        if (diag)
+                        {
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                MakeErrorMessage("Page size attribute value is too large."
+                                    " Using default value.", key, value));
+                        }
 
                         return;
                     }
@@ -254,9 +307,12 @@ namespace ignite
 
                     if (numValue <= 0 || numValue > 0xFFFFFFFFLL)
                     {
-                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                            MakeErrorMessage("Page size attribute value is out of range."
-                                " Using default value.", key, value));
+                        if (diag)
+                        {
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                MakeErrorMessage("Page size attribute value is out of range."
+                                    " Using default value.", key, value));
+                        }
 
                         return;
                     }
@@ -267,10 +323,15 @@ namespace ignite
                 {
                     BoolParseResult::Type res = StringToBool(value);
 
-                    if (res == BoolParseResult::AI_UNRECOGNIZED && diag)
+                    if (res == BoolParseResult::AI_UNRECOGNIZED)
                     {
-                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                            MakeErrorMessage("Unrecognized bool value. Defaulting to 'false'.", key, value));
+                        if (diag)
+                        {
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                MakeErrorMessage("Unrecognized bool value. Using default value.", key, value));
+                        }
+
+                        return;
                     }
 
                     cfg.SetReplicatedOnly(res == BoolParseResult::AI_TRUE);
@@ -279,10 +340,15 @@ namespace ignite
                 {
                     BoolParseResult::Type res = StringToBool(value);
 
-                    if (res == BoolParseResult::AI_UNRECOGNIZED && diag)
+                    if (res == BoolParseResult::AI_UNRECOGNIZED)
                     {
-                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                            MakeErrorMessage("Unrecognized bool value. Defaulting to 'false'.", key, value));
+                        if (diag)
+                        {
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                MakeErrorMessage("Unrecognized bool value. Using default value.", key, value));
+                        }
+
+                        return;
                     }
 
                     cfg.SetCollocated(res == BoolParseResult::AI_TRUE);
@@ -291,10 +357,15 @@ namespace ignite
                 {
                     BoolParseResult::Type res = StringToBool(value);
 
-                    if (res == BoolParseResult::AI_UNRECOGNIZED && diag)
+                    if (res == BoolParseResult::AI_UNRECOGNIZED)
                     {
-                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                            MakeErrorMessage("Unrecognized bool value. Defaulting to 'false'.", key, value));
+                        if (diag)
+                        {
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                MakeErrorMessage("Unrecognized bool value. Defaulting to 'false'.", key, value));
+                        }
+
+                        return;
                     }
 
                     cfg.SetLazy(res == BoolParseResult::AI_TRUE);
@@ -303,10 +374,15 @@ namespace ignite
                 {
                     BoolParseResult::Type res = StringToBool(value);
 
-                    if (res == BoolParseResult::AI_UNRECOGNIZED && diag)
+                    if (res == BoolParseResult::AI_UNRECOGNIZED)
                     {
-                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                            MakeErrorMessage("Unrecognized bool value. Defaulting to 'false'.", key, value));
+                        if (diag)
+                        {
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                MakeErrorMessage("Unrecognized bool value. Defaulting to 'false'.", key, value));
+                        }
+
+                        return;
                     }
 
                     cfg.SetSkipReducerOnUpdate(res == BoolParseResult::AI_TRUE);
@@ -317,11 +393,16 @@ namespace ignite
 
                     if (mode == ssl::SslMode::UNKNOWN)
                     {
-                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
-                            "Specified SSL mode is not supported. Default value used ('disable').");
+                        if (diag)
+                        {
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                "Specified SSL mode is not supported. Default value used ('disable').");
+                        }
+
+                        return;
                     }
-                    else
-                        cfg.SetSslMode(mode);
+
+                    cfg.SetSslMode(mode);
                 }
                 else if (lKey == Key::sslKeyFile)
                 {
@@ -335,16 +416,17 @@ namespace ignite
                 {
                     cfg.SetSslCaFile(value);
                 }
-                else if (lKey != Key::driver)
+                else if (lKey == Key::driver)
                 {
-                    if (diag)
-                    {
-                        std::stringstream stream;
+                    cfg.SetDriver(value);
+                }
+                else if (diag)
+                {
+                    std::stringstream stream;
 
-                        stream << "Unknown attribute: '" << key << "'. Ignoring.";
+                    stream << "Unknown attribute: '" << key << "'. Ignoring.";
 
-                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());
-                    }
+                    diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());
                 }
             }
 

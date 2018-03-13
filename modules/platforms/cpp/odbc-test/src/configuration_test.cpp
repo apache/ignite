@@ -27,9 +27,9 @@
 #include <ignite/odbc/config/configuration.h>
 #include <ignite/odbc/config/connection_string_parser.h>
 #include <ignite/odbc/config/config_tools.h>
-#include <ignite/ignite_error.h>
+#include <ignite/odbc/odbc_error.h>
 #include <ignite/common/utils.h>
-#include "ignite/odbc/diagnostic/diagnosable_adapter.h"
+#include "ignite/odbc/diagnostic/diagnostic_record_storage.h"
 
 using namespace ignite::odbc::config;
 
@@ -61,6 +61,18 @@ const char* BoolToStr(bool val, bool lowerCase = true)
     return val ? "TRUE" : "FALSE";
 }
 
+void ParseValidDsnString(const std::string& dsnStr, Configuration& cfg)
+{
+    ConnectionStringParser parser(cfg);
+
+    ignite::odbc::diagnostic::DiagnosticRecordStorage diag;
+
+    BOOST_CHECK_NO_THROW(parser.ParseConfigAttributes(dsnStr.c_str(), &diag));
+
+    if (diag.GetStatusRecordsNumber() != 0)
+        BOOST_FAIL(diag.GetStatusRecord(1).GetMessageText());
+}
+
 void ParseValidConnectString(const std::string& connectStr, Configuration& cfg)
 {
     ConnectionStringParser parser(cfg);
@@ -69,10 +81,11 @@ void ParseValidConnectString(const std::string& connectStr, Configuration& cfg)
 
     BOOST_CHECK_NO_THROW(parser.ParseConnectionString(connectStr, &diag));
 
-    BOOST_CHECK_EQUAL(diag.GetStatusRecordsNumber(), 0);
+    if (diag.GetStatusRecordsNumber() != 0)
+        BOOST_FAIL(diag.GetStatusRecord(1).GetMessageText());
 }
 
-void ParseInvalidConnectString(const std::string& connectStr, Configuration& cfg)
+void ParseConnectStringWithError(const std::string& connectStr, Configuration& cfg)
 {
     ConnectionStringParser parser(cfg);
 
@@ -83,13 +96,25 @@ void ParseInvalidConnectString(const std::string& connectStr, Configuration& cfg
     BOOST_CHECK_NE(diag.GetStatusRecordsNumber(), 0);
 }
 
+void ParseInvalidConnectString(const std::string& connectStr, Configuration& cfg)
+{
+    ConnectionStringParser parser(cfg);
+
+    ignite::odbc::diagnostic::DiagnosticRecordStorage diag;
+
+    BOOST_CHECK_THROW(parser.ParseConnectionString(connectStr, &diag), ignite::odbc::OdbcError);
+}
+
 void CheckValidAddress(const char* connectStr, uint16_t port)
 {
     Configuration cfg;
 
     ParseValidConnectString(connectStr, cfg);
 
-    BOOST_CHECK_EQUAL(cfg.GetTcpPort(), port);
+    const std::vector<ignite::odbc::EndPoint>& addrs = cfg.GetAddresses();
+
+    BOOST_REQUIRE(!addrs.empty());
+    BOOST_CHECK_EQUAL(addrs[0].port, port);
 }
 
 void CheckValidProtocolVersion(const char* connectStr, ignite::odbc::ProtocolVersion version)
@@ -114,7 +139,7 @@ void CheckInvalidProtocolVersion(const char* connectStr)
 {
     Configuration cfg;
 
-    ParseInvalidConnectString(connectStr, cfg);
+    ParseConnectStringWithError(connectStr, cfg);
 
     BOOST_CHECK(cfg.GetProtocolVersion() == Configuration::DefaultValue::protocolVersion);
 }
@@ -137,7 +162,7 @@ void CheckInvalidBoolValue(const std::string& connectStr, const std::string& key
 {
     Configuration cfg;
 
-    ParseInvalidConnectString(connectStr, cfg);
+    ParseConnectStringWithError(connectStr, cfg);
 
     Configuration::ArgumentMap map;
     cfg.ToMap(map);
@@ -148,10 +173,7 @@ void CheckInvalidBoolValue(const std::string& connectStr, const std::string& key
 void CheckConnectionConfig(const Configuration& cfg)
 {
     BOOST_CHECK_EQUAL(cfg.GetDriver(), testDriverName);
-    BOOST_CHECK_EQUAL(cfg.GetHost(), testServerHost);
-    BOOST_CHECK_EQUAL(cfg.GetTcpPort(), testServerPort);
     BOOST_CHECK_EQUAL(cfg.GetSchema(), testSchemaName);
-    BOOST_CHECK_EQUAL(cfg.GetDsn(), std::string());
     BOOST_CHECK_EQUAL(cfg.GetPageSize(), testPageSize);
     BOOST_CHECK_EQUAL(cfg.IsDistributedJoins(), testDistributedJoins);
     BOOST_CHECK_EQUAL(cfg.IsEnforceJoinOrder(), testEnforceJoinOrder);
@@ -160,9 +182,17 @@ void CheckConnectionConfig(const Configuration& cfg)
     BOOST_CHECK_EQUAL(cfg.IsLazy(), testLazy);
     BOOST_CHECK_EQUAL(cfg.IsSkipReducerOnUpdate(), testSkipReducerOnUpdate);
 
-    BOOST_REQUIRE_EQUAL(cfg.GetAddresses().size(), 1);
-    BOOST_CHECK_EQUAL(cfg.GetAddresses()[0].host, testAddress.host);
-    BOOST_CHECK_EQUAL(cfg.GetAddresses()[0].port, testAddress.port);
+    BOOST_CHECK(!cfg.IsDsnSet());
+    BOOST_CHECK(!cfg.IsHostSet());
+    BOOST_CHECK(!cfg.IsTcpPortSet());
+
+    BOOST_CHECK(cfg.IsAddressesSet());
+
+    const std::vector<ignite::odbc::EndPoint>& addrs = cfg.GetAddresses();
+
+    BOOST_REQUIRE(!addrs.empty());
+    BOOST_CHECK_EQUAL(addrs[0].host, testAddress.host);
+    BOOST_CHECK_EQUAL(addrs[0].port, testAddress.port);
 
     std::stringstream constructor;
 
@@ -376,17 +406,12 @@ BOOST_AUTO_TEST_CASE(TestConnectStringUnsupportedVersion)
     CheckInvalidProtocolVersion("Protocol_Version=1.8.1;");
 }
 
-BOOST_AUTO_TEST_CASE(TestConnectStringValidVersion)
-{
-    CheckValidProtocolVersion("Protocol_Version=2.1.0;", ignite::odbc::ProtocolVersion::VERSION_2_1_0);
-    CheckValidProtocolVersion("Protocol_Version=1.6.1;", ignite::odbc::ProtocolVersion(1, 6, 1));
-    CheckValidProtocolVersion("Protocol_Version=1.7.0;", ignite::odbc::ProtocolVersion(1, 7, 0));
-    CheckValidProtocolVersion("Protocol_Version=1.8.1;", ignite::odbc::ProtocolVersion(1, 8, 1));
-}
-
 BOOST_AUTO_TEST_CASE(TestConnectStringSupportedVersion)
 {
     CheckSupportedProtocolVersion("Protocol_Version=2.1.0;");
+    CheckSupportedProtocolVersion("Protocol_Version=2.1.5;");
+    CheckSupportedProtocolVersion("Protocol_Version=2.3.0;");
+    CheckSupportedProtocolVersion("Protocol_Version=2.3.2;");
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringInvalidBoolKeys)
@@ -455,7 +480,7 @@ BOOST_AUTO_TEST_CASE(TestDsnStringUppercase)
 
     const std::string& configStr = constructor.str();
 
-    ParseValidConnectString(configStr, cfg);
+    ParseValidDsnString(configStr, cfg);
 
     CheckDsnConfig(cfg);
 }
@@ -471,7 +496,7 @@ BOOST_AUTO_TEST_CASE(TestDsnStringLowercase)
 
     const std::string& configStr = constructor.str();
 
-    ParseValidConnectString(configStr, cfg);
+    ParseValidDsnString(configStr, cfg);
 
     CheckDsnConfig(cfg);
 }
@@ -487,7 +512,7 @@ BOOST_AUTO_TEST_CASE(TestDsnStringMixed)
 
     const std::string& configStr = constructor.str();
 
-    ParseValidConnectString(configStr, cfg);
+    ParseValidDsnString(configStr, cfg);
 
     CheckDsnConfig(cfg);
 }
@@ -503,7 +528,7 @@ BOOST_AUTO_TEST_CASE(TestDsnStringWhitespaces)
 
     const std::string& configStr = constructor.str();
 
-    ParseValidConnectString(configStr, cfg);
+    ParseValidDsnString(configStr, cfg);
 
     CheckDsnConfig(cfg);
 }
