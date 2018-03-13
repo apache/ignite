@@ -90,7 +90,7 @@ public class IgniteQueryGenerator {
      * @param sort Sort method.
      */
     public static StringBuilder addSorting(StringBuilder sql, Sort sort) {
-        if (sort != null) {
+        if (sort != null && sort!=Sort.unsorted()) {
             sql.append(" ORDER BY ");
 
             for (Sort.Order order : sort) {

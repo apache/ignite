@@ -28,13 +28,16 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.springdata.repository.IgniteRepository;
+import org.springframework.context.annotation.Conditional;
 
 /**
  * General Apache Ignite repository implementation.
  */
+/**This bean should've never been loaded by context directly, only via {@link IgniteRepositoryFactory}*/
+@Conditional(ConditionFalse.class)
 public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteRepository<T, ID> {
     /** Ignite Cache bound to the repository */
-    private final IgniteCache<ID, T> cache;
+    private IgniteCache<ID, T> cache;
 
     /**
      * Repository constructor.
