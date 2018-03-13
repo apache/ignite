@@ -919,7 +919,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
      * Wrapper for an MVCC-related iterators.
      */
     private static class MvccTrackingIterator implements GridCloseableIterator {
-
+        /** Serial version uid. */
+        private static final long serialVersionUID = -1905248502802333832L;
         /** Underlying iterator. */
         private final GridCloseableIterator it;
 
