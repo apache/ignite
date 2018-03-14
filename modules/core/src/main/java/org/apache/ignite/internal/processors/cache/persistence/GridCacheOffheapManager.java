@@ -338,7 +338,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /**
-     * Check that we need to snapshot this partition and add it to map
+     * Check that we need to snapshot this partition and add it to map.
      *
      * @param store Store.
      * @param ctx Snapshot context.
@@ -353,6 +353,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
     /**
      * @param store Store.
+     *
+     * @return corresponding to store local partition
      */
     private GridDhtLocalPartition getPartition(CacheDataStore store) {
         return grp.topology().localPartition(store.partId(),
