@@ -41,13 +41,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonTest;
 @GridCommonTest(group = "Kernal Self")
 public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
     /** */
-    private static Ignite ignite;
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        ignite = startGrid();
+    public GridCollisionJobsContextSelfTest() {
+        super(/*start grid*/true);
     }
 
     /** {@inheritDoc} */
@@ -63,7 +58,7 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testCollisionJobContext() throws Exception {
-        ignite.compute().execute(new GridTestTask(), "some-arg");
+        grid().compute().execute(new GridTestTask(), "some-arg");
     }
 
     /** */
