@@ -93,9 +93,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid();
-
-        ignite = G.ignite(getTestIgniteInstanceName());
+        ignite = startGrid();
     }
 
     /**

@@ -93,6 +93,7 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
@@ -543,7 +544,7 @@ public abstract class GridAbstractTest extends TestCase {
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
 
-        assert G.allGrids().isEmpty() : "Not all grids stopped before tests execution";
+        assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution";
     }
 
     /**
@@ -999,21 +1000,21 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @param idx Index of the grid to stop.
+     * @param idx Index of the Ignite instance to stop.
      */
     protected void stopAndCancelGrid(int idx) {
         stopGrid(getTestIgniteInstanceName(idx), true);
     }
 
     /**
-     * @param idx Index of the grid to stop.
+     * @param idx Index of the Ignite instance to stop.
      */
     protected void stopGrid(int idx) {
         stopGrid(getTestIgniteInstanceName(idx), false);
     }
 
     /**
-     * @param idx Index of the grid to stop.
+     * @param idx Index of the Ignite instance to stop.
      * @param cancel Cancel flag.
      */
     protected void stopGrid(int idx, boolean cancel) {
@@ -1036,7 +1037,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Stop grid and log exception
+     * Stop Ignite instance and log exception.
      *
      * @param igniteInstanceName Ignite instance name.
      * @param cancel Cancel flag.
@@ -1047,12 +1048,12 @@ public abstract class GridAbstractTest extends TestCase {
             stopGridUnhandledEx(igniteInstanceName, cancel, awaitTop);
         }
         catch (Throwable t) {
-            error("Failed to stop grid [igniteInstanceName=" + igniteInstanceName + ", cancel=" + cancel + ']', t);
+            error("Failed to stop node [igniteInstanceName=" + igniteInstanceName + ", cancel=" + cancel + ']', t);
         }
     }
 
     /**
-     * Stop node ignoring already stopped
+     * Stop Ignite instance ignoring already stopped.
      *
      * @param igniteInstanceName Ignite instance name.
      * @param cancel Cancel flag.
@@ -1088,10 +1089,10 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Stop all grids and throw {@link Exception} if some of them failed to stop.
+     * Stop all Ignite instances and throw {@link IgniteException} if some of them failed to stop.
      */
     private void stopAllGridsSilently() throws Exception {
-        final Map<String, Throwable> stopGridErrors = new HashMap<>();
+        final Map<String, Throwable> errors = new HashMap<>();
 
         for (Ignite g : G.allGrids()) {
             String igniteInstanceName = g.name();
@@ -1099,28 +1100,28 @@ public abstract class GridAbstractTest extends TestCase {
             try {
                 stopGridUnhandledEx(igniteInstanceName, false, false);
             } catch (Throwable t) {
-                stopGridErrors.put(igniteInstanceName, t);
+                errors.put(igniteInstanceName, t);
             }
         }
 
         if (stopGridErr) {
-            String message = stopGridErrors.entrySet().stream().map(Map.Entry::toString)
+            String msg = errors.entrySet().stream().map(Map.Entry::toString)
                 .collect(Collectors.joining(", ", "[", "]"));
 
-            throw new Exception("Failed to stop grids: [" + message + "].");
+            throw new IgniteException("Failed to stop nodes: [" + msg + "].");
         }
     }
 
     /**
-     * Stop all grid nodes with canceling all jobs currently active.
+     * Stop all Ignite instances with canceling all jobs currently active.
      */
     protected void stopAllGrids() {
         stopAllGrids(true);
     }
 
     /**
-     * Stop all grids using {@link org.apache.ignite.spi.discovery.DiscoverySpi#isClientMode()} as condition for
-     * stopping client grid nodes before server grid nodes
+     * Stop all Ignite instances using {@link DiscoverySpi#isClientMode()} as condition
+     * for stopping client instances before server instances.
      *
      * @param cancel Cancel flag.
      */
@@ -1138,7 +1139,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Stop all server grid nodes.
+     * Stop all server Ignite instances.
      */
     protected void stopAllServers() {
         G.allGrids().stream().filter(g -> !g.configuration().getDiscoverySpi().isClientMode())

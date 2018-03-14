@@ -40,9 +40,7 @@ public class GridCommunicationSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid();
-
-        ignite = G.ignite(getTestIgniteInstanceName());
+        ignite = startGrid();
     }
 
     /**
