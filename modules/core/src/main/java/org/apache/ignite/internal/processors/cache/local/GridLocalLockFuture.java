@@ -487,47 +487,51 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
 
-            if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
-                Set<IgniteTxKey> keys = new HashSet<>();
+            if (inTx()) {
+                if (cctx.tm().deadlockDetectionEnabled()) {
+                    Set<IgniteTxKey> keys = new HashSet<>();
 
-                List<GridLocalCacheEntry> entries = entries();
+                    List<GridLocalCacheEntry> entries = entries();
 
-                for (int i = 0; i < entries.size(); i++) {
-                    GridLocalCacheEntry e = entries.get(i);
+                    for (int i = 0; i < entries.size(); i++) {
+                        GridLocalCacheEntry e = entries.get(i);
 
-                    List<GridCacheMvccCandidate> mvcc = e.mvccAllLocal();
+                        List<GridCacheMvccCandidate> mvcc = e.mvccAllLocal();
 
-                    if (mvcc == null)
-                        continue;
+                        if (mvcc == null)
+                            continue;
 
-                    GridCacheMvccCandidate cand = mvcc.get(0);
+                        GridCacheMvccCandidate cand = mvcc.get(0);
 
-                    if (cand.owner() && cand.tx() && !cand.version().equals(tx.xidVersion()))
-                        keys.add(e.txKey());
-                }
-
-                IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx, keys);
-
-                fut.listen(new IgniteInClosure<IgniteInternalFuture<TxDeadlock>>() {
-                    @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
-                        try {
-                            TxDeadlock deadlock = fut.get();
-
-                            if (deadlock != null)
-                                ERR_UPD.compareAndSet(GridLocalLockFuture.this, null,
-                                        new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout for " +
-                                                "transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
-                                                new TransactionDeadlockException(deadlock.toString(cctx.shared()))));
-                        }
-                        catch (IgniteCheckedException e) {
-                            U.warn(log, "Failed to detect deadlock.", e);
-
-                            ERR_UPD.compareAndSet(GridLocalLockFuture.this, null, e);
-                        }
-
-                        onComplete(false);
+                        if (cand.owner() && cand.tx() && !cand.version().equals(tx.xidVersion()))
+                            keys.add(e.txKey());
                     }
-                });
+
+                    IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx, keys);
+
+                    fut.listen(new IgniteInClosure<IgniteInternalFuture<TxDeadlock>>() {
+                        @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
+                            try {
+                                TxDeadlock deadlock = fut.get();
+
+                                err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided " +
+                                    "timeout for transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']',
+                                    deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx.shared())) :
+                                        null);
+                            }
+                            catch (IgniteCheckedException e) {
+                                err = e;
+
+                                U.warn(log, "Failed to detect deadlock.", e);
+                            }
+
+                            onComplete(false);
+                        }
+                    });
+                }
+                else
+                    err = new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided " +
+                        "timeout for transaction [timeout=" + tx.timeout() + ", tx=" + CU.txString(tx) + ']');
             }
             else
                 onComplete(false);
