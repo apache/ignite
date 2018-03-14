@@ -544,10 +544,9 @@ public class BinaryClassDescriptor {
      * @throws BinaryObjectException In case of error.
      */
     void write(Object obj, BinaryWriterExImpl writer) throws BinaryObjectException {
-        try{
-            assert obj != null;
-            assert writer != null;
-            assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
+        try{assert obj != null;
+        assert writer != null;
+        assert mode != BinaryWriteMode.OPTIMIZED : "OptimizedMarshaller should not be used here: " + cls.getName();
 
             writer.typeId(typeId);
 
@@ -820,10 +819,8 @@ public class BinaryClassDescriptor {
 
                     break;
 
-                default:
-                    assert false : "Invalid mode: " + mode;
-            }
-
+            default:
+                assert false : "Invalid mode: " + mode;}
         }
         catch (Exception e) {
             if (e instanceof UnregisteredBinaryTypeException || e instanceof UnregisteredClassException)
@@ -903,10 +900,16 @@ public class BinaryClassDescriptor {
             return res;
         }
         catch (Exception e) {
+            String msg;
+
             if (S.INCLUDE_SENSITIVE && !F.isEmpty(typeName))
-                throw new BinaryObjectException("Failed to deserialize object [typeName=" + typeName + ']', e);
+                msg = "Failed to deserialize object [typeName=" + typeName + ']';
             else
-                throw new BinaryObjectException("Failed to deserialize object [typeId=" + typeId + ']', e);
+                msg = "Failed to deserialize object [typeId=" + typeId + ']';
+
+            U.error(ctx.log(), msg, e);
+
+            throw new BinaryObjectException(msg, e);
         }
     }
 
