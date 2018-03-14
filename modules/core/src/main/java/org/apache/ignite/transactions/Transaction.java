@@ -24,6 +24,7 @@ import org.apache.ignite.lang.IgniteAsyncSupport;
 import org.apache.ignite.lang.IgniteAsyncSupported;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Ignite cache transaction. Cache transactions have a default 2PC (two-phase-commit) behavior and
@@ -290,11 +291,9 @@ public interface Transaction extends AutoCloseable, IgniteAsyncSupport {
     public void suspend() throws IgniteException;
 
     /**
-     * Adds label to a transaction.
+     * Returns label for the transaction.
      *
-     * @param label Transaction label, useful for debugging.
-     *
-     * @return This transaction with defined label.
+     * @return Label.
      */
-    public Transaction withLabel(String label);
+    public @Nullable String label();
 }

@@ -1431,6 +1431,11 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         }
 
         /** {@inheritDoc} */
+        @Nullable @Override public String label() {
+            return null;
+        }
+
+        /** {@inheritDoc} */
         @Override public long timeout() {
             return tx.timeout();
         }
@@ -1479,12 +1484,6 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
         @Override public void resume() throws IgniteException {
             throw new UnsupportedOperationException();
         }
-
-        /** {@inheritDoc} */
-        @Override public Transaction withLabel(String label) {
-            return this;
-        }
-
         /** {@inheritDoc} */
         @Override public IgniteAsyncSupport withAsync() {
             throw new UnsupportedOperationException();

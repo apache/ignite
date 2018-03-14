@@ -202,6 +202,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @param txSize Transaction size.
      * @param subjId Subject ID.
      * @param taskNameHash Task name hash code.
+     * @param label Label.
      */
     public GridNearTxLocal(
         GridCacheSharedContext ctx,
@@ -215,7 +216,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         boolean storeEnabled,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        @Nullable String label
     ) {
         super(
             ctx,
@@ -234,6 +236,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             txSize,
             subjId,
             taskNameHash);
+        this.label = label;
 
         mappings = implicitSingle ? new IgniteTxMappingsSingleImpl() : new IgniteTxMappingsImpl();
 
