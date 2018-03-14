@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.io;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.processors.cache.persistence.snapshot.TrackingPageIsCorruptedException;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.util.GridStringBuilder;
 import org.apache.ignite.internal.util.GridUnsafe;
@@ -49,6 +50,12 @@ public class TrackingPageIO extends PageIO {
     public static final IOVersions<TrackingPageIO> VERSIONS = new IOVersions<>(
         new TrackingPageIO(1)
     );
+
+    /** Corrupt flag mask. */
+    public static final long CORRUPT_FLAG_MASK = 1L << 63;
+
+    /** Corrupt flag mask. */
+    public static final long CORRUPT_FLAG_FILTER_MASK = ~CORRUPT_FLAG_MASK;
 
     /** Last snapshot offset. */
     public static final int LAST_SNAPSHOT_TAG_OFFSET = COMMON_HEADER_END;
@@ -80,8 +87,8 @@ public class TrackingPageIO extends PageIO {
      * @param nextSnapshotTag tag of next snapshot.
      * @param pageSize Page size.
      */
-    public boolean markChanged(ByteBuffer buf, long pageId, long nextSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize) {
-        validateSnapshotId(buf, nextSnapshotTag, lastSuccessfulSnapshotTag, pageSize);
+    public long markChanged(ByteBuffer buf, long pageId, long nextSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize) {
+        long tag = validateSnapshotTag(buf, nextSnapshotTag, lastSuccessfulSnapshotTag, pageSize);
 
         int cntOfPage = countOfPageToTrack(pageSize);
 
@@ -98,7 +105,7 @@ public class TrackingPageIO extends PageIO {
         byte newVal =  (byte) (byteToUpdate | updateTemplate);
 
         if (byteToUpdate == newVal)
-            return false;
+            return tag;
 
         buf.put(idx, newVal);
 
@@ -108,7 +115,7 @@ public class TrackingPageIO extends PageIO {
 
         assert newSize == countOfChangedPage(buf, nextSnapshotTag, pageSize);
 
-        return true;
+        return tag;
     }
 
     /**
@@ -116,22 +123,30 @@ public class TrackingPageIO extends PageIO {
      * @param nextSnapshotTag Next snapshot id.
      * @param lastSuccessfulSnapshotTag Last successful snapshot id.
      * @param pageSize Page size.
+     *
+     * @return -1 if everything is ok, otherwise last saved tag
      */
-    private void validateSnapshotId(ByteBuffer buf, long nextSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize) {
+    private long validateSnapshotTag(ByteBuffer buf, long nextSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize) {
         assert nextSnapshotTag != lastSuccessfulSnapshotTag : "nextSnapshotTag = " + nextSnapshotTag +
             ", lastSuccessfulSnapshotId = " + lastSuccessfulSnapshotTag;
 
         long last = getLastSnapshotTag(buf);
 
-        assert last <= nextSnapshotTag : "last = " + last + ", nextSnapshotTag = " + nextSnapshotTag;
+        if(last > nextSnapshotTag) { //we have lost snapshot tag therefore should mark this tracking as corrupted
+            PageHandler.zeroMemory(buf, LAST_SNAPSHOT_TAG_OFFSET, buf.capacity() - LAST_SNAPSHOT_TAG_OFFSET);
+
+            setLastSnasphotTag(buf, nextSnapshotTag | CORRUPT_FLAG_MASK);
+
+            return last;
+        }
 
         if (nextSnapshotTag == last) //everything is ok
-            return;
+            return -1;
 
         int cntOfPage = countOfPageToTrack(pageSize);
 
         if (last <= lastSuccessfulSnapshotTag) { //we can drop our data
-            buf.putLong(LAST_SNAPSHOT_TAG_OFFSET, nextSnapshotTag);
+            setLastSnasphotTag(buf, nextSnapshotTag);
 
             PageHandler.zeroMemory(buf, SIZE_FIELD_OFFSET, buf.capacity() - SIZE_FIELD_OFFSET);
         } else { //we can't drop data, it is still necessary for incremental snapshots
@@ -167,24 +182,88 @@ public class TrackingPageIO extends PageIO {
                 buf.putShort(sizeOff2, (short)newSize);
             }
 
-            buf.putLong(LAST_SNAPSHOT_TAG_OFFSET, nextSnapshotTag);
+            setLastSnasphotTag(buf, nextSnapshotTag);
 
             PageHandler.zeroMemory(buf, sizeOff, len + SIZE_FIELD_SIZE);
         }
+
+        return -1;
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param nextSnapshotTag Next snapshot tag.
+     */
+    private void setLastSnasphotTag(ByteBuffer buf, long nextSnapshotTag) {
+        if (isCorrupted(buf))
+            nextSnapshotTag = nextSnapshotTag | CORRUPT_FLAG_MASK;
+
+        buf.putLong(LAST_SNAPSHOT_TAG_OFFSET, nextSnapshotTag);
+    }
+
+    /**
+     * @param buf Buffer.
+     * @param nextSnapshotTag Next snapshot tag.
+     */
+    private void setLastSnasphotTag0(ByteBuffer buf, long nextSnapshotTag) {
+        buf.putLong(LAST_SNAPSHOT_TAG_OFFSET, nextSnapshotTag);
+    }
+
+    /**
+     * @param addr address.
+     * @param nextSnapshotTag Next snapshot tag.
+     */
+    private void setLastSnasphotTag0(long addr, long nextSnapshotTag) {
+        GridUnsafe.putLong(addr + LAST_SNAPSHOT_TAG_OFFSET, nextSnapshotTag);
     }
 
     /**
      * @param buf Buffer.
      */
-    long getLastSnapshotTag(ByteBuffer buf) {
-        return buf.getLong(LAST_SNAPSHOT_TAG_OFFSET);
+    private long getLastSnapshotTag(ByteBuffer buf) {
+        return getLastSnapshotTag0(buf) & CORRUPT_FLAG_FILTER_MASK;
+    }
+
+    /**
+     * @param buf Buffer.
+     */
+    private long getLastSnapshotTag0(ByteBuffer buf) {
+        return buf.getLong(LAST_SNAPSHOT_TAG_OFFSET) ;
     }
 
     /**
      * @param addr Address.
      */
-    long getLastSnapshotTag(long addr) {
+    private long getLastSnapshotTag(long addr) {
+        return getLastSnapshotTag0(addr) & CORRUPT_FLAG_FILTER_MASK;
+    }
+
+    /**
+     * @param addr Address.
+     */
+    private long getLastSnapshotTag0(long addr) {
         return GridUnsafe.getLong(addr + LAST_SNAPSHOT_TAG_OFFSET);
+    }
+
+    /**
+     * @param buf Buffer.
+     */
+    public boolean isCorrupted(ByteBuffer buf) {
+        return getLastSnapshotTag0(buf) < 0;
+    }
+
+    /**
+     * @param buf Buffer.
+     */
+    public void resetCorruptFlag(ByteBuffer buf) {
+        setLastSnasphotTag0(buf, getLastSnapshotTag(buf));
+    }
+
+    /**
+     * @param addr Buffer.
+     */
+    public void resetCorruptFlag(long addr) {
+        setLastSnasphotTag0(addr, getLastSnapshotTag(addr));
     }
 
     /**
@@ -196,8 +275,15 @@ public class TrackingPageIO extends PageIO {
      * @param lastSuccessfulSnapshotTag Last successful snapshot id.
      * @param pageSize Page size.
      */
-    public boolean wasChanged(ByteBuffer buf, long pageId, long curSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize) {
-        validateSnapshotId(buf, curSnapshotTag + 1, lastSuccessfulSnapshotTag, pageSize);
+    public boolean wasChanged(ByteBuffer buf, long pageId, long curSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize)
+        throws TrackingPageIsCorruptedException {
+        if (isCorrupted(buf))
+            throw TrackingPageIsCorruptedException.INSTANCE;
+
+        long lastTag = validateSnapshotTag(buf, curSnapshotTag + 1, lastSuccessfulSnapshotTag, pageSize);
+
+        if (lastTag >= 0)
+            throw new TrackingPageIsCorruptedException(lastTag, curSnapshotTag);
 
         if (countOfChangedPage(buf, curSnapshotTag, pageSize) < 1)
             return false;
@@ -242,7 +328,7 @@ public class TrackingPageIO extends PageIO {
      *
      * @return true if snapshotTag is odd, otherwise - false
      */
-    boolean useLeftHalf(long snapshotTag) {
+    private boolean useLeftHalf(long snapshotTag) {
         return (snapshotTag & 0b1) == 0;
     }
 
@@ -282,8 +368,14 @@ public class TrackingPageIO extends PageIO {
      * @return set pageId if it was changed or next closest one, if there is no changed page {@code null} will be returned
      */
     @Nullable public Long findNextChangedPage(ByteBuffer buf, long start, long curSnapshotTag,
-        long lastSuccessfulSnapshotTag, int pageSize) {
-        validateSnapshotId(buf, curSnapshotTag + 1, lastSuccessfulSnapshotTag, pageSize);
+        long lastSuccessfulSnapshotTag, int pageSize) throws TrackingPageIsCorruptedException {
+        if (isCorrupted(buf))
+            throw TrackingPageIsCorruptedException.INSTANCE;
+
+        long lastTag = validateSnapshotTag(buf, curSnapshotTag + 1, lastSuccessfulSnapshotTag, pageSize);
+
+        if (lastTag >= 0)
+            throw new TrackingPageIsCorruptedException(lastTag, curSnapshotTag);
 
         int cntOfPage = countOfPageToTrack(pageSize);
 
