@@ -519,7 +519,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * Cleanup checkpoint directory from temporary files.
      */
     private void cleanup() throws IgniteCheckedException {
-        checkpointLock.readLock().lock();
+        checkpointReadLock();
 
         try {
             File[] files = cpDir.listFiles();
@@ -540,7 +540,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
         }
         finally {
-            checkpointLock.readLock().unlock();
+            checkpointReadUnlock();
         }
     }
 
