@@ -20,7 +20,6 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import org.apache.ignite.GridTestJob;
 import org.apache.ignite.GridTestTask;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
@@ -58,7 +57,7 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testCollisionJobContext() throws Exception {
-        grid().compute().execute(new GridTestTask(), "some-arg");
+        G.ignite(getTestIgniteInstanceName()).compute().execute(new GridTestTask(), "some-arg");
     }
 
     /** */
