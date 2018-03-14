@@ -150,4 +150,9 @@ public class TestTransaction implements Transaction {
     @Override public void resume() throws IgniteException {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override public Transaction withLabel(String label) {
+        return this;
+    }
 }
