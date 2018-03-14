@@ -158,14 +158,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         boolean metaWasUpdated = false;
 
-        for (CacheDataStore store : partDataStores.values()) {
-            RowStore rowStore = store.rowStore();
-
-            if (rowStore == null)
-                continue;
-
+        for (CacheDataStore store : partDataStores.values())
             metaWasUpdated |= saveStoreMetadata(store, ctx, !metaWasUpdated, false);
-        }
     }
 
     /**
@@ -206,8 +200,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     if (beforeDestroy)
                         state = GridDhtPartitionState.EVICTED;
                     else {
-                        part = grp.topology().localPartition(store.partId(),
-                                AffinityTopologyVersion.NONE, false, true);
+                        part = getPartition(store);
 
                         if (part != null && part.state() != GridDhtPartitionState.EVICTED)
                             state = part.state();
@@ -334,9 +327,37 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     pageMem.releasePage(grpId, partMetaId, partMetaPage);
                 }
             }
+            else if (needSnapshot)
+                tryAddEmptyPartitionToSnapshot(store, ctx);;
         }
+        else if (needSnapshot)
+            tryAddEmptyPartitionToSnapshot(store, ctx);
 
         return wasSaveToMeta;
+    }
+
+    /**
+     * Check that we need to snapshot this partition and add it to map.
+     *
+     * @param store Store.
+     * @param ctx Snapshot context.
+     */
+    private void tryAddEmptyPartitionToSnapshot(CacheDataStore store, Context ctx) {
+        if (getPartition(store).state() == OWNING) {
+            ctx.partitionStatMap().put(
+                    new GroupPartitionId(grp.groupId(), store.partId()),
+                    new PagesAllocationRange(0, 0));
+        }
+    }
+
+    /**
+     * @param store Store.
+     *
+     * @return corresponding to store local partition
+     */
+    private GridDhtLocalPartition getPartition(CacheDataStore store) {
+        return grp.topology().localPartition(store.partId(),
+                AffinityTopologyVersion.NONE, false, true);
     }
 
     /**
@@ -1042,7 +1063,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         reuseRoot.isAllocated()) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
-                            
+
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
                     };
