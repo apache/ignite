@@ -423,11 +423,11 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
-            availableSpaceBytes.addAndGet(-maxWalSegmentSize);
+        @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+            availableSpaceBytes.addAndGet(-sizeBytes);
             if (availableSpaceBytes.get() < 0)
                 throw new IOException("Not enough space!");
-            return super.map(maxWalSegmentSize);
+            return super.map(sizeBytes);
         }
     }
 
