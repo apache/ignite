@@ -117,7 +117,6 @@ public class MovieGAExample {
             ignite.log();
             Chromosome fittestChromosome = gaGrid.evolve();
 
-            Ignition.stop(true);
             ignite = null;
 
         }

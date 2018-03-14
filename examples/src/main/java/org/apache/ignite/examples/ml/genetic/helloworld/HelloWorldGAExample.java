@@ -86,7 +86,6 @@ public class HelloWorldGAExample {
             // evolve the population
             Chromosome fittestChromosome = gaGrid.evolve();
 
-            Ignition.stop(true);
             ignite = null;
 
         }

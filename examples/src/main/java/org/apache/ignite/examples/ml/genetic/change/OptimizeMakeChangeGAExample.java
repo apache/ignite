@@ -148,7 +148,6 @@ public class OptimizeMakeChangeGAExample {
 
             Chromosome fittestChromosome = gaGrid.evolve();
 
-            Ignition.stop(true);
             ignite = null;
 
         }
