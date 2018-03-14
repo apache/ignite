@@ -37,12 +37,14 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -299,10 +301,10 @@ public class JdbcThinTcpIo {
 
             ClientListenerProtocolVersion srvProtocolVer = ClientListenerProtocolVersion.create(maj, min, maintenance);
 
-            if (VER_2_3_0.equals(srvProtocolVer))
-                handshake(VER_2_3_0);
-            else if (VER_2_1_5.equals(srvProtocolVer))
-                handshake(VER_2_1_5);
+            if (VER_2_4_0.equals(srvProtocolVer)
+                    || VER_2_3_0.equals(srvProtocolVer)
+                    || VER_2_1_5.equals(srvProtocolVer))
+                handshake(srvProtocolVer);
             else if (VER_2_1_0.equals(srvProtocolVer))
                 handshake_2_1_0();
             else {
@@ -394,9 +396,12 @@ public class JdbcThinTcpIo {
         int cap;
 
         if (req instanceof JdbcBatchExecuteRequest) {
-            int cnt = Math.min(MAX_BATCH_QRY_CNT, ((JdbcBatchExecuteRequest)req).queries().size());
+            List<JdbcQuery> qrys = ((JdbcBatchExecuteRequest)req).queries();
 
-            cap = cnt * DYNAMIC_SIZE_MSG_CAP;
+            int cnt = !F.isEmpty(qrys) ? Math.min(MAX_BATCH_QRY_CNT, qrys.size()) : 0;
+
+            // One additional byte for autocommit and last batch flags.
+            cap = cnt * DYNAMIC_SIZE_MSG_CAP + 2;
         }
         else if (req instanceof JdbcQueryCloseRequest)
             cap = QUERY_CLOSE_MSG_SIZE;

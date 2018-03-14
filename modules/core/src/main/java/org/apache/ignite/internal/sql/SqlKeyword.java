@@ -31,8 +31,14 @@ public class SqlKeyword {
     /** Keyword: ALTER. */
     public static final String ALTER = "ALTER";
 
+    /** Keyword: ALLOW_OVERWRITE */
+    public static final String ALLOW_OVERWRITE = "ALLOW_OVERWRITE";
+
     /** Keyword: ASC. */
     public static final String ASC = "ASC";
+
+    /** Keyword: BATCH_SIZE */
+    public static final String BATCH_SIZE = "BATCH_SIZE";
 
     /** Keyword: BEGIN. */
     public static final String BEGIN = "BEGIN";
@@ -102,6 +108,9 @@ public class SqlKeyword {
 
     /** Keyword: FLOAT8. */
     public static final String FLOAT8 = "FLOAT8";
+
+    /** Keyword: FLUSH_FREQUENCY. */
+    public static final String FLUSH_FREQUENCY = "FLUSH_FREQUENCY";
 
     /** Keyword: FORMAT. */
     public static final String FORMAT = "FORMAT";
@@ -175,8 +184,17 @@ public class SqlKeyword {
     /** Keyword: NVARCHAR2. */
     public static final String NVARCHAR2 = "NVARCHAR2";
 
+    /** Keyword: OFF. */
+    public static final String OFF = "OFF";
+
     /** Keyword: ON. */
     public static final String ON = "ON";
+
+    /** Keyword: PER_NODE_PARALLEL_OPERATIONS. */
+    public static final String PER_NODE_PARALLEL_OPERATIONS = "PER_NODE_PARALLEL_OPERATIONS";
+
+    /** Keyword: PER_NODE_BUFFER_SIZE. */
+    public static final String PER_NODE_BUFFER_SIZE = "PER_NODE_BUFFER_SIZE";
 
     /** Keyword: PRECISION. */
     public static final String PRECISION = "PRECISION";
@@ -193,6 +211,9 @@ public class SqlKeyword {
     /** Keyword: ROLLBACK. */
     public static final String ROLLBACK = "ROLLBACK";
 
+    /** Keyword: SET. */
+    public static final String SET = "SET";
+
     /** Keyword: SIGNED. */
     public static final String SIGNED = "SIGNED";
 
@@ -207,6 +228,9 @@ public class SqlKeyword {
 
     /** Keyword: START. */
     public static final String START = "START";
+
+    /** Keyword: STREAMING. */
+    public static final String STREAMING = "STREAMING";
 
     /** Keyword: TABLE. */
     public static final String TABLE = "TABLE";
@@ -250,9 +274,6 @@ public class SqlKeyword {
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;
 
-    /** Keywords indicating that a query may be parsed natively. */
-    public static final Set<String> NATIVE_KEYWORDS;
-
     static {
         KEYWORDS = new HashSet<>();
 
@@ -268,8 +289,6 @@ public class SqlKeyword {
         catch (ReflectiveOperationException e) {
             throw new IgniteException("Failed to initialize keywords collection.", e);
         }
-
-        NATIVE_KEYWORDS = Collections.unmodifiableSet(new HashSet<>(F.asList(ALTER, INDEX, BEGIN, COMMIT, ROLLBACK, COPY)));
     }
 
     /**

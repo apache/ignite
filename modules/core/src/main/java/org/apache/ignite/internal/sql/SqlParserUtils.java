@@ -123,6 +123,28 @@ public class SqlParserUtils {
     }
 
     /**
+     * Parse boolean parameter value based on presence of tokens 1, 0, ON, OFF. Not that this is not
+     * and is not intended to be routine for parsing a boolean literal from TRUE/FALSE.
+     * @param lex Lexer.
+     * @return Boolean parameter value.
+     */
+    public static boolean parseBoolean(SqlLexer lex) {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.DEFAULT) {
+            switch (lex.token()) {
+                case SqlKeyword.ON:
+                case "1":
+                    return true;
+
+                case SqlKeyword.OFF:
+                case "0":
+                    return false;
+            }
+        }
+
+        throw errorUnexpectedToken(lex, SqlKeyword.ON, SqlKeyword.OFF, "1", "0");
+    }
+
+    /**
      * Process name.
      *
      * @param lex Lexer.

@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsEvictor;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopologyImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
@@ -127,6 +128,9 @@ public class CacheGroupContext {
 
     /** */
     private GridCachePreloader preldr;
+
+    /** Partition evictor. */
+    private GridDhtPartitionsEvictor evictor;
 
     /** */
     private final DataRegion dataRegion;
@@ -269,6 +273,13 @@ public class CacheGroupContext {
      */
     public GridCachePreloader preloader() {
         return preldr;
+    }
+
+    /**
+     * @return Partitions evictor.
+     */
+    public GridDhtPartitionsEvictor evictor() {
+        return evictor;
     }
 
     /**
@@ -907,6 +918,8 @@ public class CacheGroupContext {
         }
         else
             preldr = new GridCachePreloaderAdapter(this);
+
+        evictor = new GridDhtPartitionsEvictor(this);
 
         if (persistenceEnabled()) {
             try {

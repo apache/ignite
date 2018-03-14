@@ -43,22 +43,10 @@ import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
+import org.apache.ignite.internal.processors.query.h2.sql.*;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlMerge;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -89,11 +77,11 @@ public final class UpdatePlanBuilder {
      * @param loc Local query flag.
      * @param idx Indexing.
      * @param conn Connection.
-     * @param fieldsQuery Original query.
+     * @param fieldsQry Original query.
      * @return Update plan.
      */
     public static UpdatePlan planForStatement(Prepared prepared, boolean loc, IgniteH2Indexing idx,
-        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery, @Nullable Integer errKeysPos)
+        @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQry, @Nullable Integer errKeysPos)
         throws IgniteCheckedException {
         assert !prepared.isQuery();
 
@@ -126,9 +114,12 @@ public final class UpdatePlanBuilder {
         }
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
-            return planForInsert(stmt, loc, idx, conn, fieldsQuery, mvccEnabled);
+            return planForInsert(stmt, loc, idx, conn, fieldsQry, mvccEnabled);
+        else if (stmt instanceof GridSqlUpdate || stmt instanceof GridSqlDelete)
+            return planForUpdate(stmt, loc, idx, conn, fieldsQry, errKeysPos, mvccEnabled);
         else
-            return planForUpdate(stmt, loc, idx, conn, fieldsQuery, errKeysPos, mvccEnabled);
+            throw new IgniteSQLException("Unsupported operation: " + prepared.getSQL(),
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**

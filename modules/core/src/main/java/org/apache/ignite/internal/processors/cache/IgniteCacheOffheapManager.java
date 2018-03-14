@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteDhtDemandedPartitionsMap;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.RootPage;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
@@ -328,14 +329,21 @@ public interface IgniteCacheOffheapManager {
     public GridIterator<CacheDataRow> partitionIterator(final int part) throws IgniteCheckedException;
 
     /**
-     * @param part Partition.
+     * @param part Partition number.
      * @param topVer Topology version.
-     * @param partCntr Partition counter to get historical data if available.
+     * @return Iterator for given partition that will reserve partition state until it is closed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridCloseableIterator<CacheDataRow> reservedIterator(final int part, final AffinityTopologyVersion topVer)
+        throws IgniteCheckedException;
+
+    /**
+     * @param parts Partitions.
      * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
     // TODO: MVCC>
-    public IgniteRebalanceIterator rebalanceIterator(int part, AffinityTopologyVersion topVer, Long partCntr)
+    public IgniteRebalanceIterator rebalanceIterator(IgniteDhtDemandedPartitionsMap parts, AffinityTopologyVersion topVer)
         throws IgniteCheckedException;
 
     /**

@@ -43,6 +43,12 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     private boolean autoCommit;
 
     /**
+     * Last stream batch flag - whether open streamers on current connection
+     * must be flushed and closed after this batch.
+     */
+    private boolean lastStreamBatch;
+
+    /**
      * Default constructor.
      */
     public JdbcBatchExecuteRequest() {
@@ -54,14 +60,15 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
      * @param queries Queries.
      * @param autoCommit Client auto commit flag state.
      */
-    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries, boolean autoCommit) {
+    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries, boolean autoCommit, boolean lastStreamBatch) {
         super(BATCH_EXEC);
 
-        assert !F.isEmpty(queries);
+        assert lastStreamBatch || !F.isEmpty(queries);
 
         this.schemaName = schemaName;
         this.queries = queries;
         this.autoCommit = autoCommit;
+        this.lastStreamBatch = lastStreamBatch;
     }
 
     /**
@@ -85,17 +92,31 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         return autoCommit;
     }
 
+    /**
+     * @return Last stream batch flag.
+     */
+    public boolean isLastStreamBatch() {
+        return lastStreamBatch;
+    }
+
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriterExImpl writer) throws BinaryObjectException {
         super.writeBinary(writer);
 
         writer.writeString(schemaName);
-        writer.writeInt(queries.size());
 
-        for (JdbcQuery q : queries)
-            q.writeBinary(writer);
+        if (!F.isEmpty(queries)) {
+            writer.writeInt(queries.size());
+
+            for (JdbcQuery q : queries)
+                q.writeBinary(writer);
+
+        }
+        else
+            writer.writeInt(0);
 
         writer.writeBoolean(autoCommit);
+        writer.writeBoolean(lastStreamBatch);
     }
 
     /** {@inheritDoc} */
@@ -118,8 +139,10 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         }
 
         try {
-            if (reader.available() > 0)
+            if (reader.available() > 0) {
                 autoCommit = reader.readBoolean();
+                lastStreamBatch = reader.readBoolean();
+            }
             else
                 autoCommit = true;
         }

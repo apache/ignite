@@ -71,6 +71,7 @@ import org.apache.ignite.internal.processors.cache.ExchangeDiscoveryEvents;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
+import org.apache.ignite.internal.processors.cache.GridCachePartitionExchangeManager;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.LocalJoinCachesContext;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
@@ -822,6 +823,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     }
 
     /**
+     * Updates topology versions and discovery caches on all topologies.
+     *
      * @param exchCrd Exchange coordinator node.
      * @param crd Coordinator flag.
      * @param mvccCrd Mvcc coordinator.
@@ -845,7 +848,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     top.update(null,
                         clientTop.partitionMap(true),
                         clientTop.fullUpdateCounters(),
-                        Collections.<Integer>emptySet(),
+                        Collections.emptySet(),
                         null);
                 }
             }
@@ -1005,6 +1008,15 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         else if (req.activate()) {
             // TODO: BLT changes on inactive cluster can't be handled easily because persistent storage hasn't been initialized yet.
             try {
+                if (!forceAffReassignment) {
+                    // possible only if cluster contains nodes without forceAffReassignment mode
+                    assert firstEventCache().minimumNodeVersion()
+                        .compareToIgnoreTimestamp(FORCE_AFF_REASSIGNMENT_SINCE) < 0
+                        : firstEventCache().minimumNodeVersion();
+
+                    cctx.affinity().onBaselineTopologyChanged(this, crd);
+                }
+
                 if (CU.isPersistenceEnabled(cctx.kernalContext().config()) && !cctx.kernalContext().clientNode())
                     cctx.kernalContext().state().onBaselineTopologyChanged(req.baselineTopology(),
                         req.prevBaselineTopologyHistoryItem());
@@ -1757,7 +1769,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      */
     private void logExchange(DiscoveryEvent evt) {
         if (cctx.kernalContext().state().publicApiActiveState(false) && cctx.wal() != null) {
-            if (((FileWriteAheadLogManager)cctx.wal()).serializerVersion() > 1)
+            if (cctx.wal().serializerVersion() > 1)
                 try {
                     ExchangeRecord.Type type = null;
 
@@ -1902,6 +1914,18 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         }
 
         return wait;
+    }
+
+    /**
+     * Checks that some futures were merged to the current.
+     * Future without merges has only one DiscoveryEvent.
+     * If we merge futures to the current (see {@link GridCachePartitionExchangeManager#mergeExchanges(GridDhtPartitionsExchangeFuture, GridDhtPartitionsFullMessage)})
+     * we add new discovery event from merged future.
+     *
+     * @return {@code True} If some futures were merged to current, false in other case.
+     */
+    private boolean hasMergedExchanges() {
+        return context().events().events().size() > 1;
     }
 
     /**
@@ -2302,7 +2326,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             CounterWithNodes maxCntr = maxCntrs.get(part.id());
 
             if (maxCntr == null && cntr == 0) {
-                CounterWithNodes cntrObj = new CounterWithNodes(cntr, cctx.localNodeId());
+                CounterWithNodes cntrObj = new CounterWithNodes(0, cctx.localNodeId());
 
                 for (UUID nodeId : msgs.keySet()) {
                     if (top.partitionState(nodeId, part.id()) == GridDhtPartitionState.OWNING)
@@ -2340,8 +2364,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
             if (localReserved != null) {
                 Long localCntr = localReserved.get(p);
 
-                if (localCntr != null && localCntr <= minCntr &&
-                    maxCntrObj.nodes.contains(cctx.localNodeId())) {
+                if (localCntr != null && localCntr <= minCntr && maxCntrObj.nodes.contains(cctx.localNodeId())) {
                     partHistSuppliers.put(cctx.localNodeId(), top.groupId(), p, minCntr);
 
                     haveHistory.add(p);
@@ -2450,6 +2473,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     log.info("Coordinator received all messages, try merge [ver=" + initialVersion() + ']');
 
                 boolean finish = cctx.exchange().mergeExchangesOnCoordinator(this);
+
+                // Synchronize in case of changed coordinator (thread switched to sys-*)
+                synchronized (mux) {
+                    if (hasMergedExchanges())
+                        updateTopologies(crd, true, cctx.coordinators().currentCoordinator());
+                }
 
                 if (!finish)
                     return;
@@ -3050,6 +3079,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         return; // Node is stopping, no need to further process exchange.
                     }
 
+                    if (hasMergedExchanges())
+                        updateTopologies(crd,false, cctx.coordinators().currentCoordinator());
+
                     assert resTopVer.equals(exchCtx.events().topologyVersion()) :  "Unexpected result version [" +
                         "msgVer=" + resTopVer +
                         ", locVer=" + exchCtx.events().topologyVersion() + ']';
@@ -3135,7 +3167,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     top.update(resTopVer,
                         entry.getValue(),
                         cntrMap,
-                        Collections.<Integer>emptySet(),
+                        Collections.emptySet(),
                         null);
                 }
             }

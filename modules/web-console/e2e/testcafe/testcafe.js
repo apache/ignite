@@ -23,7 +23,7 @@ require('app-module-path').addPath(__dirname);
 const argv = require('minimist')(process.argv.slice(2));
 const envEnabled = argv.env;
 
-const { startEnv, removeData } = require('./envtools');
+const { startEnv, dropTestDB } = require('./envtools');
 
 const createTestCafe = require('testcafe');
 
@@ -52,7 +52,7 @@ createTestCafe('localhost', 1337, 1338)
             if (envEnabled)
                 await startEnv();
 
-            await removeData();
+            await dropTestDB();
 
             testcafe = tc;
 
@@ -65,7 +65,7 @@ createTestCafe('localhost', 1337, 1338)
                 .src(resolveFixturesPaths())
                 .browsers(BROWSERS)
                 .reporter(reporter)
-                .run({ skipJsErrors: true });
+                .run({ skipJsErrors: true, quarantineMode: true });
         } catch (err) {
             console.log(err);
 
@@ -78,7 +78,7 @@ createTestCafe('localhost', 1337, 1338)
         testcafe.close();
 
         if (envEnabled)
-            await removeData();
+            await dropTestDB();
 
         console.log('Tests failed: ' + failedCount);
 

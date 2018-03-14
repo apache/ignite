@@ -852,7 +852,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      * @return Result set.
      * @throws RuntimeException if failed.
      */
-    List<List<?>> execute(Connection conn, String sql, Object... args) {
+    protected List<List<?>> execute(Connection conn, String sql, Object... args) {
         try {
             return super.execute(conn, sql, args);
         }
@@ -887,7 +887,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      * @param params Connection parameters.
      * @return Thin JDBC connection to specified node.
      */
-    Connection connect(IgniteEx node, String params) {
+    protected Connection connect(IgniteEx node, String params) {
         try {
             return super.connect(node, params);
         }

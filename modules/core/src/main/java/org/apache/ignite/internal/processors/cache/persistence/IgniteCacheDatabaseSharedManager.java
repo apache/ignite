@@ -268,7 +268,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (dfltMemPlcName == null)
             dfltMemPlcName = DFLT_DATA_REG_DEFAULT_NAME;
 
-        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(dataRegionCfg, fillFactorProvider(dataRegionCfg));
+        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(dataRegionCfg, freeSpaceProvider(dataRegionCfg));
 
         DataRegion memPlc = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable);
 
@@ -289,28 +289,23 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dataRegCfg Data region configuration.
      * @return Closure.
      */
-    protected IgniteOutClosure<Float> fillFactorProvider(final DataRegionConfiguration dataRegCfg) {
+    protected IgniteOutClosure<Long> freeSpaceProvider(final DataRegionConfiguration dataRegCfg) {
         final String dataRegName = dataRegCfg.getName();
 
-        return new IgniteOutClosure<Float>() {
+        return new IgniteOutClosure<Long>() {
             private CacheFreeListImpl freeList;
 
-            @Override public Float apply() {
+            @Override public Long apply() {
                 if (freeList == null) {
                     CacheFreeListImpl freeList0 = freeListMap.get(dataRegName);
 
                     if (freeList0 == null)
-                        return (float) 0;
+                        return 0L;
 
                     freeList = freeList0;
                 }
 
-                T2<Long, Long> fillFactor = freeList.fillFactor();
-
-                if (fillFactor.get2() == 0)
-                    return (float) 0;
-
-                return (float) fillFactor.get1() / fillFactor.get2();
+                return freeList.freeSpace();
             }
         };
     }
