@@ -832,7 +832,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             skipStore,
             keepBinary);
 
-        if (fut.isDone())
+        if (fut.isDone()) // Possible when rolled back.
             return fut;
 
         for (KeyCacheObject key : keys) {
