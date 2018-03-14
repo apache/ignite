@@ -519,21 +519,28 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * Cleanup checkpoint directory from temporary files.
      */
     private void cleanup() throws IgniteCheckedException {
-        File[] files = cpDir.listFiles();
+        checkpointLock.readLock().lock();
 
-        if (files != null) {
-            for (File file : files) {
-                if (file.getName().endsWith(CP_FILE_TMP_SUFFIX)) {
-                    try {
-                        Files.delete(file.toPath());
+        try {
+            File[] files = cpDir.listFiles();
 
-                        U.warn(log, "Removed unfinished checkpoint marker: " + file.getPath());
-                    }
-                    catch (IOException e) {
-                        throw new IgniteCheckedException("Unable to delete unfinished checkpoint marker: " + file.getPath(), e);
+            if (files != null) {
+                for (File file : files) {
+                    if (file.getName().endsWith(CP_FILE_TMP_SUFFIX)) {
+                        try {
+                            Files.delete(file.toPath());
+
+                            U.warn(log, "Removed unfinished checkpoint marker: " + file.getPath());
+                        }
+                        catch (IOException e) {
+                            throw new IgniteCheckedException("Unable to delete unfinished checkpoint marker: " + file.getPath(), e);
+                        }
                     }
                 }
             }
+        }
+        finally {
+            checkpointLock.readLock().unlock();
         }
     }
 
