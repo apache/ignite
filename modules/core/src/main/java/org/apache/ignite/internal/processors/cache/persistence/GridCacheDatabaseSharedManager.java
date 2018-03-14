@@ -1778,6 +1778,32 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         lsnrs.remove(lsnr);
     }
 
+
+    /**
+     * @return Array of archived wal segments that can be safely truncated
+     * @throws IgniteCheckedException
+     */
+    public File[] walArchiveCanBeTruncated() throws IgniteCheckedException {
+        CheckpointEntry entry = checkpointHistory().firstEntry();
+        return entry != null
+                ? cctx.wal().canBeTruncated(null,entry.cpMark)
+                : new File[0];
+
+    }
+
+    /**
+     * Safely truncate archived wal segments
+     *
+     * @return number of deleted files
+     * @throws IgniteCheckedException
+     */
+    public int walArchiveTruncate() throws IgniteCheckedException {
+        CheckpointEntry entry = checkpointHistory().firstEntry();
+        return entry != null
+                ? cctx.wal().truncate(null,entry.cpMark)
+                : 0;
+    }
+
     /**
      * @return Read checkpoint status.
      * @throws IgniteCheckedException If failed to read checkpoint status page.
@@ -3681,6 +3707,15 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 throw new IgniteCheckedException("Checkpoint entry was removed: " + cpTs);
 
             return entry;
+        }
+
+        /**
+         * @return First checkpoint entry if exists. Otherwise null.
+         */
+        private CheckpointEntry firstEntry() {
+            Map.Entry<Long,CheckpointEntry> entry = histMap.firstEntry();
+
+            return entry != null ? entry.getValue() : null;
         }
 
         /**

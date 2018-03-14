@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.commandline;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientClosedException;
@@ -38,12 +34,14 @@ import org.apache.ignite.internal.client.GridServerUnreachableException;
 import org.apache.ignite.internal.client.impl.connection.GridClientConnectionResetException;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineNode;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
+import org.apache.ignite.internal.visor.misc.*;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.jetbrains.annotations.NotNull;
@@ -82,6 +80,9 @@ public class CommandHandler {
     private static final String CMD_USER = "--user";
 
     /** */
+    private static final String CMD_NODES = "--nodes";
+
+    /** */
     private static final String BASELINE_ADD = "add";
 
     /** */
@@ -92,6 +93,12 @@ public class CommandHandler {
 
     /** */
     private static final String BASELINE_SET_VERSION = "version";
+
+    /** */
+    private static final String WAL_PRINT = "print";
+
+    /** */
+    private static final String WAL_DELETE = "delete";
 
     /** */
     private static final String DELIM = "--------------------------------------------------------------------------------";
@@ -107,6 +114,9 @@ public class CommandHandler {
 
     /** */
     static final String CMD_STATE = "--state";
+
+    /** */
+    static final String CMD_WAL = "--wal";
 
     /** */
     public static final int EXIT_CODE_OK = 0;
@@ -206,6 +216,12 @@ public class CommandHandler {
 
         String baselineArgs = "";
 
+        String walAct = "";
+
+        String walArgs = "";
+
+        String nodes = "";
+
         List<String> commands = new ArrayList<>();
 
         Iterator<String> it = Arrays.asList(rawArgs).iterator();
@@ -240,6 +256,9 @@ public class CommandHandler {
                     pwd = nextArg(it, "Expected password");
                     break;
 
+                case CMD_NODES:
+                    break;
+
                 case CMD_ACTIVATE:
                 case CMD_DEACTIVATE:
                 case CMD_STATE:
@@ -259,6 +278,17 @@ public class CommandHandler {
                             throw new IllegalArgumentException("Unexpected argument for " + CMD_BASE_LINE + ": "
                                 + baselineAct);
                     }
+                    break;
+
+                case CMD_WAL:
+                    commands.add(CMD_WAL);
+
+                    if (it.hasNext()) {
+                        walAct = it.next().toLowerCase();
+
+                        walArgs = it.hasNext() ? nextArg(it,"Unexpected WAL arguments") : "";
+                    }
+                    break;
 
             }
         }
@@ -279,7 +309,7 @@ public class CommandHandler {
         if (hasUsr != hasPwd)
             throw new IllegalArgumentException("Both user and password should be specified");
 
-        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs);
+        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, walAct, walArgs);
     }
 
     /**
@@ -352,19 +382,36 @@ public class CommandHandler {
     private <R> R executeTask(GridClient client, Class<?> taskCls, Object taskArgs) throws GridClientException {
         GridClientCompute compute = client.compute();
 
-        List<GridClientNode> nodes = new ArrayList<>();
-
-        for (GridClientNode node : compute.nodes())
-            if (node.connectable())
-                nodes.add(node);
-
-        if (F.isEmpty(nodes))
-            throw new GridClientDisconnectedException("Connectable node not found", null);
-
-        GridClientNode node = compute.balancer().balancedNode(nodes);
+        GridClientNode node = getBalancedNode(compute);
 
         return compute.projection(node).execute(taskCls.getName(),
             new VisorTaskArgument<>(node.nodeId(), taskArgs, false));
+    }
+
+    /**
+     *  Get balanced node.
+     *
+     *  @param compute Compute projection
+     *  @return Node.
+     *  @throws GridClientException If failed to pick node.
+     */
+    private GridClientNode getBalancedNode(GridClientCompute compute) throws GridClientException {
+
+        List<GridClientNode> connectableNodes = new ArrayList<>();
+
+        List<UUID> nodes = new ArrayList<>();
+
+        for (GridClientNode node : compute.nodes()) {
+            if (node.connectable())
+                connectableNodes.add(node);
+
+            nodes.add(node.nodeId());
+        }
+
+        if (F.isEmpty(connectableNodes))
+            throw new GridClientDisconnectedException("Connectable node not found", null);
+
+        return compute.balancer().balancedNode(connectableNodes);
     }
 
     /**
@@ -399,13 +446,124 @@ public class CommandHandler {
     }
 
     /**
-     * Prepare task argument.
+     *  Execute WAL command
+     *
+     * @param client Client.
+     * @param walAct Wal action to execute.
+     * @param walArgs Wal args.
+     * @throws Throwable If failed to execute wal action.
+     */
+    private void wal(GridClient client, String walAct, String walArgs) throws Throwable {
+        switch (walAct){
+            case WAL_DELETE:
+                deleteUnusedWalSegments(client, walArgs);
+                break;
+            case WAL_PRINT:
+            default:
+                printUnusedWalSegments(client, walArgs);
+                break;
+        }
+
+    }
+
+    /**
+     * Execute delete unused WAL segments task.
+     *
+     * @param client Client.
+     * @param walArgs Wal args.
+     */
+    private void deleteUnusedWalSegments(GridClient client, String walArgs) throws Throwable {
+        VisorWalTaskResult res = executeTask(client, VisorWalTask.class,
+                walArg(VisorWalTaskOperation.DELETE_UNUSED_WAL_SEGMENTS, walArgs));
+        printDeleteWalSegments0(res);
+    }
+
+    /**
+     * Execute print wal task unused WAL segments.
+     * @param client Client.
+     * @param walArgs Wal args.
+     */
+    private void printUnusedWalSegments(GridClient client, String walArgs) throws Throwable {
+        VisorWalTaskResult res = executeTask(client, VisorWalTask.class,
+                walArg(VisorWalTaskOperation.PRINT_UNUSED_WAL_SEGMENTS, walArgs));
+        printUnusedWalSegments0(res);
+    }
+
+    /**
+     * Print list of unused wal segments.
+     *
+     * @param res Task result with baseline topology.
+     */
+    private void printUnusedWalSegments0(VisorWalTaskResult res) {
+        log("Unused wal segments per node:");
+        nl();
+
+        Map<String, Collection<String>> okRes = res.results();
+        Map<String, Exception> failRes = res.exceptions();
+        Map<String, VisorClusterNode> nodesInfo = res.getNodesInfo();
+
+        for(Map.Entry<String, Collection<String>> entry: okRes.entrySet()) {
+            VisorClusterNode node = nodesInfo.get(entry.getKey());
+
+            log("Node=" + node.getConsistentId());
+            log("     addresses " + U.addressesAsString(node.getAddresses(),node.getHostnames()));
+
+            for(String fileName: entry.getValue())
+                log("   " + fileName);
+            nl();
+        }
+
+        for(Map.Entry<String, Exception> entry: failRes.entrySet()) {
+            VisorClusterNode node = nodesInfo.get(entry.getKey());
+
+            log("Node=" + node.getConsistentId());
+            log("     addresses " + U.addressesAsString(node.getAddresses(),node.getHostnames()));
+
+            log("   failed with error: " + entry.getValue().getMessage());
+            nl();
+        }
+    }
+
+    /**
+     * Print list of unused wal segments.
+     *
+     * @param res Task result with baseline topology.
+     */
+    private void printDeleteWalSegments0(VisorWalTaskResult res) {
+        log("Wal segments cleaned for nodes:");
+        nl();
+
+        Map<String, Collection<String>> okRes = res.results();
+        Map<String, Exception> failRes = res.exceptions();
+        Map<String, VisorClusterNode> nodesInfo = res.getNodesInfo();
+
+        for(Map.Entry<String, Collection<String>> entry: okRes.entrySet()) {
+            VisorClusterNode node = nodesInfo.get(entry.getKey());
+
+            log("Node=" + node.getConsistentId());
+            log("     addresses " + U.addressesAsString(node.getAddresses(),node.getHostnames()));
+            nl();
+        }
+
+        for(Map.Entry<String, Exception> entry: failRes.entrySet()) {
+            VisorClusterNode node = nodesInfo.get(entry.getKey());
+
+            log("Node=" + node.getConsistentId());
+            log("     addresses " + U.addressesAsString(node.getAddresses(),node.getHostnames()));
+
+            log("   failed with error: " + entry.getValue().getMessage());
+            nl();
+        }
+    }
+
+    /**
+     * Prepare baseline task argument.
      *
      * @param op Operation.
      * @param s Argument from command line.
      * @return Task argument.
      */
-    private VisorBaselineTaskArg arg(VisorBaselineOperation op, String s) {
+    private VisorBaselineTaskArg baselineArg(VisorBaselineOperation op, String s) {
         switch (op) {
             case ADD:
             case REMOVE:
@@ -433,6 +591,32 @@ public class CommandHandler {
             default:
                 return new VisorBaselineTaskArg(op, -1, null);
         }
+    }
+
+    /**
+     * Prepare WAL task argument.
+     *
+     * @param op Operation.
+     * @param s Argument from command line.
+     * @return Task argument.
+     */
+    private VisorWalTaskArg walArg(VisorWalTaskOperation op, String s){
+        List<String> consistentIds = null;
+
+        if (!F.isEmpty(s)) {
+            consistentIds = new ArrayList<>();
+            for (String consistentId : s.split(","))
+                consistentIds.add(consistentId.trim());
+        }
+
+        switch (op){
+            case DELETE_UNUSED_WAL_SEGMENTS:
+            case PRINT_UNUSED_WAL_SEGMENTS:
+                return new VisorWalTaskArg(op, consistentIds);
+            default:
+                return new VisorWalTaskArg(VisorWalTaskOperation.PRINT_UNUSED_WAL_SEGMENTS, consistentIds);
+        }
+
     }
 
     /**
@@ -489,7 +673,7 @@ public class CommandHandler {
      * @param client Client.
      */
     private void baselinePrint(GridClient client) throws GridClientException {
-        VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(COLLECT, ""));
+        VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, baselineArg(COLLECT, ""));
 
         baselinePrint0(res);
     }
@@ -503,7 +687,7 @@ public class CommandHandler {
      */
     private void baselineAdd(GridClient client, String baselineArgs) throws Throwable {
         try {
-            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(ADD, baselineArgs));
+            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, baselineArg(ADD, baselineArgs));
 
             baselinePrint0(res);
         }
@@ -523,7 +707,7 @@ public class CommandHandler {
      */
     private void baselineRemove(GridClient client, String consistentIds) throws Throwable {
         try {
-            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(REMOVE, consistentIds));
+            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, baselineArg(REMOVE, consistentIds));
 
             baselinePrint0(res);
         }
@@ -543,7 +727,7 @@ public class CommandHandler {
      */
     private void baselineSet(GridClient client, String consistentIds) throws Throwable {
         try {
-            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(SET, consistentIds));
+            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, baselineArg(SET, consistentIds));
 
             baselinePrint0(res);
         }
@@ -562,7 +746,7 @@ public class CommandHandler {
      */
     private void baselineVersion(GridClient client, String arg) throws GridClientException {
         try {
-            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, arg(VERSION, arg));
+            VisorBaselineTaskResult res = executeTask(client, VisorBaselineTask.class, baselineArg(VERSION, arg));
 
             baselinePrint0(res);
         }
@@ -629,6 +813,7 @@ public class CommandHandler {
                 usage("  Remove nodes from baseline topology:", CMD_BASE_LINE + " remove consistentId1[,consistentId2,....,consistentIdN]");
                 usage("  Set baseline topology:", CMD_BASE_LINE + " set consistentId1[,consistentId2,....,consistentIdN]");
                 usage("  Set baseline topology based on version:", CMD_BASE_LINE + " version topologyVersion");
+                usage("  Print absolute path of unused archived wal segments on each node:", CMD_WAL);
 
                 log("Default values:");
                 log("    HOST_OR_IP=" + DFLT_HOST);
@@ -673,6 +858,10 @@ public class CommandHandler {
 
                     case CMD_BASE_LINE:
                         baseline(client, args.baselineAction(), args.baselineArguments());
+                        break;
+
+                    case CMD_WAL:
+                        wal(client, args.walAction(), args.walArguments());
                         break;
                 }
             }
