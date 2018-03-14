@@ -35,6 +35,7 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheMetrics;
@@ -679,6 +680,10 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
 
     /** {@inheritDoc} */
     @Override public void enableStatistics(boolean enabled) {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    @Override public IgniteSet<K> asSet() {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 

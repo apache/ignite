@@ -1521,4 +1521,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param enabled Statistics enabled flag.
      */
     public void enableStatistics(boolean enabled);
+
+    /** todo */
+    public IgniteSet<K> asSet();
 }
