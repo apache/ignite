@@ -106,23 +106,14 @@ namespace ignite
         {
             config::Configuration config;
 
-            try
-            {
-                config::ConnectionStringParser parser(config);
+            config::ConnectionStringParser parser(config);
 
-                parser.ParseConnectionString(connectStr, &GetDiagnosticRecords());
+            parser.ParseConnectionString(connectStr, &GetDiagnosticRecords());
 
-                std::string dsn = config.GetDsn();
+            std::string dsn = config.GetDsn();
 
-                if (!dsn.empty())
-                    odbc::ReadDsnConfiguration(dsn.c_str(), config);
-            }
-            catch (OdbcError& e)
-            {
-                AddStatusRecord(e);
-
-                return SqlResult::AI_ERROR;
-            }
+            if (!dsn.empty())
+                ReadDsnConfiguration(dsn.c_str(), config);
 
             return InternalEstablish(config);
         }
@@ -145,7 +136,14 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            SslMode::Type sslMode = cfg.GetSslMode();
+            if (!config.IsHostSet() && config.IsAddressesSet() && config.GetAddresses().empty())
+            {
+                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "No valid address to connect.");
+
+                return SqlResult::AI_ERROR;
+            }
+
+            SslMode::Type sslMode = config.GetSslMode();
 
             if (sslMode != SslMode::DISABLE)
             {
@@ -159,14 +157,15 @@ namespace ignite
                     return SqlResult::AI_ERROR;
                 }
 
-                socket.reset(new ssl::SecureSocketClient(cfg.GetSslCertFile(), cfg.GetSslKeyFile(), cfg.GetSslCaFile()));
+                socket.reset(new ssl::SecureSocketClient(config.GetSslCertFile(),
+                    config.GetSslKeyFile(), config.GetSslCaFile()));
             }
             else
                 socket.reset(new system::TcpSocketClient());
 
             EndPoint addr;
 
-            GetRandomEndPoint(cfg, addr);
+            ChooseAddress(config, addr);
 
             bool connected = socket->Connect(addr.host.c_str(), addr.port, *this);
 
@@ -613,9 +612,9 @@ namespace ignite
             return SqlResult::AI_SUCCESS;
         }
 
-        void Connection::GetRandomEndPoint(const config::Configuration& cfg, EndPoint& endPoint) const
+        void Connection::ChooseAddress(const config::Configuration& cfg, EndPoint& endPoint)
         {
-            if (cfg.IsHostSet())
+            if (cfg.IsHostSet() && (!cfg.IsAddressesSet() || cfg.GetAddresses().empty()))
             {
                 LOG_MSG("Host is set. Using legacy connection method.");
 

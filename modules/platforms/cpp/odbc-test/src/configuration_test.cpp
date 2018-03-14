@@ -97,15 +97,6 @@ void ParseConnectStringWithError(const std::string& connectStr, Configuration& c
     BOOST_CHECK_NE(diag.GetStatusRecordsNumber(), 0);
 }
 
-void ParseInvalidConnectString(const std::string& connectStr, Configuration& cfg)
-{
-    ConnectionStringParser parser(cfg);
-
-    diagnostic::DiagnosticRecordStorage diag;
-
-    BOOST_CHECK_THROW(parser.ParseConnectionString(connectStr, &diag), OdbcError);
-}
-
 void CheckValidAddress(const char* connectStr, const EndPoint& endPoint)
 {
     Configuration cfg;
@@ -392,13 +383,13 @@ BOOST_AUTO_TEST_CASE(TestConnectStringInvalidAddress)
 {
     Configuration cfg;
 
-    ParseInvalidConnectString("Address=example.com:0;", cfg);
-    ParseInvalidConnectString("Address=example.com:00000;", cfg);
-    ParseInvalidConnectString("Address=example.com:fdsf;", cfg);
-    ParseInvalidConnectString("Address=example.com:123:1;", cfg);
-    ParseInvalidConnectString("Address=example.com:12322221;", cfg);
-    ParseInvalidConnectString("Address=example.com:12322a;", cfg);
-    ParseInvalidConnectString("Address=example.com:;", cfg);
+    ParseConnectStringWithError("Address=example.com:0;", cfg);
+    ParseConnectStringWithError("Address=example.com:00000;", cfg);
+    ParseConnectStringWithError("Address=example.com:fdsf;", cfg);
+    ParseConnectStringWithError("Address=example.com:123:1;", cfg);
+    ParseConnectStringWithError("Address=example.com:12322221;", cfg);
+    ParseConnectStringWithError("Address=example.com:12322a;", cfg);
+    ParseConnectStringWithError("Address=example.com:;", cfg);
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringValidAddress)

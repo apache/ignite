@@ -146,12 +146,6 @@ namespace ignite
 
                     ParseAddress(value, endPoints, diag);
 
-                    if (endPoints.empty())
-                    {
-                        throw OdbcError(SqlState::SHY000_GENERAL_ERROR,
-                            "No valid addresses found. Aborting connection.");
-                    }
-
                     cfg.SetAddresses(endPoints);
                 }
                 else if (lKey == Key::server)

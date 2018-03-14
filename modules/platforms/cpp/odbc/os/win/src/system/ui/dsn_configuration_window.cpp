@@ -528,13 +528,13 @@ namespace ignite
                     skipReducerOnUpdate = skipReducerOnUpdateCheckBox->IsChecked();
 
                     LOG_MSG("Retriving arguments:");
-                    LOG_MSG("Page size:                 " << pageSize);
-                    LOG_MSG("Distributed Joins:         " << (distributedJoins ? "true" : "false"));
-                    LOG_MSG("Enforce Join Order:        " << (enforceJoinOrder ? "true" : "false"));
-                    LOG_MSG("Replicated only:           " << (replicatedOnly ? "true" : "false"));
-                    LOG_MSG("Collocated:                " << (collocated ? "true" : "false"));
-                    LOG_MSG("Lazy:                      " << (lazy ? "true" : "false"));
-                    LOG_MSG("Skip reducer on update:    " << (skipReducerOnUpdate ? "true" : "false"));
+                    LOG_MSG("Page size:              " << pageSize);
+                    LOG_MSG("Distributed Joins:      " << (distributedJoins ? "true" : "false"));
+                    LOG_MSG("Enforce Join Order:     " << (enforceJoinOrder ? "true" : "false"));
+                    LOG_MSG("Replicated only:        " << (replicatedOnly ? "true" : "false"));
+                    LOG_MSG("Collocated:             " << (collocated ? "true" : "false"));
+                    LOG_MSG("Lazy:                   " << (lazy ? "true" : "false"));
+                    LOG_MSG("Skip reducer on update: " << (skipReducerOnUpdate ? "true" : "false"));
 
                     cfg.SetPageSize(pageSize);
                     cfg.SetDistributedJoins(distributedJoins);

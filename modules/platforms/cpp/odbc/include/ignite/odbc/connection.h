@@ -363,12 +363,12 @@ namespace ignite
             SqlResult::Type MakeRequestHandshake();
 
             /**
-             * Get random end point from config.
+             * Choose random end point from config.
              *
              * @param cfg Configuration.
              * @param endPoint End point.
              */
-            void GetRandomEndPoint(const config::Configuration& cfg, EndPoint& endPoint) const;
+            static void ChooseAddress(const config::Configuration& cfg, EndPoint& endPoint);
 
             /**
              * Constructor.

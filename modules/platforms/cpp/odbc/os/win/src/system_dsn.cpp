@@ -158,16 +158,7 @@ BOOL INSTAPI ConfigDSN(HWND hwndParent, WORD req, LPCSTR driver, LPCSTR attribut
 
     diagnostic::DiagnosticRecordStorage diag;
 
-    try
-    {
-        parser.ParseConfigAttributes(attributes, &diag);
-    }
-    catch (const OdbcError& err)
-    {
-        LOG_MSG("Error: " << err.GetErrorMessage());
-
-        return FALSE;
-    }
+    parser.ParseConfigAttributes(attributes, &diag);
 
     if (!SQLValidDSN(config.GetDsn().c_str()))
         return FALSE;
