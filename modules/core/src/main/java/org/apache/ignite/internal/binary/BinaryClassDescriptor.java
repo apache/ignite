@@ -554,7 +554,7 @@ public class BinaryClassDescriptor {
             switch (mode) {
                 case P_BYTE:
                 case BYTE:
-                    writer.writeByteFieldPrimitive((byte) obj);
+                    writer.writeByteFieldPrimitive((byte)obj);
 
                     break;
 
@@ -566,37 +566,37 @@ public class BinaryClassDescriptor {
 
                 case P_INT:
                 case INT:
-                    writer.writeIntFieldPrimitive((int) obj);
+                    writer.writeIntFieldPrimitive((int)obj);
 
                     break;
 
                 case P_LONG:
                 case LONG:
-                    writer.writeLongFieldPrimitive((long) obj);
+                    writer.writeLongFieldPrimitive((long)obj);
 
                     break;
 
                 case P_FLOAT:
                 case FLOAT:
-                    writer.writeFloatFieldPrimitive((float) obj);
+                    writer.writeFloatFieldPrimitive((float)obj);
 
                     break;
 
                 case P_DOUBLE:
                 case DOUBLE:
-                    writer.writeDoubleFieldPrimitive((double) obj);
+                    writer.writeDoubleFieldPrimitive((double)obj);
 
                     break;
 
                 case P_CHAR:
                 case CHAR:
-                    writer.writeCharFieldPrimitive((char) obj);
+                    writer.writeCharFieldPrimitive((char)obj);
 
                     break;
 
                 case P_BOOLEAN:
                 case BOOLEAN:
-                    writer.writeBooleanFieldPrimitive((boolean) obj);
+                    writer.writeBooleanFieldPrimitive((boolean)obj);
 
                     break;
 
@@ -636,67 +636,67 @@ public class BinaryClassDescriptor {
                     break;
 
                 case SHORT_ARR:
-                    writer.doWriteShortArray((short[]) obj);
+                    writer.doWriteShortArray((short[])obj);
 
                     break;
 
                 case INT_ARR:
-                    writer.doWriteIntArray((int[]) obj);
+                    writer.doWriteIntArray((int[])obj);
 
                     break;
 
                 case LONG_ARR:
-                    writer.doWriteLongArray((long[]) obj);
+                    writer.doWriteLongArray((long[])obj);
 
                     break;
 
                 case FLOAT_ARR:
-                    writer.doWriteFloatArray((float[]) obj);
+                    writer.doWriteFloatArray((float[])obj);
 
                     break;
 
                 case DOUBLE_ARR:
-                    writer.doWriteDoubleArray((double[]) obj);
+                    writer.doWriteDoubleArray((double[])obj);
 
                     break;
 
                 case CHAR_ARR:
-                    writer.doWriteCharArray((char[]) obj);
+                    writer.doWriteCharArray((char[])obj);
 
                     break;
 
                 case BOOLEAN_ARR:
-                    writer.doWriteBooleanArray((boolean[]) obj);
+                    writer.doWriteBooleanArray((boolean[])obj);
 
                     break;
 
                 case DECIMAL_ARR:
-                    writer.doWriteDecimalArray((BigDecimal[]) obj);
+                    writer.doWriteDecimalArray((BigDecimal[])obj);
 
                     break;
 
                 case STRING_ARR:
-                    writer.doWriteStringArray((String[]) obj);
+                    writer.doWriteStringArray((String[])obj);
 
                     break;
 
                 case UUID_ARR:
-                    writer.doWriteUuidArray((UUID[]) obj);
+                    writer.doWriteUuidArray((UUID[])obj);
 
                     break;
 
                 case DATE_ARR:
-                    writer.doWriteDateArray((Date[]) obj);
+                    writer.doWriteDateArray((Date[])obj);
 
                     break;
 
                 case TIMESTAMP_ARR:
-                    writer.doWriteTimestampArray((Timestamp[]) obj);
+                    writer.doWriteTimestampArray((Timestamp[])obj);
 
                     break;
 
                 case TIME_ARR:
-                    writer.doWriteTimeArray((Time[]) obj);
+                    writer.doWriteTimeArray((Time[])obj);
 
                     break;
 
@@ -902,10 +902,16 @@ public class BinaryClassDescriptor {
             return res;
         }
         catch (Exception e) {
+            String msg;
+
             if (S.INCLUDE_SENSITIVE && !F.isEmpty(typeName))
-                throw new BinaryObjectException("Failed to deserialize object [typeName=" + typeName + ']', e);
+                msg = "Failed to deserialize object [typeName=" + typeName + ']';
             else
-                throw new BinaryObjectException("Failed to deserialize object [typeId=" + typeId + ']', e);
+                msg = "Failed to deserialize object [typeId=" + typeId + ']';
+
+            U.error(ctx.log(), msg, e);
+
+            throw new BinaryObjectException(msg, e);
         }
     }
 
