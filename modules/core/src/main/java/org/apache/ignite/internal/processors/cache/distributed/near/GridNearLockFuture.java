@@ -240,7 +240,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         valMap = new ConcurrentHashMap<>();
 
         if (tx != null && !tx.updateLockFuture(null, this)) {
-            onError(tx.rollbackException());
+            err = tx.rollbackException();
 
             onComplete(false, false);
         }
@@ -787,6 +787,9 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
      * part. Note that if primary node leaves grid, the future will fail and transaction will be rolled back.
      */
     void map() {
+        if (isDone()) // Possible due to async rollback.
+            return;
+
         if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();
 

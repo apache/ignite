@@ -698,6 +698,9 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
      * part. Note that if primary node leaves grid, the future will fail and transaction will be rolled back.
      */
     void map() {
+        if (isDone()) // Possible due to async rollback.
+            return;
+
         if (timeout > 0) {
             timeoutObj = new LockTimeoutObject();
 
