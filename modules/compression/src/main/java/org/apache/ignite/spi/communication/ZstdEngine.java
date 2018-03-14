@@ -46,7 +46,7 @@ public class ZstdEngine implements CompressionEngine {
     private byte[] decompressArr = new byte[32768];
 
     /** {@inheritDoc} */
-    @Override public CompressionEngineResult wrap(ByteBuffer src, ByteBuffer buf) throws IOException {
+    @Override public CompressionEngineResult compress(ByteBuffer src, ByteBuffer buf) throws IOException {
         if (src.isDirect() && buf.isDirect()) {
             try {
                 Zstd.compress(buf, src, COMPRESS_LEVEL);
@@ -92,7 +92,7 @@ public class ZstdEngine implements CompressionEngine {
     }
 
     /** {@inheritDoc} */
-    @Override public CompressionEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException {
+    @Override public CompressionEngineResult decompress(ByteBuffer src, ByteBuffer buf) throws IOException {
         int frameSize = readFrameSize(src);
 
         if (frameSize == -1)

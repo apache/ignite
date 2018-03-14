@@ -49,7 +49,7 @@ public class LZ4Engine implements CompressionEngine {
     }
 
     /** {@inheritDoc} */
-    public CompressionEngineResult wrap(ByteBuffer src, ByteBuffer buf) throws IOException {
+    public CompressionEngineResult compress(ByteBuffer src, ByteBuffer buf) throws IOException {
         try {
             int compress = compressor.compress(src, src.position(), src.remaining(), buf, buf.position() + 4, buf.remaining() - 4);
 
@@ -66,7 +66,7 @@ public class LZ4Engine implements CompressionEngine {
     }
 
     /** {@inheritDoc} */
-    public CompressionEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException {
+    public CompressionEngineResult decompress(ByteBuffer src, ByteBuffer buf) throws IOException {
         int len = src.remaining();
         int initPos = src.position();
 

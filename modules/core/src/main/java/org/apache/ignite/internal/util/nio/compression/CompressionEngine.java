@@ -30,7 +30,7 @@ public interface CompressionEngine {
      * @param buf ByteBuffer to hold outbound network data.
      * @return Result of compression.
      */
-    public CompressionEngineResult wrap(ByteBuffer src, ByteBuffer buf) throws IOException;
+    public CompressionEngineResult compress(ByteBuffer src, ByteBuffer buf) throws IOException;
 
     /**
      * Decompress source byte buffer that can contains part of message, one or more messages.
@@ -38,5 +38,5 @@ public interface CompressionEngine {
      * @param buf ByteBuffer to hold inbound network data.
      * @return Result of decompression.
      */
-    public CompressionEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException;
+    public CompressionEngineResult decompress(ByteBuffer src, ByteBuffer buf) throws IOException;
 }

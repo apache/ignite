@@ -63,7 +63,7 @@ public class DeflaterEngine implements CompressionEngine {
     }
 
     /** {@inheritDoc} */
-    public CompressionEngineResult wrap(ByteBuffer src, ByteBuffer buf) {
+    public CompressionEngineResult compress(ByteBuffer src, ByteBuffer buf) {
         int len = src.remaining();
 
         if (inputDeflaterArr.length < len)
@@ -97,7 +97,7 @@ public class DeflaterEngine implements CompressionEngine {
     }
 
     /** {@inheritDoc} */
-    public CompressionEngineResult unwrap(ByteBuffer src, ByteBuffer buf) throws IOException {
+    public CompressionEngineResult decompress(ByteBuffer src, ByteBuffer buf) throws IOException {
         if (inflateBaos.size() > 0){
             if (buf.remaining() < inflateBaos.size())
                 return BUFFER_OVERFLOW;
