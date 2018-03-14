@@ -1400,11 +1400,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private void restoreState() throws IgniteCheckedException {
         try {
-            CheckpointStatus status = readCheckpointStatus();
-
             checkpointReadLock();
 
             try {
+                CheckpointStatus status = readCheckpointStatus();
+
                 applyLastUpdates(status, false);
             }
             finally {
