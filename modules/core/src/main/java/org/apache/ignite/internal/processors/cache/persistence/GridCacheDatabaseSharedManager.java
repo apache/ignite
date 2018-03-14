@@ -500,6 +500,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (!U.mkdirs(cpDir))
                 throw new IgniteCheckedException("Could not create directory for checkpoint metadata: " + cpDir);
 
+            cleanup();
+
             final FileLockHolder preLocked = kernalCtx.pdsFolderResolver()
                 .resolveFolders()
                 .getLockedFileLockHolder();
@@ -510,6 +512,28 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             // Here we can get data from metastorage
             readMetastore();
+        }
+    }
+
+    /**
+     * Cleanup checkpoint directory from temporary files.
+     */
+    private void cleanup() throws IgniteCheckedException {
+        File[] files = cpDir.listFiles();
+
+        if (files != null) {
+            for (File file : files) {
+                if (file.getName().endsWith(CP_FILE_TMP_SUFFIX)) {
+                    try {
+                        Files.delete(file.toPath());
+
+                        U.warn(log, "Removed unfinished checkpoint marker: " + file.getPath());
+                    }
+                    catch (IOException e) {
+                        throw new IgniteCheckedException("Unable to delete unfinished checkpoint marker: " + file.getPath(), e);
+                    }
+                }
+            }
         }
     }
 
@@ -1829,19 +1853,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         File[] files = dir.listFiles();
 
         for (File file : files) {
-            if (file.getName().endsWith(CP_FILE_TMP_SUFFIX)) {
-                try {
-                    Files.delete(file.toPath());
-
-                    U.warn(log, "Removed unfinished checkpoint marker: " + file.getPath());
-
-                    continue;
-                }
-                catch (IOException e) {
-                    throw new IgniteCheckedException("Unable to delete unfinished checkpoint marker: " + file.getPath(), e);
-                }
-            }
-
             Matcher matcher = CP_FILE_NAME_PATTERN.matcher(file.getName());
 
             if (matcher.matches()) {
