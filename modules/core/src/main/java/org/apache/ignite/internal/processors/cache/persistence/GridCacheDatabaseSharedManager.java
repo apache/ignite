@@ -2623,6 +2623,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try (FileIO io = ioFactory.create(Paths.get(cpDir.getAbsolutePath(), skipSync ? fileName : tmpFileName).toFile(),
             StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
 
+            log.info("Create checkpoint entry [ptr=" + filePtr
+                    + ", cpTs=" + cpTs
+                    + ", cpId=" + cpId
+                    + ", type=" + type + "]");
+
             tmpWriteBuf.rewind();
 
             tmpWriteBuf.putLong(filePtr.index());
@@ -2639,6 +2644,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (!skipSync) {
                 io.force();
+
+                log.info("Force checkpoint entry [ptr=" + filePtr
+                        + ", cpTs=" + cpTs
+                        + ", cpId=" + cpId
+                        + ", type=" + type + "]");
 
                 Files.move(Paths.get(cpDir.getAbsolutePath(), tmpFileName), Paths.get(cpDir.getAbsolutePath(), fileName));
             }
