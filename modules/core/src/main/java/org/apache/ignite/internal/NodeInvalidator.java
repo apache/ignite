@@ -24,14 +24,24 @@ import org.jetbrains.annotations.NotNull;
  * TODO: Should be replaced on proper implementation in https://issues.apache.org/jira/browse/IGNITE-6891
  */
 public class NodeInvalidator {
+    /** */
     public static NodeInvalidator INSTANCE = new NodeInvalidator();
 
-    private static final long STOP_TIMEOUT_MS = 60 * 1000;
+    /** */
+    private static final long STOP_TIMEOUT_MS = 20 * 1000;
 
+    /**
+     * Private constructor.
+     */
     private NodeInvalidator() {
         // Empty
     }
 
+    /**
+     * Invalidate and stop node with given {@code error}.
+     * @param ctx Kernal context.
+     * @param error Error.
+     */
     public void invalidate(@NotNull GridKernalContext ctx, @NotNull Throwable error) {
         if (ctx.invalidated())
             return;

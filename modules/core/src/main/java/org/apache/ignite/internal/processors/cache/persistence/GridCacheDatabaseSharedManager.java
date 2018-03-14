@@ -209,6 +209,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** Checkpoint file name pattern. */
     private static final Pattern CP_FILE_NAME_PATTERN = Pattern.compile("(\\d+)-(.*)-(START|END)\\.bin");
 
+    /** Checkpoint file temporary suffix. This is needed to safe writing checkpoint markers through temporary file and renaming. */
+    private static final String CP_FILE_TMP_SUFFIX = ".ch.tmp";
+
     /** Node started file patter. */
     private static final Pattern NODE_STARTED_FILE_NAME_PATTERN = Pattern.compile("(\\d+)-node-started\\.bin");
 
@@ -1815,6 +1818,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         File[] files = dir.listFiles();
 
         for (File file : files) {
+            if (file.getName().endsWith(CP_FILE_TMP_SUFFIX)) {
+                try {
+                    Files.delete(file.toPath());
+
+                    U.warn(log, "Removed unfinished checkpoint marker: " + file.getPath());
+
+                    continue;
+                }
+                catch (IOException e) {
+                    throw new IgniteCheckedException("Unable to delete unfinished checkpoint marker: " + file.getPath(), e);
+                }
+            }
+
             Matcher matcher = CP_FILE_NAME_PATTERN.matcher(file.getName());
 
             if (matcher.matches()) {
@@ -2589,8 +2605,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         FileWALPointer filePtr = (FileWALPointer)ptr;
 
         String fileName = checkpointFileName(cpTs, cpId, type);
+        String tmpFileName = fileName + CP_FILE_TMP_SUFFIX;
 
-        try (FileChannel ch = FileChannel.open(Paths.get(cpDir.getAbsolutePath(), fileName),
+        try (FileChannel ch = FileChannel.open(Paths.get(cpDir.getAbsolutePath(), skipSync ? fileName : tmpFileName),
             StandardOpenOption.CREATE_NEW, StandardOpenOption.APPEND)) {
 
             tmpWriteBuf.rewind();
@@ -2607,13 +2624,19 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             tmpWriteBuf.clear();
 
-            if (!skipSync)
+            if (!skipSync) {
                 ch.force(true);
+
+                Files.move(Paths.get(cpDir.getAbsolutePath(), tmpFileName), Paths.get(cpDir.getAbsolutePath(), fileName));
+            }
 
             return createCheckPointEntry(cpTs, ptr, cpId, rec, type);
         }
         catch (IOException e) {
-            throw new IgniteCheckedException(e);
+            throw new IgniteCheckedException("Unable to write checkpoint entry [ptr=" + filePtr
+                    + ", cpTs=" + cpTs
+                    + ", cpId=" + cpId
+                    + ", type=" + type + "]", e);
         }
     }
 
@@ -2815,7 +2838,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try {
                 CheckpointMetricsTracker tracker = new CheckpointMetricsTracker();
 
-                Checkpoint chp = markCheckpointBegin(tracker);
+                Checkpoint chp;
+
+                try {
+                    chp = markCheckpointBegin(tracker);
+                }
+                catch (IgniteCheckedException e) {
+                    // In case of checkpoint initialization error node should be invalidated and stopped.
+                    NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+
+                    return;
+                }
 
                 currCheckpointPagesCnt = chp.pagesSize;
 
@@ -2873,7 +2906,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         } catch (IgniteCheckedException e) {
                             chp.progress.cpFinishFut.onDone(e);
 
-                            // In case of writing error node should be invalidated and stopped.
+                            // In case of checkpoint writing error node should be invalidated and stopped.
                             NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
 
                             return;
