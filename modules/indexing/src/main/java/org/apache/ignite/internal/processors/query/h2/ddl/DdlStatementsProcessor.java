@@ -67,6 +67,7 @@ import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.h2.command.Prepared;
 import org.h2.command.ddl.AlterTableAlterColumn;
 import org.h2.command.ddl.CreateIndex;
@@ -75,6 +76,7 @@ import org.h2.command.ddl.DropIndex;
 import org.h2.command.ddl.DropTable;
 import org.h2.table.Column;
 import org.h2.value.DataType;
+import org.h2.value.Value;
 
 import static org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing.UPDATE_RESULT_META;
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser.PARAM_WRAP_VALUE;
@@ -584,6 +586,8 @@ public class DdlStatementsProcessor {
 
         Set<String> notNullFields = null;
 
+        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
+
         HashMap<String, Object> dfltValues = new HashMap<>();
 
         for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
@@ -604,10 +608,16 @@ public class DdlStatementsProcessor {
 
             if (dfltVal != null)
                 dfltValues.put(e.getKey(), dfltVal);
+
+            if (col.getType() == Value.DECIMAL)
+                decimalInfo.put(e.getKey(), F.t(col.getScale(), (int)col.getPrecision()));
         }
 
         if (!F.isEmpty(dfltValues))
             res.setDefaultFieldValues(dfltValues);
+
+        if (!F.isEmpty(decimalInfo))
+            res.setDecimalInfo(decimalInfo);
 
         String valTypeName = QueryUtils.createTableValueTypeName(createTbl.schemaName(), createTbl.tableName());
         String keyTypeName = QueryUtils.createTableKeyTypeName(valTypeName);

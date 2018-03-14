@@ -25,13 +25,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.jetbrains.annotations.NotNull;
 
 import static java.math.RoundingMode.HALF_UP;
 import static java.util.Arrays.asList;
@@ -40,15 +43,19 @@ import static java.util.Arrays.asList;
  * Test to check decimal columns.
  */
 public class H2DecimalSelfTest extends AbstractSchemaSelfTest {
-    private static final Integer SCALE = 8;
+    private static final int SCALE = 8;
 
-    private static final Integer PRECISION = 8;
+    private static final int PRECISION = 9;
 
-    private static final String COL_NAME = "value";
+    private static final String DEC_TAB_NAME = "DECIMAL_TABLE";
 
-    private static final String DEC_TAB_NAME = "decimal_table";
+    private static final String VALUE = "VALUE";
 
-    private static final String SALARY_TAB_NAME = "salary";
+    private static final String SALARY_CACHE = "SALARY_CACHE";
+
+    private static final String SALARY_TAB_NAME = "SALARY";
+
+    private static final String AMOUNT = "AMOUNT";
 
     private static final MathContext mathCtx = new MathContext(PRECISION);
 
@@ -65,7 +72,7 @@ public class H2DecimalSelfTest extends AbstractSchemaSelfTest {
         IgniteEx grid = startGrid(0);
 
         execute(grid, "CREATE TABLE " + DEC_TAB_NAME +
-            "(id LONG PRIMARY KEY, " + COL_NAME + " DECIMAL(" + SCALE + ", " + PRECISION + "))");
+            "(id LONG PRIMARY KEY, " + VALUE + " DECIMAL(" + PRECISION + ", " + SCALE + "))");
 
         String insertQry = "INSERT INTO " + DEC_TAB_NAME + " VALUES (?, ?)";
 
@@ -85,38 +92,74 @@ public class H2DecimalSelfTest extends AbstractSchemaSelfTest {
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
-
-        decimalInfo.put("amount", F.t(SCALE, PRECISION));
-
-        CacheConfiguration<Integer, Salary> ccfg = new CacheConfiguration<>("salary_cache");
-
-        QueryEntity queryEntity = new QueryEntity(Integer.class.getName(), Salary.class.getName());
-
-        queryEntity.setTableName(SALARY_TAB_NAME);
-
-        queryEntity.addQueryField("id", Integer.class.getName(), null);
-        queryEntity.addQueryField("amount", BigDecimal.class.getName(), null);
-
-        queryEntity.setDecimalInfo(decimalInfo);
-
-        ccfg.setQueryEntities(Collections.singletonList(queryEntity));
+        CacheConfiguration<Integer, Salary> ccfg = cacheCfg(SALARY_TAB_NAME, "salary_cache");
 
         cfg.setCacheConfiguration(ccfg);
 
         return cfg;
     }
 
+    @NotNull private CacheConfiguration<Integer, Salary> cacheCfg(String tabName, String cacheName) {
+        CacheConfiguration<Integer, Salary> ccfg = new CacheConfiguration<>(cacheName);
+
+        QueryEntity queryEntity = new QueryEntity(Integer.class.getName(), Salary.class.getName());
+
+        queryEntity.setTableName(tabName);
+
+        queryEntity.addQueryField("id", Integer.class.getName(), null);
+        queryEntity.addQueryField("amount", BigDecimal.class.getName(), null);
+
+        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
+
+        decimalInfo.put("amount", F.t(SCALE, PRECISION));
+
+        queryEntity.setDecimalInfo(decimalInfo);
+
+        ccfg.setQueryEntities(Collections.singletonList(queryEntity));
+        return ccfg;
+    }
+
     /**
      * @throws Exception If failed.
      */
-    public void testDecimalColumnMetadata() throws Exception {
-        checkDecimalInfo(DEC_TAB_NAME, COL_NAME, SCALE, PRECISION);
+    public void testConfiguredFromDdl() throws Exception {
+        checkDecimalInfo(DEC_TAB_NAME, VALUE, SCALE, PRECISION);
     }
 
-    public void testQueryEntityInCacheConfig() throws Exception {
-        checkDecimalInfo(SALARY_TAB_NAME, "amount", SCALE, PRECISION);
+    public void testConfiguredFromQueryEntity() throws Exception {
+        checkDecimalInfo(SALARY_TAB_NAME, AMOUNT, SCALE, PRECISION);
     }
+
+    public void testConfiguredFromQueryEntityInDynamicallyCreatedCache() throws Exception {
+        IgniteEx grid = grid(0);
+
+        String tabName = SALARY_TAB_NAME + "2";
+
+        CacheConfiguration<Integer, Salary> ccfg = cacheCfg(tabName, SALARY_CACHE + "2");
+
+        IgniteCache<Integer, Salary> cache = grid.createCache(ccfg);
+
+        checkDecimalInfo(tabName, AMOUNT, SCALE, PRECISION);
+    }
+
+    public void testConfiguredFromAnnotations() throws Exception {
+        IgniteEx grid = grid(0);
+
+        String tabName = SALARY_TAB_NAME + "3";
+
+        CacheConfiguration<Integer, Salary> ccfg = new CacheConfiguration<>(SALARY_CACHE + "3");
+
+        ccfg.setIndexedTypes(Integer.class, SalaryWithAnnotations.class);
+
+        grid.createCache(ccfg);
+
+        checkDecimalInfo(tabName, AMOUNT, SCALE, PRECISION);
+    }
+
+    //Добавить  такие же тесты с учёто старта\стопа грида
+    //Например - стартуем ноду с persist'ом. создаём таблицу. рестартуем ноду.
+    //Проверяем что инфа о scale+precision доступна
+    //Добавить пример на схему через аннотации.
 
     public void testSelectDecimal() throws Exception {
         IgniteEx grid = grid(0);
@@ -184,6 +227,19 @@ public class H2DecimalSelfTest extends AbstractSchemaSelfTest {
     }
 
     private static class Salary {
+        private BigDecimal amount;
+
+        public BigDecimal getAmount() {
+            return amount;
+        }
+
+        public void setAmount(BigDecimal amount) {
+            this.amount = amount;
+        }
+    }
+
+    private static class SalaryWithAnnotations {
+        @QuerySqlField(index = true, scale = SCALE, precision = PRECISION)
         private BigDecimal amount;
 
         public BigDecimal getAmount() {
