@@ -1058,7 +1058,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param igniteInstanceName Ignite instance name.
      * @param cancel Cancel flag.
      * @param awaitTop Await topology change flag.
-     * @throws Throwable If grid stop fails
+     * @throws Throwable If grid stop fails.
      */
     private void stopGridUnhandledEx(@Nullable String igniteInstanceName, boolean cancel,
         boolean awaitTop) throws Throwable {
@@ -1129,7 +1129,7 @@ public abstract class GridAbstractTest extends TestCase {
         try {
             G.allGrids().stream()
                 .sorted(Comparator.comparing(g -> g.configuration().getDiscoverySpi().isClientMode()))
-                .forEach(g -> stopGrid(g.name(), cancel, false));
+                .forEachOrdered(g -> stopGrid(g.name(), cancel, false));
 
             assert G.allGrids().isEmpty();
         }

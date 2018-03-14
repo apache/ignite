@@ -44,19 +44,16 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
     /** Topic name for PUB-SUB. */
     private final byte[] TOPIC = "0mq".getBytes();
 
-    /** Constructor. */
-    public IgniteZeroMqStreamerTest() {
-        super(true);
-    }
-
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 10_000;
     }
 
     /** {@inheritDoc} */
-    @Override public void beforeTest() throws Exception {
-        grid().getOrCreateCache(defaultCacheConfiguration());
+    @Override public void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        startGrid().getOrCreateCache(defaultCacheConfiguration());
     }
 
     /**
