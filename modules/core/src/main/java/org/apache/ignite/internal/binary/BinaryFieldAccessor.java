@@ -506,17 +506,17 @@ public abstract class BinaryFieldAccessor {
 
             switch (mode(val)) {
                 case BYTE:
-                    writer.writeByteField((Byte) val);
+                    writer.writeByteField((Byte)val);
 
                     break;
 
                 case SHORT:
-                    writer.writeShortField((Short) val);
+                    writer.writeShortField((Short)val);
 
                     break;
 
                 case INT:
-                    writer.writeIntField((Integer) val);
+                    writer.writeIntField((Integer)val);
 
                     break;
 
