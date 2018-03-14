@@ -2634,6 +2634,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         try (FileIO io = ioFactory.create(Paths.get(cpDir.getAbsolutePath(), skipSync ? fileName : tmpFileName).toFile(),
             StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
 
+            log.info("[CP-ENTRY] Created " + tmpFileName);
+
             tmpWriteBuf.rewind();
 
             tmpWriteBuf.putLong(filePtr.index());
