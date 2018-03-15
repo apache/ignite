@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio.compression;
+package org.apache.ignite.spi.communication;
+
+import org.apache.ignite.internal.util.nio.compression.CompressionEngine;
 
 import javax.cache.configuration.Factory;
 

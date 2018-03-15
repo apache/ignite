@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.nio.compression;
+package org.apache.ignite.spi.communication;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -23,6 +23,9 @@ import java.nio.ByteBuffer;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
+
+import org.apache.ignite.internal.util.nio.compression.CompressionEngine;
+import org.apache.ignite.internal.util.nio.compression.CompressionEngineResult;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.BUFFER_OVERFLOW;

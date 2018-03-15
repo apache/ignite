@@ -1403,12 +1403,29 @@ public class IgniteConfiguration {
         return this;
     }
 
-    /** */
+    /**
+     * Network compression engine factory.
+     * <p>
+     * If {@code null} then Ignite will not compress network.
+     * <p>
+     * If not provided, default is {@code null}.
+     *
+     * @return Network compression engine factory.
+     */
     public Factory<CompressionEngine> getNetworkCompressionFactory() {
         return compressionEngineFactory;
     }
 
-    /** */
+    /**
+     * Sets compression engine factory for network compression.
+     * <p>
+     * If {@code null} then Ignite will not compress network.
+     * <p>
+     * If not provided, default is {@code null}.
+     *
+     * @param compressionEngineFactory Network compression engine factory.
+     * @return {@code this} for chaining.
+     */
     public IgniteConfiguration setNetworkCompressionFactory(Factory<CompressionEngine> compressionEngineFactory) {
         this.compressionEngineFactory = compressionEngineFactory;
 
@@ -1418,10 +1435,12 @@ public class IgniteConfiguration {
     /**
      * Network compression enabled flag.
      * <p>
+     * If {@code true} then {@link TcpCommunicationSpi} will compress network with others nodes.
+     * <p>
      * If not provided, then default value
      * {@link #DFLT_COMPRESSION_ENABLED} is used.
      *
-     * @return True if network compression enabled.
+     * @return True if network compression for this node is enabled.
      * @see #DFLT_COMPRESSION_ENABLED
      */
     public boolean isCompressionEnabled() {
@@ -1431,7 +1450,9 @@ public class IgniteConfiguration {
     /**
      * Set network compression enabled flag.
      * <p>
-     * If not provided (value is {@code 0}), then default value
+     * If {@code true} then {@link TcpCommunicationSpi} will compress network with others nodes.
+     * <p>
+     * If not provided, then default value
      * {@link #DFLT_COMPRESSION_ENABLED} is used.
      *
      * @param compressionEnabled Network compression enabled flag.
