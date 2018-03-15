@@ -48,10 +48,14 @@ namespace Apache.Ignite.Core.Ssl
         /// </summary>
         public string KeyStoreType { get; set; }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Key store file path.
+        /// </summary>
         public string KeyStoreFilePath { get; set; }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Key store file password.
+        /// </summary>
         public string KeyStorePassword { get; set; }
 
         /// <summary>
