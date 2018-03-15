@@ -15,23 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures.partitioned;
+package org.apache.ignite.internal.processors.cache.datastructures.replicated;
 
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.internal.processors.cache.datastructures.GridCacheSetFailoverAbstractSelfTest;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.internal.processors.cache.datastructures.GridCacheSetAdapterTest;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-
-/**
- * Set failover tests.
- */
-public class GridCachePartitionedSetFailoverSelfTest extends GridCacheSetFailoverAbstractSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
-        return TRANSACTIONAL;
+/** -*/
+public class GridCacheSetAdapterReplicatedSelfTest extends GridCacheSetAdapterTest {
+    /** -*/
+    @Override protected CacheMode collectionCacheMode() {
+        return CacheMode.REPLICATED;
     }
 
-    @Override public void testNodeRestart(){
-        fail("https://issues.apache.org/jira/browse/IGNITE-1593");
+    /** -*/
+    @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
+        return CacheAtomicityMode.TRANSACTIONAL;
     }
 }
