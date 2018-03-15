@@ -66,8 +66,8 @@ namespace ignite
             {
                 std::string connect_str(str, len);
 
-                while (connect_str.back() == 0)
-                    connect_str.pop_back();
+                while (*connect_str.rbegin() == 0)
+                    connect_str.erase(connect_str.size() - 1);
 
                 while (!connect_str.empty())
                 {
@@ -165,7 +165,7 @@ namespace ignite
                         return;
                     }
 
-                    if (!common::AllOf(value.begin(), value.end(), std::isdigit))
+                    if (!common::AllOf(value.begin(), value.end(), isdigit))
                     {
                         if (diag)
                         {
@@ -269,7 +269,7 @@ namespace ignite
                 }
                 else if (lKey == Key::pageSize)
                 {
-                    if (!common::AllOf(value.begin(), value.end(), std::isdigit))
+                    if (!common::AllOf(value.begin(), value.end(), isdigit))
                     {
                         if (diag)
                         {

@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#include <algorithm>
 #include <cctype>
+#include <algorithm>
 
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/config/config_tools.h"
@@ -200,7 +200,7 @@ namespace ignite
             {
                 std::string port = utility::RemoveSurroundingSpaces(value.begin(), value.end());
 
-                if (!common::AllOf(port.begin(), port.end(), std::isdigit))
+                if (!common::AllOf(port.begin(), port.end(), &isdigit))
                 {
                     std::stringstream stream;
 
