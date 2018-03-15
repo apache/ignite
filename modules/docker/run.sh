@@ -16,35 +16,64 @@
 # limitations under the License.
 #
 
-if [ ! -z "$OPTION_LIBS" ]; then
-  IFS=, LIBS_LIST=("$OPTION_LIBS")
 
-  for lib in ${LIBS_LIST[@]}; do
-    cp -r $IGNITE_HOME/libs/optional/"$lib"/* \
-        $IGNITE_HOME/libs/
-  done
+#
+# Prepare execution
+#
+TMP=$(mktemp)
+QUITE=""
+
+
+#
+# Add optional libs to classpath
+#
+if [ ! -z "${OPTION_LIBS}" ]
+then
+	IFS=, LIBS_LIST=("${OPTION_LIBS}")
+	
+	for lib in ${LIBS_LIST[@]}
+	do
+		cp -r "${IGNITE_HOME}/libs/optional/${lib}/"* \
+        	      ${IGNITE_HOME}/libs/
+	done
 fi
 
-if [ ! -z "$EXTERNAL_LIBS" ]; then
-  IFS=, LIBS_LIST=("$EXTERNAL_LIBS")
 
-  for lib in ${LIBS_LIST[@]}; do
-    echo $lib >> temp
-  done
+#
+# Add external libs to classpath
+#
+if [ ! -z "${EXTERNAL_LIBS}" ]
+then
+	IFS=, LIBS_LIST=("${EXTERNAL_LIBS}")
 
-  wget -i temp -P $IGNITE_HOME/libs
+	for lib in ${LIBS_LIST[@]}
+	do
+		echo ${lib} >> ${TMP}
+	done
 
-  rm temp
+	wget -i ${TMP} -P ${IGNITE_HOME}/libs
 fi
 
-QUIET=""
 
-if [ "$IGNITE_QUIET" = "false" ]; then
-  QUIET="-v"
+#
+# Set verbosity of Ignite execution
+#
+if ! ${IGNITE_QUIET}
+then
+	QUIET="-v"
 fi
 
-if [ -z $CONFIG_URI ]; then
-  $IGNITE_HOME/bin/ignite.sh $QUIET
-else
-  $IGNITE_HOME/bin/ignite.sh $QUIET $CONFIG_URI
-fi
+
+#
+# Start Ignite
+#
+${IGNITE_HOME}/bin/ignite.sh ${QUIET} ${CONFIG_URI:-}
+
+
+#
+# Trap
+#
+trap "
+    rm -rfv ${TMP}
+" INT TERM ERR EXIT
+
