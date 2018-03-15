@@ -111,4 +111,13 @@ public interface IgniteTransactions {
      * @return Transactions started on local node.
      */
     public Collection<Transaction> localActiveTransactions();
+
+    /**
+     * Returns instance of Ignite Transactions which produces transactions marked with given label.
+     *
+     * @param label label.
+     * @return {@code This} for chaining.
+     * @throws NullPointerException if label is null.
+     */
+    public IgniteTransactions withLabel(String label);
 }

@@ -18,6 +18,8 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
+import java.util.Objects;
+import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -42,11 +44,15 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
     /** Cache shared context. */
     private GridCacheSharedContext<K, V> cctx;
 
+    /** Label. */
+    private String label;
+
     /**
      * @param cctx Cache shared context.
      */
-    public IgniteTransactionsImpl(GridCacheSharedContext<K, V> cctx) {
+    public IgniteTransactionsImpl(GridCacheSharedContext<K, V> cctx, @Nullable String label) {
         this.cctx = cctx;
+        this.label = label;
     }
 
     /** {@inheritDoc} */
@@ -170,7 +176,8 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
                 isolation,
                 timeout,
                 true,
-                txSize
+                txSize,
+                label
             );
 
             assert tx != null;
@@ -210,6 +217,13 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
                 return tx.near();
             }
         });
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteTransactions withLabel(String label) {
+        A.notNull(label, "label should not be empty.");
+
+        return new IgniteTransactionsImpl<>(cctx, label);
     }
 
     /**

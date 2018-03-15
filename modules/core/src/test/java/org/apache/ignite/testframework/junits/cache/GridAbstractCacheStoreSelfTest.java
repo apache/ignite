@@ -584,8 +584,8 @@ public abstract class GridAbstractCacheStoreSelfTest<T extends CacheStore<Object
         }
 
         /** {@inheritDoc} */
-        @Override public Transaction withLabel(String label) {
-            return this;
+        @Nullable @Override public String label() {
+            return null;
         }
 
         /** {@inheritDoc} */

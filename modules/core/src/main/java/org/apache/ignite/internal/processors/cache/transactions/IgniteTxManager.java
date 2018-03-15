@@ -455,7 +455,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         TransactionIsolation isolation,
         long timeout,
         boolean storeEnabled,
-        int txSize
+        int txSize,
+        @Nullable String label
     ) {
         assert sysCacheCtx == null || sysCacheCtx.systemTx();
 
@@ -475,7 +476,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             storeEnabled,
             txSize,
             subjId,
-            taskNameHash);
+            taskNameHash,
+            label);
 
         if (tx.system()) {
             AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), tx);
