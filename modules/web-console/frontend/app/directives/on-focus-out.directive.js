@@ -15,15 +15,15 @@
  * limitations under the License.
  */
 
-export default ['$timeout', '$parse', ($timeout, $parse) => {
+export default ['$parse', ($parse) => {
     return ($scope, $element, $attrs) => {
+        const parsedExpr = $parse($attrs.igniteOnFocusOut);
+
         const handlerCheckFocusOut = (FocusClick) => {
             if ($element.find(FocusClick.target).length)
                 return;
 
-            $parse($attrs.igniteOnFocusOut)($scope);
-
-            $timeout();
+            $scope.$evalAsync(() => parsedExpr($scope));
         };
 
         window.addEventListener('click', handlerCheckFocusOut, true);
