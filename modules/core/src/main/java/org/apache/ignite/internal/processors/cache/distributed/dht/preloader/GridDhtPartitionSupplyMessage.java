@@ -89,7 +89,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
      * @param topVer Topology version.
      * @param addDepInfo Deployment info flag.
      */
-    GridDhtPartitionSupplyMessage(long rebalanceId,
+    public GridDhtPartitionSupplyMessage(long rebalanceId,
         int grpId,
         AffinityTopologyVersion topVer,
         boolean addDepInfo) {
@@ -214,7 +214,7 @@ public class GridDhtPartitionSupplyMessage extends GridCacheGroupIdMessage imple
      * @param cacheObjCtx Cache object context.
      * @throws IgniteCheckedException If failed.
      */
-    void addEntry0(int p, GridCacheEntryInfo info, GridCacheSharedContext ctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
+    public void addEntry0(int p, GridCacheEntryInfo info, GridCacheSharedContext ctx, CacheObjectContext cacheObjCtx) throws IgniteCheckedException {
         assert info != null;
         assert info.key() != null : info;
         assert info.value() != null : info;

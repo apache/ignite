@@ -73,7 +73,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
      * @param topVer Topology version.
      * @param grpId Cache group ID.
      */
-    GridDhtPartitionDemandMessage(long rebalanceId, @NotNull AffinityTopologyVersion topVer, int grpId) {
+    public GridDhtPartitionDemandMessage(long rebalanceId, @NotNull AffinityTopologyVersion topVer, int grpId) {
         this.grpId = grpId;
         this.rebalanceId = rebalanceId;
         this.topVer = topVer;
@@ -136,7 +136,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
     /**
      * @return Partition.
      */
-    IgniteDhtDemandedPartitionsMap partitions() {
+    public IgniteDhtDemandedPartitionsMap partitions() {
         return parts;
     }
 
