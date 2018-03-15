@@ -15,36 +15,25 @@
  * limitations under the License.
  */
 
-// exports.config = {
-//   specs: ['test/e2e/*.js'],
-//   capabilities: {
+package org.apache.ignite.yardstick.upload;
 
-//   }
-// };
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.yardstick.upload.model.Values10;
 
-exports.config = {
-    seleniumAddress: 'http://localhost:4444/wd/hub',
+/**
+ * Benchmark that inserts single upload of number of entries using {@link IgniteCache#put(Object, Object)}.
+ */
+public class NativePutBenchmark extends AbstractNativeBenchmark {
+    /**
+     * Uploads randomly generated data using simple put.
+     *
+     * @param cacheName - name of the cache.
+     * @param insertsCnt - how many entries should be uploaded.
+     */
+    @Override protected void upload(String cacheName, long insertsCnt) {
+        IgniteCache<Object, Object> c = ignite().cache(cacheName);
 
-    capabilities: {
-        browserName: 'chrome'
-    // 'browserName': 'phantomjs',
-
-    // /*
-    //  * Can be used to specify the phantomjs binary path.
-    //  * This can generally be ommitted if you installed phantomjs globally.
-    //  */
-    // 'phantomjs.binary.path': require('phantomjs').path,
-
-    // /*
-    //  * Command line args to pass to ghostdriver, phantomjs's browser driver.
-    //  * See https://github.com/detro/ghostdriver#faq
-    //  */
-    // 'phantomjs.ghostdriver.cli.args': ['--loglevel=DEBUG']
-    },
-
-    specs: ['test/e2e/*.js'],
-
-    jasmineNodeOpts: {
-        showColors: true
+        for (long id = 1; id <= insertsCnt; id++)
+            c.put(id, new Values10() );
     }
-};
+}
