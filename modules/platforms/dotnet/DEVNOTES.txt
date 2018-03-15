@@ -49,9 +49,9 @@ Getting started:
   ./build.sh
 * Run tests:
   cd Apache.Ignite.Core.Tests.DotNetCore
-  dotnet test
+  dotnet test --logger "console;verbosity=normal"
 * Run specific test:
-  dotnet test --filter CacheTest
+  dotnet test --filter CacheTest --logger "console;verbosity=normal"
 * IDE: Open Apache.Ignite.DotNetCore.sln
 
 
