@@ -610,13 +610,19 @@ namespace ignite
             {
                 const EndPoint& addr = addrs.back();
 
-                connected = socket->Connect(addr.host.c_str(), addr.port, *this);
-
-                if (connected)
+                for (uint16_t port = addr.port; port <= addr.port + addr.range; ++port)
                 {
-                    SqlResult::Type res = MakeRequestHandshake();
+                    connected = socket->Connect(addr.host.c_str(), port, *this);
 
-                    connected = res != SqlResult::AI_ERROR;
+                    if (connected)
+                    {
+                        SqlResult::Type res = MakeRequestHandshake();
+
+                        connected = res != SqlResult::AI_ERROR;
+
+                        if (connected)
+                            break;
+                    }
                 }
 
                 addrs.pop_back();
