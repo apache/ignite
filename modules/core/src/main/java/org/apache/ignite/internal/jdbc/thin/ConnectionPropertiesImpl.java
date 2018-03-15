@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.io.Serializable;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.util.Arrays;
@@ -44,7 +42,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** Default socket buffer size. */
     private static final int DFLT_SOCK_BUFFER_SIZE = 64 * 1024;
 
-    /** Host name property. */
     /** Connection URL. */
     private String url;
 
@@ -525,15 +522,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         if (!F.isEmpty(paramPart))
             parseParameters(paramPart, props);
-    }
-
-    /**
-     * @param hostname Host name.
-     * @return An array of all the IP addresses for a given host name.
-     * @throws UnknownHostException On error.
-     */
-    protected InetAddress[] getAllAddressesByHost(String hostname) throws UnknownHostException {
-        return InetAddress.getAllByName(hostname);
     }
 
     /**
