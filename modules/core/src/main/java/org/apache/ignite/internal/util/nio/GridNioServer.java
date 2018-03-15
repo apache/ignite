@@ -1315,16 +1315,6 @@ public class GridNioServer<T> {
             }
         }
 
-        private void compact(GridSelectorNioSessionImpl ses, ByteBuffer buf, SessionWriteRequest req, boolean finished) {
-            if (buf.hasRemaining() || !finished) {
-                buf.compact();
-
-                ses.addMeta(NIO_OPERATION.ordinal(), req);
-            }
-            else
-                buf.clear();
-        }
-
         /**
          * Processes write-ready event on the key.
          *
