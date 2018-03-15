@@ -27,7 +27,6 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSet;
 import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -35,11 +34,9 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteRunnable;
 
 /** todo */
-public class GridCacheSetAdapter<T> extends AbstractCollection<T> implements IgniteSet<T> {
+public class GridCacheSetAdapter<T> extends AbstractCollection<T> implements Set<T> {
     /** */
     private static final int BATCH_SIZE = 100;
 
@@ -61,7 +58,7 @@ public class GridCacheSetAdapter<T> extends AbstractCollection<T> implements Ign
 
     /** {@inheritDoc} */
     @Override public boolean add(T t) throws IgniteException {
-        return cache.putIfAbsent(t, Boolean.TRUE);
+        return cache.putIfAbsent(t, true);
     }
 
     /** {@inheritDoc} */
@@ -115,8 +112,11 @@ public class GridCacheSetAdapter<T> extends AbstractCollection<T> implements Ign
 
     /** {@inheritDoc} */
     @Override public boolean isEmpty() throws IgniteException {
-        // todo
-        return cache.size() == 0;
+        try (GridCloseableIterator<T> itr = iterator0()) {
+            return !itr.hasNext();
+        } catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -237,39 +237,6 @@ public class GridCacheSetAdapter<T> extends AbstractCollection<T> implements Ign
         return cache.size();
     }
 
-    /** {@inheritDoc} */
-    @Override public void close() throws IgniteException {
-        cache.destroy();
-    }
-
-    /** {@inheritDoc} */
-    @Override public String name() {
-        return cache.getName();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean collocated() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean removed() {
-        // todo check
-        return cache.isClosed();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void affinityRun(IgniteRunnable job) throws IgniteException {
-        throw new IgniteException("Failed to execute affinityRun() for non-collocated set: " + name() +
-            ". This operation is supported only for collocated sets.");
-    }
-    /**
-     * {@inheritDoc} */
-    @Override public <R> R affinityCall(IgniteCallable<R> job) throws IgniteException {
-        throw new IgniteException("Failed to execute affinityCall() for non-collocated set: " + name() +
-            ". This operation is supported only for collocated sets.");
-    }
-
     /**
      * @param call Callable.
      * @return Callable result.
@@ -287,12 +254,10 @@ public class GridCacheSetAdapter<T> extends AbstractCollection<T> implements Ign
      * @param keys Keys to remove.
      */
     private void retryRemoveAll(final Set<T> keys) {
-        retry(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                cache.removeAll(keys);
+        retry(() -> {
+            cache.removeAll(keys);
 
-                return null;
-            }
+            return null;
         });
     }
 
@@ -300,12 +265,11 @@ public class GridCacheSetAdapter<T> extends AbstractCollection<T> implements Ign
      * @param keys Keys to remove.
      */
     private void retryPutAll(final Map<T, Boolean> keys) {
-        retry(new Callable<Void>() {
-            @Override public Void call() throws Exception {
+        retry(() -> {
                 cache.putAll(keys);
 
                 return null;
             }
-        });
+        );
     }
 }
