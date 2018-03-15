@@ -173,14 +173,9 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            SqlResult::Type res = MakeRequestHandshake();
+            bool errors = GetDiagnosticRecords().GetStatusRecordsNumber() > 0;
 
-            if (res == SqlResult::AI_ERROR)
-                Close();
-            else
-                parser.SetProtocolVersion(config.GetProtocolVersion());
-
-            return res;
+            return errors ? SqlResult::AI_SUCCESS_WITH_INFO : SqlResult::AI_SUCCESS;
         }
 
         void Connection::Release()
@@ -589,6 +584,18 @@ namespace ignite
             }
 
             return SqlResult::AI_SUCCESS;
+        }
+
+        void Connection::EnsureConnected()
+        {
+            if (socket.get() != 0)
+                return;
+
+            bool success = TryRestoreConnection();
+
+            if (!success)
+                throw OdbcError(SqlState::S08001_CANNOT_CONNECT,
+                    "Failed to establish connection with any provided hosts");
         }
 
         bool Connection::TryRestoreConnection()

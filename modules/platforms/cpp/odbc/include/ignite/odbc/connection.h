@@ -165,6 +165,8 @@ namespace ignite
             template<typename ReqT, typename RspT>
             bool SyncMessage(const ReqT& req, RspT& rsp, int32_t timeout)
             {
+                EnsureConnected();
+
                 std::vector<int8_t> tempBuffer;
 
                 parser.Encode(req, tempBuffer);
@@ -195,6 +197,8 @@ namespace ignite
             template<typename ReqT, typename RspT>
             void SyncMessage(const ReqT& req, RspT& rsp)
             {
+                EnsureConnected();
+
                 std::vector<int8_t> tempBuffer;
 
                 parser.Encode(req, tempBuffer);
@@ -394,6 +398,13 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult::Type MakeRequestHandshake();
+
+            /**
+             * Ensure there is a connection to the cluster.
+             *
+             * @throw OdbcError on failure.
+             */
+            void EnsureConnected();
 
             /**
              * Try to restore connection to the cluster.
