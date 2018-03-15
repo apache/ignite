@@ -114,6 +114,7 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
@@ -438,8 +439,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /** {@inheritDoc} */
-    @Override protected void initDataRegions(DataStorageConfiguration memCfg) throws IgniteCheckedException {
-        super.initDataRegions(memCfg);
+    @Override protected void initDataRegions0(DataStorageConfiguration memCfg) throws IgniteCheckedException {
+        super.initDataRegions0(memCfg);
 
         addDataRegion(
             memCfg,
@@ -713,6 +714,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
+            for (DatabaseLifecycleListener lsnr : getSubscribers(cctx.kernalContext())) {
+                lsnr.beforeMemoryRestore(this);
+            }
+
             if (!F.isEmpty(cachesToStart)) {
                 for (DynamicCacheDescriptor desc : cachesToStart) {
                     if (CU.affinityNode(cctx.localNode(), desc.cacheConfiguration().getNodeFilter()))
@@ -745,6 +750,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             metaStorage.init(this);
 
             notifyMetastorageReadyForReadWrite();
+
+            for (DatabaseLifecycleListener lsnr : getSubscribers(cctx.kernalContext())) {
+                lsnr.afterMemoryRestore(this);
+            }
+
         }
         catch (StorageException e) {
             throw new IgniteCheckedException(e);
@@ -3385,20 +3395,21 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                     PageMemoryEx pageMem;
 
-                    if (grpId != MetaStorage.METASTORAGE_CACHE_ID) {
+                    // TODO IGNITE-7792 add generic mapping.
+                    if (grpId == MetaStorage.METASTORAGE_CACHE_ID)
+                        pageMem = (PageMemoryEx)metaStorage.pageMemory();
+                    else if (grpId == TxLog.TX_LOG_CACHE_ID)
+                        pageMem = (PageMemoryEx)dataRegion(TxLog.TX_LOG_CACHE_NAME).pageMemory();
+                    else {
                         CacheGroupContext grp = context().cache().cacheGroup(grpId);
 
-                        if (grp == null)
+                        DataRegion region = grp != null ? grp.dataRegion() : null;
+
+                        if (region == null || !region.config().isPersistenceEnabled())
                             continue;
 
-                        if (!grp.dataRegion().config().isPersistenceEnabled())
-                            continue;
-
-                        pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
+                        pageMem = (PageMemoryEx)region.pageMemory();
                     }
-                    else
-                        pageMem = (PageMemoryEx)metaStorage.pageMemory();
-
 
                     Integer tag = pageMem.getForCheckpoint(
                         fullId, tmpWriteBuf, persStoreMetrics.metricsEnabled() ? tracker : null);

@@ -73,6 +73,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
+import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -171,6 +173,14 @@ public class GridCacheUtils {
 
     /** System cache name. */
     public static final String UTILITY_CACHE_NAME = "ignite-sys-cache";
+
+    /** Reserved cache names */
+    public static final String[] RESERVED_NAMES = new String[] {
+        SYS_CACHE_HADOOP_MR,
+        UTILITY_CACHE_NAME,
+        MetaStorage.METASTORAGE_CACHE_NAME,
+        TxLog.TX_LOG_CACHE_NAME,
+    };
 
     /** */
     public static final String CONTINUOUS_QRY_LOG_CATEGORY = "org.apache.ignite.continuous.query";
@@ -1631,6 +1641,17 @@ public class GridCacheUtils {
     }
 
     /**
+     * @param name Cache name.
+     * @throws IllegalArgumentException In case the name is not valid.
+     */
+    public static void validateNewCacheName(String name) throws IllegalArgumentException {
+        validateCacheName(name);
+
+        A.ensure(!isReservedCacheName(name), "Cache name cannot be \"" + name +
+            "\" because it is reserved for internal purposes.");
+    }
+
+    /**
      * @param cacheNames Cache names to validate.
      * @throws IllegalArgumentException In case the name is not valid.
      */
@@ -1646,7 +1667,20 @@ public class GridCacheUtils {
     public static void validateConfigurationCacheNames(Collection<CacheConfiguration> ccfgs)
         throws IllegalArgumentException {
         for (CacheConfiguration ccfg : ccfgs)
-            validateCacheName(ccfg.getName());
+            validateNewCacheName(ccfg.getName());
+    }
+
+    /**
+     * @param name Cache name.
+     * @return {@code True} if it is a reserved cache name.
+     */
+    public static boolean isReservedCacheName(String name) {
+        for (String reserved : RESERVED_NAMES) {
+            if (reserved.equals(name))
+                return true;
+        }
+
+        return false;
     }
 
     /**

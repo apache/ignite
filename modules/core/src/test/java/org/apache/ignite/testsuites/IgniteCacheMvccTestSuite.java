@@ -20,6 +20,7 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccConfigurationValidationTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccProcessorTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTransactionsTest;
 
 /**
@@ -34,6 +35,7 @@ public class IgniteCacheMvccTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("IgniteCache MVCC Test Suite");
 
         suite.addTestSuite(CacheMvccTransactionsTest.class);
+        suite.addTestSuite(CacheMvccProcessorTest.class);
         suite.addTestSuite(CacheMvccClusterRestartTest.class);
         suite.addTestSuite(CacheMvccConfigurationValidationTest.class);
 

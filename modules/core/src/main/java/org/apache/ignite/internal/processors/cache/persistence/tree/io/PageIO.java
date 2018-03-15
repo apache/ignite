@@ -25,6 +25,8 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLogInnerIO;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLogLeafIO;
 import org.apache.ignite.internal.processors.cache.persistence.IndexStorageImpl;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.io.PagesListNodeIO;
@@ -224,6 +226,12 @@ public abstract class PageIO {
 
     /** */
     public static final short T_H2_MVCC_REF_INNER = 29;
+
+    /** */
+    public static final short T_TX_LOG_LEAF = 30;
+
+    /** */
+    public static final short T_TX_LOG_INNER = 31;
 
     /** Index for payload == 1. */
     public static final short T_H2_EX_REF_LEAF_START = 10_000;
@@ -594,6 +602,12 @@ public abstract class PageIO {
                     break;
 
                 return (Q)h2MvccLeafIOs.forVersion(ver);
+
+            case T_TX_LOG_INNER:
+                return (Q)TxLogInnerIO.VERSIONS.forVersion(ver);
+
+            case T_TX_LOG_LEAF:
+                return (Q)TxLogLeafIO.VERSIONS.forVersion(ver);
 
             case T_DATA_REF_INNER:
                 return (Q)DataInnerIO.VERSIONS.forVersion(ver);
