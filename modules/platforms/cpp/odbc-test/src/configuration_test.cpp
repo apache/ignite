@@ -51,7 +51,7 @@ namespace
 
     const std::string testAddressStr = testServerHost + ':' + ignite::common::LexicalCast<std::string>(testServerPort);
 
-    const EndPoint testAddress(testServerHost, testServerPort);
+    const EndPoint testAddress(testServerHost, testServerPort, 10);
 }
 
 const char* BoolToStr(bool val, bool lowerCase = true)
@@ -399,6 +399,7 @@ BOOST_AUTO_TEST_CASE(TestConnectStringValidAddress)
     CheckValidAddress("Address=example.com:55555;", EndPoint("example.com", 55555));
     CheckValidAddress("Address=example.com:110;", EndPoint("example.com", 110));
     CheckValidAddress("Address=example.com;", EndPoint("example.com", Configuration::DefaultValue::port));
+    CheckValidAddress("Address=example.com:1000..1010;", EndPoint("example.com", 1000, 10));
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringValidAddress4)
@@ -406,11 +407,11 @@ BOOST_AUTO_TEST_CASE(TestConnectStringValidAddress4)
     std::vector<EndPoint> addrs;
 
     addrs.push_back(EndPoint("one.com", 1234));
-    addrs.push_back(EndPoint("two.net", 42));
+    addrs.push_back(EndPoint("two.net", 42, 53-42));
     addrs.push_back(EndPoint("three.eu", Configuration::DefaultValue::port));
     addrs.push_back(EndPoint("some.long.name.org", 50141));
 
-    CheckValidAddresses("Address=some.long.name.org:50141,three.eu,two.net:42,one.com:1234", addrs);
+    CheckValidAddresses("Address=some.long.name.org:50141,three.eu,two.net:42..53,one.com:1234", addrs);
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringValidAddress4Spaces)
@@ -418,11 +419,11 @@ BOOST_AUTO_TEST_CASE(TestConnectStringValidAddress4Spaces)
     std::vector<EndPoint> addrs;
 
     addrs.push_back(EndPoint("one.com", 1234));
-    addrs.push_back(EndPoint("two.net", 42));
+    addrs.push_back(EndPoint("two.net", 42, 53 - 42));
     addrs.push_back(EndPoint("three.eu", Configuration::DefaultValue::port));
     addrs.push_back(EndPoint("some.long.name.org", 50141));
 
-    CheckValidAddresses("Address = some.long.name.org:50141, three.eu, two.net:42, one.com:1234", addrs);
+    CheckValidAddresses("Address = some.long.name.org:50141, three.eu, two.net: 42 .. 53, one.com:1234", addrs);
 }
 
 BOOST_AUTO_TEST_CASE(TestConnectStringInvalidVersion)

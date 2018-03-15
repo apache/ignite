@@ -35,7 +35,8 @@ namespace ignite
              */
             EndPoint() :
                 host(),
-                port()
+                port(),
+                range()
             {
                 // No-op.
             }
@@ -46,9 +47,10 @@ namespace ignite
              * @param host Host.
              * @param port Port.
              */
-            EndPoint(const std::string& host, uint16_t port) :
+            EndPoint(const std::string& host, uint16_t port, uint16_t range = 0) :
                 host(host),
-                port(port)
+                port(port),
+                range(range)
             {
                 // No-op.
             }
@@ -58,6 +60,9 @@ namespace ignite
 
             /** TCP port. */
             uint16_t port;
+
+            /** TCP port. */
+            uint16_t range;
         };
     }
 }

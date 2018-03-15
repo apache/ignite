@@ -64,6 +64,27 @@ namespace ignite
              */
             bool ParseSingleAddress(const std::string& value, EndPoint& endPoint,
                 diagnostic::DiagnosticRecordStorage* diag);
+
+            /**
+             * Parse single network port.
+             *
+             * @param value String value to parse.
+             * @param port Port range begin.
+             * @param range Number of ports in range.
+             * @param diag Diagnostics collector.
+             * @return @c Port value on success and zero on failure.
+             */
+            bool ParsePortRange(const std::string& value, uint16_t& port, uint16_t& range,
+                diagnostic::DiagnosticRecordStorage* diag);
+
+            /**
+             * Parse single network port.
+             *
+             * @param value String value to parse.
+             * @param diag Diagnostics collector.
+             * @return @c Port value on success and zero on failure.
+             */
+            uint16_t ParsePort(const std::string& value, diagnostic::DiagnosticRecordStorage* diag);
         }
     }
 }

@@ -113,11 +113,11 @@ namespace ignite
                     return false;
                 }
 
-                size_t pos = value.find(':');
+                size_t colonPos = value.find(':');
 
-                endPoint.host = value.substr(0, pos);
+                endPoint.host = value.substr(0, colonPos);
 
-                if (pos == value.size() - 1)
+                if (colonPos == value.size() - 1)
                 {
                     std::stringstream stream;
 
@@ -129,14 +129,36 @@ namespace ignite
                     return false;
                 }
 
-                std::string port = value.substr(pos + 1);
+                std::string portRange = value.substr(colonPos + 1);
 
-                if (!common::AllOf(port.begin(), port.end(), std::isdigit))
+                if (!ParsePortRange(portRange, endPoint.port, endPoint.range, diag))
+                    return false;
+
+                return true;
+            }
+
+            bool ParsePortRange(const std::string& value, uint16_t& port, uint16_t& range,
+                diagnostic::DiagnosticRecordStorage* diag)
+            {
+                size_t sepPos = value.find('.');
+
+                if (sepPos == value.npos)
+                {
+                    range = 0;
+                    port = ParsePort(value, diag);
+
+                    if (!port)
+                        return false;
+
+                    return true;
+                }
+
+                if (sepPos + 2 > value.size() || value[sepPos + 1] != '.')
                 {
                     std::stringstream stream;
 
-                    stream << "Unexpected port characters: '" << port
-                        << "' in the following address: '" << value << "'. Ignoring address.";
+                    stream << "Unexpected number of '.' characters in the following address: '"
+                        << value << "'. Ignoring address.";
 
                     if (diag)
                         diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());
@@ -144,17 +166,61 @@ namespace ignite
                     return false;
                 }
 
-                if (port.size() >= sizeof("65535"))
+                uint16_t rangeBegin = ParsePort(value.substr(0, sepPos), diag);
+
+                if (!rangeBegin)
+                    return false;
+
+                uint16_t rangeEnd = ParsePort(value.substr(sepPos + 2), diag);
+
+                if (!rangeEnd)
+                    return false;
+
+                if (rangeEnd < rangeBegin)
                 {
                     std::stringstream stream;
 
-                    stream << "Port value is too large: '" << port
-                        << "' in the following address: '" << value << "'. Ignoring address.";
+                    stream << "Port range end is less than port range begin in the following address: '"
+                        << value << "'. Ignoring address.";
 
                     if (diag)
                         diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());
 
                     return false;
+                }
+
+                port = rangeBegin;
+                range = rangeEnd - rangeBegin;
+
+                return true;
+            }
+
+            uint16_t ParsePort(const std::string& value, diagnostic::DiagnosticRecordStorage* diag)
+            {
+                std::string port = utility::RemoveSurroundingSpaces(value.begin(), value.end());
+
+                if (!common::AllOf(port.begin(), port.end(), std::isdigit))
+                {
+                    std::stringstream stream;
+
+                    stream << "Unexpected port characters: '" << port << "'. Ignoring address.";
+
+                    if (diag)
+                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());
+
+                    return 0;
+                }
+
+                if (port.size() >= sizeof("65535"))
+                {
+                    std::stringstream stream;
+
+                    stream << "Port value is too large: '" << port << "'. Ignoring address.";
+
+                    if (diag)
+                        diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());
+
+                    return 0;
                 }
 
                 int32_t intPort = 0;
@@ -167,18 +233,15 @@ namespace ignite
                 {
                     std::stringstream stream;
 
-                    stream << "Port value is too large: '" << port
-                        << "' in the following address: '" << value << "'. Ignoring address.";
+                    stream << "Port value is too large: '" << port << "'. Ignoring address.";
 
                     if (diag)
                         diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());
 
-                    return false;
+                    return 0;
                 }
 
-                endPoint.port = static_cast<uint16_t>(intPort);
-
-                return true;
+                return static_cast<uint16_t>(intPort);
             }
         }
     }
