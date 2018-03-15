@@ -107,9 +107,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Current bulk load processors. */
     private final ConcurrentHashMap<Long, JdbcBulkLoadProcessor> bulkLoadRequests = new ConcurrentHashMap<>();
 
-    /** Replicated only flag. */
-    private final boolean replicatedOnly;
-
     /** Automatic close of cursors. */
     private final boolean autoCloseCursors;
 
@@ -118,7 +115,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
     /**
      * Constructor.
-     *
      * @param ctx Context.
      * @param busyLock Shutdown latch.
      * @param maxCursors Maximum allowed cursors.
@@ -129,17 +125,11 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
-     * @param stream Streaming flag.
-     * @param streamAllowOverwrites Streaming overwrites flag.
-     * @param streamParOps Number of parallel ops per cluster node during streaming.
-     * @param streamBufSize Buffer size per cluster node during streaming.
-     * @param streamFlushFreq Data streamers' flush timeout.
      * @param protocolVer Protocol version.
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
         boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate,
-        boolean stream, boolean streamAllowOverwrites, int streamParOps, int streamBufSize, long streamFlushFreq,
         ClientListenerProtocolVersion protocolVer) {
         this.ctx = ctx;
 
@@ -148,18 +138,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             distributedJoins,
             enforceJoinOrder,
             collocated,
+            replicatedOnly,
             lazy,
-            skipReducerOnUpdate,
-            stream,
-            streamAllowOverwrites,
-            streamParOps,
-            streamBufSize,
-            streamFlushFreq
+            skipReducerOnUpdate
         );
 
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
-        this.replicatedOnly = replicatedOnly;
         this.autoCloseCursors = autoCloseCursors;
         this.protocolVer = protocolVer;
 
@@ -365,7 +350,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             qry.setDistributedJoins(cliCtx.isDistributedJoins());
             qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
             qry.setCollocated(cliCtx.isCollocated());
-            qry.setReplicatedOnly(replicatedOnly);
+            qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
             qry.setLazy(cliCtx.isLazy());
 
             if (req.pageSize() <= 0)
@@ -581,7 +566,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 qry.setDistributedJoins(cliCtx.isDistributedJoins());
                 qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
                 qry.setCollocated(cliCtx.isCollocated());
-                qry.setReplicatedOnly(replicatedOnly);
+                qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
                 qry.setLazy(cliCtx.isLazy());
 
                 qry.setSchema(schemaName);
@@ -594,6 +579,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
 
         if (qry != null)
             executeBatchedQuery(qry, updCntsAcc, firstErr);
+
+        if (req.isLastStreamBatch())
+            cliCtx.disableStreaming();
 
         int updCnts[] = U.toIntArray(updCntsAcc);
 

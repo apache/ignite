@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteLogger;
@@ -43,6 +44,9 @@ public class SqlClientContext implements AutoCloseable {
     /** Collocated flag. */
     private final boolean collocated;
 
+    /** Replicated caches only flag. */
+    private final boolean replicatedOnly;
+
     /** Lazy query execution flag. */
     private final boolean lazy;
 
@@ -50,19 +54,19 @@ public class SqlClientContext implements AutoCloseable {
     private final boolean skipReducerOnUpdate;
 
     /** Allow overwrites for duplicate keys on streamed {@code INSERT}s. */
-    private final boolean streamAllowOverwrite;
+    private boolean streamAllowOverwrite;
 
     /** Parallel ops count per node for data streamer. */
-    private final int streamNodeParOps;
+    private int streamNodeParOps;
 
     /** Node buffer size for data streamer. */
-    private final int streamNodeBufSize;
+    private int streamNodeBufSize;
 
     /** Auto flush frequency for streaming. */
-    private final long streamFlushTimeout;
+    private long streamFlushTimeout;
 
     /** Streamers for various caches. */
-    private final Map<String, IgniteDataStreamer<?, ?>> streamers;
+    private Map<String, IgniteDataStreamer<?, ?>> streamers;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -72,33 +76,61 @@ public class SqlClientContext implements AutoCloseable {
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
      * @param collocated Collocated flag.
+     * @param replicatedOnly Replicated caches only flag.
      * @param lazy Lazy query execution flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
-     * @param stream Streaming state flag
-     * @param streamAllowOverwrite Allow overwrites for duplicate keys on streamed {@code INSERT}s.
-     * @param streamNodeParOps Parallel ops count per node for data streamer.
-     * @param streamNodeBufSize Node buffer size for data streamer.
-     * @param streamFlushTimeout Auto flush frequency for streaming.
      */
     public SqlClientContext(GridKernalContext ctx, boolean distributedJoins, boolean enforceJoinOrder,
-        boolean collocated, boolean lazy, boolean skipReducerOnUpdate, boolean stream, boolean streamAllowOverwrite,
-        int streamNodeParOps, int streamNodeBufSize, long streamFlushTimeout) {
+        boolean collocated, boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate) {
         this.ctx = ctx;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
         this.collocated = collocated;
+        this.replicatedOnly = replicatedOnly;
         this.lazy = lazy;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
-        this.streamAllowOverwrite = streamAllowOverwrite;
-        this.streamNodeParOps = streamNodeParOps;
-        this.streamNodeBufSize = streamNodeBufSize;
-        this.streamFlushTimeout = streamFlushTimeout;
-
-        streamers = stream ? new HashMap<>() : null;
 
         log = ctx.log(SqlClientContext.class.getName());
+    }
 
-        ctx.query().registerClientContext(this);
+    /**
+     * Turn on streaming on this client context.
+     *
+     * @param allowOverwrite Whether streaming should overwrite existing values.
+     * @param flushFreq Flush frequency for streamers.
+     * @param perNodeBufSize Per node streaming buffer size.
+     * @param perNodeParOps Per node streaming parallel operations number.
+     */
+    public void enableStreaming(boolean allowOverwrite, long flushFreq, int perNodeBufSize, int perNodeParOps) {
+        if (isStream())
+            return;
+
+        streamers = new HashMap<>();
+
+        this.streamAllowOverwrite = allowOverwrite;
+        this.streamFlushTimeout = flushFreq;
+        this.streamNodeBufSize = perNodeBufSize;
+        this.streamNodeParOps = perNodeParOps;
+    }
+
+    /**
+     * Turn off streaming on this client context - with closing all open streamers, if any.
+     */
+    public void disableStreaming() {
+        if (!isStream())
+            return;
+
+        Iterator<IgniteDataStreamer<?, ?>> it = streamers.values().iterator();
+
+        while (it.hasNext()) {
+            IgniteDataStreamer<?, ?> streamer = it.next();
+
+            U.close(streamer, log);
+
+            it.remove();
+        }
+
+        streamers = null;
     }
 
     /**
@@ -120,6 +152,13 @@ public class SqlClientContext implements AutoCloseable {
      */
     public boolean isEnforceJoinOrder() {
         return enforceJoinOrder;
+    }
+
+    /**
+     * @return Replicated caches only flag.
+     */
+    public boolean isReplicatedOnly() {
+        return replicatedOnly;
     }
 
     /**
@@ -148,44 +187,33 @@ public class SqlClientContext implements AutoCloseable {
      * @return Streamer for given cache.
      */
     public IgniteDataStreamer<?, ?> streamerForCache(String cacheName) {
-        Map<String, IgniteDataStreamer<?, ?>> curStreamers = streamers;
-
-        if (curStreamers == null)
+        if (streamers == null)
             return null;
 
-        IgniteDataStreamer<?, ?> res = curStreamers.get(cacheName);
+        IgniteDataStreamer<?, ?> res = streamers.get(cacheName);
 
         if (res != null)
             return res;
 
         res = ctx.grid().dataStreamer(cacheName);
 
-        IgniteDataStreamer<?, ?> exStreamer = curStreamers.putIfAbsent(cacheName, res);
+        res.autoFlushFrequency(streamFlushTimeout);
 
-        if (exStreamer == null) {
-            res.autoFlushFrequency(streamFlushTimeout);
+        res.allowOverwrite(streamAllowOverwrite);
 
-            res.allowOverwrite(streamAllowOverwrite);
+        if (streamNodeBufSize > 0)
+            res.perNodeBufferSize(streamNodeBufSize);
 
-            if (streamNodeBufSize > 0)
-                res.perNodeBufferSize(streamNodeBufSize);
+        if (streamNodeParOps > 0)
+            res.perNodeParallelOperations(streamNodeParOps);
 
-            if (streamNodeParOps > 0)
-                res.perNodeParallelOperations(streamNodeParOps);
+        streamers.put(cacheName, res);
 
-            return res;
-        }
-        else { // Someone got ahead of us.
-            res.close();
-
-            return exStreamer;
-        }
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public void close() throws Exception {
-        ctx.query().unregisterClientContext(this);
-
         if (streamers == null)
             return;
 

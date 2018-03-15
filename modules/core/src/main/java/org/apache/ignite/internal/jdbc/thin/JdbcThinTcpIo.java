@@ -37,12 +37,14 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
 
@@ -62,11 +64,8 @@ public class JdbcThinTcpIo {
     /** Version 2.4.0. */
     private static final ClientListenerProtocolVersion VER_2_4_0 = ClientListenerProtocolVersion.create(2, 4, 0);
 
-    /** Version 2.5.0. */
-    private static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
-
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_5_0;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_4_0;
 
     /** Initial output stream capacity for handshake. */
     private static final int HANDSHAKE_MSG_SIZE = 13;
@@ -268,11 +267,6 @@ public class JdbcThinTcpIo {
         writer.writeBoolean(connProps.isAutoCloseServerCursor());
         writer.writeBoolean(connProps.isLazy());
         writer.writeBoolean(connProps.isSkipReducerOnUpdate());
-        writer.writeBoolean(connProps.isStream());
-        writer.writeBoolean(connProps.isStreamAllowOverwrite());
-        writer.writeInt(connProps.getStreamParallelOperations());
-        writer.writeInt(connProps.getStreamBufferSize());
-        writer.writeLong(connProps.getStreamFlushFrequency());
 
         send(writer.array());
 
@@ -400,9 +394,12 @@ public class JdbcThinTcpIo {
         int cap;
 
         if (req instanceof JdbcBatchExecuteRequest) {
-            int cnt = Math.min(MAX_BATCH_QRY_CNT, ((JdbcBatchExecuteRequest)req).queries().size());
+            List<JdbcQuery> qrys = ((JdbcBatchExecuteRequest)req).queries();
 
-            cap = cnt * DYNAMIC_SIZE_MSG_CAP;
+            int cnt = !F.isEmpty(qrys) ? Math.min(MAX_BATCH_QRY_CNT, qrys.size()) : 0;
+
+            // One additional byte for last batch flag.
+            cap = cnt * DYNAMIC_SIZE_MSG_CAP + 1;
         }
         else if (req instanceof JdbcQueryCloseRequest)
             cap = QUERY_CLOSE_MSG_SIZE;
