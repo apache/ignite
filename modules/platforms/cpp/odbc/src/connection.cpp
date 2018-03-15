@@ -19,6 +19,7 @@
 #include <cstddef>
 
 #include <sstream>
+#include <algorithm>
 
 #include <ignite/common/fixed_size_array.h>
 
@@ -163,17 +164,11 @@ namespace ignite
             else
                 socket.reset(new system::TcpSocketClient());
 
-            EndPoint addr;
-
-            ChooseAddress(config, addr);
-
-            bool connected = socket->Connect(addr.host.c_str(), addr.port, *this);
+            bool connected = TryRestoreConnection();
 
             if (!connected)
             {
                 AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, "Failed to establish connection with the host.");
-
-                Close();
 
                 return SqlResult::AI_ERROR;
             }
@@ -525,30 +520,7 @@ namespace ignite
 
         SqlResult::Type Connection::MakeRequestHandshake()
         {
-            bool distributedJoins = false;
-            bool enforceJoinOrder = false;
-            bool replicatedOnly = false;
-            bool collocated = false;
-            bool lazy = false;
-            bool skipReducerOnUpdate = false;
-            ProtocolVersion protocolVersion;
-
-            try
-            {
-                protocolVersion = config.GetProtocolVersion();
-                distributedJoins = config.IsDistributedJoins();
-                enforceJoinOrder = config.IsEnforceJoinOrder();
-                replicatedOnly = config.IsReplicatedOnly();
-                collocated = config.IsCollocated();
-                lazy = config.IsLazy();
-                skipReducerOnUpdate = config.IsSkipReducerOnUpdate();
-            }
-            catch (const IgniteError& err)
-            {
-                AddStatusRecord(SqlState::S01S00_INVALID_CONNECTION_STRING_ATTRIBUTE, err.GetText());
-
-                return SqlResult::AI_ERROR;
-            }
+            ProtocolVersion protocolVersion = config.GetProtocolVersion();
 
             if (!protocolVersion.IsSupported())
             {
@@ -558,6 +530,13 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
+            bool distributedJoins = config.IsDistributedJoins();
+            bool enforceJoinOrder = config.IsEnforceJoinOrder();
+            bool replicatedOnly = config.IsReplicatedOnly();
+            bool collocated = config.IsCollocated();
+            bool lazy = config.IsLazy();
+            bool skipReducerOnUpdate = config.IsSkipReducerOnUpdate();
+
             HandshakeRequest req(protocolVersion, distributedJoins, enforceJoinOrder, replicatedOnly, collocated, lazy,
                 skipReducerOnUpdate);
             HandshakeResponse rsp;
@@ -566,7 +545,7 @@ namespace ignite
             {
                 // Workaround for some Linux systems that report connection on non-blocking
                 // sockets as successful but fail to establish real connection.
-                bool sent = SyncMessage(req, rsp, SocketClient::CONNECT_TIMEOUT);
+                bool sent = InternalSyncMessage(req, rsp, SocketClient::CONNECT_TIMEOUT);
 
                 if (!sent)
                 {
@@ -612,29 +591,54 @@ namespace ignite
             return SqlResult::AI_SUCCESS;
         }
 
-        void Connection::ChooseAddress(const config::Configuration& cfg, EndPoint& endPoint)
+        bool Connection::TryRestoreConnection()
         {
-            if (cfg.IsHostSet() && (!cfg.IsAddressesSet() || cfg.GetAddresses().empty()))
-            {
-                LOG_MSG("Host is set. Using legacy connection method.");
+            std::vector<EndPoint> addrs;
 
-                endPoint.host = cfg.GetHost();
-                endPoint.port = cfg.GetTcpPort();
+            CollectAddresses(config, addrs);
+
+            bool connected = false;
+
+            while (!addrs.empty() && !connected)
+            {
+                const EndPoint& addr = addrs.back();
+
+                connected = socket->Connect(addr.host.c_str(), addr.port, *this);
+
+                if (connected)
+                {
+                    SqlResult::Type res = MakeRequestHandshake();
+
+                    connected = res != SqlResult::AI_ERROR;
+                }
+
+                addrs.pop_back();
+            }
+
+            if (!connected)
+                Close();
+            else
+                parser.SetProtocolVersion(config.GetProtocolVersion());
+
+            return connected;
+        }
+
+        void Connection::CollectAddresses(const config::Configuration& cfg, std::vector<EndPoint>& endPoints)
+        {
+            endPoints.clear();
+
+            if (cfg.IsHostSet() && !cfg.IsAddressesSet())
+            {
+                LOG_MSG("'Server' set while 'Address' is not set. Using legacy connection method.");
+
+                endPoints.push_back(EndPoint(cfg.GetHost(), cfg.GetTcpPort()));
 
                 return;
             }
 
-            LOG_MSG("Getting random end point.");
+            endPoints = cfg.GetAddresses();
 
-            const std::vector<EndPoint>& addrs = cfg.GetAddresses();
-
-            size_t idx = rand() % addrs.size();
-
-            LOG_MSG("Addresses:    " << addrs.size());
-            LOG_MSG("Chosen index: " << idx);
-
-            endPoint.host = addrs[idx].host;
-            endPoint.port = addrs[idx].port;
+            std::random_shuffle(endPoints.begin(), endPoints.end());
         }
     }
 }
