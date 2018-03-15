@@ -2493,11 +2493,17 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         lock.readLock().lock();
 
         try {
-            return IntStream.range(0, locParts.length())
-                    .filter(part -> locParts.get(part) != null)
-                    .mapToObj(locParts::get)
-                    .filter(part -> part.fullSize() != 0)
-                    .collect(Collectors.toMap(GridDhtLocalPartition::id, GridDhtLocalPartition::fullSize));
+            Map<Integer, Long> partitionSizes = new HashMap<>();
+
+            for (int p = 0; p < locParts.length(); p++) {
+                GridDhtLocalPartition part = locParts.get(p);
+                if (part == null || part.fullSize() == 0)
+                    continue;
+
+                partitionSizes.put(part.id(), part.fullSize());
+            }
+
+            return partitionSizes;
         }
         finally {
             lock.readLock().unlock();

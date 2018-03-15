@@ -2706,7 +2706,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 validator.validatePartitionCountersAndSizes(this, top, msgs);
             }
             catch (IgniteCheckedException ex) {
-                U.error(log, "Partition states validation was failed for cache " + grpDesc.cacheOrGroupName(), ex);
+                U.warn(log, "Partition states validation was failed for cache " + grpDesc.cacheOrGroupName(), ex);
                 // TODO: Handle such errors https://issues.apache.org/jira/browse/IGNITE-7833
             }
         }

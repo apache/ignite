@@ -18,11 +18,14 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
@@ -68,11 +71,11 @@ public class GridDhtPartitionsStateValidator {
                                                   GridDhtPartitionTopology top,
                                                   Map<UUID, GridDhtPartitionsSingleMessage> messages) throws IgniteCheckedException {
         // Ignore just joined nodes.
-        final Set<UUID> ignoringNodes = fut.events().events()
-                .stream()
-                .filter(evt -> evt.type() == EVT_NODE_JOINED)
-                .map(evt -> evt.eventNode().id())
-                .collect(Collectors.toSet());
+        final Set<UUID> ignoringNodes = new HashSet<>();
+
+        for (DiscoveryEvent evt : fut.events().events())
+            if (evt.type() == EVT_NODE_JOINED)
+                ignoringNodes.add(evt.eventNode().id());
 
         AffinityTopologyVersion topVer = fut.context().events().topologyVersion();
 
@@ -82,12 +85,9 @@ public class GridDhtPartitionsStateValidator {
             throw new IgniteCheckedException("Partitions update counters are inconsistent for " + fold(topVer, result));
 
         // For sizes validation ignore also nodes which are not able to send cache sizes.
-        ignoringNodes.addAll(
-                messages.keySet()
-                        .stream()
-                        .filter(node -> cctx.discovery().node(topVer, node).version().compareTo(SIZES_VALIDATION_AVAILABLE_SINCE) < 0)
-                        .collect(Collectors.toList())
-        );
+        for (UUID id : messages.keySet())
+            if (cctx.discovery().node(topVer, id).version().compareTo(SIZES_VALIDATION_AVAILABLE_SINCE) < 0)
+                ignoringNodes.add(id);
 
         // Validate cache sizes.
         result = validatePartitionsSizes(top, messages, ignoringNodes);
@@ -183,7 +183,7 @@ public class GridDhtPartitionsStateValidator {
                 if (top.partitionState(nodeId, part) != GridDhtPartitionState.OWNING)
                     continue;
 
-                long currentSize = sizesMap.getOrDefault(part, 0L);
+                long currentSize = sizesMap.containsKey(part) ? sizesMap.get(part) : 0L;
 
                 process(invalidPartitions, sizesAndNodesByPartitions, part, nodeId, currentSize);
             }
@@ -207,14 +207,17 @@ public class GridDhtPartitionsStateValidator {
                          int part,
                          UUID node,
                          long counter) {
-        T2<UUID, Long> existingData = countersAndNodes.putIfAbsent(part, new T2<>(node, counter));
+        T2<UUID, Long> existingData = countersAndNodes.get(part);
+
+        if (existingData == null)
+            countersAndNodes.put(part, new T2<>(node, counter));
 
         if (existingData != null && counter != existingData.get2()) {
-            invalidPartitions.computeIfAbsent(part, p -> {
+            if (!invalidPartitions.containsKey(part)) {
                 Map<UUID, Long> map = new HashMap<>();
                 map.put(existingData.get1(), existingData.get2());
-                return map;
-            });
+                invalidPartitions.put(part, map);
+            }
 
             invalidPartitions.get(part).put(node, counter);
         }
@@ -232,7 +235,10 @@ public class GridDhtPartitionsStateValidator {
      */
     private String fold(AffinityTopologyVersion topVer, Map<Integer, Map<UUID, Long>> invalidPartitions) {
         SB sb = new SB();
-        for (Map.Entry<Integer, Map<UUID, Long>> p : invalidPartitions.entrySet()) {
+
+        NavigableMap<Integer, Map<UUID, Long>> sortedPartitions = new TreeMap<>(invalidPartitions);
+
+        for (Map.Entry<Integer, Map<UUID, Long>> p : sortedPartitions.entrySet()) {
             sb.a("Part ").a(p.getKey()).a(": [");
             for (Map.Entry<UUID, Long> e : p.getValue().entrySet()) {
                 Object consistentId = cctx.discovery().node(topVer, e.getKey()).consistentId();

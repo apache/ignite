@@ -283,10 +283,13 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @return Partition history counters.
      */
     Map<Integer, Long> partitionHistoryCounters(int grpId) {
-        if (partHistCntrs == null)
-            return Collections.emptyMap();
+        if (partHistCntrs != null) {
+            Map<Integer, Long> res = partHistCntrs.get(grpId);
 
-        return partHistCntrs.getOrDefault(grpId, Collections.emptyMap());
+            return res != null ? res : Collections.<Integer, Long>emptyMap();
+        }
+
+        return Collections.emptyMap();
     }
 
     /**
