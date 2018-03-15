@@ -127,6 +127,38 @@ BOOST_AUTO_TEST_CASE(TestConnectionProtocolVersion_2_3_2)
     InsertTestBatch(11, 20, 9);
 }
 
+BOOST_AUTO_TEST_CASE(TestConnectionRangeBegin)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110..11115;SCHEMA=cache");
+
+    InsertTestStrings(10, false);
+    InsertTestBatch(11, 20, 9);
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectionRangeEnd)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11108..11110;SCHEMA=cache");
+
+    InsertTestStrings(10, false);
+    InsertTestBatch(11, 20, 9);
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectionRangeMiddle)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11108..11115;SCHEMA=cache");
+
+    InsertTestStrings(10, false);
+    InsertTestBatch(11, 20, 9);
+}
+
+BOOST_AUTO_TEST_CASE(TestConnectionMultipleAddresses)
+{
+    Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:4242,127.0.0.1:11109..11115,127.0.0.1;SCHEMA=cache");
+
+    InsertTestStrings(10, false);
+    InsertTestBatch(11, 20, 9);
+}
+
 BOOST_AUTO_TEST_CASE(ConnectionAttributeConnectionDeadGet)
 {
     Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
