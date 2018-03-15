@@ -39,6 +39,7 @@
         <spark.version>2.1.0</spark.version>
         <spring.version>4.3.7.RELEASE</spring.version> <!-- don't forget to update spring-data version -->
         <spring.data.version>1.13.1.RELEASE</spring.data.version> <!-- don't forget to update spring version -->
+        <spring_3.version>3.2.18.RELEASE</spring_3.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>MMMM d yyyy</maven.build.timestamp.format>
         <doxygen.exec>doxygen</doxygen.exec>
@@ -89,6 +90,7 @@
         <jtidy.version>r938</jtidy.version>
         <kafka.version>0.10.0.1</kafka.version>
         <karaf.version>4.0.2</karaf.version>
+        <log4j.version>2.8.1</log4j.version>
         <lucene.bundle.version>5.5.2_1</lucene.bundle.version>
         <lucene.version>5.5.2</lucene.version>
         <oro.bundle.version>2.0.8_6</oro.bundle.version>

@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import javax.cache.CacheException;
@@ -82,6 +83,8 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -155,7 +158,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             if (ctx.clientNode())
                 ctx.event().addLocalEventListener(clientDisconLsnr, EVT_CLIENT_NODE_DISCONNECTED);
 
-            metadataFileStore = new BinaryMetadataFileStore(metadataLocCache, ctx, log, binaryMetadataFileStoreDir);
+            if (!ctx.clientNode())
+                metadataFileStore = new BinaryMetadataFileStore(metadataLocCache, ctx, log, binaryMetadataFileStoreDir);
 
             transport = new BinaryMetadataTransport(metadataLocCache, metadataFileStore, ctx, log);
 
@@ -239,7 +243,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
             }
 
-            metadataFileStore.restoreMetadata();
+            if (!ctx.clientNode())
+                metadataFileStore.restoreMetadata();
         }
     }
 
@@ -461,9 +466,18 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         BinaryMetadata oldMeta = metaHolder != null ? metaHolder.metadata() : null;
 
-        BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
+        try {
+            BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
 
-        metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
+            metadataFileStore.mergeAndWriteMetadata(mergedMeta);
+
+            metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
+        }
+        catch (BinaryObjectException e) {
+            throw new BinaryObjectException("New binary metadata is incompatible with binary metadata" +
+                " persisted locally." +
+                " Consider cleaning up persisted metadata from <workDir>/binary_meta directory.", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -495,6 +509,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         }
 
         if (holder != null) {
+            if (IgniteThread.current() instanceof IgniteDiscoveryThread)
+                return holder.metadata();
+
             if (holder.pendingVersion() - holder.acceptedVersion() > 0) {
                 GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(typeId, holder.pendingVersion());
 
@@ -534,7 +551,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
             }
         }
-        else {
+        else if (holder != null) {
+            if (IgniteThread.current() instanceof IgniteDiscoveryThread)
+                return holder.metadata().wrap(binaryCtx);
+
             if (holder.pendingVersion() - holder.acceptedVersion() > 0) {
                 GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(
                         typeId,
@@ -893,6 +913,69 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
+    @Override public void collectJoiningNodeData(DiscoveryDataBag dataBag) {
+        Map<Integer, BinaryMetadataHolder> res = U.newHashMap(metadataLocCache.size());
+
+        for (Map.Entry<Integer,BinaryMetadataHolder> e : metadataLocCache.entrySet())
+            res.put(e.getKey(), e.getValue());
+
+        dataBag.addJoiningNodeData(BINARY_PROC.ordinal(), (Serializable) res);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onJoiningNodeDataReceived(DiscoveryDataBag.JoiningNodeDiscoveryData data) {
+        Map<Integer,BinaryMetadataHolder> newNodeMeta = (Map<Integer, BinaryMetadataHolder>) data.joiningNodeData();
+
+        if (newNodeMeta == null)
+            return;
+
+        UUID joiningNode = data.joiningNodeId();
+
+        for (Map.Entry<Integer, BinaryMetadataHolder> metaEntry : newNodeMeta.entrySet()) {
+            if (metadataLocCache.containsKey(metaEntry.getKey())) {
+                BinaryMetadataHolder localMetaHolder = metadataLocCache.get(metaEntry.getKey());
+
+                BinaryMetadata newMeta = metaEntry.getValue().metadata();
+                BinaryMetadata localMeta = localMetaHolder.metadata();
+
+                BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(localMeta, newMeta);
+
+                if (mergedMeta != localMeta) {
+                    //put mergedMeta to local cache and store to disk
+                    U.log(log,
+                        String.format("Newer version of existing BinaryMetadata[typeId=%d, typeName=%s] " +
+                                "is received from node %s; updating it locally",
+                            mergedMeta.typeId(),
+                            mergedMeta.typeName(),
+                            joiningNode));
+
+                    metadataLocCache.put(metaEntry.getKey(),
+                        new BinaryMetadataHolder(mergedMeta,
+                            localMetaHolder.pendingVersion(),
+                            localMetaHolder.acceptedVersion()));
+
+                    metadataFileStore.writeMetadata(mergedMeta);
+                }
+            }
+            else {
+                BinaryMetadataHolder newMetaHolder = metaEntry.getValue();
+                BinaryMetadata newMeta = newMetaHolder.metadata();
+
+                U.log(log,
+                    String.format("New BinaryMetadata[typeId=%d, typeName=%s] " +
+                            "is received from node %s; adding it locally",
+                        newMeta.typeId(),
+                        newMeta.typeName(),
+                        joiningNode));
+
+                metadataLocCache.put(metaEntry.getKey(), newMetaHolder);
+
+                metadataFileStore.writeMetadata(newMeta);
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void onGridDataReceived(GridDiscoveryData data) {
         Map<Integer, BinaryMetadataHolder> receivedData = (Map<Integer, BinaryMetadataHolder>) data.commonData();
 
@@ -910,7 +993,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 metadataLocCache.put(e.getKey(), localHolder);
 
                 if (!ctx.clientNode())
-                    metadataFileStore.saveMetadata(holder.metadata());
+                    metadataFileStore.writeMetadata(holder.metadata());
             }
         }
     }

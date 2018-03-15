@@ -95,6 +95,11 @@ class GridCacheLogger implements IgniteLogger, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public void debug(String marker, String msg) {
+        log.debug(marker, msg);
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteLogger getLogger(Object ctgr) {
         return new GridCacheLogger(cctx, ctgr.toString());
     }
@@ -105,8 +110,18 @@ class GridCacheLogger implements IgniteLogger, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public void trace(String marker, String msg) {
+        log.trace(marker, msg);
+    }
+
+    /** {@inheritDoc} */
     @Override public void info(String msg) {
         log.info(format(msg));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void info(String marker, String msg) {
+        log.info(marker, msg);
     }
 
     /** {@inheritDoc} */
@@ -120,6 +135,11 @@ class GridCacheLogger implements IgniteLogger, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public void warning(String marker, String msg, @Nullable Throwable e) {
+        log.warning(marker, msg, e);
+    }
+
+    /** {@inheritDoc} */
     @Override public void error(String msg) {
         log.error(format(msg));
     }
@@ -127,6 +147,11 @@ class GridCacheLogger implements IgniteLogger, Externalizable {
     /** {@inheritDoc} */
     @Override public void error(String msg, @Nullable Throwable e) {
         log.error(format(msg), e);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void error(String marker, String msg, @Nullable Throwable e) {
+        log.error(marker, msg, e);
     }
 
     /** {@inheritDoc} */

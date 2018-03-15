@@ -28,6 +28,7 @@ export default function pcbScaleNumber() {
             ngModel.$parsers.push(down);
             ngModel.$validators.min = wrap(ngModel.$validators.min)(up);
             ngModel.$validators.max = wrap(ngModel.$validators.max)(up);
+            ngModel.$validators.step = wrap(ngModel.$validators.step)(up);
 
             scope.$watch(attr.pcbScaleNumber, (value, old) => {
                 factor = Number(value);

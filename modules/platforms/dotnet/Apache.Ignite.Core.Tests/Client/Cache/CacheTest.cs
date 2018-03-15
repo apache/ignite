@@ -69,6 +69,22 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         }
 
         /// <summary>
+        /// Tests the cache put / get for Empty object type.
+        /// </summary>
+        [Test]
+        public void TestPutGetEmptyObject()
+        {
+            using (var client = GetClient())
+            {
+                var serverCache = GetCache<EmptyObject>();
+                var clientCache = client.GetCache<int, EmptyObject>(CacheName);
+
+                serverCache.Put(1, new EmptyObject());
+                Assert.IsNotNull(clientCache.Get(1));
+            }
+        }
+
+        /// <summary>
         /// Tests the cache put / get with user data types.
         /// </summary>
         [Test]
@@ -113,6 +129,60 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
                 // Null key or value.
                 Assert.Throws<ArgumentNullException>(() => clientCache.Put(10, null));
                 Assert.Throws<ArgumentNullException>(() => clientCache.Put(null, person));
+            }
+        }
+
+        /// <summary>
+        /// Tests the cache put / get for Dictionary with Enum keys.
+        /// </summary>
+        [Test]
+        public void TestPutGetDictionary([Values(true, false)] bool compactFooter)
+        {
+            var cfg = GetClientConfiguration();
+
+            cfg.BinaryConfiguration = new BinaryConfiguration
+            {
+                CompactFooter = compactFooter
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                var dict = new Dictionary<ByteEnum, int> { { ByteEnum.One, 1 }, { ByteEnum.Two, 2 } };
+
+                var serverCache = GetCache<Dictionary<ByteEnum, int>>();
+                var clientCache = client.GetCache<int, Dictionary<ByteEnum, int>>(CacheName);
+
+                serverCache.Put(1, dict);
+                var res = clientCache.Get(1);
+
+                Assert.AreEqual(dict, res);
+            }
+        }
+
+        /// <summary>
+        /// Tests the cache put / get for HashSet with Enum keys.
+        /// </summary>
+        [Test]
+        public void TestPutGetHashSet([Values(true, false)] bool compactFooter)
+        {
+            var cfg = GetClientConfiguration();
+
+            cfg.BinaryConfiguration = new BinaryConfiguration
+            {
+                CompactFooter = compactFooter
+            };
+
+            using (var client = Ignition.StartClient(cfg))
+            {
+                var hashSet = new HashSet<ByteEnum> { ByteEnum.One, ByteEnum.Two };
+
+                var serverCache = GetCache<HashSet<ByteEnum>>();
+                var clientCache = client.GetCache<int, HashSet<ByteEnum>>(CacheName);
+
+                serverCache.Put(1, hashSet);
+                var res = clientCache.Get(1);
+
+                Assert.AreEqual(hashSet, res);
             }
         }
 
@@ -779,6 +849,12 @@ namespace Apache.Ignite.Core.Tests.Client.Cache
         private class Container
         {
             public Container Inner;
+        }
+
+        public enum ByteEnum : byte
+        {
+            One = 1,
+            Two = 2,
         }
     }
 }
