@@ -500,8 +500,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (!U.mkdirs(cpDir))
                 throw new IgniteCheckedException("Could not create directory for checkpoint metadata: " + cpDir);
 
-            cleanup();
-
             final FileLockHolder preLocked = kernalCtx.pdsFolderResolver()
                 .resolveFolders()
                 .getLockedFileLockHolder();
@@ -512,35 +510,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             // Here we can get data from metastorage
             readMetastore();
-        }
-    }
-
-    /**
-     * Cleanup checkpoint directory from temporary files.
-     */
-    private void cleanup() throws IgniteCheckedException {
-        checkpointReadLock();
-
-        try {
-            File[] files = cpDir.listFiles();
-
-            if (files != null) {
-                for (File file : files) {
-                    if (file.getName().endsWith(CP_FILE_TMP_SUFFIX)) {
-                        try {
-                            Files.delete(file.toPath());
-
-                            U.warn(log, "Removed unfinished checkpoint marker: " + file.getPath());
-                        }
-                        catch (IOException e) {
-                            throw new IgniteCheckedException("Unable to delete unfinished checkpoint marker: " + file.getPath(), e);
-                        }
-                    }
-                }
-            }
-        }
-        finally {
-            checkpointReadUnlock();
         }
     }
 
@@ -809,21 +778,23 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         ByteBuffer buf = ByteBuffer.allocate(20);
         buf.order(ByteOrder.nativeOrder());
 
-        try (FileIO io = ioFactory.create(Paths.get(cpDir.getAbsolutePath(), tmpFileName).toFile(),
-                StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
-            buf.putLong(p.index());
+        try {
+            try (FileIO io = ioFactory.create(Paths.get(cpDir.getAbsolutePath(), tmpFileName).toFile(),
+                    StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+                buf.putLong(p.index());
 
-            buf.putInt(p.fileOffset());
+                buf.putInt(p.fileOffset());
 
-            buf.putInt(p.length());
+                buf.putInt(p.length());
 
-            buf.flip();
+                buf.flip();
 
-            io.write(buf);
+                io.write(buf);
 
-            buf.clear();
+                buf.clear();
 
-            io.force(true);
+                io.force(true);
+            }
 
             Files.move(Paths.get(cpDir.getAbsolutePath(), tmpFileName), Paths.get(cpDir.getAbsolutePath(), fileName));
         }
@@ -2638,30 +2609,30 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         String fileName = checkpointFileName(cpTs, cpId, type);
         String tmpFileName = fileName + CP_FILE_TMP_SUFFIX;
 
-        try (FileIO io = ioFactory.create(Paths.get(cpDir.getAbsolutePath(), skipSync ? fileName : tmpFileName).toFile(),
-            StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+        try {
+            try (FileIO io = ioFactory.create(Paths.get(cpDir.getAbsolutePath(), skipSync ? fileName : tmpFileName).toFile(),
+                    StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
 
-            log.info("[CP-ENTRY] Created " + tmpFileName);
+                tmpWriteBuf.rewind();
 
-            tmpWriteBuf.rewind();
+                tmpWriteBuf.putLong(filePtr.index());
 
-            tmpWriteBuf.putLong(filePtr.index());
+                tmpWriteBuf.putInt(filePtr.fileOffset());
 
-            tmpWriteBuf.putInt(filePtr.fileOffset());
+                tmpWriteBuf.putInt(filePtr.length());
 
-            tmpWriteBuf.putInt(filePtr.length());
+                tmpWriteBuf.flip();
 
-            tmpWriteBuf.flip();
+                io.write(tmpWriteBuf);
 
-            io.write(tmpWriteBuf);
+                tmpWriteBuf.clear();
 
-            tmpWriteBuf.clear();
-
-            if (!skipSync) {
-                io.force(true);
-
-                Files.move(Paths.get(cpDir.getAbsolutePath(), tmpFileName), Paths.get(cpDir.getAbsolutePath(), fileName));
+                if (!skipSync)
+                    io.force(true);
             }
+
+            if (!skipSync)
+                Files.move(Paths.get(cpDir.getAbsolutePath(), tmpFileName), Paths.get(cpDir.getAbsolutePath(), fileName));
 
             return createCheckPointEntry(cpTs, ptr, cpId, rec, type);
         }
