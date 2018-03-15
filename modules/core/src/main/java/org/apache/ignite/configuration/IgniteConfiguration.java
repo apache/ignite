@@ -1450,7 +1450,8 @@ public class IgniteConfiguration {
     /**
      * Set network compression enabled flag.
      * <p>
-     * If {@code true} then {@link TcpCommunicationSpi} will compress network with others nodes.
+     * If {@code true} and {@code compressionEngineFactory} not {@code null} then
+     * {@link TcpCommunicationSpi} will compress network with others nodes.
      * <p>
      * If not provided, then default value
      * {@link #DFLT_COMPRESSION_ENABLED} is used.
