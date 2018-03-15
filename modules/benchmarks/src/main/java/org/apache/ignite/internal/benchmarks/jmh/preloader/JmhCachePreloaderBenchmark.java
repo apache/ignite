@@ -135,6 +135,8 @@ public class JmhCachePreloaderBenchmark extends JmhAbstractBenchmark {
         U.sleep(2_000);
 
         demanderNode.cache(DEFAULT_CACHE_NAME).rebalance();
+
+        U.sleep(2_000);
     }
 
     /**
@@ -270,8 +272,16 @@ public class JmhCachePreloaderBenchmark extends JmhAbstractBenchmark {
     }
 
     public static void main(String[] args)throws Exception {
-        run("handleSupplyMessage", 4, 10);
-        run("handleDemandMessage", 4, 10);
+        run("handleSupplyMessage", 4, 10000);
+        run("handleDemandMessage", 4, 10000);
+
+//        JmhCachePreloaderBenchmark benchmark = new JmhCachePreloaderBenchmark();
+//
+//        benchmark.setup();
+//
+//        benchmark.handleSupplyMessage();
+//
+//        benchmark.tearDown();
     }
 
     /**

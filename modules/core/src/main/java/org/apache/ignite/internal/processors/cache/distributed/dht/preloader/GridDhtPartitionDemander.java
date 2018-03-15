@@ -674,6 +674,8 @@ public class GridDhtPartitionDemander {
             }
         }
 
+        ctx.database().checkpointReadLock();
+
         try {
             AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
@@ -785,6 +787,9 @@ public class GridDhtPartitionDemander {
                 ", srcNode=" + node.id() +
                 ", err=" + e + ']');
         }
+        finally {
+            ctx.database().checkpointReadUnlock();
+        }
     }
 
     /**
@@ -803,7 +808,7 @@ public class GridDhtPartitionDemander {
         GridCacheEntryInfo entry,
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
-        ctx.database().checkpointReadLock();
+//        ctx.database().checkpointReadLock();
 
         try {
             GridCacheEntryEx cached = null;
@@ -816,7 +821,7 @@ public class GridDhtPartitionDemander {
                 if (log.isDebugEnabled())
                     log.debug("Rebalancing key [key=" + entry.key() + ", part=" + p + ", node=" + from.id() + ']');
 
-                cctx.shared().database().checkpointReadLock();
+//                cctx.shared().database().checkpointReadLock();
 
                 try {
                     if (preloadPred == null || preloadPred.apply(entry)) {
@@ -849,7 +854,7 @@ public class GridDhtPartitionDemander {
                         log.debug("Rebalance predicate evaluated to false for entry (will ignore): " + entry);
                 }
                 finally {
-                    cctx.shared().database().checkpointReadUnlock();
+//                    cctx.shared().database().checkpointReadUnlock();
                 }
             }
             catch (GridCacheEntryRemovedException ignored) {
@@ -872,7 +877,7 @@ public class GridDhtPartitionDemander {
                 ctx.localNode() + ", node=" + from.id() + ", key=" + entry.key() + ", part=" + p + ']', e);
         }
         finally {
-            ctx.database().checkpointReadUnlock();
+//            ctx.database().checkpointReadUnlock();
         }
 
         return true;
