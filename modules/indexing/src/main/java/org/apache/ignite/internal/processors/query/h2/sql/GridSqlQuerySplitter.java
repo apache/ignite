@@ -285,25 +285,27 @@ public class GridSqlQuerySplitter {
         // Setup the needed information for split.
         analyzeQueryModel(qrym);
 
-//        debug("ANALYZED", printQueryModel(qrym));
+        debug("ANALYZED", printQueryModel(qrym));
 
         // If we have child queries to split, then go hard way.
         if (qrym.needSplitChild) {
             // All the siblings to selects we are going to split must be also wrapped into subqueries.
             pushDownQueryModel(qrym);
 
-//            debug("PUSHED_DOWN", printQueryModel(qrym));
+            debug("PUSHED_DOWN", printQueryModel(qrym));
 
             // Need to make all the joined subqueries to be ordered by join conditions.
             setupMergeJoinSorting(qrym);
 
-//            debug("SETUP_MERGE_JOIN", printQueryModel(qrym));
+            debug("SETUP_MERGE_JOIN", printQueryModel(qrym));
         }
         else if (!qrym.needSplit)  // Just split the top level query.
             setNeedSplit(qrym);
 
         // Split the query model into multiple map queries and a single reduce query.
         splitQueryModel(qrym);
+
+        debug("SPLIT", printQueryModel(qrym));
 
         // Get back the updated query from the fake parent. It will be our reduce query.
         qry = fakeQryPrnt.subquery();
