@@ -55,7 +55,7 @@ namespace ignite
                  * @param val Value to convert.
                  * @return String value.
                  */
-                static std::string SslMode::ToString(Type val);
+                static std::string ToString(Type val);
             };
         }
     }
