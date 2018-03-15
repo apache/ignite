@@ -16,6 +16,7 @@
  */
 
 #include <algorithm>
+#include <cctype>
 
 #include "ignite/odbc/utility.h"
 #include "ignite/odbc/config/config_tools.h"
