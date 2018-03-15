@@ -919,7 +919,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 loadFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
                     @Override public void apply(IgniteInternalFuture<Void> fut) {
-                        finishFuture(enlistFut, null, true);
+                        try {
+                            fut.get();
+
+                            finishFuture(enlistFut, null, true);
+                        }
+                        catch (IgniteCheckedException e) {
+                            finishFuture(enlistFut, e, true);
+                        }
                     }
                 });
 
@@ -931,7 +938,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             return enlistFut;
         }
         catch (IgniteCheckedException e) {
-            return finishFuture(enlistFut, null, true);
+            return finishFuture(enlistFut, e, true);
         }
     }
 
@@ -1110,7 +1117,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
                 loadFut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
                     @Override public void apply(IgniteInternalFuture<Void> fut) {
-                        finishFuture(enlistFut, null, true);
+                        try {
+                            fut.get();
+
+                            finishFuture(enlistFut, null, true);
+                        }
+                        catch (IgniteCheckedException e) {
+                            finishFuture(enlistFut, e, true);
+                        }
                     }
                 });
 
@@ -1729,7 +1743,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         try {
             checkValid();
 
-            // Guard against concurrent rollback.
             GridFutureAdapter<?> enlistFut = new GridFutureAdapter<>();
 
             if (!updateLockFuture(null, enlistFut))
