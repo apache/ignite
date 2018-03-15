@@ -17,17 +17,6 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.tcp;
 
-import java.text.DecimalFormat;
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Random;
-import java.util.TreeMap;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
@@ -35,24 +24,24 @@ import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.benchmarks.jmh.cache.JmhCacheAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.runner.JmhIdeBenchmarkRunner;
-import org.apache.ignite.internal.util.nio.compression.CompressionType;
+import org.apache.ignite.internal.util.nio.compression.CompressionEngine;
 import org.apache.ignite.messaging.MessagingListenActor;
-import org.openjdk.jmh.annotations.AuxCounters;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Level;
-import org.openjdk.jmh.annotations.Measurement;
-import org.openjdk.jmh.annotations.Mode;
-import org.openjdk.jmh.annotations.Param;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Warmup;
+import org.apache.ignite.spi.communication.DeflaterFactory;
+import org.apache.ignite.spi.communication.LZ4Factory;
+import org.apache.ignite.spi.communication.ZstdFactory;
+import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.results.RunResult;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
+
+import javax.cache.configuration.Factory;
+import java.text.DecimalFormat;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Tests for SPI compression and SSL.
@@ -70,15 +59,24 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
 
     /** */
     @Param({"NO_COMPRESSION", "LZ4", "ZSTD", "DEFLATER"})
-    private CompressionType compressionType = CompressionType.LZ4;
+    private String compressionType = "NO_COMPRESSION";
 
     /** */
     @Param({"false", "true"})
     boolean isSsl = false;
 
     /** {@inheritDoc} */
-    @Override protected final CompressionType compressionType() {
-        return compressionType;
+    @Override protected final Factory<CompressionEngine> compressionEngineFactory() {
+        switch (compressionType) {
+            case "LZ4":
+                return new LZ4Factory();
+            case "ZSTD":
+                return new ZstdFactory();
+            case "DEFLATER":
+                return new DeflaterFactory();
+            default:
+                return null;
+        }
     }
 
     /** {@inheritDoc} */
@@ -426,24 +424,24 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
 
         /** */
         private static Type getType(String comp0, String ssl0) {
-            CompressionType comp = Enum.valueOf(CompressionType.class, comp0);
+            String comp = String.valueOf(comp0);
             boolean ssl = Boolean.valueOf(ssl0);
 
-            if (comp == CompressionType.NO_COMPRESSION && ssl)
+            if (comp.equals("NO_COMPRESSION") && ssl)
                 return Ssl;
-            if (comp == CompressionType.NO_COMPRESSION && !ssl)
+            if (comp.equals("NO_COMPRESSION") && !ssl)
                 return No;
-            if (comp == CompressionType.LZ4 && !ssl)
+            if (comp.equals("LZ4") && !ssl)
                 return LZ4;
-            if (comp == CompressionType.LZ4 && ssl)
+            if (comp.equals("LZ4") && ssl)
                 return SslLZ4;
-            if (comp == CompressionType.ZSTD && !ssl)
+            if (comp.equals("ZSTD") && !ssl)
                 return ZSTD;
-            if (comp == CompressionType.ZSTD && ssl)
+            if (comp.equals("ZSTD") && ssl)
                 return SslZSTD;
-            if (comp == CompressionType.DEFLATER && !ssl)
+            if (comp.equals("DEFLATER") && !ssl)
                 return Deflater;
-            if (comp == CompressionType.DEFLATER && ssl)
+            if (comp.equals("DEFLATER") && ssl)
                 return SslDeflater;
 
             return No;

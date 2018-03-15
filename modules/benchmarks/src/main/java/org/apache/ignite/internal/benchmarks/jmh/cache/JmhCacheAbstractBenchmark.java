@@ -28,15 +28,16 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.benchmarks.jmh.JmhAbstractBenchmark;
 import org.apache.ignite.internal.benchmarks.jmh.tcp.GridTestUtils;
-import org.apache.ignite.internal.util.nio.compression.CompressionType;
+import org.apache.ignite.internal.util.nio.compression.CompressionEngine;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
+
+import javax.cache.configuration.Factory;
 
 /**
  * Base class for cache benchmarks.
@@ -131,8 +132,8 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
     }
 
     /** */
-    protected CompressionType compressionType() {
-        return CompressionType.NO_COMPRESSION;
+    protected Factory<CompressionEngine> compressionEngineFactory() {
+        return null;
     }
 
     /**
@@ -167,7 +168,7 @@ public class JmhCacheAbstractBenchmark extends JmhAbstractBenchmark {
         if (isSsl())
             cfg.setSslContextFactory(GridTestUtils.sslFactory());
 
-        cfg.setCompressionType(compressionType());
+        cfg.setNetworkCompressionFactory(compressionEngineFactory());
 
         return cfg;
     }
