@@ -15,26 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.cache;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.query.IgniteSqlSplitterSelfTest;
-import org.apache.ignite.testframework.IgniteTestSuite;
+import org.apache.ignite.transactions.TransactionConcurrency;
+
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 
 /**
- * Test suite for cache queries.
+ * Tests of pessimistic transactional replicated cache's 'get' requests distribution.
  */
-public class IgniteCacheQuerySelfTestSuite extends TestSuite {
-    /**
-     * @return Test suite.
-     * @throws Exception If failed.
-     */
-    public static TestSuite suite() throws Exception {
-        IgniteTestSuite suite = new IgniteTestSuite("Ignite Cache Queries Test Suite");
-
-        for (int i = 0; i < 100; i++)
-            suite.addTestSuite(IgniteSqlSplitterSelfTest.class);
-
-        return suite;
+public class ReplicatedTransactionalPessimisticCacheGetsDistributionTest
+    extends ReplicatedTransactionalOptimisticCacheGetsDistributionTest {
+    /** {@inheritDoc} */
+    @Override protected TransactionConcurrency transactionConcurrency() {
+        return PESSIMISTIC;
     }
 }

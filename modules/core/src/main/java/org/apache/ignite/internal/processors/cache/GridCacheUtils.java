@@ -31,6 +31,7 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -116,6 +117,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.configuration.CacheConfiguration.DFLT_CACHE_MODE;
 import static org.apache.ignite.internal.GridTopic.TOPIC_REPLICATION;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 
 /**
@@ -457,6 +459,42 @@ public class GridCacheUtils {
      */
     public static Collection<ClusterNode> affinityNodes(GridCacheContext ctx, AffinityTopologyVersion topVer) {
         return ctx.discovery().cacheGroupAffinityNodes(ctx.groupId(), topVer);
+    }
+
+    /**
+     * Determines an affinity node to send get request to.
+     *
+     * @param ctx Context.
+     * @param affNodes All affinity nodes.
+     * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
+     * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
+     */
+    @Nullable public static ClusterNode affinityNode(GridCacheContext ctx, List<ClusterNode> affNodes,
+        boolean canRemap) {
+        if (!ctx.config().isReadFromBackup())
+            return affNodes.get(0);
+
+        String locMacs = ctx.localNode().attribute(ATTR_MACS);
+
+        assert locMacs != null;
+
+        int r = ThreadLocalRandom.current().nextInt(affNodes.size());
+
+        ClusterNode n0 = null;
+
+        for (ClusterNode node : affNodes) {
+            if (canRemap || ctx.discovery().alive(node)) {
+                if (locMacs.equals(node.attribute(ATTR_MACS)))
+                    return node;
+
+                if (r >= 0 || n0 == null)
+                    n0 = node;
+            }
+
+            r--;
+        }
+
+        return n0;
     }
 
     /**
