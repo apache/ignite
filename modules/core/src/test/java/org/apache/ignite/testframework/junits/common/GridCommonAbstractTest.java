@@ -17,7 +17,6 @@
 
 package org.apache.ignite.testframework.junits.common;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -83,12 +82,12 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.verify.PartitionHashRecord;
 import org.apache.ignite.internal.processors.cache.verify.PartitionKey;
 import org.apache.ignite.internal.processors.cache.verify.VerifyBackupPartitionsTask;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
@@ -1654,6 +1653,21 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", false));
         U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    protected void forceCheckpoint() throws Exception {
+        for (Ignite ignite : G.allGrids()) {
+            if (ignite.cluster().localNode().isClient())
+                continue;
+
+            IgniteCacheDatabaseSharedManager dbMgr = ((IgniteEx)ignite).context()
+                .cache().context().database();
+
+            dbMgr.waitForCheckpoint("test");
+        }
     }
 
     /**

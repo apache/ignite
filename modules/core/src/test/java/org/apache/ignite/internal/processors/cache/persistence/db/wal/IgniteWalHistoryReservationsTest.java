@@ -448,19 +448,4 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
     }
-
-    /**
-     *
-     */
-    private void forceCheckpoint() throws Exception {
-        for (Ignite ignite : G.allGrids()) {
-            if (ignite.cluster().localNode().isClient())
-                continue;
-
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
-                .cache().context().database();
-
-            dbMgr.waitForCheckpoint("test");
-        }
-    }
 }
