@@ -1859,7 +1859,10 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         assertFalse(res.isEmpty());
     }
 
-    public void testJoinWithSubquery2() throws Exception {
+    /**
+     *
+     */
+    public void testJoinWithSubquery2() {
         IgniteCache<Integer, Contract> c1 = ignite(0).createCache(
             cacheConfig("Contract", true,
                 Integer.class, Contract.class));
@@ -1867,6 +1870,10 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         IgniteCache<Integer, PromoContract> c2 = ignite(0).createCache(
             cacheConfig("PromoContract", true,
                 Integer.class, PromoContract.class));
+
+        IgniteCache<Integer, UserOrder> cu= ignite(0).createCache(
+            cacheConfig("UserOrder", true,
+                Integer.class, UserOrder.class));
 
         for (int i = 0; i < 100; i++) {
             int coId = i % 10;
@@ -1877,14 +1884,10 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 10; i++)
             c2.put(i, new PromoContract((i % 5) + 1, i));
 
-        final List<List<?>> res = c2.query(new SqlFieldsQuery("SELECT CO.CO_ID \n" +
-            "FROM PromoContract PMC  \n" +
-            "INNER JOIN \"Contract\".Contract CO  ON PMC.CO_ID = 5  \n" +
-            "AND PMC.CO_ID = CO.CO_ID  \n" +
-            "INNER JOIN  (SELECT CO_ID FROM PromoContract EBP WHERE EBP.CO_ID = 5 LIMIT 1) VPMC  \n" +
-            "ON PMC.CO_ID = VPMC.CO_ID ")).getAll();
-
-        assertFalse(res.isEmpty());
+        final List<List<?>> res = c2.query(new SqlFieldsQuery("SELECT p.CO_ID \n" +
+            "FROM (SELECT distinct CO_ID, OFFER_ID FROM PromoContract) as p \n" +
+            "LEFT JOIN \"Contract\".Contract c ON c.CO_ID = p.CO_ID \n" +
+            "LEFT JOIN \"UserOrder\".UserOrder u ON u.id = p.OFFER_ID")).getAll();
     }
 
     /** @throws Exception if failed. */
