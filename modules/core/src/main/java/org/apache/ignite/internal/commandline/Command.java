@@ -56,7 +56,9 @@ public enum Command {
         return null;
     }
 
-    /** */
+    /**
+     * @return Command text.
+     */
     public String text() {
         return text;
     }

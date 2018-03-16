@@ -95,20 +95,21 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param args arguments
-     * @return result of execution
+     * @param args Arguments.
+     * @return Result of execution.
      */
     protected int execute(String... args) {
         return execute(new ArrayList<>(Arrays.asList(args)));
     }
 
     /**
-     * @param args arguments
-     * @return result of execution
+     * @param args Arguments.
+     * @return Result of execution
      */
     protected int execute(ArrayList<String> args) {
         // Add force to avoid interactive confirmation
         args.add("--force");
+
         return new CommandHandler().execute(args);
     }
 
@@ -240,8 +241,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         ignite.cluster().active(true);
 
         Ignite other = startGrid(2);
-
-        CommandHandler cmd = new CommandHandler();
 
         assertEquals(EXIT_CODE_OK, execute("--baseline", "set", consistentIds(ignite, other)));
 

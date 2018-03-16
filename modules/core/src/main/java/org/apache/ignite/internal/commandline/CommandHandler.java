@@ -184,9 +184,10 @@ public class CommandHandler {
     }
 
     /**
-     * requests interactive user confirmation if forthcoming operation is dangerous
-     * @param args arguments
-     * @return true if operation confirmed (or not needed), false otherwise
+     * Requests interactive user confirmation if forthcoming operation is dangerous.
+     *
+     * @param args Arguments.
+     * @return {@code true} if operation confirmed (or not needed), {@code false} otherwise.
      */
     private boolean confirm(Arguments args) {
         String prompt = confirmationPrompt(args);
@@ -198,10 +199,10 @@ public class CommandHandler {
     }
 
     /**
-     * @param args arguments
-     * @return prompt text if confirmation needed, otherwise null
+     * @param args Arguments.
+     * @return Prompt text if confirmation needed, otherwise {@code null}.
      */
-    private static String confirmationPrompt(Arguments args) {
+    private String confirmationPrompt(Arguments args) {
         if (args.force())
             return null;
 
@@ -210,6 +211,8 @@ public class CommandHandler {
         switch (args.command()) {
             case DEACTIVATE:
                 str = "Warning: the command will deactivate a cluster.";
+                break;
+
             case BASELINE:
                 if (!F.isEmpty(args.baselineAction()))
                     str = "Warning! This command will perform changes in baseline!";
@@ -219,16 +222,7 @@ public class CommandHandler {
     }
 
     /**
-     * @param args Arguments to parse and apply.
-     */
-    public static void main(String[] args) {
-        CommandHandler hnd = new CommandHandler();
-
-        System.exit(hnd.execute(Arrays.asList(args)));
-    }
-
-    /**
-     * @param rawArgs arguments
+     * @param rawArgs Arguments.
      */
     private void initArgIterator(List<String> rawArgs) {
         argsIt = rawArgs.iterator();
@@ -236,7 +230,7 @@ public class CommandHandler {
     }
 
     /**
-     * @return Returns true if the iteration has more elements.
+     * @return Returns {@code true} if the iteration has more elements.
      */
     private boolean hasNextArg() {
         return peekedArg != null || argsIt.hasNext();
@@ -589,7 +583,7 @@ public class CommandHandler {
     /**
      * Returns the next argument in the iteration, without advancing the iteration.
      *
-     * @return Next argument value or null if no next argument
+     * @return Next argument value or {@code null} if no next argument.
      */
     private String peekNextArg() {
         if (peekedArg == null && argsIt.hasNext())
@@ -646,7 +640,7 @@ public class CommandHandler {
 
                             if (BASELINE_ADD.equals(baselineAct) || BASELINE_REMOVE.equals(baselineAct) ||
                                 BASELINE_SET.equals(baselineAct) || BASELINE_SET_VERSION.equals(baselineAct)) {
-                                nextArg(""); //skip baseLineAct we peeked
+                                nextArg(""); // Skip baseLineAct we peeked.
 
                                 baselineArgs = nextArg("Expected baseline arguments");
                             }
@@ -800,6 +794,15 @@ public class CommandHandler {
 
             return error(EXIT_CODE_UNEXPECTED_ERROR, "", e);
         }
+    }
+
+    /**
+     * @param args Arguments to parse and apply.
+     */
+    public static void main(String[] args) {
+        CommandHandler hnd = new CommandHandler();
+
+        System.exit(hnd.execute(Arrays.asList(args)));
     }
 }
 

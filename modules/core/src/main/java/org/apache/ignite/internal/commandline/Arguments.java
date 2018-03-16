@@ -36,7 +36,7 @@ public class Arguments {
     /** Password. */
     private String pwd;
 
-    /** force option is used for auto confirmation. */
+    /** Force option is used for auto confirmation. */
     private boolean force;
 
     /**
@@ -57,10 +57,12 @@ public class Arguments {
      * @param pwd Password.
      * @param baselineAct Baseline action.
      * @param baselineArgs Baseline args.
-     * @param force force.
+     * @param force Force flag.
      */
-    public Arguments(Command cmd, String host, String port, String user, String pwd, String baselineAct,
-        String baselineArgs, boolean force) {
+    public Arguments(Command cmd, String host, String port, String user, String pwd,
+        String baselineAct, String baselineArgs,
+        boolean force
+    ) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
@@ -121,7 +123,7 @@ public class Arguments {
     }
 
     /**
-     * @return force option
+     * @return Force option.
      */
     public boolean force() {
         return force;
