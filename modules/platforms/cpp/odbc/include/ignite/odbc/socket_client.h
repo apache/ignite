@@ -33,7 +33,7 @@ namespace ignite
         {
         public:
             /** Connection establishment timeout in seconds. */
-            enum { CONNECT_TIMEOUT = 5 };
+            enum { DEFALT_CONNECT_TIMEOUT = 5 };
 
             /**
              * Non-negative timeout operation result.
@@ -63,10 +63,12 @@ namespace ignite
              *
              * @param hostname Remote host name.
              * @param port Service port.
+             * @param timeout Timeout.
              * @param diag Diagnostics collector.
              * @return True on success.
              */
-            virtual bool Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag) = 0;
+            virtual bool Connect(const char* hostname, uint16_t port, int32_t timeout,
+                diagnostic::Diagnosable& diag) = 0;
 
             /**
              * Close established connection.
