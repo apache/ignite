@@ -107,7 +107,7 @@ public class IgniteProcessProxy implements IgniteEx {
     private static final String TEST_MULTIJVM_JAVA_HOME = "test.multijvm.java.home";
 
     /** Waiting milliseconds of the left of a node to topology. */
-    protected static final int NODE_LEFT_TIMEOUT = 30_000;
+    protected static final long NODE_LEFT_TIMEOUT = 30_000;
 
     /** Jvm process with ignite instance. */
     private final transient GridJavaProcess proc;
