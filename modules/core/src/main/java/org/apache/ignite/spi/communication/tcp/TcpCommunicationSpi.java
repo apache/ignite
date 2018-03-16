@@ -64,6 +64,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.managers.eventstorage.HighPriorityListener;
@@ -2601,6 +2602,14 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         if (log.isTraceEnabled())
             log.trace("Sending message with ack to node [node=" + node + ", msg=" + msg + ']');
 
+        if (isLocalNodeDisconnected()) {
+            if (log.isDebugEnabled())
+                log.debug("Sending a message is canceled due to local node disconnecting." +
+                    "[node=" + node + ", msg=" + msg + ']');
+
+            return;
+        }
+
         ClusterNode locNode = getLocalNode();
 
         if (locNode == null)
@@ -2651,6 +2660,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     client.forceClose();
             }
         }
+    }
+
+    /**
+     * @return {@code True} if local node in disconnected state.
+     */
+    private boolean isLocalNodeDisconnected() {
+        boolean disconnected = false;
+
+        if (ignite instanceof IgniteKernal)
+            disconnected = ((IgniteKernal)ignite).context().clientDisconnected();
+
+        return disconnected;
     }
 
     /**
@@ -2798,8 +2819,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 client = fut.get();
 
-                if (client == null)
-                    continue;
+                if (client == null) {
+                    if (isLocalNodeDisconnected())
+                        throw new IgniteCheckedException("Unable to create TCP client due to local node disconnecting.");
+                    else
+                        continue;
+                }
 
                 if (getSpiContext().node(nodeId) == null) {
                     if (removeNodeClient(nodeId, client))
