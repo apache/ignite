@@ -61,6 +61,7 @@ import org.apache.ignite.internal.util.Jsr310Java8DateTimeApiUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -542,6 +543,7 @@ public class QueryUtils {
         Set<String> keyFields = qryEntity.getKeyFields();
         Set<String> notNulls = qryEntity.getNotNullFields();
         Map<String, Object> dlftVals = qryEntity.getDefaultFieldValues();
+        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo  = qryEntity.getDecimalInfo();
 
         // We have to distinguish between empty and null keyFields when the key is not of SQL type -
         // when a key is not of SQL type, absence of a field in nonnull keyFields tell us that this field
@@ -572,9 +574,14 @@ public class QueryUtils {
 
             Object dfltVal = dlftVals != null ? dlftVals.get(entry.getKey()) : null;
 
+            IgniteBiTuple<Integer, Integer> scaleAndPrecision =
+                decimalInfo != null ? decimalInfo.get(entry.getKey()) : null;
+
             QueryBinaryProperty prop = buildBinaryProperty(ctx, entry.getKey(),
                 U.classForName(entry.getValue(), Object.class, true),
-                d.aliases(), isKeyField, notNull, dfltVal);
+                d.aliases(), isKeyField, notNull, dfltVal,
+                scaleAndPrecision != null ? scaleAndPrecision.get1() : -1,
+                scaleAndPrecision != null ? scaleAndPrecision.get2() : -1);
 
             d.addProperty(prop, false);
         }
@@ -718,11 +725,14 @@ public class QueryUtils {
      *      to key, {@code false} if it belongs to value, {@code null} if QueryEntity#keyFields is null.
      * @param notNull {@code true} if {@code null} value is not allowed.
      * @param dlftVal Default value.
+     * @param scale Scale.
+     * @param precision Precision.
      * @return Binary property.
      * @throws IgniteCheckedException On error.
      */
     public static QueryBinaryProperty buildBinaryProperty(GridKernalContext ctx, String pathStr, Class<?> resType,
-        Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull, Object dlftVal) throws IgniteCheckedException {
+        Map<String, String> aliases, @Nullable Boolean isKeyField, boolean notNull, Object dlftVal,
+        int scale, int precision) throws IgniteCheckedException {
         String[] path = pathStr.split("\\.");
 
         QueryBinaryProperty res = null;
@@ -738,7 +748,8 @@ public class QueryUtils {
             String alias = aliases.get(fullName.toString());
 
             // The key flag that we've found out is valid for the whole path.
-            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal);
+            res = new QueryBinaryProperty(ctx, prop, res, resType, isKeyField, alias, notNull, dlftVal,
+                scale, precision);
         }
 
         return res;
@@ -1400,6 +1411,16 @@ public class QueryUtils {
         /** {@inheritDoc} */
         @Override public Object defaultValue() {
             return null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int scale() {
+            return -1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int precision() {
+            return -1;
         }
     }
 }

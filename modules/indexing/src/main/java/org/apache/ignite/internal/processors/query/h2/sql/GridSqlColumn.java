@@ -129,6 +129,20 @@ public class GridSqlColumn extends GridSqlElement {
     }
 
     /**
+     * @return Scale.
+     */
+    public int scale() {
+        return -1; //TODO: implement me;
+    }
+
+    /**
+     * @return Precision.
+     */
+    public int precision() {
+        return -1; //TODO: implement me;
+    }
+
+    /**
      * @return H2 Column.
      */
     public Column column() {

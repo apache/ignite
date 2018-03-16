@@ -413,7 +413,8 @@ public class DdlStatementsProcessor {
 
                         QueryField field = new QueryField(col.columnName(),
                             DataType.getTypeClassName(col.column().getType()),
-                            col.column().isNullable(), col.defaultValue());
+                            col.column().isNullable(), col.defaultValue(),
+                            col.scale(), col.precision());
 
                         cols.add(field);
 
@@ -586,9 +587,9 @@ public class DdlStatementsProcessor {
 
         Set<String> notNullFields = null;
 
-        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
-
         HashMap<String, Object> dfltValues = new HashMap<>();
+
+        Map<String, IgniteBiTuple<Integer, Integer>> decimalInfo = new HashMap<>();
 
         for (Map.Entry<String, GridSqlColumn> e : createTbl.columns().entrySet()) {
             GridSqlColumn gridCol = e.getValue();
