@@ -66,7 +66,7 @@ namespace ignite
             {
                 std::string connect_str(str, len);
 
-                while (*connect_str.rbegin() == 0)
+                while (connect_str.rbegin() != connect_str.rend() && *connect_str.rbegin() == 0)
                     connect_str.erase(connect_str.size() - 1);
 
                 while (!connect_str.empty())
