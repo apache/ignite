@@ -373,6 +373,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     private boolean prepareStore(boolean onTxPrepare, CacheStoreManager storeManager, IgniteTxEntry txEntry) {
         assert storeManager != null;
 
+        if (storeManager.configuredStore() == null)
+            return true;
         if (storeManager.isWriteBehind() && onTxPrepare)
             return false;
         if (onTxPrepare)
