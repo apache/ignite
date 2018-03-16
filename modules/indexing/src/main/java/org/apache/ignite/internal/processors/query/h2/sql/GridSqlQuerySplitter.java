@@ -305,8 +305,6 @@ public class GridSqlQuerySplitter {
         // Split the query model into multiple map queries and a single reduce query.
         splitQueryModel(qrym);
 
-        debug("SPLIT", printQueryModel(qrym));
-
         // Get back the updated query from the fake parent. It will be our reduce query.
         qry = fakeQryPrnt.subquery();
 
@@ -424,6 +422,8 @@ public class GridSqlQuerySplitter {
 
             boolean hasPushedDownCol = false;
 
+            debug("PUSH DOWN CHECK:", printQueryModel(child));
+
             // It is either splittable subquery (it must remain in REDUCE query)
             // or left join condition with pushed down columns (this condition
             // can not be pushed down into a wrap query).
@@ -432,6 +432,7 @@ public class GridSqlQuerySplitter {
                 // range on the left side. If there are no LEFT JOINs in the SELECT, then
                 // we will never have ON conditions, they are getting moved to WHERE clause.
                 (hasPushedDownCol = (hasLeftJoin && i != 0 && hasPushedDownColumn(findJoin(qrym, i).on())))) {
+
                 // Handle a single table push down case.
                 if (hasPushedDownCol && begin == -1)
                     begin = i - 1;
@@ -1539,6 +1540,8 @@ public class GridSqlQuerySplitter {
         if (map.isPartitioned())
             map.derivedPartitions(derivePartitionsFromQuery(mapQry, ctx));
 
+        X.println("+++ MAP QRY: " + mapQry);
+        X.println("+++ MAP: " + map);
         mapSqlQrys.add(map);
     }
 
@@ -2516,7 +2519,7 @@ public class GridSqlQuerySplitter {
         /**
          * @return {@code true} If this is a SELECT or UNION query model.
          */
-        private boolean isQuery() {
+        public boolean isQuery() {
             return type == Type.SELECT || type == Type.UNION;
         }
 

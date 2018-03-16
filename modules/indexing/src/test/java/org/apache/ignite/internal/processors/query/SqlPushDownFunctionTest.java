@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.query;
 import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -53,17 +54,21 @@ public class SqlPushDownFunctionTest extends GridCommonAbstractTest {
         sql("INSERT INTO Company (id, name) VALUES (1, 'n1'), (2, 'n2'), (3, 'n3')");
         sql("INSERT INTO Address (id, person_id, city) VALUES (1, 1, 'san francisco'), (2, 2, 'paris'), (3, 3, 'new york')");
 
-
         sql("SELECT a.id FROM \n" +
             "(" +
-            "SELECT p1.id, p1.company_id FROM Person p1 WHERE p1.id = 1 \n" +
-            "UNION " +
-            "SELECT p2.id, p2.company_id FROM Person p2 WHERE p2.id = 2" +
+            "SELECT distinct p1.id, p1.company_id FROM Person p1 WHERE p1.id = 1 \n" +
             ")  p\n"
-            + "LEFT JOIN Company c ON p.company_id = c.id\n"
-            + "LEFT JOIN Address a ON a.person_id = p.id;"
+            + "LEFT JOIN Address a ON a.person_id = p.id "
+//            + "LEFT JOIN Company c ON c.id = p.company_id "
         );
 
+//        sql("SELECT a.id FROM \n" +
+//            "(" +
+//            "SELECT distinct p1.id, p1.company_id FROM Person p1 WHERE p1.id = 1 \n" +
+//            ")  p\n"
+//            + "LEFT JOIN Address a ON a.person_id = p.id "
+//            + "LEFT JOIN Company c ON a.id = c.id "
+//        );
     }
 
     /**
