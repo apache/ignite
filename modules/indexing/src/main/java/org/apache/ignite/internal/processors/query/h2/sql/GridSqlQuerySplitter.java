@@ -964,7 +964,8 @@ public class GridSqlQuerySplitter {
 
             assert expr instanceof GridSqlAlias;
 
-            if (isAllRelatedToTables(tblAliases, GridSqlQuerySplitter.<GridSqlAlias>newIdentityHashSet(), expr)) {
+            if (isAllRelatedToTables(tblAliases, GridSqlQuerySplitter.<GridSqlAlias>newIdentityHashSet(), expr)
+                && !hasAggregates(expr)) {
                 // Push down the whole expression.
                 pushDownColumn(tblAliases, cols, wrapAlias, expr, 0);
             }
