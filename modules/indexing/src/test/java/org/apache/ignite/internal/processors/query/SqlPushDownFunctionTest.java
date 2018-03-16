@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.query;
 import java.util.List;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -59,10 +58,10 @@ public class SqlPushDownFunctionTest extends GridCommonAbstractTest {
             "SELECT distinct p1.id, p1.company_id FROM Person p1 WHERE p1.id = 1 \n" +
             ")  p\n"
             + "LEFT JOIN Address a ON a.person_id = p.id "
-//            + "LEFT JOIN Company c ON c.id = p.company_id "
+            + "LEFT JOIN Company c ON c.id = p.company_id "
         );
 
-//        sql("SELECT a.id FROM \n" +
+        //        sql("SELECT a.id FROM \n" +
 //            "(" +
 //            "SELECT distinct p1.id, p1.company_id FROM Person p1 WHERE p1.id = 1 \n" +
 //            ")  p\n"
