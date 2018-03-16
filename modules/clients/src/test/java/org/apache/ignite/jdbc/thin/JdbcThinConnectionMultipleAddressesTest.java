@@ -48,7 +48,8 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
     private static final int NODES_CNT = 3;
 
     /** */
-    private static final String URL = "jdbc:ignite:thin://127.0.0.1";
+    private static final String URL_PORT_RANGE = "jdbc:ignite:thin://127.0.0.1:"
+        + ClientConnectorConfiguration.DFLT_PORT + ".." + (ClientConnectorConfiguration.DFLT_PORT + 10);
 
     /** Jdbc ports. */
     private static ArrayList<Integer> jdbcPorts = new ArrayList<>();
@@ -136,52 +137,98 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
     /**
      * @throws Exception If failed.
      */
-    public void testOneNodeFailoverOnStatementExecute() throws Exception {
-        checkReconnectOnStatementExecute(false);
+    public void testPortRangeConnect() throws Exception {
+        try (Connection conn = DriverManager.getConnection(URL_PORT_RANGE)) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("SELECT 1");
+
+                ResultSet rs = stmt.getResultSet();
+
+                assertTrue(rs.next());
+
+                assertEquals(1, rs.getInt(1));
+            }
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testAllNodesFailoverOnStatementExecute() throws Exception {
-        checkReconnectOnStatementExecute(true);
+    public void testMultipleAddressesOneNodeFailoverOnStatementExecute() throws Exception {
+        checkReconnectOnStatementExecute(url(), false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testOneNodeFailoverOnResultSet() throws Exception {
-        checkReconnectOnResultSet(false);
+    public void testMultipleAddressesAllNodesFailoverOnStatementExecute() throws Exception {
+        checkReconnectOnStatementExecute(url(), true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testAllNodesFailoverOnResultSet() throws Exception {
-        checkReconnectOnResultSet(true);
+    public void testPortRangeAllNodesFailoverOnStatementExecute() throws Exception {
+        checkReconnectOnStatementExecute(URL_PORT_RANGE, true);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testOneNodeFailoverOnMeta() throws Exception {
-        checkReconnectOnMeta(false);
+    public void testMultipleAddressesOneNodeFailoverOnResultSet() throws Exception {
+        checkReconnectOnResultSet(url(), false);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testAllNodesFailoverOnMeta() throws Exception {
-        checkReconnectOnMeta(true);
+    public void testMultipleAddressesAllNodesFailoverOnResultSet() throws Exception {
+        checkReconnectOnResultSet(url(), true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPortRangeAllNodesFailoverOnResultSet() throws Exception {
+        checkReconnectOnResultSet(URL_PORT_RANGE, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMultipleAddressesOneNodeFailoverOnMeta() throws Exception {
+        checkReconnectOnMeta(url(), false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMultipleAddressesAllNodesFailoverOnMeta() throws Exception {
+        checkReconnectOnMeta(url(), true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPortRangeAllNodesFailoverOnMeta() throws Exception {
+        checkReconnectOnMeta(URL_PORT_RANGE, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMultipleAddressesOneNodeFailoverOnStreaming() throws Exception {
+        checkReconnectOnStreaming(url(), false);
     }
 
     /**
      * Check failover on restart cluster ar stop one node.
+     * @param url Connection URL.
      * @param allNodes Restart all nodes flag.
      * @throws Exception If failed.
      */
-    private void checkReconnectOnMeta(boolean allNodes) throws Exception {
-        try (Connection conn = DriverManager.getConnection(url())) {
+    private void checkReconnectOnMeta(String url, boolean allNodes) throws Exception {
+        try (Connection conn = DriverManager.getConnection(url)) {
             DatabaseMetaData meta = conn.getMetaData();
 
             ResultSet rs0 = meta.getTables(null, null, null, null);
@@ -207,11 +254,12 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
 
     /**
      * Check failover on restart cluster ar stop one node.
+     * @param url Connection URL.
      * @param allNodes Restart all nodes flag.
      * @throws Exception If failed.
      */
-    private void checkReconnectOnStatementExecute(boolean allNodes) throws Exception {
-        try (Connection conn = DriverManager.getConnection(url())) {
+    private void checkReconnectOnStatementExecute(String url, boolean allNodes) throws Exception {
+        try (Connection conn = DriverManager.getConnection(url)) {
             final Statement stmt0 = conn.createStatement();
 
             stmt0.execute("SELECT 1");
@@ -250,11 +298,12 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
 
     /**
      * Check failover on restart cluster ar stop one node.
+     * @param url Connection URL.
      * @param allNodes Restart all nodes flag.
      * @throws Exception If failed.
      */
-    private void checkReconnectOnResultSet(boolean allNodes) throws Exception {
-        try (Connection conn = DriverManager.getConnection(url())) {
+    private void checkReconnectOnResultSet(String url, boolean allNodes) throws Exception {
+        try (Connection conn = DriverManager.getConnection(url)) {
             final Statement stmt0 = conn.createStatement();
 
             stmt0.execute("SELECT 1");
@@ -288,6 +337,63 @@ public class JdbcThinConnectionMultipleAddressesTest extends JdbcThinAbstractSel
 
             assertTrue(rs1.next());
             assertEquals(1, rs1.getInt(1));
+        }
+    }
+
+
+    /**
+     * Check failover on restart cluster ar stop one node.
+     * @param url Connection URL.
+     * @param allNodes Restart all nodes flag.
+     * @throws Exception If failed.
+     */
+    private void checkReconnectOnStreaming(String url, boolean allNodes) throws Exception {
+        try (Connection conn = DriverManager.getConnection(url)) {
+            final Statement stmt0 = conn.createStatement();
+            stmt0.execute("CREATE TABLE TEST(id int primary key, val int)");
+
+            stmt0.execute("SET STREAMING 1 BATCH_SIZE 10 ALLOW_OVERWRITE 0 " +
+                " PER_NODE_BUFFER_SIZE 1000 FLUSH_FREQUENCY 1000");
+
+            final ResultSet rs0 = stmt0.getResultSet();
+
+            stop(conn, allNodes);
+
+            final int [] id = {0};
+
+            GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    // compiled instead of while (true)
+                    while (id[0] >= 0) {
+                        stmt0.execute("INSERT INTO TEST(id, val) values (" + id[0] + ", " + id[0] + ")");
+
+                        id[0]++;
+                    }
+
+                    return null;
+                }
+            }, SQLException.class, "Failed to communicate with Ignite cluster");
+
+            assertTrue(id[0] > 0);
+
+            int minId = id[0];
+
+            restart(allNodes);
+
+            final Statement stmt1 = conn.createStatement();
+
+            for (int i = 0; i < 10; ++i, id[0]++)
+                stmt1.execute("INSERT INTO TEST(id, val) values (" + id[0] + ", " + id[0] + ")");
+
+            stmt1.execute("SET STREAMING 0");
+
+            stmt1.execute("SELECT ID FROM TEST WHERE id < " + minId);
+
+            assertFalse(stmt1.getResultSet().next());
+
+            stmt1.execute("SELECT count(id) FROM TEST WHERE id > " + minId);
+
+            assertTrue(stmt1.getResultSet().next());
         }
     }
 

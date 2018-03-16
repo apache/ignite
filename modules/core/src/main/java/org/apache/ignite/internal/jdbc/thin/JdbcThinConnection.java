@@ -213,6 +213,7 @@ public class JdbcThinConnection implements Connection {
      * Add another query for batched execution.
      * @param sql Query.
      * @param args Arguments.
+     * @throws SQLException On error.
      */
     void addBatch(String sql, List<Object> args) throws SQLException {
         boolean newQry = (args == null || !F.eq(lastStreamQry, sql));
