@@ -26,7 +26,7 @@ public class DeflaterFactory implements Factory<CompressionEngine> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** */
+    /** {@inheritDoc} */
     @Override public CompressionEngine create() {
         return new DeflaterEngine();
     }
