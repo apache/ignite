@@ -812,6 +812,10 @@ public class JdbcThinConnection implements Connection {
 
         connected = false;
 
+        streamBatch = null;
+
+        lastStreamQry = null;
+
         for (JdbcThinStatement s : stmts)
             s.closeOnDisconnect();
 
