@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,24 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm.binary;
 
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.regressions.linear.LinearRegressionSGDTrainer;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationTrainer;
+namespace Apache.Ignite.Linq.Impl.Dml
+{
+    using System.Linq.Expressions;
 
-/**
- * Tests for {@link LinearRegressionSGDTrainer} on {@link DenseLocalOnHeapMatrix}.
- */
-public class LocalLinearSVMBinaryClassificationTrainerTest extends GenericLinearSVMBinaryClassificationTrainerTest {
-    /** */
-    public LocalLinearSVMBinaryClassificationTrainerTest() {
-        super(
-            new SVMLinearBinaryClassificationTrainer()
-                .withLambda(0.2)
-                .withAmountOfIterations(10)
-                .withAmountOfLocIterations(20),
-            false,
-            1e-2);
+    /// <summary>
+    /// Contains information about member update
+    /// </summary>
+    internal struct MemberUpdateContainer
+    {
+        /// <summary>
+        /// Gets or sets member selector
+        /// </summary>
+        public Expression Selector { get; set; }
+
+        /// <summary>
+        /// Gets or sets member new value
+        /// </summary>
+        public Expression Value { get; set; }
     }
 }
