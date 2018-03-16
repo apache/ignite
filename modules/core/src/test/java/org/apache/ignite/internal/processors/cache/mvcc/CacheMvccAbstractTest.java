@@ -145,6 +145,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         DataRegionConfiguration regionCfg = new DataRegionConfiguration();
 
         regionCfg.setPersistenceEnabled(persistence);
+        regionCfg.setMaxSize(32L * 1024 * 1024);
 
         storageCfg.setDefaultDataRegionConfiguration(regionCfg);
 
