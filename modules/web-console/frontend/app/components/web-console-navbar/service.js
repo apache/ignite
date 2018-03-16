@@ -17,7 +17,7 @@
 
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
-export default class {
+export default class WebConsoleNavbarSrv {
     static $inject = [];
 
     constructor() {
