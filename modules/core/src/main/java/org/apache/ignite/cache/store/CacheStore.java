@@ -102,4 +102,13 @@ public interface CacheStore<K, V> extends CacheLoader<K, V>, CacheWriter<K, V> {
      */
     @Deprecated
     public void sessionEnd(boolean commit) throws CacheWriterException;
+
+    /**
+     * Checks whether cache store supports 2-phase-commit.
+     *
+     * @return {@code True} If store supports 2-phase-commit.
+     */
+    default public boolean supports2PhaseCommit() {
+        return false;
+    }
 }

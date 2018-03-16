@@ -515,6 +515,14 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 cctx.database().checkpointReadUnlock();
             }
         }
+
+        try {
+            if (tx.dht() || tx.optimistic())
+                tx.storesPrepare(req.writes(), true);
+        }
+        catch (IgniteCheckedException e) {
+            onError(e);
+        }
     }
 
     /**
@@ -1656,9 +1664,12 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     @Override public String toString() {
         Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
             @Override public String apply(IgniteInternalFuture<?> f) {
-                return "[node=" + ((MiniFuture)f).node().id() +
-                    ", loc=" + ((MiniFuture)f).node().isLocal() +
-                    ", done=" + f.isDone() + "]";
+                if (f instanceof MiniFuture)
+                    return "[node=" + ((MiniFuture)f).node().id() +
+                        ", loc=" + ((MiniFuture)f).node().isLocal() +
+                        ", done=" + f.isDone() + "]";
+                else
+                    return "";
             }
         });
 

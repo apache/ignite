@@ -211,7 +211,11 @@ public class CacheContinuousWithTransformerFailoverTest extends GridCommonAbstra
             IgniteCache<Integer, Integer> cache2 = grid(1).cache(DEFAULT_CACHE_NAME);
 
             final int key1 = primaryKey(cache1);
+
             final int key2 = primaryKey(cache2);
+
+            Thread.sleep(1_000);
+
 
             final CountDownLatch latch1 = new CountDownLatch(2);
             final CountDownLatch latch2 = new CountDownLatch(2);

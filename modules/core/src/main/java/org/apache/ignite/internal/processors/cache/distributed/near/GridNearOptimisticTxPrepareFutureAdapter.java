@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -36,6 +37,9 @@ import org.jetbrains.annotations.Nullable;
  *
  */
 public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearTxPrepareFutureAdapter {
+    /** */
+    @GridToStringExclude
+    protected KeyLockFuture keyLockFut;
     /**
      * @param cctx Context.
      * @param tx Transaction.
@@ -171,7 +175,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
     /**
      * Keys lock future.
      */
-    protected static class KeyLockFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
+    public static class KeyLockFuture extends GridFutureAdapter<GridNearTxPrepareResponse> {
         /** */
         @GridToStringInclude
         protected Collection<IgniteTxKey> lockKeys = new GridConcurrentHashSet<>();

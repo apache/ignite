@@ -48,17 +48,7 @@ import org.apache.ignite.internal.managers.discovery.ConsistentIdMapper;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.TxRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
-import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
-import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.GridCacheReturn;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
@@ -370,6 +360,29 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             log = U.logger(cctx.kernalContext(), logRef, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
+    }
+
+    /**
+     * Checks whether store must be prepared now.
+     *
+     * @param onTxPrepare {@code True} If transaction is on prepare phase, otherwise is on finish step.
+     * @param storeManager Store manager.
+     * @param txEntry txEntry.
+     * @return {@code True} If store could be prepared.
+     */
+    private boolean prepareStore(boolean onTxPrepare, CacheStoreManager storeManager, IgniteTxEntry txEntry) {
+        assert storeManager != null;
+
+        if (storeManager.isWriteBehind() && onTxPrepare)
+            return false;
+        if (onTxPrepare)
+            return storeManager.configuredStore().supports2PhaseCommit();
+        else if (!storeManager.isLocal() && txEntry.cached().detached())
+            return true;
+        else if (storeManager.configuredStore().supports2PhaseCommit() && storeManager.isWriteBehind())
+            return true;
+        else
+            return !storeManager.configuredStore().supports2PhaseCommit();
     }
 
     /**
@@ -890,6 +903,22 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         return false;
     }
 
+    /**
+     *  Commits stores.
+     */
+    protected void storeFinish() throws IgniteCheckedException {
+        if (!storeEnabled() || internal() ||
+            (!local() && near())) // No need to work with local store at GridNearTxRemote.
+            return;
+
+        Collection<CacheStoreManager> stores = txState().stores(cctx);
+
+        if (stores == null || stores.isEmpty() || isRollbackOnly())
+            return;
+
+        sessionEnd(stores, true);
+    }
+
     /** {@inheritDoc} */
     @Override public void completedVersions(GridCacheVersion base, Collection<GridCacheVersion> committed,
         Collection<GridCacheVersion> txs) {
@@ -1248,22 +1277,23 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /**
-     * Performs batch database operations. This commit must be called
-     * before cache update. This way if there is a DB failure,
-     * cache transaction can still be rolled back.
+     * Iterates through entries and prepares cache stores if they support prepare. On transaction prepare step
+     * store would be prepared only if it supports preparing. On transaction finish step only stores that don't support
+     * preparing are written into, because they can persist data right away(without prepare).
      *
-     * @param writeEntries Transaction write set.
-     * @throws IgniteCheckedException If batch update failed.
+     * @param writeEntries Write entries.
+     * @param onTxPrepare {@code True} If we perform persistence prepare on transaction prepare phase.
      */
-    @SuppressWarnings({"CatchGenericClass"})
-    protected final void batchStoreCommit(Iterable<IgniteTxEntry> writeEntries) throws IgniteCheckedException {
+    public final void storesPrepare(Iterable<IgniteTxEntry> writeEntries,
+                                    boolean onTxPrepare) throws IgniteCheckedException {
+
         if (!storeEnabled() || internal() ||
             (!local() && near())) // No need to work with local store at GridNearTxRemote.
             return;
 
         Collection<CacheStoreManager> stores = txState().stores(cctx);
 
-        if (stores == null || stores.isEmpty())
+        if (stores == null || stores.isEmpty() || isRollbackOnly())
             return;
 
         assert isWriteToStoreFromDhtValid(stores) : "isWriteToStoreFromDht can't be different within one transaction";
@@ -1272,178 +1302,172 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         boolean isWriteToStoreFromDht = first.isWriteToStoreFromDht();
 
-        if ((local() || first.isLocal()) && (near() || isWriteToStoreFromDht)) {
+        if ((local() || first.isLocal()) && (near() || isWriteToStoreFromDht) && writeEntries != null) {
             try {
-                if (writeEntries != null) {
-                    Map<KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> putMap = null;
-                    List<KeyCacheObject> rmvCol = null;
-                    CacheStoreManager writeStore = null;
+                Map<KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> putMap = null;
+                List<KeyCacheObject> rmvCol = null;
+                CacheStoreManager writeStore = null;
 
-                    boolean skipNonPrimary = near() && isWriteToStoreFromDht;
+                boolean skipNonPrimary = near() && isWriteToStoreFromDht;
 
-                    for (IgniteTxEntry e : writeEntries) {
-                        boolean skip = e.skipStore();
+                for (IgniteTxEntry e : writeEntries) {
+                    boolean skip = e.skipStore();
 
-                        if (!skip && skipNonPrimary) {
-                            skip = e.cached().isNear() ||
-                                e.cached().detached() ||
-                                !e.context().affinity().primaryByPartition(e.cached().partition(), topologyVersion()).isLocal();
+                    GridCacheContext cacheCtx = e.context();
+
+                    if (!skip && skipNonPrimary) {
+                        skip = e.cached().isNear() ||
+                            e.cached().detached() ||
+                            !e.context().affinity().primaryByPartition(e.cached().partition(), topologyVersion()).isLocal();
+
+                    }
+
+                    if (!skip && !local() && // Update local store at backups only if needed.
+                        cctx.localStorePrimaryOnly())
+                        skip = true;
+
+                    if (!skip)
+                        skip = !prepareStore(onTxPrepare, cacheCtx.store(), e);
+
+                    if (skip)
+                        continue;
+
+
+                    boolean intercept = e.context().config().getInterceptor() != null;
+
+                    if (intercept || !F.isEmpty(e.entryProcessors()))
+                        e.cached().unswap(false);
+
+                    IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(e, false, null);
+
+                    GridCacheOperation op = res.get1();
+                    KeyCacheObject key = e.key();
+                    CacheObject val = res.get2();
+                    GridCacheVersion ver = writeVersion();
+
+                    if (op == CREATE || op == UPDATE) {
+                        if (rmvCol != null && !rmvCol.isEmpty()) {
+                            assert writeStore != null;
+
+                            writeStore.removeAll(this, rmvCol);
+
+                            // Reset.
+                            rmvCol.clear();
+
+                            writeStore = null;
                         }
 
-                        if (!skip && !local() && // Update local store at backups only if needed.
-                            cctx.localStorePrimaryOnly())
-                            skip = true;
-
-                        if (skip)
-                            continue;
-
-                        boolean intercept = e.context().config().getInterceptor() != null;
-
-                        if (intercept || !F.isEmpty(e.entryProcessors()))
-                            e.cached().unswap(false);
-
-                        IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(e, false, null);
-
-                        GridCacheContext cacheCtx = e.context();
-
-                        GridCacheOperation op = res.get1();
-                        KeyCacheObject key = e.key();
-                        CacheObject val = res.get2();
-                        GridCacheVersion ver = writeVersion();
-
-                        if (op == CREATE || op == UPDATE) {
-                            // Batch-process all removes if needed.
-                            if (rmvCol != null && !rmvCol.isEmpty()) {
-                                assert writeStore != null;
-
-                                writeStore.removeAll(this, rmvCol);
-
-                                // Reset.
-                                rmvCol.clear();
-
-                                writeStore = null;
-                            }
-
-                            // Batch-process puts if cache ID has changed.
-                            if (writeStore != null && writeStore != cacheCtx.store()) {
-                                if (putMap != null && !putMap.isEmpty()) {
-                                    writeStore.putAll(this, putMap);
-
-                                    // Reset.
-                                    putMap.clear();
-                                }
-
-                                writeStore = null;
-                            }
-
-                            if (intercept) {
-                                Object interceptorVal = cacheCtx.config().getInterceptor().onBeforePut(
-                                    new CacheLazyEntry(
-                                        cacheCtx,
-                                        key,
-                                        e.cached().rawGet(),
-                                        e.keepBinary()),
-                                    cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(val, e.keepBinary(), false));
-
-                                if (interceptorVal == null)
-                                    continue;
-
-                                val = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(interceptorVal));
-                            }
-
-                            if (writeStore == null)
-                                writeStore = cacheCtx.store();
-
-                            if (writeStore.isWriteThrough()) {
-                                if (putMap == null)
-                                    putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
-
-                                putMap.put(key, F.t(val, ver));
-                            }
-                        }
-                        else if (op == DELETE) {
-                            // Batch-process all puts if needed.
+                        if (writeStore != null && writeStore != cacheCtx.store()) {
                             if (putMap != null && !putMap.isEmpty()) {
-                                assert writeStore != null;
-
                                 writeStore.putAll(this, putMap);
 
-                                // Reset.
                                 putMap.clear();
-
-                                writeStore = null;
                             }
 
-                            if (writeStore != null && writeStore != cacheCtx.store()) {
-                                if (rmvCol != null && !rmvCol.isEmpty()) {
-                                    writeStore.removeAll(this, rmvCol);
-
-                                    // Reset.
-                                    rmvCol.clear();
-                                }
-
-                                writeStore = null;
-                            }
-
-                            if (intercept) {
-                                IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor().onBeforeRemove(
-                                    new CacheLazyEntry(cacheCtx, key, e.cached().rawGet(), e.keepBinary()));
-
-                                if (cacheCtx.cancelRemove(t))
-                                    continue;
-                            }
-
-                            if (writeStore == null)
-                                writeStore = cacheCtx.store();
-
-                            if (writeStore.isWriteThrough()) {
-                                if (rmvCol == null)
-                                    rmvCol = new ArrayList<>();
-
-                                rmvCol.add(key);
-                            }
+                            writeStore = null;
                         }
-                        else if (log.isDebugEnabled())
-                            log.debug("Ignoring NOOP entry for batch store commit: " + e);
+
+                        if (intercept) {
+                            Object interceptorVal = cacheCtx.config().getInterceptor().onBeforePut(
+                                new CacheLazyEntry(
+                                    cacheCtx,
+                                    key,
+                                    e.cached().rawGet(),
+                                    e.keepBinary()),
+                                cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(val, e.keepBinary(), false));
+
+                            if (interceptorVal == null)
+                                continue;
+
+                            val = cacheCtx.toCacheObject(cacheCtx.unwrapTemporary(interceptorVal));
+                        }
+
+                        if (writeStore == null)
+                            writeStore = cacheCtx.store();
+
+                        if (writeStore.isWriteThrough()) {
+                            if (putMap == null)
+                                putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
+
+                            putMap.put(key, F.t(val, ver));
+                        }
                     }
+                    else if (op == DELETE) {
+                        if (putMap != null && !putMap.isEmpty()) {
+                            assert writeStore != null;
 
-                    if (putMap != null && !putMap.isEmpty()) {
-                        assert rmvCol == null || rmvCol.isEmpty();
-                        assert writeStore != null;
+                            writeStore.putAll(this, putMap);
 
-                        // Batch put at the end of transaction.
-                        writeStore.putAll(this, putMap);
+                            putMap.clear();
+
+                            writeStore = null;
+                        }
+
+                        if (writeStore != null && writeStore != cacheCtx.store()) {
+                            if (rmvCol != null && !rmvCol.isEmpty()) {
+                                writeStore.removeAll(this, rmvCol);
+
+                                rmvCol.clear();
+                            }
+
+                            writeStore = null;
+                        }
+
+                        if (intercept) {
+                            IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor().onBeforeRemove(
+                                new CacheLazyEntry(cacheCtx, key, e.cached().rawGet(), e.keepBinary()));
+
+                            if (cacheCtx.cancelRemove(t))
+                                continue;
+                        }
+
+                        if (writeStore == null)
+                            writeStore = cacheCtx.store();
+
+                        if (writeStore.isWriteThrough()) {
+                            if (rmvCol == null)
+                                rmvCol = new ArrayList<>();
+
+                            rmvCol.add(key);
+                        }
                     }
-
-                    if (rmvCol != null && !rmvCol.isEmpty()) {
-                        assert putMap == null || putMap.isEmpty();
-                        assert writeStore != null;
-
-                        // Batch remove at the end of transaction.
-                        writeStore.removeAll(this, rmvCol);
-                    }
+                    else if (log.isDebugEnabled())
+                        log.debug("Ignoring NOOP entry for batch store commit: " + e);
                 }
 
-                // Commit while locks are held.
-                sessionEnd(stores, true);
+                if (putMap != null && !putMap.isEmpty()) {
+                    assert rmvCol == null || rmvCol.isEmpty();
+                    assert writeStore != null;
+
+                    writeStore.putAll(this, putMap);
+                }
+
+                if (rmvCol != null && !rmvCol.isEmpty()) {
+                    assert putMap == null || putMap.isEmpty();
+                    assert writeStore != null;
+
+                    writeStore.removeAll(this, rmvCol);
+                }
             }
             catch (IgniteCheckedException ex) {
-                commitError(ex);
+                if (!onTxPrepare) {
+                    commitError(ex);
 
-                errorWhenCommitting();
+                    errorWhenCommitting();
 
-                // Safe to remove transaction from committed tx list because nothing was committed yet.
-                cctx.tm().removeCommittedTx(this);
+                    cctx.tm().removeCommittedTx(this);
+                }
 
                 throw ex;
             }
             catch (Throwable ex) {
-                commitError(ex);
+                if (!onTxPrepare) {
+                    commitError(ex);
 
-                errorWhenCommitting();
+                    errorWhenCommitting();
 
-                // Safe to remove transaction from committed tx list because nothing was committed yet.
-                cctx.tm().removeCommittedTx(this);
+                    cctx.tm().removeCommittedTx(this);
+                }
 
                 if (ex instanceof Error)
                     throw (Error)ex;
@@ -1455,8 +1479,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     sessionEnd(stores, false);
             }
         }
-        else
-            sessionEnd(stores, true);
     }
 
     /**

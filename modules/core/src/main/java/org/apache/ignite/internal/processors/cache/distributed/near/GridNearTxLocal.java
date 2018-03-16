@@ -105,6 +105,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOO
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
+import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearOptimisticTxPrepareFutureAdapter.*;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_EMPTY_ENTRY_VER;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry.SER_READ_NOT_EMPTY_VER;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
@@ -3158,7 +3159,52 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         mapExplicitLocks();
 
+        final GridFutureAdapter storePrepareFut = new GridFutureAdapter<>();
+
+        fut.add(storePrepareFut);
+
         fut.prepare();
+
+        if (fut instanceof GridNearOptimisticTxPrepareFutureAdapter) {
+            KeyLockFuture keyLockFut = ((GridNearOptimisticTxPrepareFutureAdapter)fut).keyLockFut;
+
+            if (keyLockFut != null) {
+                final GridNearTxPrepareFutureAdapter finalFut = fut;
+
+                keyLockFut.listen(new IgniteInClosure<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
+                    /** {@inheritDoc} */
+                    @Override public void apply(
+                        IgniteInternalFuture<GridNearTxPrepareResponse> gridNearTxPrepareResponseIgniteInternalFuture) {
+                        try {
+                            storesPrepare(writeEntries(), true);
+
+                            storePrepareFut.onDone();
+                        }
+                        catch (IgniteCheckedException e) {
+                            finalFut.onDone(e);
+
+                            storePrepareFut.onDone(e);
+                        }
+
+                    }
+                });
+            }
+            else
+                storePrepareFut.onDone();
+
+        }
+        else {
+            try {
+                storesPrepare(writeEntries(), true);
+
+                storePrepareFut.onDone();
+            }
+            catch (IgniteCheckedException e) {
+                fut.onDone(e);
+
+                storePrepareFut.onDone(e);
+            }
+        }
 
         return fut;
     }

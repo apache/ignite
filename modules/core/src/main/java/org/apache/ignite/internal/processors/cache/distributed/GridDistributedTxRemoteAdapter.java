@@ -398,6 +398,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
         try {
             cctx.tm().prepareTx(this, null);
 
+            storesPrepare(writeEntries(), true);
+
             if (pessimistic() || isSystemInvalidate())
                 state(PREPARED);
         }
@@ -485,7 +487,9 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                         List<DataEntry> dataEntries = null;
 
-                        batchStoreCommit(writeMap().values());
+                        storesPrepare(writeEntries(), false);
+
+                        storeFinish();
 
                         try {
                             // Node that for near transactions we grab all entries.

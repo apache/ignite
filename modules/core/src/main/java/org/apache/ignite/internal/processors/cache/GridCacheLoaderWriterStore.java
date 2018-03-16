@@ -145,6 +145,11 @@ class GridCacheLoaderWriterStore<K, V> implements CacheStore<K, V>, LifecycleAwa
     }
 
     /** {@inheritDoc} */
+    @Override public boolean supports2PhaseCommit() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheLoaderWriterStore.class, this);
     }
