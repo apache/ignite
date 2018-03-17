@@ -106,9 +106,6 @@ public class IgniteProcessProxy implements IgniteEx {
     /** Property that specify alternative {@code JAVA_HOME}. */
     private static final String TEST_MULTIJVM_JAVA_HOME = "test.multijvm.java.home";
 
-    /** Waiting milliseconds of the left of a node to topology. */
-    protected static final long NODE_LEFT_TIMEOUT = 30_000;
-
     /** Jvm process with ignite instance. */
     private final transient GridJavaProcess proc;
 
@@ -298,8 +295,9 @@ public class IgniteProcessProxy implements IgniteEx {
      *
      * @param igniteInstanceName Ignite instance name.
      * @param cancel If {@code true} then all jobs currently will be cancelled.
+     * @throws InterruptedException In case of the node stopping error.
      */
-    public static void stop(String igniteInstanceName, boolean cancel) {
+    public static void stop(String igniteInstanceName, boolean cancel) throws InterruptedException {
         final IgniteProcessProxy proxy = gridProxies.get(igniteInstanceName);
 
         if (proxy != null) {
@@ -321,11 +319,12 @@ public class IgniteProcessProxy implements IgniteEx {
             proxy.remoteCompute().runAsync(new StopGridTask(igniteInstanceName, cancel));
 
             try {
-                if (!rmtNodeStoppedLatch.await(NODE_LEFT_TIMEOUT, TimeUnit.MILLISECONDS))
-                    throw new IllegalStateException("Remote node has not stopped [id=" + rmNodeId + ']');
+                rmtNodeStoppedLatch.await();
             }
             catch (InterruptedException e) {
-                throw new IgniteException(e);
+                X.printerr("Remote node has not stopped [id=" + rmNodeId + ']', e);
+
+                throw e;
             }
 
             gridProxies.remove(igniteInstanceName, proxy);
