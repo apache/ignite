@@ -85,6 +85,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.Update
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CacheGroupAffinityMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtForceKeysResponse;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandLegacyMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionDemandMessage;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
@@ -511,6 +512,11 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 44:
+                msg = new GridDhtPartitionDemandLegacyMessage();
+
+                break;
+
+            case 45:
                 msg = new GridDhtPartitionDemandMessage();
 
                 break;

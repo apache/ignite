@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
+import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.sql.Date;
@@ -66,6 +67,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_BINARIES_MASK;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEYS;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT_ALL;
@@ -99,6 +101,9 @@ public class GridJettyRestHandler extends AbstractHandler {
 
     /** */
     private static final String  TEMPLATE_NAME_PARAM = "templateName";
+
+    /** */
+    private static final NullOutputStream NULL_OUTPUT_STREAM = new NullOutputStream();
 
     /** Logger. */
     private final IgniteLogger log;
@@ -391,16 +396,17 @@ public class GridJettyRestHandler extends AbstractHandler {
             cmdRes = new GridRestResponse(STATUS_FAILED, e.getMessage());
         }
 
-        try {
-            ServletOutputStream os = res.getOutputStream();
-
+        try(ServletOutputStream os = res.getOutputStream()) {
             try {
+                // Try serialize.
+                jsonMapper.writeValue(NULL_OUTPUT_STREAM, cmdRes);
+
                 jsonMapper.writeValue(os, cmdRes);
             }
             catch (JsonProcessingException e) {
                 U.error(log, "Failed to convert response to JSON: " + cmdRes, e);
 
-                jsonMapper.writeValue(os, F.asMap("successStatus", STATUS_FAILED, "error", e.getMessage()));
+                jsonMapper.writeValue(os, new GridRestResponse(STATUS_FAILED, e.getMessage()));
             }
 
             if (log.isDebugEnabled())
@@ -525,10 +531,10 @@ public class GridJettyRestHandler extends AbstractHandler {
                 }
 
                 // Set cache group name.
-                String cacheGroup = (String)params.get(CACHE_GROUP_PARAM);
+                String cacheGrp = (String)params.get(CACHE_GROUP_PARAM);
 
-                if (!F.isEmpty(cacheGroup))
-                    cfg.cacheGroup(cacheGroup);
+                if (!F.isEmpty(cacheGrp))
+                    cfg.cacheGroup(cacheGrp);
 
                 // Set cache data region name.
                 String dataRegion = (String)params.get(DATA_REGION_PARAM);
@@ -620,7 +626,8 @@ public class GridJettyRestHandler extends AbstractHandler {
                 if (val1 != null)
                     restReq0.value(val1);
 
-                restReq0.cacheFlags(intValue("cacheFlags", params, 0));
+                // Cache operations via REST will use binary objects.
+                restReq0.cacheFlags(intValue("cacheFlags", params, KEEP_BINARIES_MASK));
                 restReq0.ttl(longValue("exp", params, null));
 
                 if (cmd == CACHE_GET_ALL || cmd == CACHE_PUT_ALL || cmd == CACHE_REMOVE_ALL ||
@@ -921,5 +928,25 @@ public class GridJettyRestHandler extends AbstractHandler {
             return ((String[])obj)[0];
 
         return null;
+    }
+
+    /**
+     * Special stream to check JSON serialization.
+     */
+    private static class NullOutputStream extends OutputStream {
+        /** {@inheritDoc} */
+        @Override public void write(byte[] b, int off, int len) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(int b) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(byte[] b) {
+            // No-op.
+        }
     }
 }

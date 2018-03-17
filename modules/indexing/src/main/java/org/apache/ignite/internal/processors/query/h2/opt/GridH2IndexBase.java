@@ -1575,6 +1575,16 @@ public abstract class GridH2IndexBase extends BaseIndex {
     }
 
     /**
+     * Re-assign column ids after removal of column(s).
+     */
+    public void refreshColumnIds() {
+        assert columnIds.length == columns.length;
+
+        for (int pos = 0; pos < columnIds.length; ++pos)
+            columnIds[pos] = columns[pos].getColumnId();
+    }
+
+    /**
      *
      */
     private static final class CursorIteratorWrapper implements Iterator<GridH2Row> {
