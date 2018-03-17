@@ -15,23 +15,8 @@
  * limitations under the License.
  */
 
-export default ['$parse', ($parse) => {
-    return ($scope, $element, $attrs) => {
-        const parsedExpr = $parse($attrs.igniteOnFocusOut);
-
-        const handlerCheckFocusOut = (FocusClick) => {
-            if ($element.find(FocusClick.target).length)
-                return;
-
-            $scope.$evalAsync(() => parsedExpr($scope));
-        };
-
-        window.addEventListener('click', handlerCheckFocusOut, true);
-        window.addEventListener('focusin', handlerCheckFocusOut, true);
-
-        $scope.$on('$destroy', () => {
-            window.removeEventListener('click', handlerCheckFocusOut, true);
-            window.removeEventListener('focusin', handlerCheckFocusOut, true);
-        });
-    };
-}];
+/**
+ * <!-- Package description. -->
+ * SVM Binary Classification Examples.
+ */
+package org.apache.ignite.examples.ml.svm.binary;

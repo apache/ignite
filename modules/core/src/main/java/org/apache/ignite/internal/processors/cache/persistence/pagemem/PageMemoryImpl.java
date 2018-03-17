@@ -897,7 +897,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             ByteBuffer restored = curPage == null ? lastValidPage : curPage;
 
             if (restored == null)
-                throw new AssertionError(String.format(
+                throw new IllegalStateException(String.format(
                     "Page is broken. Can't restore it from WAL. (grpId = %d, pageId = %X).",
                     fullId.groupId(), fullId.pageId()
                 ));
