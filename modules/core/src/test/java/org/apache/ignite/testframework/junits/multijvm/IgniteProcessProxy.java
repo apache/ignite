@@ -314,7 +314,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
                     return true;
                 }
-            }, EventType.EVT_NODE_LEFT);
+            }, EventType.EVT_NODE_LEFT, EventType.EVT_NODE_FAILED);
 
             proxy.remoteCompute().runAsync(new StopGridTask(igniteInstanceName, cancel));
 
