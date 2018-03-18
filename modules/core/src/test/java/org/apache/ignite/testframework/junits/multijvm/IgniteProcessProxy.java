@@ -302,7 +302,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
         if (proxy != null) {
             final CountDownLatch rmtNodeStoppedLatch = new CountDownLatch(1);
-            final UUID rmNodeId = proxy.id;
+            final UUID rmNodeId = proxy.localNode().id();
 
             proxy.locJvmGrid.events().localListen(new IgnitePredicateX<Event>() {
                 @Override public boolean applyx(Event e) {
