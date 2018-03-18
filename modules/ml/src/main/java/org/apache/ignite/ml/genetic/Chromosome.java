@@ -46,7 +46,6 @@ public class Chromosome {
     private long[] genes;
 
     /**
-     *
      * @param genes Primary keys of Genes
      */
     public Chromosome(long[] genes) {

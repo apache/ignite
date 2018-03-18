@@ -297,7 +297,7 @@ public class GAConfiguration {
     /**
      * Retreive the termination criteria
      *
-     * @return  Termination Criteria
+     * @return Termination Criteria
      */
     public ITerminateCriteria getTerminateCriteria() {
         return terminateCriteria;
