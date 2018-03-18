@@ -48,6 +48,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -422,8 +423,21 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         if (!commit) {
             final IgniteInternalFuture<?> lockFut = tryRollbackAsync();
 
-            if (lockFut != null)
-                ((GridDhtLockFuture)lockFut).onError(rollbackException());
+            if (lockFut != null) {
+                if (lockFut instanceof GridDhtLockFuture)
+                    ((GridDhtLockFuture)lockFut).onError(rollbackException());
+                else {
+                    final IgniteInternalFuture finalPrepFut = prepFut;
+
+                    lockFut.listen(new IgniteInClosure<IgniteInternalFuture<?>>() {
+                        @Override public void apply(IgniteInternalFuture<?> ignored) {
+                            finishTx(false, finalPrepFut, fut);
+                        }
+                    });
+
+                    return;
+                }
+            }
         }
 
         if (!commit && prepFut != null) {

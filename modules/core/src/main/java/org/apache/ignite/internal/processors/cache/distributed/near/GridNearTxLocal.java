@@ -4238,23 +4238,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     }
 
     /**
-     *
-     * @param f Future to finish.
-     * @param err Error.
-     * @param clearLockFut {@code true} If need to clear lock future.
-     *
-     * @return Finished future.
-     */
-    private <T> GridFutureAdapter<T> finishFuture(GridFutureAdapter<T> f, Throwable err, boolean clearLockFut) {
-        if (clearLockFut)
-            clearLockFuture(null);
-
-        f.onDone(err);
-
-        return f;
-    }
-
-    /**
      * Post-lock closure.
      *
      * @param <T> Return type.

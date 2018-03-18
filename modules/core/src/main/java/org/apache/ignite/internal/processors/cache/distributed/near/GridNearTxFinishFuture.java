@@ -438,7 +438,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
                 curFut.cancel(); // Force cancellation.
             }
             catch (IgniteCheckedException e) {
-                assert false : "This shouldn't happen";
+                log.error("Failed to cancel lock for the transaction: " + CU.txString(tx), e);
             }
         }
 
@@ -745,7 +745,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
      * @param miniId Mini future ID.
      * @param m Mapping.
      * @param commit Commit flag.
-     * @param {@code true} If need to add completed version on finish.
+     * @param useCompletedVer {@code True} if need to add completed version on finish.
      */
     private void finish(int miniId, GridDistributedTxMapping m, boolean commit, boolean useCompletedVer) {
         ClusterNode n = m.primary();

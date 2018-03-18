@@ -576,68 +576,78 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         onePhaseCommit(onePhaseCommit);
 
         try {
+            GridFutureAdapter<GridCacheReturn> enlistFut = new GridFutureAdapter<>();
+
+            if (!updateLockFuture(null, enlistFut))
+                return finishFuture(enlistFut, rollbackException(), false);
+
             Set<KeyCacheObject> skipped = null;
 
-            AffinityTopologyVersion topVer = topologyVersion();
+            try {
+                AffinityTopologyVersion topVer = topologyVersion();
 
-            GridDhtCacheAdapter dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
+                GridDhtCacheAdapter dhtCache = cacheCtx.isNear() ? cacheCtx.near().dht() : cacheCtx.dht();
 
-            // Enlist locks into transaction.
-            for (int i = 0; i < entries.size(); i++) {
-                GridCacheEntryEx entry = entries.get(i);
+                // Enlist locks into transaction.
+                for (int i = 0; i < entries.size(); i++) {
+                    GridCacheEntryEx entry = entries.get(i);
 
-                KeyCacheObject key = entry.key();
+                    KeyCacheObject key = entry.key();
 
-                IgniteTxEntry txEntry = entry(entry.txKey());
+                    IgniteTxEntry txEntry = entry(entry.txKey());
 
-                // First time access.
-                if (txEntry == null) {
-                    GridDhtCacheEntry cached;
+                    // First time access.
+                    if (txEntry == null) {
+                        GridDhtCacheEntry cached;
 
-                    while (true) {
-                        try {
-                            cached = dhtCache.entryExx(key, topVer);
+                        while (true) {
+                            try {
+                                cached = dhtCache.entryExx(key, topVer);
 
-                            cached.unswap(read);
+                                cached.unswap(read);
 
-                            break;
+                                break;
+                            }
+                            catch (GridCacheEntryRemovedException ignore) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Get removed entry: " + key);
+                            }
                         }
-                        catch (GridCacheEntryRemovedException ignore) {
-                            if (log.isDebugEnabled())
-                                log.debug("Get removed entry: " + key);
-                        }
+
+                        addActiveCache(dhtCache.context(), false);
+
+                        txEntry = addEntry(NOOP,
+                            null,
+                            null,
+                            null,
+                            cached,
+                            null,
+                            CU.empty0(),
+                            false,
+                            -1L,
+                            -1L,
+                            null,
+                            skipStore,
+                            keepBinary,
+                            nearCache);
+
+                        if (read)
+                            txEntry.ttl(accessTtl);
+
+                        txEntry.cached(cached);
+
+                        addReader(msgId, cached, txEntry, topVer);
                     }
+                    else {
+                        if (skipped == null)
+                            skipped = new GridLeanSet<>();
 
-                    addActiveCache(dhtCache.context(), false);
-
-                    txEntry = addEntry(NOOP,
-                        null,
-                        null,
-                        null,
-                        cached,
-                        null,
-                        CU.empty0(),
-                        false,
-                        -1L,
-                        -1L,
-                        null,
-                        skipStore,
-                        keepBinary,
-                        nearCache);
-
-                    if (read)
-                        txEntry.ttl(accessTtl);
-
-                    txEntry.cached(cached);
-
-                    addReader(msgId, cached, txEntry, topVer);
+                        skipped.add(key);
+                    }
                 }
-                else {
-                    if (skipped == null)
-                        skipped = new GridLeanSet<>();
-
-                    skipped.add(key);
-                }
+            }
+            finally {
+                finishFuture(enlistFut, null, true);
             }
 
             assert pessimistic();
@@ -870,11 +880,28 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
+     *
+     * @param f Future to finish.
+     * @param err Error.
+     * @param clearLockFut {@code true} If need to clear lock future.
+     *
+     * @return Finished future.
+     */
+    public <T> GridFutureAdapter<T> finishFuture(GridFutureAdapter<T> f, Throwable err, boolean clearLockFut) {
+        if (clearLockFut)
+            clearLockFuture(null);
+
+        f.onDone(err);
+
+        return f;
+    }
+
+    /**
      * Prepare async rollback.
      *
      * @return Current lock future or null if it's safe to roll back.
      */
-    public IgniteInternalFuture<?> tryRollbackAsync() {
+    public @Nullable IgniteInternalFuture<?> tryRollbackAsync() {
         IgniteInternalFuture<Boolean> fut;
 
         while(true) {
