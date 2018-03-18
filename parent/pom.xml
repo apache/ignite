@@ -612,7 +612,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>flatten-maven-plugin</artifactId>
-                <version>1.0.0-beta-3</version>
+                <version>1.0.1</version>
 
                 <configuration>
                     <flattenMode>minimum</flattenMode>
