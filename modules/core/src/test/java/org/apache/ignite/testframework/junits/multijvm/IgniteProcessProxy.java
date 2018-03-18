@@ -298,13 +298,14 @@ public class IgniteProcessProxy implements IgniteEx {
      *
      * @param igniteInstanceName Ignite instance name.
      * @param cancel If {@code true} then all jobs currently will be cancelled.
+     * @throws Exception In case of the node stopping error.
      */
-    public static void stop(String igniteInstanceName, boolean cancel) {
+    public static void stop(String igniteInstanceName, boolean cancel) throws Exception {
         final IgniteProcessProxy proxy = gridProxies.get(igniteInstanceName);
 
         if (proxy != null) {
             final CountDownLatch rmtNodeStoppedLatch = new CountDownLatch(1);
-            final UUID rmNodeId = proxy.id;
+            final UUID rmNodeId = proxy.getId();
 
             proxy.locJvmGrid.events().localListen(new IgnitePredicateX<Event>() {
                 @Override public boolean applyx(Event e) {
@@ -318,14 +319,16 @@ public class IgniteProcessProxy implements IgniteEx {
                 }
             }, EventType.EVT_NODE_LEFT);
 
-            proxy.remoteCompute().runAsync(new StopGridTask(igniteInstanceName, cancel));
-
             try {
+                proxy.remoteCompute().runAsync(new StopGridTask(igniteInstanceName, cancel));
+
                 if (!rmtNodeStoppedLatch.await(NODE_LEFT_TIMEOUT, TimeUnit.MILLISECONDS))
                     throw new IllegalStateException("Remote node has not stopped [id=" + rmNodeId + ']');
             }
-            catch (InterruptedException e) {
-                throw new IgniteException(e);
+            catch (Throwable t) {
+                proxy.log().error("Failed to stop grid [igniteInstanceName=" + igniteInstanceName + ", cancel=" + cancel + ']', t);
+
+                throw t;
             }
 
             gridProxies.remove(igniteInstanceName, proxy);
