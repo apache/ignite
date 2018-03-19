@@ -21,6 +21,7 @@ import java.lang.{Long ⇒ JLong, String ⇒ JString}
 
 import org.apache.ignite.cache.query.SqlFieldsQuery
 import org.apache.ignite.configuration.CacheConfiguration
+import org.apache.ignite.internal.util.IgniteUtils.resolveIgnitePath
 import org.apache.ignite.{Ignite, Ignition}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{SaveMode, SparkSession}
@@ -70,7 +71,8 @@ object IgniteDataFrameWriteExample extends App {
 
     def writeJSonToIgnite(implicit spark: SparkSession): Unit = {
         //Load content of json file to data frame.
-        val personsDataFrame = spark.read.json("examples/src/main/resources/person.json")
+        val personsDataFrame = spark.read.json(
+            resolveIgnitePath("examples/src/main/resources/person.json").getAbsolutePath)
 
         println()
         println("Json file content:")

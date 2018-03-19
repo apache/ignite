@@ -62,9 +62,17 @@ namespace ignite
                 /**
                  * Set header record values.
                  *
-                 * @param retCode Operation return code.
+                 * @param result Operation return code.
                  */
                 void SetHeaderRecord(SqlResult::Type result);
+
+                /**
+                 * Add new status record.
+                 *
+                 * @param sqlState SQL state.
+                 * @param message Message.
+                 */
+                void AddStatusRecord(SqlState::Type  sqlState, const std::string& message);
 
                 /**
                  * Add status record to diagnostic records.
@@ -169,7 +177,8 @@ namespace ignite
                  * @param buffer Buffer to put data to.
                  * @return Operation result.
                  */
-                SqlResult::Type GetField(int32_t recNum, DiagnosticField::Type field, app::ApplicationDataBuffer& buffer) const;
+                SqlResult::Type GetField(int32_t recNum, DiagnosticField::Type field,
+                    app::ApplicationDataBuffer& buffer) const;
 
             private:
                 IGNITE_NO_COPY_ASSIGNMENT(DiagnosticRecordStorage);
