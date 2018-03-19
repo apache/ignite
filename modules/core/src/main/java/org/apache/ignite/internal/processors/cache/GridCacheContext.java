@@ -441,15 +441,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     public boolean isReplicatedAffinityNode() {
         return isReplicated() && affinityNode();
     }
-
-    /**
-     * @return {@code true} if read load balancing is enabled.
-     * @see IgniteSystemProperties#IGNITE_READ_LOAD_BALANCING
-     */
-    public boolean isReadLoadBalancingEnabled() {
-        return readLoadBalancingEnabled;
-    }
-
+    
     /**
      * @throws IgniteCheckedException If failed to wait.
      */
@@ -2179,7 +2171,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
      * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
      */
-    @Nullable public ClusterNode selectAffinityNode(List<ClusterNode> affNodes, boolean canRemap) {
+    @Nullable public ClusterNode selectAffinityNodeBalanced(List<ClusterNode> affNodes, boolean canRemap) {
         if (!readLoadBalancingEnabled) {
             if (!canRemap) {
                 for (ClusterNode node : affNodes) {
