@@ -17,14 +17,8 @@
 
 package org.apache.ignite.spi.discovery.zk;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import junit.framework.TestSuite;
-import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ClusterNodeMetricsUpdateTest;
 import org.apache.ignite.internal.IgniteClientReconnectCacheTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerAtomicTest;
@@ -46,14 +40,11 @@ import org.apache.ignite.internal.processors.cache.multijvm.GridCacheAtomicMulti
 import org.apache.ignite.internal.processors.cache.multijvm.GridCachePartitionedMultiJvmFullApiSelfTest;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryAsyncFailoverAtomicSelfTest;
 import org.apache.ignite.internal.processors.continuous.GridEventConsumeSelfTest;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * Regular Ignite tests executed with ZookeeperDiscoverySpi.
+ * Regular Ignite tests executed with {@link org.apache.ignite.spi.discovery.zk.ZookeeperDiscoverySpi}.
  */
-public class ZookeeperDiscoverySpiTestSuite2 extends TestSuite {
+public class ZookeeperDiscoverySpiTestSuite2 extends ZookeeperDiscoverySpiAbstractTestSuite {
     /** */
     private static TestingCluster testingCluster;
 
@@ -62,15 +53,9 @@ public class ZookeeperDiscoverySpiTestSuite2 extends TestSuite {
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        System.setProperty("zookeeper.forceSync", "false");
-
         System.setProperty("H2_JDBC_CONNECTIONS", "500"); // For multi-jvm tests.
 
-        testingCluster = createTestingCluster(3);
-
-        testingCluster.start();
-
-        System.setProperty(GridTestProperties.IGNITE_CFG_PREPROCESSOR_CLS, ZookeeperDiscoverySpiTestSuite2.class.getName());
+        initSuite();
 
         TestSuite suite = new TestSuite("ZookeeperDiscoverySpi Test Suite");
 
@@ -111,71 +96,5 @@ public class ZookeeperDiscoverySpiTestSuite2 extends TestSuite {
         suite.addTestSuite(GridCachePartitionedMultiJvmFullApiSelfTest.class);
 
         return suite;
-    }
-
-    /**
-     * Called via reflection by {@link org.apache.ignite.testframework.junits.GridAbstractTest}.
-     *
-     * @param cfg Configuration to change.
-     */
-    public synchronized static void preprocessConfiguration(IgniteConfiguration cfg) {
-        if (testingCluster == null)
-            throw new IllegalStateException("Test Zookeeper cluster is not started.");
-
-        ZookeeperDiscoverySpi zkSpi = new ZookeeperDiscoverySpi();
-
-        DiscoverySpi spi = cfg.getDiscoverySpi();
-
-        if (spi instanceof TcpDiscoverySpi)
-            zkSpi.setClientReconnectDisabled(((TcpDiscoverySpi)spi).isClientReconnectDisabled());
-
-        zkSpi.setSessionTimeout(30_000);
-        zkSpi.setZkConnectionString(testingCluster.getConnectString());
-
-        cfg.setDiscoverySpi(zkSpi);
-    }
-
-    /**
-     * @param instances Number of instances in
-     * @return Test cluster.
-     */
-    public static TestingCluster createTestingCluster(int instances) {
-        String tmpDir = System.getProperty("java.io.tmpdir");
-
-        List<InstanceSpec> specs = new ArrayList<>();
-
-        for (int i = 0; i < instances; i++) {
-            File file = new File(tmpDir, "apacheIgniteTestZk-" + i);
-
-            if (file.isDirectory())
-                deleteRecursively0(file);
-            else {
-                if (!file.mkdirs())
-                    throw new IgniteException("Failed to create directory for test Zookeeper server: " + file.getAbsolutePath());
-            }
-
-            specs.add(new InstanceSpec(file, -1, -1, -1, true, -1, -1, 500));
-        }
-
-        return new TestingCluster(specs);
-    }
-
-    /**
-     * @param file File or directory to delete.
-     */
-    private static void deleteRecursively0(File file) {
-        File[] files = file.listFiles();
-
-        if (files == null)
-            return;
-
-        for (File f : files) {
-            if (f.isDirectory())
-                deleteRecursively0(f);
-            else {
-                if (!f.delete())
-                    throw new IgniteException("Failed to delete file: " + f.getAbsolutePath());
-            }
-        }
     }
 }

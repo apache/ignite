@@ -607,7 +607,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
             List<List<ClusterNode>> res = new ArrayList<>(parts);
 
             for (int i = 0; i < parts; i++)
-                res.add(new ArrayList<ClusterNode>());
+                res.add(new ArrayList<>());
 
             List<ClusterNode> allNodes = discoCache.cacheGroupAffinityNodes(grpId);
 

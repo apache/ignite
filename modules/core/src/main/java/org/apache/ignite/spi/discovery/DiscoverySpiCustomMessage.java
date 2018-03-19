@@ -42,7 +42,7 @@ public interface DiscoverySpiCustomMessage extends Serializable {
     public boolean isMutable();
 
     /**
-     * Called on discovery coordinator node after after listener is notified. If returns {@code true}
+     * Called on discovery coordinator node after listener is notified. If returns {@code true}
      * then message is not passed to others nodes, if after this method {@link #ackMessage()} returns non-null ack
      * message, it is sent to all nodes.
      *
