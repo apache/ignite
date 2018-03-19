@@ -65,7 +65,7 @@ public final class IgniteSystemProperties {
     /** Defines Ignite installation folder. */
     public static final String IGNITE_HOME = "IGNITE_HOME";
 
-    /** If this system property is set to {@code false} - no shutdown hook will be set. */
+    /** If this system property is set to {@code true} - no shutdown hook will be set. */
     public static final String IGNITE_NO_SHUTDOWN_HOOK = "IGNITE_NO_SHUTDOWN_HOOK";
 
     /**
@@ -815,12 +815,19 @@ public final class IgniteSystemProperties {
      * Because other thread may require exactly the same page to be loaded from store, reads are protected by locking.
      */
     public static final String IGNITE_DELAYED_REPLACED_PAGE_WRITE = "IGNITE_DELAYED_REPLACED_PAGE_WRITE";
+
     /**
      * When set to {@code true}, WAL implementation with dedicated worker will be used even in FSYNC mode.
      * Default is {@code false}.
      */
     public static final String IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER = "IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER";
 
+    /**
+     * When set to {@code false}, loaded pages implementation is switched to previous version of implementation,
+     * FullPageIdTable. {@code True} value enables 'Robin Hood hashing: backward shift deletion'.
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP = "IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP";
 
     /**
      * Enforces singleton.

@@ -616,8 +616,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         [Test]
         public void TestCustomSchema()
         {
-            var doubles = GetIgnite().GetOrCreateCache<int, double>(new CacheConfiguration("doubles", typeof(double)));
-            var strings = GetIgnite().GetOrCreateCache<int, string>(new CacheConfiguration("strings", typeof(string)));
+            var doubles = GetIgnite().GetOrCreateCache<int, double>(new CacheConfiguration("doubles",
+                    new QueryEntity(typeof(int), typeof(double))));
+            var strings = GetIgnite().GetOrCreateCache<int, string>(new CacheConfiguration("strings",
+                    new QueryEntity(typeof(int), typeof(string))));
 
             doubles[1] = 36.6;
             strings[1] = "foo";

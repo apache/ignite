@@ -1052,7 +1052,8 @@ export class NotebookCtrl {
                     unit: 60000,
                     installed: false
                 },
-                qryType: 'query'
+                qryType: 'query',
+                lazy: true
             });
 
             $scope.addParagraph(paragraph, sz);
@@ -1569,10 +1570,9 @@ export class NotebookCtrl {
             const filter = paragraph.filter;
             const pageSize = paragraph.pageSize;
 
-            paragraph.localQueryMode = local;
-
             $scope.scanAvailable(paragraph) && _chooseNode(cacheName, local)
                 .then((nid) => {
+                    paragraph.localQueryMode = local;
                     paragraph.scanningInProgress = true;
 
                     Notebook.save($scope.notebook)
