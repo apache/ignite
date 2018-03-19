@@ -30,6 +30,8 @@ import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
 
+import static org.apache.curator.test.DirectoryUtils.deleteRecursively;
+
 /**
  * Implements methods to prepare SASL tests infrastructure: jaas.conf files, starting up ZooKeeper server,
  * clean up procedures when the test has finished etc.
@@ -114,7 +116,9 @@ public abstract class ZookeeperDiscoverySpiSaslAuthAbstractTest extends GridComm
         System.clearProperty(ZooKeeperSaslClient.LOGIN_CONTEXT_NAME_KEY);
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     private void prepareJaasConfigFile() throws Exception {
         U.ensureDirectory(tmpDir, "Temp directory for JAAS configuration file wasn't created", null);
 

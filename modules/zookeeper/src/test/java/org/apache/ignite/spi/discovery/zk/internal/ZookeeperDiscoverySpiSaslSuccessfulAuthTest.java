@@ -22,7 +22,9 @@ import org.apache.zookeeper.client.ZooKeeperSaslClient;
  *
  */
 public class ZookeeperDiscoverySpiSaslSuccessfulAuthTest extends ZookeeperDiscoverySpiSaslAuthAbstractTest {
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testIgniteNodesWithValidPasswordSuccessfullyJoins() throws Exception {
         System.setProperty(ZooKeeperSaslClient.LOGIN_CONTEXT_NAME_KEY,
             "ValidZookeeperClient");
@@ -32,7 +34,9 @@ public class ZookeeperDiscoverySpiSaslSuccessfulAuthTest extends ZookeeperDiscov
         waitForTopology(3);
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testIgniteNodeWithoutSaslConfigurationSuccessfullyJoins() throws Exception {
         //clearing SASL-related system properties that were set in beforeTest
         clearSaslSystemProperties();

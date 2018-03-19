@@ -23,7 +23,9 @@ import org.junit.Assert;
  *
  */
 public class ZookeeperDiscoverySpiSaslFailedAuthTest extends ZookeeperDiscoverySpiSaslAuthAbstractTest {
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testIgniteNodeWithInvalidPasswordFailsToJoin() throws Exception {
         System.setProperty(ZooKeeperSaslClient.LOGIN_CONTEXT_NAME_KEY,
             "InvalidZookeeperClient");

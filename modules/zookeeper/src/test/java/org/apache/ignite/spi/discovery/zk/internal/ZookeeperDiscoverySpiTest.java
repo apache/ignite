@@ -3832,7 +3832,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         evts.clear();
 
         try {
-            GridTestUtils.deleteDbFiles();
+            cleanPersistenceDir();
         }
         catch (Exception e) {
             error("Failed to delete DB files: " + e, e);
