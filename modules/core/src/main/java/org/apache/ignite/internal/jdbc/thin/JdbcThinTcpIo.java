@@ -27,6 +27,7 @@ import java.net.UnknownHostException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryMetadataRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcResponse;
+import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -85,6 +87,9 @@ public class JdbcThinTcpIo {
     /** Initial output for query close message. */
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
 
+    /** Random. */
+    private static final Random RND = new Random(U.currentTimeMillis());
+
     /** Connection properties. */
     private final ConnectionProperties connProps;
 
@@ -103,6 +108,9 @@ public class JdbcThinTcpIo {
     /** Ignite server version. */
     private IgniteProductVersion igniteVer;
 
+    /** Address index. */
+    private int srvIdx;
+
     /**
      * Constructor.
      *
@@ -110,6 +118,9 @@ public class JdbcThinTcpIo {
      */
     public JdbcThinTcpIo(ConnectionProperties connProps) {
         this.connProps = connProps;
+
+        // Try to connect to random address then round robin.
+        srvIdx = RND.nextInt(connProps.getAddresses().length);
     }
 
     /**
@@ -126,40 +137,47 @@ public class JdbcThinTcpIo {
      * @throws IOException On IO error in handshake.
      */
     public void start(int timeout) throws SQLException, IOException {
-        InetAddress[] addrs;
-
-        try {
-            addrs = getAllAddressesByHost(connProps.getHost());
-        }
-        catch (UnknownHostException exception) {
-            throw new SQLException("Failed to connect to server [host=" + connProps.getHost() +
-                    ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, exception);
-        }
-
         List<String> inaccessibleAddrs = null;
 
         List<Exception> exceptions = null;
 
-        for (InetAddress addr : addrs) {
-            try {
-                connect(addr, timeout);
+        HostAndPortRange[] srvs = connProps.getAddresses();
 
+        boolean connected = false;
+
+        for (int i = 0; i < srvs.length; i++, srvIdx = (srvIdx + 1) % srvs.length) {
+            HostAndPortRange srv = srvs[srvIdx];
+
+            InetAddress[] addrs = getAllAddressesByHost(srv.host());
+
+            for (InetAddress addr : addrs) {
+                for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
+                    try {
+                        connect(new InetSocketAddress(addr, port), timeout);
+
+                        connected = true;
+
+                        break;
+                    }
+                    catch (IOException | SQLException exception) {
+                        if (inaccessibleAddrs == null)
+                            inaccessibleAddrs = new ArrayList<>();
+
+                        inaccessibleAddrs.add(addr.getHostName());
+
+                        if (exceptions == null)
+                            exceptions = new ArrayList<>();
+
+                        exceptions.add(exception);
+                    }
+                }
+            }
+
+            if (connected)
                 break;
-            }
-            catch (IOException | SQLException exception) {
-                if (inaccessibleAddrs == null)
-                    inaccessibleAddrs = new ArrayList<>();
-
-                inaccessibleAddrs.add(addr.getHostAddress());
-
-                if (exceptions == null)
-                    exceptions = new ArrayList<>();
-
-                exceptions.add(exception);
-            }
         }
 
-        if ((inaccessibleAddrs != null) && (inaccessibleAddrs.size() == addrs.length) && (exceptions != null)) {
+        if (!connected && inaccessibleAddrs != null && exceptions != null) {
             if (exceptions.size() == 1) {
                 Exception ex = exceptions.get(0);
 
@@ -169,8 +187,8 @@ public class JdbcThinTcpIo {
                     throw (IOException)ex;
             }
 
-            SQLException e = new SQLException("Failed to connect to server [host=" + connProps.getHost() + ", addresses=" +
-                    inaccessibleAddrs + ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED);
+            SQLException e = new SQLException("Failed to connect to server [url=" + connProps.getUrl() + ']',
+                SqlStateCode.CLIENT_CONNECTION_FAILED);
 
             for (Exception ex : exceptions)
                 e.addSuppressed(ex);
@@ -189,20 +207,20 @@ public class JdbcThinTcpIo {
      * @throws IOException On IO error.
      * @throws SQLException On connection reject.
      */
-    private void connect(InetAddress addr, int timeout) throws IOException, SQLException {
+    private void connect(InetSocketAddress addr, int timeout) throws IOException, SQLException {
         Socket sock;
 
         if (ConnectionProperties.SSL_MODE_REQUIRE.equalsIgnoreCase(connProps.getSslMode()))
-            sock = JdbcThinSSLUtil.createSSLSocket(connProps);
+            sock = JdbcThinSSLUtil.createSSLSocket(addr, connProps);
         else if (ConnectionProperties.SSL_MODE_DISABLE.equalsIgnoreCase(connProps.getSslMode())) {
             sock = new Socket();
 
             try {
-                sock.connect(new InetSocketAddress(addr, connProps.getPort()), timeout);
+                sock.connect(addr, timeout);
             }
             catch (IOException e) {
-                throw new SQLException("Failed to connect to server [host=" + addr +
-                    ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+                throw new SQLException("Failed to connect to server [host=" + addr.getHostName() +
+                    ", port=" + addr.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
             }
         }
         else {
@@ -225,8 +243,8 @@ public class JdbcThinTcpIo {
             in = new BufferedInputStream(endpoint.inputStream());
         }
         catch (IgniteCheckedException e) {
-            throw new SQLException("Failed to connect to server [host=" + connProps.getHost() +
-                ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            throw new SQLException("Failed to connect to server [url=" + connProps.getUrl() + ']',
+                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
     }
 
@@ -252,7 +270,7 @@ public class JdbcThinTcpIo {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
-        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
+        writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
         writer.writeShort(ver.major());
         writer.writeShort(ver.minor());
@@ -323,7 +341,7 @@ public class JdbcThinTcpIo {
         BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(HANDSHAKE_MSG_SIZE),
             null, null);
 
-        writer.writeByte((byte) ClientListenerRequest.HANDSHAKE);
+        writer.writeByte((byte)ClientListenerRequest.HANDSHAKE);
 
         writer.writeShort(VER_2_1_0.major());
         writer.writeShort(VER_2_1_0.minor());
@@ -437,7 +455,7 @@ public class JdbcThinTcpIo {
     private byte[] read() throws IOException {
         byte[] sizeBytes = read(4);
 
-        int msgSize  = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
+        int msgSize = (((0xFF & sizeBytes[3]) << 24) | ((0xFF & sizeBytes[2]) << 16)
             | ((0xFF & sizeBytes[1]) << 8) + (0xFF & sizeBytes[0]));
 
         return read(msgSize);
@@ -448,7 +466,7 @@ public class JdbcThinTcpIo {
      * @return Read bytes.
      * @throws IOException On error.
      */
-    private byte [] read(int size) throws IOException {
+    private byte[] read(int size) throws IOException {
         int off = 0;
 
         byte[] data = new byte[size];
