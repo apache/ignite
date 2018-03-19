@@ -800,7 +800,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
         readyLocks();
 
-        if (timeout > 0 && !isDone()) {
+        if (timeout > 0 && !isDone()) { // Prevent memory leak if future is completed by call to readyLocks.
             timeoutObj = new LockTimeoutObject();
 
             cctx.time().addTimeoutObject(timeoutObj);

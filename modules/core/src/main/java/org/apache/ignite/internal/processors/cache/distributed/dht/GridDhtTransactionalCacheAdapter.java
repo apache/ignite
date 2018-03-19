@@ -832,7 +832,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             skipStore,
             keepBinary);
 
-        if (fut.isDone()) // Possible when rolled back.
+        if (fut.isDone()) // Possible in case of cancellation or time out or rollback.
             return fut;
 
         for (KeyCacheObject key : keys) {
@@ -873,7 +873,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         if (!fut.isDone()) {
             ctx.mvcc().addFuture(fut);
 
-            // Handle race with async rollback.
             fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
                 @Override public void apply(IgniteInternalFuture<Boolean> fut) {
                     ctx.mvcc().removeVersionedFuture((GridCacheVersionedFuture<?>)fut);
