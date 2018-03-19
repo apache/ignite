@@ -60,7 +60,7 @@ export default class Notebook {
                 const nextNotebook = notebooks.length > idx ? notebooks[idx] : _.last(notebooks);
 
                 if (nextNotebook)
-                    this.$state.go('base.sql.notebook', {noteId: nextNotebook._id});
+                    this.$state.go('base.sql.tabs.notebook', {noteId: nextNotebook._id});
                 else
                     this.$state.go('base.configuration.tabs.advanced.clusters');
             });
