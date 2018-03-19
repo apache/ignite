@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -142,11 +143,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** Init set data map latch. */
     private final CountDownLatch initSetLatch = new CountDownLatch(1);
 
-    /** Indicates that cluster activation callback was called. */
-    private final AtomicBoolean activated = new AtomicBoolean();
-
-    /** Indicates that local set data recovery may be in progress. */
-    private volatile boolean awaitSetData;
+    /** Indicates that cluster activation callback was called and local set data recovery may be in progress. */
+    private AtomicReference<Boolean> recoveryFlag = new AtomicReference<>();
 
     /**
      *
@@ -230,11 +228,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * Called when cluster performs activation.
      */
     public void onActivate() {
-        if (activated.compareAndSet(false, true)) {
-            awaitSetData = true;
-
+        if (recoveryFlag.compareAndSet(null, Boolean.TRUE))
             restoreSetDataMap(cctx);
-        }
     }
 
 
@@ -526,10 +521,10 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      */
     @Nullable public GridConcurrentHashSet<SetItemKey> setData(IgniteUuid id) {
         try {
-            if (awaitSetData) {
+            if (Boolean.TRUE == recoveryFlag.get()) {
                 U.await(initSetLatch);
 
-                awaitSetData = false;
+                recoveryFlag.set(Boolean.FALSE);
             }
 
             return setDataMap.get(id);
