@@ -105,7 +105,7 @@ import org.apache.ignite.services.ServiceDescriptor;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.apache.ignite.transactions.Transaction;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getString;
@@ -140,10 +140,10 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
     private final Map<String, Collection<ServiceContextImpl>> locSvcs = new HashMap<>();
 
     /** Deployment futures. */
-    private final ConcurrentMap<String, GridServiceDeploymentFuture> depFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<String, GridServiceDeploymentFuture> depFuts = new ConcurrentHashMap<>();
 
     /** Deployment futures. */
-    private final ConcurrentMap<String, GridFutureAdapter<?>> undepFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<String, GridFutureAdapter<?>> undepFuts = new ConcurrentHashMap<>();
 
     /** Pending compute job contexts that waiting for utility cache initialization. */
     private final List<ComputeJobContext> pendingJobCtxs = new ArrayList<>(0);
@@ -238,9 +238,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
             if (ctx.deploy().enabled())
                 ctx.cache().context().deploy().ignoreOwnership(true);
 
-            if (!ctx.clientNode()) {
-                assert serviceCache.context().affinityNode();
-
+            if (!ctx.clientNode() && serviceCache.context().affinityNode()) {
                 serviceCache.context().continuousQueries().executeInternalQuery(
                     new ServiceEntriesListener(), null, true, true, false
                 );
@@ -1790,8 +1788,7 @@ public class GridServiceProcessor extends GridProcessorAdapter implements Ignite
                                     try {
                                         svcName.set(dep.configuration().getName());
 
-                                        ctx.cache().internalCache(UTILITY_CACHE_NAME).context().affinity().
-                                            affinityReadyFuture(topVer).get();
+                                        ctx.cache().context().exchange().affinityReadyFuture(topVer).get();
 
                                         reassign(dep, topVer);
                                     }

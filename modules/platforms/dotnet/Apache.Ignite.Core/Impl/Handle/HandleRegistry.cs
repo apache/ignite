@@ -239,6 +239,7 @@ namespace Apache.Ignite.Core.Impl.Handle
         /// <param name="id">Identifier.</param>
         /// <param name="throwOnAbsent">Whether to throw an exception if resource is not found.</param>
         /// <returns>Target.</returns>
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Global
         public T Get<T>(long id, bool throwOnAbsent)
         {
             object target;

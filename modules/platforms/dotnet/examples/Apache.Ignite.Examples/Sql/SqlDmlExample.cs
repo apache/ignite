@@ -153,10 +153,7 @@ namespace Apache.Ignite.Examples.Sql
         /// <param name="employeeCache">Employee cache.</param>
         private static void Delete(ICache<int, Employee> employeeCache)
         {
-            var qry = new SqlFieldsQuery(string.Format(
-                "delete from Employee where _key in (" +
-                "select emp._key from Employee emp, \"{0}\".Organization org " +
-                "where org.Name != ? and org._key = emp.organizationId)", OrganizationCacheName), "ASF");
+            var qry = new SqlFieldsQuery("delete from Employee where organizationId != ?", 1);
 
             employeeCache.Query(qry);
         }

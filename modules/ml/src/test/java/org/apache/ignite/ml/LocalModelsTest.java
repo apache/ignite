@@ -31,6 +31,7 @@ import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.regressions.linear.LinearRegressionModel;
 import org.apache.ignite.ml.structures.LabeledDataset;
+import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -76,6 +77,24 @@ public class LocalModelsTest {
             return null;
         });
     }
+
+    /** */
+    @Test
+    public void importExportSVMBinaryClassificationModelTest() throws IOException {
+        executeModelTest(mdlFilePath -> {
+            SVMLinearBinaryClassificationModel mdl = new SVMLinearBinaryClassificationModel(new DenseLocalOnHeapVector(new double[]{1, 2}), 3);
+            Exporter<SVMLinearBinaryClassificationModel, String> exporter = new FileExporter<>();
+            mdl.saveModel(exporter, mdlFilePath);
+
+            SVMLinearBinaryClassificationModel load = exporter.load(mdlFilePath);
+
+            Assert.assertNotNull(load);
+            Assert.assertEquals("", mdl, load);
+
+            return null;
+        });
+    }
+
 
     /** */
     private void executeModelTest(Function<String, Void> code) throws IOException {

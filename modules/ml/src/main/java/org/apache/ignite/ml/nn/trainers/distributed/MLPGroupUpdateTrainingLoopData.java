@@ -26,34 +26,44 @@ import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFun
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
-import org.apache.ignite.ml.nn.updaters.ParameterUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 
 /** Multilayer perceptron group update training loop data. */
 public class MLPGroupUpdateTrainingLoopData<P> implements Serializable {
-    /** */
-    private final ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator;
-    /** */
+    /** {@link ParameterUpdateCalculator}. */
+    private final ParameterUpdateCalculator<? super MultilayerPerceptron, P> updateCalculator;
+
+    /**
+     * Count of steps which should be done by each of parallel trainings before sending it's update for combining with
+     * other parallel trainings updates.
+     */
     private final int stepsCnt;
-    /** */
+
+    /** Function used to reduce updates of all steps of given parallel training. */
     private final IgniteFunction<List<P>, P> updateReducer;
-    /** */
+
+    /** Previous update. */
     private final P previousUpdate;
-    /** */
+
+    /** Supplier of batches. */
     private final IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier;
-    /** */
+
+    /** Loss function. */
     private final IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss;
-    /** */
+
+    /** Error tolerance. */
     private final double tolerance;
 
-    /** */
+    /** Key. */
     private final GroupTrainerCacheKey<Void> key;
-    /** */
+
+    /** MLP. */
     private final MultilayerPerceptron mlp;
 
     /** Create multilayer perceptron group update training loop data. */
     public MLPGroupUpdateTrainingLoopData(MultilayerPerceptron mlp,
-        ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator, int stepsCnt,
+        ParameterUpdateCalculator<? super MultilayerPerceptron, P> updateCalculator, int stepsCnt,
         IgniteFunction<List<P>, P> updateReducer, P previousUpdate,
         GroupTrainerCacheKey<Void> key, IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier,
         IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
@@ -75,7 +85,7 @@ public class MLPGroupUpdateTrainingLoopData<P> implements Serializable {
     }
 
     /** Get update calculator. */
-    public ParameterUpdateCalculator<MultilayerPerceptron, P> updateCalculator() {
+    public ParameterUpdateCalculator<? super MultilayerPerceptron, P> updateCalculator() {
         return updateCalculator;
     }
 

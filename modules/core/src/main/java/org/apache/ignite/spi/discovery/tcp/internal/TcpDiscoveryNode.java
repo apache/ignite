@@ -603,8 +603,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
 
         Object consistentIdAttr = attrs.get(ATTR_NODE_CONSISTENT_ID);
 
-        consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
-
         // Cluster metrics
         byte[] mtr = U.readByteArray(in);
 
@@ -628,6 +626,11 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Ignite
         intOrder = in.readLong();
         ver = (IgniteProductVersion)in.readObject();
         clientRouterNodeId = U.readUuid(in);
+
+        if (isClient())
+            consistentId = consistentIdAttr != null ? consistentIdAttr : id;
+        else
+            consistentId = consistentIdAttr != null ? consistentIdAttr : U.consistentId(addrs, discPort);
     }
 
     /** {@inheritDoc} */

@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             using (var ignite = Ignition.Start(cfg))
             {
-                ignite.SetActive(true);
+                ignite.GetCluster().SetActive(true);
 
                 var cache = ignite.CreateCache<int, object>("c");
 
@@ -79,8 +79,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 Assert.AreEqual(0, metrics.WalArchiveSegments);
                 Assert.AreEqual(0, metrics.WalFsyncTimeAverage);
 
-                Assert.AreEqual(89, metrics.LastCheckpointTotalPagesNumber);
-                Assert.AreEqual(10, metrics.LastCheckpointDataPagesNumber);
+                Assert.GreaterOrEqual(metrics.LastCheckpointTotalPagesNumber, 26);
+                Assert.AreEqual(0, metrics.LastCheckpointDataPagesNumber);
                 Assert.AreEqual(0, metrics.LastCheckpointCopiedOnWritePagesNumber);
                 Assert.AreEqual(TimeSpan.Zero, metrics.LastCheckpointLockWaitDuration);
 

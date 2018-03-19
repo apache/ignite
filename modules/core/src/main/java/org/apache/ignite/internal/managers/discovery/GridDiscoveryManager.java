@@ -50,6 +50,7 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cluster.BaselineNode;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -60,16 +61,14 @@ import org.apache.ignite.configuration.DefaultCommunicationFailureResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
-import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.GridNodeOrderComparator;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
-import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
@@ -80,11 +79,11 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
-import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
-import org.apache.ignite.internal.processors.jobmetrics.GridJobMetrics;
+import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -130,7 +129,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
@@ -273,7 +271,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** Custom event listener. */
     private ConcurrentMap<Class<?>, List<CustomEventListener<DiscoveryCustomMessage>>> customEvtLsnrs =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /** Local node initialization event listeners. */
     private final Collection<IgniteInClosure<ClusterNode>> locNodeInitLsnrs = new ArrayList<>();
@@ -715,8 +713,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     Snapshot snapshot = topSnap.get();
 
                     if (customMsg == null) {
-                        discoCache = createDiscoCache(nextTopVer,
+                        discoCache = createDiscoCache(
+                            nextTopVer,
                             ctx.state().clusterState(),
+                            locNode,
+                            topSnapshot);
+                    }
+                    else if (customMsg instanceof ChangeGlobalStateMessage) {
+                        discoCache = createDiscoCache(
+                            nextTopVer,
+                            ctx.state().pendingState((ChangeGlobalStateMessage)customMsg),
                             locNode,
                             topSnapshot);
                     }
@@ -794,7 +800,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     topSnap.set(new Snapshot(AffinityTopologyVersion.ZERO,
                         createDiscoCache(AffinityTopologyVersion.ZERO, ctx.state().clusterState(), locNode,
-                            Collections.<ClusterNode>singleton(locNode))
+                            Collections.singleton(locNode))
                     ));
                 }
                 else if (type == EVT_CLIENT_NODE_RECONNECTED) {
@@ -856,7 +862,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 if (ctx.localNodeId().equals(dataBag.joiningNodeId())) {
                     // NodeAdded msg reached joining node after round-trip over the ring.
-                    GridClusterStateProcessor stateProc = ctx.state();
+                    IGridClusterStateProcessor stateProc = ctx.state();
 
                     stateProc.onGridDataReceived(dataBag.gridDiscoveryData(
                         stateProc.discoveryDataType().ordinal()));
@@ -868,7 +874,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
                 else {
                     // Discovery data from newly joined node has to be applied to the current old node.
-                    GridClusterStateProcessor stateProc = ctx.state();
+                    IGridClusterStateProcessor stateProc = ctx.state();
 
                     JoiningNodeDiscoveryData data0 = dataBag.newJoinerDiscoveryData(
                         stateProc.discoveryDataType().ordinal());
@@ -1055,121 +1061,33 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             /** {@inheritDoc} */
             @Override public ClusterMetrics metrics() {
-                GridJobMetrics jm = ctx.jobMetric().getJobMetrics();
-
-                ClusterMetricsSnapshot nm = new ClusterMetricsSnapshot();
-
-                nm.setLastUpdateTime(U.currentTimeMillis());
-
-                // Job metrics.
-                nm.setMaximumActiveJobs(jm.getMaximumActiveJobs());
-                nm.setCurrentActiveJobs(jm.getCurrentActiveJobs());
-                nm.setAverageActiveJobs(jm.getAverageActiveJobs());
-                nm.setMaximumWaitingJobs(jm.getMaximumWaitingJobs());
-                nm.setCurrentWaitingJobs(jm.getCurrentWaitingJobs());
-                nm.setAverageWaitingJobs(jm.getAverageWaitingJobs());
-                nm.setMaximumRejectedJobs(jm.getMaximumRejectedJobs());
-                nm.setCurrentRejectedJobs(jm.getCurrentRejectedJobs());
-                nm.setAverageRejectedJobs(jm.getAverageRejectedJobs());
-                nm.setMaximumCancelledJobs(jm.getMaximumCancelledJobs());
-                nm.setCurrentCancelledJobs(jm.getCurrentCancelledJobs());
-                nm.setAverageCancelledJobs(jm.getAverageCancelledJobs());
-                nm.setTotalRejectedJobs(jm.getTotalRejectedJobs());
-                nm.setTotalCancelledJobs(jm.getTotalCancelledJobs());
-                nm.setTotalExecutedJobs(jm.getTotalExecutedJobs());
-                nm.setTotalJobsExecutionTime(jm.getTotalJobsExecutionTime());
-                nm.setMaximumJobWaitTime(jm.getMaximumJobWaitTime());
-                nm.setCurrentJobWaitTime(jm.getCurrentJobWaitTime());
-                nm.setAverageJobWaitTime(jm.getAverageJobWaitTime());
-                nm.setMaximumJobExecuteTime(jm.getMaximumJobExecuteTime());
-                nm.setCurrentJobExecuteTime(jm.getCurrentJobExecuteTime());
-                nm.setAverageJobExecuteTime(jm.getAverageJobExecuteTime());
-                nm.setCurrentIdleTime(jm.getCurrentIdleTime());
-                nm.setTotalIdleTime(jm.getTotalIdleTime());
-                nm.setAverageCpuLoad(jm.getAverageCpuLoad());
-
-                // Job metrics.
-                nm.setTotalExecutedTasks(ctx.task().getTotalExecutedTasks());
-
-                // VM metrics.
-                nm.setAvailableProcessors(metrics.getAvailableProcessors());
-                nm.setCurrentCpuLoad(metrics.getCurrentCpuLoad());
-                nm.setCurrentGcCpuLoad(metrics.getCurrentGcCpuLoad());
-                nm.setHeapMemoryInitialized(metrics.getHeapMemoryInitialized());
-                nm.setHeapMemoryUsed(metrics.getHeapMemoryUsed());
-                nm.setHeapMemoryCommitted(metrics.getHeapMemoryCommitted());
-                nm.setHeapMemoryMaximum(metrics.getHeapMemoryMaximum());
-                nm.setHeapMemoryTotal(metrics.getHeapMemoryMaximum());
-                nm.setNonHeapMemoryInitialized(metrics.getNonHeapMemoryInitialized());
-                nonHeapMemoryUsed(nm);
-                nm.setNonHeapMemoryCommitted(metrics.getNonHeapMemoryCommitted());
-                nm.setNonHeapMemoryMaximum(metrics.getNonHeapMemoryMaximum());
-                nm.setNonHeapMemoryTotal(metrics.getNonHeapMemoryMaximum());
-                nm.setUpTime(metrics.getUptime());
-                nm.setStartTime(metrics.getStartTime());
-                nm.setNodeStartTime(startTime);
-                nm.setCurrentThreadCount(metrics.getThreadCount());
-                nm.setMaximumThreadCount(metrics.getPeakThreadCount());
-                nm.setTotalStartedThreadCount(metrics.getTotalStartedThreadCount());
-                nm.setCurrentDaemonThreadCount(metrics.getDaemonThreadCount());
-                nm.setTotalNodes(1);
-
-                // Data metrics.
-                nm.setLastDataVersion(ctx.cache().lastDataVersion());
-
-                GridIoManager io = ctx.io();
-
-                // IO metrics.
-                nm.setSentMessagesCount(io.getSentMessagesCount());
-                nm.setSentBytesCount(io.getSentBytesCount());
-                nm.setReceivedMessagesCount(io.getReceivedMessagesCount());
-                nm.setReceivedBytesCount(io.getReceivedBytesCount());
-                nm.setOutboundMessagesQueueSize(io.getOutboundMessagesQueueSize());
-
-                return nm;
-            }
-
-            /**
-             * @param nm Initializing metrics snapshot.
-             */
-            private void nonHeapMemoryUsed(ClusterMetricsSnapshot nm) {
-                long nonHeapUsed = metrics.getNonHeapMemoryUsed();
-
-                Map<Integer, CacheMetrics> nodeCacheMetrics = cacheMetrics();
-
-                if (nodeCacheMetrics != null) {
-                    for (Map.Entry<Integer, CacheMetrics> entry : nodeCacheMetrics.entrySet()) {
-                        CacheMetrics e = entry.getValue();
-
-                        if (e != null)
-                            nonHeapUsed += e.getOffHeapAllocatedSize();
-                    }
-                }
-
-                nm.setNonHeapMemoryUsed(nonHeapUsed);
+                return new ClusterMetricsImpl(ctx, metrics, startTime);
             }
 
             /** {@inheritDoc} */
             @Override public Map<Integer, CacheMetrics> cacheMetrics() {
-                Collection<GridCacheAdapter<?, ?>> caches = ctx.cache().internalCaches();
+                try {
+                    Collection<GridCacheAdapter<?, ?>> caches = ctx.cache().internalCaches();
 
-                if (F.isEmpty(caches))
-                    return Collections.emptyMap();
+                    if (!F.isEmpty(caches)) {
+                        Map<Integer, CacheMetrics> metrics = U.newHashMap(caches.size());
 
-                Map<Integer, CacheMetrics> metrics = null;
+                        for (GridCacheAdapter<?, ?> cache : caches) {
+                            if (cache.context().statisticsEnabled() &&
+                                cache.context().started() &&
+                                cache.context().affinity().affinityTopologyVersion().topologyVersion() > 0) {
 
-                for (GridCacheAdapter<?, ?> cache : caches) {
-                    if (cache.context().statisticsEnabled() &&
-                        cache.context().started() &&
-                        cache.context().affinity().affinityTopologyVersion().topologyVersion() > 0) {
-                        if (metrics == null)
-                            metrics = U.newHashMap(caches.size());
+                                metrics.put(cache.context().cacheId(), cache.localMetrics());
+                            }
+                        }
 
-                        metrics.put(cache.context().cacheId(), cache.localMetrics());
+                        return metrics;
                     }
+                } catch (Exception e) {
+                    U.warn(log, "Failed to compute cache metrics", e);
                 }
 
-                return metrics == null ? Collections.<Integer, CacheMetrics>emptyMap() : metrics;
+                return Collections.emptyMap();
             }
         };
     }
@@ -1913,6 +1831,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     }
 
     /**
+     * @param topVer Topology version.
+     * @return All baseline nodes for given topology version or {@code null} if baseline was not set for the
+     *      given topology version.
+     */
+    @Nullable public List<? extends BaselineNode> baselineNodes(AffinityTopologyVersion topVer) {
+        return resolveDiscoCache(CU.cacheId(null), topVer).baselineNodes();
+    }
+
+    /**
      * Gets node from history for given topology version.
      *
      * @param topVer Topology version.
@@ -1921,6 +1848,26 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      */
     public ClusterNode node(AffinityTopologyVersion topVer, UUID id) {
         return resolveDiscoCache(CU.cacheId(null), topVer).node(id);
+    }
+
+    /**
+     * Gets consistentId from history for given topology version.
+     *
+     * @param topVer Topology version.
+     * @return Compacted consistent id.
+     */
+    public Map<UUID, Short> consistentId(AffinityTopologyVersion topVer) {
+        return resolveDiscoCache(CU.cacheId(null), topVer).consistentIdMap();
+    }
+
+    /**
+     * Gets consistentId from history for given topology version.
+     *
+     * @param topVer Topology version.
+     * @return Compacted consistent id map.
+     */
+    public  Map<Short, UUID> nodeIdMap(AffinityTopologyVersion topVer) {
+        return resolveDiscoCache(CU.cacheId(null), topVer).nodeIdMap();
     }
 
     /**
@@ -2116,7 +2063,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /**
      * @return Consistent ID.
-     * @deprecated Use PdsConsistentIdProcessor to get actual consistent ID
+     * @deprecated Use {@link ClusterNode#consistentId()} of local node to get actual consistent ID.
      */
     @Deprecated
     public Serializable consistentId() {
@@ -2332,7 +2279,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         ArrayList<ClusterNode> rmtNodes = new ArrayList<>(topSnapshot.size());
         ArrayList<ClusterNode> allNodes = new ArrayList<>(topSnapshot.size());
 
+        Map<UUID, Short> nodeIdToConsIdx;
+        Map<Short, UUID> consIdxToNodeId;
+        List<? extends BaselineNode> baselineNodes;
+
         IgniteProductVersion minVer = null;
+        IgniteProductVersion minSrvVer = null;
 
         for (ClusterNode node : topSnapshot) {
             if (alive(node))
@@ -2346,8 +2298,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 if (!node.isLocal())
                     rmtNodes.add(node);
 
-                if (!CU.clientNode(node))
+                if (!CU.clientNode(node)) {
                     srvNodes.add(node);
+
+                    if (minSrvVer == null)
+                        minSrvVer = node.version();
+                    else if (node.version().compareTo(minSrvVer) < 0)
+                        minSrvVer = node.version();
+                }
             }
 
             nodeMap.put(node.id(), node);
@@ -2363,9 +2321,51 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Map<Integer, List<ClusterNode>> allCacheNodes = U.newHashMap(allNodes.size());
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes = U.newHashMap(allNodes.size());
-        Set<ClusterNode> rmtNodesWithCaches = new TreeSet<>(GridNodeOrderComparator.INSTANCE);
+        Set<ClusterNode> rmtNodesWithCaches = new TreeSet<>(NodeOrderComparator.getInstance());
 
         fillAffinityNodeCaches(allNodes, allCacheNodes, cacheGrpAffNodes, rmtNodesWithCaches);
+
+        BaselineTopology blt = state.baselineTopology();
+
+        if (blt != null) {
+            nodeIdToConsIdx = U.newHashMap(srvNodes.size());
+            consIdxToNodeId = U.newHashMap(srvNodes.size());
+
+            Map<Object, Short> m = blt.consistentIdMapping();
+
+            Map<Object, ClusterNode> aliveNodesByConsId = U.newHashMap(srvNodes.size());
+
+            for (ClusterNode node : srvNodes) {
+                Short compactedId = m.get(node.consistentId());
+
+                if (compactedId != null) {
+                    nodeIdToConsIdx.put(node.id(), compactedId);
+
+                    consIdxToNodeId.put(compactedId, node.id());
+                }
+
+                aliveNodesByConsId.put(node.consistentId(), node);
+            }
+
+            List<BaselineNode >baselineNodes0 = new ArrayList<>(blt.size());
+
+            for (Object consId : blt.consistentIds()) {
+                ClusterNode srvNode = aliveNodesByConsId.get(consId);
+
+                if (srvNode != null)
+                    baselineNodes0.add(srvNode);
+                else
+                    baselineNodes0.add(blt.baselineNode(consId));
+            }
+
+            baselineNodes = baselineNodes0;
+        }
+        else {
+            nodeIdToConsIdx = null;
+            consIdxToNodeId = null;
+
+            baselineNodes = null;
+        }
 
         return new DiscoCache(
             topVer,
@@ -2376,11 +2376,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             Collections.unmodifiableList(srvNodes),
             Collections.unmodifiableList(daemonNodes),
             U.sealList(rmtNodesWithCaches),
+            baselineNodes == null ? null : Collections.unmodifiableList(baselineNodes),
             Collections.unmodifiableMap(allCacheNodes),
             Collections.unmodifiableMap(cacheGrpAffNodes),
             Collections.unmodifiableMap(nodeMap),
             alives,
-            minVer);
+            nodeIdToConsIdx == null ? null : Collections.unmodifiableMap(nodeIdToConsIdx),
+            consIdxToNodeId == null ? null : Collections.unmodifiableMap(consIdxToNodeId),
+            minVer,
+            minSrvVer);
     }
 
     /**
@@ -2560,8 +2564,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         discoWrk.addEvent(EVT_NODE_SEGMENTED,
                             AffinityTopologyVersion.NONE,
                             node,
-                            createDiscoCache(AffinityTopologyVersion.NONE, null, node, locNodeOnlyTop),
-                            locNodeOnlyTop,
+                            createDiscoCache(
+                                AffinityTopologyVersion.NONE,
+                                ctx.state().clusterState(),
+                                node,
+                                locNodeOnlyTop
+                            ), locNodeOnlyTop,
                             null);
 
                         lastSegChkRes.set(false);
@@ -3255,12 +3263,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param discoCache Current disco cache.
      * @return New discovery cache.
      */
-    public DiscoCache createDiscoCacheOnCacheChange(AffinityTopologyVersion topVer,
-        DiscoCache discoCache) {
+    public DiscoCache createDiscoCacheOnCacheChange(
+        AffinityTopologyVersion topVer,
+        DiscoCache discoCache
+    ) {
         List<ClusterNode> allNodes = discoCache.allNodes();
         Map<Integer, List<ClusterNode>> allCacheNodes = U.newHashMap(allNodes.size());
         Map<Integer, List<ClusterNode>> cacheGrpAffNodes = U.newHashMap(allNodes.size());
-        Set<ClusterNode> rmtNodesWithCaches = new TreeSet<>(GridNodeOrderComparator.INSTANCE);
+        Set<ClusterNode> rmtNodesWithCaches = new TreeSet<>(NodeOrderComparator.getInstance());
 
         fillAffinityNodeCaches(allNodes, allCacheNodes, cacheGrpAffNodes, rmtNodesWithCaches);
 
@@ -3273,10 +3283,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             discoCache.serverNodes(),
             discoCache.daemonNodes(),
             U.sealList(rmtNodesWithCaches),
+            discoCache.baselineNodes(),
             allCacheNodes,
             cacheGrpAffNodes,
             discoCache.nodeMap,
             discoCache.alives,
-            discoCache.minimumNodeVersion());
+            discoCache.nodeIdToConsIdx,
+            discoCache.consIdxToNodeId,
+            discoCache.minimumNodeVersion(),
+            discoCache.minimumServerNodeVersion());
     }
 }
