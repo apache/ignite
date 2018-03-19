@@ -65,7 +65,7 @@ public final class IgniteSystemProperties {
     /** Defines Ignite installation folder. */
     public static final String IGNITE_HOME = "IGNITE_HOME";
 
-    /** If this system property is set to {@code false} - no shutdown hook will be set. */
+    /** If this system property is set to {@code true} - no shutdown hook will be set. */
     public static final String IGNITE_NO_SHUTDOWN_HOOK = "IGNITE_NO_SHUTDOWN_HOOK";
 
     /**
