@@ -33,7 +33,7 @@ import static org.apache.ignite.internal.util.nio.compression.CompressionEngineR
 /**
  * Implementation of LZ4 algorithm.
  */
-public class LZ4Engine implements CompressionEngine {
+public final class LZ4Engine implements CompressionEngine {
     /** */
     private final LZ4Compressor compressor;
 
@@ -49,7 +49,10 @@ public class LZ4Engine implements CompressionEngine {
     }
 
     /** {@inheritDoc} */
-    public CompressionEngineResult compress(ByteBuffer src, ByteBuffer buf) throws IOException {
+    @Override public CompressionEngineResult compress(ByteBuffer src, ByteBuffer buf) {
+        assert src != null;
+        assert buf != null;
+
         try {
             int compress = compressor.compress(src, src.position(), src.remaining(),
                 buf, buf.position() + 4, buf.remaining() - 4);
@@ -67,7 +70,10 @@ public class LZ4Engine implements CompressionEngine {
     }
 
     /** {@inheritDoc} */
-    public CompressionEngineResult decompress(ByteBuffer src, ByteBuffer buf) throws IOException {
+    @Override public CompressionEngineResult decompress(ByteBuffer src, ByteBuffer buf) {
+        assert src != null;
+        assert buf != null;
+
         int len = src.remaining();
         int initPos = src.position();
 

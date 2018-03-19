@@ -181,7 +181,7 @@ public final class BlockingCompressionHandler {
      * @param cap Requested capacity.
      * @return Expanded byte buffer.
      */
-    private ByteBuffer expandBuffer(ByteBuffer original, int cap) {
+    private static ByteBuffer expandBuffer(ByteBuffer original, int cap) {
         ByteBuffer res = original.isDirect() ? ByteBuffer.allocateDirect(cap) : ByteBuffer.allocate(cap);
 
         res.order(original.order());

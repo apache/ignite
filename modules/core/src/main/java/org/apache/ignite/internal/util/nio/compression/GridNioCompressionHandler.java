@@ -35,7 +35,7 @@ import static org.apache.ignite.internal.util.nio.compression.CompressionEngineR
 /**
  * Class that encapsulate the per-session compression state, compress and decompress logic.
  */
-class GridNioCompressionHandler extends ReentrantLock {
+final class GridNioCompressionHandler extends ReentrantLock {
     /** Size of a net buffers. */
     private static final int netBufSize = 32768;
 
@@ -43,19 +43,19 @@ class GridNioCompressionHandler extends ReentrantLock {
     private static final long serialVersionUID = 0L;
 
     /** Grid logger. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** Compression engine. */
-    private CompressionEngine compressionEngine;
+    private final CompressionEngine compressionEngine;
 
     /** Order. */
-    private ByteOrder order;
+    private final ByteOrder order;
 
     /** Allocate direct buffer or heap buffer. */
-    private boolean directBuf;
+    private final boolean directBuf;
 
     /** Session of this handler. */
-    private GridNioSession ses;
+    private final GridNioSession ses;
 
     /** Output buffer into which compressed data will be written. */
     private ByteBuffer outNetBuf;
@@ -67,7 +67,7 @@ class GridNioCompressionHandler extends ReentrantLock {
     private ByteBuffer appBuf;
 
     /** Parent filter. */
-    private GridNioCompressionFilter parent;
+    private final GridNioCompressionFilter parent;
 
     /**
      * Creates handler.

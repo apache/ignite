@@ -35,24 +35,30 @@ import static org.apache.ignite.internal.util.nio.compression.CompressionEngineR
 /**
  * Implementation of Deflater algorithm.
  */
-public class DeflaterEngine implements CompressionEngine {
+public final class DeflaterEngine implements CompressionEngine {
+    /** */
+    private static final int initArrSize = 1 << 15;
+
+    /** */
+    private static final int batchSize = 1 << 10;
+
     /** */
     private final Deflater deflater = new Deflater();
 
     /** */
-    private byte[] inputDeflaterArr = new byte[32768];
+    private byte[] inputDeflaterArr = new byte[initArrSize];
 
     /** */
-    private final ExtendedByteArrayOutputStream deflateBaos = new ExtendedByteArrayOutputStream(32768);
+    private final ExtendedByteArrayOutputStream deflateBaos = new ExtendedByteArrayOutputStream(initArrSize);
 
     /** */
     private final Inflater inflater = new Inflater();
 
     /** */
-    private byte[] inputInflaterArr = new byte[32768];
+    private byte[] inputInflaterArr = new byte[initArrSize];
 
     /** */
-    private final ExtendedByteArrayOutputStream inflateBaos = new ExtendedByteArrayOutputStream(32768);
+    private final ExtendedByteArrayOutputStream inflateBaos = new ExtendedByteArrayOutputStream(initArrSize);
 
     /** */
     private int inputUnwrapPos = 0;
@@ -66,7 +72,10 @@ public class DeflaterEngine implements CompressionEngine {
     }
 
     /** {@inheritDoc} */
-    public CompressionEngineResult compress(ByteBuffer src, ByteBuffer buf) {
+    @Override public CompressionEngineResult compress(ByteBuffer src, ByteBuffer buf) {
+        assert src != null;
+        assert buf != null;
+
         int len = src.remaining();
 
         if (inputDeflaterArr.length < len)
@@ -80,7 +89,7 @@ public class DeflaterEngine implements CompressionEngine {
 
         deflateBaos.reset();
 
-        byte[] arr = new byte[1024];
+        byte[] arr = new byte[batchSize];
 
         while (!deflater.finished()) {
             int cnt = deflater.deflate(arr);
@@ -100,7 +109,10 @@ public class DeflaterEngine implements CompressionEngine {
     }
 
     /** {@inheritDoc} */
-    public CompressionEngineResult decompress(ByteBuffer src, ByteBuffer buf) throws IOException {
+    @Override public CompressionEngineResult decompress(ByteBuffer src, ByteBuffer buf) throws IOException {
+        assert src != null;
+        assert buf != null;
+
         if (inflateBaos.size() > 0){
             if (buf.remaining() < inflateBaos.size())
                 return BUFFER_OVERFLOW;
@@ -128,12 +140,12 @@ public class DeflaterEngine implements CompressionEngine {
 
         inflater.setInput(inputInflaterArr, inputUnwrapPos, inputUnwrapLen - inputUnwrapPos);
 
-        byte[] arr = new byte[1024];
+        byte[] arr = new byte[batchSize];
 
         while (!inflater.finished() && !inflater.needsInput()) {
             try {
-                int count = inflater.inflate(arr);
-                inflateBaos.write(arr, 0, count);
+                int cnt = inflater.inflate(arr);
+                inflateBaos.write(arr, 0, cnt);
             } catch (DataFormatException e) {
                 throw new IOException("DataFormatException: ", e);
             }
@@ -163,7 +175,7 @@ public class DeflaterEngine implements CompressionEngine {
     }
 
     /** */
-    static class ExtendedByteArrayOutputStream extends ByteArrayOutputStream {
+    static final class ExtendedByteArrayOutputStream extends ByteArrayOutputStream {
         /** */
         ExtendedByteArrayOutputStream(int size) {
             super(size);

@@ -20,7 +20,7 @@ package org.apache.ignite.internal.util.nio.compression;
 import java.nio.ByteBuffer;
 
 /** */
-public class GridCompressionMeta {
+public final class GridCompressionMeta {
     /** GridNioCompressionHandler. */
     private GridNioCompressionHandler hnd;
 

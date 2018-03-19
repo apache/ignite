@@ -24,7 +24,6 @@ import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.nio.GridNioException;
 import org.apache.ignite.internal.util.nio.GridNioFilterAdapter;
 import org.apache.ignite.internal.util.nio.GridNioFinishedFuture;
@@ -36,15 +35,15 @@ import org.apache.ignite.lang.IgniteInClosure;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.COMPRESSION_META;
 
 /** */
-public class GridNioCompressionFilter extends GridNioFilterAdapter {
+public final class GridNioCompressionFilter extends GridNioFilterAdapter {
     /** Logger to use. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** Order. */
-    private ByteOrder order;
+    private final ByteOrder order;
 
     /** Allocate direct buffer or heap buffer. */
-    private boolean directBuf;
+    private final boolean directBuf;
 
     /** Whether direct mode is used. */
     private boolean directMode;
@@ -142,7 +141,7 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
      * @param ses Session.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    public void lock(GridNioSession ses) {
+    public static void lock(GridNioSession ses) {
         GridNioCompressionHandler hnd = compressionHandler(ses);
 
         hnd.lock();
@@ -151,7 +150,7 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
     /**
      * @param ses NIO session.
      */
-    public void unlock(GridNioSession ses) {
+    public static void unlock(GridNioSession ses) {
         compressionHandler(ses).unlock();
     }
 
@@ -161,7 +160,7 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
      * @return Output buffer with compressed data.
      * @throws IOException If failed to compress.
      */
-    public ByteBuffer compress(GridNioSession ses, ByteBuffer input) throws IOException {
+    public static ByteBuffer compress(GridNioSession ses, ByteBuffer input) throws IOException {
         GridNioCompressionHandler hnd = compressionHandler(ses);
 
         hnd.lock();
@@ -299,7 +298,7 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
      * @param ses Session instance.
      * @return compression handler.
      */
-    private GridNioCompressionHandler compressionHandler(GridNioSession ses) {
+    private static GridNioCompressionHandler compressionHandler(GridNioSession ses) {
         GridCompressionMeta compressMeta = ses.meta(COMPRESSION_META.ordinal());
 
         assert compressMeta != null;
@@ -322,7 +321,7 @@ public class GridNioCompressionFilter extends GridNioFilterAdapter {
      * @return Message that was cast to a byte buffer.
      * @throws GridNioException If msg is not a byte buffer.
      */
-    private ByteBuffer checkMessage(GridNioSession ses, Object msg) throws GridNioException {
+    private static ByteBuffer checkMessage(GridNioSession ses, Object msg) throws GridNioException {
         if (!(msg instanceof ByteBuffer))
             throw new GridNioException("Invalid object type received (is compress filter correctly placed in filter " +
                 "chain?) [ses=" + ses + ", msgClass=" + msg.getClass().getName() +  ']');

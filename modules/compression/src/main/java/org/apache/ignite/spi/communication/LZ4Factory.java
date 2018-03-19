@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.nio.compression.CompressionEngine;
 import javax.cache.configuration.Factory;
 
 /** */
-public class LZ4Factory implements Factory<CompressionEngine> {
+public final class LZ4Factory implements Factory<CompressionEngine> {
     /** */
     private static final long serialVersionUID = 0L;
 

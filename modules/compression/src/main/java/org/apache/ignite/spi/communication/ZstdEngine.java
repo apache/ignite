@@ -30,9 +30,10 @@ import static org.apache.ignite.internal.util.nio.compression.CompressionEngineR
 /**
  * Implementation of Zstd algorithm.
  */
-public class ZstdEngine implements CompressionEngine {
+public final class ZstdEngine implements CompressionEngine {
     /** */
     private static final int COMPRESS_LEVEL = 1;
+
     /** */
     private static final long DEST_BUFFER_OVERFLOW_ERR = -70;
 
@@ -40,13 +41,19 @@ public class ZstdEngine implements CompressionEngine {
     private static final String DEST_BUFFER_OVERFLOW_ERR_MSG = "Destination buffer is too small";
 
     /** */
-    private byte[] compressArr = new byte[32768];
+    private static final int initArrSize = 1 >> 15;
 
     /** */
-    private byte[] decompressArr = new byte[32768];
+    private byte[] compressArr = new byte[initArrSize];
+
+    /** */
+    private byte[] decompressArr = new byte[initArrSize];
 
     /** {@inheritDoc} */
     @Override public CompressionEngineResult compress(ByteBuffer src, ByteBuffer buf) throws IOException {
+        assert src != null;
+        assert buf != null;
+
         if (src.isDirect() && buf.isDirect()) {
             try {
                 Zstd.compress(buf, src, COMPRESS_LEVEL);
@@ -93,6 +100,9 @@ public class ZstdEngine implements CompressionEngine {
 
     /** {@inheritDoc} */
     @Override public CompressionEngineResult decompress(ByteBuffer src, ByteBuffer buf) throws IOException {
+        assert src != null;
+        assert buf != null;
+
         int frameSize = readFrameSize(src);
 
         if (frameSize == -1)
