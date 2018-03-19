@@ -44,30 +44,26 @@ public class IgniteCacheTestSuite6 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("IgniteCache Test Suite part 6");
 
-        // TODO IGNITE-7770: uncomment when flaky TxRollbackOnTimeoutNearCacheTest is fixed.
+        suite.addTestSuite(CachePartitionStateTest.class);
 
-//        suite.addTestSuite(CachePartitionStateTest.class);
-//
-//        suite.addTestSuite(GridCachePartitionEvictionDuringReadThroughSelfTest.class);
-//        suite.addTestSuite(IgniteOptimisticTxSuspendResumeTest.class);
-//        suite.addTestSuite(IgniteOptimisticTxSuspendResumeMultiServerTest.class);
-//        suite.addTestSuite(IgnitePessimisticTxSuspendResumeTest.class);
-//
-//        suite.addTestSuite(CacheExchangeMergeTest.class);
-//
-//        suite.addTestSuite(TxRollbackOnTimeoutTest.class);
-//        suite.addTestSuite(TxRollbackOnTimeoutNoDeadlockDetectionTest.class);
+        suite.addTestSuite(GridCachePartitionEvictionDuringReadThroughSelfTest.class);
+        suite.addTestSuite(IgniteOptimisticTxSuspendResumeTest.class);
+        suite.addTestSuite(IgniteOptimisticTxSuspendResumeMultiServerTest.class);
+        suite.addTestSuite(IgnitePessimisticTxSuspendResumeTest.class);
 
-        for (int i = 0; i < 50; i++)
-            suite.addTestSuite(TxRollbackOnTimeoutNearCacheTest.class);
+        suite.addTestSuite(CacheExchangeMergeTest.class);
 
-//        suite.addTestSuite(IgniteCacheThreadLocalTxTest.class);
-//
-//        suite.addTestSuite(IgnitePdsCacheAssignmentNodeRestartsTest.class);
-//
-//        suite.addTestSuite(WalModeChangeSelfTest.class);
-//        suite.addTestSuite(WalModeChangeCoordinatorNotAffinityNodeSelfTest.class);
-//        suite.addTestSuite(WalModeChangeAdvancedSelfTest.class);
+        suite.addTestSuite(TxRollbackOnTimeoutTest.class);
+        suite.addTestSuite(TxRollbackOnTimeoutNoDeadlockDetectionTest.class);
+        suite.addTestSuite(TxRollbackOnTimeoutNearCacheTest.class);
+
+        suite.addTestSuite(IgniteCacheThreadLocalTxTest.class);
+
+        suite.addTestSuite(IgnitePdsCacheAssignmentNodeRestartsTest.class);
+
+        suite.addTestSuite(WalModeChangeSelfTest.class);
+        suite.addTestSuite(WalModeChangeCoordinatorNotAffinityNodeSelfTest.class);
+        suite.addTestSuite(WalModeChangeAdvancedSelfTest.class);
 
 //        TODO enable this test after IGNITE-6753, now it takes too long
 //        suite.addTestSuite(IgniteOutOfMemoryPropagationTest.class);
