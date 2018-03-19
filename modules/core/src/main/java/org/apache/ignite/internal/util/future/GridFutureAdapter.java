@@ -283,9 +283,7 @@ public class GridFutureAdapter<R> implements IgniteInternalFuture<R> {
         }
     }
 
-    /**
-     *
-     */
+    /** */
     private void removeCurrentThreadFromWaiters() {
         Node prev = null;
         Object cur = state;
