@@ -56,7 +56,7 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(TxRollbackOnTimeoutTest.class);
         suite.addTestSuite(TxRollbackOnTimeoutNoDeadlockDetectionTest.class);
 
-        for (int i = 0; i < 50; i++)
+        for (int i = 0; i < 30; i++)
             suite.addTestSuite(TxRollbackOnTimeoutNearCacheTest.class);
 
         suite.addTestSuite(IgniteCacheThreadLocalTxTest.class);
