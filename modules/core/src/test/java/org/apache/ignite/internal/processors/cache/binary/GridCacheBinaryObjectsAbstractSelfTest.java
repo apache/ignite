@@ -435,7 +435,7 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
             TestObject obj = new TestObject(123);
             c.put(0, Collections.singletonMap(obj, obj));
-            c.put(1, Collections.singletonMap(null, null));
+            c.put(1, Collections.<TestObject, TestObject>singletonMap(null, null));
 
             assertEquals(1, c.get(0).size());
             assertEquals(1, c.get(1).size());
@@ -484,8 +484,8 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
             c.put(0, Collections.singletonList(new TestObject(123)));
             c.put(1, Collections.singleton(new TestObject(123)));
-            c.put(3, Collections.singletonList(null));
-            c.put(4, Collections.singleton(null));
+            c.put(3, Collections.<TestObject>singletonList(null));
+            c.put(4, Collections.<TestObject>singleton(null));
 
             assertEquals(1, c.get(0).size());
             assertEquals(123,c.get(0).iterator().next().val);
