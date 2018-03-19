@@ -19,13 +19,16 @@ package org.apache.ignite.internal.processors.odbc.odbc;
 
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.typedef.F;
 
 /**
  * ODBC Connection Context.
@@ -94,7 +97,8 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader) {
+    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+        throws IgniteCheckedException {
         assert SUPPORTED_VERS.contains(ver): "Unsupported ODBC protocol version.";
 
         boolean distributedJoins = reader.readBoolean();
@@ -111,8 +115,32 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
         if (ver.compareTo(VER_2_3_0) >= 0)
             skipReducerOnUpdate = reader.readBoolean();
 
+        AuthorizationContext actx = null;
+
+        try {
+            if (reader.available() > 0) {
+                String user = reader.readString();
+                String passwd = reader.readString();
+
+                if (F.isEmpty(user) && ctx.authentication().enabled())
+                    throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+
+                actx = ctx.authentication().authenticate(user, passwd);
+
+                if (actx == null)
+                    throw new IgniteCheckedException("Unknown authentication error");
+            }
+            else {
+                if (ctx.authentication().enabled())
+                    throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+            }
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
+        }
+
         handler = new OdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins,
-                enforceJoinOrder, replicatedOnly, collocated, lazy, skipReducerOnUpdate);
+                enforceJoinOrder, replicatedOnly, collocated, lazy, skipReducerOnUpdate, actx);
 
         parser = new OdbcMessageParser(ctx, ver);
     }
