@@ -74,8 +74,6 @@ public class RestExecutor implements AutoCloseable {
         dispatcher.setMaxRequests(Integer.MAX_VALUE);
         dispatcher.setMaxRequestsPerHost(Integer.MAX_VALUE);
         
-
-
         OkHttpClient.Builder builder = new OkHttpClient.Builder()
             .readTimeout(0, TimeUnit.MILLISECONDS)
             .dispatcher(dispatcher);
