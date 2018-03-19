@@ -290,7 +290,14 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testJoinWhileActivate1_Client() throws Exception {
-        joinWhileActivate1(true, false);
+        for (int iterations = 0; iterations < 30; iterations++) {
+            try {
+                joinWhileActivate1(true, false);
+            }
+            finally {
+                stopAllGrids();
+            }
+        }
     }
 
     /**
@@ -436,7 +443,14 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     public void testJoinWhileDeactivate1_Client() throws Exception {
-        joinWhileDeactivate1(true, false);
+        for (int iterations = 0; iterations < 30; iterations++) {
+            try {
+                joinWhileDeactivate1(true, false);
+            }
+            finally {
+                stopAllGrids();
+            }
+        }
     }
 
     /**
