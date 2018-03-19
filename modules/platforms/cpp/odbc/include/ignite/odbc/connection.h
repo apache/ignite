@@ -165,6 +165,8 @@ namespace ignite
             template<typename ReqT, typename RspT>
             bool SyncMessage(const ReqT& req, RspT& rsp, int32_t timeout)
             {
+                EnsureConnected();
+
                 std::vector<int8_t> tempBuffer;
 
                 parser.Encode(req, tempBuffer);
@@ -195,6 +197,8 @@ namespace ignite
             template<typename ReqT, typename RspT>
             void SyncMessage(const ReqT& req, RspT& rsp)
             {
+                EnsureConnected();
+
                 std::vector<int8_t> tempBuffer;
 
                 parser.Encode(req, tempBuffer);
@@ -245,6 +249,39 @@ namespace ignite
             IGNITE_NO_COPY_ASSIGNMENT(Connection);
 
             /**
+             * Synchronously send request message and receive response.
+             * Uses provided timeout. Does not try to restore connection on
+             * fail.
+             *
+             * @param req Request message.
+             * @param rsp Response message.
+             * @param timeout Timeout.
+             * @return @c true on success, @c false on timeout.
+             * @throw OdbcError on error.
+             */
+            template<typename ReqT, typename RspT>
+            bool InternalSyncMessage(const ReqT& req, RspT& rsp, int32_t timeout)
+            {
+                std::vector<int8_t> tempBuffer;
+
+                parser.Encode(req, tempBuffer);
+
+                bool success = Send(tempBuffer.data(), tempBuffer.size(), timeout);
+
+                if (!success)
+                    return false;
+
+                success = Receive(tempBuffer, timeout);
+
+                if (!success)
+                    return false;
+
+                parser.Decode(rsp, tempBuffer);
+
+                return true;
+            }
+
+            /**
              * Establish connection to ODBC server.
              * Internal call.
              *
@@ -260,7 +297,7 @@ namespace ignite
              * @param cfg Configuration.
              * @return Operation result.
              */
-            SqlResult::Type InternalEstablish(const config::Configuration cfg);
+            SqlResult::Type InternalEstablish(const config::Configuration& cfg);
 
             /**
              * Release established connection.
@@ -361,6 +398,28 @@ namespace ignite
              * @return Operation result.
              */
             SqlResult::Type MakeRequestHandshake();
+
+            /**
+             * Ensure there is a connection to the cluster.
+             *
+             * @throw OdbcError on failure.
+             */
+            void EnsureConnected();
+
+            /**
+             * Try to restore connection to the cluster.
+             *
+             * @return @c true on success and @c false otherwise.
+             */
+            bool TryRestoreConnection();
+
+            /**
+             * Collect all addresses from config.
+             *
+             * @param cfg Configuration.
+             * @param endPoints End points.
+             */
+            static void CollectAddresses(const config::Configuration& cfg, std::vector<EndPoint>& endPoints);
 
             /**
              * Constructor.
