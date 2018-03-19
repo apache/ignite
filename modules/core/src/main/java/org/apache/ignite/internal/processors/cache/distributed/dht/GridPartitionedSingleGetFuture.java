@@ -347,7 +347,7 @@ public class GridPartitionedSingleGetFuture extends GridCacheFutureAdapter<Objec
             }
         }
 
-        ClusterNode affNode = CU.selectAffinityNode(cctx, affNodes, canRemap, cctx.isReadLoadBalancingEnabled());
+        ClusterNode affNode = cctx.selectAffinityNode(affNodes, canRemap);
 
         if (affNode == null) {
             onDone(serverNotFoundError(topVer));

@@ -462,68 +462,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * Determines an affinity node to send get request to.
-     *
-     * @param ctx Cache context.
-     * @param affNodes All affinity nodes.
-     * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
-     * @param balancingEnabled Whether read load balancing is enabled.
-     * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
-     */
-    @Nullable public static ClusterNode selectAffinityNode(GridCacheContext ctx, List<ClusterNode> affNodes,
-        boolean canRemap, boolean balancingEnabled) {
-        if (!balancingEnabled)
-            return selectAffinityNode(ctx, affNodes, canRemap);
-
-        if (!ctx.config().isReadFromBackup())
-            return affNodes.get(0);
-
-        String locMacs = ctx.localNode().attribute(ATTR_MACS);
-
-        assert locMacs != null;
-
-        int r = ThreadLocalRandom.current().nextInt(affNodes.size());
-
-        ClusterNode n0 = null;
-
-        for (ClusterNode node : affNodes) {
-            if (canRemap || ctx.discovery().alive(node)) {
-                if (locMacs.equals(node.attribute(ATTR_MACS)))
-                    return node;
-
-                if (r >= 0 || n0 == null)
-                    n0 = node;
-            }
-
-            r--;
-        }
-
-        return n0;
-    }
-
-    /**
-     * Determines an affinity node to send get request to.
-     *
-     * @param ctx Cache context.
-     * @param affNodes All affinity nodes.
-     * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
-     * @return Affinity node to get key from.
-     */
-    @Nullable private static ClusterNode selectAffinityNode(GridCacheContext ctx, List<ClusterNode> affNodes,
-        boolean canRemap) {
-        if (!canRemap) {
-            for (ClusterNode node : affNodes) {
-                if (ctx.discovery().alive(node))
-                    return node;
-            }
-
-            return null;
-        }
-        else
-            return affNodes.get(0);
-    }
-
-    /**
      * Checks if near cache is enabled for cache context.
      *
      * @param ctx Cache context to check.

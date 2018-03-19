@@ -490,7 +490,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                         }
                     }
 
-                    ClusterNode affNode = CU.selectAffinityNode(cctx, affNodes, canRemap, cctx.isReadLoadBalancingEnabled());
+                    ClusterNode affNode = cctx.selectAffinityNode(affNodes, canRemap);
 
                     if (affNode == null) {
                         onDone(serverNotFoundError(topVer));

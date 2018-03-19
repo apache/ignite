@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
 import javax.cache.expiry.EternalExpiryPolicy;
@@ -114,6 +115,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STOPPED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
@@ -2168,6 +2170,53 @@ public class GridCacheContext<K, V> implements Externalizable {
         }
 
         return true;
+    }
+
+    /**
+     * Determines an affinity node to send get request to.
+     *
+     * @param affNodes All affinity nodes.
+     * @param canRemap Flag indicating that 'get' should be done on a locked topology version.
+     * @return Affinity node to get key from or {@code null} if there is no suitable alive node.
+     */
+    @Nullable public ClusterNode selectAffinityNode(List<ClusterNode> affNodes, boolean canRemap) {
+        if (!readLoadBalancingEnabled) {
+            if (!canRemap) {
+                for (ClusterNode node : affNodes) {
+                    if (ctx.discovery().alive(node))
+                        return node;
+                }
+
+                return null;
+            }
+            else
+                return affNodes.get(0);
+        }
+
+        if (!config().isReadFromBackup())
+            return affNodes.get(0);
+
+        String locMacs = localNode().attribute(ATTR_MACS);
+
+        assert locMacs != null;
+
+        int r = ThreadLocalRandom.current().nextInt(affNodes.size());
+
+        ClusterNode n0 = null;
+
+        for (ClusterNode node : affNodes) {
+            if (canRemap || discovery().alive(node)) {
+                if (locMacs.equals(node.attribute(ATTR_MACS)))
+                    return node;
+
+                if (r >= 0 || n0 == null)
+                    n0 = node;
+            }
+
+            r--;
+        }
+
+        return n0;
     }
 
     /**

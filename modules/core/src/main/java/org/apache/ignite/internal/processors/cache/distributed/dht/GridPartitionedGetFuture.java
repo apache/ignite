@@ -407,7 +407,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             }
         }
 
-        ClusterNode node = CU.selectAffinityNode(cctx, affNodes, canRemap, cctx.isReadLoadBalancingEnabled());
+        ClusterNode node = cctx.selectAffinityNode(affNodes, canRemap);
 
         if (node == null) {
             onDone(serverNotFoundError(topVer));
