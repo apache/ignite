@@ -881,10 +881,10 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     private static int compareForDml0(BinaryObjectImpl first, BinaryObjectImpl second) {
         int res = Integer.compare(first.typeId(), second.typeId());
 
-        if (res != 0) {
+        if (res == 0) {
             res = Integer.compare(first.hashCode(), second.hashCode());
 
-            if (res != 0) {
+            if (res == 0) {
                 // Pessimistic case: need to perform binary comparison.
                 int firstDataStart = first.dataStartOffset();
                 int secondDataStart = second.dataStartOffset();

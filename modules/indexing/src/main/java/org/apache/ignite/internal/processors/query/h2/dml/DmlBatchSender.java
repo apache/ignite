@@ -318,6 +318,7 @@ public class DmlBatchSender {
 
         /** Map from keys to entry processors. */
         private Map<Object, EntryProcessor<Object, Object, Boolean>> rowProcs = new TreeMap<>(COMP);
+//        private Map<Object, EntryProcessor<Object, Object, Boolean>> rowProcs = new HashMap<>();
 
         /**
          * Checks if batch contains key.
