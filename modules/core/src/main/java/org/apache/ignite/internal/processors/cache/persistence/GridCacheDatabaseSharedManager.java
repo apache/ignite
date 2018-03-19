@@ -549,6 +549,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             DataRegion regCfg = new DataRegion(storePageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, storePageMem));
 
+            CheckpointStatus status = readCheckpointStatus();
+
             cctx.pageStore().initializeForMetastorage();
 
             storePageMem.start();
@@ -556,8 +558,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             checkpointReadLock();
 
             try {
-                CheckpointStatus status = readCheckpointStatus();
-
                 restoreMemory(status, true, storePageMem);
 
                 metaStorage = new MetaStorage(cctx.wal(), regCfg, memMetrics, true);
@@ -1402,11 +1402,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      */
     private void restoreState() throws IgniteCheckedException {
         try {
+            CheckpointStatus status = readCheckpointStatus();
+
             checkpointReadLock();
 
             try {
-                CheckpointStatus status = readCheckpointStatus();
-
                 applyLastUpdates(status, false);
             }
             finally {
