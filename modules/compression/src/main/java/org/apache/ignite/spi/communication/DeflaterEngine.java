@@ -83,9 +83,9 @@ public class DeflaterEngine implements CompressionEngine {
         byte[] arr = new byte[1024];
 
         while (!deflater.finished()) {
-            int count = deflater.deflate(arr);
+            int cnt = deflater.deflate(arr);
 
-            deflateBaos.write(arr, 0, count);
+            deflateBaos.write(arr, 0, cnt);
         }
 
         if (deflateBaos.size() > buf.remaining()) {
@@ -163,7 +163,7 @@ public class DeflaterEngine implements CompressionEngine {
     }
 
     /** */
-    class ExtendedByteArrayOutputStream extends ByteArrayOutputStream {
+    static class ExtendedByteArrayOutputStream extends ByteArrayOutputStream {
         /** */
         ExtendedByteArrayOutputStream(int size) {
             super(size);

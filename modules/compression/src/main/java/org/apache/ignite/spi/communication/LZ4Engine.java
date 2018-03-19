@@ -51,7 +51,8 @@ public class LZ4Engine implements CompressionEngine {
     /** {@inheritDoc} */
     public CompressionEngineResult compress(ByteBuffer src, ByteBuffer buf) throws IOException {
         try {
-            int compress = compressor.compress(src, src.position(), src.remaining(), buf, buf.position() + 4, buf.remaining() - 4);
+            int compress = compressor.compress(src, src.position(), src.remaining(),
+                buf, buf.position() + 4, buf.remaining() - 4);
 
             putInt(compress, buf);
 
@@ -84,7 +85,8 @@ public class LZ4Engine implements CompressionEngine {
         }
 
         try {
-            int decompress = decompressor.decompress(src, src.position(), compressedLen, buf, buf.position(), buf.remaining());
+            int decompress = decompressor.decompress(src, src.position(), compressedLen,
+                buf, buf.position(), buf.remaining());
 
             buf.position(buf.position() + decompress);
             src.position(src.position() + compressedLen);
@@ -99,13 +101,13 @@ public class LZ4Engine implements CompressionEngine {
     }
 
     /** */
-    private int getInt(ByteBuffer buf) {
+    private static int getInt(ByteBuffer buf) {
         return ((buf.get() & 0xFF) << 24) | ((buf.get() & 0xFF) << 16)
             | ((buf.get() & 0xFF) << 8) | (buf.get() & 0xFF);
     }
 
     /** */
-    private void putInt(int val, ByteBuffer buf) {
+    private static void putInt(int val, ByteBuffer buf) {
         buf.put((byte)(val >>> 24));
         buf.put((byte)(val >>> 16));
         buf.put((byte)(val >>> 8));

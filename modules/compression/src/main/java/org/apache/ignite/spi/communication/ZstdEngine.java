@@ -32,12 +32,12 @@ import static org.apache.ignite.internal.util.nio.compression.CompressionEngineR
  */
 public class ZstdEngine implements CompressionEngine {
     /** */
-    private final static int COMPRESS_LEVEL = 1;
+    private static final int COMPRESS_LEVEL = 1;
     /** */
-    private final static long DEST_BUFFER_OVERFLOW_ERR = -70;
+    private static final long DEST_BUFFER_OVERFLOW_ERR = -70;
 
     /** */
-    private final static String DEST_BUFFER_OVERFLOW_ERR_MSG = "Destination buffer is too small";
+    private static final String DEST_BUFFER_OVERFLOW_ERR_MSG = "Destination buffer is too small";
 
     /** */
     private byte[] compressArr = new byte[32768];
@@ -122,14 +122,14 @@ public class ZstdEngine implements CompressionEngine {
         else {
             int initPos = src.position();
 
-            byte[] inputWrapArray = new byte[frameSize];
+            byte[] inputWrapArr = new byte[frameSize];
 
-            src.get(inputWrapArray);
+            src.get(inputWrapArr);
 
             long res;
 
             do {
-                res = Zstd.decompress(decompressArr, inputWrapArray);
+                res = Zstd.decompress(decompressArr, inputWrapArr);
 
                 if (Zstd.isError(res)) {
                     if (res == DEST_BUFFER_OVERFLOW_ERR)
@@ -165,17 +165,17 @@ public class ZstdEngine implements CompressionEngine {
         if (initPos + 4 + 1 + 3 /* MAGIC + FRAME_HEADER + BLOCK_HEADER */ > limit)
             return -1;
 
-        int offset = initPos;
+        int off = initPos;
 
-        boolean magicCheck = buf.get(offset++) == 40 &&
-                            buf.get(offset++) == -75 &&
-                            buf.get(offset++) == 47 &&
-                            buf.get(offset++) == -3;
+        boolean magicCheck = buf.get(off++) == 40 &&
+                            buf.get(off++) == -75 &&
+                            buf.get(off++) == 47 &&
+                            buf.get(off++) == -3;
 
         if (!magicCheck)
             throw new IOException("Invalid magic prefix.");
 
-        int frameHdrDesc = buf.get(offset) & 0xFF;
+        int frameHdrDesc = buf.get(off) & 0xFF;
 
         int contentSizeDesc = frameHdrDesc >>> 6;
         boolean singleSegment = (frameHdrDesc & 0b100000) != 0;
@@ -187,24 +187,24 @@ public class ZstdEngine implements CompressionEngine {
             (dictionaryDesc == 0 ? 0 : (1 << (dictionaryDesc - 1))) +
             (contentSizeDesc == 0 ? (singleSegment ? 1 : 0) : (1 << contentSizeDesc));
 
-        if (offset + hdrSize > limit)
+        if (off + hdrSize > limit)
             return -1;
 
-        offset += hdrSize;
+        off += hdrSize;
 
         boolean lastBlock;
 
         do {
-            if (offset + 3 > limit)
+            if (off + 3 > limit)
                 return -1;
 
             // read block header
             int hdr = (
-                ((buf.get(offset + 2) & 0xff) << 16) |
-                    ((buf.get(offset + 1) & 0xff) <<  8) |
-                    ((buf.get(offset) & 0xff))) & 0xFF_FFFF;
+                ((buf.get(off + 2) & 0xff) << 16) |
+                    ((buf.get(off + 1) & 0xff) <<  8) |
+                    ((buf.get(off) & 0xff))) & 0xFF_FFFF;
 
-            offset += 3 /* SIZE_OF_BLOCK_HEADER */;
+            off += 3 /* SIZE_OF_BLOCK_HEADER */;
 
             lastBlock = (hdr & 1) != 0;
             int blockType = (hdr >>> 1) & 0b11;
@@ -212,24 +212,24 @@ public class ZstdEngine implements CompressionEngine {
 
             switch (blockType) {
                 case 0:
-                    offset += blockSize;
+                    off += blockSize;
                     break;
                 case 1:
-                    offset += 1;
+                    off += 1;
                     break;
                 case 2:
-                    offset += blockSize;
+                    off += blockSize;
                     break;
             }
         }
         while (!lastBlock);
 
         if (hasChecksum)
-            offset += 3;
+            off += 3;
 
-        if (offset > limit)
+        if (off > limit)
             return -1;
 
-        return offset - initPos;
+        return off - initPos;
     }
 }

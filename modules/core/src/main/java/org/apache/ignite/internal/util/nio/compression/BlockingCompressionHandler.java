@@ -28,12 +28,12 @@ import static org.apache.ignite.internal.util.nio.compression.CompressionEngineR
 import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.OK;
 
 /** */
-public class BlockingCompressionHandler {
+public final class BlockingCompressionHandler {
     /** Size of a net buffers. */
     private static final int netBufSize = 32768;
 
     /** Logger. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** Compression engine. */
     private final CompressionEngine compressionEngine;
@@ -74,7 +74,8 @@ public class BlockingCompressionHandler {
         appBuf.order(order);
 
         if (log.isDebugEnabled())
-            log.debug("Started compression session [netBufSize=" + netBufSize + ", appBufSize=" + appBuf.capacity() + ']');
+            log.debug("Started compression session [netBufSize=" + netBufSize +
+                ", appBufSize=" + appBuf.capacity() + ']');
     }
 
     /** */
