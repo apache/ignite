@@ -29,8 +29,9 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.net.ConnectException;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
 import okhttp3.Dispatcher;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
@@ -40,14 +41,13 @@ import okhttp3.Response;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
 import org.apache.ignite.internal.util.typedef.internal.LT;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.logger.slf4j.Slf4jLogger;
 import org.slf4j.LoggerFactory;
 
 import static com.fasterxml.jackson.core.JsonToken.END_ARRAY;
 import static com.fasterxml.jackson.core.JsonToken.END_OBJECT;
 import static com.fasterxml.jackson.core.JsonToken.START_ARRAY;
+import static org.apache.ignite.console.agent.AgentUtils.trustManager;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_AUTH_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_FAILED;
 import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS_SUCCESS;
@@ -73,11 +73,30 @@ public class RestExecutor implements AutoCloseable {
         
         dispatcher.setMaxRequests(Integer.MAX_VALUE);
         dispatcher.setMaxRequestsPerHost(Integer.MAX_VALUE);
+        
 
-        httpClient = new OkHttpClient.Builder()
+
+        OkHttpClient.Builder builder = new OkHttpClient.Builder()
             .readTimeout(0, TimeUnit.MILLISECONDS)
-            .dispatcher(dispatcher)
-            .build();
+            .dispatcher(dispatcher);
+
+        // Workaround for use self-signed certificate
+        if (Boolean.getBoolean("trust.all")) {
+            try {
+                SSLContext ctx = SSLContext.getInstance("TLS");
+
+                // Create an SSLContext that uses our TrustManager
+                ctx.init(null, new TrustManager[] {trustManager()}, null);
+
+                builder.sslSocketFactory(ctx.getSocketFactory(), trustManager());
+
+                builder.hostnameVerifier((hostname, session) -> true);
+            } catch (Exception ignored) {
+                LT.warn(log, "Failed to initialize the Trust Manager for \"-Dtrust.all\" option to skip certificate validation.");
+            }
+        }
+
+        httpClient = builder.build();
     }
 
     /**

@@ -32,7 +32,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -43,11 +42,10 @@ import java.util.jar.Manifest;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLHandshakeException;
 import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import org.apache.ignite.console.agent.handlers.ClusterListener;
+import org.apache.ignite.console.agent.handlers.DatabaseListener;
 import org.apache.ignite.console.agent.handlers.RestListener;
 import org.apache.ignite.console.agent.rest.RestExecutor;
-import org.apache.ignite.console.agent.handlers.DatabaseListener;
 import org.apache.ignite.console.agent.rest.RestExecutorSecurity;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -64,6 +62,7 @@ import static io.socket.client.Socket.EVENT_DISCONNECT;
 import static io.socket.client.Socket.EVENT_ERROR;
 import static org.apache.ignite.console.agent.AgentUtils.fromJSON;
 import static org.apache.ignite.console.agent.AgentUtils.toJSON;
+import static org.apache.ignite.console.agent.AgentUtils.trustManager;
 
 /**
  * Ignite Web Agent launcher.
@@ -114,29 +113,6 @@ public class AgentLauncher {
 
         // Add SLF4JBridgeHandler to j.u.l's root logger.
         SLF4JBridgeHandler.install();
-    }
-
-    /**
-     * Create a trust manager that trusts all certificates It is not using a particular keyStore
-     */
-    private static TrustManager[] getTrustManagers() {
-        return new TrustManager[] {
-            new X509TrustManager() {
-                /** {@inheritDoc} */
-                @Override public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-                    return new X509Certificate[0];
-                }
-
-                /** {@inheritDoc} */
-                @Override public void checkClientTrusted(
-                    java.security.cert.X509Certificate[] certs, String authType) {
-                }
-
-                /** {@inheritDoc} */
-                @Override public void checkServerTrusted(
-                    java.security.cert.X509Certificate[] certs, String authType) {
-                }
-            }};
     }
 
     /**
@@ -363,7 +339,7 @@ public class AgentLauncher {
             SSLContext ctx = SSLContext.getInstance("TLS");
 
             // Create an SSLContext that uses our TrustManager
-            ctx.init(null, getTrustManagers(), null);
+            ctx.init(null, new TrustManager[] {trustManager()}, null);
 
             opts.sslContext = ctx;
         }
