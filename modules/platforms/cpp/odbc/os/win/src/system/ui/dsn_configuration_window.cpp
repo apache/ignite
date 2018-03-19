@@ -444,7 +444,7 @@ namespace ignite
                     common::StripSurroundingWhitespaces(dsnStr);
                     // Stripping of whitespaces off the schema skipped intentionally
 
-                    LOG_MSG("Retriving arguments:");
+                    LOG_MSG("Retrieving arguments:");
                     LOG_MSG("DSN:                " << dsnStr);
                     LOG_MSG("Address:            " << addressStr);
                     LOG_MSG("Schema:             " << schemaStr);
@@ -488,7 +488,7 @@ namespace ignite
                     sslCertFileEdit->GetText(sslCertStr);
                     sslCaFileEdit->GetText(sslCaStr);
 
-                    LOG_MSG("Retriving arguments:");
+                    LOG_MSG("Retrieving arguments:");
                     LOG_MSG("SSL Mode:           " << sslModeStr);
                     LOG_MSG("SSL Key:            " << sslKeyStr);
                     LOG_MSG("SSL Certificate:    " << sslCertStr);
@@ -527,7 +527,7 @@ namespace ignite
                     lazy = lazyCheckBox->IsChecked();
                     skipReducerOnUpdate = skipReducerOnUpdateCheckBox->IsChecked();
 
-                    LOG_MSG("Retriving arguments:");
+                    LOG_MSG("Retrieving arguments:");
                     LOG_MSG("Page size:              " << pageSize);
                     LOG_MSG("Distributed Joins:      " << (distributedJoins ? "true" : "false"));
                     LOG_MSG("Enforce Join Order:     " << (enforceJoinOrder ? "true" : "false"));

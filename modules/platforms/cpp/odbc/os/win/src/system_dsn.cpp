@@ -164,8 +164,6 @@ BOOL INSTAPI ConfigDSN(HWND hwndParent, WORD req, LPCSTR driver, LPCSTR attribut
         return FALSE;
 
     LOG_MSG("Driver: " << driver);
-    LOG_MSG("Attributes: " << attributes);
-
     LOG_MSG("DSN: " << config.GetDsn());
 
     switch (req)

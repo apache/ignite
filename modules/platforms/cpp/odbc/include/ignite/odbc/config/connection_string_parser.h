@@ -94,7 +94,7 @@ namespace ignite
                 };
 
                 /**
-                 * Default constructor.
+                 * Constructor.
                  *
                  * @param cfg Configuration.
                  */

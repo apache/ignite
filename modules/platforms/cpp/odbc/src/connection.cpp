@@ -640,9 +640,9 @@ namespace ignite
         {
             endPoints.clear();
 
-            if (cfg.IsHostSet() && !cfg.IsAddressesSet())
+            if (!cfg.IsAddressesSet())
             {
-                LOG_MSG("'Server' set while 'Address' is not set. Using legacy connection method.");
+                LOG_MSG("'Address' is not set. Using legacy connection method.");
 
                 endPoints.push_back(EndPoint(cfg.GetHost(), cfg.GetTcpPort()));
 

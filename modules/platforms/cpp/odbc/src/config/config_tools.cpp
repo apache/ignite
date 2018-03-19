@@ -234,7 +234,7 @@ namespace ignite
                 {
                     std::stringstream stream;
 
-                    stream << "Port value is too large: '" << port << "'. Ignoring address.";
+                    stream << "Port value is out of range: '" << port << "'. Ignoring address.";
 
                     if (diag)
                         diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, stream.str());

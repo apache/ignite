@@ -46,6 +46,8 @@ namespace ignite
              *
              * @param host Host.
              * @param port Port.
+             * @param range Number of ports after the @c port that should be
+             *    tried if the previous are unavailable.
              */
             EndPoint(const std::string& host, uint16_t port, uint16_t range = 0) :
                 host(host),
@@ -61,7 +63,7 @@ namespace ignite
             /** TCP port. */
             uint16_t port;
 
-            /** TCP port. */
+            /** Number of ports after the port that should be tried if the previous are unavailable. */
             uint16_t range;
         };
     }
