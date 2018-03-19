@@ -378,7 +378,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Check wal archive size configuration for correctness
+     * Check wal archive size configuration for correctness.
+     *
+     * @param memCfg durable memory configuration for an Apache Ignite node.
      */
     private void checkWalArchiveSizeConfiguration(DataStorageConfiguration memCfg) throws IgniteCheckedException {
         if (memCfg.getWalHistorySize() == DFLT_WAL_HISTORY_SIZE || memCfg.getWalHistorySize() == Integer.MAX_VALUE)

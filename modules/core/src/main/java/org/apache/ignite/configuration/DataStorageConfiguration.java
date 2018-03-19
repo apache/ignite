@@ -507,7 +507,7 @@ public class DataStorageConfiguration implements Serializable {
     }
 
     /**
-     * Gets a max allowed size of WAL archives. In MBytes
+     * Gets a max allowed size of WAL archives. In bytes.
      *
      * @return max size of WAL archive directory.
      */

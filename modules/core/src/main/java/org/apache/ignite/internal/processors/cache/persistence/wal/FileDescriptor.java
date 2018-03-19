@@ -22,25 +22,28 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * WAL file descriptor.
  */
 public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRecordsIterator.AbstractFileDescriptor {
-    /** file extension of WAL segment */
+
+    /** file extension of WAL segment. */
     private static final String WAL_SEGMENT_FILE_EXT = ".wal";
 
-    /** Length of WAL segment file name */
+    /** Length of WAL segment file name. */
     private static final int WAL_SEGMENT_FILE_NAME_LENGTH = 16;
 
-    /** File represented by this class */
+    /** File represented by this class. */
     protected final File file;
 
-    /** Absolute WAL segment file index */
+    /** Absolute WAL segment file index. */
     protected final long idx;
 
     /**
-     * Creates file descriptor. Index is restored from file name
+     * Creates file descriptor. Index is restored from file name.
      *
      * @param file WAL segment file.
      */
@@ -50,7 +53,7 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
 
     /**
      * @param file WAL segment file.
-     * @param idx Absolute WAL segment file index. For null value index is restored from file name
+     * @param idx Absolute WAL segment file index. For null value index is restored from file name.
      */
     public FileDescriptor(@NotNull File file, @Nullable Long idx) {
         this.file = file;

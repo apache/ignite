@@ -1080,7 +1080,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /**
-     * Give last checkpoint file idx
+     * Give last checkpoint file idx.
      */
     private long lashCheckpointFileIdx() {
         WALPointer lastCheckpointMark = cctx.database().lastCheckpointMarkWalPointer();
@@ -2826,7 +2826,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
          * @param serializerFactory Serializer factory.
          * @param archiver File Archiver.
          * @param decompressor Decompressor.
-         * @param log Logger  @throws IgniteCheckedException If failed to initialize WAL segment.
+         * @param log Logger
+         * @throws IgniteCheckedException If failed to initialize WAL segment.
          */
         private RecordsIterator(
             GridCacheSharedContext cctx,

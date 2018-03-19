@@ -822,12 +822,13 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER = "IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER";
 
     /**
-     * Property for setup percentage of archive size for checkpoint trigger.
+     * Property for setup percentage of archive size for checkpoint trigger. Default value is 0.25
      */
     public static final String IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE";
 
     /**
      * Property for setup percentage of WAL archive size to calculate threshold since which removing of old archive should be started.
+     * Default value is 0.5
      */
     public static final String IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE = "IGNITE_THRESHOLD_WAL_ARCHIVE_SIZE_PERCENTAGE";
 

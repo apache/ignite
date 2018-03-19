@@ -161,7 +161,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static java.nio.file.StandardOpenOption.READ;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_CHECKPOINT_TRIGGER_ARCHIVE_SIZE_PERCENTAGE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
@@ -1774,9 +1773,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         return checkpointHist;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     public WALPointer lastCheckpointMarkWalPointer() {
         CheckpointEntry lastCheckpointEntry = checkpointHist.lastCheckpointEntry;
 
@@ -3657,7 +3654,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private final NavigableMap<Long, CheckpointEntry> histMap = new ConcurrentSkipListMap<>();
 
-        /** Link to last checkpoint entry for fast access. Should be equal histMap.lastEntry() */
+        /**
+         * Link to last checkpoint entry for fast access. Should be equal histMap.lastEntry().
+         * Implies multithreading access together with {@link #histMap}. Synchronized write and volatile read.
+         */
         private volatile CheckpointEntry lastCheckpointEntry = null;
 
         /**
@@ -3724,11 +3724,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * Adds checkpoint entry after the corresponding WAL record has been written to WAL. The checkpoint itself
          * is not finished yet.
          *
-         * @param entry Entry to ad.
+         * @param entry Entry to add.
          */
         private void addCheckpointEntry(CheckpointEntry entry) {
             synchronized (this) {
                 histMap.put(entry.checkpointTimestamp(), entry);
+
                 lastCheckpointEntry = entry;
             }
         }
@@ -3816,10 +3817,13 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         /**
          * Clears checkpoint history by archive size.
+         *
+         * @param chp checkpoint which finishing now
          */
         private void onMaxWalArchiveSizeCheckpointFinished(Checkpoint chp) {
             if(persistenceCfg.getMaxWalArchiveSize() == Integer.MAX_VALUE){
                 finishCheckpoint(chp, 0);
+
                 return;
             }
 
@@ -3831,6 +3835,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if(totalArchiveSize < allowedThresholdWalArchiveSize) {
                 finishCheckpoint(chp, 0);
+
                 return;
             }
 
@@ -3840,6 +3845,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             if (checkpointMarkToDel == null) {
                 finishCheckpoint(chp, 0);
+
                 return;
             }
 
@@ -3851,7 +3857,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             finishCheckpoint(chp, cctx.wal().truncate(null, checkpointMarkToDel));
         }
 
-        /** Calculate checkpoint mark to which checkpoints can be deleted(not including this checkpoint) */
+        /**
+         * Calculate checkpoint mark to which checkpoints can be deleted(not including this checkpoint)
+         */
         @Nullable private WALPointer calculateCheckpointMarkToDelete(Checkpoint chp, long absFileIdxForDel) {
             long fileUntilDel = absFileIdxForDel + 1;
 
@@ -3867,7 +3875,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return null;
         }
 
-        /** Calculate max allowed index of files to delete */
+        /**
+         * Calculate max allowed index of files to delete
+         */
         private long calculateFileIdxToDelete(FileDescriptor[] fileDescriptors, Long totalArchiveSize) {
             long absFileIdxForDel = -1;
             long sizeOfOldestArchivedFiles = 0;
@@ -3875,7 +3885,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             for (FileDescriptor file : fileDescriptors) {
                 sizeOfOldestArchivedFiles += file.file().length();
 
-                if(totalArchiveSize - sizeOfOldestArchivedFiles < allowedThresholdWalArchiveSize){
+                if (totalArchiveSize - sizeOfOldestArchivedFiles < allowedThresholdWalArchiveSize) {
                     absFileIdxForDel = file.getIdx();
 
                     break;
@@ -3885,7 +3895,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return absFileIdxForDel;
         }
 
-        /** Do finish action for checkpoint */
+        /**
+         * Do finish action for checkpoint
+         *
+         * @param chp checkpoint which finishing now
+         * @param deleted {@code True} if wal files was deleted
+         */
         private void finishCheckpoint(Checkpoint chp, int deleted) {
             chp.walFilesDeleted = deleted;
 
@@ -3893,9 +3908,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 cctx.wal().allowCompressionUntil(chp.cpEntry.checkpointMark());
         }
 
-        /** Retrieve absolute file index by checkpoint entry */
+        /**
+         * Retrieve absolute file index by checkpoint entry.
+         *
+         * @param pointer checkpoint entry for which need to calculate absolute file index.
+         * @return absolute file index for given checkpoint entry.
+         */
         private long absFileIdx(CheckpointEntry pointer) {
-            return ((FileWALPointer) pointer.checkpointMark()).index();
+            return ((FileWALPointer)pointer.checkpointMark()).index();
         }
 
         /**
