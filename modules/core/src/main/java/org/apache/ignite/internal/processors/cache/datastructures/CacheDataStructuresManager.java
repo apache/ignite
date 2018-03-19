@@ -143,7 +143,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     private final CountDownLatch initSetLatch = new CountDownLatch(1);
 
     /** Indicates that cluster activation callback was called. */
-    private volatile boolean activated;
+    private final AtomicBoolean activated = new AtomicBoolean();
 
     /** Indicates that local set data recovery may be in progress. */
     private volatile boolean awaitSetData;
@@ -230,8 +230,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * Called when cluster performs activation.
      */
     public void onActivate() {
-        if (!activated) {
-            awaitSetData = activated = true;
+        if (activated.compareAndSet(false, true)) {
+            awaitSetData = true;
 
             restoreSetDataMap(cctx);
         }
@@ -527,9 +527,9 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     @Nullable public GridConcurrentHashSet<SetItemKey> setData(IgniteUuid id) {
         try {
             if (awaitSetData) {
-                awaitSetData = false;
-
                 U.await(initSetLatch);
+
+                awaitSetData = false;
             }
 
             return setDataMap.get(id);
