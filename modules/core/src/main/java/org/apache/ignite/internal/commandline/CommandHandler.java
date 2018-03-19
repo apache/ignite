@@ -93,6 +93,9 @@ public class CommandHandler {
     private static final String BASELINE_REMOVE = "remove";
 
     /** */
+    private static final String BASELINE_COLLECT = "collect";
+
+    /** */
     private static final String BASELINE_SET = "set";
 
     /** */
@@ -215,7 +218,7 @@ public class CommandHandler {
 
             case BASELINE:
                 if (!F.isEmpty(args.baselineAction()))
-                    str = "Warning! This command will perform changes in baseline!";
+                    str = "Warning: the command will perform changes in baseline.";
         }
 
         return str == null ? null : str + "\nPress 'y' to continue...";
@@ -347,8 +350,9 @@ public class CommandHandler {
                 baselineVersion(client, baselineArgs);
                 break;
 
-            default:
+            case BASELINE_COLLECT:
                 baselinePrint(client);
+                break;
         }
     }
 
@@ -634,18 +638,20 @@ public class CommandHandler {
                     case BASELINE:
                         commands.add(BASELINE);
 
-                        baselineAct = peekNextArg();
-                        if (baselineAct != null) {
-                            baselineAct = baselineAct.toLowerCase();
+                        baselineAct = BASELINE_COLLECT; //default baseline action
 
-                            if (BASELINE_ADD.equals(baselineAct) || BASELINE_REMOVE.equals(baselineAct) ||
-                                BASELINE_SET.equals(baselineAct) || BASELINE_SET_VERSION.equals(baselineAct)) {
-                                nextArg(""); // Skip baseLineAct we peeked.
+                        str = peekNextArg();
+
+                        if (str != null) {
+                            str = str.toLowerCase();
+
+                            if (BASELINE_ADD.equals(str) || BASELINE_REMOVE.equals(str) ||
+                                BASELINE_SET.equals(str) || BASELINE_SET_VERSION.equals(str)) {
+                                baselineAct = nextArg("Expected baseline action");
 
                                 baselineArgs = nextArg("Expected baseline arguments");
                             }
                         }
-
                 }
             }
             else {
@@ -679,6 +685,8 @@ public class CommandHandler {
                     case CMD_FORCE:
                         force = true;
                         break;
+                    default:
+                        throw new IllegalArgumentException("Unexpected argument: " + str);
                 }
             }
         }
@@ -726,6 +734,10 @@ public class CommandHandler {
                 usage("  Remove nodes from baseline topology:", BASELINE, " remove consistentId1[,consistentId2,....,consistentIdN]");
                 usage("  Set baseline topology:", BASELINE, " set consistentId1[,consistentId2,....,consistentIdN]");
                 usage("  Set baseline topology based on version:", BASELINE, " version topologyVersion");
+
+                log("By default cluster deactivation and changes in baseline topology commands request interactive confirmation. ");
+                log("  --force option can be used to execute commands without prompting for confirmation.");
+                nl();
 
                 log("Default values:");
                 log("    HOST_OR_IP=" + DFLT_HOST);
