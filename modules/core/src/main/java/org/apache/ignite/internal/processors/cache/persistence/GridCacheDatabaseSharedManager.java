@@ -128,6 +128,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -3114,7 +3115,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 assert cpPtr != null;
 
                 // Sync log outside the checkpoint write lock.
-                cctx.wal().fsync(cpPtr);
+                cctx.wal().fsync(FileWriteAheadLogManager.FSYNC_FAKE_PTR);
 
                 long cpTs = System.currentTimeMillis();
 
@@ -3153,7 +3154,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
             else {
                 if (curr.nextSnapshot)
-                    cctx.wal().fsync(null);
+                    cctx.wal().fsync(FileWriteAheadLogManager.FSYNC_FAKE_PTR);
 
                 if (printCheckpointStats) {
                     if (log.isInfoEnabled())

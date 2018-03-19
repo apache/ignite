@@ -126,6 +126,9 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
  */
 @SuppressWarnings("IfMayBeConditional")
 public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter implements IgniteWriteAheadLogManager {
+    /** Fsync fake ptr. */
+    public static WALPointer FSYNC_FAKE_PTR = new FileWALPointer(0, 0, 0);
+
     /** {@link MappedByteBuffer#force0(java.io.FileDescriptor, long, long)}. */
     private static final Method force0 = findNonPublicMethod(
         MappedByteBuffer.class, "force0",
@@ -755,11 +758,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         if (mode == LOG_ONLY) {
             cur.flushOrWait(filePtr);
 
-            return;
+            if (ptr != FSYNC_FAKE_PTR)
+                return;
         }
 
         // No need to sync if was rolled over.
-        if (filePtr != null && !cur.needFsync(filePtr))
+        if (filePtr != null && filePtr != FSYNC_FAKE_PTR && !cur.needFsync(filePtr))
             return;
 
         cur.fsync(filePtr);
@@ -1702,7 +1706,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
-                if (mode == WALMode.FSYNC) {
+                if (mode == WALMode.FSYNC || mode == LOG_ONLY) {
                     try (FileIO f0 = ioFactory.create(dstFile, CREATE, READ, WRITE)) {
                         f0.force();
                     }
@@ -2766,7 +2770,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         }
 
                         // Do the final fsync.
-                        if (mode == WALMode.FSYNC) {
+                        if (mode == WALMode.FSYNC || mode == LOG_ONLY) {
                             if (mmap)
                                 ((MappedByteBuffer)buf.buf).force();
                             else
