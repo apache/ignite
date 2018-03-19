@@ -39,6 +39,7 @@ import javax.cache.expiry.ExpiryPolicy;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.cache.CacheInterceptor;
@@ -106,6 +107,7 @@ import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_READ_LOAD_BALANCING;
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
@@ -257,6 +259,9 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** Statistics enabled flag. */
     private volatile boolean statisticsEnabled;
+
+    /** Whether to enable read load balancing. */
+    private final boolean readLoadBalancingEnabled = IgniteSystemProperties.getBoolean(IGNITE_READ_LOAD_BALANCING, true);
 
     /**
      * Empty constructor required for {@link Externalizable}.
@@ -433,6 +438,14 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean isReplicatedAffinityNode() {
         return isReplicated() && affinityNode();
+    }
+
+    /**
+     * @return {@code true} if read load balancing is enabled.
+     * @see IgniteSystemProperties#IGNITE_READ_LOAD_BALANCING
+     */
+    public boolean isReadLoadBalancingEnabled() {
+        return readLoadBalancingEnabled;
     }
 
     /**
