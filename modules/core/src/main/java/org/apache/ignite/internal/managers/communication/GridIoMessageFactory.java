@@ -893,12 +893,12 @@ public class GridIoMessageFactory implements MessageFactory {
 
                 break;
 
-            case 129:
+            case 130:
                 msg = new ClusterMetricsUpdateMessage();
 
                 break;
 
-            case 130:
+            case 131:
                 msg = new ContinuousRoutineStartResultMessage();
 
                 break;

@@ -138,7 +138,7 @@ public class ClusterMetricsUpdateMessage implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 129;
+        return 130;
     }
 
     /** {@inheritDoc} */

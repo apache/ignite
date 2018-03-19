@@ -1128,7 +1128,7 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
      * @throws Exception If failed.
      */
     private void stateChangeFailover3(boolean activate) throws Exception {
-        testDiscoSpi = true;
+        testReconnectSpi = true;
 
         startNodesAndBlockStatusChange(4, 0, 0, !activate);
 
