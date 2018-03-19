@@ -16,12 +16,23 @@
  */
 
 queries-notebook {
-    breadcrumbs {
-        margin-bottom: 20px;
-        padding-left: 0;
 
-        .breadcrumbs__home {
-            margin-left: 0 !important;
+    .notebooks-top {
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+
+        breadcrumbs {
+            padding-left: 0;
+
+            .breadcrumbs__home {
+                margin-left: 0 !important;
+            }
+        }
+
+        cluster-selector {
+            margin-left: 30px;
+            display: inline-flex;
         }
     }
 
