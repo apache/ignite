@@ -1880,7 +1880,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     Files.move(tmpZip.toPath(), zip.toPath());
 
-                    if (mode == WALMode.FSYNC) {
+                    if (mode == WALMode.FSYNC || mode == WALMode.LOG_ONLY) {
                         try (FileIO f0 = ioFactory.create(zip, CREATE, READ, WRITE)) {
                             f0.force();
                         }
