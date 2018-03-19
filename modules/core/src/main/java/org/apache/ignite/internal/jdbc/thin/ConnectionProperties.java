@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.jdbc.thin;
 
 import java.sql.SQLException;
+import org.apache.ignite.internal.util.HostAndPortRange;
 
 /**
  * Provide access and manipulations with connection JDBC properties.
@@ -51,25 +52,14 @@ public interface ConnectionProperties {
     public void setUrl(String url) throws SQLException;
 
     /**
-     * @return Host name or host's IP to connect.
+     * @return Ignite nodes addresses.
      */
-    public String getHost();
+    public HostAndPortRange[] getAddresses();
 
     /**
-     * @param host Host name or host's IP to connect.
+     * @param addrs Ignite nodes addresses.
      */
-    public void setHost(String host);
-
-    /**
-     * @return Port to connect.
-     */
-    public int getPort();
-
-    /**
-     * @param port Port to connect.
-     * @throws SQLException On error.
-     */
-    public void setPort(int port) throws SQLException;
+    public void setAddresses(HostAndPortRange[] addrs);
 
     /**
      * @return Distributed joins flag.
