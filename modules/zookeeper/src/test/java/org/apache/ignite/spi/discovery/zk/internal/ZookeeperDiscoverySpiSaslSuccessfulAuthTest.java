@@ -14,38 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.spi.discovery.zk.internal;
 
+import org.apache.zookeeper.client.ZooKeeperSaslClient;
+
 /**
- * Zk Runnable.
+ *
  */
-public abstract class ZkRunnable extends ZkAbstractCallabck implements Runnable {
-    /**
-     * @param rtState Runtime state.
-     * @param impl Discovery impl.
-     */
-    ZkRunnable(ZkRuntimeState rtState, ZookeeperDiscoveryImpl impl) {
-        super(rtState, impl);
+public class ZookeeperDiscoverySpiSaslSuccessfulAuthTest extends ZookeeperDiscoverySpiSaslAuthAbstractTest {
+    /** */
+    public void testIgniteNodesWithValidPasswordSuccessfullyJoins() throws Exception {
+        System.setProperty(ZooKeeperSaslClient.LOGIN_CONTEXT_NAME_KEY,
+            "ValidZookeeperClient");
+
+        startGrids(3);
+
+        waitForTopology(3);
     }
 
-    /** {@inheritDoc} */
-    @Override public void run() {
-        if (!onProcessStart())
-            return;
+    /** */
+    public void testIgniteNodeWithoutSaslConfigurationSuccessfullyJoins() throws Exception {
+        //clearing SASL-related system properties that were set in beforeTest
+        clearSaslSystemProperties();
 
-        try {
-            run0();
+        startGrid(0);
 
-            onProcessEnd();
-        }
-        catch (Throwable e) {
-            onProcessError(e);
-        }
+        waitForTopology(1);
     }
-
-    /**
-     *
-     */
-    protected abstract void run0() throws Exception;
 }

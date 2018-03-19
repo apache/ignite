@@ -419,11 +419,11 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         try {
             assertFalse("Unexpected error, see log for details", err);
 
-            checkEventsConsistency();
+//            checkEventsConsistency();
 
             checkInternalStructuresCleanup();
 
-            // checkZkNodesCleanup();
+//             checkZkNodesCleanup();
         }
         finally {
             reset();
@@ -1090,6 +1090,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
             srvs.get(1).restart();
 
+            U.sleep(4000);
+
             startGrid(4);
 
             waitForTopology(4);
@@ -1282,7 +1284,12 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    long internalOrder = GridTestUtils.getFieldValue(spi, "impl", "rtState", "internalOrder");
+                    Object spiImpl = GridTestUtils.getFieldValue(spi, "impl");
+
+                    if (spiImpl == null)
+                        return false;
+
+                    long internalOrder = GridTestUtils.getFieldValue(spiImpl, "rtState", "internalOrder");
 
                     return internalOrder > 0;
                 }
@@ -1860,25 +1867,29 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         AtomicBoolean stop = new AtomicBoolean();
 
-        IgniteInternalFuture<?> fut1 = restartZk ? startRestartZkServers(stopTime, stop) : null;
-        IgniteInternalFuture<?> fut2 = closeClientSock ? startCloseZkClientSocket(stopTime, stop) : null;
+        IgniteInternalFuture<?> fut1 = null;
 
-        int INIT_NODES = 10;
-
-        startGridsMultiThreaded(INIT_NODES);
-
-        final int MAX_NODES = 20;
-
-        final List<Integer> startedNodes = new ArrayList<>();
-
-        for (int i = 0; i < INIT_NODES; i++)
-            startedNodes.add(i);
-
-        ThreadLocalRandom rnd = ThreadLocalRandom.current();
-
-        final AtomicInteger startIdx = new AtomicInteger(INIT_NODES);
+        IgniteInternalFuture<?> fut2 = null;
 
         try {
+            fut1 = restartZk ? startRestartZkServers(stopTime, stop) : null;
+            fut2 = closeClientSock ? startCloseZkClientSocket(stopTime, stop) : null;
+
+            int INIT_NODES = 10;
+
+            startGridsMultiThreaded(INIT_NODES);
+
+            final int MAX_NODES = 20;
+
+            final List<Integer> startedNodes = new ArrayList<>();
+
+            for (int i = 0; i < INIT_NODES; i++)
+                startedNodes.add(i);
+
+            ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+            final AtomicInteger startIdx = new AtomicInteger(INIT_NODES);
+
             while (System.currentTimeMillis() < stopTime) {
                 if (startedNodes.size() >= MAX_NODES) {
                     int stopNodes = rnd.nextInt(5) + 1;
@@ -4055,7 +4066,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
                 return true;
             }
-        }, 10000));
+        }, 30000));
     }
 
     /**

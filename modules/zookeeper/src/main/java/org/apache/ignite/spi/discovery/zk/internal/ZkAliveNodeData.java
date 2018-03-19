@@ -21,7 +21,7 @@ import java.io.Serializable;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- *
+ * Zk Alive Node Data.
  */
 public class ZkAliveNodeData implements Serializable {
     /** */

@@ -17,13 +17,12 @@
 
 package org.apache.ignite.spi.discovery.zk.internal;
 
-import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Zk Force Node Fail Message.
  */
 public class ZkForceNodeFailMessage implements DiscoverySpiCustomMessage, ZkInternalMessage {
     /** */

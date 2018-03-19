@@ -14,38 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.ignite.spi.discovery.zk.internal;
 
-/**
- * Zk Runnable.
- */
-public abstract class ZkRunnable extends ZkAbstractCallabck implements Runnable {
-    /**
-     * @param rtState Runtime state.
-     * @param impl Discovery impl.
-     */
-    ZkRunnable(ZkRuntimeState rtState, ZookeeperDiscoveryImpl impl) {
-        super(rtState, impl);
-    }
+import org.apache.zookeeper.client.ZooKeeperSaslClient;
+import org.junit.Assert;
 
-    /** {@inheritDoc} */
-    @Override public void run() {
-        if (!onProcessStart())
-            return;
+/**
+ *
+ */
+public class ZookeeperDiscoverySpiSaslFailedAuthTest extends ZookeeperDiscoverySpiSaslAuthAbstractTest {
+    /** */
+    public void testIgniteNodeWithInvalidPasswordFailsToJoin() throws Exception {
+        System.setProperty(ZooKeeperSaslClient.LOGIN_CONTEXT_NAME_KEY,
+            "InvalidZookeeperClient");
+
+        System.setProperty("IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT", Integer.toString(1));
 
         try {
-            run0();
+            startGrid(0);
 
-            onProcessEnd();
+            Assert.fail("Ignite node with invalid password should fail on join.");
         }
-        catch (Throwable e) {
-            onProcessError(e);
+        catch (Exception e) {
+            //ignored
         }
     }
-
-    /**
-     *
-     */
-    protected abstract void run0() throws Exception;
 }

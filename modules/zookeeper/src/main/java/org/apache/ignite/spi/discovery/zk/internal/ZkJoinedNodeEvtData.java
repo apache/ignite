@@ -21,7 +21,7 @@ import java.io.Serializable;
 import java.util.UUID;
 
 /**
- *
+ * Zk Joined Node Evt Data.
  */
 public class ZkJoinedNodeEvtData implements Serializable {
     /** */
