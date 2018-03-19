@@ -65,7 +65,7 @@ public class GridNearTxFastFinishFuture extends GridFutureAdapter<IgniteInternal
                 tx.state(PREPARED);
                 tx.state(COMMITTING);
 
-                tx.context().tm().fastFinishTx(tx, true, false);
+                tx.context().tm().fastFinishTx(tx, true, true);
 
                 tx.state(COMMITTED);
             }
