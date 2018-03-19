@@ -114,27 +114,27 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
      * Test 'get' operations requests generator distribution.
      *
      * @throws Exception In case of an error.
-     * @see #runTestGetRequestsGeneratorDistribution(boolean)
+     * @see #runTestBalancingDistribution(boolean)
      */
     public void testGetRequestsGeneratorDistribution() throws Exception {
-        runTestGetRequestsGeneratorDistribution(false);
+        runTestBalancingDistribution(false);
     }
 
     /**
      * Test 'getAll' operations requests generator distribution.
      *
      * @throws Exception In case of an error.
-     * @see #runTestGetRequestsGeneratorDistribution(boolean)
+     * @see #runTestBalancingDistribution(boolean)
      */
     public void testGetAllRequestsGeneratorDistribution() throws Exception {
-        runTestGetRequestsGeneratorDistribution(true);
+        runTestBalancingDistribution(true);
     }
 
     /**
-     * @param batchMode Test mode.
+     * @param batchMode Whenever 'get' or 'getAll' operations are used in the test.
      * @throws Exception In case of an error.
      */
-    protected void runTestGetRequestsGeneratorDistribution(boolean batchMode) throws Exception {
+    protected void runTestBalancingDistribution(boolean batchMode) throws Exception {
         IgniteCache<Integer, String> cache = grid(0).createCache(cacheConfiguration());
 
         List<Integer> keys = primaryKeys(cache, PRIMARY_KEYS_NUMBER);
@@ -157,34 +157,34 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
      * Tests that the 'get' operation requests are routed to node with same MAC address as at requester.
      *
      * @throws Exception In case of an error.
-     * @see #runTestGetAllRequestsDistribution(UUID, boolean)
+     * @see #runTestSameHostDistribution(UUID, boolean)
      */
     public void testGetRequestsDistribution() throws Exception {
         UUID destId = grid(0).localNode().id();
 
-        runTestGetAllRequestsDistribution(destId, false);
+        runTestSameHostDistribution(destId, false);
     }
 
     /**
      * Tests that the 'getAll' operation requests are routed to node with same MAC address as at requester.
      *
      * @throws Exception In case of an error.
-     * @see #runTestGetAllRequestsDistribution(UUID, boolean)
+     * @see #runTestSameHostDistribution(UUID, boolean)
      */
     public void testGetAllRequestsDistribution() throws Exception {
         UUID destId = grid(gridCount() - 1).localNode().id();
 
-        runTestGetAllRequestsDistribution(destId, true);
+        runTestSameHostDistribution(destId, true);
     }
 
     /**
-     * Tests that the 'get' and 'getAll requests are routed to node with same MAC address as at requester.
+     * Tests that the 'get' and 'getAll' requests are routed to node with same MAC address as at requester.
      *
      * @param destId Destination Ignite instance id for requests distribution.
      * @param batchMode Test mode.
      * @throws Exception In case of an error.
      */
-    protected void runTestGetAllRequestsDistribution(final UUID destId, final boolean batchMode) throws Exception {
+    protected void runTestSameHostDistribution(final UUID destId, final boolean batchMode) throws Exception {
         Map<UUID, String> macs = getClusterMacs();
 
         String clientMac = macs.get(grid(CLIENT_NAME).localNode().id());
@@ -273,7 +273,7 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
     /**
      * @return Caching mode.
      */
-    protected CacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return REPLICATED;
     }
 
@@ -301,9 +301,10 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
             for (ClusterNode node : ignite.cluster().nodes()) {
                 String mac = macs.get(node.id());
 
-                assert mac != null;
+                assertNotNull(mac);
 
                 Map<String, Object> attrs = new HashMap<>(node.attributes());
+
                 attrs.put(ATTR_MACS, mac);
 
                 ((TcpDiscoveryNode)node).setAttributes(attrs);
