@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -38,6 +38,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Ssl;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Configuration;
@@ -132,6 +133,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(typeof(int), queryEntity.Fields.Single().FieldType);
             Assert.IsTrue(queryEntity.Fields.Single().IsKeyField);
             Assert.IsTrue(queryEntity.Fields.Single().NotNull);
+            Assert.AreEqual(3.456d, (double)queryEntity.Fields.Single().DefaultValue);
             Assert.AreEqual("somefield.field", queryEntity.Aliases.Single().FullName);
             Assert.AreEqual("shortField", queryEntity.Aliases.Single().Alias);
 
@@ -250,6 +252,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(client.TcpNoDelay);
             Assert.AreEqual(14, client.MaxOpenCursorsPerConnection);
             Assert.AreEqual(15, client.ThreadPoolSize);
+            Assert.AreEqual(19, client.IdleTimeout.TotalSeconds);
 
             var pers = cfg.PersistentStoreConfiguration;
 
@@ -307,6 +310,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(16, ds.WalSegments);
             Assert.AreEqual(17, ds.WalSegmentSize);
             Assert.AreEqual("wal-store", ds.WalPath);
+            Assert.AreEqual(TimeSpan.FromSeconds(18), ds.WalAutoArchiveAfterInactivity);
             Assert.IsTrue(ds.WriteThrottlingEnabled);
 
             var dr = ds.DataRegionConfigurations.Single();
@@ -333,6 +337,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(6, dr.MetricsSubIntervalCount);
             Assert.AreEqual("swap2", dr.SwapPath);
             Assert.IsFalse(dr.MetricsEnabled);
+
+            Assert.IsInstanceOf<SslContextFactory>(cfg.SslContextFactory);
         }
 
         /// <summary>
@@ -675,7 +681,8 @@ namespace Apache.Ignite.Core.Tests
                                     new QueryField("field", typeof(int))
                                     {
                                         IsKeyField = true,
-                                        NotNull = true
+                                        NotNull = true,
+                                        DefaultValue = "foo"
                                     }
                                 },
                                 Indexes = new[]
@@ -894,7 +901,11 @@ namespace Apache.Ignite.Core.Tests
                     SocketReceiveBufferSize = 5,
                     SocketSendBufferSize = 6,
                     TcpNoDelay = false,
-                    ThreadPoolSize = 7
+                    ThinClientEnabled = false,
+                    OdbcEnabled = false,
+                    JdbcEnabled = false,
+                    ThreadPoolSize = 7,
+                    IdleTimeout = TimeSpan.FromMinutes(5)
                 },
                 PersistentStoreConfiguration = new PersistentStoreConfiguration
                 {
@@ -956,6 +967,7 @@ namespace Apache.Ignite.Core.Tests
                     SystemRegionMaxSize = 128 * 1024 * 1024,
                     ConcurrencyLevel = 1,
                     PageSize = 5 * 1024,
+                    WalAutoArchiveAfterInactivity = TimeSpan.FromSeconds(19),
                     DefaultDataRegionConfiguration = new DataRegionConfiguration
                     {
                         Name = "reg1",
@@ -988,7 +1000,8 @@ namespace Apache.Ignite.Core.Tests
                             SwapPath = Path.GetTempPath()
                         }
                     }
-                }
+                },
+                SslContextFactory = new SslContextFactory()
             };
         }
 

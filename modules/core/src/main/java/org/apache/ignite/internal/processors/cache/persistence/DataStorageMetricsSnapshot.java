@@ -36,6 +36,9 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     private float walFsyncTimeAvg;
 
     /** */
+    private long walBuffPollSpinsNum;
+
+    /** */
     private long lastCpDuration;
 
     /** */
@@ -67,6 +70,7 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
         walWritingRate = metrics.getWalWritingRate();
         walArchiveSegments = metrics.getWalArchiveSegments();
         walFsyncTimeAvg = metrics.getWalFsyncTimeAverage();
+        walBuffPollSpinsNum = metrics.getWalBuffPollSpinsRate();
         lastCpDuration = metrics.getLastCheckpointDuration();
         lastCpLockWaitDuration = metrics.getLastCheckpointLockWaitDuration();
         lastCpMmarkDuration = metrics.getLastCheckpointMarkDuration();
@@ -95,6 +99,11 @@ public class DataStorageMetricsSnapshot implements DataStorageMetrics {
     /** {@inheritDoc} */
     @Override public float getWalFsyncTimeAverage() {
         return walFsyncTimeAvg;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getWalBuffPollSpinsRate() {
+        return walBuffPollSpinsNum;
     }
 
     /** {@inheritDoc} */

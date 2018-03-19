@@ -134,7 +134,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheck
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
@@ -194,7 +194,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     private RingMessageWorker msgWorker;
 
     /** Client message workers. */
-    protected ConcurrentMap<UUID, ClientMessageWorker> clientMsgWorkers = new ConcurrentHashMap8<>();
+    protected ConcurrentMap<UUID, ClientMessageWorker> clientMsgWorkers = new ConcurrentHashMap<>();
 
     /** IP finder cleaner. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
@@ -242,7 +242,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
     /** Map with proceeding ping requests. */
     private final ConcurrentMap<InetSocketAddress, GridPingFutureAdapter<IgniteBiTuple<UUID, Boolean>>> pingMap =
-        new ConcurrentHashMap8<>();
+        new ConcurrentHashMap<>();
 
     /**
      * @param adapter Adapter.
@@ -1091,7 +1091,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     log.debug("Concurrent discovery SPI start has been detected (local node should wait).");
 
                 try {
-                    U.sleep(2000);
+                    U.sleep(spi.getReconnectDelay());
                 }
                 catch (IgniteInterruptedCheckedException e) {
                     throw new IgniteSpiException("Thread has been interrupted.", e);
@@ -1125,7 +1125,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 try {
-                    U.sleep(2000);
+                    U.sleep(spi.getReconnectDelay());
                 }
                 catch (IgniteInterruptedCheckedException ex) {
                     throw new IgniteSpiException("Thread has been interrupted.", ex);
@@ -3574,36 +3574,43 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                final IgniteNodeValidationResult err = spi.getSpiContext().validateNode(node);
+                IgniteNodeValidationResult err;
+
+                err = spi.getSpiContext().validateNode(node);
+
+                if (err == null)
+                    err = spi.getSpiContext().validateNode(node, msg.gridDiscoveryData().unmarshalJoiningNodeData(spi.marshaller(), U.resolveClassLoader(spi.ignite().configuration()), false, log));
 
                 if (err != null) {
+                    final IgniteNodeValidationResult err0 = err;
+
                     if (log.isDebugEnabled())
                         log.debug("Node validation failed [res=" + err + ", node=" + node + ']');
 
                     utilityPool.execute(
                         new Runnable() {
                             @Override public void run() {
-                                boolean ping = node.id().equals(err.nodeId()) ? pingNode(node) : pingNode(err.nodeId());
+                                boolean ping = node.id().equals(err0.nodeId()) ? pingNode(node) : pingNode(err0.nodeId());
 
                                 if (!ping) {
                                     if (log.isDebugEnabled())
                                         log.debug("Conflicting node has already left, need to wait for event. " +
                                             "Will ignore join request for now since it will be recent [req=" + msg +
-                                            ", err=" + err.message() + ']');
+                                            ", err=" + err0.message() + ']');
 
                                     // Ignore join request.
                                     return;
                                 }
 
-                                LT.warn(log, err.message());
+                                LT.warn(log, err0.message());
 
                                 // Always output in debug.
                                 if (log.isDebugEnabled())
-                                    log.debug(err.message());
+                                    log.debug(err0.message());
 
                                 try {
                                     trySendMessageDirectly(node,
-                                        new TcpDiscoveryCheckFailedMessage(err.nodeId(), err.sendMessage()));
+                                        new TcpDiscoveryCheckFailedMessage(err0.nodeId(), err0.sendMessage()));
                                 }
                                 catch (IgniteSpiException e) {
                                     if (log.isDebugEnabled())

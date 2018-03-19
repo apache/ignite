@@ -118,6 +118,11 @@ public class GridPluginComponent implements GridComponent {
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node, JoiningNodeDiscoveryData discoData) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         // No-op.
     }

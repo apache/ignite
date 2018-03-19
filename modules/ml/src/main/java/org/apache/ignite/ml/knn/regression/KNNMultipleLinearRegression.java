@@ -43,7 +43,7 @@ public class KNNMultipleLinearRegression extends KNNModel {
     }
 
     /** {@inheritDoc} */
-    @Override public Double predict(Vector v) {
+    @Override public Double apply(Vector v) {
         LabeledVector[] neighbors = findKNearestNeighbors(v, true);
 
         return predictYBasedOn(neighbors, v);

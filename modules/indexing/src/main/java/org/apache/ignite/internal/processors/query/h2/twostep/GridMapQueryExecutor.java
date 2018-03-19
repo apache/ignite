@@ -77,12 +77,11 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
+import org.apache.ignite.thread.IgniteThread;
 import org.h2.jdbc.JdbcResultSet;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.QUERY_POOL;
@@ -109,13 +108,13 @@ public class GridMapQueryExecutor {
     private IgniteH2Indexing h2;
 
     /** */
-    private ConcurrentMap<UUID, MapNodeResults> qryRess = new ConcurrentHashMap8<>();
+    private ConcurrentMap<UUID, MapNodeResults> qryRess = new ConcurrentHashMap<>();
 
     /** */
     private final GridSpinBusyLock busyLock;
 
     /** */
-    private final ConcurrentMap<MapReservationKey, GridReservable> reservations = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<MapReservationKey, GridReservable> reservations = new ConcurrentHashMap<>();
 
     /** Lazy workers. */
     private final ConcurrentHashMap<MapQueryLazyWorkerKey, MapQueryLazyWorker> lazyWorkers = new ConcurrentHashMap<>();
@@ -620,8 +619,7 @@ public class GridMapQueryExecutor {
                 }
             }
 
-            qr = new MapQueryResults(h2, reqId, qrys.size(), mainCctx != null ? mainCctx.name() : null,
-                MapQueryLazyWorker.currentWorker());
+            qr = new MapQueryResults(h2, reqId, qrys.size(), mainCctx, MapQueryLazyWorker.currentWorker());
 
             if (nodeRess.put(reqId, segmentId, qr) != null)
                 throw new IllegalStateException();
@@ -660,7 +658,7 @@ public class GridMapQueryExecutor {
                 // Run queries.
                 int qryIdx = 0;
 
-                boolean evt = mainCctx != null && ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED);
+                boolean evt = mainCctx != null && mainCctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED);
 
                 for (GridCacheSqlQuery qry : qrys) {
                     ResultSet rs = null;
@@ -704,12 +702,15 @@ public class GridMapQueryExecutor {
 
                     qryIdx++;
                 }
-            }
-            finally {
-                GridH2QueryContext.clearThreadLocal();
 
-                if (distributedJoinMode == OFF)
-                    qctx.clearContext(false);
+                // All request results are in the memory in result set already, so it's ok to release partitions.
+                if (!lazy)
+                    releaseReservations();
+            }
+            catch (Throwable e){
+                releaseReservations();
+
+                throw e;
             }
         }
         catch (Throwable e) {
@@ -740,6 +741,20 @@ public class GridMapQueryExecutor {
                 for (int i = 0; i < reserved.size(); i++)
                     reserved.get(i).release();
             }
+        }
+    }
+
+    /**
+     * Releases reserved partitions.
+     */
+    private void releaseReservations() {
+        GridH2QueryContext qctx = GridH2QueryContext.get();
+
+        if (qctx != null) { // No-op if already released.
+            GridH2QueryContext.clearThreadLocal();
+
+            if (qctx.distributedJoinMode() == OFF)
+                qctx.clearContext(false);
         }
     }
 
@@ -802,7 +817,7 @@ public class GridMapQueryExecutor {
             GridCacheContext<?, ?> mainCctx =
                 !F.isEmpty(cacheIds) ? ctx.cache().context().cacheContext(cacheIds.get(0)) : null;
 
-            boolean evt = local && mainCctx != null && ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED);
+            boolean evt = local && mainCctx != null && mainCctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED);
 
             if (evt) {
                 ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -958,8 +973,13 @@ public class GridMapQueryExecutor {
         if (last) {
             res.close();
 
-            if (qr.isAllClosed())
+            if (qr.isAllClosed()) {
                 nodeRess.remove(qr.queryRequestId(), segmentId, qr);
+
+                // Release reservations if the last page fetched, all requests are closed and this is a lazy worker.
+                if (MapQueryLazyWorker.currentWorker() != null)
+                    releaseReservations();
+            }
         }
 
         try {

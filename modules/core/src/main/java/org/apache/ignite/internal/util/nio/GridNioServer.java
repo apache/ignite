@@ -56,6 +56,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -75,7 +76,6 @@ import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-import sun.nio.ch.DirectBuffer;
 
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
@@ -152,6 +152,9 @@ public class GridNioServer<T> {
 
     /** Filter chain to use. */
     private final GridNioFilterChain<T> filterChain;
+
+    /** Server listener. */
+    private final GridNioServerListener<T> lsnr;
 
     /** Logger. */
     @GridToStringExclude
@@ -312,6 +315,7 @@ public class GridNioServer<T> {
         this.msgQueueLsnr = msgQueueLsnr;
         this.selectorSpins = selectorSpins;
         this.readWriteSelectorsAssign = readWriteSelectorsAssign;
+        this.lsnr = lsnr;
 
         filterChain = new GridNioFilterChain<>(log, lsnr, new HeadFilter(), filters);
 
@@ -1381,8 +1385,12 @@ public class GridNioServer<T> {
 
                         finished = msg.writeTo(buf, writer);
 
-                        if (finished && writer != null)
-                            writer.reset();
+                        if (finished) {
+                            onMessageWritten(ses, msg);
+
+                            if (writer != null)
+                                writer.reset();
+                        }
                     }
 
                     // Fill up as many messages as possible to write buffer.
@@ -1406,8 +1414,12 @@ public class GridNioServer<T> {
 
                         finished = msg.writeTo(buf, writer);
 
-                        if (finished && writer != null)
-                            writer.reset();
+                        if (finished) {
+                            onMessageWritten(ses, msg);
+
+                            if (writer != null)
+                                writer.reset();
+                        }
                     }
 
                     int sesBufLimit = buf.limit();
@@ -1579,8 +1591,12 @@ public class GridNioServer<T> {
 
                 finished = msg.writeTo(buf, writer);
 
-                if (finished && writer != null)
-                    writer.reset();
+                if (finished) {
+                    onMessageWritten(ses, msg);
+
+                    if (writer != null)
+                        writer.reset();
+                }
             }
 
             // Fill up as many messages as possible to write buffer.
@@ -1604,8 +1620,12 @@ public class GridNioServer<T> {
 
                 finished = msg.writeTo(buf, writer);
 
-                if (finished && writer != null)
-                    writer.reset();
+                if (finished) {
+                    onMessageWritten(ses, msg);
+
+                    if (writer != null)
+                        writer.reset();
+                }
             }
 
             buf.flip();
@@ -1647,6 +1667,18 @@ public class GridNioServer<T> {
         @Override public String toString() {
             return S.toString(DirectNioClientWorker.class, this, super.toString());
         }
+    }
+
+    /**
+     * Handle message written event.
+     *
+     * @param ses Session.
+     * @param msg Message.
+     */
+    @SuppressWarnings("unchecked")
+    private void onMessageWritten(GridSelectorNioSessionImpl ses, Message msg) {
+        if (lsnr != null)
+            lsnr.onMessageSent(ses, (T)msg);
     }
 
     /**
@@ -2573,10 +2605,10 @@ public class GridNioServer<T> {
 
                 if (directBuf) {
                     if (ses.writeBuffer() != null)
-                        ((DirectBuffer)ses.writeBuffer()).cleaner().clean();
+                        GridUnsafe.cleanDirectBuffer(ses.writeBuffer());
 
                     if (ses.readBuffer() != null)
-                        ((DirectBuffer)ses.readBuffer()).cleaner().clean();
+                        GridUnsafe.cleanDirectBuffer(ses.readBuffer());
                 }
 
                 closeKey(ses.key());

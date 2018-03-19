@@ -29,9 +29,6 @@
 
 #include "ignite/ignite.h"
 
-#include "test_type.h"
-#include "complex_type.h"
-
 namespace ignite
 {
     namespace odbc
@@ -41,6 +38,11 @@ namespace ignite
          */
         struct OdbcTestSuite
         {
+            /**
+             * Prepare environment.
+             */
+            void Prepare();
+
             /**
              * Establish connection to node.
              *

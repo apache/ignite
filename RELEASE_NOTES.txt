@@ -1,6 +1,100 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 2.4
+---------------------------------------
+Ignite:
+* Introduced Baseline Affinity Topology
+* Ability to disable WAL for cache in runtime through IgniteCluster API or ALTER TABLE command
+* Added ability to convert WAL to human-readable form
+* Ability to enable/disable JDBC, ODBC and thin client endpoints
+* Project moved to Java 8
+* Java 7 is no longer supported
+* Apache Ignite can be run on Java 9
+* Introduced Apache Ignite packaging with RPM
+* Spark Data Frames support
+* Added integration with Spring 3.x
+* Added handler to stop node when IO error is encountered
+* EvictionPolicyFactory support added to CacheConfiguration
+* Added JMX metrics for memory regions
+* Added detailed memory consumption on start and OOM reporting
+* Added custom thread pools monitoring
+* Support Ignite MR in Kerberized environment without IGFS
+* S3 IP finder: support server side encryption and bucket endpoint configuration
+* Multiple fixes and performance optimizations
+
+Ignite.NET:
+* Thin Client initial release
+* .NET Core / Linux / macOS support
+* Mono platform support
+* Removed C++ JNI layer
+
+SQL:
+* Added DEFAULT support to CREATE TABLE command
+* Added ALTER TABLE DROP COLUMN support
+* Added INLINE_SIZE option to CREATE INDEX command
+* Added PARALLEL option to CREATE INDEX command
+* Added optional on-heap row cache
+* INSERT command now can be executed without explicit column names (INSERT INTO table VALUES ...)
+* Allowed multiple caches to share the same schema
+* Added support for Java 8 Date and Time API
+* Added "notNull" property to QuerySqlField annotation
+* Improved COUNT(*) performance
+* Fixed a problem causing an exception in certain nodes do not have primary partitions for REPLICATED cache
+* Fixed per-thread H2 connection leak.
+* Fixed partition exchange hang due to SQL query running inside a transaction.
+
+JDBC Driver:
+* Optimized batched operations processing
+
+ODBC Driver:
+* Added support of multiple statements execution with one call
+* Added support of SQL_ATTR_CONNECTION_TIMEOUT
+* Added support of SQL_ATTR_QUERY_TIMEOUT
+* Optimized batched operations processing
+* Proper handling of ungraceful TCP disconnects (keep-alive connection)
+* Fixed error preventing close of executed DML statement
+* Fixed table names returned by SQLTables for DDL-created tables
+
+Machine Learning:
+* Implemented Fuzzy c-means algorithm
+* Implemented gradient descent for OLS Linear Regression
+* Implemented K nearest neighbor algorithm
+* Introduced API for datasets
+* Introduced API for ML model and trainers
+* Introduced common mechanism for group training of models
+* Added distributed version of multilayer perceptron
+* Added local version of multilayer perceptron
+* Added basic import/export functionality for ml models
+* Added decision tree algorithm
+* Performance optimizations for distributed operations
+
+Web Console:
+* Implemented component for cluster selection and activation
+* Implemented support for multiple statements on Queries screen
+* Implemented progress indication for 'execute', 'scan' and 'export' actions on Queries screen
+* Added support for ClientConnectorConfiguration
+* Added several SQL examples on Queries screen
+* Added "Connected clusters" component in header
+* Added support for custom SMTP server configuration
+* Added detection of CSV separator based on browser locale
+* Added "Copy to clipboard" action on Queries screen
+* Added duration and node ID in results header and 'Show query' modal
+* Improved support for binary JDBC types on import from RDBMS
+* Fixed Web Console under IE11
+* Fixed configuration generation for imported model in case of Oracle NUMBER(5) data type
+* Fixed output of big numbers in SQL query results
+
+Visor:
+* Added "-quiet" flag for batch mode
+* Added ability to start cache rebalance
+* Added output of data region metrics to "node" command
+* Added dialog to put/get/remove values to/from cache for simple key types
+* Show valid message for caches when cluster is inactive
+* Fixed 'cache -a' in case of node filter
+* Fixed reading last command line in batch mode
+* Updated eviction policy factory in configs
+
 Apache Ignite In-Memory Data Fabric 2.3
 ---------------------------------------
 Ignite:

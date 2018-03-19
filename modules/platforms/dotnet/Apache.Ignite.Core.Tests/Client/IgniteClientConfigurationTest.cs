@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using System;
     using System.Configuration;
     using System.IO;
+    using System.Security.Authentication;
     using System.Text;
     using System.Xml;
     using Apache.Ignite.Core.Binary;
@@ -43,6 +44,7 @@ namespace Apache.Ignite.Core.Tests.Client
             Assert.AreEqual(IgniteClientConfiguration.DefaultSocketBufferSize, cfg.SocketReceiveBufferSize);
             Assert.AreEqual(IgniteClientConfiguration.DefaultSocketBufferSize, cfg.SocketSendBufferSize);
             Assert.AreEqual(IgniteClientConfiguration.DefaultTcpNoDelay, cfg.TcpNoDelay);
+            Assert.AreEqual(IgniteClientConfiguration.DefaultSocketTimeout, cfg.SocketTimeout);
         }
 
         /// <summary>
@@ -68,11 +70,20 @@ namespace Apache.Ignite.Core.Tests.Client
                 SocketReceiveBufferSize = 222,
                 SocketSendBufferSize = 333,
                 TcpNoDelay = false,
+                SocketTimeout = TimeSpan.FromSeconds(15),
                 BinaryConfiguration = new BinaryConfiguration
                 {
                     CompactFooter = false,
                     KeepDeserialized = false,
                     Types = new[] {"foo", "bar"}
+                },
+                SslStreamFactory = new SslStreamFactory
+                {
+                    CertificatePath = "abc.pfx",
+                    CertificatePassword = "foo",
+                    CheckCertificateRevocation = true,
+                    SkipServerCertificateValidation = true,
+                    SslProtocols = SslProtocols.None
                 }
             };
 

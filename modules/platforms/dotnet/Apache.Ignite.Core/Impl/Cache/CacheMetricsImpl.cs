@@ -211,6 +211,39 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** */
         private readonly bool _isWriteThrough;
 
+        /** */
+        private readonly bool _isValidForReading;
+
+        /** */
+        private readonly bool _isValidForWriting;
+
+        /** */
+        private readonly int _totalPartitionsCount;
+
+        /** */
+        private readonly int _rebalancingPartitionsCount;
+
+        /** */
+        private readonly long _keysToRebalanceLeft;
+
+        /** */
+        private readonly long _rebalancingKeysRate;
+
+        /** */
+        private readonly long _rebalancingBytesRate;
+
+        /** */
+        private readonly long _heapEntriesCount;
+
+        /** */
+        private readonly long _estimatedRebalancingFinishTime;
+
+        /** */
+        private readonly long _rebalancingStartTime;
+
+        /** */
+        private readonly long _rebalancingClearingPartitionsLeft;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheMetricsImpl"/> class.
         /// </summary>
@@ -279,6 +312,17 @@ namespace Apache.Ignite.Core.Impl.Cache
             _isManagementEnabled = reader.ReadBoolean();
             _isReadThrough = reader.ReadBoolean();
             _isWriteThrough = reader.ReadBoolean();
+            _isValidForReading = reader.ReadBoolean();
+            _isValidForWriting = reader.ReadBoolean();
+            _totalPartitionsCount = reader.ReadInt();
+            _rebalancingPartitionsCount = reader.ReadInt();
+            _keysToRebalanceLeft = reader.ReadLong();
+            _rebalancingKeysRate = reader.ReadLong();
+            _rebalancingBytesRate = reader.ReadLong();
+            _heapEntriesCount = reader.ReadLong();
+            _estimatedRebalancingFinishTime = reader.ReadLong();
+            _rebalancingStartTime = reader.ReadLong();
+            _rebalancingClearingPartitionsLeft = reader.ReadLong();
         }
 
         /** <inheritDoc /> */
@@ -466,5 +510,38 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** <inheritDoc /> */
         public bool IsWriteThrough { get { return _isWriteThrough; } }
+
+        /** <inheritDoc /> */
+        public bool IsValidForReading { get { return _isValidForReading; } }
+
+        /** <inheritDoc /> */
+        public bool IsValidForWriting { get { return _isValidForWriting; } }
+
+        /** <inheritDoc /> */
+        public int TotalPartitionsCount { get { return _totalPartitionsCount; } }
+
+        /** <inheritDoc /> */
+        public int RebalancingPartitionsCount { get { return _rebalancingPartitionsCount; } }
+
+        /** <inheritDoc /> */
+        public long KeysToRebalanceLeft { get { return _keysToRebalanceLeft; } }
+
+        /** <inheritDoc /> */
+        public long RebalancingKeysRate { get { return _rebalancingKeysRate; } }
+
+        /** <inheritDoc /> */
+        public long RebalancingBytesRate { get { return _rebalancingBytesRate; } }
+
+        /** <inheritDoc /> */
+        public long HeapEntriesCount { get { return _heapEntriesCount; } }
+
+        /** <inheritDoc /> */
+        public long EstimatedRebalancingFinishTime { get { return _estimatedRebalancingFinishTime; } }
+
+        /** <inheritDoc /> */
+        public long RebalancingStartTime { get { return _rebalancingStartTime; } }
+
+        /** <inheritDoc /> */
+        public long RebalanceClearingPartitionsLeft { get { return _rebalancingClearingPartitionsLeft; } }
     }
 }

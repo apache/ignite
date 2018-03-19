@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Security;
@@ -35,7 +36,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
     {
         /** */
         // ReSharper disable once InconsistentNaming
-        private const int JNI_VERSION_1_6 = 0x00010006;
+        private const int JNI_VERSION_1_8 = 0x00010008;
+
+        /** */
+        // ReSharper disable once InconsistentNaming
+        private const int JNI_VERSION_9 = 0x00090000;
+
+        /** Options to enable startup on Java 9. */
+        private static readonly string[] Java9Options =
+        {
+            "--add-exports=java.base/jdk.internal.misc=ALL-UNNAMED",
+            "--add-exports=java.base/sun.nio.ch=ALL-UNNAMED",
+            "--add-exports=java.management/com.sun.jmx.mbeanserver=ALL-UNNAMED",
+            "--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED",
+            "--illegal-access=permit"
+        };
 
         /** */
         private readonly IntPtr _jvmPtr;
@@ -92,6 +107,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// </summary>
         private static Callbacks GetCallbacksFromDefaultDomain()
         {
+#if !NETCOREAPP2_0
             // JVM exists once per process, and JVM callbacks exist once per process.
             // We should register callbacks ONLY from the default AppDomain (which can't be unloaded).
             // Non-default appDomains should delegate this logic to the default one.
@@ -109,6 +125,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
             var helper = (CallbackAccessor)defDomain.CreateInstance(type.Assembly.FullName, type.FullName).Unwrap();
 
             return helper.GetCallbacks();
+#else
+            throw new IgniteException("Multiple domains are not supported on .NET Core.");
+#endif
         }
 
         /// <summary>
@@ -126,6 +145,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
         /// <summary>
         /// Gets the JVM.
         /// </summary>
+        // ReSharper disable once ParameterOnlyUsedForPreconditionCheck.Global
         public static Jvm Get(bool ignoreMissing = false)
         {
             var res = _instance;
@@ -216,35 +236,85 @@ namespace Apache.Ignite.Core.Impl.Unmanaged.Jni
                 return jvm;
             }
 
+            return CreateJvm(options);
+        }
+
+        /// <summary>
+        /// Determines whether we are on Java 9.
+        /// </summary>
+        private static bool IsJava9()
+        {
             var args = new JvmInitArgs
             {
-                version = JNI_VERSION_1_6
+                version = JNI_VERSION_9
             };
 
-            if (options != null && options.Count > 0)
+            // Returns error on Java 8 and lower.
+            var res = JvmDll.Instance.GetDefaultJvmInitArgs(&args);
+            return res == JniResult.Success;
+        }
+
+        /// <summary>
+        /// Creates the JVM.
+        /// </summary>
+        private static IntPtr CreateJvm(IList<string> options)
+        {
+            if (IsJava9())
             {
-                args.nOptions = options.Count;
-                var opt = new JvmOption[options.Count];
-
-                for (int i = 0; i < options.Count; i++)
-                {
-                    opt[i].optionString = Marshal.StringToHGlobalAnsi(options[i]);
-                }
-
-                fixed (JvmOption* a = &opt[0])
-                {
-                    args.options = a;
-                }
+                options = options == null
+                    ? Java9Options.ToList()
+                    : new List<string>(options.Concat(Java9Options));
             }
 
-            IntPtr env;
-            res = JvmDll.Instance.CreateJvm(out jvm, out env, &args);
-            if (res != JniResult.Success)
+            var args = new JvmInitArgs
             {
-                throw new IgniteException("JNI_CreateJavaVM failed: " + res);
+                version = JNI_VERSION_1_8,
+                nOptions = options.Count
+            };
+
+            var opts = GetJvmOptions(options);
+
+            try
+            {
+                JniResult res;
+                IntPtr jvm;
+
+                fixed (JvmOption* optPtr = &opts[0])
+                {
+                    args.options = optPtr;
+                    IntPtr env;
+                    res = JvmDll.Instance.CreateJvm(out jvm, out env, &args);
+                }
+
+                if (res != JniResult.Success)
+                {
+                    throw new IgniteException("JNI_CreateJavaVM failed: " + res);
+                }
+
+                return jvm;
+            }
+            finally
+            {
+                foreach (var opt in opts)
+                {
+                    Marshal.FreeHGlobal(opt.optionString);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gets the JVM options.
+        /// </summary>
+        private static JvmOption[] GetJvmOptions(IList<string> options)
+        {
+            var opt = new JvmOption[options.Count];
+
+            for (var i = 0; i < options.Count; i++)
+            {
+                opt[i].optionString = Marshal.StringToHGlobalAnsi(options[i]);
             }
 
-            return jvm;
+            return opt;
         }
 
         /// <summary>

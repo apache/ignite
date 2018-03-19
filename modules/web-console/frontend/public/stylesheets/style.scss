@@ -1064,6 +1064,10 @@ button.form-control {
 
 .popover-content {
     padding: 5px;
+
+    button {
+        margin-left: 5px;
+    }
 }
 
 .popover:focus {
@@ -2145,55 +2149,6 @@ html,body,.splash-screen {
     }
 }
 
-.admin-page {
-    .docs-header {
-        display: flex;
-        flex-direction: row;
-        align-items: baseline;
-
-        margin: 40px 0 20px 0;
-
-        h1 {
-            font-size: 24px;
-            margin: 0 10px 0 0;
-        }
-    }
-
-    .panel-heading {
-        height: 38px;
-
-        border-bottom: 0;
-        padding-bottom: 0;
-
-        cursor: default;
-
-        i {
-            margin-top: 2px;
-            margin-right: 10px;
-        }
-
-        sub {
-            bottom: 0;
-        }
-    }
-
-    .ui-grid-header-cell input {
-      font-weight: normal;
-    }
-
-    .ui-grid-header-cell input {
-      font-weight: normal;
-    }
-
-    .ui-grid-filter-select {
-        width: calc(100% - 10px);
-    }
-
-    .ui-grid-cell-contents > i {
-        line-height: $line-height-base;
-    }
-}
-
 .center-container {
     position: absolute !important;
 }
@@ -2209,5 +2164,38 @@ html,body,.splash-screen {
 
     span {
         margin-left: 5px;
+    }
+}
+
+header.header-with-selector {
+    margin: 40px 0 30px;
+
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+
+
+    h1 {
+        height: 36px;
+        margin: 0;
+        margin-right: 8px;
+
+        font-family: Roboto, sans-serif;
+        font-size: 24px;
+        line-height: 36px;
+    }
+
+    div {
+        display: flex;
+    }
+
+    .btn-ignite + .btn-ignite-group {
+        position: relative;
+        margin-left: 20px;
+
+        ul.dropdown-menu {
+            min-width: 100%;
+            font-family: Roboto;
+        }
     }
 }
