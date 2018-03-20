@@ -202,6 +202,16 @@ namespace ignite
 
             if (sslCaFile.IsSet() && !config.IsSslCaFileSet())
                 config.SetSslCaFile(sslCaFile.GetValue());
+
+            SettableValue<std::string> user = ReadDsnString(dsn, ConnectionStringParser::Key::user);
+
+            if (user.IsSet() && !config.IsUserSet())
+                config.SetUser(user.GetValue());
+
+            SettableValue<std::string> password = ReadDsnString(dsn, ConnectionStringParser::Key::password);
+
+            if (password.IsSet() && !config.IsPasswordSet())
+                config.SetPassword(password.GetValue());
         }
     }
 }
