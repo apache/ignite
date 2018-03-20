@@ -69,6 +69,18 @@ public class RobinHoodBackwardShiftHashMapTest {
      * @throws Exception If failed.
      */
     @Test
+    public void testShortSize() throws Exception {
+        withMap(map -> {
+            map.put(1, 1, 0, 0);
+            map.put(2, 0, 1, 1);
+            map.remove(1, 1);
+        }, 2);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    @Test
     public void testSimplestPutGet() throws Exception {
         int cnt = 100;
         withMap(map -> {

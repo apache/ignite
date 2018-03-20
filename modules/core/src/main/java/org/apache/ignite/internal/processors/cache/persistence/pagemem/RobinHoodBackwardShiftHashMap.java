@@ -147,7 +147,7 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
      * @return base cell (bucket) address in buffer.
      */
     private long entryBase(int idx) {
-        assert idx >= 0 && idx < numBuckets;
+        assert idx >= 0 && idx < numBuckets : "idx=" + idx + ", numBuckets=" + numBuckets;
 
         return baseAddr + MAPSIZE_SIZE + MAPSIZE_PADDING + (long)idx * BYTES_PER_CELL;
     }
@@ -319,6 +319,9 @@ public class RobinHoodBackwardShiftHashMap implements LoadedPagesMap {
         }
 
         int lastShiftedIdx = (idxRmv - 1) % numBuckets;
+
+        if (lastShiftedIdx < 0)
+            lastShiftedIdx += numBuckets;
 
         setEmpty(entryBase(lastShiftedIdx));
     }

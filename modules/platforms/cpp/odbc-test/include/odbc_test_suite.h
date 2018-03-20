@@ -108,7 +108,36 @@ namespace ignite
              */
             void InsertNonFullBatchSelect(int recordsNum, int splitAt);
 
+            /**
+             * Get test string.
+             *
+             * @param ind Index.
+             * @return Corresponding test string.
+             */
             static std::string getTestString(int64_t ind);
+
+            /**
+             * Check that SQL error has expected SQL state.
+             *
+             * @param handleType Handle type.
+             * @param handle Handle.
+             * @param expectSqlState Expected state.
+             */
+            void CheckSQLDiagnosticError(int16_t handleType, SQLHANDLE handle, const std::string& expectSqlState);
+
+            /**
+             * Check that statement SQL error has expected SQL state.
+             *
+             * @param expectSqlState Expected state.
+             */
+            void CheckSQLStatementDiagnosticError(const std::string& expectSqlState);
+
+            /**
+             * Check that connection SQL error has expected SQL state.
+             *
+             * @param expectSqlState Expected state.
+             */
+            void CheckSQLConnectionDiagnosticError(const std::string& expectSqlState);
 
             /** ODBC Environment. */
             SQLHENV env;
