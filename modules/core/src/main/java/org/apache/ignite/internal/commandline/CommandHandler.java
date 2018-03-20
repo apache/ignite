@@ -727,13 +727,13 @@ public class CommandHandler {
                 log("This utility can do the following commands:");
 
                 usage("  Activate cluster:", ACTIVATE);
-                usage("  Deactivate cluster:", DEACTIVATE);
+                usage("  Deactivate cluster:", DEACTIVATE, " [--force]");
                 usage("  Print current cluster state:", STATE);
                 usage("  Print cluster baseline topology:", BASELINE);
-                usage("  Add nodes into baseline topology:", BASELINE, " add consistentId1[,consistentId2,....,consistentIdN]");
-                usage("  Remove nodes from baseline topology:", BASELINE, " remove consistentId1[,consistentId2,....,consistentIdN]");
-                usage("  Set baseline topology:", BASELINE, " set consistentId1[,consistentId2,....,consistentIdN]");
-                usage("  Set baseline topology based on version:", BASELINE, " version topologyVersion");
+                usage("  Add nodes into baseline topology:", BASELINE, " add consistentId1[,consistentId2,....,consistentIdN] [--force]");
+                usage("  Remove nodes from baseline topology:", BASELINE, " remove consistentId1[,consistentId2,....,consistentIdN] [--force]");
+                usage("  Set baseline topology:", BASELINE, " set consistentId1[,consistentId2,....,consistentIdN] [--force]");
+                usage("  Set baseline topology based on version:", BASELINE, " version topologyVersion [--force]");
 
                 log("By default cluster deactivation and changes in baseline topology commands request interactive confirmation. ");
                 log("  --force option can be used to execute commands without prompting for confirmation.");
