@@ -61,6 +61,9 @@ public class ZookeeperDiscoverySpiTestSuite2 extends ZookeeperDiscoverySpiAbstra
 
         suite.addTestSuite(ZookeeperDiscoverySuitePreprocessorTest.class);
 
+        suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
+        suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
+
         suite.addTestSuite(IgniteCacheEntryListenerAtomicTest.class);
 
         suite.addTestSuite(GridEventConsumeSelfTest.class);
@@ -69,9 +72,6 @@ public class ZookeeperDiscoverySpiTestSuite2 extends ZookeeperDiscoverySpiAbstra
 
         suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
         suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
-
-        suite.addTestSuite(GridCachePartitionedNodeRestartTest.class);
-        suite.addTestSuite(GridCacheReplicatedNodeRestartSelfTest.class);
 
         suite.addTestSuite(ClusterNodeMetricsUpdateTest.class);
 
