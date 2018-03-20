@@ -307,6 +307,8 @@ public class GridAffinityAssignmentCache {
 
         List<List<ClusterNode>> assignment;
 
+        int where = -1;
+
         if (prevAssignment != null && events != null) {
             /* Skip affinity calculation only when all nodes triggered exchange
                don't belong to affinity for current group (client node or filtered by nodeFilter). */
@@ -322,6 +324,7 @@ public class GridAffinityAssignmentCache {
 
             if (skipCalculation) {
                 assignment = prevAssignment;
+                where = 0;
             }
             else if (hasBaseline && !changedBaseline) {
                 if (baselineAssignment == null)
@@ -330,6 +333,7 @@ public class GridAffinityAssignmentCache {
                         prevAssignment, events.lastEvent(), topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
+                where = 1;
             }
             else if (hasBaseline && changedBaseline) {
                 baselineAssignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(
@@ -337,10 +341,12 @@ public class GridAffinityAssignmentCache {
                     prevAssignment, events.lastEvent(), topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
+                where = 2;
             }
             else {
                 assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment,
                         events.lastEvent(), topVer, backups));
+                where = 3;
             }
         }
         else {
@@ -354,10 +360,12 @@ public class GridAffinityAssignmentCache {
                     prevAssignment, event, topVer, backups));
 
                 assignment = currentBaselineAssignment(topVer);
+                where = 4;
             }
             else {
                 assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment,
                         event, topVer, backups));
+                where = 5;
             }
         }
 
@@ -376,6 +384,8 @@ public class GridAffinityAssignmentCache {
 
         if (locCache)
             initialize(topVer, assignment);
+
+        U.dumpStack(log, "Affinity " + " " + cacheOrGrpName + " " + topVer + " " + where + " = " + assignment.get(0).size());
 
         return assignment;
     }
