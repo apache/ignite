@@ -476,7 +476,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     sndId = ((HandshakeMessage)msg).nodeId();
                     connKey = new ConnectionKey(sndId, msg0.connectionIndex(), msg0.connectCount());
 
-                    if (msg0.compressFlag() == 1)
+                    if (msg0.compressFlag())
                         ses.setCompressed(true);
                 }
 
@@ -699,7 +699,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         if (log.isDebugEnabled())
                             log.debug("Close incoming connection, failed to enter gateway.");
 
-                        if (msg instanceof HandshakeMessage && ((HandshakeMessage)msg).compressFlag() == 1)
+                        if (msg instanceof HandshakeMessage && ((HandshakeMessage)msg).compressFlag())
                             ses.setCompressed(true);
 
                         ses.send(new RecoveryLastReceivedMessage(NODE_STOPPING)).listen(new CI1<IgniteInternalFuture<?>>() {
@@ -816,6 +816,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to send message: " + e, e);
                 }
+
                 recovery.onConnected();
 
                 GridTcpNioCommunicationClient client = null;
@@ -2315,7 +2316,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     } :
                     null;
 
-                ArrayList<GridNioFilter> filterList = new ArrayList<>();
+                ArrayList<GridNioFilter> filterList = new ArrayList<>(4);
 
                 filterList.add(new GridNioCodecFilter(parser, log, true));
                 filterList.add(new GridConnectionBytesVerifyFilter(log));
@@ -3420,10 +3421,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         assert locNode != null;
         assert rmtNode != null;
 
-        Object locAttr = locNode.attribute(ATTR_COMPRESSION_ENABLED);
-        Object rmtAttr = rmtNode.attribute(ATTR_COMPRESSION_ENABLED);
+        Boolean locAttr = locNode.attribute(ATTR_COMPRESSION_ENABLED);
+        Boolean rmtAttr = rmtNode.attribute(ATTR_COMPRESSION_ENABLED);
 
-        return locAttr != null && rmtAttr != null && ((boolean)locAttr || (boolean)rmtAttr);
+        return locAttr != null && rmtAttr != null && locAttr || rmtAttr;
 
     }
 
@@ -3583,20 +3584,18 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
                 int msgSize = HandshakeMessage.MESSAGE_FULL_SIZE;
 
-                byte compressFlag = (byte)(isCompressed ? 1 : 0);
-
                 if (handshakeConnIdx != null) {
                     msg = new HandshakeMessage2(locNode.id(),
                         recovery.incrementConnectCount(),
                         recovery.received(),
-                        handshakeConnIdx, compressFlag);
+                        handshakeConnIdx, isCompressed);
 
                     msgSize += 4;
                 }
                 else {
                     msg = new HandshakeMessage(locNode.id(),
                         recovery.incrementConnectCount(),
-                        recovery.received(), compressFlag);
+                        recovery.received(), isCompressed);
                 }
 
                 if (log.isDebugEnabled())

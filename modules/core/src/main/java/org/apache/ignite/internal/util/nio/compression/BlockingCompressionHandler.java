@@ -30,7 +30,7 @@ import static org.apache.ignite.internal.util.nio.compression.CompressionEngineR
 /** */
 public final class BlockingCompressionHandler {
     /** Size of a net buffers. */
-    private static final int netBufSize = 32768;
+    private static final int NET_BUF_SIZE = 1 << 15;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -57,24 +57,27 @@ public final class BlockingCompressionHandler {
         boolean directBuf,
         ByteOrder order,
         IgniteLogger log) {
+        assert log != null;
+        assert compressionEngine != null;
+
         this.log = log;
         this.compressionEngine = compressionEngine;
 
-        outNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
+        outNetBuf = directBuf ? ByteBuffer.allocateDirect(NET_BUF_SIZE) : ByteBuffer.allocate(NET_BUF_SIZE);
         outNetBuf.order(order);
 
         // Initially buffer is empty.
         outNetBuf.position(0);
         outNetBuf.limit(0);
 
-        inNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
+        inNetBuf = directBuf ? ByteBuffer.allocateDirect(NET_BUF_SIZE) : ByteBuffer.allocate(NET_BUF_SIZE);
         inNetBuf.order(order);
 
-        appBuf = ByteBuffer.allocate(netBufSize * 2);
+        appBuf = ByteBuffer.allocate(NET_BUF_SIZE * 2);
         appBuf.order(order);
 
         if (log.isDebugEnabled())
-            log.debug("Started compression session [netBufSize=" + netBufSize +
+            log.debug("Started compression session [netBufSize=" + NET_BUF_SIZE +
                 ", appBufSize=" + appBuf.capacity() + ']');
     }
 
@@ -100,6 +103,8 @@ public final class BlockingCompressionHandler {
      * @return Output buffer with compressed data.
      */
     public ByteBuffer compress(ByteBuffer src) throws IOException {
+        assert src != null;
+
         // The data buffer is (must be) empty, we can reuse the entire
         // buffer.
         outNetBuf.clear();
@@ -109,11 +114,12 @@ public final class BlockingCompressionHandler {
             CompressionEngineResult res = compressionEngine.compress(src, outNetBuf);
 
             if (res == BUFFER_OVERFLOW) {
-                outNetBuf = expandBuffer(outNetBuf, Math.max(
-                    outNetBuf.position() + src.remaining() * 2, outNetBuf.capacity() * 2));
+                assert outNetBuf.capacity() <= Integer.MAX_VALUE / 2;
+
+                outNetBuf = expandBuffer(outNetBuf, outNetBuf.capacity() * 2);
 
                 if (log.isDebugEnabled())
-                    log.debug("Expanded output net buffer [outNetBufCapacity=" + outNetBuf.capacity());
+                    log.debug("Expanded output net buffer [outNetBufCapacity=" + outNetBuf.capacity() + ']');
             }
         }
 
@@ -130,9 +136,13 @@ public final class BlockingCompressionHandler {
      * @throws IOException If failed to process compress data.
      */
     public ByteBuffer decompress(ByteBuffer buf) throws IgniteCheckedException, IOException {
+        assert buf != null;
+
         appBuf.clear();
 
         if (buf.limit() > inNetBuf.remaining()) {
+            assert inNetBuf.capacity() + buf.limit() * 2 <= Integer.MAX_VALUE;
+
             inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() + buf.limit() * 2);
 
             if (log.isDebugEnabled())
@@ -165,8 +175,11 @@ public final class BlockingCompressionHandler {
         do {
             res = compressionEngine.decompress(inNetBuf, appBuf);
 
-            if (res == BUFFER_OVERFLOW)
+            if (res == BUFFER_OVERFLOW) {
+                assert appBuf.capacity() <= Integer.MAX_VALUE / 2;
+
                 appBuf = expandBuffer(appBuf, appBuf.capacity() * 2);
+            }
         }
         while (res == OK || res == BUFFER_OVERFLOW);
 

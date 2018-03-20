@@ -78,8 +78,11 @@ public final class ZstdEngine implements CompressionEngine {
                 res = Zstd.compress(compressArr, inputArr, COMPRESS_LEVEL);
 
                 if (Zstd.isError(res)) {
-                    if (res == ZSTD_ERROR_DST_SIZE_TOO_SMALL)
+                    if (res == ZSTD_ERROR_DST_SIZE_TOO_SMALL) {
+                        assert decompressArr.length <= Integer.MAX_VALUE / 2;
+
                         compressArr = new byte[compressArr.length * 2];
+                    }
                     else
                         throw new IOException("Failed to compress data: " + Zstd.getErrorName(res));
                 }
@@ -143,8 +146,11 @@ public final class ZstdEngine implements CompressionEngine {
                 res = Zstd.decompress(decompressArr, inputWrapArr);
 
                 if (Zstd.isError(res)) {
-                    if (res == ZSTD_ERROR_DST_SIZE_TOO_SMALL)
+                    if (res == ZSTD_ERROR_DST_SIZE_TOO_SMALL) {
+                        assert decompressArr.length <= Integer.MAX_VALUE / 2;
+
                         decompressArr = new byte[decompressArr.length * 2];
+                    }
                     else
                         throw new IOException("Failed to decompress data: " + Zstd.getErrorName(res));
                 }
@@ -164,7 +170,7 @@ public final class ZstdEngine implements CompressionEngine {
     }
 
     /**
-     * Read size of compressed frame.
+     * Read size of a compressed frame.
      *
      * @param buf ByteBuffer.
      * @return size of compressed frame, -1 otherwise if not enough data.

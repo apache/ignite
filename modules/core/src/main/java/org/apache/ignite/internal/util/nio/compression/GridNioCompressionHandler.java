@@ -142,6 +142,8 @@ final class GridNioCompressionHandler extends ReentrantLock {
      */
     void messageReceived(ByteBuffer buf) throws IgniteCheckedException, IOException {
         if (buf.limit() > inNetBuf.remaining()) {
+            assert inNetBuf.capacity() + buf.limit() * 2 <= Integer.MAX_VALUE;
+
             inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() + buf.limit() * 2);
 
             if (log.isDebugEnabled())
@@ -173,8 +175,9 @@ final class GridNioCompressionHandler extends ReentrantLock {
             CompressionEngineResult res = compressionEngine.compress(src, outNetBuf);
 
             if (res == BUFFER_OVERFLOW) {
-                outNetBuf = expandBuffer(outNetBuf, Math.max(
-                    outNetBuf.position() + src.remaining() * 2, outNetBuf.capacity() * 2));
+                assert outNetBuf.capacity() <= Integer.MAX_VALUE / 2;
+
+                outNetBuf = expandBuffer(outNetBuf,outNetBuf.capacity() * 2);
 
                 if (log.isDebugEnabled())
                     log.debug("Expanded output net buffer [outNetBufCapacity=" + outNetBuf.capacity() + ", ses=" +
@@ -219,8 +222,11 @@ final class GridNioCompressionHandler extends ReentrantLock {
         do {
             res = compressionEngine.decompress(inNetBuf, appBuf);
 
-            if (res == BUFFER_OVERFLOW)
+            if (res == BUFFER_OVERFLOW) {
+                assert appBuf.capacity() <= Integer.MAX_VALUE / 2;
+
                 appBuf = expandBuffer(appBuf, appBuf.capacity() * 2);
+            }
         }
         while (res == OK || res == BUFFER_OVERFLOW);
 

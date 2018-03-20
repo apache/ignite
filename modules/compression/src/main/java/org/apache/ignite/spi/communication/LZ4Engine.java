@@ -52,6 +52,7 @@ public final class LZ4Engine implements CompressionEngine {
     @Override public CompressionEngineResult compress(ByteBuffer src, ByteBuffer buf) {
         assert src != null;
         assert buf != null;
+        assert buf.position() + 4 /* Block length */ <= Integer.MAX_VALUE;
 
         try {
             int compress = compressor.compress(src, src.position(), src.remaining(),
@@ -77,12 +78,12 @@ public final class LZ4Engine implements CompressionEngine {
         int len = src.remaining();
         int initPos = src.position();
 
-        if (len < 5)
+        if (len < 4 /* Block length */)
             return BUFFER_UNDERFLOW;
 
         int compressedLen = getInt(src);
 
-        assert compressedLen >= 0;
+        assert compressedLen > 0;
 
         if (src.remaining() < compressedLen) {
             src.position(initPos);
@@ -106,14 +107,28 @@ public final class LZ4Engine implements CompressionEngine {
         return OK;
     }
 
-    /** */
+    /**
+     * Read {@code int} value from a byte buffer disregard byte order.
+     *
+     * @param buf ByteBuffer.
+     * @return {@code int} Value.
+     */
     private static int getInt(ByteBuffer buf) {
+        assert buf.remaining() >=4;
+
         return ((buf.get() & 0xFF) << 24) | ((buf.get() & 0xFF) << 16)
             | ((buf.get() & 0xFF) << 8) | (buf.get() & 0xFF);
     }
 
-    /** */
+    /**
+     * Write {@code int} value to a byte buffer disregard byte order.
+     *
+     * @param int Value.
+     * @param buf ByteBuffer.
+     */
     private static void putInt(int val, ByteBuffer buf) {
+        assert buf.remaining() >=4;
+
         buf.put((byte)(val >>> 24));
         buf.put((byte)(val >>> 16));
         buf.put((byte)(val >>> 8));
