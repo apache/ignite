@@ -848,6 +848,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP = "IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP";
 
     /**
+     * When set to {@code true}, StripedExecutorProxy (IgniteThreadPoolExecutor) will be used instread of StripedExecutorImpl.
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_STRIPED_POOL_DISABLED = "IGNITE_STRIPED_POOL_DISABLED";
+
+    /**
      * Whenever read load balancing is enabled, that means 'get' requests will be distributed between primary and backup
      * nodes if it is possible and {@link CacheConfiguration#readFromBackup} is {@code true}.
      *
