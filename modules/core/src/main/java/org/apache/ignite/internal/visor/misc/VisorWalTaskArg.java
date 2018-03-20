@@ -19,15 +19,13 @@
 
 package org.apache.ignite.internal.visor.misc;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
-import org.jetbrains.annotations.NotNull;
-
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.List;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  * Argument for {@link VisorWalTask}.
@@ -66,7 +64,7 @@ public class VisorWalTaskArg extends VisorDataTransferObject{
     }
 
     /**
-     *  @return WAL task operation
+     *  @return WAL task operation.
      */
     public VisorWalTaskOperation getOperation() {
         return op == null ? VisorWalTaskOperation.PRINT_UNUSED_WAL_SEGMENTS : op;

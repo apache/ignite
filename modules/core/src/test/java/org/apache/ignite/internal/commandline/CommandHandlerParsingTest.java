@@ -19,14 +19,18 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.UUID;
 import junit.framework.TestCase;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.CMD_ACTIVATE;
 import static org.apache.ignite.internal.commandline.CommandHandler.CMD_BASE_LINE;
 import static org.apache.ignite.internal.commandline.CommandHandler.CMD_DEACTIVATE;
 import static org.apache.ignite.internal.commandline.CommandHandler.CMD_STATE;
+import static org.apache.ignite.internal.commandline.CommandHandler.CMD_WAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
+import static org.apache.ignite.internal.commandline.CommandHandler.WAL_DELETE;
+import static org.apache.ignite.internal.commandline.CommandHandler.WAL_PRINT;
 
 /**
  * Tests Command Handler parsing arguments.
@@ -83,6 +87,44 @@ public class CommandHandlerParsingTest extends TestCase {
             assertEquals("testUser", args.user());
             assertEquals("testPass", args.password());
             assertEquals(cmd, args.command());
+        }
+    }
+
+    /**
+     * Tests parsing and validation  of WAL commands.
+     */
+    public void testParseAndValidateWalActions() {
+        CommandHandler hnd = new CommandHandler();
+
+        Arguments args = hnd.parseAndValidate(CMD_WAL, WAL_PRINT);
+
+        assertEquals(CMD_WAL, args.command());
+
+        assertEquals(WAL_PRINT, args.walAction());
+
+        String nodes = UUID.randomUUID().toString() + "," + UUID.randomUUID().toString();
+
+        args = hnd.parseAndValidate(CMD_WAL, WAL_DELETE, nodes);
+
+        assertEquals(WAL_DELETE, args.walAction());
+
+        assertEquals(nodes, args.walArguments());
+
+        try {
+            hnd.parseAndValidate(CMD_WAL);
+
+            fail("expected exception: invalid arguments for --wal command");
+        }
+        catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
+        try {
+            hnd.parseAndValidate(CMD_WAL, UUID.randomUUID().toString());
+
+            fail("expected exception: invalid arguments for --wal command");
+        }
+        catch (IllegalArgumentException e) {
+            e.printStackTrace();
         }
     }
 

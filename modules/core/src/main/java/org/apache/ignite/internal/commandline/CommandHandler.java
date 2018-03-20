@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal.commandline;
 
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.client.GridClientAuthenticationException;
 import org.apache.ignite.internal.client.GridClientClosedException;
@@ -65,43 +71,43 @@ public class CommandHandler {
     static final String DFLT_PORT = "11211";
 
     /** */
-    private static final String CMD_HELP = "--help";
+    static final String CMD_HELP = "--help";
 
     /** */
-    private static final String CMD_HOST = "--host";
+    static final String CMD_HOST = "--host";
 
     /** */
-    private static final String CMD_PORT = "--port";
+    static final String CMD_PORT = "--port";
 
     /** */
-    private static final String CMD_PASSWORD = "--password";
+    static final String CMD_PASSWORD = "--password";
 
     /** */
-    private static final String CMD_USER = "--user";
+    static final String CMD_USER = "--user";
 
     /** */
-    private static final String CMD_NODES = "--nodes";
+    static final String CMD_NODES = "--nodes";
 
     /** */
-    private static final String BASELINE_ADD = "add";
+    static final String BASELINE_ADD = "add";
 
     /** */
-    private static final String BASELINE_REMOVE = "remove";
+    static final String BASELINE_REMOVE = "remove";
 
     /** */
-    private static final String BASELINE_SET = "set";
+    static final String BASELINE_SET = "set";
 
     /** */
-    private static final String BASELINE_SET_VERSION = "version";
+    static final String BASELINE_SET_VERSION = "version";
 
     /** */
-    private static final String WAL_PRINT = "print";
+    static final String WAL_PRINT = "print";
 
     /** */
-    private static final String WAL_DELETE = "delete";
+    static final String WAL_DELETE = "delete";
 
     /** */
-    private static final String DELIM = "--------------------------------------------------------------------------------";
+    static final String DELIM = "--------------------------------------------------------------------------------";
 
     /** */
     static final String CMD_ACTIVATE = "--activate";
@@ -286,8 +292,14 @@ public class CommandHandler {
                     if (it.hasNext()) {
                         walAct = it.next().toLowerCase();
 
-                        walArgs = it.hasNext() ? nextArg(it,"Unexpected WAL arguments") : "";
+                        if (WAL_PRINT.equals(walAct) || WAL_DELETE.equals(walAct))
+                            walArgs = it.hasNext() ? nextArg(it,"Unexpected WAL arguments") : "";
+                        else
+                            throw new IllegalArgumentException("Unexpected argument for " + CMD_WAL + ": " + walAct);
                     }
+                    else
+                        throw new IllegalArgumentException("Expected arguments for " + CMD_WAL);
+
                     break;
 
             }
@@ -396,17 +408,11 @@ public class CommandHandler {
      *  @throws GridClientException If failed to pick node.
      */
     private GridClientNode getBalancedNode(GridClientCompute compute) throws GridClientException {
-
         List<GridClientNode> connectableNodes = new ArrayList<>();
 
-        List<UUID> nodes = new ArrayList<>();
-
-        for (GridClientNode node : compute.nodes()) {
+        for (GridClientNode node : compute.nodes())
             if (node.connectable())
                 connectableNodes.add(node);
-
-            nodes.add(node.nodeId());
-        }
 
         if (F.isEmpty(connectableNodes))
             throw new GridClientDisconnectedException("Connectable node not found", null);
@@ -446,7 +452,7 @@ public class CommandHandler {
     }
 
     /**
-     *  Execute WAL command
+     * Execute WAL command.
      *
      * @param client Client.
      * @param walAct Wal action to execute.
@@ -479,7 +485,8 @@ public class CommandHandler {
     }
 
     /**
-     * Execute print wal task unused WAL segments.
+     * Execute print unused WAL segments task.
+     *
      * @param client Client.
      * @param walArgs Wal args.
      */
@@ -530,7 +537,7 @@ public class CommandHandler {
      * @param res Task result with baseline topology.
      */
     private void printDeleteWalSegments0(VisorWalTaskResult res) {
-        log("Wal segments cleaned for nodes:");
+        log("WAL segments deleted for nodes:");
         nl();
 
         Map<String, Collection<String>> okRes = res.results();

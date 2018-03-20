@@ -1780,28 +1780,32 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
 
     /**
-     * @return Array of archived wal segments that can be safely truncated
-     * @throws IgniteCheckedException
+     * Index of WAL reserved segment index. Segments with indices below can be truncated.
+     *
+     * @return Index of WAL reserved segment.
      */
-    public File[] walArchiveCanBeTruncated() throws IgniteCheckedException {
+    public long reservedWalSegmentIndex() {
         CheckpointEntry entry = checkpointHistory().firstEntry();
-        return entry != null
-                ? cctx.wal().canBeTruncated(null,entry.cpMark)
-                : new File[0];
 
+        if (entry != null) {
+            int resCnt = cctx.wal().reserved(null, entry.cpMark);
+
+            long highIdx = ((FileWALPointer) entry.cpMark).index();
+
+            return highIdx - resCnt;
+        }
+        else
+            return 0;
     }
 
     /**
-     * Safely truncate archived wal segments
+     * Safely truncate archived wal segments.
      *
      * @return number of deleted files
-     * @throws IgniteCheckedException
      */
-    public int walArchiveTruncate() throws IgniteCheckedException {
+    public int walSegmentsTruncate() {
         CheckpointEntry entry = checkpointHistory().firstEntry();
-        return entry != null
-                ? cctx.wal().truncate(null,entry.cpMark)
-                : 0;
+        return entry != null ? cctx.wal().truncate(null,entry.cpMark) : 0;
     }
 
     /**

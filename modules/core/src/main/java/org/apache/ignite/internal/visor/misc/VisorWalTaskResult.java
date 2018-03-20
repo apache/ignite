@@ -19,18 +19,17 @@
 
 package org.apache.ignite.internal.visor.misc;
 
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
-
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
- *  Result of {@link VisorWalTask }
+ *  Result of {@link VisorWalTask}.
  */
 public class VisorWalTaskResult extends VisorDataTransferObject {
     /**
@@ -76,7 +75,6 @@ public class VisorWalTaskResult extends VisorDataTransferObject {
         return exceptions;
     }
 
-
     /**
      * @return List of archived wal segments path search results by node consistent ID.
      */
@@ -94,8 +92,7 @@ public class VisorWalTaskResult extends VisorDataTransferObject {
     /**
      * {@inheritDoc}
      */
-    @Override
-    protected void writeExternalData(ObjectOutput out) throws IOException {
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeMap(out, exceptions);
         U.writeMap(out, results);
         U.writeMap(out, nodesInfo);
@@ -104,19 +101,16 @@ public class VisorWalTaskResult extends VisorDataTransferObject {
     /**
      * {@inheritDoc}
      */
-    @Override
-    protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         exceptions = U.readMap(in);
         results = U.readMap(in);
         nodesInfo = U.readMap(in);
     }
 
-
     /**
      * {@inheritDoc}
      */
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return S.toString(VisorWalTaskResult.class, this);
     }
 }

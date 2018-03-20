@@ -886,46 +886,6 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         return deleted;
     }
 
-    /** {@inheritDoc} */
-    @Override public File[] canBeTruncated(WALPointer low, WALPointer high){
-        if (high == null)
-            return new File[0];
-
-        assert high instanceof FileWALPointer : high;
-
-        // File pointer bound: older entries will be deleted from archive
-        FileWALPointer lowPtr = (FileWALPointer)low;
-        FileWALPointer highPtr = (FileWALPointer)high;
-
-        FileDescriptor[] descs = scan(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
-
-        List<File> canBeTruncated= new ArrayList<>(descs.length);
-
-        for (FileDescriptor desc : descs) {
-            if (lowPtr != null && desc.idx < lowPtr.index())
-                continue;
-
-            // Do not delete reserved or locked segment and any segment after it.
-            if (segmentReservedOrLocked(desc.idx))
-                return canBeTruncated.toArray(new File[canBeTruncated.size()]);
-
-            long archivedAbsIdx = archivedMonitor.lastArchivedAbsoluteIndex();
-
-            long lastArchived = archivedAbsIdx >= 0 ? archivedAbsIdx : lastArchivedIndex();
-
-            // We need to leave at least one archived segment to correctly determine the archive index.
-            if (desc.idx < highPtr.index() && desc.idx < lastArchived) {
-                canBeTruncated.add(desc.file);
-
-                // Bump up the oldest archive segment index.
-                if (lastTruncatedArchiveIdx < desc.idx)
-                    lastTruncatedArchiveIdx = desc.idx;
-            }
-        }
-
-        return canBeTruncated.toArray(new File[canBeTruncated.size()]);
-    }
-
     /**
      * Check if WAL segment locked (protected from move to archive) or reserved (protected from deletion from WAL
      * cleanup).
@@ -966,6 +926,35 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         FileWALPointer fPtr = (FileWALPointer)ptr;
 
         return segmentReservedOrLocked(fPtr.index());
+    }
+
+    /** {@inheritDoc} */
+    @Override public int reserved(WALPointer low, WALPointer high) {
+        if (high == null)
+            return 0;
+
+        assert high instanceof FileWALPointer : high;
+
+        assert low == null || low instanceof FileWALPointer : low;
+
+        FileWALPointer lowPtr = (FileWALPointer) low;
+
+        FileWALPointer highPtr = (FileWALPointer) high;
+
+        long lowIdx = lowPtr != null ? lowPtr.index() : 0;
+
+        long highIdx = highPtr.index();
+
+        int cntr = 0;
+
+        while(lowIdx < highIdx){
+            if(segmentReservedOrLocked(lowIdx))
+                cntr++;
+
+            lowIdx++;
+        }
+
+        return cntr;
     }
 
     /** {@inheritDoc} */

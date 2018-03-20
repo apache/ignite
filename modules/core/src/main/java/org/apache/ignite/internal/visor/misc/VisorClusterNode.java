@@ -86,14 +86,14 @@ public class VisorClusterNode extends VisorDataTransferObject {
     }
 
     /**
-     * @return Node addresses
+     * @return Node addresses.
      */
     public Collection<String> getAddresses() {
         return addresses;
     }
 
     /**
-     * @return Node hostnames
+     * @return Node hostnames.
      */
     public Collection<String> getHostnames() {
         return hostnames;
@@ -102,8 +102,7 @@ public class VisorClusterNode extends VisorDataTransferObject {
     /**
      * {@inheritDoc}
      */
-    @Override
-    protected void writeExternalData(ObjectOutput out) throws IOException {
+    @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, consistentId);
         U.writeMap(out, attrs);
         U.writeCollection(out,hostnames);
@@ -113,8 +112,7 @@ public class VisorClusterNode extends VisorDataTransferObject {
     /**
      * {@inheritDoc}
      */
-    @Override
-    protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
+    @Override protected void readExternalData(byte protoVer, ObjectInput in) throws IOException, ClassNotFoundException {
         consistentId = U.readString(in);
         attrs = U.readMap(in);
         hostnames = U.readCollection(in);
@@ -125,8 +123,7 @@ public class VisorClusterNode extends VisorDataTransferObject {
     /**
      * {@inheritDoc}
      */
-    @Override
-    public String toString() {
+    @Override public String toString() {
         return S.toString(VisorClusterNode.class, this);
     }
 }

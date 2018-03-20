@@ -800,46 +800,6 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @Override public File[] canBeTruncated(WALPointer low, WALPointer high){
-        if (high == null)
-            return new File[0];
-
-        assert high instanceof FileWALPointer : high;
-
-        // File pointer bound: older entries will be deleted from archive
-        FileWALPointer lowPtr = (FileWALPointer)low;
-        FileWALPointer highPtr = (FileWALPointer)high;
-
-        FileDescriptor[] descs = scan(walArchiveDir.listFiles(WAL_SEGMENT_COMPACTED_OR_RAW_FILE_FILTER));
-
-        List<File> canBeTruncated = new ArrayList<>();
-
-        FileArchiver archiver0 = archiver;
-
-        for (FileDescriptor desc : descs) {
-            if (lowPtr != null && desc.idx < lowPtr.index())
-                continue;
-
-            // Do not delete reserved or locked segment and any segment after it.
-            if (archiver0 != null && archiver0.reserved(desc.idx))
-                return canBeTruncated.toArray(new File[canBeTruncated.size()]);
-
-            long lastArchived = archiver0 != null ? archiver0.lastArchivedAbsoluteIndex() : lastArchivedIndex();
-
-            // We need to leave at least one archived segment to correctly determine the archive index.
-            if (desc.idx < highPtr.index() && desc.idx < lastArchived) {
-                canBeTruncated.add(desc.file);
-
-                // Bump up the oldest archive segment index.
-                if (lastTruncatedArchiveIdx < desc.idx)
-                    lastTruncatedArchiveIdx = desc.idx;
-            }
-        }
-
-        return canBeTruncated.toArray(new File[canBeTruncated.size()]);
-    }
-
-    /** {@inheritDoc} */
     @Override public void allowCompressionUntil(WALPointer ptr) {
         if (compressor != null)
             compressor.allowCompressionUntil(((FileWALPointer)ptr).index());
@@ -866,6 +826,37 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         FileArchiver archiver0 = archiver;
 
         return archiver0 != null && archiver0.reserved(fPtr.index());
+    }
+
+    /** {@inheritDoc} */
+    @Override public int reserved(WALPointer low, WALPointer high) {
+        if (high == null)
+            return 0;
+
+        assert high instanceof FileWALPointer : high;
+
+        assert low == null || low instanceof FileWALPointer : low;
+
+        FileWALPointer lowPtr = (FileWALPointer) low;
+
+        FileWALPointer highPtr = (FileWALPointer) high;
+
+        FileArchiver archiver0 = archiver;
+
+        long lowIdx = lowPtr != null ? lowPtr.index() : 0;
+
+        long highIdx = highPtr.index();
+
+        int cntr = 0;
+
+        while(lowIdx < highIdx){
+            if(archiver0 != null && archiver0.reserved(lowIdx))
+                cntr++;
+
+            lowIdx++;
+        }
+
+        return cntr;
     }
 
     /** {@inheritDoc} */

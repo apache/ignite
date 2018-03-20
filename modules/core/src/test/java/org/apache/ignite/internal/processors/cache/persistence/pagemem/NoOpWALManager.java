@@ -27,8 +27,6 @@ import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.lang.IgniteFuture;
 
-import java.io.File;
-
 /**
  *
  */
@@ -84,11 +82,6 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public File[] canBeTruncated(WALPointer low, WALPointer high) {
-        return new File[0];
-    }
-
-    /** {@inheritDoc} */
     @Override public void allowCompressionUntil(WALPointer ptr) {
         // No-op.
     }
@@ -96,6 +89,11 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     /** {@inheritDoc} */
     @Override public boolean reserved(WALPointer ptr) {
         return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int reserved(WALPointer low, WALPointer high) {
+        return 0;
     }
 
     /** {@inheritDoc} */
@@ -134,7 +132,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext kctx) throws IgniteCheckedException {
+    @Override public void onActivate(GridKernalContext kctx) {
         // No-op.
     }
 

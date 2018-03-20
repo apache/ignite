@@ -19,6 +19,9 @@
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
 
+import java.io.File;
+import java.nio.file.Paths;
+import java.util.*;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -36,14 +39,10 @@ import org.apache.ignite.internal.visor.misc.VisorWalTaskOperation;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskResult;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import java.io.File;
-import java.nio.file.Paths;
-import java.util.*;
-
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 
 /**
- * Test correctness of WAL Visor Task and corretness of delete
+ * Test correctness of WAL Visor Task and corretness of delete.
  */
 public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
     /** Cache name. */
@@ -52,12 +51,15 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         System.setProperty(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, "2");
+
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         CacheConfiguration<Integer, IgnitePdsUnusedWalSegmentsTest.IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
+
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         cfg.setCacheConfiguration(ccfg);
@@ -100,12 +102,14 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Tests correctness of {@link VisorWalTaskOperation}
+     *
      * @throws Exception if failed.
      */
     public void testCorrectnessOfDeletionTaskSegments() throws Exception {
         try {
-
             IgniteEx ignite1 = startGrid(0);
+
             IgniteEx ignite2 = (IgniteEx) startGridsMultiThreaded(1,1);
 
             if (checkTopology())
@@ -124,9 +128,11 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
                     X.println(" >> " + i);
 
                 int k = rnd.nextInt(300_000);
+
                 IndexedObject v = new IndexedObject(rnd.nextInt(10_000));
 
                 cache.put(k, v);
+
                 map.put(k, v);
             }
 
@@ -137,19 +143,22 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
                     .database();
 
             dbMgr1.waitForCheckpoint("test");
+
             dbMgr2.waitForCheckpoint("test");
 
             for (int i = 0; i < 1_000; i++) {
                 int k = rnd.nextInt(300_000);
+
                 IndexedObject v = new IndexedObject(rnd.nextInt(10_000));
 
                 cache.put(k, v);
+
                 map.put(k, v);
             }
 
             dbMgr1.waitForCheckpoint("test");
-            dbMgr2.waitForCheckpoint("test");
 
+            dbMgr2.waitForCheckpoint("test");
 
             VisorWalTaskResult res = ignite1.compute().execute(VisorWalTask.class,
                     new VisorTaskArgument<>(ignite1.cluster().node().id(),
@@ -161,6 +170,7 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
 
             for(Collection<String> pathsPerNode: res.results().values()){
                 assertTrue(pathsPerNode.size() > 0);
+
                 for(String path: pathsPerNode)
                     walArchives.add(Paths.get(path).toFile());
             }
@@ -169,10 +179,23 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
                     new VisorTaskArgument<>(ignite1.cluster().node().id(),
                             new VisorWalTaskArg(VisorWalTaskOperation.DELETE_UNUSED_WAL_SEGMENTS), false));
 
+            List<File> walDeletedArchives = new ArrayList<>();
+
+            for(Collection<String> pathsPerNode: res.results().values()){
+                assertTrue(pathsPerNode.size() > 0);
+
+                for(String path: pathsPerNode)
+                    walDeletedArchives.add(Paths.get(path).toFile());
+            }
+
+            for(File f: walDeletedArchives)
+                assertTrue(!f.exists());
+
             for(File f: walArchives)
                 assertTrue(!f.exists());
 
             stopGrid(0);
+
             stopGrid(1);
 
             IgniteEx ignite = (IgniteEx) startGridsMultiThreaded(2);

@@ -17,9 +17,15 @@
 
 package org.apache.ignite.util;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.ConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -37,6 +43,12 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UN
  * Command line handler test.
  */
 public class GridCommandHandlerTest extends GridCommonAbstractTest {
+    /** */
+    private final ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+    /** */
+    private final ByteArrayOutputStream err = new ByteArrayOutputStream();
+
     /**
      * @return Folder in work directory.
      * @throws IgniteCheckedException If failed to resolve folder name.
@@ -49,12 +61,24 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         cleanPersistenceDir();
 
+        System.setOut(new PrintStream(out));
+
+        System.setErr(new PrintStream(err));
+
         stopAllGrids();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        System.setOut(new PrintStream(System.out));
+
+        System.setErr(new PrintStream(System.err));
+
+        System.err.println(err.toString());
+
+        System.out.println(out.toString());
 
         cleanPersistenceDir();
     }
@@ -272,5 +296,78 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(EXIT_CODE_OK, execute(cmd, "--baseline", "version", String.valueOf(ignite.cluster().topologyVersion())));
 
         assertEquals(2, ignite.cluster().currentBaselineTopology().size());
+    }
+
+
+    /**
+     *  Test execution of --wal print command.
+     *
+     *  @throws Exception if failed.
+     */
+    public void testUnusedWal() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        CommandHandler cmd = new CommandHandler();
+
+        List<String> nodes = new ArrayList<>(2);
+
+        for (ClusterNode node: ignite.cluster().forServers().nodes())
+            nodes.add(node.consistentId().toString());
+
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--wal", "print"));
+
+
+        for(String id: nodes)
+            assertTrue(out.toString().contains(id));
+
+        assertTrue(!out.toString().contains("error"));
+
+        out.reset();
+
+        err.reset();
+
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--wal", "print", nodes.get(0)));
+
+        assertTrue(!out.toString().contains(nodes.get(1)));
+
+        assertTrue(!out.toString().contains("error"));
+    }
+
+    /**
+     *  Test execution of --wal delete command.
+     *  @throws Exception
+     */
+    public void testUnusedWalDelete() throws Exception {
+        Ignite ignite = startGrids(2);
+
+        ignite.cluster().active(true);
+
+        CommandHandler cmd = new CommandHandler();
+
+        List<String> nodes = new ArrayList<>(2);
+
+        for (ClusterNode node: ignite.cluster().forServers().nodes())
+            nodes.add(node.consistentId().toString());
+
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--wal", "delete"));
+
+
+        for(String id: nodes)
+            assertTrue(out.toString().contains(id));
+
+        assertTrue(!out.toString().contains("error"));
+
+        out.reset();
+
+        err.reset();
+
+        assertEquals(EXIT_CODE_OK, execute(cmd, "--wal", "delete", nodes.get(0)));
+
+        assertTrue(!out.toString().contains(nodes.get(1)));
+
+        assertTrue(!out.toString().contains("error"));
+
     }
 }
