@@ -209,6 +209,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Estimate rebalance finish time. */
     private long rebalanceFinishTime;
 
+    /** The number of clearing partitions need to await before rebalance. */
+    private long rebalanceClearingPartitionsLeft;
+
     /** */
     private String keyType;
 
@@ -323,6 +326,7 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         rebalancingKeysRate = m.getRebalancingKeysRate();
         rebalanceStartTime = m.rebalancingStartTime();
         rebalanceFinishTime = m.estimateRebalancingFinishTime();
+        rebalanceClearingPartitionsLeft = m.getRebalanceClearingPartitionsLeft();
     }
 
     /**
@@ -751,6 +755,11 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** {@inheritDoc} */
     @Override public long getRebalancingStartTime() {
         return rebalanceStartTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalanceClearingPartitionsLeft() {
+        return rebalanceClearingPartitionsLeft;
     }
 
     /** {@inheritDoc} */

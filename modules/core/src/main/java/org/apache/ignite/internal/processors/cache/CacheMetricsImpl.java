@@ -122,6 +122,9 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** Rebalancing rate in bytes. */
     private HitRateMetrics rebalancingBytesRate = new HitRateMetrics(REBALANCE_RATE_INTERVAL, 20);
 
+    /** Number of currently clearing partitions for rebalancing. */
+    private AtomicLong rebalanceClearingPartitions = new AtomicLong();
+
     /** Cache metrics. */
     @GridToStringExclude
     private transient CacheMetricsImpl delegate;
@@ -856,6 +859,19 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public long getRebalancingStartTime() {
         return rebalanceStartTime.get();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getRebalanceClearingPartitionsLeft() {
+        return rebalanceClearingPartitions.get();
+    }
+
+    /**
+     * Sets clearing partitions number.
+     * @param partitions Partitions number.
+     */
+    public void rebalanceClearingPartitions(int partitions) {
+        rebalanceClearingPartitions.set(partitions);
     }
 
     /**
