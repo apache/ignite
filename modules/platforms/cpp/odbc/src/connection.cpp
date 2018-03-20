@@ -19,6 +19,7 @@
 #include <cstddef>
 
 #include <sstream>
+#include <algorithm>
 
 #include <ignite/common/fixed_size_array.h>
 
@@ -27,11 +28,13 @@
 #include "ignite/odbc/statement.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
-#include "ignite/odbc/config/configuration.h"
 #include "ignite/odbc/ssl/ssl_mode.h"
 #include "ignite/odbc/ssl/ssl_gateway.h"
 #include "ignite/odbc/ssl/secure_socket_client.h"
 #include "ignite/odbc/system/tcp_socket_client.h"
+#include "ignite/odbc/dsn_config.h"
+#include "ignite/odbc/config/configuration.h"
+#include "ignite/odbc/config/connection_string_parser.h"
 
 // Uncomment for per-byte debug.
 //#define PER_BYTE_DEBUG
@@ -104,16 +107,14 @@ namespace ignite
         {
             config::Configuration config;
 
-            try
-            {
-                config.FillFromConnectString(connectStr);
-            }
-            catch (IgniteError& e)
-            {
-                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, e.GetText());
+            config::ConnectionStringParser parser(config);
 
-                return SqlResult::AI_ERROR;
-            }
+            parser.ParseConnectionString(connectStr, &GetDiagnosticRecords());
+
+            std::string dsn = config.GetDsn();
+
+            if (!dsn.empty())
+                ReadDsnConfiguration(dsn.c_str(), config);
 
             return InternalEstablish(config);
         }
@@ -123,7 +124,7 @@ namespace ignite
             IGNITE_ODBC_API_CALL(InternalEstablish(cfg));
         }
 
-        SqlResult::Type Connection::InternalEstablish(const config::Configuration cfg)
+        SqlResult::Type Connection::InternalEstablish(const config::Configuration& cfg)
         {
             using ssl::SslMode;
 
@@ -136,7 +137,14 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            SslMode::T sslMode = SslMode::FromString(cfg.GetSslMode(), SslMode::DISABLE);
+            if (!config.IsHostSet() && config.IsAddressesSet() && config.GetAddresses().empty())
+            {
+                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, "No valid address to connect.");
+
+                return SqlResult::AI_ERROR;
+            }
+
+            SslMode::Type sslMode = config.GetSslMode();
 
             if (sslMode != SslMode::DISABLE)
             {
@@ -150,30 +158,24 @@ namespace ignite
                     return SqlResult::AI_ERROR;
                 }
 
-                socket.reset(new ssl::SecureSocketClient(cfg.GetSslCertFile(), cfg.GetSslKeyFile(), cfg.GetSslCaFile()));
+                socket.reset(new ssl::SecureSocketClient(config.GetSslCertFile(),
+                    config.GetSslKeyFile(), config.GetSslCaFile()));
             }
             else
                 socket.reset(new system::TcpSocketClient());
 
-            bool connected = socket->Connect(cfg.GetHost().c_str(), cfg.GetTcpPort(), *this);
+            bool connected = TryRestoreConnection();
 
             if (!connected)
             {
                 AddStatusRecord(SqlState::S08001_CANNOT_CONNECT, "Failed to establish connection with the host.");
 
-                Close();
-
                 return SqlResult::AI_ERROR;
             }
 
-            SqlResult::Type res = MakeRequestHandshake();
+            bool errors = GetDiagnosticRecords().GetStatusRecordsNumber() > 0;
 
-            if (res == SqlResult::AI_ERROR)
-                Close();
-            else
-                parser.SetProtocolVersion(config.GetProtocolVersion());
-
-            return res;
+            return errors ? SqlResult::AI_SUCCESS_WITH_INFO : SqlResult::AI_SUCCESS;
         }
 
         void Connection::Release()
@@ -513,30 +515,7 @@ namespace ignite
 
         SqlResult::Type Connection::MakeRequestHandshake()
         {
-            bool distributedJoins = false;
-            bool enforceJoinOrder = false;
-            bool replicatedOnly = false;
-            bool collocated = false;
-            bool lazy = false;
-            bool skipReducerOnUpdate = false;
-            ProtocolVersion protocolVersion;
-
-            try
-            {
-                protocolVersion = config.GetProtocolVersion();
-                distributedJoins = config.IsDistributedJoins();
-                enforceJoinOrder = config.IsEnforceJoinOrder();
-                replicatedOnly = config.IsReplicatedOnly();
-                collocated = config.IsCollocated();
-                lazy = config.IsLazy();
-                skipReducerOnUpdate = config.IsSkipReducerOnUpdate();
-            }
-            catch (const IgniteError& err)
-            {
-                AddStatusRecord(SqlState::S01S00_INVALID_CONNECTION_STRING_ATTRIBUTE, err.GetText());
-
-                return SqlResult::AI_ERROR;
-            }
+            ProtocolVersion protocolVersion = config.GetProtocolVersion();
 
             if (!protocolVersion.IsSupported())
             {
@@ -546,6 +525,13 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
+            bool distributedJoins = config.IsDistributedJoins();
+            bool enforceJoinOrder = config.IsEnforceJoinOrder();
+            bool replicatedOnly = config.IsReplicatedOnly();
+            bool collocated = config.IsCollocated();
+            bool lazy = config.IsLazy();
+            bool skipReducerOnUpdate = config.IsSkipReducerOnUpdate();
+
             HandshakeRequest req(protocolVersion, distributedJoins, enforceJoinOrder, replicatedOnly, collocated, lazy,
                 skipReducerOnUpdate);
             HandshakeResponse rsp;
@@ -554,7 +540,7 @@ namespace ignite
             {
                 // Workaround for some Linux systems that report connection on non-blocking
                 // sockets as successful but fail to establish real connection.
-                bool sent = SyncMessage(req, rsp, SocketClient::CONNECT_TIMEOUT);
+                bool sent = InternalSyncMessage(req, rsp, SocketClient::CONNECT_TIMEOUT);
 
                 if (!sent)
                 {
@@ -598,6 +584,74 @@ namespace ignite
             }
 
             return SqlResult::AI_SUCCESS;
+        }
+
+        void Connection::EnsureConnected()
+        {
+            if (socket.get() != 0)
+                return;
+
+            bool success = TryRestoreConnection();
+
+            if (!success)
+                throw OdbcError(SqlState::S08001_CANNOT_CONNECT,
+                    "Failed to establish connection with any provided hosts");
+        }
+
+        bool Connection::TryRestoreConnection()
+        {
+            std::vector<EndPoint> addrs;
+
+            CollectAddresses(config, addrs);
+
+            bool connected = false;
+
+            while (!addrs.empty() && !connected)
+            {
+                const EndPoint& addr = addrs.back();
+
+                for (uint16_t port = addr.port; port <= addr.port + addr.range; ++port)
+                {
+                    connected = socket->Connect(addr.host.c_str(), port, *this);
+
+                    if (connected)
+                    {
+                        SqlResult::Type res = MakeRequestHandshake();
+
+                        connected = res != SqlResult::AI_ERROR;
+
+                        if (connected)
+                            break;
+                    }
+                }
+
+                addrs.pop_back();
+            }
+
+            if (!connected)
+                Close();
+            else
+                parser.SetProtocolVersion(config.GetProtocolVersion());
+
+            return connected;
+        }
+
+        void Connection::CollectAddresses(const config::Configuration& cfg, std::vector<EndPoint>& endPoints)
+        {
+            endPoints.clear();
+
+            if (!cfg.IsAddressesSet())
+            {
+                LOG_MSG("'Address' is not set. Using legacy connection method.");
+
+                endPoints.push_back(EndPoint(cfg.GetHost(), cfg.GetTcpPort()));
+
+                return;
+            }
+
+            endPoints = cfg.GetAddresses();
+
+            std::random_shuffle(endPoints.begin(), endPoints.end());
         }
     }
 }
