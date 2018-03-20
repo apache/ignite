@@ -265,6 +265,8 @@ export class NotebookCtrl {
         $ctrl.chartSettingsTemplateUrl = chartSettingsTemplateUrl;
         $ctrl.demoStarted = false;
 
+        this.isDemo = $root.IgniteDemoMode;
+
         const _tryStopRefresh = function(paragraph) {
             paragraph.cancelRefresh($interval);
         };
