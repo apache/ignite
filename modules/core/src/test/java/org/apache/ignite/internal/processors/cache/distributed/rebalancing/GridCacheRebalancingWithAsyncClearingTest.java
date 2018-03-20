@@ -238,4 +238,13 @@ public class GridCacheRebalancingWithAsyncClearingTest extends GridCommonAbstrac
             Assert.assertEquals("Check failed for " + k + " = " + value, k, (int) value);
         }
     }
+
+    /**
+     * Sets baseline topology.
+     */
+    private void resetBaselineTopology() {
+        Ignite node = G.allGrids().get(0);
+
+        node.cluster().setBaselineTopology(node.cluster().topologyVersion());
+    }
 }

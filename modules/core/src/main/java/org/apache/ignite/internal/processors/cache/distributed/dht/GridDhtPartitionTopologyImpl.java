@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridAtomicLong;
@@ -64,6 +65,7 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
@@ -357,21 +359,24 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     assert exchId.isJoined() || added;
 
                     for (int p = 0; p < num; p++) {
-                        IgnitePageStoreManager storeMgr = ctx.pageStore();
-
-                        if (localNode(p, aff)
-                            || (storeMgr instanceof FilePageStoreManager
-                            && grp.persistenceEnabled()
-                            && Files.exists(((FilePageStoreManager)storeMgr).getPath(grp.sharedGroup(), grp.cacheOrGroupName(), p)))) {
+                        if (localNode(p, aff) || initLocalPartition(p, discoCache)) {
                             GridDhtLocalPartition locPart = createPartition(p);
 
-                            boolean owned = locPart.own();
+                            if (grp.persistenceEnabled()) {
+                                GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)grp.shared().database();
 
-                            assert owned : "Failed to own partition for oldest node [grp=" + grp.cacheOrGroupName() +
-                                ", part=" + locPart + ']';
+                                locPart.restoreState(db.readPartitionState(grp, locPart.id()));
+                            }
+                            else {
+                                boolean owned = locPart.own();
 
-                            if (log.isDebugEnabled())
-                                log.debug("Owned partition for oldest node: " + locPart);
+                                assert owned : "Failed to own partition for oldest node [grp=" + grp.cacheOrGroupName() +
+                                    ", part=" + locPart + ']';
+
+                                if (log.isDebugEnabled())
+                                    log.debug("Owned partition for oldest node [grp=" + grp.cacheOrGroupName() +
+                                    ", part=" + locPart + ']');
+                            }
 
                             updateSeq = updateLocal(p, locPart.state(), updateSeq, affVer);
                         }
@@ -397,9 +402,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                                 updateSeq = updateLocal(p, locPart.state(), updateSeq, affVer);
 
-                                if (log.isDebugEnabled())
-                                    log.debug("Evicting partition with rebalancing disabled " +
-                                        "(it does not belong to affinity): " + locPart);
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Evicting partition with rebalancing disabled (it does not belong to " +
+                                        "affinity) [grp=" + grp.cacheOrGroupName() + ", part=" + locPart + ']');
+                                }
                             }
                         }
                         else
@@ -417,6 +423,21 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         }
 
         updateRebalanceVersion(aff);
+    }
+
+    /**
+     * @param p Partition ID to restore.
+     * @param discoCache Disco cache to use.
+     * @return {@code True} if should restore local partition.
+     */
+    private boolean initLocalPartition(int p, DiscoCache discoCache) {
+        IgnitePageStoreManager storeMgr = ctx.pageStore();
+
+        return
+            grp.persistenceEnabled() &&
+            storeMgr instanceof FilePageStoreManager &&
+            discoCache.baselineNode(ctx.localNodeId()) &&
+            Files.exists(((FilePageStoreManager)storeMgr).getPath(grp.sharedGroup(), grp.cacheOrGroupName(), p));
     }
 
     /**
