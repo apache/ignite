@@ -34,12 +34,6 @@ public class JdbcThinDataSource extends ConnectionPropertiesImpl implements Data
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Connection URL. */
-    private String url;
-
-    /** Schema name. */
-    private String schema;
-
     /** Login timeout. */
     private int loginTimeout;
 
@@ -111,53 +105,9 @@ public class JdbcThinDataSource extends ConnectionPropertiesImpl implements Data
     /**
      * Different application servers us different format (URL & url).
      * @param url Connection URL.
+     * @throws SQLException On error whrn URL is invalid.
      */
-    public void setURL(String url) {
+    public void setURL(String url) throws SQLException {
         setUrl(url);
-    }
-
-    /**
-     * Different application servers us different format (URL & url).
-     * @return Connection URL.
-     */
-    public String getUrl() {
-        if (url != null)
-            return url;
-        else {
-            if (F.isEmpty(getHost()))
-                return null;
-
-            StringBuilder sbUrl = new StringBuilder(JdbcThinUtils.URL_PREFIX).append(getHost());
-
-            if (getPort() > 0)
-                sbUrl.append(':').append(getPort());
-
-            if (!F.isEmpty(schema))
-                sbUrl.append('/').append(schema);
-
-            return sbUrl.toString();
-        }
-    }
-
-    /**
-     * Different application servers us different format (URL & url).
-     * @param url Connection URL.
-     */
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    /**
-     * @return Database schema to access.
-     */
-    public String getSchema() {
-        return schema;
-    }
-
-    /**
-     * @param schema Database schema to access.
-     */
-    public void setSchema(String schema) {
-        this.schema = schema;
     }
 }
