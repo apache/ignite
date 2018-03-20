@@ -300,7 +300,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void rollbackOnTopologyChange(AffinityTopologyVersion topVer) {
         for (IgniteInternalTx tx : activeTransactions()) {
-            if (tx != null && tx.local() && (!tx.dht() || tx.colocated()) && !tx.implicit() && needWaitTransaction(tx, topVer)) {
+            if (tx.local() && tx.near() && needWaitTransaction(tx, topVer)) {
                 if (log.isInfoEnabled())
                     log.info("Forcibly rolling back near transaction: " + CU.txString(tx));
 
@@ -445,6 +445,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param isolation Isolation.
      * @param timeout transaction timeout.
      * @param txSize Expected transaction size.
+     * @param lb Label.
      * @return New transaction.
      */
     public GridNearTxLocal newTx(
@@ -456,7 +457,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         long timeout,
         boolean storeEnabled,
         int txSize,
-        @Nullable String label
+        @Nullable String lb
     ) {
         assert sysCacheCtx == null || sysCacheCtx.systemTx();
 
@@ -477,7 +478,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             txSize,
             subjId,
             taskNameHash,
-            label);
+            lb);
 
         if (tx.system()) {
             AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), tx);

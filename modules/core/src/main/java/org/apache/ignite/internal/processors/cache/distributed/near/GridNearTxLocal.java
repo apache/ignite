@@ -133,10 +133,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     private static final AtomicReferenceFieldUpdater<GridNearTxLocal, NearTxFinishFuture> FINISH_FUT_UPD =
         AtomicReferenceFieldUpdater.newUpdater(GridNearTxLocal.class, NearTxFinishFuture.class, "finishFut");
 
-    /** Fast finish updater. */
-    private static final AtomicIntegerFieldUpdater<GridNearTxLocal> FAST_FINISH_UPD =
-        AtomicIntegerFieldUpdater.newUpdater(GridNearTxLocal.class, "fastFinish");
-
     /** DHT mappings. */
     private IgniteTxMappings mappings;
 
@@ -174,10 +170,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** */
     @GridToStringExclude
     private TransactionProxyImpl proxy;
-
-    /** Used to prevent race between fast finish check and async rollback. */
-    @SuppressWarnings("UnusedDeclaration")
-    private volatile int fastFinish;
 
     /** Tx label. */
     private @Nullable String label;
@@ -4224,6 +4216,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (state(MARKED_ROLLBACK, true) || (state() == MARKED_ROLLBACK)) {
             cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                 @Override public void run() {
+                    // Note: if rollback asynchronously on timeout should not clear thread map
+                    // since thread started tx still should be able to see this tx.
                     rollbackNearTxLocalAsync(false, true);
 
                     U.warn(log, "Transaction was rolled back because the timeout is reached: " +

@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
-import java.util.Objects;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteTransactionsEx;
@@ -214,7 +213,7 @@ public class IgniteTransactionsImpl<K, V> implements IgniteTransactionsEx {
             }
         }, new IgnitePredicate<IgniteInternalTx>() {
             @Override public boolean apply(IgniteInternalTx tx) {
-                return tx.near();
+                return tx.local() && tx.near();
             }
         });
     }

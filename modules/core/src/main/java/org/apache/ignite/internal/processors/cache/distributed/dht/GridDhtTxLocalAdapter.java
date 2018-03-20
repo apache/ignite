@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -106,7 +105,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     /** Nodes where transactions were started on lock step. */
     private Set<ClusterNode> lockTxNodes;
 
-    /** Lock future what is currently in progress. */
+    /** Enlist or lock future what is currently in progress. */
     @SuppressWarnings("UnusedDeclaration")
     @GridToStringExclude
     protected volatile IgniteInternalFuture<Boolean> lockFut;
@@ -883,7 +882,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
      *
      * @param f Future to finish.
      * @param err Error.
-     * @param clearLockFut {@code true} If need to clear lock future.
+     * @param clearLockFut {@code True} if need to clear lock future.
      *
      * @return Finished future.
      */

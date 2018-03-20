@@ -43,7 +43,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
-import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.transactions.TransactionDeadlockException;
@@ -432,14 +431,6 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
         }
 
         return isCancelled();
-    }
-
-    private ConcurrentLinkedQueue<StackTraceElement[]> q = new ConcurrentLinkedQueue<>();
-
-    @Override protected boolean onDone(@Nullable Boolean res, @Nullable Throwable err, boolean cancel) {
-        q.add(new Exception().getStackTrace());
-
-        return super.onDone(res, err, cancel);
     }
 
     /**
