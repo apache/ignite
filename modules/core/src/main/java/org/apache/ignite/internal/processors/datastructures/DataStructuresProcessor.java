@@ -188,6 +188,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /**
      *
      */
+    public void onBeforeActivate() {
+        initLatch = new CountDownLatch(1);
+    }
+
+    /**
+     *
+     */
     private void onKernalStart0(){
         initLatch.countDown();
     }
@@ -225,10 +232,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 ((GridCacheLockEx)ds).onStop();
         }
 
-        if (initLatch.getCount() > 0) {
+        CountDownLatch init0 = initLatch;
+
+        if (init0 != null && init0.getCount() > 0) {
             initFailed = true;
 
-            initLatch.countDown();
+            init0.countDown();
+
+            initLatch = null;
         }
 
         Iterator<Map.Entry<Integer, UUID>> iter = qryIdMap.entrySet().iterator();
@@ -245,22 +256,20 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void onActivate(GridKernalContext ctx) {
         if (log.isDebugEnabled())
-            log.debug("Activate data structure processor [nodeId=" + ctx.localNodeId() +
+            log.debug("Activating data structure processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
 
         initFailed = false;
-
-        initLatch = new CountDownLatch(1);
 
         qryIdMap.clear();
 
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        onKernalStart0();
-
         restoreStructuresState(ctx);
+
+        onKernalStart0();
     }
 
     /**
@@ -289,6 +298,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         ctx.event().removeLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         onKernalStop(false);
+
+        initLatch = null;
 
         for (GridCacheRemovable v : dsMap.values()) {
             if (v instanceof IgniteChangeGlobalStateSupport)
@@ -1070,9 +1081,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * Awaits for processor initialization.
      */
     private void awaitInitialization() {
-        if (initLatch.getCount() > 0) {
+        CountDownLatch latch0 = initLatch;
+
+        if (latch0 == null)
+            throw new IllegalStateException("Ignite cluster is not active");
+
+        if (latch0.getCount() > 0) {
             try {
-                U.await(initLatch);
+                U.await(latch0);
 
                 if (initFailed)
                     throw new IllegalStateException("Failed to initialize data structures processor.");
