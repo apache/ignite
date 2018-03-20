@@ -25,14 +25,12 @@ export default class PageProfileController {
     }
 
     $onInit() {
-        const self = this;
-
-        self.ui = {};
+        this.ui = {};
 
         this.User.read()
-            .then((user) => self.ui.user = angular.copy(user));
+            .then((user) => this.ui.user = angular.copy(user));
 
-        self.ui.countries = this.Countries.getAll();
+        this.ui.countries = this.Countries.getAll();
     }
 
     toggleToken() {

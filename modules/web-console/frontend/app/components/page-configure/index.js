@@ -23,6 +23,9 @@ import ConfigurationDownload from './services/ConfigurationDownload';
 
 export default angular
     .module('ignite-console.page-configure', [])
+    .config(['DefaultStateProvider', (DefaultState) => {
+        DefaultState.setRedirectTo(() => 'base.configuration.tabs');
+    }])
     .component('pageConfigure', component)
     .service('PageConfigure', PageConfigure)
     .service('ConfigureState', ConfigureState)

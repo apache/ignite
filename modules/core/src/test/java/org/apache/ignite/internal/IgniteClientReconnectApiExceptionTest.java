@@ -39,6 +39,7 @@ import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -60,6 +61,10 @@ import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
  *
  */
 public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnectAbstractTest {
+
+    /** Cache key for test put and invoke operation after reconnect */
+    private final static int CACHE_PUT_INVOKE_KEY = 10010;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -139,7 +144,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
                         boolean failed = false;
 
                         try {
-                            client.set("testSet", new CollectionConfiguration());
+                            client.set("testSet", getCollectionConfiguration());
                         }
                         catch (IgniteClientDisconnectedException e) {
                             failed = true;
@@ -149,7 +154,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
                         assertTrue(failed);
 
-                        return client.set("testSet", new CollectionConfiguration());
+                        return client.set("testSet", getCollectionConfiguration());
                     }
                 },
                 new C1<Object, Boolean>() {
@@ -176,7 +181,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
                         boolean failed = false;
 
                         try {
-                            client.queue("TestQueue", 10, new CollectionConfiguration());
+                            client.queue("TestQueue", 10, getCollectionConfiguration());
                         }
                         catch (IgniteClientDisconnectedException e) {
                             failed = true;
@@ -186,7 +191,7 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
                         assertTrue(failed);
 
-                        return client.queue("TestQueue", 10, new CollectionConfiguration());
+                        return client.queue("TestQueue", 10, getCollectionConfiguration());
                     }
                 },
                 new C1<Object, Boolean>() {
@@ -314,14 +319,15 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
                     }
                 }
             ),
-            // Check invoke operation.
+            // Check put and invoke operation.
             new T2<Callable, C1<Object, Boolean>>(
                 new Callable() {
                     @Override public Object call() throws Exception {
                         boolean failed = false;
 
                         try {
-                            dfltCache.invoke(10000, new CacheEntryProcessor<Object, Object, Object>() {
+                            dfltCache.put(CACHE_PUT_INVOKE_KEY, 10000);
+                            dfltCache.invoke(CACHE_PUT_INVOKE_KEY, new CacheEntryProcessor<Object, Object, Object>() {
                                 @Override public Object process(MutableEntry<Object, Object> entry,
                                     Object... arguments) throws EntryProcessorException {
                                     assertTrue(entry.exists());
@@ -338,7 +344,8 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
                         assertTrue(failed);
 
-                        return dfltCache.invoke(10000, new CacheEntryProcessor<Object, Object, Object>() {
+                        dfltCache.put(CACHE_PUT_INVOKE_KEY, 10000);
+                        return dfltCache.invoke(CACHE_PUT_INVOKE_KEY, new CacheEntryProcessor<Object, Object, Object>() {
                             @Override public Object process(MutableEntry<Object, Object> entry,
                                 Object... arguments) throws EntryProcessorException {
                                 assertTrue(entry.exists());
@@ -857,5 +864,10 @@ public class IgniteClientReconnectApiExceptionTest extends IgniteClientReconnect
 
             stopAllGrids();
         }
+    }
+
+    /** Get {@link CollectionConfiguration} with number of backups equal to {@link AtomicConfiguration} default */
+    private CollectionConfiguration getCollectionConfiguration() {
+        return new CollectionConfiguration().setBackups(AtomicConfiguration.DFLT_BACKUPS);
     }
 }
