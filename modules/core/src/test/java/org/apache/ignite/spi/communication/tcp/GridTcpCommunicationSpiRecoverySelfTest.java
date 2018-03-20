@@ -659,8 +659,8 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
     private boolean waitForSessionsCount(TcpCommunicationSpi spi, int cnt) throws IgniteInterruptedCheckedException {
         return GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                GridNioServer srv = U.field(spi, "nioSrvr");
-                Collection<? extends GridNioSession> sessions = GridTestUtils.getFieldValue(srv, "sessions");
+                Collection<? extends GridNioSession> sessions =
+                    GridTestUtils.getFieldValue(spi, "nioSrvr", "sessions");
 
                 return sessions.size() == cnt;
             }
