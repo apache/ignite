@@ -39,6 +39,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinDataSource;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
+import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -122,9 +123,10 @@ public class JdbcThinDataSourceSelfTest extends JdbcThinAbstractSelfTest {
     public void testUrlCompose() throws Exception {
         JdbcThinDataSource ids = new JdbcThinDataSource();
 
-        ids.setHost("127.0.0.1");
-        ids.setPort(ClientConnectorConfiguration.DFLT_PORT);
         ids.setSchema("test");
+        ids.setAddresses(new HostAndPortRange[] {
+            new HostAndPortRange("127.0.0.1", ClientConnectorConfiguration.DFLT_PORT)
+            });
 
         assertEquals("jdbc:ignite:thin://127.0.0.1:10800/test", ids.getUrl());
         assertEquals("jdbc:ignite:thin://127.0.0.1:10800/test", ids.getURL());
