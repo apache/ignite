@@ -157,17 +157,18 @@ export class NotebooksListCtrl {
             const currentNotebook =  this.gridApi.selection.getSelectedRows()[0];
             const newNotebookName =  await this.IgniteInput.input('Rename notebook', 'Notebook name', currentNotebook.name);
 
+            if (this.getNotebooksNames().find((name) => newNotebookName === name))
+                throw Error(`Notebook with name "${newNotebookName}" already exists!`);
+
             this.IgniteLoading.start('notebooksLoading');
             await this.IgniteNotebook.save(Object.assign(currentNotebook, {name: newNotebookName}));
-            await this.IgniteLoading.finish('notebooksLoading');
-
-            this._loadAllNotebooks();
 
         } catch (err) {
             this.IgniteMessages.showError(err);
 
         } finally {
             await this.IgniteLoading.finish('notebooksLoading');
+            this._loadAllNotebooks();
         }
     }
 
