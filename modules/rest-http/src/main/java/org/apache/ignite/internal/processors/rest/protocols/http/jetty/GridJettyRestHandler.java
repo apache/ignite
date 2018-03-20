@@ -67,6 +67,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.client.GridClientCacheFlag.KEEP_BINARIES_MASK;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_CONTAINS_KEYS;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_ALL;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT_ALL;
@@ -625,7 +626,8 @@ public class GridJettyRestHandler extends AbstractHandler {
                 if (val1 != null)
                     restReq0.value(val1);
 
-                restReq0.cacheFlags(intValue("cacheFlags", params, 0));
+                // Cache operations via REST will use binary objects.
+                restReq0.cacheFlags(intValue("cacheFlags", params, KEEP_BINARIES_MASK));
                 restReq0.ttl(longValue("exp", params, null));
 
                 if (cmd == CACHE_GET_ALL || cmd == CACHE_PUT_ALL || cmd == CACHE_REMOVE_ALL ||

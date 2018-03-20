@@ -19,8 +19,7 @@
 #   include <windows.h>
 #endif
 
-#include <sql.h>
-#include <sqlext.h>
+#include "ignite/odbc/system/odbc_constants.h"
 
 #include <vector>
 #include <string>
