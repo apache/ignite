@@ -69,8 +69,6 @@ namespace ignite
 
                 /**
                  * Close established connection.
-                 *
-                 * @return True on success.
                  */
                 virtual void Close();
 
@@ -123,8 +121,6 @@ namespace ignite
             private:
                 /**
                  * Close established connection.
-                 *
-                 * @return True on success.
                  */
                 void InternalClose();
 

@@ -72,8 +72,6 @@ namespace ignite
 
             /**
              * Close established connection.
-             *
-             * @return True on success.
              */
             virtual void Close() = 0;
 
