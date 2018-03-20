@@ -296,6 +296,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             }
             finally {
                 stopAllGrids();
+
+                cleanPersistenceDir();
             }
         }
     }
@@ -449,6 +451,8 @@ public class IgniteClusterActivateDeactivateTest extends GridCommonAbstractTest 
             }
             finally {
                 stopAllGrids();
+
+                cleanPersistenceDir();
             }
         }
     }
