@@ -217,7 +217,7 @@ public class CommandHandler {
                 break;
 
             case BASELINE:
-                if (!F.isEmpty(args.baselineAction()))
+                if (!BASELINE_COLLECT.equals(args.baselineAction()))
                     str = "Warning: the command will perform changes in baseline.";
         }
 
