@@ -265,6 +265,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Whether to enable read load balancing. */
     private final boolean readLoadBalancingEnabled = IgniteSystemProperties.getBoolean(IGNITE_READ_LOAD_BALANCING, true);
 
+    /** Flag indicating whether data can be read from backup. */
+    private boolean readFromBackup = CacheConfiguration.DFLT_READ_FROM_BACKUP;
+
     /** Local node's MAC address. */
     private String locMacs;
 
@@ -387,6 +390,8 @@ public class GridCacheContext<K, V> implements Externalizable {
             expiryPlc = null;
 
         itHolder = new CacheWeakQueryIteratorsHolder(log);
+
+        readFromBackup = cacheCfg.isReadFromBackup();
 
         locMacs = localNode().attribute(ATTR_MACS);
 
@@ -2192,7 +2197,7 @@ public class GridCacheContext<K, V> implements Externalizable {
                 return affNodes.get(0);
         }
 
-        if (!config().isReadFromBackup())
+        if (!readFromBackup)
             return affNodes.get(0);
 
         assert locMacs != null;
