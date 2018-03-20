@@ -210,7 +210,7 @@ public class GridDhtPartitionDemandMessage extends GridCacheGroupIdMessage {
      * @return Converted message or {@code this} if conversion isn't necessary.
      */
     public GridCacheMessage convertIfNeeded(IgniteProductVersion target) {
-        if (target.compareTo(VERSION_SINCE) <= 0)
+        if (target.compareTo(VERSION_SINCE) < 0)
             return new GridDhtPartitionDemandLegacyMessage(this);
 
         return this;
