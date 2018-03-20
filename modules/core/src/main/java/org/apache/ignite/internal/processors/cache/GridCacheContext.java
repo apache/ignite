@@ -389,6 +389,8 @@ public class GridCacheContext<K, V> implements Externalizable {
         itHolder = new CacheWeakQueryIteratorsHolder(log);
 
         locMacs = localNode().attribute(ATTR_MACS);
+
+        assert locMacs != null;
     }
 
     /**
