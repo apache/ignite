@@ -57,13 +57,13 @@ public class H2DecimalSelfTest extends AbstractSchemaSelfTest {
 
     private static final String AMOUNT = "AMOUNT";
 
-    private static final MathContext mathCtx = new MathContext(PRECISION);
+    private static final MathContext MATH_CTX = new MathContext(PRECISION);
 
-    private static final BigDecimal VAL_1 = new BigDecimal("123456789", mathCtx).setScale(SCALE, HALF_UP);
+    private static final BigDecimal VAL_1 = new BigDecimal("123456789", MATH_CTX).setScale(SCALE, HALF_UP);
 
-    private static final BigDecimal VAL_2 = new BigDecimal("12345678.12345678", mathCtx).setScale(SCALE, HALF_UP);
+    private static final BigDecimal VAL_2 = new BigDecimal("12345678.12345678", MATH_CTX).setScale(SCALE, HALF_UP);
 
-    private static final BigDecimal VAL_3 = new BigDecimal(".123456789", mathCtx).setScale(SCALE, HALF_UP);
+    private static final BigDecimal VAL_3 = new BigDecimal(".123456789", MATH_CTX).setScale(SCALE, HALF_UP);
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -116,6 +116,7 @@ public class H2DecimalSelfTest extends AbstractSchemaSelfTest {
         queryEntity.setDecimalInfo(decimalInfo);
 
         ccfg.setQueryEntities(Collections.singletonList(queryEntity));
+
         return ccfg;
     }
 
@@ -126,10 +127,16 @@ public class H2DecimalSelfTest extends AbstractSchemaSelfTest {
         checkDecimalInfo(DEC_TAB_NAME, VALUE, SCALE, PRECISION);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testConfiguredFromQueryEntity() throws Exception {
         checkDecimalInfo(SALARY_TAB_NAME, AMOUNT, SCALE, PRECISION);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testConfiguredFromQueryEntityInDynamicallyCreatedCache() throws Exception {
         IgniteEx grid = grid(0);
 
@@ -142,10 +149,11 @@ public class H2DecimalSelfTest extends AbstractSchemaSelfTest {
         checkDecimalInfo(tabName, AMOUNT, SCALE, PRECISION);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testConfiguredFromAnnotations() throws Exception {
         IgniteEx grid = grid(0);
-
-        String tabName = SALARY_TAB_NAME + "3";
 
         CacheConfiguration<Integer, Salary> ccfg = new CacheConfiguration<>(SALARY_CACHE + "3");
 
@@ -153,7 +161,7 @@ public class H2DecimalSelfTest extends AbstractSchemaSelfTest {
 
         grid.createCache(ccfg);
 
-        checkDecimalInfo(tabName, AMOUNT, SCALE, PRECISION);
+        checkDecimalInfo(SalaryWithAnnotations.class.getSimpleName().toUpperCase(), "amount", SCALE, PRECISION);
     }
 
     //Добавить  такие же тесты с учёто старта\стопа грида
@@ -218,7 +226,7 @@ public class H2DecimalSelfTest extends AbstractSchemaSelfTest {
      * @param node Node.
      * @param sql Statement.
      */
-    private List<List<?>> execute(Ignite node, String sql, Object...args) {
+    private List<List<?>> execute(Ignite node, String sql, Object... args) {
         SqlFieldsQuery qry = new SqlFieldsQuery(sql)
             .setArgs(args)
             .setSchema("PUBLIC");
