@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.typedef.T2;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Partition counters map.
@@ -67,5 +68,10 @@ public class IgniteDhtPartitionCountersMap implements Serializable {
             return Collections.emptyMap();
 
         return cntrMap;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteDhtPartitionCountersMap.class, this);
     }
 }

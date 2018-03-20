@@ -23,7 +23,7 @@ require('app-module-path').addPath(__dirname);
 const argv = require('minimist')(process.argv.slice(2));
 const envEnabled = argv.env;
 
-const { startEnv, removeData } = require('./envtools');
+const { startEnv, dropTestDB } = require('./envtools');
 
 const createTestCafe = require('testcafe');
 
@@ -33,11 +33,11 @@ const BROWSERS = ['chromium:headless --no-sandbox']; // For example: ['chrome', 
 let testcafe = null;
 
 const resolveFixturesPaths = () => {
-    let fixturesPaths = glob.sync('./fixtures/*.js');
+    let fixturesPaths = glob.sync(' ./fixtures/**/*.js');
 
     if (process.env.IGNITE_MODULES) {
         const igniteModulesTestcafe = path.join(process.env.IGNITE_MODULES, 'e2e/testcafe');
-        const additionalFixturesPaths = glob.sync(path.join(igniteModulesTestcafe, 'fixtures', '*.js'));
+        const additionalFixturesPaths = glob.sync(path.join(igniteModulesTestcafe, 'fixtures', '**/*.js'));
         const relativePaths = new Set(additionalFixturesPaths.map((fixturePath) => path.relative(igniteModulesTestcafe, fixturePath)));
 
         fixturesPaths = fixturesPaths.filter((fixturePath) => !relativePaths.has(path.relative(process.cwd(), fixturePath))).concat(additionalFixturesPaths);
@@ -52,7 +52,7 @@ createTestCafe('localhost', 1337, 1338)
             if (envEnabled)
                 await startEnv();
 
-            await removeData();
+            await dropTestDB();
 
             testcafe = tc;
 
@@ -65,7 +65,7 @@ createTestCafe('localhost', 1337, 1338)
                 .src(resolveFixturesPaths())
                 .browsers(BROWSERS)
                 .reporter(reporter)
-                .run({ skipJsErrors: true });
+                .run({ skipJsErrors: true, quarantineMode: true });
         } catch (err) {
             console.log(err);
 
@@ -78,7 +78,7 @@ createTestCafe('localhost', 1337, 1338)
         testcafe.close();
 
         if (envEnabled)
-            await removeData();
+            await dropTestDB();
 
         console.log('Tests failed: ' + failedCount);
 

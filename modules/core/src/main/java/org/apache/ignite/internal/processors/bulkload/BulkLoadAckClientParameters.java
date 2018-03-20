@@ -23,33 +23,33 @@ import org.jetbrains.annotations.NotNull;
  * Bulk load parameters, which are parsed from SQL command and sent from server to client.
  */
 public class BulkLoadAckClientParameters {
-    /** Minimum batch size. */
-    public static final int MIN_BATCH_SIZE = 1;
+    /** Minimum packet size. */
+    public static final int MIN_PACKET_SIZE = 1;
 
     /**
-     * Maximum batch size. Note that the batch is wrapped to transport objects and the overall packet should fit
+     * Maximum packet size. Note that the packet is wrapped to transport objects and the overall packet should fit
      * into a Java array. 512 has been chosen arbitrarily.
      */
-    public static final int MAX_BATCH_SIZE = Integer.MAX_VALUE - 512;
+    public static final int MAX_PACKET_SIZE = Integer.MAX_VALUE - 512;
 
-    /** Size of a file batch for COPY command. */
-    public static final int DEFAULT_BATCH_SIZE = 4 * 1024 * 1024;
+    /** Size of a file packet size for COPY command. */
+    public static final int DFLT_PACKET_SIZE = 4 * 1024 * 1024;
 
     /** Local name of the file to send to server */
     @NotNull private final String locFileName;
 
-    /** File batch size in bytes. */
-    private final int batchSize;
+    /** File packet size in bytes. */
+    private final int packetSize;
 
     /**
      * Creates a bulk load parameters.
      *
      * @param locFileName File name to send from client to server.
-     * @param batchSize Batch size (Number of bytes in a portion of a file to send in one JDBC request/response).
+     * @param packetSize Packet size (Number of bytes in a portion of a file to send in one JDBC request/response).
      */
-    public BulkLoadAckClientParameters(@NotNull String locFileName, int batchSize) {
+    public BulkLoadAckClientParameters(@NotNull String locFileName, int packetSize) {
         this.locFileName = locFileName;
-        this.batchSize = batchSize;
+        this.packetSize = packetSize;
     }
 
     /**
@@ -62,31 +62,31 @@ public class BulkLoadAckClientParameters {
     }
 
     /**
-     * Returns the batch size.
+     * Returns the packet size.
      *
-     * @return The batch size.
+     * @return The packet size.
      */
-    public int batchSize() {
-        return batchSize;
+    public int packetSize() {
+        return packetSize;
     }
 
     /**
-     * Checks if batch size value is valid.
+     * Checks if packet size value is valid.
      *
-     * @param sz The batch size to check.
-     * @throws IllegalArgumentException if batch size is invalid.
+     * @param sz The packet size to check.
+     * @throws IllegalArgumentException if packet size is invalid.
      */
-    public static boolean isValidBatchSize(int sz) {
-        return sz >= MIN_BATCH_SIZE && sz <= MAX_BATCH_SIZE;
+    public static boolean isValidPacketSize(int sz) {
+        return sz >= MIN_PACKET_SIZE && sz <= MAX_PACKET_SIZE;
     }
 
     /**
-     * Creates proper batch size error message if {@link #isValidBatchSize(int)} check has failed.
+     * Creates proper packet size error message if {@link #isValidPacketSize(int)} check has failed.
      *
-     * @param sz The batch size.
+     * @param size The packet size.
      * @return The string with the error message.
      */
-    public static String batchSizeErrorMsg(int sz) {
-        return "Batch size should be within [" + MIN_BATCH_SIZE + ".." + MAX_BATCH_SIZE + "]: " + sz;
+    public static String packetSizeErrorMesssage(int size) {
+        return "Packet size should be within [" + MIN_PACKET_SIZE + ".." + MAX_PACKET_SIZE + "]: " + size;
     }
 }

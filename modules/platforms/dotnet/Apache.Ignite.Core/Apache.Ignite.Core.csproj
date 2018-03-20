@@ -56,6 +56,8 @@
     <Compile Include="Cache\Configuration\DataPageEvictionMode.cs" />
     <Compile Include="Client\Cache\CacheClientConfiguration.cs" />
     <Compile Include="Client\IgniteClientConfigurationSection.cs" />
+    <Compile Include="Client\ISslStreamFactory.cs" />
+    <Compile Include="Client\SslStreamFactory.cs" />
     <Compile Include="Cluster\IBaselineNode.cs" />
     <Compile Include="Configuration\CheckpointWriteOrder.cs" />
     <Compile Include="Configuration\DataPageEvictionMode.cs" />
@@ -70,7 +72,7 @@
     <Compile Include="Client\IgniteClientException.cs" />
     <Compile Include="Client\IIgniteClient.cs" />
     <Compile Include="Common\ExceptionFactory.cs" />
-    <Compile Include="Cluster\Ssl\ISslContextFactory.cs" />
+    <Compile Include="Ssl\ISslContextFactory.cs" />
     <Compile Include="Configuration\Package-Info.cs" />
     <Compile Include="Configuration\ClientConnectorConfiguration.cs" />
     <Compile Include="Datastream\DataStreamerDefaults.cs" />
@@ -94,8 +96,8 @@
     <Compile Include="Client\ClientStatusCode.cs" />
     <Compile Include="Events\LocalEventListener.cs" />
     <Compile Include="Impl\Cluster\BaselineNode.cs" />
-    <Compile Include="Cluster\Ssl\SslContextFactory.cs" />
-    <Compile Include="Impl\Cluster\Ssl\SslFactorySerializer.cs" />
+    <Compile Include="Ssl\SslContextFactory.cs" />
+    <Compile Include="Impl\Ssl\SslFactorySerializer.cs" />
     <Compile Include="Impl\DataStorageMetrics.cs" />
     <Compile Include="Impl\IIgniteInternal.cs" />
     <Compile Include="Impl\Client\Cache\CacheClient.cs" />

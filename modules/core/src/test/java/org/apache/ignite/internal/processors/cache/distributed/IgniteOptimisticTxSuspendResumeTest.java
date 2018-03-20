@@ -33,6 +33,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -624,6 +625,38 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                     }
 
                     cache.removeAll();
+                }
+            }
+        });
+    }
+
+    /**
+     * Test for correct exception handling when misuse transaction API - resume active tx.
+     *
+     * @throws Exception If failed.
+     */
+    public void testResumeActiveTx() throws Exception {
+        executeTestForAllCaches(new CI2Exc<Ignite, IgniteCache<Integer, Integer>>() {
+            @Override public void applyx(Ignite ignite, final IgniteCache<Integer, Integer> cache) throws Exception {
+                for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                    final Transaction tx = ignite.transactions().txStart(OPTIMISTIC, isolation);
+
+                    cache.put(1, 1);
+
+                    try {
+                        tx.resume();
+
+                        fail("Exception must be thrown");
+                    }
+                    catch (Throwable e) {
+                        assertTrue(X.hasCause(e, IgniteException.class));
+
+                        assertFalse(X.hasCause(e, AssertionError.class));
+                    }
+
+                    tx.close();
+
+                    assertFalse(cache.containsKey(1));
                 }
             }
         });
