@@ -439,7 +439,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                         if (delay > 0)
                             sleep(delay);
 
-                        // TODO IGNITE-7770 NPE on v deref is another bug, hasn't been fixed yet.
+                        // TODO IGNITE-7983 NPE on v deref is another bug, hasn't been fixed yet.
                         if (v == null) {
                             stop.set(true);
                             cntr1.add(1);

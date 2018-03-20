@@ -3229,7 +3229,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                     TransactionState state = state();
 
                     fut0.finish(state == PREPARED || state == COMMITTING || state == COMMITTED, true);
-
                 }
                 catch (Error | RuntimeException e) {
                     COMMIT_ERR_UPD.compareAndSet(GridNearTxLocal.this, null, e);
