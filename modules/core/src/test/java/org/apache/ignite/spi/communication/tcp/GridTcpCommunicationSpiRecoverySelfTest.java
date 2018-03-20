@@ -369,7 +369,8 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
                     assertEquals(expMsgs, lsnr1.rcvCnt.get());
 
-                    assertTrue(waitForSessionsCount(spi1, 1));
+                    if (spi1.isUsePairedConnections())
+                        assertTrue(waitForSessionsCount(spi1, 1));
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(BindException.class)) {
@@ -503,7 +504,8 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
                     assertEquals(expMsgs0, lsnr0.rcvCnt.get());
                     assertEquals(expMsgs1, lsnr1.rcvCnt.get());
 
-                    assertTrue(waitForSessionsCount(spi1, 2));
+                    if (spi1.isUsePairedConnections())
+                        assertTrue(waitForSessionsCount(spi1, 2));
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(BindException.class)) {
@@ -615,7 +617,8 @@ public class GridTcpCommunicationSpiRecoverySelfTest<T extends CommunicationSpi>
 
                     assertEquals(expMsgs, lsnr1.rcvCnt.get());
 
-                    assertTrue(waitForSessionsCount(spi1, 1));
+                    if (spi1.isUsePairedConnections())
+                        assertTrue(waitForSessionsCount(spi1, 1));
                 }
                 catch (IgniteCheckedException e) {
                     if (e.hasCause(BindException.class)) {
