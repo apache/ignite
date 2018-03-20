@@ -77,6 +77,11 @@ export class NotebooksListCtrl {
                 available: true
             },
             {
+                action: 'Rename',
+                click: this.renameNotebok.bind(this),
+                available: true
+            },
+            {
                 action: 'Delete',
                 click: this.deleteNotebooks.bind(this),
                 available: true
@@ -116,11 +121,14 @@ export class NotebooksListCtrl {
     }
 
     _onSelectionChanged() {
-        this._checkCloneAllow();
+        this._checkActionsAllow();
     }
 
-    _checkCloneAllow() {
-        this.actionOptions[0].available = this.gridApi.selection.getSelectedRows().length === 1;
+    _checkActionsAllow() {
+        // Dissallow clone and rename if more then one item is selectted.
+        const oneItemIsSelected  = this.gridApi.selection.getSelectedRows().length === 1;
+        this.actionOptions[0].available = oneItemIsSelected;
+        this.actionOptions[1].available = oneItemIsSelected;
     }
 
     async createNotebook() {
@@ -141,6 +149,25 @@ export class NotebooksListCtrl {
 
             if (this.createNotebookModal)
                 this.createNotebookModal.$promise.then(this.createNotebookModal.hide);
+        }
+    }
+
+    async renameNotebok() {
+        try {
+            const currentNotebook =  this.gridApi.selection.getSelectedRows()[0];
+            const newNotebookName =  await this.IgniteInput.input('Rename notebook', 'Notebook name', currentNotebook.name);
+
+            this.IgniteLoading.start('notebooksLoading');
+            await this.IgniteNotebook.save(Object.assign(currentNotebook, {name: newNotebookName}));
+            await this.IgniteLoading.finish('notebooksLoading');
+
+            this._loadAllNotebooks();
+
+        } catch (err){
+            this.IgniteMessages.showError(err);
+
+        } finally {
+            await this.IgniteLoading.finish('notebooksLoading');
         }
     }
 
