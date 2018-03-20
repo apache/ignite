@@ -513,6 +513,21 @@ public class H2TreeIndex extends GridH2IndexBase {
         return filter != null ? new PartitionFilterTreeRowClosure(filter) : null;
     }
 
+    /** {@inheritDoc} */
+    @Override public void refreshColumnIds() {
+        super.refreshColumnIds();
+
+        if (inlineIdxs == null)
+            return;
+
+        List<InlineIndexHelper> inlineHelpers = getAvailableInlineColumns(indexColumns);
+
+        assert inlineIdxs.size() == inlineHelpers.size();
+
+        for (int pos = 0; pos < inlineHelpers.size(); ++pos)
+            inlineIdxs.set(pos, inlineHelpers.get(pos));
+    }
+
     /**
      * Empty cursor.
      */

@@ -25,6 +25,8 @@ WORKDIR /opt/testcafe/tests
 
 COPY . /opt/testcafe/tests
 
+ENV NPM_CONFIG_LOGLEVEL warn
+
 RUN npm install --production && \
  npm cache verify --force && \
  rm -rf /tmp/*

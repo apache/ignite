@@ -14,70 +14,143 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-mixin lbl(txt)
-    label.col-sm-2.required.labelFormField #{txt}
+include /app/helpers/jade/mixins
 
-mixin lbl-not-required(txt)
-    label.col-sm-2.labelFormField #{txt}
-
-.row
-    .docs-content
-        .docs-header
+div
+    header.header-with-selector
+        div
             h1 User profile
-            hr
-        .docs-body
-            form.form-horizontal(name='$ctrl.form' novalidate)
-                .col-sm-10(style='padding: 0')
-                    .details-row
-                        +lbl('First name:')
-                        .col-xs-5.col-sm-4
-                            input#profile-firstname.form-control(ignite-on-enter-focus-move='profile-lastname' type='text' ng-model='$ctrl.ui.user.firstName' placeholder='Input first name' required ignite-auto-focus)
-                    .details-row
-                        +lbl('Last name:')
-                        .col-xs-5.col-sm-4
-                            input#profile-lastname.form-control(ignite-on-enter-focus-move='profile-email' type='text' ng-model='$ctrl.ui.user.lastName' placeholder='Input last name' required)
-                    .details-row
-                        +lbl('Email:')
-                        .col-xs-5.col-sm-4
-                            input#profile-email.form-control(ignite-on-enter-focus-move='profile-company' type='email' ng-model='$ctrl.ui.user.email' placeholder='Input email' required)
-                    .details-row
-                        +lbl-not-required('Phone:')
-                        .col-xs-5.col-sm-4
-                            input#profile-phone.form-control(ignite-on-enter-focus-move='profile-company' type='tel' ng-model='$ctrl.ui.user.phone' placeholder='Input phone')
-                    .details-row
-                        +lbl('Company:')
-                        .col-xs-5.col-sm-4
-                            input#profile-company.form-control(ignite-on-enter-focus-move='profile-country' type='text' ng-model='$ctrl.ui.user.company' placeholder='Input company name' required)
-                    .details-row
-                        +lbl('Country:')
-                        .col-xs-5.col-sm-4
-                            button#profile-country.select-toggle.form-control(bs-select bs-options='item.name as item.name for item in $ctrl.ui.countries' type='text' ng-model='$ctrl.ui.user.country' placeholder='Choose your country' ng-required='true')
-                    .details-row#security-token-section
-                        .advanced-options
-                            i.fa(
-                            ng-click='$ctrl.toggleToken()'
-                            ng-class='$ctrl.ui.expandedToken ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
-                            a(ng-click='$ctrl.toggleToken()') {{$ctrl.ui.expandedToken ? 'Cancel security token changing...' : 'Show security token...'}}
-                        div(ng-if='$ctrl.ui.expandedToken')
-                            +lbl('Security token:')
-                            label#current-security-token {{$ctrl.ui.user.token || 'No security token. Regenerate please.'}}
-                            i.tipLabel.fa.fa-refresh(ng-click='$ctrl.generateToken()' bs-tooltip='' data-title='Generate random security token')
-                            i.tipLabel.fa.fa-clipboard(ignite-copy-to-clipboard='{{$ctrl.ui.user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
-                            i.tipLabel.icon-help(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
-                    .details-row#change-password-section
-                        .advanced-options
-                            i.fa(
-                            ng-click='$ctrl.togglePassword()'
-                            ng-class='$ctrl.ui.expandedPassword ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
-                            a(ng-click='$ctrl.togglePassword()') {{$ctrl.ui.expandedPassword ? 'Cancel password changing...' : 'Change password...'}}
-                        div(ng-if='$ctrl.ui.expandedPassword')
-                            .details-row
-                                +lbl('New password:')
-                                .col-xs-5.col-sm-4
-                                    input#profile_password.form-control(ignite-on-enter-focus-move='profile_confirm' type='password' ng-model='$ctrl.ui.user.password' placeholder='New password' required)
-                            .details-row
-                                +lbl('Confirm:')
-                                .col-xs-5.col-sm-4
-                                    input#profile_confirm.form-control(type='password' ng-model='user.confirm' ignite-match='$ctrl.ui.user.password' placeholder='Confirm new password' required)
-                .col-xs-12.col-sm-12.details-row
-                    button.btn.btn-primary(ng-click='$ctrl.saveUser()' ng-disabled='$ctrl.form.$invalid') Save
+
+    -var form = '$ctrl.form'
+    form.theme--ignite(name='$ctrl.form' novalidate)
+        .row
+            .col-25
+                +form-field__text({
+                    label: 'First name:',
+                    model: '$ctrl.ui.user.firstName',
+                    name: '"firstName"',
+                    required: true,
+                    placeholder: 'Input first name'
+                })(
+                ignite-auto-focus
+                    ignite-on-enter-focus-move='lastNameInput'
+                )
+            .col-25
+                +form-field__text({
+                    label: 'Last name:',
+                    model: '$ctrl.ui.user.lastName',
+                    name: '"lastName"',
+                    required: true,
+                    placeholder: 'Input last name'
+                })(
+                    ignite-on-enter-focus-move='emailInput'
+                )
+        .row
+            .col-50
+                +form-field__email({
+                    label: 'Email:',
+                    model: '$ctrl.ui.user.email',
+                    name: '"email"',
+                    required: true,
+                    placeholder: 'Input email'
+                })(
+                    ignite-on-enter-focus-move='phoneInput'
+                )
+        .row
+            .col-25
+                +form-field__phone({
+                    label: 'Phone:',
+                    model: '$ctrl.ui.user.phone',
+                    name: '"phone"',
+                    optional: true,
+                    placeholder: 'Input phone (ex.: +15417543010)'
+                })(
+                    ignite-on-enter-focus-move='companyInput'
+                )
+            .col-25
+                +form-field__dropdown({
+                    label: 'Country:',
+                    model: '$ctrl.ui.user.country',
+                    name: '"country"',
+                    required: true,
+                    placeholder: 'Choose your country',
+                    options: '$ctrl.ui.countries'
+                })
+        .row
+            .col-50
+                +form-field__text({
+                    label: 'Company:',
+                    model: '$ctrl.ui.user.company',
+                    name: '"company"',
+                    required: true,
+                    placeholder: 'Input company name'
+                })(
+                    ignite-on-enter-focus-move='countryInput'
+                )
+
+        .row#security-token-section
+            .col-50
+                .panel--ignite.panel--collapse(ng-class='{ in: !$ctrl.ui.expandedToken }')
+                    header(ng-click='$ctrl.toggleToken()')
+                        svg(ignite-icon='expand')
+                        svg(ignite-icon='collapse')
+
+                        | {{$ctrl.ui.expandedToken ? 'Cancel security token changing...' : 'Show security token...'}}
+                    hr
+                    section(ng-if='$ctrl.ui.expandedToken')
+                        .row
+                            .col-25
+                                label.required Security token:
+                            .col-75
+                                label#current-security-token {{$ctrl.ui.user.token || 'No security token. Regenerate please.'}}
+                                label
+                                    i.tipLabel.fa.fa-refresh(ng-click='$ctrl.generateToken()' bs-tooltip='' data-title='Generate random security token')
+                                    i.tipLabel.fa.fa-clipboard(ignite-copy-to-clipboard='{{$ctrl.ui.user.token}}' bs-tooltip='' data-title='Copy security token to clipboard')
+                                    i.tipLabel.icon-help(ng-if=lines bs-tooltip='' data-title='The security token is used for authorization of web agent')
+
+        .row
+            .col-50
+                .panel--ignite.panel--collapse(ng-class='{ in: !$ctrl.ui.expandedPassword }')
+                    header(ng-click='$ctrl.togglePassword()')
+                        svg(ignite-icon='expand')
+                        svg(ignite-icon='collapse')
+
+                        | {{ $ctrl.ui.expandedPassword ? 'Cancel password changing...' : 'Change password...' }}
+                    hr
+                    section(ng-if='$ctrl.ui.expandedPassword')
+                        .row
+                            .col-100
+                                +form-field__password({
+                                    label: 'New password:',
+                                    model: '$ctrl.ui.user.password',
+                                    name: '"password"',
+                                    required: true,
+                                    placeholder: 'New password'
+                                })(
+                                    ignite-auto-focus
+                                    ignite-on-enter-focus-move='passwordConfirmInput'
+                                )
+
+                        .row
+                            .col-100
+                                +form-field__password({
+                                    label: 'Confirm password:',
+                                    model: 'user.confirm',
+                                    name: '"passwordConfirm"',
+                                    required: true,
+                                    placeholder: 'Confirm new password'
+                                })(
+                                    ignite-on-enter-focus-move='passwordConfirmInput'
+                                    ignite-match='$ctrl.ui.user.password'
+                                )
+
+    hr
+
+    footer
+        a.btn-ignite.btn-ignite--link-success(type='button' ui-sref='default-state') Cancel
+        button.btn-ignite.btn-ignite--success(
+            ng-click='$ctrl.saveUser()'
+            ng-disabled='$ctrl.form.$invalid'
+        )
+            svg.icon-left(ignite-icon='checkmark')
+            | Save Changes

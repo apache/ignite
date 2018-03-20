@@ -113,7 +113,7 @@ package object impl {
       * @tparam V Value class.
       * @return CacheConfiguration and QueryEntity for a given table.
       */
-    private def sqlTableInfo[K, V](ignite: Ignite, tabName: String): Option[(CacheConfiguration[K, V], QueryEntity)] =
+    def sqlTableInfo[K, V](ignite: Ignite, tabName: String): Option[(CacheConfiguration[K, V], QueryEntity)] =
         ignite.cacheNames().map { cacheName ⇒
             val ccfg = ignite.cache[K, V](cacheName).getConfiguration(classOf[CacheConfiguration[K, V]])
 
