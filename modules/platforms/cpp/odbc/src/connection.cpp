@@ -57,6 +57,7 @@ namespace ignite
         Connection::Connection() :
             socket(),
             timeout(0),
+            loginTimeout(SocketClient::DEFALT_CONNECT_TIMEOUT),
             parser(),
             config(),
             info(config)
@@ -433,6 +434,18 @@ namespace ignite
                     break;
                 }
 
+                case SQL_ATTR_LOGIN_TIMEOUT:
+                {
+                    SQLUINTEGER *val = reinterpret_cast<SQLUINTEGER*>(buf);
+
+                    *val = static_cast<SQLUINTEGER>(loginTimeout);
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_INTEGER;
+
+                    break;
+                }
+
                 default:
                 {
                     AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
@@ -470,33 +483,20 @@ namespace ignite
 
                 case SQL_ATTR_CONNECTION_TIMEOUT:
                 {
-                    SQLUINTEGER uTimeout = static_cast<SQLUINTEGER>(reinterpret_cast<ptrdiff_t>(value));
+                    timeout = RetrieveTimeout(value);
 
-                    if (uTimeout != 0 && socket.get() != 0 && socket->IsBlocking())
-                    {
-                        timeout = 0;
-
-                        AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, "Can not set timeout, because can not "
-                            "enable non-blocking mode on TCP connection. Setting to 0.");
-
+                    if (GetDiagnosticRecords().GetStatusRecordsNumber() != 0)
                         return SqlResult::AI_SUCCESS_WITH_INFO;
-                    }
 
-                    if (uTimeout > INT32_MAX)
-                    {
-                        timeout = INT32_MAX;
+                    break;
+                }
 
-                        std::stringstream ss;
+                case SQL_ATTR_LOGIN_TIMEOUT:
+                {
+                    loginTimeout = RetrieveTimeout(value);
 
-                        ss << "Value is too big: " << uTimeout << ", changing to " << timeout << ".";
-                        std::string msg = ss.str();
-
-                        AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, msg);
-
+                    if (GetDiagnosticRecords().GetStatusRecordsNumber() != 0)
                         return SqlResult::AI_SUCCESS_WITH_INFO;
-                    }
-
-                    timeout = static_cast<int32_t>(uTimeout);
 
                     break;
                 }
@@ -540,7 +540,7 @@ namespace ignite
             {
                 // Workaround for some Linux systems that report connection on non-blocking
                 // sockets as successful but fail to establish real connection.
-                bool sent = InternalSyncMessage(req, rsp, SocketClient::CONNECT_TIMEOUT);
+                bool sent = InternalSyncMessage(req, rsp, loginTimeout);
 
                 if (!sent)
                 {
@@ -612,7 +612,7 @@ namespace ignite
 
                 for (uint16_t port = addr.port; port <= addr.port + addr.range; ++port)
                 {
-                    connected = socket->Connect(addr.host.c_str(), port, *this);
+                    connected = socket->Connect(addr.host.c_str(), port, loginTimeout, *this);
 
                     if (connected)
                     {
@@ -652,6 +652,32 @@ namespace ignite
             endPoints = cfg.GetAddresses();
 
             std::random_shuffle(endPoints.begin(), endPoints.end());
+        }
+
+        int32_t Connection::RetrieveTimeout(void* value)
+        {
+            SQLUINTEGER uTimeout = static_cast<SQLUINTEGER>(reinterpret_cast<ptrdiff_t>(value));
+
+            if (uTimeout != 0 && socket.get() != 0 && socket->IsBlocking())
+            {
+                AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, "Can not set timeout, because can not "
+                    "enable non-blocking mode on TCP connection. Setting to 0.");
+
+                return 0;
+            }
+
+            if (uTimeout > INT32_MAX)
+            {
+                std::stringstream ss;
+
+                ss << "Value is too big: " << uTimeout << ", changing to " << timeout << ".";
+
+                AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED, ss.str());
+
+                return INT32_MAX;
+            }
+
+            return static_cast<int32_t>(uTimeout);
         }
     }
 }
