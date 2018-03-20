@@ -46,8 +46,11 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
     /** Version 2.3.2: added multiple statements support. */
     public static final ClientListenerProtocolVersion VER_2_3_2 = ClientListenerProtocolVersion.create(2, 3, 2);
 
+    /** Version 2.5.0: added authentication. */
+    public static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
+
     /** Current version. */
-    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_3_2;
+    private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_5_0;
 
     /** Supported versions. */
     private static final Set<ClientListenerProtocolVersion> SUPPORTED_VERS = new HashSet<>();
@@ -70,6 +73,7 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
     static {
         SUPPORTED_VERS.add(CURRENT_VER);
         SUPPORTED_VERS.add(VER_2_3_0);
+        SUPPORTED_VERS.add(VER_2_3_2);
         SUPPORTED_VERS.add(VER_2_1_5);
         SUPPORTED_VERS.add(VER_2_1_0);
     }
@@ -115,14 +119,20 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
         if (ver.compareTo(VER_2_3_0) >= 0)
             skipReducerOnUpdate = reader.readBoolean();
 
+        String user = null;
+        String passwd = null;
+
+        if (ver.compareTo(VER_2_5_0) >= 0) {
+            user = reader.readString();
+            passwd = reader.readString();
+        }
+
         AuthorizationContext actx = null;
 
         try {
-            if (reader.available() > 0) {
-                String user = reader.readString();
-                String passwd = reader.readString();
-
-                if (F.isEmpty(user) && ctx.authentication().enabled())
+            if (ctx.authentication().enabled())
+            {
+                if (F.isEmpty(user))
                     throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
 
                 actx = ctx.authentication().authenticate(user, passwd);
@@ -131,8 +141,8 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
                     throw new IgniteCheckedException("Unknown authentication error");
             }
             else {
-                if (ctx.authentication().enabled())
-                    throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+                if (!F.isEmpty(user))
+                    throw new IgniteCheckedException("Authentication is disabled for the node.");
             }
         }
         catch (Exception e) {
