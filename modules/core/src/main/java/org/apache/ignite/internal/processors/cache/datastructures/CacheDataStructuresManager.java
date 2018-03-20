@@ -92,6 +92,18 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** Cache peek mode primary and backup. */
     private static final CachePeekMode[] PRIMARY_BACKUP = {CachePeekMode.PRIMARY, CachePeekMode.BACKUP};
 
+    /** State of Set data recovery process. */
+    private enum State {
+        /** No recovery. */
+        NONE,
+
+        /** Local set data recovery in progress. */
+        IN_PROGRESS,
+
+        /** Local set data recovery completed. */
+        COMPLETE
+    }
+
     /**
      *
      */
@@ -143,8 +155,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** Init set data map latch. */
     private final CountDownLatch initSetLatch = new CountDownLatch(1);
 
-    /** Indicates that cluster activation callback was called and local set data recovery may be in progress. */
-    private AtomicReference<Boolean> recoveryFlag = new AtomicReference<>();
+    /** Indicates state of Set data recovery process. */
+    private AtomicReference<State> recoveryState = new AtomicReference<>(State.NONE);
 
     /**
      *
@@ -228,7 +240,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * Called when cluster performs activation.
      */
     public void onActivate() {
-        if (recoveryFlag.compareAndSet(null, Boolean.TRUE))
+        if (recoveryState.compareAndSet(State.NONE, State.IN_PROGRESS))
             restoreSetDataMap(cctx);
     }
 
@@ -521,10 +533,10 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      */
     @Nullable public GridConcurrentHashSet<SetItemKey> setData(IgniteUuid id) {
         try {
-            if (Boolean.TRUE == recoveryFlag.get()) {
+            if (recoveryState.get() == State.IN_PROGRESS) {
                 U.await(initSetLatch);
 
-                recoveryFlag.set(Boolean.FALSE);
+                recoveryState.set(State.COMPLETE);
             }
 
             return setDataMap.get(id);
