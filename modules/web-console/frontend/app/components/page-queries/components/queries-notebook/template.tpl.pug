@@ -60,7 +60,7 @@ mixin notebook-rename
             label(style='max-width: calc(100% - 60px)') {{notebook.name}}
             .btn-group(ng-if='!demo')
                 +btn-toolbar('fa-pencil', 'notebook.edit = true;notebook.editName = notebook.name', 'Rename notebook')
-                +btn-toolbar('fa-trash', 'removeNotebook(notebook)', 'Remove notebook')
+                +btn-toolbar('fa-trash', 'removeNotebook(notebook)', '{{$root.IgniteDemoMode ? "Demo notebook cannot be deleted" : "Remove notebook"}}')
         h1.col-sm-6(ng-show='notebook.edit')
             i.btn.fa.fa-floppy-o(ng-show='notebook.editName' ng-click='renameNotebook(notebook.editName)' bs-tooltip data-title='Save notebook name' data-trigger='hover')
             .input-tip

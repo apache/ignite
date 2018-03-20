@@ -55,7 +55,7 @@ export class NotebooksListCtrl {
             suppressRemoveSort: false,
             enableFiltering: true,
             enableSelectAll: true,
-            enableRowSelection: false,
+            enableRowSelection: true,
             enableFullRowSelection: true,
             enableColumnMenus: false,
             noUnselect: false,
@@ -163,7 +163,7 @@ export class NotebooksListCtrl {
 
             this._loadAllNotebooks();
 
-        } catch (err){
+        } catch (err) {
             this.IgniteMessages.showError(err);
 
         } finally {
