@@ -37,7 +37,7 @@ import static org.apache.ignite.internal.util.nio.compression.CompressionEngineR
  */
 final class GridNioCompressionHandler extends ReentrantLock {
     /** Size of a net buffers. */
-    private static final int netBufSize = 32768;
+    private static final int NET_BUF_SIZE = 1 << 15;
 
     /** */
     private static final long serialVersionUID = 0L;
@@ -100,10 +100,10 @@ final class GridNioCompressionHandler extends ReentrantLock {
 
         compressionEngine = engine;
 
-        outNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
+        outNetBuf = directBuf ? ByteBuffer.allocateDirect(NET_BUF_SIZE) : ByteBuffer.allocate(NET_BUF_SIZE);
         outNetBuf.order(order);
 
-        inNetBuf = directBuf ? ByteBuffer.allocateDirect(netBufSize) : ByteBuffer.allocate(netBufSize);
+        inNetBuf = directBuf ? ByteBuffer.allocateDirect(NET_BUF_SIZE) : ByteBuffer.allocate(NET_BUF_SIZE);
         inNetBuf.order(order);
 
         if (encBuf != null) {
@@ -117,13 +117,13 @@ final class GridNioCompressionHandler extends ReentrantLock {
         outNetBuf.position(0);
         outNetBuf.limit(0);
 
-        int appBufSize = netBufSize * 2;
+        int appBufSize = NET_BUF_SIZE * 2;
 
         appBuf = directBuf ? ByteBuffer.allocateDirect(appBufSize) : ByteBuffer.allocate(appBufSize);
         appBuf.order(order);
 
         if (log.isDebugEnabled())
-            log.debug("Started compress session [netBufSize=" + netBufSize + ", appBufSize=" + appBufSize + ']');
+            log.debug("Started compress session [netBufSize=" + NET_BUF_SIZE + ", appBufSize=" + appBufSize + ']');
     }
 
     /**

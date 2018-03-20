@@ -64,7 +64,6 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
         ByteOrder order,
         IgniteLogger log) {
         super("Compression filter");
-        System.out.println("Create compress filter:"+compressionFactory);
 
         this.log = log;
         this.directBuf = directBuf;

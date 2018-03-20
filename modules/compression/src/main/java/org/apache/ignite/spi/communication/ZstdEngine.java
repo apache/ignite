@@ -35,19 +35,16 @@ public final class ZstdEngine implements CompressionEngine {
     private static final int COMPRESS_LEVEL = 1;
 
     /** */
-    private static final long DEST_BUFFER_OVERFLOW_ERR = -70;
+    private static final int ZSTD_ERROR_DST_SIZE_TOO_SMALL = -70;
 
     /** */
-    private static final String DEST_BUFFER_OVERFLOW_ERR_MSG = "Destination buffer is too small";
+    private static final int INIT_ARR_SIZE = 1 << 15;
 
     /** */
-    private static final int initArrSize = 1 >> 15;
+    private byte[] compressArr = new byte[INIT_ARR_SIZE];
 
     /** */
-    private byte[] compressArr = new byte[initArrSize];
-
-    /** */
-    private byte[] decompressArr = new byte[initArrSize];
+    private byte[] decompressArr = new byte[INIT_ARR_SIZE];
 
     /** {@inheritDoc} */
     @Override public CompressionEngineResult compress(ByteBuffer src, ByteBuffer buf) throws IOException {
@@ -55,15 +52,18 @@ public final class ZstdEngine implements CompressionEngine {
         assert buf != null;
 
         if (src.isDirect() && buf.isDirect()) {
-            try {
-                Zstd.compress(buf, src, COMPRESS_LEVEL);
-            }
-            catch (RuntimeException e) {
-                if (e.getMessage().contains(DEST_BUFFER_OVERFLOW_ERR_MSG))
+            long size = Zstd.compressDirectByteBuffer(buf, buf.position(),buf.limit() - buf.position(),
+                src, src.position(),src.limit() - src.position(), COMPRESS_LEVEL);
+
+            if (Zstd.isError(size)) {
+                if (size == ZSTD_ERROR_DST_SIZE_TOO_SMALL)
                     return BUFFER_OVERFLOW;
-                else
-                    throw new IOException("Failed to compress data", e);
+
+                throw new IOException("Failed to compress data: " + Zstd.getErrorName(size));
             }
+
+            src.position(src.limit());
+            buf.position(buf.position() + (int) size);
 
             return OK;
         }
@@ -78,13 +78,13 @@ public final class ZstdEngine implements CompressionEngine {
                 res = Zstd.compress(compressArr, inputArr, COMPRESS_LEVEL);
 
                 if (Zstd.isError(res)) {
-                    if (res == DEST_BUFFER_OVERFLOW_ERR)
+                    if (res == ZSTD_ERROR_DST_SIZE_TOO_SMALL)
                         compressArr = new byte[compressArr.length * 2];
                     else
                         throw new IOException("Failed to compress data: " + Zstd.getErrorName(res));
                 }
             }
-            while (res == DEST_BUFFER_OVERFLOW_ERR);
+            while (res == ZSTD_ERROR_DST_SIZE_TOO_SMALL);
 
             if (res > buf.remaining()) {
                 src.rewind();
@@ -113,17 +113,18 @@ public final class ZstdEngine implements CompressionEngine {
 
             src.limit(src.position() + frameSize);
 
-            try {
-                Zstd.decompress(buf, src);
-            }
-            catch (RuntimeException e) {
-                src.limit(oldLimit);
+            long size = Zstd.decompressDirectByteBuffer(buf, buf.position(), buf.limit() - buf.position(),
+                src, src.position(),src.limit() - src.position());
 
-                if (e.getMessage().contains(DEST_BUFFER_OVERFLOW_ERR_MSG))
+            if (Zstd.isError(size)) {
+                if (size == ZSTD_ERROR_DST_SIZE_TOO_SMALL)
                     return BUFFER_OVERFLOW;
-                else
-                    throw new IOException("Failed to compress data", e);
+
+                throw new IOException("Failed to decompress data: " + Zstd.getErrorName(size));
             }
+
+            src.position(src.limit());
+            buf.position(buf.position() + (int)size);
 
             src.limit(oldLimit);
 
@@ -142,13 +143,13 @@ public final class ZstdEngine implements CompressionEngine {
                 res = Zstd.decompress(decompressArr, inputWrapArr);
 
                 if (Zstd.isError(res)) {
-                    if (res == DEST_BUFFER_OVERFLOW_ERR)
+                    if (res == ZSTD_ERROR_DST_SIZE_TOO_SMALL)
                         decompressArr = new byte[decompressArr.length * 2];
                     else
                         throw new IOException("Failed to decompress data: " + Zstd.getErrorName(res));
                 }
             }
-            while (res == DEST_BUFFER_OVERFLOW_ERR);
+            while (res == ZSTD_ERROR_DST_SIZE_TOO_SMALL);
 
             if (res > buf.remaining()) {
                 src.position(initPos);
