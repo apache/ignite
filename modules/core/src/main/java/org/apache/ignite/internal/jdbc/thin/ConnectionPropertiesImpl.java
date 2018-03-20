@@ -22,6 +22,7 @@ import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Properties;
+import java.util.StringTokenizer;
 import javax.naming.RefAddr;
 import javax.naming.Reference;
 import org.apache.ignite.IgniteCheckedException;
@@ -463,6 +464,11 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         for (ConnectionProperty aPropsArray : propsArray)
             aPropsArray.init(props0);
+
+        if (!F.isEmpty(props.getProperty("user"))) {
+            setUsername(props.getProperty("user"));
+            setPassword(props.getProperty("password"));
+        }
     }
 
     /**
@@ -481,12 +487,19 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         String nakedUrl = url.substring(JdbcThinUtils.URL_PREFIX.length()).trim();
 
-        String[] nakedUrlParts = nakedUrl.split("\\?");
+        int pathPartEndPos = nakedUrl.indexOf('?');
 
-        if (nakedUrlParts.length > 2)
-            throw new SQLException("Invalid URL format (only one ? character is allowed): " + url);
+        if (pathPartEndPos == -1)
+            pathPartEndPos = nakedUrl.length();
 
-        String[] pathParts = nakedUrlParts[0].split("/");
+        String pathPart = nakedUrl.substring(0, pathPartEndPos);
+
+        String paramPart = null;
+
+        if (pathPartEndPos > 0 && pathPartEndPos < nakedUrl.length())
+            paramPart = nakedUrl.substring(pathPartEndPos + 1, nakedUrl.length());
+
+        String[] pathParts = pathPart.split("/");
 
         String [] endpoints = pathParts[0].split(",");
 
@@ -507,44 +520,78 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         if (F.isEmpty(addrs) || F.isEmpty(addrs[0].host()))
             throw new SQLException("Host name is empty", SqlStateCode.CLIENT_CONNECTION_FAILED);
 
-        if (nakedUrlParts.length == 2)
-            parseParameters(nakedUrlParts[1], props);
-
         if (pathParts.length > 2) {
             throw new SQLException("Invalid URL format (only schema name is allowed in URL path parameter " +
                 "'host:port[/schemaName]'): " + url, SqlStateCode.CLIENT_CONNECTION_FAILED);
         }
 
         setSchema(pathParts.length == 2 ? pathParts[1] : null);
+
+        if (!F.isEmpty(paramPart))
+            parseParameters(paramPart, props);
     }
 
     /**
      * Validates and parses URL parameters.
      *
-     * @param str Parameters string.
+     * @param paramStr Parameters string.
      * @param props Properties.
      * @throws SQLException If failed.
      */
-    private void parseParameters(String str, Properties props) throws SQLException {
-        String[] params = str.split("&");
+    private void parseParameters(String paramStr, Properties props) throws SQLException {
+        StringTokenizer st = new StringTokenizer(paramStr, "&");
 
-        for (String param : params) {
-            String[] pair = param.split("=");
+        boolean insideBrace = false;
 
-            if (pair.length != 2)
-                throw new SQLException("Invalid parameter format (only one = character is allowed per key/value " +
-                    "pair: " + param, SqlStateCode.CLIENT_CONNECTION_FAILED);
+        String key = null;
+        String val = null;
 
-            String key = pair[0].trim();
-            String val = pair[1].trim();
+        while (st.hasMoreTokens()) {
+            String token = st.nextToken();
 
-            if (key.isEmpty() || val.isEmpty())
-                throw new SQLException("Invalid parameter format (key and value cannot be empty): " + param,
-                    SqlStateCode.CLIENT_CONNECTION_FAILED);
+            if (!insideBrace) {
+                int eqSymPos = token.indexOf('=');
 
-            props.setProperty(PROP_PREFIX + key, val);
+                if (eqSymPos < 0) {
+                    throw new SQLException("Invalid parameter format " +
+                        "(URL properties format: key0=value0&key1=value1&... etc. pair: " + token);
+                }
+
+                if (eqSymPos == token.length())
+                    throw new SQLException("Invalid parameter format (key and value cannot be empty): " + token);
+
+                key = token.substring(0, eqSymPos);
+                val = token.substring(eqSymPos + 1, token.length());
+
+                if (val.startsWith("{")) {
+                    val = val.substring(1);
+
+                    insideBrace = true;
+                }
+            }
+            else
+                val += "&" + token;
+
+            if (val.endsWith("}")) {
+                insideBrace = false;
+
+                val = val.substring(0, val.length() - 1);
+            }
+
+            if (val.contains("{") || val.contains("}")) {
+                throw new SQLException("Braces cannot be escaped in the value. " +
+                    "Please use the connection Properties for such values. [property=" + key + ']');
+            }
+
+            if (!insideBrace) {
+                if (key.isEmpty() || val.isEmpty())
+                    throw new SQLException("Invalid parameter format (key and value cannot be empty): " + token);
+
+                props.setProperty(PROP_PREFIX + key, val);
+            }
         }
     }
+
 
     /**
      * @return Driver's properties info array.
