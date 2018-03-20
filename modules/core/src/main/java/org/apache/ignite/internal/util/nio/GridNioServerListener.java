@@ -40,6 +40,14 @@ public interface GridNioServerListener<T> {
     public void onDisconnected(GridNioSession ses, @Nullable Exception e);
 
     /**
+     * Handle message sent.
+     *
+     * @param ses Session.
+     * @param msg Message.
+     */
+    void onMessageSent(GridNioSession ses, T msg);
+
+    /**
      * This method is called whenever a {@link GridNioParser} returns non-null value.
      *
      * @param ses Session on which message was received.

@@ -241,6 +241,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** */
         private readonly long _rebalancingStartTime;
 
+        /** */
+        private readonly long _rebalancingClearingPartitionsLeft;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="CacheMetricsImpl"/> class.
         /// </summary>
@@ -319,6 +322,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             _heapEntriesCount = reader.ReadLong();
             _estimatedRebalancingFinishTime = reader.ReadLong();
             _rebalancingStartTime = reader.ReadLong();
+            _rebalancingClearingPartitionsLeft = reader.ReadLong();
         }
 
         /** <inheritDoc /> */
@@ -536,5 +540,8 @@ namespace Apache.Ignite.Core.Impl.Cache
 
         /** <inheritDoc /> */
         public long RebalancingStartTime { get { return _rebalancingStartTime; } }
+
+        /** <inheritDoc /> */
+        public long RebalanceClearingPartitionsLeft { get { return _rebalancingClearingPartitionsLeft; } }
     }
 }
