@@ -51,7 +51,6 @@ public class LabelPartitionDataBuilderOnHeap<K, V, C extends Serializable>
     /** {@inheritDoc} */
     @Override public LabelPartitionDataOnHeap build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
                                         C ctx) {
-
         double[] y = new double[Math.toIntExact(upstreamDataSize)];
 
         int ptr = 0;
@@ -62,7 +61,6 @@ public class LabelPartitionDataBuilderOnHeap<K, V, C extends Serializable>
 
             ptr++;
         }
-
         return new LabelPartitionDataOnHeap(y);
     }
 }

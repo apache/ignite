@@ -36,13 +36,15 @@ public class SVMMultiClassTrainerTest {
     /** Fixed size of columns in Dataset. */
     private static final int AMOUNT_OF_FEATURES = 2;
 
+    /** Precision in test checks. */
+    private static final double PRECISION = 1e-2;
+
     /**
      * Test trainer on classification model y = x.
      */
     @Test
     public void testTrainWithTheLinearlySeparableCase() {
         Map<Integer, double[]> data = new HashMap<>();
-
 
         ThreadLocalRandom rndX = ThreadLocalRandom.current();
         ThreadLocalRandom rndY = ThreadLocalRandom.current();
@@ -57,8 +59,10 @@ public class SVMMultiClassTrainerTest {
             data.put(i, vec);
         }
 
-
-        SVMLinearMultiClassClassificationTrainer<Integer, double[]> trainer = new SVMLinearMultiClassClassificationTrainer<>();
+        SVMLinearMultiClassClassificationTrainer<Integer, double[]> trainer = new SVMLinearMultiClassClassificationTrainer<Integer, double[]>()
+            .withLambda(0.3)
+            .withAmountOfLocIterations(100)
+            .withAmountOfIterations(20);
 
         SVMLinearMultiClassClassificationModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 10),
@@ -66,11 +70,7 @@ public class SVMMultiClassTrainerTest {
             (k, v) -> v[0],
             AMOUNT_OF_FEATURES);
 
-        double precision = 1e-2;
-
-        System.out.println(mdl);
-
-        TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[]{100, 10})), precision);
-        TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[]{10, 100})), precision);
+        TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[]{100, 10})), PRECISION);
+        TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[]{10, 100})), PRECISION);
     }
 }

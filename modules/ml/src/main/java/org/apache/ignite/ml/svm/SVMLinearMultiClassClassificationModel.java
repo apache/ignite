@@ -55,9 +55,12 @@ public class SVMLinearMultiClassClassificationModel implements Model<Vector, Dou
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
+
         SVMLinearMultiClassClassificationModel mdl = (SVMLinearMultiClassClassificationModel)o;
+
         return Objects.equals(models, mdl.models);
     }
 

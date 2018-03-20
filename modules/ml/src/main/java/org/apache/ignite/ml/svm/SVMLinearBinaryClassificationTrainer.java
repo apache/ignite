@@ -46,9 +46,6 @@ public class SVMLinearBinaryClassificationTrainer<K, V>
     /** Regularization parameter. */
     private double lambda = 0.4;
 
-    /** Dataset. */
-    private Dataset<SVMPartitionContext, LabeledDataset<Double, LabeledVector>> dataset;
-
     /**
      * Trains model based on the specified data.
      *
