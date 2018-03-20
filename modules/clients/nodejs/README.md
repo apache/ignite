@@ -24,16 +24,12 @@ This version includes:
 1. Clone or download Ignite repository https://github.com/nobitlost/ignite.git to `local_ignite_path`
 2. Go to `local_ignite_path/modules/clients/nodejs` folder
 3. Execute `npm link` command
-4. Execute `npm install` command (needed only if you are going to run tests)
-5. Go to `local_ignite_path/modules/clients/nodejs/examples` folder
-6. Execute `npm install apache-ignite-client` command (needed only if you are going to run example)
+4. Execute `npm link apache-ignite-client` command (needed only if you are going to run tests or example)
 
 ```bash
 cd local_ignite_path/modules/clients/nodejs
 npm link
-npm install
-cd examples
-npm install apache-ignite-client
+npm link apache-ignite-client
 ```
 
 ## Example Running ##
