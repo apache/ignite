@@ -1,0 +1,21 @@
+{
+  "name": "apache-ignite-client",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "author": "",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=8.0.0"
+  },
+  "dependencies": {
+    "long": "latest"
+  },
+  "scripts": {
+    "test": "jasmine"
+  },
+  "devDependencies": {
+    "jasmine": "latest",
+    "jasmine-expect": "latest"
+  }
+}
