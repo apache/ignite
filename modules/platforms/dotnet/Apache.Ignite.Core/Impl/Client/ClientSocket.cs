@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Impl.Client
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
@@ -49,6 +50,9 @@ namespace Apache.Ignite.Core.Impl.Client
         /** Underlying socket. */
         private readonly Socket _socket;
 
+        /** Underlying socket stream. */
+        private readonly Stream _stream;
+
         /** Operation timeout. */
         private readonly TimeSpan _timeout;
 
@@ -69,8 +73,7 @@ namespace Apache.Ignite.Core.Impl.Client
         private volatile Exception _exception;
 
         /** Locker. */
-        private readonly ReaderWriterLockSlim _sendRequestLock = 
-            new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
+        private readonly object _sendRequestSyncRoot = new object();
 
         /** Background socket receiver trigger. */
         private readonly ManualResetEventSlim _listenerEvent = new ManualResetEventSlim();
@@ -93,6 +96,7 @@ namespace Apache.Ignite.Core.Impl.Client
             _timeout = clientConfiguration.SocketTimeout;
 
             _socket = Connect(clientConfiguration);
+            _stream = GetSocketStream(_socket, clientConfiguration);
 
             Handshake(version ?? CurrentProtocolVersion);
 
@@ -242,8 +246,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
             Debug.Assert(messageLen == 12);
 
-            var sent = _socket.Send(buf, messageLen, SocketFlags.None);
-            Debug.Assert(sent == messageLen);
+            _stream.Write(buf, 0, messageLen);
 
             // Decode response.
             var res = ReceiveMessage();
@@ -288,11 +291,11 @@ namespace Apache.Ignite.Core.Impl.Client
             // Socket.Receive can return any number of bytes, even 1.
             // We should repeat Receive calls until required amount of data has been received.
             var buf = new byte[size];
-            var received = _socket.Receive(buf);
+            var received = _stream.Read(buf,0, size);
 
             while (received < size)
             {
-                var res = _socket.Receive(buf, received, size - received, SocketFlags.None);
+                var res = _stream.Read(buf, received, size - received);
 
                 if (res == 0)
                 {
@@ -318,15 +321,17 @@ namespace Apache.Ignite.Core.Impl.Client
 
             // If there are no pending async requests, we can execute this operation synchronously,
             // which is more efficient.
-            if (_sendRequestLock.TryEnterWriteLock(0))
+            var lockTaken = false;
+            try
             {
-                try
+                Monitor.TryEnter(_sendRequestSyncRoot, 0, ref lockTaken);
+                if (lockTaken)
                 {
                     CheckException();
 
                     if (_requests.IsEmpty)
                     {
-                        _socket.Send(reqMsg.Buffer, 0, reqMsg.Length, SocketFlags.None);
+                        _stream.Write(reqMsg.Buffer, 0, reqMsg.Length);
 
                         var respMsg = ReceiveMessage();
                         var response = new BinaryHeapStream(respMsg);
@@ -336,12 +341,12 @@ namespace Apache.Ignite.Core.Impl.Client
                         return response;
                     }
                 }
-                finally
+            }
+            finally
+            {
+                if (lockTaken)
                 {
-                    if (_sendRequestLock.IsWriteLockHeld)
-                    {
-                        _sendRequestLock.ExitWriteLock();
-                    }
+                    Monitor.Exit(_sendRequestSyncRoot);
                 }
             }
 
@@ -357,8 +362,7 @@ namespace Apache.Ignite.Core.Impl.Client
             // Do not enter lock when disposed.
             CheckException();
 
-            _sendRequestLock.EnterReadLock();
-            try
+            lock (_sendRequestSyncRoot)
             {
                 CheckException();
 
@@ -368,13 +372,9 @@ namespace Apache.Ignite.Core.Impl.Client
                 Debug.Assert(added);
 
                 // Send.
-                _socket.Send(reqMsg.Buffer, 0, reqMsg.Length, SocketFlags.None);
+                _stream.Write(reqMsg.Buffer, 0, reqMsg.Length);
                 _listenerEvent.Set();
                 return req.CompletionSource.Task;
-            }
-            finally
-            {
-                _sendRequestLock.ExitReadLock();
             }
         }
 
@@ -463,6 +463,25 @@ namespace Apache.Ignite.Core.Impl.Client
 
             throw new AggregateException("Failed to establish Ignite thin client connection, " +
                                          "examine inner exceptions for details.", errors);
+        }
+
+        /// <summary>
+        /// Gets the socket stream.
+        /// </summary>
+        private static Stream GetSocketStream(Socket socket, IgniteClientConfiguration cfg)
+        {
+            var stream = new NetworkStream(socket)
+            {
+                ReadTimeout = (int) cfg.SocketTimeout.TotalMilliseconds,
+                WriteTimeout = (int) cfg.SocketTimeout.TotalMilliseconds
+            };
+
+            if (cfg.SslStreamFactory == null)
+            {
+                return stream;
+            }
+
+            return cfg.SslStreamFactory.Create(stream, cfg.Host);
         }
 
         /// <summary>
@@ -587,6 +606,7 @@ namespace Apache.Ignite.Core.Impl.Client
 
                 _exception = _exception ?? new ObjectDisposedException(typeof(ClientSocket).FullName);
                 EndRequestsWithError();
+                _stream.Dispose();
                 _socket.Dispose();
                 _listenerEvent.Set();
                 _listenerEvent.Dispose();
@@ -595,14 +615,6 @@ namespace Apache.Ignite.Core.Impl.Client
                 {
                     _timeoutCheckTimer.Dispose();
                 }
-
-                // Wait for lock to be released and dispose.
-                if (!_sendRequestLock.IsWriteLockHeld)
-                {
-                    _sendRequestLock.EnterWriteLock();
-                }
-                _sendRequestLock.ExitWriteLock();
-                _sendRequestLock.Dispose();
 
                 _isDisposed = true;
             }

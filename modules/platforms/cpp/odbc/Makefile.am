@@ -54,8 +54,10 @@ libignite_odbc_la_SOURCES = \
     src/app/parameter.cpp \
     src/app/parameter_set.cpp \
     src/common_types.cpp \
+    src/config/config_tools.cpp \
     src/config/configuration.cpp \
     src/config/connection_info.cpp \
+	src/config/connection_string_parser.cpp \
     src/connection.cpp \
     src/cursor.cpp \
     src/diagnostic/diagnosable_adapter.cpp \

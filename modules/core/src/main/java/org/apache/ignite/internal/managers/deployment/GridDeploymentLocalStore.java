@@ -19,6 +19,7 @@ package org.apache.ignite.internal.managers.deployment;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -26,6 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compute.ComputeTask;
@@ -46,7 +48,6 @@ import org.apache.ignite.spi.deployment.DeploymentListener;
 import org.apache.ignite.spi.deployment.DeploymentResource;
 import org.apache.ignite.spi.deployment.DeploymentSpi;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_CLASS_DEPLOYED;
 import static org.apache.ignite.events.EventType.EVT_CLASS_DEPLOY_FAILED;
@@ -60,8 +61,7 @@ import static org.apache.ignite.events.EventType.EVT_TASK_UNDEPLOYED;
  */
 class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     /** Deployment cache by class name. */
-    private final ConcurrentMap<String, ConcurrentLinkedDeque8<GridDeployment>> cache =
-        new ConcurrentHashMap<>();
+    private final ConcurrentMap<String, Deque<GridDeployment>> cache = new ConcurrentHashMap<>();
 
     /** Mutex. */
     private final Object mux = new Object();
@@ -110,7 +110,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
         Collection<GridDeployment> deps = new ArrayList<>();
 
         synchronized (mux) {
-            for (ConcurrentLinkedDeque8<GridDeployment> depList : cache.values())
+            for (Deque<GridDeployment> depList : cache.values())
                 for (GridDeployment d : depList)
                     if (!deps.contains(d))
                         deps.add(d);
@@ -122,7 +122,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
     /** {@inheritDoc} */
     @Nullable @Override public GridDeployment getDeployment(IgniteUuid ldrId) {
         synchronized (mux) {
-            for (ConcurrentLinkedDeque8<GridDeployment> deps : cache.values())
+            for (Deque<GridDeployment> deps : cache.values())
                 for (GridDeployment dep : deps)
                     if (dep.classLoaderId().equals(ldrId))
                         return dep;
@@ -232,7 +232,7 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
      * @return Deployment.
      */
     @Nullable private GridDeployment deployment(String alias) {
-        ConcurrentLinkedDeque8<GridDeployment> deps = cache.get(alias);
+        Deque<GridDeployment> deps = cache.get(alias);
 
         if (deps != null) {
             GridDeployment dep = deps.peekFirst();
@@ -260,10 +260,10 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
             boolean fireEvt = false;
 
             try {
-                ConcurrentLinkedDeque8<GridDeployment> cachedDeps = null;
+                Deque<GridDeployment> cachedDeps = null;
 
                 // Find existing class loader info.
-                for (ConcurrentLinkedDeque8<GridDeployment> deps : cache.values()) {
+                for (Deque<GridDeployment> deps : cache.values()) {
                     for (GridDeployment d : deps) {
                         if (d.classLoader() == ldr) {
                             // Cache class and alias.
@@ -304,8 +304,11 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
                 assert fireEvt : "Class was not added to newly created deployment [cls=" + cls +
                     ", depMode=" + depMode + ", dep=" + dep + ']';
 
-                ConcurrentLinkedDeque8<GridDeployment> deps =
-                    F.addIfAbsent(cache, alias, F.<GridDeployment>newDeque());
+                Deque<GridDeployment> deps = F.<String, Deque<GridDeployment>>addIfAbsent(
+                    cache,
+                    alias,
+                    ConcurrentLinkedDeque::new
+                );
 
                 if (!deps.isEmpty()) {
                     for (GridDeployment d : deps) {
@@ -512,8 +515,8 @@ class GridDeploymentLocalStore extends GridDeploymentStoreAdapter {
         Collection<GridDeployment> doomed = new HashSet<>();
 
         synchronized (mux) {
-            for (Iterator<ConcurrentLinkedDeque8<GridDeployment>> i1 = cache.values().iterator(); i1.hasNext();) {
-                ConcurrentLinkedDeque8<GridDeployment> deps = i1.next();
+            for (Iterator<Deque<GridDeployment>> i1 = cache.values().iterator(); i1.hasNext();) {
+                Deque<GridDeployment> deps = i1.next();
 
                 for (Iterator<GridDeployment> i2 = deps.iterator(); i2.hasNext();) {
                     GridDeployment dep = i2.next();

@@ -91,8 +91,6 @@ class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
         }
 
         it("should successfully store data to ignite using saveValues") {
-            fail("https://issues.apache.org/jira/browse/IGNITE-7727")
-
             val sc = new SparkContext("local[*]", "test")
 
             try {
@@ -116,8 +114,6 @@ class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
         }
 
         it("should successfully store data to ignite using saveValues with inline transformation") {
-            fail("https://issues.apache.org/jira/browse/IGNITE-7727")
-
             val sc = new SparkContext("local[*]", "test")
 
             try {
@@ -248,8 +244,6 @@ class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
         }
 
         it("should successfully query complex object fields") {
-            assert(false, "https://issues.apache.org/jira/browse/IGNITE-3077")
-
             val sc = new SparkContext("local[*]", "test")
 
             try {
@@ -260,7 +254,7 @@ class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
 
                 cache.savePairs(sc.parallelize(0 to 1000, 2).map(i ⇒ (i:java.lang.Integer, new WithObjectField(i, new Entity(i, "", i)))))
 
-                val df = cache.sql("select i, ts from WithLocalDate where i = ?", 50)
+                val df = cache.sql(s"select i, ts from $WITH_OBJECT_FIELD_CACHE_NAME where i = ?", 50)
 
                 df.printSchema()
 

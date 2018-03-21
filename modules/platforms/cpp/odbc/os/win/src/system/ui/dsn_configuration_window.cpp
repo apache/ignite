@@ -22,6 +22,8 @@
 #include "ignite/odbc/ssl/ssl_mode.h"
 
 #include "ignite/odbc/system/ui/dsn_configuration_window.h"
+#include "ignite/odbc/config/config_tools.h"
+#include "ignite/odbc/diagnostic/diagnosable_adapter.h"
 
 namespace ignite
 {
@@ -124,7 +126,9 @@ namespace ignite
 
                     rowPos += INTERVAL + ROW_HEIGHT;
 
-                    val = config.GetAddress().c_str();
+                    std::string addr = config::AddressesToString(config.GetAddresses());
+
+                    val = addr.c_str();
                     addressLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
                         "Address:", ChildId::ADDRESS_LABEL);
                     addressEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT, val, ChildId::ADDRESS_EDIT);
@@ -183,8 +187,10 @@ namespace ignite
 
                     int rowPos = posY + 2 * INTERVAL;
 
-                    const char* val = config.GetSslMode().c_str();
-                    SslMode::T sslMode = SslMode::FromString(val, SslMode::DISABLE);
+                    SslMode::Type sslMode = config.GetSslMode();
+                    std::string sslModeStr = SslMode::ToString(sslMode);
+
+                    const char* val = sslModeStr.c_str();
 
                     sslModeLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT, "SSL Mode:", ChildId::SSL_MODE_LABEL);
                     sslModeComboBox = CreateComboBox(editPosX, rowPos, editSizeX, ROW_HEIGHT, "", ChildId::SSL_MODE_COMBO_BOX);
@@ -385,7 +391,7 @@ namespace ignite
                                     std::string sslModeStr;
                                     sslModeComboBox->GetText(sslModeStr);
 
-                                    SslMode::T sslMode = SslMode::FromString(sslModeStr, SslMode::DISABLE);
+                                    SslMode::Type sslMode = SslMode::FromString(sslModeStr, SslMode::DISABLE);
 
                                     sslKeyFileEdit->SetEnabled(sslMode != SslMode::DISABLE);
                                     sslCertFileEdit->SetEnabled(sslMode != SslMode::DISABLE);
@@ -424,57 +430,76 @@ namespace ignite
 
                 void DsnConfigurationWindow::RetrieveConnectionParameters(config::Configuration& cfg) const
                 {
-                    std::string dsn;
-                    std::string address;
-                    std::string schema;
-                    std::string version;
+                    std::string dsnStr;
+                    std::string addressStr;
+                    std::string schemaStr;
+                    std::string versionStr;
 
-                    nameEdit->GetText(dsn);
-                    addressEdit->GetText(address);
-                    schemaEdit->GetText(schema);
-                    protocolVersionComboBox->GetText(version);
+                    nameEdit->GetText(dsnStr);
+                    addressEdit->GetText(addressStr);
+                    schemaEdit->GetText(schemaStr);
+                    protocolVersionComboBox->GetText(versionStr);
 
-                    common::StripSurroundingWhitespaces(address);
-                    common::StripSurroundingWhitespaces(dsn);
+                    common::StripSurroundingWhitespaces(addressStr);
+                    common::StripSurroundingWhitespaces(dsnStr);
                     // Stripping of whitespaces off the schema skipped intentionally
 
-                    LOG_MSG("Retriving arguments:");
-                    LOG_MSG("DSN:                " << dsn);
-                    LOG_MSG("Address:            " << address);
-                    LOG_MSG("Schema:             " << schema);
-                    LOG_MSG("Protocol version:   " << version);
+                    LOG_MSG("Retrieving arguments:");
+                    LOG_MSG("DSN:                " << dsnStr);
+                    LOG_MSG("Address:            " << addressStr);
+                    LOG_MSG("Schema:             " << schemaStr);
+                    LOG_MSG("Protocol version:   " << versionStr);
 
-                    if (dsn.empty())
+                    if (dsnStr.empty())
                         throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "DSN name can not be empty.");
 
-                    cfg.SetDsn(dsn);
-                    cfg.SetAddress(address);
-                    cfg.SetSchema(schema);
+                    diagnostic::DiagnosticRecordStorage diag;
+
+                    std::vector<EndPoint> addresses;
+
+                    config::ParseAddress(addressStr, addresses, &diag);
+
+                    if (diag.GetStatusRecordsNumber() > 0)
+                    {
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                            diag.GetStatusRecord(1).GetMessageText().c_str());
+                    }
+
+                    ProtocolVersion version = ProtocolVersion::FromString(versionStr);
+
+                    if (!version.IsSupported())
+                        throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, "Protocol version is not supported.");
+
+                    cfg.SetDsn(dsnStr);
+                    cfg.SetAddresses(addresses);
+                    cfg.SetSchema(schemaStr);
                     cfg.SetProtocolVersion(version);
                 }
 
                 void DsnConfigurationWindow::RetrieveSslParameters(config::Configuration& cfg) const
                 {
-                    std::string sslMode;
-                    std::string sslKey;
-                    std::string sslCert;
-                    std::string sslCa;
+                    std::string sslModeStr;
+                    std::string sslKeyStr;
+                    std::string sslCertStr;
+                    std::string sslCaStr;
 
-                    sslModeComboBox->GetText(sslMode);
-                    sslKeyFileEdit->GetText(sslKey);
-                    sslCertFileEdit->GetText(sslCert);
-                    sslCaFileEdit->GetText(sslCa);
+                    sslModeComboBox->GetText(sslModeStr);
+                    sslKeyFileEdit->GetText(sslKeyStr);
+                    sslCertFileEdit->GetText(sslCertStr);
+                    sslCaFileEdit->GetText(sslCaStr);
 
-                    LOG_MSG("Retriving arguments:");
-                    LOG_MSG("SSL Mode:           " << sslMode);
-                    LOG_MSG("SSL Key:            " << sslKey);
-                    LOG_MSG("SSL Certificate:    " << sslCert);
-                    LOG_MSG("SSL CA:             " << sslCa);
+                    LOG_MSG("Retrieving arguments:");
+                    LOG_MSG("SSL Mode:           " << sslModeStr);
+                    LOG_MSG("SSL Key:            " << sslKeyStr);
+                    LOG_MSG("SSL Certificate:    " << sslCertStr);
+                    LOG_MSG("SSL CA:             " << sslCaStr);
+
+                    ssl::SslMode::Type sslMode = ssl::SslMode::FromString(sslModeStr, ssl::SslMode::DISABLE);
 
                     cfg.SetSslMode(sslMode);
-                    cfg.SetSslKeyFile(sslKey);
-                    cfg.SetSslCertFile(sslCert);
-                    cfg.SetSslCaFile(sslCa);
+                    cfg.SetSslKeyFile(sslKeyStr);
+                    cfg.SetSslCertFile(sslCertStr);
+                    cfg.SetSslCaFile(sslCaStr);
                 }
 
                 void DsnConfigurationWindow::RetrieveAdditionalParameters(config::Configuration& cfg) const
@@ -502,14 +527,14 @@ namespace ignite
                     lazy = lazyCheckBox->IsChecked();
                     skipReducerOnUpdate = skipReducerOnUpdateCheckBox->IsChecked();
 
-                    LOG_MSG("Retriving arguments:");
-                    LOG_MSG("Page size:                 " << pageSize);
-                    LOG_MSG("Distributed Joins:         " << (distributedJoins ? "true" : "false"));
-                    LOG_MSG("Enforce Join Order:        " << (enforceJoinOrder ? "true" : "false"));
-                    LOG_MSG("Replicated only:           " << (replicatedOnly ? "true" : "false"));
-                    LOG_MSG("Collocated:                " << (collocated ? "true" : "false"));
-                    LOG_MSG("Lazy:                      " << (lazy ? "true" : "false"));
-                    LOG_MSG("Skip reducer on update:    " << (skipReducerOnUpdate ? "true" : "false"));
+                    LOG_MSG("Retrieving arguments:");
+                    LOG_MSG("Page size:              " << pageSize);
+                    LOG_MSG("Distributed Joins:      " << (distributedJoins ? "true" : "false"));
+                    LOG_MSG("Enforce Join Order:     " << (enforceJoinOrder ? "true" : "false"));
+                    LOG_MSG("Replicated only:        " << (replicatedOnly ? "true" : "false"));
+                    LOG_MSG("Collocated:             " << (collocated ? "true" : "false"));
+                    LOG_MSG("Lazy:                   " << (lazy ? "true" : "false"));
+                    LOG_MSG("Skip reducer on update: " << (skipReducerOnUpdate ? "true" : "false"));
 
                     cfg.SetPageSize(pageSize);
                     cfg.SetDistributedJoins(distributedJoins);

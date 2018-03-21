@@ -55,9 +55,12 @@ public class SVMLinearMultiClassClassificationModel implements Model<Vector, Dou
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
+
         if (o == null || getClass() != o.getClass())
             return false;
+
         SVMLinearMultiClassClassificationModel mdl = (SVMLinearMultiClassClassificationModel)o;
+
         return Objects.equals(models, mdl.models);
     }
 
@@ -71,7 +74,7 @@ public class SVMLinearMultiClassClassificationModel implements Model<Vector, Dou
         StringBuilder wholeStr = new StringBuilder();
 
         models.forEach((clsLb, mdl) -> {
-            wholeStr.append("The class with label " + clsLb + " has classifier: " + mdl.toString() + System.lineSeparator());
+            wholeStr.append("The class with label ").append(clsLb).append(" has classifier: ").append(mdl.toString()).append(System.lineSeparator());
         });
 
         return wholeStr.toString();

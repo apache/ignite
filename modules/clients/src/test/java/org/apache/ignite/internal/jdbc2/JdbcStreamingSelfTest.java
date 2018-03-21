@@ -260,6 +260,8 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
     public void testOnlyInsertsAllowed() {
         assertStatementForbidden("CREATE TABLE PUBLIC.X (x int primary key, y int)");
 
+        assertStatementForbidden("CREATE INDEX idx_1 ON Person(name)");
+
         assertStatementForbidden("SELECT * from Person");
 
         assertStatementForbidden("insert into PUBLIC.Person(\"id\", \"name\") " +
@@ -287,7 +289,7 @@ public class JdbcStreamingSelfTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, SQLException.class,"Only tuple based INSERT statements are supported in streaming mode");
+        }, SQLException.class,"Streaming mode supports only INSERT commands without subqueries.");
     }
 
     /**

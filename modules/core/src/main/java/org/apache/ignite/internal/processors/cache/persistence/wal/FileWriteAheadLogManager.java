@@ -467,10 +467,12 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             File file = new File(walArchiveDir, segmentName);
             File fileZip = new File(walArchiveDir, segmentName + ".zip");
 
-            if (file.exists() || fileZip.exists())
+            if (file.exists())
                 res.add(file);
+            else if (fileZip.exists())
+                res.add(fileZip);
             else {
-                if (log.isInfoEnabled()){
+                if (log.isInfoEnabled()) {
                     log.info("Segment not found: " + file.getName() + "/" + fileZip.getName());
 
                     log.info("Stopped iteration on idx: " + i);
@@ -657,10 +659,8 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         cctx.time().addTimeoutObject(nextAutoArchiveTimeoutObj);
     }
 
-    /**
-     * @return Latest serializer version.
-     */
-    public int serializerVersion() {
+    /** {@inheritDoc} */
+    @Override public int serializerVersion() {
         return serializerVer;
     }
 
@@ -2300,7 +2300,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
         /**
          * @throws IgniteCheckedException If failed to close the WAL segment file.
          */
-        public void close() throws IgniteCheckedException {
+        @Override public void close() throws IgniteCheckedException {
             try {
                 fileIO.close();
             }
