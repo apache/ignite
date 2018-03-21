@@ -789,7 +789,7 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
         if (minQry != -1)
             cleanupVer = cleanupVer == -1 ? minQry : Math.min(cleanupVer, minQry);
 
-        if (cleanupVer != -1)
+        if (cleanupVer > minQry)
             cleanupVer--;
 
         res.init(futId, crdVer, ver, cleanupVer);
@@ -903,7 +903,8 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
             long ver = committedCntr.get();
 
             for (Long txVer : activeTxs) {
-                res.addTx(txVer);
+                if (txVer < ver)
+                    res.addTx(txVer);
             }
 
             lock.writeUnlock();

@@ -291,18 +291,34 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
             @Override public void apply(IgniteCache<Object, Object> cache) {
                 final IgniteTransactions txs = cache.unwrap(Ignite.class).transactions();
 
-                try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    SqlFieldsQuery qry = new SqlFieldsQuery("insert into MvccTestAccount(_key, val, updateCnt) values " +
-                            "(?," + ACCOUNT_START_VAL + ",1)");
+                if (writeMode == WriteMode.KEY_VALUE) {
+                    Map<Integer, MvccTestAccount> accounts = new HashMap<>();
 
-                    for (int i = 0; i < ACCOUNTS; i++) {
-                        try (FieldsQueryCursor<List<?>> cur = cache.query(qry.setArgs(i))) {
-                            assertEquals(1L, cur.iterator().next().get(0));
-                        }
+                    for (int i = 0; i < ACCOUNTS; i++)
+                        accounts.put(i, new MvccTestAccount(ACCOUNT_START_VAL, 1));
+
+                    try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        cache.putAll(accounts);
 
                         tx.commit();
                     }
                 }
+                else if (writeMode == WriteMode.DML) {
+                    try (Transaction tx = txs.txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        SqlFieldsQuery qry = new SqlFieldsQuery("insert into MvccTestAccount(_key, val, updateCnt) values " +
+                                "(?," + ACCOUNT_START_VAL + ",1)");
+
+                        for (int i = 0; i < ACCOUNTS; i++) {
+                            try (FieldsQueryCursor<List<?>> cur = cache.query(qry.setArgs(i))) {
+                                assertEquals(1L, cur.iterator().next().get(0));
+                            }
+
+                            tx.commit();
+                        }
+                    }
+                }
+                else
+                    assert false : "Unknown write mode";
             }
         };
 

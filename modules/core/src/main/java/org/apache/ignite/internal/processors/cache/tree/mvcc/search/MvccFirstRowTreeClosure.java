@@ -61,12 +61,9 @@ public class MvccFirstRowTreeClosure implements MvccTreeClosure {
         long pageAddr, int idx) throws IgniteCheckedException {
         RowLinkIO rowIo = (RowLinkIO)io;
 
-        if (cctx.shared().coordinators().state(rowIo.getMvccCoordinatorVersion(pageAddr, idx), rowIo.getMvccCounter(pageAddr, idx)) != TxState.COMMITTED)
-            return true; // do not return active or aborted versions
-
         MvccVersion newVersion = getNewVersion(cctx, rowIo.getLink(pageAddr, idx));
 
-        if (newVersion == null || cctx.shared().coordinators().state(newVersion) != TxState.COMMITTED)
+        if (newVersion == null)
             res = tree.getRow(io, pageAddr, idx, CacheDataRowAdapter.RowData.NO_KEY);
 
         return false;  // Stop search.
