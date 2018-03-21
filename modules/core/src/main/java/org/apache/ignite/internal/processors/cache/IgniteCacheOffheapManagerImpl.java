@@ -33,6 +33,7 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -834,9 +835,35 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             return null;
         }
 
-        CacheDataStore data = partitionData(part);
+        final CacheDataStore data = partitionData(part);
 
-        final GridCursor<? extends CacheDataRow> cur = data.cursor();
+        boolean endless = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DEBUG_ENDLESS_REBALANCE, false)
+            && (ctx.cache().cacheType(grp.cacheOrGroupName()) == CacheType.USER);
+
+        final GridCursor<? extends CacheDataRow> cur;
+
+        if (endless)
+            cur = new GridCursor<CacheDataRow>() {
+                GridCursor<? extends CacheDataRow> cur0 = data.cursor();
+
+                @Override public boolean next() throws IgniteCheckedException {
+                    boolean next = cur0.next();
+
+                    if (!next) {
+                        cur0 = data.cursor();
+
+                        next = cur0.next();
+                    }
+
+                    return next;
+                }
+
+                @Override public CacheDataRow get() throws IgniteCheckedException {
+                    return cur0.get();
+                }
+            };
+        else
+            cur = data.cursor();
 
         return new GridCloseableIteratorAdapter<CacheDataRow>() {
             /** */
@@ -888,6 +915,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             else
                 iterators.put(p, partIter);
         }
+
+
 
         IgniteRebalanceIterator iter = new IgniteRebalanceIteratorImpl(iterators, historicalIterator(parts.historicalMap()));
 

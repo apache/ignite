@@ -20,6 +20,7 @@ package org.apache.ignite.internal.benchmarks.jmh.preloader;
 import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -64,6 +65,9 @@ public class JmhPreloaderAbstractBenchmark extends JmhAbstractBenchmark {
     /** Property: entries per message. */
     protected static final String PROP_ENTRIES_PER_MESSAGE = "ignite.jmh.preloader.entriesPerMessage";
 
+    /** Property: entries per message. */
+    protected static final String PROP_REBALANCE_TYPE = "ignite.jmh.preloader.rebalanceType";
+
     /** IP finder shared across nodes. */
     protected static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -71,6 +75,8 @@ public class JmhPreloaderAbstractBenchmark extends JmhAbstractBenchmark {
     protected static final String DEFAULT_CACHE_NAME = "default";
 
     protected int entriesPerMessage;
+
+    protected RebalanceType rebalanceType;
 
     protected IgniteEx supplierNode;
     protected IgniteEx demanderNode;
@@ -109,6 +115,13 @@ public class JmhPreloaderAbstractBenchmark extends JmhAbstractBenchmark {
         System.out.println("--------------------");
         System.out.println();
 
+        rebalanceType = enumProperty(PROP_REBALANCE_TYPE, RebalanceType.class, RebalanceType.ENDLESS);
+
+        if (rebalanceType == RebalanceType.ENDLESS)
+            System.setProperty(IgniteSystemProperties.IGNITE_DEBUG_ENDLESS_REBALANCE, "true");
+        else
+            System.setProperty(IgniteSystemProperties.IGNITE_DEBUG_ENDLESS_REBALANCE, "false");
+
         supplierNode = (IgniteEx) Ignition.start(configuration("supplier"));
 
         supplierNode.cluster().active(true);
@@ -120,10 +133,7 @@ public class JmhPreloaderAbstractBenchmark extends JmhAbstractBenchmark {
         supplierSharedCtx = supplierCacheCtx.shared();
         supplierCache = supplierNode.cache(DEFAULT_CACHE_NAME);
 
-        entriesPerMessage = intProperty(PROP_ENTRIES_PER_MESSAGE);
-
-        if (entriesPerMessage == 0)
-            entriesPerMessage = 10_000;
+        entriesPerMessage = intProperty(PROP_ENTRIES_PER_MESSAGE, 10_000);
 
         IgniteCache<Integer, Integer> cache = supplierNode.cache(DEFAULT_CACHE_NAME);
 
@@ -165,30 +175,32 @@ public class JmhPreloaderAbstractBenchmark extends JmhAbstractBenchmark {
         discoSpi.setIpFinder(IP_FINDER);
         cfg.setDiscoverySpi(discoSpi);
 
-        cfg.setCommunicationSpi(new TcpCommunicationSpi() {
-            @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
-                if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionSupplyMessage) {
-                    int grpId = ((GridDhtPartitionSupplyMessage)((GridIoMessage)msg).message()).groupId();
+        if (rebalanceType == RebalanceType.SYNTHETIC || rebalanceType == RebalanceType.NONE) {
+            cfg.setCommunicationSpi(new TcpCommunicationSpi() {
+                @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+                    if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionSupplyMessage) {
+                        int grpId = ((GridDhtPartitionSupplyMessage)((GridIoMessage)msg).message()).groupId();
 
-                    if (grpId == CU.cacheId(DEFAULT_CACHE_NAME))
-                        return; // block supply messages
+                        if (grpId == CU.cacheId(DEFAULT_CACHE_NAME))
+                            return; // block supply messages
+                    }
+
+                    super.sendMessage(node, msg);
                 }
 
-                super.sendMessage(node, msg);
-            }
+                @Override public void sendMessage(ClusterNode node, Message msg,
+                    IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
+                    if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionSupplyMessage) {
+                        int grpId = ((GridDhtPartitionSupplyMessage)((GridIoMessage)msg).message()).groupId();
 
-            @Override public void sendMessage(ClusterNode node, Message msg,
-                IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
-                if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionSupplyMessage) {
-                    int grpId = ((GridDhtPartitionSupplyMessage)((GridIoMessage)msg).message()).groupId();
+                        if (grpId == CU.cacheId(DEFAULT_CACHE_NAME))
+                            return; // block supply messages
+                    }
 
-                    if (grpId == CU.cacheId(DEFAULT_CACHE_NAME))
-                        return; // block supply messages
+                    super.sendMessage(node, msg, ackC);
                 }
-
-                super.sendMessage(node, msg, ackC);
-            }
-        });
+            });
+        }
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
@@ -211,7 +223,7 @@ public class JmhPreloaderAbstractBenchmark extends JmhAbstractBenchmark {
             .setBackups(1)
             .setRebalanceDelay(-1)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
-            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+            .setAtomicityMode(CacheAtomicityMode.ATOMIC);
     }
 
     /**
@@ -256,5 +268,11 @@ public class JmhPreloaderAbstractBenchmark extends JmhAbstractBenchmark {
         msg.partitions().addFull(0);
 
         return msg;
+    }
+
+    public enum RebalanceType {
+        NONE,
+        SYNTHETIC,
+        ENDLESS
     }
 }
