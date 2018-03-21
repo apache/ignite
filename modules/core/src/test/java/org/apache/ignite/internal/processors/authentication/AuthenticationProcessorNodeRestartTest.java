@@ -40,7 +40,7 @@ public class AuthenticationProcessorNodeRestartTest extends GridCommonAbstractTe
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Nodes count. */
-    protected static final int NODES_COUNT = 2;
+    private static final int NODES_COUNT = 4;
 
     /** Nodes restarts count. */
     private static final int RESTARTS = 10;
