@@ -289,9 +289,7 @@ public class CacheBasedDatasetTest extends GridCommonAbstractTest {
                         builder.append("\t\t")
                             .append(String.format("| %3d  |", partition.id()))
                             .append(String.format(" %7s  |", partition.state()))
-                            .append(String.format(" %7s  |", partition.reload()))
                             .append(String.format(" %13s  |", partition.reservations()))
-                            .append(String.format(" %18s  |", partition.shouldBeRenting()))
                             .append(String.format(" %8s  |", partition.primary(instanceState.topVer)))
                             .append(String.format(" %16d  |", partition.dataStore().fullSize()))
                             .append("\n");

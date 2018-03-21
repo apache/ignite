@@ -24,10 +24,10 @@ import java.util.Arrays;
 import java.util.Properties;
 import javax.naming.RefAddr;
 import javax.naming.Reference;
-
-import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.F;
 
 /**
@@ -40,14 +40,18 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** Prefix for property names. */
     public static final String PROP_PREFIX = "ignite.jdbc.";
 
-    /** Host name property. */
-    private StringProperty host = new StringProperty(
-        "host", "Ignite node IP to connect", null, null, true,
-        new EmptyStringValidator("Host name is empty"));
+    /** Default socket buffer size. */
+    private static final int DFLT_SOCK_BUFFER_SIZE = 64 * 1024;
 
-    /** Connection port property. */
-    private IntegerProperty port = new IntegerProperty(
-        "port", "Ignite node IP to connect", ClientConnectorConfiguration.DFLT_PORT, false, 1, 0xFFFF);
+    /** Connection URL. */
+    private String url;
+
+    /** Addresses. */
+    private HostAndPortRange [] addrs;
+
+    /** Schema name. Hidden property. Is used to set default schema name part of the URL. */
+    private StringProperty schema = new StringProperty("schema",
+        "Schema name of the connection", "PUBLIC", null, false, null);
 
     /** Distributed joins property. */
     private BooleanProperty distributedJoins = new BooleanProperty(
@@ -82,12 +86,12 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /** Socket send buffer size property. */
     private IntegerProperty socketSendBuffer = new IntegerProperty(
         "socketSendBuffer", "Socket send buffer size",
-        0, false, 0, Integer.MAX_VALUE);
+        DFLT_SOCK_BUFFER_SIZE, false, 0, Integer.MAX_VALUE);
 
     /** Socket receive buffer size property. */
     private IntegerProperty socketReceiveBuffer = new IntegerProperty(
         "socketReceiveBuffer", "Socket send buffer size",
-        0, false, 0, Integer.MAX_VALUE);
+        DFLT_SOCK_BUFFER_SIZE, false, 0, Integer.MAX_VALUE);
 
     /** Executes update queries on ignite server nodes flag. */
     private BooleanProperty skipReducerOnUpdate = new BooleanProperty(
@@ -100,113 +104,111 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
     /** SSL: Client certificate key store url. */
     private StringProperty sslProtocol = new StringProperty("sslProtocol",
-        "SSL protocol name", null,  null, false, null);
+        "SSL protocol name", null, null, false, null);
 
     /** SSL: Key algorithm name. */
     private StringProperty sslKeyAlgorithm = new StringProperty("sslKeyAlgorithm",
-        "SSL key algorithm name", "SunX509",  null, false, null);
+        "SSL key algorithm name", "SunX509", null, false, null);
 
     /** SSL: Client certificate key store url. */
     private StringProperty sslClientCertificateKeyStoreUrl =
         new StringProperty("sslClientCertificateKeyStoreUrl",
-        "Client certificate key store URL",
-        null, null, false, null);
+            "Client certificate key store URL",
+            null, null, false, null);
 
     /** SSL: Client certificate key store password. */
     private StringProperty sslClientCertificateKeyStorePassword =
         new StringProperty("sslClientCertificateKeyStorePassword",
-        "Client certificate key store password",
+            "Client certificate key store password",
             null, null, false, null);
 
     /** SSL: Client certificate key store type. */
     private StringProperty sslClientCertificateKeyStoreType =
         new StringProperty("sslClientCertificateKeyStoreType",
-        "Client certificate key store type",
+            "Client certificate key store type",
             null, null, false, null);
 
     /** SSL: Trusted certificate key store url. */
     private StringProperty sslTrustCertificateKeyStoreUrl =
         new StringProperty("sslTrustCertificateKeyStoreUrl",
-        "Trusted certificate key store URL", null, null, false, null);
+            "Trusted certificate key store URL", null, null, false, null);
 
     /** SSL Trusted certificate key store password. */
     private StringProperty sslTrustCertificateKeyStorePassword =
         new StringProperty("sslTrustCertificateKeyStorePassword",
-        "Trusted certificate key store password", null, null, false, null);
+            "Trusted certificate key store password", null, null, false, null);
 
     /** SSL: Trusted certificate key store type. */
     private StringProperty sslTrustCertificateKeyStoreType =
         new StringProperty("sslTrustCertificateKeyStoreType",
-        "Trusted certificate key store type",
+            "Trusted certificate key store type",
             null, null, false, null);
 
     /** SSL: Trust all certificates. */
     private BooleanProperty sslTrustAll = new BooleanProperty("sslTrustAll",
-        "Trust all certificates",false, false);
+        "Trust all certificates", false, false);
 
     /** SSL: Custom class name that implements Factory&lt;SSLSocketFactory&gt;. */
     private StringProperty sslFactory = new StringProperty("sslFactory",
         "Custom class name that implements Factory<SSLSocketFactory>", null, null, false, null);
 
-    /** Turn on streaming mode on this connection. */
-    private BooleanProperty stream = new BooleanProperty(
-        "streaming", "Turn on streaming mode on this connection", false, false);
-
-    /** Turn on overwrite during streaming on this connection. */
-    private BooleanProperty streamAllowOverwrite = new BooleanProperty(
-        "streamingAllowOverwrite", "Turn on overwrite during streaming on this connection", false, false);
-
-    /** Number of parallel operations per cluster node during streaming. */
-    private IntegerProperty streamParOps = new IntegerProperty(
-        "streamingPerNodeParallelOperations", "Number of parallel operations per cluster node during streaming",
-        0, false, 0, Integer.MAX_VALUE);
-
-    /** Buffer size per cluster node during streaming. */
-    private IntegerProperty streamBufSize = new IntegerProperty(
-        "streamingPerNodeBufferSize", "Buffer size per cluster node during streaming",
-        0, false, 0, Integer.MAX_VALUE);
-
-    /** Server-size flush frequency during streaming. */
-    private LongProperty streamFlushFreq = new LongProperty(
-        "streamingFlushFrequency", "Server-size flush frequency during streaming",
-        0, false, 0, Long.MAX_VALUE);
-
-    /** Buffer size per cluster node during streaming. */
-    private IntegerProperty streamBatchSize = new IntegerProperty(
-        "streamingBatchSize", "Batch size for streaming (number of commands to accumulate internally " +
-        "before actually sending over the wire)", IgniteDataStreamer.DFLT_PER_NODE_BUFFER_SIZE * 4, false, 1,
-        Integer.MAX_VALUE);
-
     /** Properties array. */
-    private final ConnectionProperty [] props = {
-        host, port,
+    private final ConnectionProperty [] propsArray = {
         distributedJoins, enforceJoinOrder, collocated, replicatedOnly, autoCloseServerCursor,
         tcpNoDelay, lazy, socketSendBuffer, socketReceiveBuffer, skipReducerOnUpdate,
         sslMode, sslProtocol, sslKeyAlgorithm,
         sslClientCertificateKeyStoreUrl, sslClientCertificateKeyStorePassword, sslClientCertificateKeyStoreType,
         sslTrustCertificateKeyStoreUrl, sslTrustCertificateKeyStorePassword, sslTrustCertificateKeyStoreType,
-        sslTrustAll, sslFactory,
-        stream, streamAllowOverwrite, streamParOps, streamBufSize, streamFlushFreq, streamBatchSize
+        sslTrustAll, sslFactory
     };
 
     /** {@inheritDoc} */
-    @Override public String getHost() {
-        return host.value();
+    @Override public String getSchema() {
+        return schema.value();
     }
 
     /** {@inheritDoc} */
-    @Override public void setHost(String host) {
-        this.host.setValue(host);
+    @Override public void setSchema(String schema) {
+        this.schema.setValue(schema);
     }
 
     /** {@inheritDoc} */
-    @Override public int getPort() {
-        return port.value();
+    @Override public String getUrl() {
+        if (url != null)
+            return url;
+        else {
+            if (F.isEmpty(getAddresses()))
+                return null;
+
+            StringBuilder sbUrl = new StringBuilder(JdbcThinUtils.URL_PREFIX);
+
+            HostAndPortRange [] addrs = getAddresses();
+
+            for (int i = 0; i < addrs.length; i++)
+                sbUrl.append(addrs[i].toString());
+
+            if (!F.isEmpty(getSchema()))
+                sbUrl.append('/').append(getSchema());
+
+            return sbUrl.toString();
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public void setPort(int port) throws SQLException {
-        this.port.setValue(port);
+    @Override public void setUrl(String url) throws SQLException {
+        this.url = url;
+
+        init(url, new Properties());
+    }
+
+    /** {@inheritDoc} */
+    @Override public HostAndPortRange[] getAddresses() {
+        return addrs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setAddresses(HostAndPortRange[] addrs) {
+        this.addrs = addrs;
     }
 
     /** {@inheritDoc} */
@@ -419,100 +421,112 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         this.sslFactory.setValue(sslFactory);
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean isStream() {
-        return stream.value();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setStream(boolean val) {
-        stream.setValue(val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isStreamAllowOverwrite() {
-        return streamAllowOverwrite.value();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setStreamAllowOverwrite(boolean val) {
-        streamAllowOverwrite.setValue(val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getStreamParallelOperations() {
-        return streamParOps.value();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setStreamParallelOperations(int val) throws SQLException {
-        streamParOps.setValue(val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getStreamBufferSize() {
-        return streamBufSize.value();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setStreamBufferSize(int val) throws SQLException {
-        streamBufSize.setValue(val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getStreamFlushFrequency() {
-        return streamFlushFreq.value();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setStreamFlushFrequency(long val) throws SQLException {
-        streamFlushFreq.setValue(val);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getStreamBatchSize() {
-        return streamBatchSize.value();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setStreamBatchSize(int val) throws SQLException {
-        streamBatchSize.setValue(val);
-    }
-
     /**
+     * @param url URL connection.
      * @param props Environment properties.
      * @throws SQLException On error.
      */
-    void init(Properties props) throws SQLException {
+    public void init(String url, Properties props) throws SQLException {
         Properties props0 = (Properties)props.clone();
 
-        for (ConnectionProperty aPropsArray : this.props)
+        if (!F.isEmpty(url))
+            parseUrl(url, props0);
+
+        for (ConnectionProperty aPropsArray : propsArray)
             aPropsArray.init(props0);
     }
 
     /**
-     * @return Driver's properties info array.
+     * Validates and parses connection URL.
+     *
+     * @param url URL.
+     * @param props Properties.
+     * @throws SQLException On error.
      */
-    private DriverPropertyInfo[] getDriverPropertyInfo() {
-        DriverPropertyInfo[] dpis = new DriverPropertyInfo[props.length];
+    private void parseUrl(String url, Properties props) throws SQLException {
+        if (F.isEmpty(url))
+            throw new SQLException("URL cannot be null or empty.");
 
-        for (int i = 0; i < props.length; ++i)
-            dpis[i] = props[i].getDriverPropertyInfo();
+        if (!url.startsWith(JdbcThinUtils.URL_PREFIX))
+            throw new SQLException("URL must start with \"" + JdbcThinUtils.URL_PREFIX + "\"");
 
-        return dpis;
+        String nakedUrl = url.substring(JdbcThinUtils.URL_PREFIX.length()).trim();
+
+        String[] nakedUrlParts = nakedUrl.split("\\?");
+
+        if (nakedUrlParts.length > 2)
+            throw new SQLException("Invalid URL format (only one ? character is allowed): " + url);
+
+        String[] pathParts = nakedUrlParts[0].split("/");
+
+        String [] endpoints = pathParts[0].split(",");
+
+        if (endpoints.length > 0)
+            addrs = new HostAndPortRange[endpoints.length];
+
+        for (int i = 0; i < endpoints.length; ++i ) {
+            try {
+                addrs[i] = HostAndPortRange.parse(endpoints[i],
+                    ClientConnectorConfiguration.DFLT_PORT, ClientConnectorConfiguration.DFLT_PORT,
+                    "Invalid endpoint format (should be \"host[:portRangeFrom[..portRangeTo]]\")");
+            }
+            catch (IgniteCheckedException e) {
+                throw new SQLException(e.getMessage(), SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            }
+        }
+
+        if (F.isEmpty(addrs) || F.isEmpty(addrs[0].host()))
+            throw new SQLException("Host name is empty", SqlStateCode.CLIENT_CONNECTION_FAILED);
+
+        if (nakedUrlParts.length == 2)
+            parseParameters(nakedUrlParts[1], props);
+
+        if (pathParts.length > 2) {
+            throw new SQLException("Invalid URL format (only schema name is allowed in URL path parameter " +
+                "'host:port[/schemaName]'): " + url, SqlStateCode.CLIENT_CONNECTION_FAILED);
+        }
+
+        setSchema(pathParts.length == 2 ? pathParts[1] : null);
     }
 
     /**
-     * @param props Environment properties.
-     * @return Driver's properties info array.
-     * @throws SQLException On error.
+     * Validates and parses URL parameters.
+     *
+     * @param str Parameters string.
+     * @param props Properties.
+     * @throws SQLException If failed.
      */
-    public static DriverPropertyInfo[] getDriverPropertyInfo(Properties props) throws SQLException {
-        ConnectionPropertiesImpl cpi = new ConnectionPropertiesImpl();
+    private void parseParameters(String str, Properties props) throws SQLException {
+        String[] params = str.split("&");
 
-        cpi.init(props);
+        for (String param : params) {
+            String[] pair = param.split("=");
 
-        return cpi.getDriverPropertyInfo();
+            if (pair.length != 2)
+                throw new SQLException("Invalid parameter format (only one = character is allowed per key/value " +
+                    "pair: " + param, SqlStateCode.CLIENT_CONNECTION_FAILED);
+
+            String key = pair[0].trim();
+            String val = pair[1].trim();
+
+            if (key.isEmpty() || val.isEmpty())
+                throw new SQLException("Invalid parameter format (key and value cannot be empty): " + param,
+                    SqlStateCode.CLIENT_CONNECTION_FAILED);
+
+            props.setProperty(PROP_PREFIX + key, val);
+        }
+    }
+
+    /**
+     * @return Driver's properties info array.
+     */
+    public DriverPropertyInfo[] getDriverPropertyInfo() {
+        DriverPropertyInfo[] dpis = new DriverPropertyInfo[propsArray.length];
+
+        for (int i = 0; i < propsArray.length; ++i)
+            dpis[i] = propsArray[i].getDriverPropertyInfo();
+
+        return dpis;
     }
 
     /**
@@ -524,30 +538,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @throws SQLException On validation fails.
          */
         void validate(String val) throws SQLException;
-    }
-
-    /**
-     *
-     */
-    private static class EmptyStringValidator implements PropertyValidator {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /** Error message. */
-        private final String errMsg;
-
-        /**
-         * @param msg Error message.
-         */
-        private EmptyStringValidator(String msg) {
-            errMsg = msg;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void validate(String val) throws SQLException {
-            if (F.isEmpty(val))
-                throw new SQLException(errMsg, SqlStateCode.CLIENT_CONNECTION_FAILED);
-        }
     }
 
     /**
@@ -587,7 +577,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          */
         ConnectionProperty(String name, String desc, Object dfltVal, String[] choices, boolean required) {
             this.name = name;
-            this.desc= desc;
+            this.desc = desc;
             this.dfltVal = dfltVal;
             this.choices = choices;
             this.required = required;
@@ -604,7 +594,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
         ConnectionProperty(String name, String desc, Object dfltVal, String[] choices, boolean required,
             PropertyValidator validator) {
             this.name = name;
-            this.desc= desc;
+            this.desc = desc;
             this.dfltVal = dfltVal;
             this.choices = choices;
             this.required = required;
@@ -890,38 +880,6 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
     /**
      *
      */
-    private static class LongProperty extends NumberProperty {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * @param name Name.
-         * @param desc Description.
-         * @param dfltVal Default value.
-         * @param required {@code true} if the property is required.
-         * @param min Lower bound of allowed range.
-         * @param max Upper bound of allowed range.
-         */
-        LongProperty(String name, String desc, Number dfltVal, boolean required, long min, long max) {
-            super(name, desc, dfltVal, required, min, max);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Number parse(String str) throws NumberFormatException {
-            return Long.parseLong(str);
-        }
-
-        /**
-         * @return Property value.
-         */
-        long value() {
-            return val.longValue();
-        }
-    }
-
-    /**
-     *
-     */
     private static class StringProperty extends ConnectionProperty {
         /** */
         private static final long serialVersionUID = 0L;
@@ -937,7 +895,7 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
          * @param required {@code true} if the property is required.
          * @param validator Property value validator.
          */
-        StringProperty(String name, String desc, String dfltVal, String [] choices, boolean required,
+        StringProperty(String name, String desc, String dfltVal, String[] choices, boolean required,
             PropertyValidator validator) {
             super(name, desc, dfltVal, choices, required, validator);
 
@@ -960,6 +918,9 @@ public class ConnectionPropertiesImpl implements ConnectionProperties, Serializa
 
         /** {@inheritDoc} */
         @Override void init(String str) throws SQLException {
+            if (validator != null)
+                validator.validate(str);
+
             if (str == null)
                 val = (String)dfltVal;
             else

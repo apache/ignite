@@ -36,7 +36,7 @@ fixture('Checking admin panel')
     });
 
 test('Testing setting notifications', async(t) => {
-    await t.click(Selector('button').withAttribute('ng-click', 'ctrl.changeUserNotifications()'));
+    await t.click(Selector('button').withAttribute('ng-click', '$ctrl.changeUserNotifications()'));
 
     await t
         .expect(Selector('h4').withText(/.*Set user notifications.*/).exists)
@@ -50,7 +50,7 @@ test('Testing setting notifications', async(t) => {
         .expect(Selector('.wch-notification').innerText)
         .eql('test message');
 
-    await t.click(Selector('button').withAttribute('ng-click', 'ctrl.changeUserNotifications()'));
+    await t.click(Selector('button').withAttribute('ng-click', '$ctrl.changeUserNotifications()'));
 
     await t
         .click('.ace_content')

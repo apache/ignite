@@ -24,13 +24,21 @@ import java.sql.Statement;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
+import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.query.FieldsQueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest;
+import org.apache.ignite.internal.processors.query.GridQueryCancel;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.SqlClientContext;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Tests for streaming via thin driver.
@@ -41,6 +49,8 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        GridQueryProcessor.idxCls = IndexingWithContext.class;
+
         super.beforeTestsStarted();
 
         batchSize = 17;
@@ -52,14 +62,19 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
             execute(c, "DROP TABLE PUBLIC.T IF EXISTS");
         }
 
+        IndexingWithContext.cliCtx = null;
+
         super.afterTest();
     }
 
     /** {@inheritDoc} */
     @Override protected Connection createStreamedConnection(boolean allowOverwrite, long flushFreq) throws Exception {
-        return JdbcThinAbstractSelfTest.connect(grid(0), "streaming=true&streamingFlushFrequency="
-            + flushFreq + "&" + "streamingAllowOverwrite=" + allowOverwrite + "&streamingPerNodeBufferSize=1000&"
-            + "streamingBatchSize=" + batchSize);
+        Connection c = JdbcThinAbstractSelfTest.connect(grid(0), null       );
+
+        execute(c, "SET STREAMING 1 BATCH_SIZE " + batchSize + " ALLOW_OVERWRITE " + (allowOverwrite ? 1 : 0) +
+            " PER_NODE_BUFFER_SIZE 1000 FLUSH_FREQUENCY " + flushFreq);
+
+        return c;
     }
 
     /** {@inheritDoc} */
@@ -75,11 +90,11 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
             put(i, nameForId(i * 100));
 
         try (Connection conn = createStreamedConnection(false)) {
-            assertStreamingOn();
+            assertStreamingState(true);
 
             try (PreparedStatement stmt = conn.prepareStatement("insert into Person(\"id\", \"name\") values (?, ?), " +
                 "(?, ?)")) {
-                for (int i = 1; i <= 100; i+=2) {
+                for (int i = 1; i <= 100; i+= 2) {
                     stmt.setInt(1, i);
                     stmt.setString(2, nameForId(i));
                     stmt.setInt(3, i + 1);
@@ -116,7 +131,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
         U.sleep(500);
 
         try (Connection conn = createStreamedConnection(false, 10000)) {
-            assertStreamingOn();
+            assertStreamingState(true);
 
             PreparedStatement firstStmt = conn.prepareStatement("insert into Person(\"id\", \"name\") values (?, ?)");
 
@@ -189,7 +204,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
         String stmtStr = "insert into Person(\"id\", \"name\") values (%d, '%s')";
 
         try (Connection conn = createStreamedConnection(false, 10000)) {
-            assertStreamingOn();
+            assertStreamingState(true);
 
             PreparedStatement firstStmt = conn.prepareStatement(prepStmtStr);
 
@@ -237,10 +252,174 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
     }
 
     /**
+     * @throws SQLException if failed.
+     */
+    public void testStreamingOffToOn() throws SQLException {
+        try (Connection conn = createOrdinaryConnection()) {
+            assertStreamingState(false);
+
+            execute(conn, "SET STREAMING 1");
+
+            assertStreamingState(true);
+        }
+    }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    public void testStreamingOnToOff() throws Exception {
+        try (Connection conn = createStreamedConnection(false)) {
+            assertStreamingState(true);
+
+            execute(conn, "SET STREAMING off");
+
+            assertStreamingState(false);
+        }
+    }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    public void testFlush() throws Exception {
+        try (Connection conn = createStreamedConnection(false, 10000)) {
+            assertStreamingState(true);
+
+            try (PreparedStatement stmt = conn.prepareStatement("insert into Person(\"id\", \"name\") values (?, ?)")) {
+                for (int i = 1; i <= 100; i++) {
+                    stmt.setInt(1, i);
+                    stmt.setString(2, nameForId(i));
+
+                    stmt.executeUpdate();
+                }
+            }
+
+            assertCacheEmpty();
+
+            execute(conn, "set streaming 0");
+
+            assertStreamingState(false);
+
+            U.sleep(500);
+
+            // Now let's check it's all there.
+            for (int i = 1; i <= 100; i++)
+                assertEquals(nameForId(i), nameForIdInCache(i));
+        }
+    }
+
+    /**
+     * @throws SQLException if failed.
+     */
+    public void testStreamingReEnabled() throws Exception {
+        try (Connection conn = createStreamedConnection(false, 10000)) {
+            assertStreamingState(true);
+
+            try (PreparedStatement stmt = conn.prepareStatement("insert into Person(\"id\", \"name\") values (?, ?)")) {
+                for (int i = 1; i <= 100; i++) {
+                    stmt.setInt(1, i);
+                    stmt.setString(2, nameForId(i));
+
+                    stmt.executeUpdate();
+                }
+            }
+
+            assertCacheEmpty();
+
+            execute(conn, "set streaming 1 batch_size 111 allow_overwrite 0 per_node_buffer_size 512 " +
+                "per_node_parallel_operations 4 flush_frequency 5000");
+
+            U.sleep(500);
+
+            assertEquals((Integer)111, U.field(conn, "streamBatchSize"));
+
+            SqlClientContext cliCtx = sqlClientContext();
+
+            assertTrue(cliCtx.isStream());
+
+            assertFalse(U.field(cliCtx, "streamAllowOverwrite"));
+
+            assertEquals((Integer)512, U.field(cliCtx, "streamNodeBufSize"));
+
+            assertEquals((Long)5000L, U.field(cliCtx, "streamFlushTimeout"));
+
+            assertEquals((Integer)4, U.field(cliCtx, "streamNodeParOps"));
+
+            // Now let's check it's all there - SET STREAMING 1 repeated call must also have caused flush.
+            for (int i = 1; i <= 100; i++)
+                assertEquals(nameForId(i), nameForIdInCache(i));
+        }
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testNonStreamedBatch() {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                try (Connection conn = createOrdinaryConnection()) {
+                    try (Statement s = conn.createStatement()) {
+                        for (int i = 1; i <= 10; i++)
+                            s.addBatch(String.format("insert into Person(\"id\", \"name\")values (%d, '%s')", i,
+                                nameForId(i)));
+
+                        execute(conn, "SET STREAMING 1");
+
+                        s.addBatch(String.format("insert into Person(\"id\", \"name\")values (%d, '%s')", 11,
+                            nameForId(11)));
+                    }
+                }
+
+                return null;
+            }
+        }, SQLException.class, "Statement has non-empty batch (call executeBatch() or clearBatch() before " +
+            "enabling streaming).");
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testStreamingStatementInTheMiddleOfNonPreparedBatch() {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                try (Connection conn = createOrdinaryConnection()) {
+                    try (Statement s = conn.createStatement()) {
+                        s.addBatch(String.format("insert into Person(\"id\", \"name\")values (%d, '%s')", 1,
+                            nameForId(1)));
+
+                        s.addBatch("SET STREAMING 1 FLUSH_FREQUENCY 10000");
+                    }
+                }
+
+                return null;
+            }
+        }, SQLException.class, "Streaming control commands must be executed explicitly");
+    }
+
+    /**
+     *
+     */
+    @SuppressWarnings("ThrowableNotThrown")
+    public void testBatchingSetStreamingStatement() {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                try (Connection conn = createOrdinaryConnection()) {
+                    try (PreparedStatement s = conn.prepareStatement("SET STREAMING 1 FLUSH_FREQUENCY 10000")) {
+                        s.addBatch();
+                    }
+                }
+
+                return null;
+            }
+        }, SQLException.class, "Streaming control commands must be executed explicitly");
+    }
+
+    /**
      * Check that there's nothing in cache.
      */
     private void assertCacheEmpty() {
-        assertEquals(0, grid(0).cache(DEFAULT_CACHE_NAME).size(CachePeekMode.ALL));
+        assertEquals(0, cache().size(CachePeekMode.ALL));
     }
 
     /**
@@ -258,22 +437,19 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
      * @return Active SQL client context.
      */
     private SqlClientContext sqlClientContext() {
-        Set<SqlClientContext> ctxs = U.field(grid(0).context().query(), "cliCtxs");
+        assertNotNull(IndexingWithContext.cliCtx);
 
-        assertFalse(F.isEmpty(ctxs));
-
-        assertEquals(1, ctxs.size());
-
-        return ctxs.iterator().next();
+        return IndexingWithContext.cliCtx;
     }
 
     /**
      * Check that streaming state on target node is as expected.
+     * @param on Expected streaming state.
      */
-    private void assertStreamingOn() {
+    private void assertStreamingState(boolean on) {
         SqlClientContext cliCtx = sqlClientContext();
 
-        assertTrue(cliCtx.isStream());
+        assertEquals(on, cliCtx.isStream());
     }
 
     /** {@inheritDoc} */
@@ -281,5 +457,30 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
         batchSize = 1;
 
         super.assertStatementForbidden(sql);
+    }
+
+    /**
+     *
+     */
+    private static final class IndexingWithContext extends IgniteH2Indexing {
+        /** Client context. */
+        static SqlClientContext cliCtx;
+
+        /** {@inheritDoc} */
+        @Override public List<Long> streamBatchedUpdateQuery(String schemaName, String qry, List<Object[]> params,
+            SqlClientContext cliCtx) throws IgniteCheckedException {
+            IndexingWithContext.cliCtx = cliCtx;
+
+            return super.streamBatchedUpdateQuery(schemaName, qry, params, cliCtx);
+        }
+
+        /** {@inheritDoc} */
+        @Override public List<FieldsQueryCursor<List<?>>> querySqlFields(String schemaName, SqlFieldsQuery qry,
+            @Nullable SqlClientContext cliCtx, boolean keepBinary, boolean failOnMultipleStmts,
+            GridQueryCancel cancel) {
+            IndexingWithContext.cliCtx = cliCtx;
+
+            return super.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, cancel);
+        }
     }
 }

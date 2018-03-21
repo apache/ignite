@@ -19,6 +19,7 @@ package org.apache.ignite.ml;
 
 import org.apache.ignite.ml.clustering.ClusteringTestSuite;
 import org.apache.ignite.ml.dataset.DatasetTestSuite;
+import org.apache.ignite.ml.genetic.GAGridTestSuite;
 import org.apache.ignite.ml.knn.KNNTestSuite;
 import org.apache.ignite.ml.math.MathImplMainTestSuite;
 import org.apache.ignite.ml.nn.MLPTestSuite;
@@ -47,7 +48,8 @@ import org.junit.runners.Suite;
     TrainersGroupTestSuite.class,
     OptimizationTestSuite.class,
     DatasetTestSuite.class,
-    PreprocessingTestSuite.class
+    PreprocessingTestSuite.class,
+    GAGridTestSuite.class
 })
 public class IgniteMLTestSuite {
     // No-op.

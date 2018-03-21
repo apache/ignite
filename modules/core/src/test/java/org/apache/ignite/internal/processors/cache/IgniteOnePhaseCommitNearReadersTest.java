@@ -208,7 +208,7 @@ public class IgniteOnePhaseCommitNearReadersTest extends GridCommonAbstractTest 
             for (TransactionIsolation isolation : TransactionIsolation.values()) {
                 srv = startGrid(0);
 
-                awaitPartitionMapExchange();
+                awaitPartitionMapExchange(true, true, null);
 
                 key = primaryKey(srv.cache(DEFAULT_CACHE_NAME));
 
