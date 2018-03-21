@@ -27,6 +27,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -53,7 +54,6 @@ import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_PORT;
  * activator node'll enter a topology, enabling grid operations.
  */
 public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopologySplitAbstractTest {
-
     /** */
     private static final String DC_NODE_ATTR = "dc";
 
@@ -61,10 +61,10 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
     private static final String ACTIVATOR_NODE_ATTR = "split.resolved";
 
     /** */
-    private static final int GRID_CNT = 32;
+    private static final int GRID_CNT = 8;
 
     /** */
-    private static final int CACHES_CNT = 50;
+    private static final int CACHES_CNT = 10;
 
     /** */
     private static final int RESOLVER_GRID_IDX = GRID_CNT;
@@ -178,6 +178,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
             ccfg.setWriteSynchronizationMode(PRIMARY_SYNC);
             ccfg.setBackups(0);
             ccfg.setTopologyValidator(new SplitAwareTopologyValidator());
+            ccfg.setRebalanceDelay(5000L);
 
             if (useCacheGrp)
                 ccfg.setGroupName("testGroup");
@@ -410,6 +411,22 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
     }
 
     /**
+     * @param iterable Iterable.
+     */
+    private String iterableAsString(Iterable<?> iterable) {
+        StringBuilder sb = new StringBuilder();
+
+        for (Object i : iterable) {
+            if (sb.length() != 0)
+                sb.append(", ");
+
+            sb.append(i);
+        }
+
+        return sb.toString();
+    }
+
+    /**
      * @param idx Grid to test.
      * @return number of successful puts to caches
      * @throws IgniteException If all tries to put was failed.
@@ -443,7 +460,13 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
             IgniteCache<Object, Object> cache = g.cache(cacheName);
 
             try {
+                log.info("!!! try put [gridIdx=" + idx + ", cache=" + cacheName + ", key=" + key + "]" );
                 cache.put(key, key);
+                log.info("put success");
+
+                if (cache.localSize() != 1)
+                    log.info("!!!!!!!!!!!!! " + iterableAsString(
+                        cache.localEntries(CachePeekMode.PRIMARY, CachePeekMode.OFFHEAP)));
 
                 assertEquals(1, cache.localSize());
 
@@ -454,10 +477,11 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
                 putCnt++;
             }
             catch (Throwable t) {
-                IgniteException e = new IgniteException("Failed to put entry [cache=" + cacheName + ", key=" +
-                    key + ']', t);
+                IgniteException e = new IgniteException("Failed to put entry [gridIdx=" + idx + ", cache=" + cacheName
+                    + ", key=" + key + ']', t);
 
-                log.error(e.getMessage(), e.getCause());
+                //log.error(e.getMessage(), e.getCause());
+                log.info("put failed: " + e.getMessage() + ": " + t.getMessage());
 
                 if (ex == null)
                     ex = new IgniteException("Failed to put entry [node=" + g.name() + ']');
@@ -498,6 +522,10 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
                         ex = new IgniteException("Failed to put entry");
 
                     ex.addSuppressed(e);
+
+                    if (putCnt != 0)
+                        throw new AssertionError("Failure after successful tryPut [gridIdx=" + idx +
+                            ", sucessful puts = " + putCnt + ']', ex);
                 }
             }
         }
