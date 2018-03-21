@@ -22,7 +22,7 @@ package org.apache.ignite.internal.commandline;
  */
 public class Arguments {
     /** Command. */
-    private String cmd;
+    private Command cmd;
 
     /** Host. */
     private String host;
@@ -35,6 +35,9 @@ public class Arguments {
 
     /** Password. */
     private String pwd;
+
+    /** Force option is used for auto confirmation. */
+    private boolean force;
 
     /**
      * Action for baseline command.
@@ -66,9 +69,10 @@ public class Arguments {
      * @param baselineArgs Baseline args.
      * @param walAct WAL action.
      * @param walArgs WAL args.
+     * @param force Force flag.
      */
-    public Arguments(String cmd, String host, String port, String user, String pwd, String baselineAct,
-        String baselineArgs, String walAct, String walArgs) {
+    public Arguments(Command cmd, String host, String port, String user, String pwd,
+        String baselineAct, String baselineArgs, String walAct, String walArgs, boolean force) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
@@ -78,12 +82,13 @@ public class Arguments {
         this.baselineArgs = baselineArgs;
         this.walAct = walAct;
         this.walArgs = walArgs;
+        this.force = force;
     }
 
     /**
      * @return command
      */
-    public String command() {
+    public Command command() {
         return cmd;
     }
 
@@ -141,5 +146,12 @@ public class Arguments {
      */
     public String walArguments() {
         return walArgs;
+    }
+
+    /**
+     * @return Force option.
+     */
+    public boolean force() {
+        return force;
     }
 }

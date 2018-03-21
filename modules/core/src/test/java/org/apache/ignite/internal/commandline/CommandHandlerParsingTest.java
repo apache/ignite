@@ -19,7 +19,6 @@
 
 package org.apache.ignite.internal.commandline;
 
-import java.util.UUID;
 import junit.framework.TestCase;
 
 import static org.apache.ignite.internal.commandline.CommandHandler.CMD_ACTIVATE;
@@ -27,6 +26,7 @@ import static org.apache.ignite.internal.commandline.CommandHandler.CMD_BASE_LIN
 import static org.apache.ignite.internal.commandline.CommandHandler.CMD_DEACTIVATE;
 import static org.apache.ignite.internal.commandline.CommandHandler.CMD_STATE;
 import static org.apache.ignite.internal.commandline.CommandHandler.CMD_WAL;
+import static java.util.Arrays.asList;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_DELETE;
@@ -36,18 +36,15 @@ import static org.apache.ignite.internal.commandline.CommandHandler.WAL_PRINT;
  * Tests Command Handler parsing arguments.
  */
 public class CommandHandlerParsingTest extends TestCase {
-    /** Commands to test. */
-    private static final String[] Commands = new String[] {CMD_STATE, CMD_ACTIVATE, CMD_DEACTIVATE, CMD_BASE_LINE};
-
     /**
      * Test parsing and validation for user and password arguments
      */
     public void testParseAndValidateUserAndPassword() {
         CommandHandler hnd = new CommandHandler();
 
-        for (String cmd : Commands) {
+        for (Command cmd : Command.values()) {
             try {
-                hnd.parseAndValidate("--user");
+                hnd.parseAndValidate(asList("--user"));
 
                 fail("expected exception: Expected user name");
             }
@@ -56,7 +53,7 @@ public class CommandHandlerParsingTest extends TestCase {
             }
 
             try {
-                hnd.parseAndValidate("--password");
+                hnd.parseAndValidate(asList("--password"));
 
                 fail("expected exception: Expected password");
             }
@@ -65,7 +62,7 @@ public class CommandHandlerParsingTest extends TestCase {
             }
 
             try {
-                hnd.parseAndValidate("--user", "testUser", cmd);
+                hnd.parseAndValidate(asList("--user", "testUser", cmd.text()));
 
                 fail("expected exception: Both user and password should be specified");
             }
@@ -74,7 +71,7 @@ public class CommandHandlerParsingTest extends TestCase {
             }
 
             try {
-                hnd.parseAndValidate("--password", "testPass", cmd);
+                hnd.parseAndValidate(asList("--password", "testPass", cmd.text()));
 
                 fail("expected exception: Both user and password should be specified");
             }
@@ -82,7 +79,7 @@ public class CommandHandlerParsingTest extends TestCase {
                 e.printStackTrace();
             }
 
-            Arguments args = hnd.parseAndValidate("--user", "testUser", "--password", "testPass", cmd);
+            Arguments args = hnd.parseAndValidate(asList("--user", "testUser", "--password", "testPass", cmd.text()));
 
             assertEquals("testUser", args.user());
             assertEquals("testPass", args.password());
@@ -134,21 +131,21 @@ public class CommandHandlerParsingTest extends TestCase {
     public void testHostAndPort() {
         CommandHandler hnd = new CommandHandler();
 
-        for (String cmd : Commands) {
-            Arguments args = hnd.parseAndValidate(cmd);
+        for (Command cmd : Command.values()) {
+            Arguments args = hnd.parseAndValidate(asList(cmd.text()));
 
             assertEquals(cmd, args.command());
             assertEquals(DFLT_HOST, args.host());
             assertEquals(DFLT_PORT, args.port());
 
-            args = hnd.parseAndValidate("--port", "12345", "--host", "test-host", cmd);
+            args = hnd.parseAndValidate(asList("--port", "12345", "--host", "test-host", cmd.text()));
 
             assertEquals(cmd, args.command());
             assertEquals("test-host", args.host());
             assertEquals("12345", args.port());
 
             try {
-                hnd.parseAndValidate("--port", "wrong-port", cmd);
+                hnd.parseAndValidate(asList("--port", "wrong-port", cmd.text()));
 
                 fail("expected exception: Invalid value for port:");
             }
