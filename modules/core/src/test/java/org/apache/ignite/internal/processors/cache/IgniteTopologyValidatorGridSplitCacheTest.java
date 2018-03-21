@@ -60,10 +60,10 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
     private static final String ACTIVATOR_NODE_ATTR = "split.resolved";
 
     /** */
-    private static final int GRID_CNT = 8;
+    private static final int GRID_CNT = 32;
 
     /** */
-    private static final int CACHES_CNT = 10;
+    private static final int CACHES_CNT = 50;
 
     /** */
     private static final int RESOLVER_GRID_IDX = GRID_CNT;
