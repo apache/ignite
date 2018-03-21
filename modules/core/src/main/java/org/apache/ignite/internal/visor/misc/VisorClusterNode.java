@@ -19,16 +19,16 @@
 
 package org.apache.ignite.internal.visor.misc;
 
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.VisorDataTransferObject;
-
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.VisorDataTransferObject;
 
 /**
  *  Data transfer object for {@link ClusterNode}.
@@ -38,15 +38,18 @@ public class VisorClusterNode extends VisorDataTransferObject {
     private static final long serialVersionUID = 0L;
 
     /** */
+    @GridToStringInclude
     private String consistentId;
 
     /** */
     private Map<String, Object> attrs;
 
     /** */
+    @GridToStringInclude
     private Collection<String> addresses;
 
     /** */
+    @GridToStringInclude
     private Collection<String> hostnames;
 
     /**

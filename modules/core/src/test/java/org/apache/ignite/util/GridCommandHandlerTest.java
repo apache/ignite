@@ -21,9 +21,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -299,7 +298,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      *
      *  @throws Exception if failed.
      */
-    public void testUnusedWal() throws Exception {
+    public void testUnusedWalPrint() throws Exception {
         Ignite ignite = startGrids(2);
 
         ignite.cluster().active(true);
@@ -311,7 +310,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         for (ClusterNode node: ignite.cluster().forServers().nodes())
             nodes.add(node.consistentId().toString());
 
-        assertEquals(EXIT_CODE_OK, execute(cmd, "--wal", "print"));
+        assertEquals(EXIT_CODE_OK, execute("--wal", "print"));
 
 
         for(String id: nodes)
@@ -323,7 +322,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         err.reset();
 
-        assertEquals(EXIT_CODE_OK, execute(cmd, "--wal", "print", nodes.get(0)));
+        assertEquals(EXIT_CODE_OK, execute("--wal", "print", nodes.get(0)));
 
         assertTrue(!out.toString().contains(nodes.get(1)));
 
@@ -346,7 +345,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         for (ClusterNode node: ignite.cluster().forServers().nodes())
             nodes.add(node.consistentId().toString());
 
-        assertEquals(EXIT_CODE_OK, execute(cmd, "--wal", "delete"));
+        assertEquals(EXIT_CODE_OK, execute("--wal", "delete"));
 
 
         for(String id: nodes)
@@ -358,7 +357,7 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         err.reset();
 
-        assertEquals(EXIT_CODE_OK, execute(cmd, "--wal", "delete", nodes.get(0)));
+        assertEquals(EXIT_CODE_OK, execute("--wal", "delete", nodes.get(0)));
 
         assertTrue(!out.toString().contains(nodes.get(1)));
 

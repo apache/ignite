@@ -19,14 +19,14 @@
 
 package org.apache.ignite.internal.commandline;
 
+import java.util.*;
+
+import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import junit.framework.TestCase;
 
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_ACTIVATE;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_BASE_LINE;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_DEACTIVATE;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_STATE;
-import static org.apache.ignite.internal.commandline.CommandHandler.CMD_WAL;
 import static java.util.Arrays.asList;
+import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_HOST;
 import static org.apache.ignite.internal.commandline.CommandHandler.DFLT_PORT;
 import static org.apache.ignite.internal.commandline.CommandHandler.WAL_DELETE;
@@ -79,7 +79,11 @@ public class CommandHandlerParsingTest extends TestCase {
                 e.printStackTrace();
             }
 
-            Arguments args = hnd.parseAndValidate(asList("--user", "testUser", "--password", "testPass", cmd.text()));
+            List<String> rawArgs = Lists.newArrayList("--user", "testUser", "--password", "testPass", cmd.text());
+            if (cmd == WAL)
+                rawArgs.add(WAL_PRINT);
+
+            Arguments args = hnd.parseAndValidate(rawArgs);
 
             assertEquals("testUser", args.user());
             assertEquals("testPass", args.password());
@@ -93,22 +97,22 @@ public class CommandHandlerParsingTest extends TestCase {
     public void testParseAndValidateWalActions() {
         CommandHandler hnd = new CommandHandler();
 
-        Arguments args = hnd.parseAndValidate(CMD_WAL, WAL_PRINT);
+        Arguments args = hnd.parseAndValidate(Arrays.asList(WAL.text(), WAL_PRINT));
 
-        assertEquals(CMD_WAL, args.command());
+        assertEquals(WAL, args.command());
 
         assertEquals(WAL_PRINT, args.walAction());
 
         String nodes = UUID.randomUUID().toString() + "," + UUID.randomUUID().toString();
 
-        args = hnd.parseAndValidate(CMD_WAL, WAL_DELETE, nodes);
+        args = hnd.parseAndValidate(Arrays.asList(WAL.text(), WAL_DELETE, nodes));
 
         assertEquals(WAL_DELETE, args.walAction());
 
         assertEquals(nodes, args.walArguments());
 
         try {
-            hnd.parseAndValidate(CMD_WAL);
+            hnd.parseAndValidate(Collections.singletonList(WAL.text()));
 
             fail("expected exception: invalid arguments for --wal command");
         }
@@ -116,7 +120,7 @@ public class CommandHandlerParsingTest extends TestCase {
             e.printStackTrace();
         }
         try {
-            hnd.parseAndValidate(CMD_WAL, UUID.randomUUID().toString());
+            hnd.parseAndValidate(Arrays.asList(WAL.text(), UUID.randomUUID().toString()));
 
             fail("expected exception: invalid arguments for --wal command");
         }
@@ -132,20 +136,32 @@ public class CommandHandlerParsingTest extends TestCase {
         CommandHandler hnd = new CommandHandler();
 
         for (Command cmd : Command.values()) {
-            Arguments args = hnd.parseAndValidate(asList(cmd.text()));
+            List<String> rawArgs = Lists.newArrayList(cmd.text());
+            if (cmd == WAL)
+                rawArgs.add(WAL_PRINT);
+
+            Arguments args = hnd.parseAndValidate(rawArgs);
 
             assertEquals(cmd, args.command());
             assertEquals(DFLT_HOST, args.host());
             assertEquals(DFLT_PORT, args.port());
 
-            args = hnd.parseAndValidate(asList("--port", "12345", "--host", "test-host", cmd.text()));
+            rawArgs = Lists.newArrayList("--port", "12345", "--host", "test-host", cmd.text());
+            if (cmd == WAL)
+                rawArgs.add(WAL_PRINT);
+
+            args = hnd.parseAndValidate(rawArgs);
 
             assertEquals(cmd, args.command());
             assertEquals("test-host", args.host());
             assertEquals("12345", args.port());
 
             try {
-                hnd.parseAndValidate(asList("--port", "wrong-port", cmd.text()));
+                rawArgs = Lists.newArrayList("--port", "wrong-port", cmd.text());
+                if (cmd == WAL)
+                    rawArgs.add(WAL_PRINT);
+
+                hnd.parseAndValidate(rawArgs);
 
                 fail("expected exception: Invalid value for port:");
             }

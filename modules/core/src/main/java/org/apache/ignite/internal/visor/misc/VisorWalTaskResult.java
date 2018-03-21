@@ -24,6 +24,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorDataTransferObject;
@@ -32,19 +33,25 @@ import org.apache.ignite.internal.visor.VisorDataTransferObject;
  *  Result of {@link VisorWalTask}.
  */
 public class VisorWalTaskResult extends VisorDataTransferObject {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * List of exceptions  by node consistent ID.
      */
+    @GridToStringInclude
     private Map<String, Exception> exceptions;
 
     /**
      * List of archived wal segments path search results by node consistent ID.
      */
+    @GridToStringInclude
     private Map<String, Collection<String>> results;
 
     /**
      *  Nodes info by node consistent ID.
      */
+    @GridToStringInclude
     private Map<String, VisorClusterNode> nodesInfo;
 
     /**

@@ -21,7 +21,16 @@ package org.apache.ignite.internal.visor.misc;
 
 import java.io.File;
 import java.io.FileFilter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -46,6 +55,9 @@ import org.jetbrains.annotations.Nullable;
  */
 @GridInternal
 public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTaskResult, Collection<String>> {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** Pattern for segment file names */
     private static final Pattern WAL_NAME_PATTERN = Pattern.compile("\\d{16}\\.wal");
 
@@ -116,21 +128,26 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
      * Performs WAL cleanup per node.
      */
     private static class VisorWalJob extends VisorJob<VisorWalTaskArg, Collection<String>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** Auto injected logger */
         @LoggerResource
         private transient IgniteLogger log;
 
         /** */
-        private static final long serialVersionUID = 0L;
-
         private transient IgniteConfiguration igCfg;
 
+        /** */
         private transient DataStorageConfiguration dsCfg;
 
+        /** */
         private transient GridKernalContext cctx;
 
+        /** */
         private transient File walArchiveDir;
 
+        /** */
         private transient GridCacheDatabaseSharedManager dbMgr;
 
         /**
@@ -197,6 +214,8 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
             Collection<String> res = new ArrayList<>(walFiles != null && walFiles.length > 0 ? walFiles.length - 1 : 0);
 
             if(walFiles != null)
+                sortWalFiles(walFiles);
+
                 for(File f: walFiles) {
                     if (getIndex(f) < maxIdx && res.size() < walFiles.length - 1)
                         res.add(f.getAbsolutePath());
@@ -221,11 +240,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
             int num = dbMgr.walSegmentsTruncate();
 
             if (walFiles != null) {
-                Arrays.sort(walFiles, new Comparator<File>() {
-                    @Override public int compare(File o1, File o2) {
-                        return Long.compare(getIndex(o1), getIndex(o2));
-                    }
-                });
+                sortWalFiles(walFiles);
 
                 Collection<String> res = new ArrayList<>(num);
 
@@ -269,9 +284,24 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
                 dir = new File(U.resolveWorkDirectory(igCfg.getWorkDirectory(),
                         DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, false), consId);
 
-            U.ensureDirectory(dir, "WAL archive directory", log);
+            if (!dir.exists())
+                throw new IgniteCheckedException("WAL archive directory does not exists" + dir.getAbsolutePath());
 
             return dir;
+        }
+
+
+        /**
+         * Sort wal files according their inices.
+         *
+         * @param files Array of WAL segment files.
+         */
+        private void sortWalFiles(File[] files) {
+            Arrays.sort(files, new Comparator<File>() {
+                @Override public int compare(File o1, File o2) {
+                    return Long.compare(getIndex(o1), getIndex(o2));
+                }
+            });
         }
     }
 

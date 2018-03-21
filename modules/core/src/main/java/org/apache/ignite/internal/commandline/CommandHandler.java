@@ -47,7 +47,11 @@ import org.apache.ignite.internal.visor.baseline.VisorBaselineOperation;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTask;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskArg;
 import org.apache.ignite.internal.visor.baseline.VisorBaselineTaskResult;
-import org.apache.ignite.internal.visor.misc.*;
+import org.apache.ignite.internal.visor.misc.VisorClusterNode;
+import org.apache.ignite.internal.visor.misc.VisorWalTask;
+import org.apache.ignite.internal.visor.misc.VisorWalTaskArg;
+import org.apache.ignite.internal.visor.misc.VisorWalTaskOperation;
+import org.apache.ignite.internal.visor.misc.VisorWalTaskResult;
 import org.apache.ignite.plugin.security.SecurityCredentials;
 import org.apache.ignite.plugin.security.SecurityCredentialsBasicProvider;
 import org.jetbrains.annotations.NotNull;
@@ -58,6 +62,7 @@ import static org.apache.ignite.internal.commandline.Command.ACTIVATE;
 import static org.apache.ignite.internal.commandline.Command.BASELINE;
 import static org.apache.ignite.internal.commandline.Command.DEACTIVATE;
 import static org.apache.ignite.internal.commandline.Command.STATE;
+import static org.apache.ignite.internal.commandline.Command.WAL;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.ADD;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.COLLECT;
 import static org.apache.ignite.internal.visor.baseline.VisorBaselineOperation.REMOVE;
@@ -115,9 +120,6 @@ public class CommandHandler {
 
     /** Force option is used for auto confirmation. */
     private static final String CMD_FORCE = "--force";
-
-    /** */
-    static final String CMD_WAL = "--wal";
 
     /** */
     public static final int EXIT_CODE_OK = 0;
@@ -226,11 +228,20 @@ public class CommandHandler {
         switch (args.command()) {
             case DEACTIVATE:
                 str = "Warning: the command will deactivate a cluster.";
+
                 break;
 
             case BASELINE:
                 if (!BASELINE_COLLECT.equals(args.baselineAction()))
                     str = "Warning: the command will perform changes in baseline.";
+
+                break;
+
+            case WAL:
+                if (WAL_DELETE.equals(args.walAction()))
+                    str = "Warning: the command will delete unused WAL segments.";
+
+                break;
         }
 
         return str == null ? null : str + "\nPress 'y' to continue...";
@@ -747,6 +758,15 @@ public class CommandHandler {
     }
 
     /**
+     *  Check if raw arg is command or option
+     *
+     *  @return true If raw arg is command, overwise false
+     */
+    private boolean isCommandOrOption(String raw) {
+        return raw != null && raw.contains("--");
+    }
+
+    /**
      * Parses and validates arguments.
      *
      * @param rawArgs Array of arguments.
@@ -765,6 +785,10 @@ public class CommandHandler {
         String baselineAct = "";
 
         String baselineArgs = "";
+
+        String walAct = "";
+
+        String walArgs = "";
 
         boolean force = false;
 
@@ -802,6 +826,24 @@ public class CommandHandler {
                                 baselineArgs = nextArg("Expected baseline arguments");
                             }
                         }
+
+                        break;
+                    case WAL:
+                        commands.add(WAL);
+
+                        str = nextArg("Expected arguments for " + WAL.text());
+
+                        walAct = str.toLowerCase();
+
+                        if (WAL_PRINT.equals(walAct) || WAL_DELETE.equals(walAct))
+                            walArgs = (str = peekNextArg()) != null && !isCommandOrOption(str)
+                                    ? nextArg("Unexpected argument for " + WAL.text() + ": " + walAct)
+                                    : "";
+                        else
+                            throw new IllegalArgumentException("Unexpected action " + walAct + " for " + WAL.text());
+
+                        break;
+
                 }
             }
             else {
@@ -857,7 +899,7 @@ public class CommandHandler {
         if (hasUsr != hasPwd)
             throw new IllegalArgumentException("Both user and password should be specified");
 
-        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, force);
+        return new Arguments(cmd, host, port, user, pwd, baselineAct, baselineArgs, walAct, walArgs, force);
     }
 
     /**
@@ -884,7 +926,8 @@ public class CommandHandler {
                 usage("  Remove nodes from baseline topology:", BASELINE, " remove consistentId1[,consistentId2,....,consistentIdN] [--force]");
                 usage("  Set baseline topology:", BASELINE, " set consistentId1[,consistentId2,....,consistentIdN] [--force]");
                 usage("  Set baseline topology based on version:", BASELINE, " version topologyVersion [--force]");
-                usage("  Print absolute path of unused archived wal segments on each node:", CMD_WAL, "print consistentId1[,consistentId2,....,consistentIdN] [--force]");
+                usage("  Print absolute paths of unused archived wal segments on each node:", WAL, "print consistentId1[,consistentId2,....,consistentIdN]");
+                usage("  Delete unused archived wal segments on each node:", WAL, "delete consistentId1[,consistentId2,....,consistentIdN] [--force]");
 
                 log("By default cluster deactivation and changes in baseline topology commands request interactive confirmation. ");
                 log("  --force option can be used to execute commands without prompting for confirmation.");
@@ -941,7 +984,7 @@ public class CommandHandler {
                         baseline(client, args.baselineAction(), args.baselineArguments());
                         break;
 
-                    case CMD_WAL:
+                    case WAL:
                         wal(client, args.walAction(), args.walArguments());
                         break;
                 }
