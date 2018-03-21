@@ -17,16 +17,18 @@
 
 package org.apache.ignite.failure;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 
 /**
  * Provides facility to handle failures by custom user implementations,
- * which can be added by {@link IgniteConfiguration#setIgniteFailureHandler(FailureHandler)} method.
+ * which can be added by {@link IgniteConfiguration#setFailureHandler(FailureHandler)} method.
  */
 public interface FailureHandler {
     /**
      * @param failureCtx Failure context.
-     * @return Reaction to failure.
+     * @param ignite Ignite instance.
+     * @return Whether kernal context must be invalidated or not.
      */
-    public FailureAction onFailure(FailureContext failureCtx);
+    public boolean onFailure(FailureContext failureCtx, Ignite ignite);
 }

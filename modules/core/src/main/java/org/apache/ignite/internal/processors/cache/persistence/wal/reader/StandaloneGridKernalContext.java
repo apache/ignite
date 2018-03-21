@@ -453,6 +453,9 @@ public class StandaloneGridKernalContext implements GridKernalContext {
         return null;
     }
 
+    @Override public void invalidate(FailureContext ctx) {
+    }
+
     @Override public FailureContext invalidationCause() {
         return null;
     }

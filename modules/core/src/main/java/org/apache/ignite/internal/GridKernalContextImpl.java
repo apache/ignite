@@ -390,7 +390,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     private GridInternalSubscriptionProcessor internalSubscriptionProc;
 
     /** */
-    private FailureProcessor failureProcessor;
+    private FailureProcessor failureProc;
 
     /** Failure context caused invalidation. */
     private volatile FailureContext failureCtx;
@@ -475,7 +475,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         this.customExecSvcs = customExecSvcs;
 
         marshCtx = new MarshallerContextImpl(plugins, clsFilter);
-        failureProcessor = new FailureProcessor(this);
 
         try {
             spring = SPRING.create(false);
@@ -542,6 +541,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
          * ==========
          */
 
+        else if (comp instanceof FailureProcessor)
+            failureProc = (FailureProcessor)comp;
         else if (comp instanceof GridTaskProcessor)
             taskProc = (GridTaskProcessor)comp;
         else if (comp instanceof GridJobProcessor)
@@ -1098,12 +1099,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return pdsFolderRslvr;
     }
 
-    /**
-     * Invalidates context.
-     *
-     * @param ctx Invalidation context
-     */
-    public void invalidate(FailureContext ctx) {
+    /** {@inheritDoc} */
+    @Override public void invalidate(FailureContext ctx) {
         this.failureCtx = ctx;
     }
 
@@ -1113,7 +1110,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     @Override public FailureProcessor failure() {
-        return failureProcessor;
+        return failureProc;
     }
 
     /** {@inheritDoc} */

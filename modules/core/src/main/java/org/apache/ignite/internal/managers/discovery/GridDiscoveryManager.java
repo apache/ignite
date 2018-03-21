@@ -2748,6 +2748,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 U.error(log, "Failed to disconnect discovery SPI.", e);
             }
 
+            // FIXME !!!
             switch (segPlc) {
                 case STOP:
                     ctx.failure().stopNode(new FailureContext(FailureType.SEGMENTATION, null));

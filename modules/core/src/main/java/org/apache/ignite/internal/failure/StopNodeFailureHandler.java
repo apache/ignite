@@ -17,27 +17,29 @@
 
 package org.apache.ignite.internal.failure;
 
-import org.apache.ignite.failure.FailureAction;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
-/**
- * Default implementation of {@link FailureHandler}
- */
-public class DefaultFailureHandler implements FailureHandler {
+public class StopNodeFailureHandler implements FailureHandler {
     /** {@inheritDoc} */
-    @Override public FailureAction onFailure(FailureContext failureCtx) {
-        switch (failureCtx.type()) {
-            case SYSTEM_WORKER_CRASH:
-                return FailureAction.STOP;
+    @Override public boolean onFailure(FailureContext failureCtx, Ignite ignite) {
+        new Thread(
+            new Runnable() {
+                @Override public void run() {
+                    final IgniteLogger log = ignite.log();
 
-            case CRITICAL_ERROR:
-                return FailureAction.STOP;
+                    U.warn(log, "Stopping local node on Ignite failure: " + failureCtx);
 
-            default:
-                assert false : "Unsupported Ignite failure type: " + failureCtx.type();
+                    IgnitionEx.stop(ignite.name(), true, true);
+                }
+            },
+            "node-stopper"
+        ).start();
 
-                return FailureAction.STOP;
-        }
+        return true;
     }
 }

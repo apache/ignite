@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.failure;
+package org.apache.ignite.internal.failure;
+
+import org.apache.ignite.Ignite;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureHandler;
 
 /**
- * List of possible actions on some critical situation.
+ * Just ignores any failure. It's useful for tests and debugging.
  */
-public enum FailureAction {
-    /** Restart JVM. */
-    RESTART_JVM,
-
-    /** Stop. */
-    STOP,
-
-    /** Noop. */
-    NOOP;
+public class NoOpFailureHandler implements FailureHandler {
+    /** {@inheritDoc} */
+    @Override public boolean onFailure(FailureContext failureCtx, Ignite ignite) {
+        return false;
+    }
 }

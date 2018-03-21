@@ -488,7 +488,7 @@ public class IgniteConfiguration {
     private ClientConnectorConfiguration cliConnCfg = ClientListenerProcessor.DFLT_CLI_CFG;
 
     /** Ignite failure handler. */
-    private FailureHandler igniteFailureHnd;
+    private FailureHandler failureHnd;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -548,7 +548,7 @@ public class IgniteConfiguration {
         hadoopCfg = cfg.getHadoopConfiguration();
         igfsCfg = cfg.getFileSystemConfiguration();
         igfsPoolSize = cfg.getIgfsThreadPoolSize();
-        igniteFailureHnd = cfg.getIgniteFailureHandler();
+        failureHnd = cfg.getFailureHandler();
         igniteHome = cfg.getIgniteHome();
         igniteInstanceName = cfg.getIgniteInstanceName();
         igniteWorkDir = cfg.getWorkDirectory();
@@ -2926,18 +2926,21 @@ public class IgniteConfiguration {
     /**
      * Gets custom failure handler.
      */
-    public FailureHandler getIgniteFailureHandler() {
-        return igniteFailureHnd;
+    public FailureHandler getFailureHandler() {
+        return failureHnd;
     }
 
     /**
      * Sets custom failure handler.
      *
-     * @param igniteFailureHnd Failure handler.
+     * @param failureHnd Failure handler.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setIgniteFailureHandler(FailureHandler igniteFailureHnd) {
-        this.igniteFailureHnd = igniteFailureHnd;
+    public IgniteConfiguration setFailureHandler(FailureHandler failureHnd) {
+        this.failureHnd = failureHnd;
+
+        if (failureHnd instanceof LifecycleBean)
+            ;//lifecycleBeans.
 
         return this;
     }

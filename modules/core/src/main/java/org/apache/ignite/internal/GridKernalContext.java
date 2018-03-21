@@ -423,6 +423,13 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public DataStructuresProcessor dataStructures();
 
     /**
+     * Invalidates context.
+     *
+     * @param ctx Invalidation context
+     */
+    public void invalidate(FailureContext ctx);
+
+    /**
      * Gets invalidation cause.
      *
      * @return Cause.
