@@ -394,7 +394,7 @@ public class JdbcThinTcpIo {
     JdbcResponse sendRequest(JdbcRequest req) throws IOException {
         synchronized (mux) {
             if (ownThread != null) {
-                throw new IgniteException("Multi-threaded access to Ignite JDBC connection."
+                throw new IgniteException("Concurrent access to JDBC connection is not allowed"
                     + " [ownThread=" + ownThread.getName()
                     + ", curThread=" + Thread.currentThread().getName());
             }

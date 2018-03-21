@@ -1814,11 +1814,11 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
             for (SQLException e : exs) {
                 if (e != null && e.getCause() != null && e.getCause() instanceof IgniteException
-                    && e.getCause().getMessage().contains("Multi-threaded access to Ignite JDBC connection"))
+                    && e.getCause().getMessage().contains("Concurrent access to JDBC connection is not allowed"))
                     exceptionFound = true;
             }
 
-            assertTrue("Multithreaded exception is not thrown", exceptionFound);
+            assertTrue("Concurrent access to JDBC connection is not allowed", exceptionFound);
         }
     }
 
