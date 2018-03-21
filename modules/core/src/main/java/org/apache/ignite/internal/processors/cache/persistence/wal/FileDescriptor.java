@@ -82,25 +82,8 @@ public class FileDescriptor implements Comparable<FileDescriptor>, AbstractWalRe
         return b.toString();
     }
 
-    /**
-     * @param segment Segment number as integer.
-     * @return Segment number as aligned string.
-     */
-    private static String segmentNumber(long segment) {
-        SB b = new SB();
-
-        String segmentStr = Long.toString(segment);
-
-        for (int i = segmentStr.length(); i < WAL_SEGMENT_FILE_NAME_LENGTH; i++)
-            b.a('0');
-
-        b.a(segmentStr);
-
-        return b.toString();
-    }
-
     /** {@inheritDoc} */
-    @Override public int compareTo(FileDescriptor o) {
+    @Override public int compareTo(@NotNull FileDescriptor o) {
         return Long.compare(idx, o.idx);
     }
 

@@ -138,7 +138,7 @@ public class WalDeletionArchiveTest extends GridCommonAbstractTest {
             //then: checkpoint triggered by size limit of wall without checkpoint
             String reason = U.field((Object)U.field(dbMgr.getCheckpointer(), "scheduledCp"), "reason");
 
-            assertThat(reason, is("too big size of wal without checkpoint"));
+            assertThat(reason, is("too big size of WAL without checkpoint"));
         }
         finally {
             stopAllGrids();

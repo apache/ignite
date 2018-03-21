@@ -554,7 +554,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         List<File> res = new ArrayList<>();
 
         for (long i = low.index(); i < high.index(); i++) {
-            String segmentName = FileWriteAheadLogManager.FileDescriptor.fileName(i);
+            String segmentName = FileDescriptor.fileName(i);
 
             File file = new File(walArchiveDir, segmentName);
             File fileZip = new File(walArchiveDir, segmentName + ".zip");
