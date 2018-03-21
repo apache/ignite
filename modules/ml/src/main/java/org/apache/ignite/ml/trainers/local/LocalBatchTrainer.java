@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.trainers.local;
 
+import java.io.Serializable;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
@@ -33,7 +34,7 @@ import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalcul
  * Batch trainer. This trainer is not distributed on the cluster, but input can theoretically read data from
  * Ignite cache.
  */
-public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P>
+public class LocalBatchTrainer<M extends Model<Matrix, Matrix>, P extends Serializable>
     implements Trainer<M, LocalBatchTrainerInput<M>> {
     /**
      * Supplier for updater function.

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.nn;
 
+import java.io.Serializable;
 import java.util.Random;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.ml.TestUtils;
@@ -67,7 +68,7 @@ public class MLPLocalTrainerTest {
      * @param updaterSupplier Updater supplier.
      * @param <P> Updater parameters type.
      */
-    private <P> void xorTest(IgniteSupplier<ParameterUpdateCalculator<? super MultilayerPerceptron, P>> updaterSupplier) {
+    private <P extends Serializable> void xorTest(IgniteSupplier<ParameterUpdateCalculator<? super MultilayerPerceptron, P>> updaterSupplier) {
         Matrix xorInputs = new DenseLocalOnHeapMatrix(new double[][] {{0.0, 0.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 1.0}},
             StorageConstants.ROW_STORAGE_MODE).transpose();
 

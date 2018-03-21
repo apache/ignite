@@ -33,12 +33,20 @@ public class MLPTrainerTest {
             .withAddedLayer(5, false, Activators.RELU)
             .withAddedLayer(1, false, Activators.SIGMOID);
 
-        MLPTrainer<Integer, double[], SimpleGDParameterUpdate> trainer = new MLPTrainer<>(arch, LossFunctions.MSE,
+        MLPTrainer<SimpleGDParameterUpdate> trainer = new MLPTrainer<>(
+            arch,
+            LossFunctions.MSE,
             new UpdatesStrategy<>(
                 new SimpleGDUpdateCalculator().withLearningRate(0.001),
                 SimpleGDParameterUpdate::sumLocal,
                 SimpleGDParameterUpdate::avg
-            ),0, 10000, 10, new RandomInitializer(10));
+            ),
+            0,
+            10000,
+            10,
+            5,
+            new RandomInitializer(10)
+        );
 
         MultilayerPerceptron mlp = trainer.fit(
             new LocalDatasetBuilder<>(data, 1),

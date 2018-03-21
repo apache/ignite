@@ -17,26 +17,10 @@
 
 package org.apache.ignite.ml;
 
-import org.apache.ignite.ml.dataset.DatasetBuilder;
-import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-
 /**
- * Interface for trainers. Trainer is just a function which produces model from the data.
+ * Interface for trainers that trains on dataset with multiple label per object.
  *
  * @param <M> Type of a produced model.
- * @param <L> Type of a label.
  */
-public interface DatasetTrainer<M extends Model, L> {
-    /**
-     * Trains model based on the specified data.
-     *
-     * @param datasetBuilder Dataset builder.
-     * @param featureExtractor Feature extractor.
-     * @param lbExtractor Label extractor.
-     * @param <K> Type of a key in {@code upstream} data.
-     * @param <V> Type of a value in {@code upstream} data.
-     * @return Model.
-     */
-    public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, double[]> featureExtractor,
-        IgniteBiFunction<K, V, L> lbExtractor);
+public interface MultiLabelDatasetTrainer<M extends Model> extends DatasetTrainer<M, double[]> {
 }

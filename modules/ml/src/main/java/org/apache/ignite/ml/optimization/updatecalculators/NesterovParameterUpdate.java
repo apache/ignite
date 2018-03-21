@@ -27,6 +27,9 @@ import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
  * Data needed for Nesterov parameters updater.
  */
 public class NesterovParameterUpdate implements Serializable {
+    /** */
+    private static final long serialVersionUID = -6370106062737202385L;
+
     /**
      * Previous step weights updates.
      */

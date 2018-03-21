@@ -28,6 +28,9 @@ import org.apache.ignite.ml.optimization.SmoothParametrized;
  */
 public class NesterovUpdateCalculator<M extends SmoothParametrized<M>>
     implements ParameterUpdateCalculator<M, NesterovParameterUpdate> {
+    /** */
+    private static final long serialVersionUID = 251066184668190622L;
+
     /**
      * Learning rate.
      */

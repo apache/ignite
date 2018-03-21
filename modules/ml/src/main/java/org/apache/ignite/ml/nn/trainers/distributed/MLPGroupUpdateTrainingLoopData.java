@@ -30,7 +30,7 @@ import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalcul
 import org.apache.ignite.ml.trainers.group.GroupTrainerCacheKey;
 
 /** Multilayer perceptron group update training loop data. */
-public class MLPGroupUpdateTrainingLoopData<P> implements Serializable {
+public class MLPGroupUpdateTrainingLoopData<P extends Serializable> implements Serializable {
     /** {@link ParameterUpdateCalculator}. */
     private final ParameterUpdateCalculator<? super MultilayerPerceptron, P> updateCalculator;
 

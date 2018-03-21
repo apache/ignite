@@ -17,12 +17,14 @@
 
 package org.apache.ignite.ml.nn.trainers.distributed;
 
+import java.io.Serializable;
+
 /**
  * Context extracted in distribute phase of training loop step in {@link MLPGroupUpdateTrainer}.
  *
  * @param <U> Type of update.
  */
-public class MLPGroupUpdateTrainingContext<U> {
+public class MLPGroupUpdateTrainingContext<U extends Serializable> {
     /**
      * Group training data.
      */

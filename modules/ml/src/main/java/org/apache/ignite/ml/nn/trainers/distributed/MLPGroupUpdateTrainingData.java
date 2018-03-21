@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.nn.trainers.distributed;
 
+import java.io.Serializable;
 import java.util.List;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.Matrix;
@@ -28,7 +29,7 @@ import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
 
 /** Multilayer perceptron group update training data. */
-public class MLPGroupUpdateTrainingData<U> {
+public class MLPGroupUpdateTrainingData<U extends Serializable> {
     /** {@link ParameterUpdateCalculator}. */
     private final ParameterUpdateCalculator<? super MultilayerPerceptron, U> updateCalculator;
 

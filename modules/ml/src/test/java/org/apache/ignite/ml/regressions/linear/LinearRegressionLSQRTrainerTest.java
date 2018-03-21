@@ -69,13 +69,12 @@ public class LinearRegressionLSQRTrainerTest {
         data.put(8, new double[] {0.20702671, 0.92864654, 0.32721202, -0.09047503, 31.61484949});
         data.put(9, new double[] {-0.37890345, -0.04846179, -0.84122753, -1.14667474, -124.92598583});
 
-        LinearRegressionLSQRTrainer<Integer, double[]> trainer = new LinearRegressionLSQRTrainer<>();
+        LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
         LinearRegressionModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
-            (k, v) -> v[4],
-            4
+            (k, v) -> v[4]
         );
 
         assertArrayEquals(
@@ -108,13 +107,12 @@ public class LinearRegressionLSQRTrainerTest {
             data.put(i, x);
         }
 
-        LinearRegressionLSQRTrainer<Integer, double[]> trainer = new LinearRegressionLSQRTrainer<>();
+        LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
         LinearRegressionModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(data, parts),
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
-            (k, v) -> v[coef.length],
-            coef.length
+            (k, v) -> v[coef.length]
         );
 
         assertArrayEquals(coef, mdl.getWeights().getStorage().data(), 1e-6);

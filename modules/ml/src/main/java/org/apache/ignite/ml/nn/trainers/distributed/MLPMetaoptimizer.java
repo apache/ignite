@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.nn.trainers.distributed;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -25,7 +26,7 @@ import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.trainers.group.Metaoptimizer;
 
 /** Meta-optimizer for multilayer perceptron. */
-public class MLPMetaoptimizer<P> implements Metaoptimizer<MLPGroupUpdateTrainerLocalContext,
+public class MLPMetaoptimizer<P extends Serializable> implements Metaoptimizer<MLPGroupUpdateTrainerLocalContext,
     MLPGroupUpdateTrainingLoopData<P>, P, P, P, ArrayList<P>> {
     /** Function used for reducing updates produced by parallel trainings. */
     private final IgniteFunction<List<P>, P> allUpdatesReducer;

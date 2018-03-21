@@ -58,13 +58,13 @@ public class SVMBinaryTrainerTest {
         }
 
 
-        SVMLinearBinaryClassificationTrainer<Integer, double[]> trainer = new SVMLinearBinaryClassificationTrainer<>();
+        SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer();
 
         SVMLinearBinaryClassificationModel mdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 10),
             (k, v) -> Arrays.copyOfRange(v, 1, v.length),
-            (k, v) -> v[0],
-            AMOUNT_OF_FEATURES);
+            (k, v) -> v[0]
+        );
 
         double precision = 1e-2;
 

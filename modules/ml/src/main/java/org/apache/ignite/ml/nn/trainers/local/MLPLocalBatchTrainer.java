@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.nn.trainers.local;
 
+import java.io.Serializable;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFunction;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
@@ -33,7 +34,7 @@ import org.apache.ignite.ml.trainers.local.LocalBatchTrainer;
  *
  * @param <P> Parameter updater parameters.
  */
-public class MLPLocalBatchTrainer<P>
+public class MLPLocalBatchTrainer<P extends Serializable>
     extends LocalBatchTrainer<MultilayerPerceptron, P> {
     /**
      * Default loss function.
