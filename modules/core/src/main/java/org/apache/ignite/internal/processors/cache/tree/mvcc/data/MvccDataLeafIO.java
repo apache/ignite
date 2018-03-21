@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.tree.mvcc.data;
 
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.tree.AbstractDataLeafIO;
@@ -38,7 +37,7 @@ public final class MvccDataLeafIO extends AbstractDataLeafIO {
      * @param ver Page format version.
      */
     private MvccDataLeafIO(int ver) {
-        super(T_DATA_REF_MVCC_LEAF, ver, 28);
+        super(T_DATA_REF_MVCC_LEAF, ver, 44);
     }
 
     /** {@inheritDoc} */
@@ -72,5 +71,25 @@ public final class MvccDataLeafIO extends AbstractDataLeafIO {
     /** {@inheritDoc} */
     @Override public long getMvccCounter(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + 20);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getMvccLockCoordinatorVersion(long pageAddr, int idx) {
+        return PageUtils.getLong(pageAddr, offset(idx) + 28);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getMvccLockCounter(long pageAddr, int idx) {
+        return PageUtils.getLong(pageAddr, offset(idx) + 36);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMvccLockCoordinatorVersion(long pageAddr, int idx, long lockCrd) {
+        PageUtils.putLong(pageAddr, offset(idx) + 28, lockCrd);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMvccLockCounter(long pageAddr, int idx, long lockCntr) {
+        PageUtils.putLong(pageAddr, offset(idx) + 36, lockCntr);
     }
 }

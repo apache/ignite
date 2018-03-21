@@ -523,10 +523,30 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 AffinityTopologyVersion topVer = topologyVersion();
 
+                boolean first = true;
+                boolean queryEnlisted = false;
+
                 /*
                  * Commit to cache. Note that for 'near' transaction we loop through all the entries.
                  */
                 for (IgniteTxEntry txEntry : commitEntries) {
+                    if (txState().mvccEnabled(cctx)) {
+                        if (first) {
+                            queryEnlisted = txEntry.queryEnlisted();
+
+                            first = false;
+                        }
+                        else if (queryEnlisted != txEntry.queryEnlisted()) {
+                            throw new IgniteCheckedException("Cannot mix DML operations and native cache updates in the same transaction. Operation is unsupported at the moment");
+                        }
+
+                        if (queryEnlisted) {
+                            assert txEntry.op() == CREATE || txEntry.op() == UPDATE || txEntry.op() == DELETE;
+
+                            continue;  // we have already stored entry values;
+                        }
+                    }
+
                     GridCacheContext cacheCtx = txEntry.context();
 
                     GridDrType drType = cacheCtx.isDrEnabled() ? DR_PRIMARY : DR_NONE;

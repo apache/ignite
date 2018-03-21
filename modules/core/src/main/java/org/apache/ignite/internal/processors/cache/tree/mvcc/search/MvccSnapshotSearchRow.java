@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache.tree.mvcc.search;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccLongList;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -30,8 +30,6 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.tree.RowLinkIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisibleForSnapshot;
 
 /**
  * Search row which returns the first row visible for the given snapshot. Usage:
@@ -42,11 +40,8 @@ public class MvccSnapshotSearchRow extends MvccSearchRow implements MvccTreeClos
     /** */
     private final GridCacheContext cctx;
 
-    /** Active transactions. */
-    private final MvccLongList activeTxs;
-
     /** Resulting row. */
-    private CacheDataRow resRow;
+    private CacheDataRow res;
 
     /** */
     private MvccSnapshot snapshot;
@@ -64,7 +59,6 @@ public class MvccSnapshotSearchRow extends MvccSearchRow implements MvccTreeClos
 
         this.cctx = cctx;
 
-        this.activeTxs = snapshot.activeTransactions();
         this.snapshot = snapshot;
     }
 
@@ -72,32 +66,25 @@ public class MvccSnapshotSearchRow extends MvccSearchRow implements MvccTreeClos
      * @return Found row.
      */
     @Nullable public CacheDataRow row() {
-        return resRow;
+        return res;
     }
 
     /** {@inheritDoc} */
     @Override public boolean apply(BPlusTree<CacheSearchRow, CacheDataRow> tree, BPlusIO<CacheSearchRow> io,
         long pageAddr, int idx) throws IgniteCheckedException {
-        boolean visible = true;
-
         RowLinkIO rowIo = (RowLinkIO)io;
 
         long rowCrdVer = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
+        long rowCntr = rowIo.getMvccCounter(pageAddr, idx);
 
-        if (activeTxs != null && activeTxs.size() > 0) {
+        if (MvccUtils.isVisible(cctx, snapshot, rowCrdVer, rowCntr)) {
+            if (MvccUtils.isNewVisible(cctx, rowIo.getLink(pageAddr, idx), snapshot))
+                res = null;
+            else {
+                res = tree.getRow(io, pageAddr, idx, CacheDataRowAdapter.RowData.NO_KEY);
 
-            // TODO: What is the purpose of this check?
-            if (rowCrdVer == crdVer)
-                visible = !activeTxs.contains(rowIo.getMvccCounter(pageAddr, idx));
-        }
-
-        if (visible) {
-            long link = rowIo.getLink(pageAddr, idx);
-
-            if (!isVisibleForSnapshot(cctx, link, snapshot))
-                resRow = null;
-            else
-                resRow = tree.getRow(io, pageAddr, idx, CacheDataRowAdapter.RowData.NO_KEY);
+                res.key(key());
+            }
 
             return false; // Stop search.
         }

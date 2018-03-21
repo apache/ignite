@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInne
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 
 /** */
-public class TxLogInnerIO extends BPlusInnerIO<TxSearchRow> implements TxLogIO {
+public class TxLogInnerIO extends BPlusInnerIO<TxKey> implements TxLogIO {
     /** */
     public static final IOVersions<TxLogInnerIO> VERSIONS = new IOVersions<>(new TxLogInnerIO(1));
 
@@ -36,7 +36,7 @@ public class TxLogInnerIO extends BPlusInnerIO<TxSearchRow> implements TxLogIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void storeByOffset(long pageAddr, int off, TxSearchRow row) {
+    @Override public void storeByOffset(long pageAddr, int off, TxKey row) {
         TxRow row0 = (TxRow)row;
 
         setMajor(pageAddr, off, row0.major());
@@ -45,7 +45,7 @@ public class TxLogInnerIO extends BPlusInnerIO<TxSearchRow> implements TxLogIO {
     }
 
     /** {@inheritDoc} */
-    @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<TxSearchRow> srcIo, long srcPageAddr, int srcIdx) {
+    @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<TxKey> srcIo, long srcPageAddr, int srcIdx) {
         TxLogIO srcIo0 = (TxLogIO)srcIo;
 
         int srcOff = srcIo.offset(srcIdx);
@@ -57,7 +57,7 @@ public class TxLogInnerIO extends BPlusInnerIO<TxSearchRow> implements TxLogIO {
     }
 
     /** {@inheritDoc} */
-    @Override public TxSearchRow getLookupRow(BPlusTree<TxSearchRow, ?> tree, long pageAddr, int idx) {
+    @Override public TxKey getLookupRow(BPlusTree<TxKey, ?> tree, long pageAddr, int idx) {
         int off = offset(idx);
 
         return new TxRow(
@@ -67,7 +67,7 @@ public class TxLogInnerIO extends BPlusInnerIO<TxSearchRow> implements TxLogIO {
     }
 
     /** {@inheritDoc} */
-    @Override public int compare(long pageAddr, int off, TxSearchRow row) {
+    @Override public int compare(long pageAddr, int off, TxKey row) {
         int cmp = Long.compare(PageUtils.getLong(pageAddr, off), row.major());
 
         return cmp != 0 ? cmp : Long.compare(getMinor(pageAddr, off), row.minor());

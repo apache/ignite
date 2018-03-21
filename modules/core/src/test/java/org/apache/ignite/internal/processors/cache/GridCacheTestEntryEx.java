@@ -469,7 +469,23 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     {
         rawPut(val, ttl);
 
-        return new GridCacheUpdateTxResult(true, null);
+        return new GridCacheUpdateTxResult(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheUpdateTxResult mvccSet(@Nullable IgniteInternalTx tx, UUID affNodeId, CacheObject val, long ttl0, AffinityTopologyVersion topVer, @Nullable Long updateCntr, MvccSnapshot mvccVer) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        rawPut(val, ttl);
+
+        return new GridCacheUpdateTxResult(true);
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheUpdateTxResult mvccRemove(@Nullable IgniteInternalTx tx, UUID affNodeId, AffinityTopologyVersion topVer, @Nullable Long updateCntr, MvccSnapshot mvccVer) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        obsoleteVer = ver;
+
+        val = null;
+
+        return new GridCacheUpdateTxResult(true);
     }
 
     /** {@inheritDoc} */
@@ -554,7 +570,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
         val = null;
 
-        return new GridCacheUpdateTxResult(true, null);
+        return new GridCacheUpdateTxResult(true);
     }
 
     /** @inheritDoc */

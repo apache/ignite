@@ -27,7 +27,7 @@ public interface TxLogIO {
      * @param row Row to compare with.
      * @return Comparision result.
      */
-    int compare(long pageAddr, int off, TxSearchRow row);
+    int compare(long pageAddr, int off, TxKey row);
 
     /**
      * @param pageAddr Page address.

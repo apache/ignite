@@ -64,6 +64,8 @@ import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResult;
 import org.apache.ignite.internal.processors.query.GridQueryFieldsResultAdapter;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.UpdateSourceIterator;
+import org.apache.ignite.internal.processors.query.UpdateSourceIteratorAdapter;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlBatchSender;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlDistributedPlanInfo;
 import org.apache.ignite.internal.processors.query.h2.dml.DmlUtils;
@@ -76,7 +78,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryReq
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1092,7 +1093,8 @@ public class DmlStatementsProcessor {
      * @return Iterator upon updated values.
      * @throws IgniteCheckedException If failed.
      */
-    public GridCloseableIterator<?> prepareDistributedUpdate(String schema, Connection conn,
+    @SuppressWarnings("unchecked")
+    public UpdateSourceIterator<?> prepareDistributedUpdate(String schema, Connection conn,
         PreparedStatement stmt, SqlFieldsQuery qry,
         IndexingQueryFilter filter, GridQueryCancel cancel, boolean local,
         AffinityTopologyVersion topVer, MvccSnapshot mvccSnapshot) throws IgniteCheckedException {
@@ -1152,7 +1154,31 @@ public class DmlStatementsProcessor {
             }, cancel);
         }
 
-        return plan.iteratorForTransaction(cur, topVer);
+        return new UpdateSourceIteratorAdapter(plan.iteratorForTransaction(cur, topVer)) {
+            /** */
+            private static final long serialVersionUID = 6035896197816149820L;
+
+            /** */
+            private volatile Connection conn;
+
+            /** {@inheritDoc} */
+            @Override public void beforeDetach() {
+                Connection conn0 = conn = idx.detach();
+
+                if (isClosed()) // Double check
+                    U.close(conn0, log);
+            }
+
+            /** {@inheritDoc} */
+            @Override protected void onClose() throws IgniteCheckedException {
+                super.onClose();
+
+                Connection conn0 = conn;
+
+                if (conn0 != null)
+                    U.close(conn0, log);
+            }
+        };
     }
 
     /**

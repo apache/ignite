@@ -15,30 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.mvcc.txlog;
+package org.apache.ignite.internal.processors.cache.tree.mvcc.data;
+
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 
 /**
  *
  */
-public class TxRow extends TxKey {
-    /** */
-    private byte state;
+public interface MvccUpdateResult {
+    /**
+     * @return Type of result.
+     */
+    public ResultType resultType();
 
     /**
-     * @param major Major version.
-     * @param minor Minor version.
-     * @param state Transaction state.
+     * @return Result version.
      */
-    TxRow(long major, long minor, byte state) {
-        super(major, minor);
-
-        this.state = state;
-    }
-
-    /**
-     * @return Transaction state.
-     */
-    public byte state() {
-        return state;
-    }
+    public MvccVersion resultVersion();
 }

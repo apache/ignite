@@ -1011,6 +1011,32 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
     }
 
+    /**
+     * @param lower Lower bound inclusive.
+     * @param upper Upper bound inclusive.
+     * @param c Closure applied for all found items.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void visit(L lower, L upper, TreeVisitorClosure<L, T> c) throws IgniteCheckedException {
+        checkDestroyed();
+
+        try {
+           new TreeVisitor(lower, upper, c).visit();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
+        }
+        catch (RuntimeException e) {
+            throw new IgniteException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
+        }
+        catch (AssertionError e) {
+            throw new AssertionError("Assertion error on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
+        }
+        finally {
+            checkDestroyed();
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public T findFirst() throws IgniteCheckedException {
         return findFirst(null);
@@ -2474,6 +2500,86 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
     }
 
+
+    /**
+     * @param c Get.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void doVisit(TreeVisitor c) throws IgniteCheckedException {
+        for (;;) { // Go down with retries.
+            c.init();
+
+            switch (visitDown(c, c.rootId, 0L, c.rootLvl)) {
+                case RETRY:
+                case RETRY_ROOT:
+                    checkInterrupted();
+
+                    continue;
+
+                default:
+                    return;
+            }
+        }
+    }
+
+    /**
+     * @param v Tree visitor.
+     * @param pageId Page ID.
+     * @param fwdId Expected forward page ID.
+     * @param lvl Level.
+     * @return Result code.
+     * @throws IgniteCheckedException If failed.
+     */
+    private Result visitDown(final TreeVisitor v, final long pageId, final long fwdId, final int lvl)
+            throws IgniteCheckedException {
+        long page = acquirePage(pageId);
+
+        try {
+            for (;;) {
+                // Init args.
+                v.pageId = pageId;
+                v.fwdId = fwdId;
+
+                Result res = read(pageId, page, search, v, lvl, RETRY);
+
+                switch (res) {
+                    case GO_DOWN:
+                    case GO_DOWN_X:
+                        assert v.pageId != pageId;
+                        assert v.fwdId != fwdId || fwdId == 0;
+
+                        // Go down recursively.
+                        res = visitDown(v, v.pageId, v.fwdId, lvl - 1);
+
+                        switch (res) {
+                            case RETRY:
+                                checkInterrupted();
+
+                                continue; // The child page got split, need to reread our page.
+
+                            default:
+                                return res;
+                        }
+
+                    case NOT_FOUND:
+                        assert lvl == 0 : lvl;
+
+                        return v.init(pageId, page, fwdId);
+
+                    case FOUND:
+                        throw new IllegalStateException(); // Must never be called because we always have a shift.
+
+                    default:
+                        return res;
+                }
+            }
+        }
+        finally {
+            if (v.canRelease(pageId, lvl))
+                releasePage(pageId, page);
+        }
+    }
+
     /**
      * @param io IO.
      * @param pageAddr Page address.
@@ -2717,6 +2823,256 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             cursor.init(pageAddr, io, idx);
 
             return true;
+        }
+    }
+
+    /**
+     * Get a cursor for range.
+     */
+    private final class TreeVisitor extends Get {
+        /** */
+        long nextPageId;
+
+        /** */
+        L upper;
+
+        /** */
+        TreeVisitorClosure<L, T> p;
+
+        /** */
+        private boolean dirty;
+
+        /** */
+        private boolean writing;
+
+        /**
+         * @param lower Lower bound.
+         */
+        TreeVisitor(L lower, L upper, TreeVisitorClosure<L, T> p) {
+            super(lower, false);
+
+            this.shift = -1;
+            this.upper = upper;
+            this.p = p;
+        }
+
+        /** {@inheritDoc} */
+        @Override boolean found(BPlusIO<L> io, long pageAddr, int idx, int lvl) throws IgniteCheckedException {
+            throw new IllegalStateException(); // Must never be called because we always have a shift.
+        }
+
+        /** {@inheritDoc} */
+        @Override boolean notFound(BPlusIO<L> io, long pageAddr, int idx, int lvl) throws IgniteCheckedException {
+            if (lvl != 0)
+                return false;
+
+            if (!(writing = (p.state() & TreeVisitorClosure.CAN_WRITE) != 0))
+                init(pageAddr, io, idx);
+
+            return true;
+        }
+
+        Result init(long pageId, long page, long fwdId) throws IgniteCheckedException {
+            // Init args.
+            this.pageId = pageId;
+            this.fwdId = fwdId;
+
+            if (writing) {
+                long pageAddr = writeLock(pageId, page);
+
+                if (pageAddr == 0)
+                    return RETRY;
+
+                try {
+                    BPlusIO<L> io = io(pageAddr);
+
+                    // Check triangle invariant.
+                    if (io.getForward(pageAddr) != fwdId)
+                        return RETRY;
+
+                    init(pageAddr, io, -1);
+                } finally {
+                    unlock(pageId, page, pageAddr);
+                }
+            }
+
+            return NOT_FOUND;
+        }
+
+        /**
+         * @param pageAddr Page address.
+         * @param io IO.
+         * @param startIdx Start index.
+         * @throws IgniteCheckedException If failed.
+         */
+        private void init(long pageAddr, BPlusIO<L> io, int startIdx) throws IgniteCheckedException {
+            nextPageId = 0;
+
+            int cnt = io.getCount(pageAddr);
+
+            if (cnt != 0)
+                visit(pageAddr, io, startIdx, cnt);
+        }
+
+        /**
+         * @param pageAddr Page address.
+         * @param io IO.
+         * @param startIdx Start index.
+         * @param cnt Number of rows in the buffer.
+         * @throws IgniteCheckedException If failed.
+         */
+        @SuppressWarnings("unchecked")
+        private void visit(long pageAddr, BPlusIO<L> io, int startIdx, int cnt)
+                throws IgniteCheckedException {
+            assert io.isLeaf() : io;
+            assert cnt != 0 : cnt; // We can not see empty pages (empty tree handled in init).
+            assert startIdx >= -1 : startIdx;
+            assert cnt >= startIdx;
+
+            checkDestroyed();
+
+            nextPageId = io.getForward(pageAddr);
+
+            if (startIdx == -1)
+                startIdx = findLowerBound(pageAddr, io, cnt);
+
+            if (cnt == startIdx)
+                return; // Go to the next page;
+
+            cnt = findUpperBound(pageAddr, io, startIdx, cnt);
+
+            for (int i = startIdx; i < cnt; i++) {
+                int state = p.visit(BPlusTree.this, io, pageAddr, i, wal);
+
+                boolean stop = (state & TreeVisitorClosure.STOP) != 0;
+
+                if (writing)
+                    dirty = dirty || (state & TreeVisitorClosure.DIRTY) != 0;
+
+                if (stop) {
+                    nextPageId = 0; // The End.
+
+                    return;
+                }
+            }
+
+            if (nextPageId != 0) {
+                row = io.getLookupRow(BPlusTree.this, pageAddr, cnt - 1); // Need save last row.
+
+                shift = 1;
+            }
+        }
+
+        /**
+         * @param pageAddr Page address.
+         * @param io IO.
+         * @param cnt Count.
+         * @return Adjusted to lower bound start index.
+         * @throws IgniteCheckedException If failed.
+         */
+        private int findLowerBound(long pageAddr, BPlusIO<L> io, int cnt) throws IgniteCheckedException {
+            assert io.isLeaf();
+
+            // Compare with the first row on the page.
+            int cmp = compare(0, io, pageAddr, 0, row);
+
+            if (cmp < 0 || (cmp == 0 && shift == 1)) {
+                int idx = findInsertionPoint(0, io, pageAddr, 0, cnt, row, shift);
+
+                assert idx < 0;
+
+                return fix(idx);
+            }
+
+            return 0;
+        }
+
+        /**
+         * @param pageAddr Page address.
+         * @param io IO.
+         * @param low Start index.
+         * @param cnt Number of rows in the buffer.
+         * @return Corrected number of rows with respect to upper bound.
+         * @throws IgniteCheckedException If failed.
+         */
+        private int findUpperBound(long pageAddr, BPlusIO<L> io, int low, int cnt) throws IgniteCheckedException {
+            assert io.isLeaf();
+
+            // Compare with the last row on the page.
+            int cmp = compare(0, io, pageAddr, cnt - 1, upper);
+
+            if (cmp > 0) {
+                int idx = findInsertionPoint(0, io, pageAddr, low, cnt, upper, 1);
+
+                assert idx < 0;
+
+                cnt = fix(idx);
+
+                nextPageId = 0; // The End.
+            }
+
+            return cnt;
+        }
+
+        /**
+         * @throws IgniteCheckedException If failed.
+         */
+        private void nextPage() throws IgniteCheckedException {
+            for (;;) {
+                if (nextPageId == 0)
+                    return;
+
+                long pageId = nextPageId;
+                long page = acquirePage(pageId);
+                try {
+                    long pageAddr = lock(pageId, page); // Doing explicit null check.
+
+                    // If concurrent merge occurred we have to reinitialize cursor from the last returned row.
+                    if (pageAddr == 0L)
+                        break;
+
+                    try {
+                        BPlusIO<L> io = io(pageAddr);
+
+                        visit(pageAddr, io, -1, io.getCount(pageAddr));
+                    }
+                    finally {
+                        unlock(pageId, page, pageAddr);
+                    }
+                }
+                finally {
+                    releasePage(pageId, page);
+                }
+            }
+
+            doVisit(this); // restart from last read row
+        }
+
+        private void unlock(long pageId, long page, long pageAddr) {
+            if (writing) {
+                writeUnlock(pageId, page, pageAddr, dirty);
+
+                dirty = false; // reset dirty flag
+            }
+            else
+                readUnlock(pageId, page, pageAddr);
+        }
+
+        private long lock(long pageId, long page) {
+            if (writing = ((p.state() & TreeVisitorClosure.CAN_WRITE) != 0))
+                return writeLock(pageId, page);
+            else
+                return readLock(pageId, page);
+        }
+
+        /**
+         * @throws IgniteCheckedException If failed.
+         */
+        private void visit() throws IgniteCheckedException {
+            doVisit(this);
+
+            while (nextPageId != 0)
+                nextPage();
         }
     }
 
@@ -5294,5 +5650,35 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         public boolean apply(BPlusTree<L, T> tree, BPlusIO<L> io, long pageAddr, int idx)
             throws IgniteCheckedException;
+    }
+
+    /**
+     * A generic visitor-style interface for performing inspection/modification operations on the tree.
+     */
+    public interface TreeVisitorClosure<L, T extends L> {
+        /** */
+        int STOP = 0x01;
+        /** */
+        int CAN_WRITE = STOP << 1;
+        /** */
+        int DIRTY = CAN_WRITE << 1;
+
+        /**
+         * Performs inspection or operation on a specified row.
+         *
+         * @param tree The tree.
+         * @param io Th tree IO object.
+         * @param pageAddr The page address.
+         * @param idx The item index.
+         * @return state bitset.
+         * @throws IgniteCheckedException If failed.
+         */
+        public int visit(BPlusTree<L, T> tree, BPlusIO<L> io, long pageAddr, int idx, IgniteWriteAheadLogManager wal)
+            throws IgniteCheckedException;
+
+        /**
+         * @return state bitset.
+         */
+        public int state();
     }
 }

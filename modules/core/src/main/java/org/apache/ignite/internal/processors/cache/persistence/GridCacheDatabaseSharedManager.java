@@ -714,7 +714,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         checkpointReadLock();
 
         try {
-            for (DatabaseLifecycleListener lsnr : getSubscribers(cctx.kernalContext())) {
+            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext())) {
                 lsnr.beforeMemoryRestore(this);
             }
 
@@ -751,7 +751,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             notifyMetastorageReadyForReadWrite();
 
-            for (DatabaseLifecycleListener lsnr : getSubscribers(cctx.kernalContext())) {
+            for (DatabaseLifecycleListener lsnr : getDatabaseListeners(cctx.kernalContext())) {
                 lsnr.afterMemoryRestore(this);
             }
 

@@ -28,7 +28,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
 /**
  *
  */
-public class TxLogTree extends BPlusTree<TxSearchRow, TxRow> {
+public class TxLogTree extends BPlusTree<TxKey, TxRow> {
     /**
      * @param pageMem Page memory.
      * @param wal Write ahead log manager
@@ -47,13 +47,13 @@ public class TxLogTree extends BPlusTree<TxSearchRow, TxRow> {
     }
 
     /** {@inheritDoc} */
-    @Override protected int compare(BPlusIO<TxSearchRow> io, long pageAddr, int idx, TxSearchRow row) {
+    @Override protected int compare(BPlusIO<TxKey> io, long pageAddr, int idx, TxKey row) {
         return ((TxLogIO)io).compare(pageAddr, io.offset(idx), row);
     }
 
     /** {@inheritDoc} */
-    @Override public TxRow getRow(BPlusIO<TxSearchRow> io, long pageAddr,
-        int idx, Object ignored) throws IgniteCheckedException {
+    @Override public TxRow getRow(BPlusIO<TxKey> io, long pageAddr,
+                                  int idx, Object ignored) throws IgniteCheckedException {
         return (TxRow) io.getLookupRow(this, pageAddr, idx);
     }
 }

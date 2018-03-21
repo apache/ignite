@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -157,6 +158,26 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
 
         for (int i = 0; i < cnt; i++)
             c.apply(new CacheDataRowAdapter(getLink(pageAddr, i)));
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getMvccLockCoordinatorVersion(long pageAddr, int idx) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getMvccLockCounter(long pageAddr, int idx) {
+        return MvccProcessor.MVCC_COUNTER_NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMvccLockCoordinatorVersion(long pageAddr, int idx, long lockCrd) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMvccLockCounter(long pageAddr, int idx, long lockCntr) {
+        throw new UnsupportedOperationException();
     }
 
     /**

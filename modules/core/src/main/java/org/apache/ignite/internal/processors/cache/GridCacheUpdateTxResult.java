@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,7 +38,19 @@ public class GridCacheUpdateTxResult {
     private GridLongList mvccWaitTxs;
 
     /** */
+    private  GridFutureAdapter<GridCacheUpdateTxResult> fut;
+
+    /** */
     private WALPointer logPtr;
+
+    /**
+     * Constructor.
+     *
+     * @param success Success flag.
+     */
+    GridCacheUpdateTxResult(boolean success) {
+        this.success = success;
+    }
 
     /**
      * Constructor.
@@ -53,13 +67,38 @@ public class GridCacheUpdateTxResult {
      * Constructor.
      *
      * @param success Success flag.
+     * @param fut Update future.
+     */
+    GridCacheUpdateTxResult(boolean success, GridFutureAdapter<GridCacheUpdateTxResult> fut) {
+        this.success = success;
+        this.fut = fut;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param success Success flag.
      * @param logPtr Logger WAL pointer for the update.
      */
-    GridCacheUpdateTxResult(boolean success, long updateCntr, WALPointer logPtr, @Nullable GridLongList mvccWaitTxs) {
+    GridCacheUpdateTxResult(boolean success, long updateCntr, WALPointer logPtr) {
         this.success = success;
         this.updateCntr = updateCntr;
-        this.mvccWaitTxs = mvccWaitTxs;
         this.logPtr = logPtr;
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param success Success flag.
+     * @param updateCntr Update counter.
+     * @param logPtr Logger WAL pointer for the update.
+     * @param mvccWaitTxs List of transactions to wait for completion.
+     */
+    GridCacheUpdateTxResult(boolean success, long updateCntr, WALPointer logPtr, GridLongList mvccWaitTxs) {
+        this.success = success;
+        this.updateCntr = updateCntr;
+        this.logPtr = logPtr;
+        this.mvccWaitTxs = mvccWaitTxs;
     }
 
     /**
@@ -84,7 +123,14 @@ public class GridCacheUpdateTxResult {
     }
 
     /**
-     * @return Old value.
+     * @return Update future.
+     */
+    @Nullable public IgniteInternalFuture<GridCacheUpdateTxResult> updateFuture() {
+        return fut;
+    }
+
+    /**
+     * @return List of transactions to wait for completion.
      */
     @Nullable public GridLongList mvccWaitTransactions() {
         return mvccWaitTxs;

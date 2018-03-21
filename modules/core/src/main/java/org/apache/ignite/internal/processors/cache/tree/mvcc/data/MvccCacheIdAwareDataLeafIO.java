@@ -34,7 +34,7 @@ public final class MvccCacheIdAwareDataLeafIO extends AbstractDataLeafIO {
      * @param ver Page format version.
      */
     private MvccCacheIdAwareDataLeafIO(int ver) {
-        super(T_CACHE_ID_DATA_REF_MVCC_LEAF, ver, 32);
+        super(T_CACHE_ID_DATA_REF_MVCC_LEAF, ver, 48);
     }
 
     /** {@inheritDoc} */
@@ -60,5 +60,25 @@ public final class MvccCacheIdAwareDataLeafIO extends AbstractDataLeafIO {
     /** {@inheritDoc} */
     @Override public final long getMvccCounter(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + 24);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getMvccLockCoordinatorVersion(long pageAddr, int idx) {
+        return PageUtils.getLong(pageAddr, offset(idx) + 32);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getMvccLockCounter(long pageAddr, int idx) {
+        return PageUtils.getLong(pageAddr, offset(idx) + 40);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMvccLockCoordinatorVersion(long pageAddr, int idx, long lockCrd) {
+        PageUtils.putLong(pageAddr, offset(idx) + 32, lockCrd);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMvccLockCounter(long pageAddr, int idx, long lockCntr) {
+        PageUtils.putLong(pageAddr, offset(idx) + 40, lockCntr);
     }
 }

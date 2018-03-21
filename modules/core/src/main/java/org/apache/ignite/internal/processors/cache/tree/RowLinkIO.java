@@ -55,4 +55,32 @@ public interface RowLinkIO {
      * @return Mvcc counter.
      */
     public long getMvccCounter(long pageAddr, int idx);
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @return Mvcc coordinator version.
+     */
+    public long getMvccLockCoordinatorVersion(long pageAddr, int idx);
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @return Mvcc counter.
+     */
+    public long getMvccLockCounter(long pageAddr, int idx);
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @param lockCrd Mvcc lock coordinator version.
+     */
+    public void setMvccLockCoordinatorVersion(long pageAddr, int idx, long lockCrd);
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @param lockCntr Mvcc lock counter.
+     */
+    public void setMvccLockCounter(long pageAddr, int idx, long lockCntr);
 }

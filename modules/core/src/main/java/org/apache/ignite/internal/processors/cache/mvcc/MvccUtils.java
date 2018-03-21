@@ -22,6 +22,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
 
@@ -35,10 +36,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Da
  */
 public class MvccUtils {
     /** */
-    private static MvccClosure<Boolean> isVisible = new IsVisible();
-
-    /** */
-    private static MvccClosure<Boolean> hasNewVer = new HasNewVersion();
+    private static MvccClosure<Boolean> isNewVisible = new IsNewVisible();
 
     /** */
     private static MvccClosure<MvccVersion> getNewVer = new GetNewVersion();
@@ -55,26 +53,74 @@ public class MvccUtils {
      * @param snapshot Snapshot.
      * @param mvccCrd Mvcc coordinator.
      * @param mvccCntr Mvcc counter.
+     * @return {@code True} if visible.
+     */
+    public static boolean isVisible(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr) throws IgniteCheckedException {
+        return isVisible(cctx, snapshot, mvccCrd, mvccCntr, true);
+    }
+
+    /**
+     * Checks if version is visible from the given snapshot.
+     *
+     * @param snapshot Snapshot.
+     * @param mvccCrd Mvcc coordinator.
+     * @param mvccCntr Mvcc counter.
+     * @return {@code True} if visible.
+     */
+    public static boolean isVisible(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr, boolean useTxLog) throws IgniteCheckedException {
+        long snapshotCrd = snapshot.coordinatorVersion();
+        long snapshotCntr = snapshot.counter();
+
+        if (mvccCrd < snapshotCrd)
+            return isCommitted(cctx, mvccCrd, mvccCntr, useTxLog);
+        else if (mvccCrd == snapshotCrd && mvccCntr < snapshotCntr)
+            return !snapshot.activeTransactions().contains(mvccCntr) && isCommitted(cctx, mvccCrd, mvccCntr, useTxLog);
+        else
+            return mvccCrd == snapshotCrd && mvccCntr == snapshotCntr;
+    }
+
+    /**
+     * Checks if version is visible from the given snapshot.
+     *
+     * @param snapshot Snapshot.
+     * @param mvccCrd Mvcc coordinator.
+     * @param mvccCntr Mvcc counter.
      * @param newMvccCrd New mvcc coordinator.
      * @param newMvccCntr New mvcc counter.
      * @return {@code True} if visible.
      */
-    public static boolean isVisibleForSnapshot(MvccSnapshot snapshot, long mvccCrd, long mvccCntr, long newMvccCrd,
-        long newMvccCntr) {
+    public static boolean isVisible(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr, long newMvccCrd,
+                                    long newMvccCntr) throws IgniteCheckedException {
 
-        long snapshotCrd = snapshot.coordinatorVersion();
-        long snapshotCntr = snapshot.counter();
+        return isVisible(cctx, snapshot, mvccCrd, mvccCntr)
+                && (newMvccCrd == 0 || !isVisible(cctx, snapshot, newMvccCrd, newMvccCntr));
+    }
 
-        if (mvccCrd > snapshotCrd || mvccCrd == snapshotCrd && mvccCntr > snapshotCntr ||
-            mvccCrd == snapshotCrd && snapshot.activeTransactions().contains(mvccCntr))
-            return false; // invisible if xid_min transaction is in the future or is active now.
-        else if (newMvccCrd == 0 && newMvccCntr == MVCC_COUNTER_NA)
-            return true; // visible if xid_max is empty.
-        else if (newMvccCrd == snapshotCrd && newMvccCntr == snapshotCntr)
-            return false; // invisible if deleted by the current tx.
-        else // visible if xid_max is in the future or is active now.
-            return newMvccCrd > snapshotCrd || newMvccCrd == snapshotCrd && newMvccCntr > snapshotCntr ||
-                (newMvccCrd == snapshotCrd && snapshot.activeTransactions().contains(newMvccCntr));
+    /**
+     * Checks if a row's new version is visible for the given snapshot.
+     *
+     * @param cctx Cache context.
+     * @param link Link to the row.
+     * @param snapshot Mvcc snapshot.
+     * @return {@code True} if row is visible for the given snapshot.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static boolean isNewVisible(GridCacheContext cctx, long link, MvccSnapshot snapshot)
+        throws IgniteCheckedException {
+        return invoke(cctx, link, isNewVisible, snapshot);
+    }
+
+    /**
+     * Returns new version of row (xid_max) if any.
+     *
+     * @param cctx Cache context.
+     * @param link Link to the row.
+     * @return New {@code MvccVersion} if row has xid_max, or null if doesn't.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static MvccVersion getNewVersion(GridCacheContext cctx, long link)
+        throws IgniteCheckedException {
+        return invoke(cctx, link, getNewVer, null);
     }
 
     /**
@@ -95,47 +141,6 @@ public class MvccUtils {
     public static IgniteCheckedException noCoordinatorError(AffinityTopologyVersion topVer) {
         return new ClusterTopologyServerNotFoundException("Mvcc coordinator is not assigned for " +
             "topology version: " + topVer);
-    }
-
-    /**
-     * Checks if a row has not empty new version (xid_max).
-     *
-     * @param cctx Cache context.
-     * @param link Link to the row.
-     * @return {@code True} if row has a new version.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static boolean hasNewMvccVersion(GridCacheContext cctx, long link)
-        throws IgniteCheckedException {
-        return invoke(cctx, link, hasNewVer, null);
-    }
-
-
-    /**
-     * Checks if a row is visible for the given snapshot.
-     *
-     * @param cctx Cache context.
-     * @param link Link to the row.
-     * @param snapshot Mvcc snapshot.
-     * @return {@code True} if row is visible for the given snapshot.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static boolean isVisibleForSnapshot(GridCacheContext cctx, long link, MvccSnapshot snapshot)
-        throws IgniteCheckedException {
-        return invoke(cctx, link, isVisible, snapshot);
-    }
-
-    /**
-     * Returns new version of row (xid_max) if any.
-     *
-     * @param cctx Cache context.
-     * @param link Link to the row.
-     * @return New {@code MvccVersion} if row has xid_max, or null if doesn't.
-     * @throws IgniteCheckedException If failed.
-     */
-    public static MvccVersion getNewVersion(GridCacheContext cctx, long link)
-        throws IgniteCheckedException {
-        return invoke(cctx, link, getNewVer, null);
     }
 
     /**
@@ -178,7 +183,7 @@ public class MvccUtils {
                 assert mvccCrd > 0 && mvccCntr > MVCC_COUNTER_NA;
                 assert newMvccCrd > 0 == newMvccCntr > MVCC_COUNTER_NA;
 
-                return clo.apply(snapshot, mvccCrd, mvccCntr, newMvccCrd, newMvccCntr);
+                return clo.apply(cctx, snapshot, mvccCrd, mvccCntr, newMvccCrd, newMvccCntr);
             }
             finally {
                 pageMem.readUnlock(grpId, pageId, page);
@@ -187,6 +192,19 @@ public class MvccUtils {
         finally {
             pageMem.releasePage(grpId, pageId, page);
         }
+    }
+
+    /**
+     *
+     * @param cctx Cache context.
+     * @param mvccCrd Coordinator version.
+     * @param mvccCntr Counter.
+     * @param useTxLog Determines whether TxLog is used.
+     * @return {@code True} in case the corresponding transaction is in {@code TxState.COMMITTED} state.
+     * @throws IgniteCheckedException If failed.
+     */
+    private static boolean isCommitted(GridCacheContext cctx, long mvccCrd, long mvccCntr, boolean useTxLog) throws IgniteCheckedException {
+        return !useTxLog || cctx.shared().coordinators().state(mvccCrd, mvccCntr) == TxState.COMMITTED;
     }
 
     /**
@@ -203,28 +221,17 @@ public class MvccUtils {
          * @param newMvccCntr New mvcc counter.
          * @return Result.
          */
-        public R apply(MvccSnapshot snapshot, long mvccCrd, long mvccCntr, long newMvccCrd, long newMvccCntr);
+        public R apply(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr, long newMvccCrd, long newMvccCntr) throws IgniteCheckedException;
     }
 
     /**
      * Closure for checking row visibility for snapshot.
      */
-    private static class IsVisible implements MvccClosure<Boolean> {
+    private static class IsNewVisible implements MvccClosure<Boolean> {
         /** {@inheritDoc} */
-        @Override public Boolean apply(MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
-            long newMvccCrd, long newMvccCntr) {
-            return isVisibleForSnapshot(snapshot, mvccCrd, mvccCntr, newMvccCrd, newMvccCntr);
-        }
-    }
-
-    /**
-     * Closure for checking if row has a new version (xid_max).
-     */
-    private static class HasNewVersion implements MvccClosure<Boolean> {
-        /** {@inheritDoc} */
-        @Override public Boolean apply(MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
-            long newMvccCrd, long newMvccCntr) {
-            return newMvccCrd > 0;
+        @Override public Boolean apply(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
+            long newMvccCrd, long newMvccCntr) throws IgniteCheckedException {
+            return isVisible(cctx, snapshot, newMvccCrd, newMvccCntr);
         }
     }
 
@@ -233,7 +240,7 @@ public class MvccUtils {
      */
     private static class GetNewVersion implements MvccClosure<MvccVersion> {
         /** {@inheritDoc} */
-        @Override public MvccVersion apply(MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
+        @Override public MvccVersion apply(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
             long newMvccCrd, long newMvccCntr) {
             return newMvccCrd == 0 ? null : new MvccVersionImpl(newMvccCrd, newMvccCntr);
         }

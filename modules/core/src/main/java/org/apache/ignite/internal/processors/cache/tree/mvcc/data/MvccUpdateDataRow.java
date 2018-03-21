@@ -20,11 +20,14 @@ package org.apache.ignite.internal.processors.cache.tree.mvcc.data;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -32,28 +35,37 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.tree.RowLinkIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.assertMvccVersionValid;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.hasNewMvccVersion;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisible;
 
 /**
  *
  */
-public class MvccUpdateDataRow extends MvccDataRow implements BPlusTree.TreeRowClosure<CacheSearchRow, CacheDataRow> {
+public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, BPlusTree.TreeVisitorClosure<CacheSearchRow, CacheDataRow> {
+    /** */
+    private static final int FIRST = DIRTY << 1;
+    /** */
+    private static final int CHECK_VERSION = FIRST << 1;
+    /** */
+    private static final int LAST_FOUND = CHECK_VERSION << 1;
+    /** */
+    private static final int CAN_CLEANUP = LAST_FOUND << 1;
+    /** */
+    private static final int PRIMARY = CAN_CLEANUP << 1;
+    /** */
+    private static final int REMOVE = PRIMARY << 1;
+    /** */
+    private static final int FIRST_REMOVED = REMOVE << 1;
+
     /** */
     private final GridCacheContext cctx;
 
     /** */
-    private UpdateResult res;
+    private ResultType res;
 
     /** */
-    private boolean canCleanup;
-
-    /** */
-    private GridLongList activeTxs;
+    private int state;
 
     /** */
     private List<MvccLinkAwareSearchRow> cleanupRows;
@@ -64,6 +76,12 @@ public class MvccUpdateDataRow extends MvccDataRow implements BPlusTree.TreeRowC
     /** */
     private CacheDataRow oldRow;
 
+    /** */
+    private long resCrd;
+
+    /** */
+    private long resCntr;
+
     /**
      * @param key Key.
      * @param val Value.
@@ -72,6 +90,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements BPlusTree.TreeRowC
      * @param mvccSnapshot MVCC snapshot.
      * @param newVer Update version.
      * @param part Partition.
+     * @param primary Primary node flag.
      * @param cctx Cache context.
      */
     public MvccUpdateDataRow(
@@ -82,6 +101,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements BPlusTree.TreeRowC
         MvccSnapshot mvccSnapshot,
         MvccVersion newVer,
         int part,
+        boolean primary,
         GridCacheContext cctx) {
         super(key,
             val,
@@ -95,97 +115,196 @@ public class MvccUpdateDataRow extends MvccDataRow implements BPlusTree.TreeRowC
 
         this.mvccSnapshot = mvccSnapshot;
         this.cctx = cctx;
+
+        if (primary)
+            setFlags(FIRST
+                | CHECK_VERSION
+                | PRIMARY
+                | (val == null ? REMOVE : 0)
+                | CAN_WRITE);
+        else
+            setFlags(FIRST);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean apply(BPlusTree<CacheSearchRow, CacheDataRow> tree,
+    @Override public int visit(BPlusTree<CacheSearchRow, CacheDataRow> tree,
         BPlusIO<CacheSearchRow> io,
         long pageAddr,
-        int idx)
+        int idx, IgniteWriteAheadLogManager wal)
         throws IgniteCheckedException
     {
+        unsetFlags(DIRTY);
+
         RowLinkIO rowIo = (RowLinkIO)io;
 
-        // Assert version grows.
-        assert assertVersion(rowIo, pageAddr, idx);
+        // Lock entry on primary node
+        if (isFlagsSet(PRIMARY | FIRST)) {
+            long lockCrd = rowIo.getMvccLockCoordinatorVersion(pageAddr, idx);
+            long lockCntr = rowIo.getMvccLockCounter(pageAddr, idx);
 
-        boolean checkActive = mvccSnapshot.activeTransactions().size() > 0;
+            if (cctx.kernalContext().coordinators().isActive(lockCrd, lockCntr)) {
+                resCrd = lockCrd;
+                resCntr = lockCntr;
 
-        boolean txActive = false;
+                res = ResultType.LOCKED;
 
-        long rowCrdVer = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
+                return setFlags(STOP);
+            }
 
-        long crdVer = mvccCoordinatorVersion();
+            rowIo.setMvccLockCoordinatorVersion(pageAddr, idx, mvccCrd);
+            rowIo.setMvccLockCounter(pageAddr, idx, mvccCntr);
 
-        boolean isFirstRmvd = false;
+            // TODO Delta record IGNITE-7991
 
-        if (res == null) {
-            int cmp = Long.compare(crdVer, rowCrdVer);
+            setFlags(DIRTY);
 
-            if (cmp == 0)
-                cmp = Long.compare(mvccSnapshot.counter(), rowIo.getMvccCounter(pageAddr, idx));
+            // In case it is a REMOVE operation and the first entry is an aborted one
+            // we have to write lock information to the first committed entry as well
+            // because we about to delete all aborted entries before it
+            if (!isFlagsSet(REMOVE))
+                unsetFlags(CAN_WRITE);
+        }
 
-            if (cmp == 0)
-                res = UpdateResult.VERSION_FOUND;
+        if (isFlagsSet(FIRST)) {
+            oldRow = tree.getRow(io, pageAddr, idx, RowData.LINK_WITH_HEADER);
+
+            boolean removed = oldRow.newMvccCoordinatorVersion() != 0;
+
+            long rowCrd, rowCntr;
+
+            if (removed) {
+                rowCrd = oldRow.newMvccCoordinatorVersion();
+                rowCntr = oldRow.newMvccCounter();
+            }
             else {
-                isFirstRmvd = hasNewMvccVersion(cctx, rowIo.getLink(pageAddr, idx));
+                rowCrd = oldRow.mvccCoordinatorVersion();
+                rowCntr = oldRow.mvccCounter();
+            }
 
-                if (isFirstRmvd)
-                    res = UpdateResult.PREV_NULL;
-                else
-                    res = UpdateResult.PREV_NOT_NULL;
+            // Check whether the row was updated by this transaction
+            int cmp = Long.compare(mvccCrd, rowCrd);
 
-                oldRow = tree.getRow(io, pageAddr, idx, RowData.LINK_WITH_HEADER);
+            if (cmp == 0)
+                cmp = Long.compare(mvccSnapshot.counter(), rowCntr);
+
+            if (cmp == 0) {
+                res = ResultType.VERSION_FOUND;
+
+                assert !isFlagsSet(PRIMARY); // Currently can happen on backup node only
+
+                setFlags(LAST_FOUND);
             }
         }
 
-        // Suppose transactions on previous coordinator versions are done.
-        if (checkActive && crdVer == rowCrdVer) {
-            long rowMvccCntr = rowIo.getMvccCounter(pageAddr, idx);
+        long rowCrd = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
+        long rowCntr = rowIo.getMvccCounter(pageAddr, idx);
 
-            long activeTx = isFirstRmvd ? oldRow.newMvccCounter() : rowMvccCntr;
+        if (!isFlagsSet(LAST_FOUND)) {
+            byte txState = cctx.kernalContext().coordinators().state(rowCrd, rowCntr);
 
-            if (mvccSnapshot.activeTransactions().contains(activeTx)) {
-                txActive = true;
+            if (txState == TxState.COMMITTED) {
+                if (oldRow.link() != rowIo.getLink(pageAddr, idx))
+                    oldRow = tree.getRow(io, pageAddr, idx, RowData.LINK_WITH_HEADER);
 
-                if (activeTxs == null)
-                    activeTxs = new GridLongList();
+                boolean removed = false;
 
-                activeTxs.add(activeTx);
-            }
-        }
+                if (oldRow.newMvccCoordinatorVersion() != 0) {
+                    if (oldRow.newMvccCoordinatorVersion() == resCrd && oldRow.newMvccCounter() == resCntr)
+                        // The row is linked to the previous aborted version;
+                        txState = TxState.ABORTED;
+                    else
+                        // Double check with TxLog if removed version is committed;
+                        txState = cctx.shared().coordinators().state(oldRow.newMvccCoordinatorVersion(), oldRow.newMvccCounter());
 
-        if (!txActive) {
-            assert Long.compare(crdVer, rowCrdVer) >= 0;
+                    if (!(txState == TxState.COMMITTED || txState == TxState.ABORTED))
+                        throw new IllegalStateException("Unexpected state: " + txState);
 
-            int cmp;
-
-            long rowCntr = rowIo.getMvccCounter(pageAddr, idx);
-
-            if (crdVer == rowCrdVer)
-                cmp = Long.compare(mvccSnapshot.cleanupVersion(), rowCntr);
-            else
-                cmp = 1;
-
-            if (cmp >= 0) {
-                // Do not cleanup oldest version.
-                if (canCleanup) {
-                    assert assertMvccVersionValid(rowCrdVer, rowCntr);
-
-                    // Should not be possible to cleanup active tx.
-                    assert rowCrdVer != crdVer || !mvccSnapshot.activeTransactions().contains(rowCntr);
-
-                    if (cleanupRows == null)
-                        cleanupRows = new ArrayList<>();
-
-                    cleanupRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrdVer, rowCntr, rowIo.getLink(pageAddr, idx)));
+                    removed = txState == TxState.COMMITTED;
                 }
-                else
-                    canCleanup = true;
+
+                if (removed) {
+                    res = ResultType.PREV_NULL;
+
+                    setFlags(LAST_FOUND | FIRST_REMOVED);
+                }
+                else {
+                    res = ResultType.PREV_NOT_NULL;
+
+                    setFlags(LAST_FOUND);
+                }
+
+                if (isFlagsSet(CHECK_VERSION)) {
+                    assert res == ResultType.PREV_NULL || res == ResultType.PREV_NOT_NULL;
+
+                    long crdVer = removed ? oldRow.newMvccCoordinatorVersion() : oldRow.mvccCoordinatorVersion();
+                    long cntr = removed ? oldRow.newMvccCounter() : oldRow.mvccCounter();
+
+                    if (!isVisible(cctx, mvccSnapshot, crdVer, cntr, false)) {
+                        resCrd = crdVer;
+                        resCntr = cntr;
+
+                        res = ResultType.VERSION_MISMATCH; // Write conflict.
+
+                        return setFlags(STOP);
+                    }
+
+                    // no need to check further
+                    unsetFlags(CHECK_VERSION);
+                }
+
+                if (cleanupRows != null && isFlagsSet(PRIMARY | REMOVE)) {
+                    rowIo.setMvccLockCoordinatorVersion(pageAddr, idx, mvccCrd);
+                    rowIo.setMvccLockCounter(pageAddr, idx, mvccCntr);
+
+                    // TODO Delta record IGNITE-7991
+
+                    setFlags(DIRTY);
+                }
+
+                unsetFlags(CAN_WRITE); // No need to acquire write locks anymore
             }
+            else if (txState == TxState.ABORTED) {// save aborted version to fast check new version of next row
+                resCrd = rowCrd;
+                resCntr = rowCntr;
+            }
+            else
+                throw new IllegalStateException("Unexpected state: " + txState);
         }
 
-        return true;
+        if (isFlagsSet(FIRST_REMOVED)) {
+            assert isFlagsSet(LAST_FOUND);
+            assert !isFlagsSet(CAN_CLEANUP);
+
+            long crdVer = oldRow.newMvccCoordinatorVersion();
+
+            int cmp = crdVer < mvccCrd ? 1 : Long.compare(mvccSnapshot.cleanupVersion(), oldRow.newMvccCounter());
+
+            if (cmp >= 0)
+                setFlags(CAN_CLEANUP); // can cleanup older row in case it was removed;
+
+            // all further rows cannot be removed
+            unsetFlags(FIRST_REMOVED);
+        }
+
+        if (isFlagsSet(CAN_CLEANUP) || !isFlagsSet(LAST_FOUND)) { // can cleanup aborted versions
+            if (cleanupRows == null)
+                cleanupRows = new ArrayList<>();
+
+            cleanupRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowIo.getLink(pageAddr, idx)));
+        }
+        else if (!isFlagsSet(CAN_CLEANUP) && isFlagsSet(LAST_FOUND)) {
+            int cmp = rowCrd < mvccCrd ? 1 : Long.compare(mvccSnapshot.cleanupVersion(), rowCntr);
+
+            if (cmp >= 0)
+                setFlags(CAN_CLEANUP); // can cleanup oder rows;
+        }
+
+        return unsetFlags(FIRST);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int state() {
+        return state;
     }
 
     /**
@@ -198,15 +317,8 @@ public class MvccUpdateDataRow extends MvccDataRow implements BPlusTree.TreeRowC
     /**
      * @return {@code True} if previous value was non-null.
      */
-    public UpdateResult updateResult() {
-        return res == null ? UpdateResult.PREV_NULL : res;
-    }
-
-    /**
-     * @return Active transactions to wait for.
-     */
-    @Nullable public GridLongList activeTransactions() {
-        return activeTxs;
+    @Override public ResultType resultType() {
+        return res == null ? ResultType.PREV_NULL : res;
     }
 
     /**
@@ -217,27 +329,40 @@ public class MvccUpdateDataRow extends MvccDataRow implements BPlusTree.TreeRowC
     }
 
     /**
-     * @param io IO.
-     * @param pageAddr Page address.
-     * @param idx Item index.
-     * @return Always {@code true}.
+     * @return Result version.
      */
-    private boolean assertVersion(RowLinkIO io, long pageAddr, int idx) {
-        long rowCrdVer = io.getMvccCoordinatorVersion(pageAddr, idx);
-        long rowCntr = io.getMvccCounter(pageAddr, idx);
+    @Override public MvccVersion resultVersion() {
+        switch (resultType()) {
+            case VERSION_FOUND:
+            case PREV_NULL:
 
-        int cmp = Long.compare(mvccCoordinatorVersion(), rowCrdVer);
+                return new MvccVersionImpl(mvccCrd, mvccCntr);
+            case PREV_NOT_NULL:
 
-        if (cmp == 0)
-            cmp = Long.compare(mvccSnapshot.counter(), rowCntr);
+                return new MvccVersionImpl(oldRow.mvccCoordinatorVersion(), oldRow.newMvccCounter());
+            case LOCKED:
+            case VERSION_MISMATCH:
 
-        // Can be equals if execute update on backup and backup already rebalanced value updated on primary.
-        assert cmp >= 0 : "[updCrd=" + mvccCoordinatorVersion() +
-            ", updCntr=" + mvccSnapshot.counter() +
-            ", rowCrd=" + rowCrdVer +
-            ", rowCntr=" + rowCntr + ']';
+                return new MvccVersionImpl(resCrd, resCntr);
+            default:
 
-        return true;
+                throw new IllegalStateException("Unexpected result type: " + resultType());
+        }
+    }
+
+    /** */
+    private boolean isFlagsSet(int flags) {
+        return (state & flags) == flags;
+    }
+
+    /** */
+    private int setFlags(int flags) {
+        return state |= flags;
+    }
+
+    /** */
+    private int unsetFlags(int flags) {
+        return state &= (~flags);
     }
 
     /** {@inheritDoc} */
@@ -245,15 +370,4 @@ public class MvccUpdateDataRow extends MvccDataRow implements BPlusTree.TreeRowC
         return S.toString(MvccUpdateDataRow.class, this, "super", super.toString());
     }
 
-    /**
-     *
-     */
-    public enum UpdateResult {
-        /** */
-        VERSION_FOUND,
-        /** */
-        PREV_NULL,
-        /** */
-        PREV_NOT_NULL
-    }
 }

@@ -341,6 +341,47 @@ public interface GridCacheEntryEx {
 
     /**
      * @param tx Cache transaction.
+     * @param affNodeId Partitioned node iD.
+     * @param val Value to set.
+     * @param ttl0 TTL.
+     * @param topVer Topology version.
+     * @param updateCntr Update counter.
+     * @param mvccVer Mvcc version.
+     * @return Tuple containing success flag and old value. If success is {@code false},
+     *      then value is {@code null}.
+     * @throws IgniteCheckedException If storing value failed.
+     * @throws GridCacheEntryRemovedException If entry has been removed.
+     */
+    public GridCacheUpdateTxResult mvccSet(
+            @Nullable IgniteInternalTx tx,
+            UUID affNodeId,
+            CacheObject val,
+            long ttl0,
+            AffinityTopologyVersion topVer,
+            @Nullable Long updateCntr,
+            MvccSnapshot mvccVer) throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
+     * @param tx Cache transaction.
+     * @param affNodeId Partitioned node iD.
+     * @param topVer Topology version.
+     * @param updateCntr Update counter.
+     * @param mvccVer Mvcc version.
+     * @return Tuple containing success flag and old value. If success is {@code false},
+     *      then value is {@code null}.
+     * @throws IgniteCheckedException If storing value failed.
+     * @throws GridCacheEntryRemovedException If entry has been removed.
+     */
+    public GridCacheUpdateTxResult mvccRemove(
+            @Nullable IgniteInternalTx tx,
+            UUID affNodeId,
+            AffinityTopologyVersion topVer,
+            @Nullable Long updateCntr,
+            MvccSnapshot mvccVer
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException;
+
+    /**
+     * @param tx Cache transaction.
      * @param evtNodeId ID of node responsible for this change.
      * @param affNodeId Partitioned node iD.
      * @param val Value to set.

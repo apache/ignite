@@ -17,17 +17,20 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiFunction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
@@ -45,6 +48,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestQuery;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTx;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccAckRequestTxAndQuery;
@@ -57,13 +61,16 @@ import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccQuerySnapshotReq
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccSnapshotResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccTxSnapshotRequest;
 import org.apache.ignite.internal.processors.cache.mvcc.msg.MvccWaitTxsRequest;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxKey;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.DatabaseLifecycleListener;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridAtomicLong;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -91,6 +98,35 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
  */
 public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifecycleListener {
     /** */
+    private static final BiFunction<List<LockFuture>, List<LockFuture>, List<LockFuture>> CONC = new BiFunction<List<LockFuture>, List<LockFuture>, List<LockFuture>>() {
+        @Override
+        public List<LockFuture> apply(List<LockFuture> l1, List<LockFuture> l2) {
+            ArrayList<LockFuture> res = new ArrayList<>(l1.size() + l2.size());
+
+            res.addAll(l1);
+            res.addAll(l2);
+
+            return res;
+        }
+    };
+
+    /** */
+    private static final BiFunction<Long, Integer, Integer> INC = new BiFunction<Long, Integer, Integer>() {
+        @Override
+        public Integer apply(Long k, Integer v) {
+            return v == null ? 1 : v + 1;
+        }
+    };
+
+    /** */
+    private static final BiFunction<Long, Integer, Integer> DEC = new BiFunction<Long, Integer, Integer>() {
+        @Override
+        public Integer apply(Long k, Integer v) {
+            return v == null || v.longValue() == 1 ? null : v - 1;
+        }
+    };
+
+    /** */
     public static final long MVCC_COUNTER_NA = 0L;
 
     /** */
@@ -103,11 +139,10 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
     private final AtomicLong mvccCntr = new AtomicLong(MVCC_START_CNTR);
 
     /** */
-    private final GridAtomicLong committedCntr = new GridAtomicLong(1L);
+    private final GridAtomicLong committedCntr = new GridAtomicLong(MVCC_START_CNTR);
 
     /** */
-    // TODO: Why do we need GridCacheVersion here? It is never used at the moment. Failover in future?
-    private final ConcurrentSkipListMap<Long, GridCacheVersion> activeTxs = new ConcurrentSkipListMap<>();
+    private final Set<Long> activeTxs = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     /** */
     private final ActiveQueries activeQueries = new ActiveQueries();
@@ -125,7 +160,12 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
     private ConcurrentMap<Long, WaitTxFuture> waitTxFuts = new ConcurrentHashMap<>();
 
     /** */
-    private final AtomicLong futIdCntr = new AtomicLong();
+    private final Map<TxKey, List<LockFuture>> waitList = new ConcurrentHashMap<>();
+
+    /** */
+    private final AtomicLong futIdCntr = new AtomicLong(0);
+
+    GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 
     /** */
     private final CountDownLatch crdLatch = new CountDownLatch(1);
@@ -188,6 +228,14 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
     }
 
     /**
+     * @return State for given mvcc version.
+     * @throws IgniteCheckedException If fails.
+     */
+    public byte state(long crdVer, long cntr) throws IgniteCheckedException {
+        return txLog.get(crdVer, cntr);
+    }
+
+    /**
      * @param ver Version to check.
      * @return State for given mvcc version.
      * @throws IgniteCheckedException If fails.
@@ -202,7 +250,49 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
      * @throws IgniteCheckedException If fails;
      */
     public void updateState(MvccVersion ver, byte state) throws IgniteCheckedException {
+        List<LockFuture> waiting;
+
         txLog.put(ver.coordinatorVersion(), ver.counter(), state);
+
+        if ((state == TxState.ABORTED || state == TxState.COMMITTED)
+                && (waiting = waitList.remove(new TxKey(ver.coordinatorVersion(), ver.counter()))) != null) {
+            for (LockFuture fut0 : waiting)
+                complete(fut0);
+        }
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param locked Version the entry is locked by.
+     */
+    public IgniteInternalFuture waitFor(GridCacheContext cctx, MvccVersion locked) throws IgniteCheckedException {
+        TxKey key = new TxKey(locked.coordinatorVersion(), locked.counter());
+        LockFuture fut = new LockFuture(cctx.ioPolicy());
+
+        List<LockFuture> waiting = new ArrayList<>(1); waiting.add(fut);
+
+        waitList.merge(key, waiting, CONC);
+
+        byte state = txLog.get(key);
+
+        if ((state == TxState.ABORTED || state == TxState.COMMITTED)
+                && (waiting = waitList.remove(key)) != null) {
+            for (LockFuture fut0 : waiting)
+                complete(fut0);
+        }
+
+        return fut;
+    }
+
+    /**
+     * Checks whether the transaction with given version is active.
+     * @return {@code True} If active.
+     * @throws IgniteCheckedException If fails.
+     */
+    public boolean isActive(long crdVer, long cntr) throws IgniteCheckedException {
+        byte state = state(crdVer, cntr);
+
+        return !(state == TxState.COMMITTED || state == TxState.ABORTED);
     }
 
     /**
@@ -212,6 +302,18 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
      */
     public void removeUntil(MvccVersion ver) throws IgniteCheckedException {
         txLog.removeUntil(ver.coordinatorVersion(), ver.counter());
+    }
+
+    /**
+     * @param fut Lock future.
+     */
+    private void complete(LockFuture fut) {
+        try {
+            ctx.pools().poolForPolicy(fut.plc).execute(fut);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, e);
+        }
     }
 
     /**
@@ -296,7 +398,7 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
     public MvccSnapshot requestTxSnapshotOnCoordinator(IgniteInternalTx tx) {
         assert ctx.localNodeId().equals(currentCoordinatorId());
 
-        return assignTxSnapshot(tx.nearXidVersion(), 0L);
+        return assignTxSnapshot(0L);
     }
 
     /**
@@ -306,7 +408,7 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
     public MvccSnapshot requestTxSnapshotOnCoordinator(GridCacheVersion ver) {
         assert ctx.localNodeId().equals(currentCoordinatorId());
 
-        return assignTxSnapshot(ver, 0L);
+        return assignTxSnapshot(0L);
     }
 
     /**
@@ -502,7 +604,7 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
      * @param readVer Transaction read version.
      */
     public void ackTxRollback(UUID crdId, MvccSnapshot updateVer, @Nullable MvccSnapshot readVer) {
-        MvccAckRequestTx msg = createTxAckMessage(0, updateVer, readVer);
+        MvccAckRequestTx msg = createTxAckMessage(-1, updateVer, readVer);
 
         msg.skipResponse(true);
 
@@ -532,7 +634,7 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
             return;
         }
 
-        MvccSnapshotResponse res = assignTxSnapshot(msg.txId(), msg.futureId());
+        MvccSnapshotResponse res = assignTxSnapshot(msg.futureId());
 
         try {
             sendMessage(node.id(), res);
@@ -616,7 +718,7 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
      * @param msg Message.
      */
     private void processCoordinatorTxAckRequest(UUID nodeId, MvccAckRequestTx msg) {
-        onTxDone(msg.txCounter());
+        onTxDone(msg.txCounter(), msg.futureId() >= 0);
 
         if (msg.queryCounter() != MVCC_COUNTER_NA) {
             if (msg.queryCoordinatorVersion() == 0)
@@ -658,46 +760,39 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
     }
 
     /**
-     * @param txId Transaction ID.
      * @return Counter.
      */
-    private MvccSnapshotResponse assignTxSnapshot(GridCacheVersion txId, long futId) {
+    private MvccSnapshotResponse assignTxSnapshot(long futId) {
         assert crdVer != 0;
-
-        // TODO: Race
-        long nextCtr = mvccCntr.incrementAndGet();
 
         MvccSnapshotResponse res = new MvccSnapshotResponse();
 
-        long minActive = Long.MAX_VALUE;
+        lock.writeLock();
 
-        for (Long txVer : activeTxs.keySet()) {
-            if (txVer < minActive)
-                minActive = txVer;
+        long ver = mvccCntr.incrementAndGet(), cleanupVer = -1;
+
+        for (Long txVer : activeTxs) {
+            if (cleanupVer == -1 || txVer < cleanupVer)
+                cleanupVer = txVer;
 
             res.addTx(txVer);
         }
 
-        Object old = activeTxs.put(nextCtr, txId);
+        boolean add = activeTxs.add(ver);
 
-        assert old == null : txId;
+        lock.writeUnlock();
 
-        long cleanupVer;
+        assert add : ver;
 
-        if (prevCrdQueries.previousQueriesDone()) {
-            cleanupVer = Math.min(minActive, committedCntr.get());
+        long minQry = activeQueries.minimalQueryCounter();
 
+        if (minQry != -1)
+            cleanupVer = cleanupVer == -1 ? minQry : Math.min(cleanupVer, minQry);
+
+        if (cleanupVer != -1)
             cleanupVer--;
 
-            Long qryVer = activeQueries.minimalQueryCounter();
-
-            if (qryVer != null && qryVer <= cleanupVer)
-                cleanupVer = qryVer - 1;
-        }
-        else
-            cleanupVer = -1;
-
-        res.init(futId, crdVer, nextCtr, cleanupVer);
+        res.init(futId, crdVer, ver, cleanupVer);
 
         return res;
     }
@@ -705,14 +800,17 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
     /**
      * @param txCntr Counter assigned to transaction.
      */
-    private void onTxDone(Long txCntr) {
+    private void onTxDone(Long txCntr, boolean committed) {
         GridFutureAdapter fut;
 
-        GridCacheVersion ver = activeTxs.remove(txCntr);
+        lock.readLock();
 
-        assert ver != null;
+        activeTxs.remove(txCntr);
 
-        committedCntr.setIfGreater(txCntr);
+        if (committed)
+            committedCntr.setIfGreater(txCntr);
+
+        lock.readUnlock();
 
         fut = waitTxFuts.remove(txCntr);
 
@@ -788,85 +886,58 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
      */
     class ActiveQueries {
         /** */
-        private final Map<UUID, TreeMap<Long, AtomicInteger>> activeQueries = new HashMap<>();
+        private final Map<UUID, TreeMap<Long, Integer>> activeQueries = new HashMap<>();
 
         /** */
         private Long minQry;
 
-        Long minimalQueryCounter() {
-            synchronized (this) {
-                return minQry;
-            }
+        synchronized long minimalQueryCounter() {
+            return minQry == null ? -1 : minQry;
         }
 
         synchronized MvccSnapshotResponse assignQueryCounter(UUID nodeId, long futId) {
             MvccSnapshotResponse res = new MvccSnapshotResponse();
 
-            Long mvccCntr;
-            Long trackCntr;
+            lock.writeLock();
 
-            for(;;) {
-                mvccCntr = committedCntr.get();
+            long ver = committedCntr.get();
 
-                trackCntr = mvccCntr;
-
-                for (Long txVer : activeTxs.keySet()) {
-                    if (txVer < trackCntr)
-                        trackCntr = txVer;
-
-                    res.addTx(txVer);
-                }
-
-                Long minQry0 = minQry;
-
-                if (minQry == null || trackCntr < minQry)
-                    minQry = trackCntr;
-
-                if (committedCntr.get() == mvccCntr)
-                    break;
-
-                minQry = minQry0;
-
-                res.resetTransactionsCount();
+            for (Long txVer : activeTxs) {
+                res.addTx(txVer);
             }
 
-            TreeMap<Long, AtomicInteger> nodeMap = activeQueries.get(nodeId);
+            lock.writeUnlock();
+
+            TreeMap<Long, Integer> nodeMap = activeQueries.get(nodeId);
 
             if (nodeMap == null)
                 activeQueries.put(nodeId, nodeMap = new TreeMap<>());
 
-            AtomicInteger qryCnt = nodeMap.get(trackCntr);
+            nodeMap.compute(ver, INC);
 
-            if (qryCnt == null)
-                nodeMap.put(trackCntr, new AtomicInteger(1));
-            else
-                qryCnt.incrementAndGet();
+            if (minQry == null)
+                minQry = ver;
 
-            res.init(futId, crdVer, mvccCntr, MVCC_COUNTER_NA);
+            res.init(futId, crdVer, ver, MVCC_COUNTER_NA);
 
             return res;
         }
 
         synchronized void onQueryDone(UUID nodeId, Long mvccCntr) {
-            TreeMap<Long, AtomicInteger> nodeMap = activeQueries.get(nodeId);
+            TreeMap<Long, Integer> nodeMap = activeQueries.get(nodeId);
 
             if (nodeMap == null)
                 return;
 
             assert minQry != null;
 
-            AtomicInteger qryCnt = nodeMap.get(mvccCntr);
+            nodeMap.compute(mvccCntr, DEC);
 
-            assert qryCnt != null : "[node=" + nodeId + ", nodeMap=" + nodeMap + ", cntr=" + mvccCntr + "]";
+            if (nodeMap.isEmpty())
+                activeQueries.remove(nodeId);
 
-            int left = qryCnt.decrementAndGet();
-
-            if (left == 0) {
-                nodeMap.remove(mvccCntr);
-
-                if (mvccCntr == minQry.longValue())
-                    minQry = activeMinimal();
-            }
+            if (mvccCntr == minQry.longValue())
+                minQry = activeMinimal();
         }
 
         synchronized void onNodeFailed(UUID nodeId) {
@@ -878,11 +949,11 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
         private Long activeMinimal() {
             Long min = null;
 
-            for (TreeMap<Long, AtomicInteger> m : activeQueries.values()) {
-                Map.Entry<Long, AtomicInteger> e = m.firstEntry();
+            for (TreeMap<Long,Integer> s : activeQueries.values()) {
+                Long first = s.firstKey();
 
-                if (e != null && (min == null || e.getKey() < min))
-                    min = e.getKey();
+                if (min == null || first < min)
+                    min = first;
             }
 
             return min;
@@ -893,99 +964,19 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
      * @param qryNodeId Node initiated query.
      * @return Counter for query.
      */
-    private MvccSnapshotResponse assignQueryCounter(UUID qryNodeId, long futId) {
+    private synchronized MvccSnapshotResponse assignQueryCounter(UUID qryNodeId, long futId) {
         assert crdVer != 0;
 
         MvccSnapshotResponse res = activeQueries.assignQueryCounter(qryNodeId, futId);
 
         return res;
-
-        // TODO: Dead code?
-//        MvccSnapshotResponse res = new MvccSnapshotResponse();
-//
-//        Long mvccCntr;
-//
-//        for(;;) {
-//            mvccCntr = committedCntr.get();
-//
-//            Long trackCntr = mvccCntr;
-//
-//            for (Long txVer : activeTxs.keySet()) {
-//                if (txVer < trackCntr)
-//                    trackCntr = txVer;
-//
-//                res.addTx(txVer);
-//            }
-//
-//            registerActiveQuery(trackCntr);
-//
-//            if (committedCntr.get() == mvccCntr)
-//                break;
-//            else {
-//                res.resetTransactionsCount();
-//
-//                onQueryDone(trackCntr);
-//            }
-//        }
-//
-//        res.init(futId, crdVer, mvccCntr, MVCC_COUNTER_NA);
-//
-//        return res;
     }
-//
-//    private void registerActiveQuery(Long mvccCntr) {
-//        for (;;) {
-//            AtomicInteger qryCnt = activeQueries.get(mvccCntr);
-//
-//            if (qryCnt != null) {
-//                boolean inc = increment(qryCnt);
-//
-//                if (!inc) {
-//                    activeQueries.remove(mvccCntr, qryCnt);
-//
-//                    continue;
-//                }
-//            }
-//            else {
-//                qryCnt = new AtomicInteger(1);
-//
-//                if (activeQueries.putIfAbsent(mvccCntr, qryCnt) != null)
-//                    continue;
-//            }
-//
-//            break;
-//        }
-//    }
-//
-//    static boolean increment(AtomicInteger cntr) {
-//        for (;;) {
-//            int current = cntr.get();
-//
-//            if (current == 0)
-//                return false;
-//
-//            if (cntr.compareAndSet(current, current + 1))
-//                return true;
-//        }
-//    }
 
     /**
      * @param mvccCntr Query counter.
      */
     private void onQueryDone(UUID nodeId, Long mvccCntr) {
         activeQueries.onQueryDone(nodeId, mvccCntr);
-
-        // TODO: Dead code?
-//        AtomicInteger qryCnt = activeQueries.get(mvccCntr);
-//
-//        assert qryCnt != null : mvccCntr;
-//
-//        int left = qryCnt.decrementAndGet();
-//
-//        assert left >= 0 : left;
-//
-//        if (left == 0)
-//            activeQueries.remove(mvccCntr, qryCnt);
     }
 
     /**
@@ -1010,7 +1001,7 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
                     fut = old;
             }
 
-            if (!activeTxs.containsKey(txId))
+            if (!activeTxs.contains(txId))
                 fut.onDone();
 
             if (!fut.isDone()) {
@@ -1392,6 +1383,23 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
         /** {@inheritDoc} */
         @Override public String toString() {
             return "CoordinatorMessageListener[]";
+        }
+    }
+
+    /** */
+    private static class LockFuture extends GridFutureAdapter implements Runnable {
+        /** */
+        private final byte plc;
+
+        /**
+         * @param plc Pool policy.
+         */
+        LockFuture(byte plc) {
+            this.plc = plc;
+        }
+
+        @Override public void run() {
+            onDone();
         }
     }
 

@@ -20,25 +20,50 @@ package org.apache.ignite.internal.processors.cache.mvcc.txlog;
 /**
  *
  */
-public class TxRow extends TxKey {
+public class TxKey {
     /** */
-    private byte state;
+    private final long major;
+
+    /** */
+    private final long minor;
 
     /**
      * @param major Major version.
-     * @param minor Minor version.
-     * @param state Transaction state.
+     * @param minor Minor version
      */
-    TxRow(long major, long minor, byte state) {
-        super(major, minor);
-
-        this.state = state;
+    public TxKey(long major, long minor) {
+        this.major = major;
+        this.minor = minor;
     }
 
     /**
-     * @return Transaction state.
+     * @return Major version.
      */
-    public byte state() {
-        return state;
+    public long major() {
+        return major;
+    }
+
+    /**
+     * @return Minor version.
+     */
+    public long minor() {
+        return minor;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || o.getClass() != TxKey.class) return false;
+
+        TxKey txKey = (TxKey) o;
+
+        return major == txKey.major && minor == txKey.minor;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int result = (int) (major ^ (major >>> 32));
+        result = 31 * result + (int) (minor ^ (minor >>> 32));
+        return result;
     }
 }

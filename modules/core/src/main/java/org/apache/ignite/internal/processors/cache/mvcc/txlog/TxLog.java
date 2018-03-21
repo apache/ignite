@@ -19,6 +19,9 @@ package org.apache.ignite.internal.processors.cache.mvcc.txlog;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -53,7 +56,7 @@ public class TxLog implements DbCheckpointListener {
     public static final int TX_LOG_CACHE_ID = CU.cacheId(TX_LOG_CACHE_NAME);
 
     /** */
-    private static final TxSearchRow LOWEST = new TxSearchRow(0, 0);
+    private static final TxKey LOWEST = new TxKey(0, 0);
 
     /** */
     private final IgniteCacheDatabaseSharedManager mgr;
@@ -63,6 +66,9 @@ public class TxLog implements DbCheckpointListener {
 
     /** */
     private TxLogTree tree;
+
+    /** */
+    private ConcurrentMap<TxKey, Sync> keyMap = new ConcurrentHashMap<>();
 
     /**
      *
@@ -188,16 +194,19 @@ public class TxLog implements DbCheckpointListener {
      * @throws IgniteCheckedException If failed.
      */
     public byte get(long major, long minor) throws IgniteCheckedException {
-        mgr.checkpointReadLock();
+        return get(new TxKey(major, minor));
+    }
 
-        try {
-            TxRow row = tree.findOne(new TxSearchRow(major, minor));
+    /**
+     *
+     * @param key Transaction key.
+     * @return Transaction state for given version.
+     * @throws IgniteCheckedException If failed.
+     */
+    public byte get(TxKey key) throws IgniteCheckedException {
+        TxRow row = tree.findOne(key);
 
-            return row == null ? TxState.NA : row.state();
-        }
-        finally {
-            mgr.checkpointReadUnlock();
-        }
+        return row == null ? TxState.NA : row.state();
     }
 
     /**
@@ -208,13 +217,22 @@ public class TxLog implements DbCheckpointListener {
      * @throws IgniteCheckedException If failed.
      */
     public void put(long major, long minor, byte state) throws IgniteCheckedException {
-        mgr.checkpointReadLock();
+        TxKey key = new TxKey(major, minor);
+        Sync sync = syncObject(key);
 
         try {
-            tree.putx(new TxRow(major, minor, state));
-        }
-        finally {
-            mgr.checkpointReadUnlock();
+            mgr.checkpointReadLock();
+
+            try {
+                synchronized (sync) {
+                    tree.putx(new TxRow(major, minor, state));
+                }
+            }
+            finally {
+                mgr.checkpointReadUnlock();
+            }
+        } finally {
+            evict(key, sync);
         }
     }
 
@@ -226,30 +244,96 @@ public class TxLog implements DbCheckpointListener {
      * @throws IgniteCheckedException If failed.
      */
     public void removeUntil(long major, long minor) throws IgniteCheckedException {
-        mgr.checkpointReadLock();
+        TraversingClosure clo = new TraversingClosure(major, minor);
 
-        try {
-            TraversingClosure clo = new TraversingClosure(major, minor);
+        tree.iterate(LOWEST, clo, clo);
 
-            tree.iterate(LOWEST, clo, clo);
-
-            if (clo.rows != null) {
-                for (TxSearchRow row : clo.rows) {
-                    tree.removex(row);
-                }
+        if (clo.rows != null) {
+            for (TxKey row : clo.rows) {
+                remove(row);
             }
         }
-        finally {
-            mgr.checkpointReadUnlock();
+    }
+
+    /** */
+    private void remove(TxKey key) throws IgniteCheckedException {
+        Sync sync = syncObject(key);
+
+        try {
+            mgr.checkpointReadLock();
+
+            try {
+                synchronized (sync) {
+                    tree.removex(key);
+                }
+            }
+            finally {
+                mgr.checkpointReadUnlock();
+            }
+        } finally {
+            evict(key, sync);
+        }
+    }
+
+    /** */
+    private Sync syncObject(TxKey key) {
+        Sync sync = keyMap.get(key);
+
+        while (true) {
+            if (sync == null) {
+                Sync old = keyMap.putIfAbsent(key, sync = new Sync());
+
+                if (old == null)
+                    return sync;
+                else
+                    sync = old;
+            }
+            else {
+                int cntr = sync.counter;
+
+                while (cntr > 0) {
+                    if (sync.casCounter(cntr, cntr + 1))
+                        return sync;
+
+                    cntr = sync.counter;
+                }
+
+                sync = keyMap.get(key);
+            }
+        }
+    }
+
+    /** */
+    private void evict(TxKey key, Sync sync) {
+        assert sync != null;
+
+        int cntr = sync.counter;
+
+        while (true) {
+            assert cntr > 0;
+
+            if (!sync.casCounter(cntr, cntr - 1)) {
+                cntr = sync.counter;
+
+                continue;
+            }
+
+            if (cntr == 1) {
+                boolean removed = keyMap.remove(key, sync);
+
+                assert removed;
+            }
+
+            break;
         }
     }
 
     /**
      *
      */
-    private static class TraversingClosure extends TxSearchRow implements BPlusTree.TreeRowClosure<TxSearchRow, TxRow> {
+    private static class TraversingClosure extends TxKey implements BPlusTree.TreeRowClosure<TxKey, TxRow> {
         /** */
-        private List<TxSearchRow> rows;
+        private List<TxKey> rows;
 
         /**
          *
@@ -261,8 +345,8 @@ public class TxLog implements DbCheckpointListener {
         }
 
         /** {@inheritDoc} */
-        @Override public boolean apply(BPlusTree<TxSearchRow, TxRow> tree, BPlusIO<TxSearchRow> io, long pageAddr,
-            int idx) throws IgniteCheckedException {
+        @Override public boolean apply(BPlusTree<TxKey, TxRow> tree, BPlusIO<TxKey> io, long pageAddr,
+                                       int idx) throws IgniteCheckedException {
 
             if (rows == null)
                 rows = new ArrayList<>();
@@ -270,9 +354,23 @@ public class TxLog implements DbCheckpointListener {
             TxLogIO logIO = (TxLogIO)io;
             int offset = io.offset(idx);
 
-            rows.add(new TxSearchRow(logIO.getMajor(pageAddr, offset), logIO.getMinor(pageAddr, offset)));
+            rows.add(new TxKey(logIO.getMajor(pageAddr, offset), logIO.getMinor(pageAddr, offset)));
 
             return true;
+        }
+    }
+
+    /** */
+    private static class Sync {
+        /** */
+        private static final AtomicIntegerFieldUpdater<Sync> UPD = AtomicIntegerFieldUpdater.newUpdater(Sync.class, "counter");
+
+        /** */
+        volatile int counter = 1;
+
+        /** */
+        boolean casCounter(int old, int upd) {
+            return UPD.compareAndSet(this, old, upd);
         }
     }
 }

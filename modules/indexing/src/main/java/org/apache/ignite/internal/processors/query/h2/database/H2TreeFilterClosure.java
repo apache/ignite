@@ -21,6 +21,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.h2.database.io.H2RowLinkIO;
@@ -30,7 +31,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.indexing.IndexingQueryCacheFilter;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisibleForSnapshot;
 
 /**
  *
@@ -87,22 +87,10 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRo
         assert io.storeMvccInfo() : io;
 
         long rowCrdVer = io.getMvccCoordinatorVersion(pageAddr, idx);
+        long rowCntr = io.getMvccCounter(pageAddr, idx);
 
-        assert rowCrdVer > 0 : rowCrdVer;
-
-        int cmp = Long.compare(mvccSnapshot.coordinatorVersion(), rowCrdVer);
-
-        if (cmp == 0) {
-            long rowCntr = io.getMvccCounter(pageAddr, idx);
-
-            cmp = Long.compare(mvccSnapshot.counter(), rowCntr);
-
-            return cmp >= 0 &&
-                !mvccSnapshot.activeTransactions().contains(rowCntr) &&
-                isVisibleForSnapshot(cctx, io.getLink(pageAddr, idx), mvccSnapshot);
-        }
-        else
-            return cmp > 0 && isVisibleForSnapshot(cctx, io.getLink(pageAddr, idx), mvccSnapshot);
+        return MvccUtils.isVisible(cctx, mvccSnapshot, rowCrdVer, rowCntr)
+                && !MvccUtils.isNewVisible(cctx, io.getLink(pageAddr, idx), mvccSnapshot);
     }
 
     /** {@inheritDoc} */
