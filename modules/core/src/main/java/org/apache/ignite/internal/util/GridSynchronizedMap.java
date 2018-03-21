@@ -22,13 +22,13 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Map;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Synchronized map for cache values that is safe to update in-place. Main reason for this map
  * is to provide snapshot-guarantee for serialization and keep concurrent iterators.
  */
-public class GridSynchronizedMap<K, V> extends ConcurrentHashMap8<K, V> implements Externalizable {
+public class GridSynchronizedMap<K, V> extends ConcurrentHashMap<K, V> implements Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 

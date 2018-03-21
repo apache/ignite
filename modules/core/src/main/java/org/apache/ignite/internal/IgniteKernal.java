@@ -118,6 +118,7 @@ import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.processors.cache.CacheConfigurationOverride;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -130,8 +131,8 @@ import org.apache.ignite.internal.processors.cache.persistence.filename.PdsConsi
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.cluster.ClusterProcessor;
-import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
 import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
+import org.apache.ignite.internal.processors.cluster.IGridClusterStateProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
@@ -288,6 +289,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     /** Force complete reconnect future. */
     private static final Object STOP_RECONNECT = new Object();
 
+    static {
+        LongJVMPauseDetector.start();
+    }
+
     /** */
     @GridToStringExclude
     private GridKernalContextImpl ctx;
@@ -443,20 +448,33 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override
-    public boolean isRebalanceEnabled() {
+    @Override public boolean isRebalanceEnabled() {
         return ctx.cache().context().isRebalanceEnabled();
     }
 
     /** {@inheritDoc} */
-    @Override
-    public void rebalanceEnabled(boolean rebalanceEnabled) {
+    @Override public void rebalanceEnabled(boolean rebalanceEnabled) {
         ctx.cache().context().rebalanceEnabled(rebalanceEnabled);
     }
 
     /** {@inheritDoc} */
     @Override public long getUpTime() {
         return U.currentTimeMillis() - startTime;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getLongJVMPausesCount() {
+        return LongJVMPauseDetector.longPausesCount();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getLongJVMPausesTotalDuration() {
+        return LongJVMPauseDetector.longPausesTotalDuration();
+    }
+
+    /** {@inheritDoc} */
+    @Override public Map<Long, Long> getLongJVMPauseLastEvents() {
+        return LongJVMPauseDetector.longPauseEvents();
     }
 
     /** {@inheritDoc} */
@@ -2389,7 +2407,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     private boolean isDaemon() {
         assert cfg != null;
 
-        return cfg.isDaemon() || "true".equalsIgnoreCase(System.getProperty(IGNITE_DAEMON));
+        return cfg.isDaemon() || IgniteSystemProperties.getBoolean(IGNITE_DAEMON);
     }
 
     /**
@@ -3163,10 +3181,13 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
     /**
      * @param cacheName Cache name.
+     * @param templateName Template name.
+     * @param cfgOverride Cache config properties to override.
      * @param checkThreadTx If {@code true} checks that current thread does not have active transactions.
      * @return Future that will be completed when cache is deployed.
      */
-    public IgniteInternalFuture<?> getOrCreateCacheAsync(String cacheName, boolean checkThreadTx) {
+    public IgniteInternalFuture<?> getOrCreateCacheAsync(String cacheName, String templateName,
+        CacheConfigurationOverride cfgOverride, boolean checkThreadTx) {
         CU.validateCacheName(cacheName);
 
         guard();
@@ -3175,7 +3196,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             checkClusterState();
 
             if (ctx.cache().cache(cacheName) == null)
-                return ctx.cache().getOrCreateFromTemplate(cacheName, checkThreadTx);
+                return ctx.cache().getOrCreateFromTemplate(cacheName, templateName, cfgOverride, checkThreadTx);
 
             return new GridFinishedFuture<>();
         }
@@ -4010,7 +4031,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
     }
 
     /** {@inheritDoc} */
-    public void dumpDebugInfo() {
+    @Override public void dumpDebugInfo() {
         try {
             GridKernalContextImpl ctx = this.ctx;
 

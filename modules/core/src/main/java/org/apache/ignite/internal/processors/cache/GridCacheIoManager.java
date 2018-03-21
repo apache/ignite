@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
@@ -88,7 +89,6 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.util.IgniteUtils.nl;
@@ -811,12 +811,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 res.error(req.classError());
 
                 sendResponseOnFailedMessage(nodeId, res, cctx, plc);
-            }
-
-            break;
-
-            case 45: {
-                processMessage(nodeId, msg, c);// Will be handled by Rebalance Demander.
             }
 
             break;
@@ -1572,11 +1566,11 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         /** Handler registry. */
         ConcurrentMap<ListenerKey, IgniteBiInClosure<UUID, GridCacheMessage>>
-            clsHandlers = new ConcurrentHashMap8<>();
+            clsHandlers = new ConcurrentHashMap<>();
 
         /** Ordered handler registry. */
         ConcurrentMap<Object, IgniteBiInClosure<UUID, ? extends GridCacheMessage>> orderedHandlers =
-            new ConcurrentHashMap8<>();
+            new ConcurrentHashMap<>();
     }
 
     /**

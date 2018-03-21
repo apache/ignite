@@ -36,7 +36,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tests for cache store with binary.
@@ -283,7 +283,7 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
      */
     private static class TestStore extends CacheStoreAdapter<Object, Object> {
         /** */
-        private final Map<Object, Object> map = new ConcurrentHashMap8<>();
+        private final Map<Object, Object> map = new ConcurrentHashMap<>();
 
         /** {@inheritDoc} */
         @Nullable @Override public Object load(Object key) {

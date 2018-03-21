@@ -65,7 +65,7 @@ public final class IgniteSystemProperties {
     /** Defines Ignite installation folder. */
     public static final String IGNITE_HOME = "IGNITE_HOME";
 
-    /** If this system property is set to {@code false} - no shutdown hook will be set. */
+    /** If this system property is set to {@code true} - no shutdown hook will be set. */
     public static final String IGNITE_NO_SHUTDOWN_HOOK = "IGNITE_NO_SHUTDOWN_HOOK";
 
     /**
@@ -195,11 +195,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SUCCESS_FILE = "IGNITE_SUCCESS_FILE";
 
     /**
-     * Name of system property to set system-wide local IP address or host. If provided it will
-     * override all default local bind settings within Ignite or any of its SPIs.
+     * The system property sets a system-wide local IP address or hostname to be used by Ignite networking components.
+     * Once provided, the property overrides all the default local binding settings for Ignite nodes.
      * <p>
-     * Note that system-wide local bind address can also be set via {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()}
-     * method. However, system properties have priority over configuration properties specified in
+     * Note, that the address can also be changed via
+     * {@link org.apache.ignite.configuration.IgniteConfiguration#setLocalHost(String)} method.
+     * However, this system property has bigger priority and overrides the settings set via
      * {@link org.apache.ignite.configuration.IgniteConfiguration}.
      */
     public static final String IGNITE_LOCAL_HOST = "IGNITE_LOCAL_HOST";
@@ -770,6 +771,18 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID = "IGNITE_DATA_STORAGE_FOLDER_BY_CONSISTENT_ID";
 
+    /** Ignite JVM pause detector disabled. */
+    public static final String IGNITE_JVM_PAUSE_DETECTOR_DISABLED = "IGNITE_JVM_PAUSE_DETECTOR_DISABLED";
+
+    /** Ignite JVM pause detector precision. */
+    public static final String IGNITE_JVM_PAUSE_DETECTOR_PRECISION = "IGNITE_JVM_PAUSE_DETECTOR_PRECISION";
+
+    /** Ignite JVM pause detector threshold. */
+    public static final String IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD = "IGNITE_JVM_PAUSE_DETECTOR_THRESHOLD";
+
+    /** Ignite JVM pause detector last events count. */
+    public static final String IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT = "IGNITE_JVM_PAUSE_DETECTOR_LAST_EVENTS_COUNT";
+
     /**
      * Default value is {@code false}.
      */
@@ -797,6 +810,25 @@ public final class IgniteSystemProperties {
      * (such as coding mistakes in code using Ignite) will not be logged.
      */
     public static final String IGNITE_DEV_ONLY_LOGGING_DISABLED = "IGNITE_DEV_ONLY_LOGGING_DISABLED";
+
+    /**
+     * When set to {@code true} (default), pages are written to page store without holding segment lock (with delay).
+     * Because other thread may require exactly the same page to be loaded from store, reads are protected by locking.
+     */
+    public static final String IGNITE_DELAYED_REPLACED_PAGE_WRITE = "IGNITE_DELAYED_REPLACED_PAGE_WRITE";
+
+    /**
+     * When set to {@code true}, WAL implementation with dedicated worker will be used even in FSYNC mode.
+     * Default is {@code false}.
+     */
+    public static final String IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER = "IGNITE_WAL_FSYNC_WITH_DEDICATED_WORKER";
+
+    /**
+     * When set to {@code false}, loaded pages implementation is switched to previous version of implementation,
+     * FullPageIdTable. {@code True} value enables 'Robin Hood hashing: backward shift deletion'.
+     * Default is {@code true}.
+     */
+    public static final String IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP = "IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP";
 
     /**
      * Enforces singleton.

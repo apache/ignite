@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
@@ -57,7 +58,6 @@ import org.apache.ignite.internal.util.lang.gridfunc.AtomicIntegerFactoryCallabl
 import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryGetValueClosure;
 import org.apache.ignite.internal.util.lang.gridfunc.CacheEntryHasPeekPredicate;
 import org.apache.ignite.internal.util.lang.gridfunc.ClusterNodeGetIdClosure;
-import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentDequeFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentHashSetFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ConcurrentMapFactoryCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ContainsNodeIdsPredicate;
@@ -103,8 +103,6 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentLinkedDeque8;
-import org.jsr166.ThreadLocalRandom8;
 
 /**
  * Contains factory and utility methods for {@code closures}, {@code predicates}, and {@code tuples}.
@@ -137,9 +135,6 @@ public class GridFunc {
 
     /** */
     private static final IgnitePredicate<Object> ALWAYS_FALSE = new AlwaysFalsePredicate<>();
-
-    /** */
-    private static final IgniteCallable<?> DEQUE_FACTORY = new ConcurrentDequeFactoryCallable();
 
     /** */
     private static final IgnitePredicate<Object> IS_NOT_NULL = new IsNotNullPredicate();
@@ -358,7 +353,7 @@ public class GridFunc {
     public static <T> T rand(Collection<? extends T> c) {
         A.notNull(c, "c");
 
-        int n = ThreadLocalRandom8.current().nextInt(c.size());
+        int n = ThreadLocalRandom.current().nextInt(c.size());
 
         int i = 0;
 
@@ -382,7 +377,7 @@ public class GridFunc {
     public static <T> T rand(List<T> l) {
         A.notNull(l, "l");
 
-        return l.get(ThreadLocalRandom8.current().nextInt(l.size()));
+        return l.get(ThreadLocalRandom.current().nextInt(l.size()));
     }
 
     /**
@@ -397,7 +392,7 @@ public class GridFunc {
     public static <T> T rand(T... c) {
         A.notNull(c, "c");
 
-        return c[ThreadLocalRandom8.current().nextInt(c.length)];
+        return c[ThreadLocalRandom.current().nextInt(c.length)];
     }
 
     /**
@@ -1273,19 +1268,6 @@ public class GridFunc {
         catch (IOException e) {
             throw new IgniteException(e);
         }
-    }
-
-    /**
-     * Returns a factory closure that creates new {@link ConcurrentLinkedDeque8} instance.
-     * Note that this method does not create a new closure but returns a static one.
-     *
-     * @param <T> Type parameters for the created {@link List}.
-     * @return Factory closure that creates new {@link List} instance every
-     *      time its {@link org.apache.ignite.lang.IgniteOutClosure#apply()} method is called.
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> IgniteCallable<ConcurrentLinkedDeque8<T>> newDeque() {
-        return (IgniteCallable<ConcurrentLinkedDeque8<T>>)DEQUE_FACTORY;
     }
 
     /**

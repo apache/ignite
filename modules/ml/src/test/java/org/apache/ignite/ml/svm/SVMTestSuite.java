@@ -21,13 +21,13 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.regressions.* package.
+ * Test suite for all tests located in org.apache.ignite.ml.svm.* package.
  */
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-    LocalLinearSVMClassificationSCDATrainerTest.class,
-    DistributedLinearSVMClassificationSCDATrainerTest.class,
-    SVMModelTest.class
+    SVMModelTest.class,
+    SVMBinaryTrainerTest.class,
+    SVMMultiClassTrainerTest.class
 })
 public class SVMTestSuite {
     // No-op.

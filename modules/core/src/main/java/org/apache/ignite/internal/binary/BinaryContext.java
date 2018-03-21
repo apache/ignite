@@ -41,6 +41,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -118,7 +119,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.MarshallerContext;
 import org.apache.ignite.marshaller.MarshallerUtils;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.MarshallerPlatformIds.JAVA_ID;
 
@@ -209,7 +209,7 @@ public class BinaryContext {
     }
 
     /** */
-    private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap<>();
 
     /** */
     private final Map<Integer, BinaryClassDescriptor> predefinedTypes = new HashMap<>();
@@ -224,16 +224,16 @@ public class BinaryContext {
     private final Map<Class<? extends Map>, Byte> mapTypes = new HashMap<>();
 
     /** Maps typeId to mappers. */
-    private final ConcurrentMap<Integer, BinaryInternalMapper> typeId2Mapper = new ConcurrentHashMap8<>(0);
+    private final ConcurrentMap<Integer, BinaryInternalMapper> typeId2Mapper = new ConcurrentHashMap<>(0);
 
     /** Affinity key field names. */
-    private final ConcurrentMap<Integer, String> affKeyFieldNames = new ConcurrentHashMap8<>(0);
+    private final ConcurrentMap<Integer, String> affKeyFieldNames = new ConcurrentHashMap<>(0);
 
     /** Maps className to mapper */
-    private final ConcurrentMap<String, BinaryInternalMapper> cls2Mappers = new ConcurrentHashMap8<>(0);
+    private final ConcurrentMap<String, BinaryInternalMapper> cls2Mappers = new ConcurrentHashMap<>(0);
 
     /** Affinity key field names. */
-    private final ConcurrentMap<Integer, BinaryIdentityResolver> identities = new ConcurrentHashMap8<>(0);
+    private final ConcurrentMap<Integer, BinaryIdentityResolver> identities = new ConcurrentHashMap<>(0);
 
     /** */
     private BinaryMetadataHandler metaHnd;
@@ -333,6 +333,7 @@ public class BinaryContext {
         registerPredefinedType(GridMapEntry.class, 60);
         registerPredefinedType(IgniteBiTuple.class, 61);
         registerPredefinedType(T2.class, 62);
+        registerPredefinedType(IgniteUuid.class, 63);
 
         registerPredefinedType(PlatformJavaObjectFactoryProxy.class,
             GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY);
