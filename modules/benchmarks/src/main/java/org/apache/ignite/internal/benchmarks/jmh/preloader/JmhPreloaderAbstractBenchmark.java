@@ -21,6 +21,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -120,6 +122,9 @@ public class JmhPreloaderAbstractBenchmark extends JmhAbstractBenchmark {
 
         entriesPerMessage = intProperty(PROP_ENTRIES_PER_MESSAGE);
 
+        if (entriesPerMessage == 0)
+            entriesPerMessage = 10_000;
+
         IgniteCache<Integer, Integer> cache = supplierNode.cache(DEFAULT_CACHE_NAME);
 
         for (int k = 0; k < entriesPerMessage; k++)
@@ -190,8 +195,8 @@ public class JmhPreloaderAbstractBenchmark extends JmhAbstractBenchmark {
                 .setDefaultDataRegionConfiguration(
                 new DataRegionConfiguration()
                     .setPersistenceEnabled(true)
-                    .setInitialSize(2L * 1024 * 1024 * 1024)
-                    .setMaxSize(2L * 1024 * 1024 * 1024)
+                    .setInitialSize(8L * 1024 * 1024 * 1024)
+                    .setMaxSize(8L * 1024 * 1024 * 1024)
                 )
         );
 
@@ -204,7 +209,9 @@ public class JmhPreloaderAbstractBenchmark extends JmhAbstractBenchmark {
         return new CacheConfiguration(DEFAULT_CACHE_NAME)
             .setAffinity(new RendezvousAffinityFunction(false, 1))
             .setBackups(1)
-            .setRebalanceDelay(-1);
+            .setRebalanceDelay(-1)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
     }
 
     /**
@@ -221,7 +228,7 @@ public class JmhPreloaderAbstractBenchmark extends JmhAbstractBenchmark {
         GridDhtPartitionSupplyMessage msg = new GridDhtPartitionSupplyMessage(
             4,
             CU.cacheId(DEFAULT_CACHE_NAME),
-            new AffinityTopologyVersion(2, 2),
+            supplierCacheCtx.affinity().affinityTopologyVersion(),
             true
         );
 
@@ -229,7 +236,7 @@ public class JmhPreloaderAbstractBenchmark extends JmhAbstractBenchmark {
             GridCacheEntryInfo entry = new GridCacheEntryInfo();
 
             entry.cacheId(CU.cacheId(DEFAULT_CACHE_NAME));
-            entry.key(supplierCacheObjProc.toCacheKeyObject(supplierCacheObjCtx, supplierCacheCtx, ThreadLocalRandom.current().nextInt(), true));
+            entry.key(supplierCacheObjProc.toCacheKeyObject(supplierCacheObjCtx, supplierCacheCtx, ThreadLocalRandom.current().nextInt(100_000), true));
             entry.value(supplierCacheObjProc.toCacheObject(supplierCacheObjCtx, ThreadLocalRandom.current().nextInt(), true));
             entry.version(new GridCacheVersion(2, 1, 1));
 
@@ -242,7 +249,7 @@ public class JmhPreloaderAbstractBenchmark extends JmhAbstractBenchmark {
     protected GridDhtPartitionDemandMessage generateDemandMessage() throws Exception {
         GridDhtPartitionDemandMessage msg = new GridDhtPartitionDemandMessage(
             4,
-            new AffinityTopologyVersion(2, 2),
+            demanderCacheCtx.affinity().affinityTopologyVersion(),
             CU.cacheId(DEFAULT_CACHE_NAME)
         );
 
