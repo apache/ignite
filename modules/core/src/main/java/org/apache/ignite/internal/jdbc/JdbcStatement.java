@@ -27,6 +27,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.internal.client.GridClientException;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
@@ -70,6 +72,10 @@ public class JdbcStatement implements Statement {
     /** Fetch size. */
     private int fetchSize = DFLT_FETCH_SIZE;
 
+    /** Current updated items count. */
+    long updateCnt = -1;
+
+
     /**
      * Creates new statement.
      *
@@ -83,9 +89,36 @@ public class JdbcStatement implements Statement {
 
     /** {@inheritDoc} */
     @Override public ResultSet executeQuery(String sql) throws SQLException {
+        T2<Boolean, JdbcResultSet> res = execute0(sql);
+
+        rs = res.get2();
+
+        return rs;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int executeUpdate(String sql) throws SQLException {
+        T2<Boolean, JdbcResultSet> res = execute0(sql);
+
+        // select statement
+        if (res.get1())
+            return 0;
+
+        return (int)updateCnt;
+    }
+
+    /**
+     * Internal execute query.
+     * @param sql Sql statement.
+     * @return Tuple with (isQuery flag, results set).
+     * @throws SQLException If failed.
+     */
+    private T2<Boolean, JdbcResultSet> execute0(String sql) throws SQLException {
         ensureNotClosed();
 
         rs = null;
+
+        updateCnt = -1;
 
         if (sql == null || sql.isEmpty())
             throw new SQLException("SQL query is empty");
@@ -105,7 +138,7 @@ public class JdbcStatement implements Statement {
             else {
                 List<?> msg = JdbcUtils.unmarshal(data);
 
-                assert msg.size() == 7;
+                assert msg.size() == 8;
 
                 UUID nodeId = (UUID)msg.get(0);
                 UUID futId = (UUID)msg.get(1);
@@ -114,8 +147,12 @@ public class JdbcStatement implements Statement {
                 List<String> types = (List<String>)msg.get(4);
                 Collection<List<Object>> fields = (Collection<List<Object>>)msg.get(5);
                 boolean finished = (Boolean)msg.get(6);
+                boolean isQuery = (Boolean)msg.get(7);
 
-                return new JdbcResultSet(this, nodeId, futId, tbls, cols, types, fields, finished, fetchSize);
+                if (!isQuery)
+                    updateCnt = updateCounterFromQueryResult(fields);
+
+                return new T2(isQuery, new JdbcResultSet(this, nodeId, futId, tbls, cols, types, fields, finished, fetchSize));
             }
         }
         catch (GridClientException e) {
@@ -123,11 +160,29 @@ public class JdbcStatement implements Statement {
         }
     }
 
-    /** {@inheritDoc} */
-    @Override public int executeUpdate(String sql) throws SQLException {
-        ensureNotClosed();
+    /**
+     * @param rows query result.
+     * @return update counter, if found
+     * @throws SQLException if getting an update counter from result proved to be impossible.
+     */
+    private static long updateCounterFromQueryResult(Collection<List<Object>> rows) throws SQLException {
+        if (F.isEmpty(rows))
+            return -1;
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        if (rows.size() != 1)
+            throw new SQLException("Expected fetch size of 1 for update operation");
+
+        List<?> row = rows.iterator().next();
+
+        if (row.size() != 1)
+            throw new SQLException("Expected row size of 1 for update operation");
+
+        Object objRes = row.get(0);
+
+        if (!(objRes instanceof Long))
+            throw new SQLException("Unexpected update result type");
+
+        return (Long)objRes;
     }
 
     /** {@inheritDoc} */
@@ -212,9 +267,11 @@ public class JdbcStatement implements Statement {
     @Override public boolean execute(String sql) throws SQLException {
         ensureNotClosed();
 
-        rs = executeQuery(sql);
+        T2<Boolean, JdbcResultSet> res = execute0(sql);
 
-        return true;
+        rs = res.get2();
+
+        return res.get1();
     }
 
     /** {@inheritDoc} */
@@ -232,7 +289,11 @@ public class JdbcStatement implements Statement {
     @Override public int getUpdateCount() throws SQLException {
         ensureNotClosed();
 
-        return -1;
+        int res = (int)updateCnt;
+
+        updateCnt = -1;
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -292,21 +353,21 @@ public class JdbcStatement implements Statement {
     @Override public void addBatch(String sql) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public void clearBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
     }
 
     /** {@inheritDoc} */
     @Override public int[] executeBatch() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        throw new SQLFeatureNotSupportedException("Batch statements are not supported yet.");
     }
 
     /** {@inheritDoc} */
@@ -330,28 +391,37 @@ public class JdbcStatement implements Statement {
     @Override public ResultSet getGeneratedKeys() throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        throw new SQLFeatureNotSupportedException("Auto generated keys are not supported.");
     }
 
     /** {@inheritDoc} */
     @Override public int executeUpdate(String sql, int autoGeneratedKeys) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        if (autoGeneratedKeys == RETURN_GENERATED_KEYS)
+            throw new SQLFeatureNotSupportedException("Auto generated keys are not supported.");
+
+        return executeUpdate(sql);
     }
 
     /** {@inheritDoc} */
     @Override public int executeUpdate(String sql, int[] colIndexes) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        if (!F.isEmpty(colIndexes))
+            throw new SQLFeatureNotSupportedException("Auto generated keys are not supported.");
+
+        return executeUpdate(sql);
     }
 
     /** {@inheritDoc} */
     @Override public int executeUpdate(String sql, String[] colNames) throws SQLException {
         ensureNotClosed();
 
-        throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        if (!F.isEmpty(colNames))
+            throw new SQLFeatureNotSupportedException("Auto generated keys are not supported.");
+
+        return executeUpdate(sql);
     }
 
     /** {@inheritDoc} */
@@ -359,7 +429,7 @@ public class JdbcStatement implements Statement {
         ensureNotClosed();
 
         if (autoGeneratedKeys == RETURN_GENERATED_KEYS)
-            throw new SQLFeatureNotSupportedException("Updates are not supported.");
+            throw new SQLFeatureNotSupportedException("Auto generated keys are not supported.");
 
         return execute(sql);
     }
@@ -368,8 +438,8 @@ public class JdbcStatement implements Statement {
     @Override public boolean execute(String sql, int[] colIndexes) throws SQLException {
         ensureNotClosed();
 
-        if (colIndexes != null && colIndexes.length > 0)
-            throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        if (!F.isEmpty(colIndexes))
+            throw new SQLFeatureNotSupportedException("Auto generated keys are not supported.");
 
         return execute(sql);
     }
@@ -378,8 +448,8 @@ public class JdbcStatement implements Statement {
     @Override public boolean execute(String sql, String[] colNames) throws SQLException {
         ensureNotClosed();
 
-        if (colNames != null && colNames.length > 0)
-            throw new SQLFeatureNotSupportedException("Updates are not supported.");
+        if (!F.isEmpty(colNames))
+            throw new SQLFeatureNotSupportedException("Auto generated keys are not supported.");
 
         return execute(sql);
     }

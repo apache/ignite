@@ -94,7 +94,7 @@ import static org.apache.ignite.internal.jdbc2.JdbcUtils.convertToSqlException;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 
 /**
- * JDBC connection implementation.
+ * JDBC connection implementation based on Ignite client node.
  */
 public class JdbcConnection implements Connection {
     /** Null stub. */

@@ -172,7 +172,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             else {
                 status = 1;
 
-                bytes = U.marshal(MARSHALLER, new SQLException(res.getException().getMessage()));
+                bytes = U.marshal(MARSHALLER, new SQLException(res.getException()));
             }
 
             byte[] packet = new byte[bytes.length + 1];
@@ -243,6 +243,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             Collection<String> tbls = null;
             Collection<String> cols = null;
             Collection<String> types = null;
+            boolean isQuery = false;
 
             if (first) {
                 assert sql != null;
@@ -279,6 +280,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
                 tbls = new ArrayList<>(meta.size());
                 cols = new ArrayList<>(meta.size());
                 types = new ArrayList<>(meta.size());
+                isQuery = ((QueryCursorImpl<List<?>>)cursor).isQuery();
 
                 for (GridQueryFieldMetadata desc : meta) {
                     tbls.add(desc.typeName());
@@ -339,7 +341,8 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             else
                 remove(futId, c);
 
-            return first ? F.asList(ignite.cluster().localNode().id(), futId, tbls, cols, types, rows, finished) :
+            return first ?
+                F.asList(ignite.cluster().localNode().id(), futId, tbls, cols, types, rows, finished, isQuery) :
                 F.asList(rows, finished);
         }
 
