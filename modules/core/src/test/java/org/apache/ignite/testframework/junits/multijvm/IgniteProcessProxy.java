@@ -20,6 +20,7 @@ package org.apache.ignite.testframework.junits.multijvm;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -53,6 +54,7 @@ import org.apache.ignite.IgniteServices;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.DataStorageMetrics;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.MemoryMetrics;
 import org.apache.ignite.PersistenceMetrics;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -293,12 +295,37 @@ public class IgniteProcessProxy implements IgniteEx {
      *
      * @param igniteInstanceName Ignite instance name.
      * @param cancel If {@code true} then all jobs currently will be cancelled.
+     * @throws InterruptedException In case of the node stopping error.
      */
-    public static void stop(String igniteInstanceName, boolean cancel) {
-        IgniteProcessProxy proxy = gridProxies.get(igniteInstanceName);
+    public static void stop(String igniteInstanceName, boolean cancel) throws InterruptedException {
+        final IgniteProcessProxy proxy = gridProxies.get(igniteInstanceName);
 
         if (proxy != null) {
-            proxy.remoteCompute().run(new StopGridTask(igniteInstanceName, cancel));
+            final CountDownLatch rmtNodeStoppedLatch = new CountDownLatch(1);
+            final UUID rmNodeId = proxy.localNode().id();
+
+            proxy.locJvmGrid.events().localListen(new IgnitePredicateX<Event>() {
+                @Override public boolean applyx(Event e) {
+                    if (((DiscoveryEvent)e).eventNode().id().equals(rmNodeId)) {
+                        rmtNodeStoppedLatch.countDown();
+
+                        return false;
+                    }
+
+                    return true;
+                }
+            }, EventType.EVT_NODE_LEFT);
+
+            proxy.remoteCompute().runAsync(new StopGridTask(igniteInstanceName, cancel));
+
+            try {
+                rmtNodeStoppedLatch.await();
+            }
+            catch (InterruptedException e) {
+                X.printerr("Remote node has not stopped [id=" + rmNodeId + ']', e);
+
+                throw e;
+            }
 
             gridProxies.remove(igniteInstanceName, proxy);
         }
@@ -848,7 +875,8 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /**
-     *
+     * Executes {@link Ignition#stop(String, boolean)} with given arguments in a separated thread, doesn't wait up the
+     * fulfillment.
      */
     private static class StopGridTask implements IgniteRunnable {
         /** Ignite instance name. */
@@ -868,7 +896,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
         /** {@inheritDoc} */
         @Override public void run() {
-            G.stop(igniteInstanceName, cancel);
+            CompletableFuture.runAsync(() -> G.stop(igniteInstanceName, cancel));
         }
     }
 
