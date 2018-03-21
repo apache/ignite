@@ -92,7 +92,7 @@ public class CacheObjectUtils {
         for (Object obj : col)
             col0.add(unwrapBinary(ctx, obj, keepBinary, cpy));
 
-        return (col0 instanceof MutableSingletonList) ? U.convertToSingletonList(col0) : col0;
+        return U.unwrapSingletonCollection(col0);
     }
 
     /**
@@ -115,7 +115,7 @@ public class CacheObjectUtils {
                 unwrapBinary(ctx, e.getKey(), false, cpy),
                 unwrapBinary(ctx, e.getValue(), false, cpy));
 
-        return map0;
+        return U.unwrapSingletonMap(map0);
     }
 
     /**
@@ -134,7 +134,7 @@ public class CacheObjectUtils {
         for (Object obj : col)
             col0.add(unwrapBinaryIfNeeded(ctx, obj, keepBinary, cpy));
 
-        return col0;
+        return U.unwrapSingletonCollection(col0);
     }
 
     /**

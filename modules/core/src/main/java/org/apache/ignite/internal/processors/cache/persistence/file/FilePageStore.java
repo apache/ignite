@@ -30,6 +30,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.store.PageStore;
+import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.IgniteDataIntegrityViolationException;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
@@ -71,6 +72,9 @@ public class FilePageStore implements PageStore {
     /** */
     private final AtomicLong allocated;
 
+    /** Region metrics updater. */
+    private final AllocatedPageTracker allocatedTracker;
+
     /** */
     private final int pageSize;
 
@@ -92,16 +96,19 @@ public class FilePageStore implements PageStore {
     /**
      * @param file File.
      */
-    public FilePageStore(byte type, File file, FileIOFactory factory, DataStorageConfiguration cfg) {
+    public FilePageStore(
+        byte type,
+        File file,
+        FileIOFactory factory,
+        DataStorageConfiguration cfg,
+        AllocatedPageTracker allocatedTracker) {
         this.type = type;
-
-        cfgFile = file;
-        dbCfg = cfg;
-        ioFactory = factory;
-
-        allocated = new AtomicLong();
-
-        pageSize = dbCfg.getPageSize();
+        this.cfgFile = file;
+        this.dbCfg = cfg;
+        this.ioFactory = factory;
+        this.allocated = new AtomicLong();
+        this.pageSize = dbCfg.getPageSize();
+        this.allocatedTracker = allocatedTracker;
     }
 
     /** {@inheritDoc} */
@@ -261,7 +268,13 @@ public class FilePageStore implements PageStore {
 
             fileIO.clear();
 
-            allocated.set(initFile());
+            long newAlloc = initFile();
+
+            long delta = newAlloc - allocated.getAndSet(newAlloc);
+
+            assert delta % pageSize == 0;
+
+            allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
         }
         catch (IOException e) {
             throw new IgniteCheckedException(e);
@@ -292,8 +305,15 @@ public class FilePageStore implements PageStore {
         lock.writeLock().lock();
 
         try {
-            if (inited)
-                allocated.set(fileIO.size());
+            if (inited) {
+                long newSize = fileIO.size();
+
+                long delta = newSize - allocated.getAndSet(newSize);
+
+                assert delta % pageSize == 0;
+
+                allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
+            }
 
             recover = false;
         }
@@ -405,10 +425,17 @@ public class FilePageStore implements PageStore {
                     try {
                         this.fileIO = fileIO = ioFactory.create(cfgFile, CREATE, READ, WRITE);
 
-                        if (cfgFile.length() == 0)
-                            allocated.set(initFile());
-                        else
-                            allocated.set(checkFile());
+                        long newSize = cfgFile.length() == 0 ? initFile() : checkFile();
+
+                        assert allocated.get() == 0;
+
+                        long delta = newSize - headerSize();
+
+                        assert delta % pageSize == 0;
+
+                        allocatedTracker.updateTotalAllocatedPages(delta / pageSize);
+
+                        allocated.set(newSize);
 
                         inited = true;
                     }
@@ -433,7 +460,7 @@ public class FilePageStore implements PageStore {
     }
 
     /** {@inheritDoc} */
-    @Override public void write(long pageId, ByteBuffer pageBuf, int tag) throws IgniteCheckedException {
+    @Override public void write(long pageId, ByteBuffer pageBuf, int tag, boolean calculateCrc) throws IgniteCheckedException {
         init();
 
         lock.readLock().lock();
@@ -450,13 +477,20 @@ public class FilePageStore implements PageStore {
             assert pageBuf.capacity() == pageSize;
             assert pageBuf.position() == 0;
             assert pageBuf.order() == ByteOrder.nativeOrder();
-            assert PageIO.getCrc(pageBuf) == 0 : U.hexLong(pageId);
+            assert PageIO.getType(pageBuf) != 0 : "Invalid state. Type is 0! pageId = " + U.hexLong(pageId);
+            assert PageIO.getVersion(pageBuf) != 0 : "Invalid state. Version is 0! pageId = " + U.hexLong(pageId);
 
-            int crc32 = skipCrc ? 0 : PureJavaCrc32.calcCrc32(pageBuf, pageSize);
+            if (calculateCrc && !skipCrc) {
+                assert PageIO.getCrc(pageBuf) == 0 : U.hexLong(pageId);
 
-            PageIO.setCrc(pageBuf, crc32);
+                PageIO.setCrc(pageBuf, calcCrc32(pageBuf, pageSize));
+            }
 
-            pageBuf.position(0);
+            // Check whether crc was calculated somewhere above the stack if it is forcibly skipped.
+            assert skipCrc || PageIO.getCrc(pageBuf) != 0 || calcCrc32(pageBuf, pageSize) == 0 :
+                    "CRC hasn't been calculated, crc=0";
+
+            assert pageBuf.position() == 0 : pageBuf.position();
 
             int len = pageSize;
 
@@ -477,6 +511,21 @@ public class FilePageStore implements PageStore {
         }
         finally {
             lock.readLock().unlock();
+        }
+    }
+
+    /**
+     * @param pageBuf Page buffer.
+     * @param pageSize Page size.
+     */
+    private static int calcCrc32(ByteBuffer pageBuf, int pageSize) {
+        try {
+            pageBuf.position(0);
+
+            return PureJavaCrc32.calcCrc32(pageBuf, pageSize);
+        }
+        finally {
+            pageBuf.position(0);
         }
     }
 
@@ -525,8 +574,11 @@ public class FilePageStore implements PageStore {
         do {
             off = allocated.get();
 
-            if (allocated.compareAndSet(off, off + pageSize))
+            if (allocated.compareAndSet(off, off + pageSize)) {
+                allocatedTracker.updateTotalAllocatedPages(1);
+
                 break;
+            }
         }
         while (true);
 

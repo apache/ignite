@@ -66,7 +66,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -82,6 +81,8 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
+import org.apache.ignite.spi.discovery.IgniteDiscoveryThread;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -358,7 +359,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 for (Object item : col)
                     pCol.add(marshalToBinary(item));
 
-                return (pCol instanceof MutableSingletonList) ? U.convertToSingletonList(pCol) : pCol;
+                return U.unwrapSingletonCollection(pCol);
             }
         }
 
@@ -371,7 +372,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 for (Map.Entry<?, ?> e : map.entrySet())
                     pMap.put(marshalToBinary(e.getKey()), marshalToBinary(e.getValue()));
 
-                return pMap;
+                return U.unwrapSingletonMap(pMap);
             }
         }
 
@@ -461,9 +462,18 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         BinaryMetadata oldMeta = metaHolder != null ? metaHolder.metadata() : null;
 
-        BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
+        try {
+            BinaryMetadata mergedMeta = BinaryUtils.mergeMetadata(oldMeta, newMeta0);
 
-        metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
+            metadataFileStore.mergeAndWriteMetadata(mergedMeta);
+
+            metadataLocCache.put(typeId, new BinaryMetadataHolder(mergedMeta, 0, 0));
+        }
+        catch (BinaryObjectException e) {
+            throw new BinaryObjectException("New binary metadata is incompatible with binary metadata" +
+                " persisted locally." +
+                " Consider cleaning up persisted metadata from <workDir>/binary_meta directory.", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -495,6 +505,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         }
 
         if (holder != null) {
+            if (IgniteThread.current() instanceof IgniteDiscoveryThread)
+                return holder.metadata();
+
             if (holder.pendingVersion() - holder.acceptedVersion() > 0) {
                 GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(typeId, holder.pendingVersion());
 
@@ -534,7 +547,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
             }
         }
-        else {
+        else if (holder != null) {
+            if (IgniteThread.current() instanceof IgniteDiscoveryThread)
+                return holder.metadata().wrap(binaryCtx);
+
             if (holder.pendingVersion() - holder.acceptedVersion() > 0) {
                 GridFutureAdapter<MetadataUpdateResult> fut = transport.awaitMetadataUpdate(
                         typeId,
@@ -910,7 +926,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 metadataLocCache.put(e.getKey(), localHolder);
 
                 if (!ctx.clientNode())
-                    metadataFileStore.saveMetadata(holder.metadata());
+                    metadataFileStore.writeMetadata(holder.metadata());
             }
         }
     }

@@ -19,7 +19,10 @@ package org.apache.ignite.internal.processors.cluster;
 
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.ExchangeActions;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -112,7 +115,13 @@ public class ChangeGlobalStateMessage implements DiscoveryCustomMessage {
         return false;
     }
 
-   /**
+    /** {@inheritDoc} */
+    @Override public DiscoCache createDiscoCache(GridDiscoveryManager mgr, AffinityTopologyVersion topVer,
+        DiscoCache discoCache) {
+        return mgr.createDiscoCacheOnCacheChange(topVer, discoCache);
+    }
+
+    /**
     * @return Node initiated state change.
     */
     public UUID initiatorNodeId() {

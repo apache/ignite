@@ -28,9 +28,9 @@ import org.jsr166.LongAdder8;
 /**
  *
  */
-public class DataRegionMetricsImpl implements DataRegionMetrics {
+public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTracker {
     /** */
-    private final IgniteOutClosure<Float> fillFactorProvider;
+    private final IgniteOutClosure<Long> freeSpaceProvider;
 
     /** */
     private final LongAdder8 totalAllocatedPages = new LongAdder8();
@@ -39,6 +39,9 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      * Counter for number of pages occupied by large entries (one entry is larger than one page).
      */
     private final LongAdder8 largeEntriesPages = new LongAdder8();
+
+    /** Memory page size */
+    private final int pageSize;
 
     /** Counter for number of dirty pages. */
     private LongAdder8 dirtyPages = new LongAdder8();
@@ -71,15 +74,18 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      * @param memPlcCfg DataRegionConfiguration.
     */
     public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg) {
-        this(memPlcCfg, null);
+        this(memPlcCfg, null, 0);
     }
 
     /**
      * @param memPlcCfg DataRegionConfiguration.
      */
-    public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg, @Nullable IgniteOutClosure<Float> fillFactorProvider) {
+    public DataRegionMetricsImpl(DataRegionConfiguration memPlcCfg, @Nullable IgniteOutClosure<Long> freeSpaceProvider,
+        int pageSize) {
         this.memPlcCfg = memPlcCfg;
-        this.fillFactorProvider = fillFactorProvider;
+        this.freeSpaceProvider = freeSpaceProvider;
+
+        this.pageSize = pageSize;
 
         metricsEnabled = memPlcCfg.isMetricsEnabled();
 
@@ -123,10 +129,14 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
 
     /** {@inheritDoc} */
     @Override public float getPagesFillFactor() {
-        if (!metricsEnabled || fillFactorProvider == null)
+        if (!metricsEnabled || freeSpaceProvider == null || pageSize == 0)
             return 0;
 
-        return fillFactorProvider.apply();
+        long freeSpace = freeSpaceProvider.apply();
+
+        long totalAllocated = pageSize * totalAllocatedPages.longValue();
+
+        return (float) (totalAllocated - freeSpace) / totalAllocated;
     }
 
     /** {@inheritDoc} */
@@ -191,8 +201,13 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      * Increments totalAllocatedPages counter.
      */
     public void incrementTotalAllocatedPages() {
+        updateTotalAllocatedPages(1);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateTotalAllocatedPages(long delta) {
         if (metricsEnabled) {
-            totalAllocatedPages.increment();
+            totalAllocatedPages.add(delta);
 
             updateAllocationRateMetrics();
         }

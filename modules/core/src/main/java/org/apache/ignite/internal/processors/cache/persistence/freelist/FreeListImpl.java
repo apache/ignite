@@ -65,7 +65,10 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     /** */
     private static final int MIN_PAGE_FREE_SPACE = 8;
 
-    /** */
+    /**
+     * Step between buckets in free list, measured in powers of two.
+     * For example, for page size 4096 and 256 buckets, shift is 4 and step is 16 bytes.
+     */
     private final int shift;
 
     /** */
@@ -191,7 +194,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
             CacheDataRow row,
             int rowSize
         ) throws IgniteCheckedException {
-            io.addRow(pageAddr, row, rowSize, pageSize());
+            io.addRow(pageId, pageAddr, row, rowSize, pageSize());
 
             if (needWalDeltaRecord(pageId, page, null)) {
                 // TODO IGNITE-5829 This record must contain only a reference to a logical WAL record with the actual data.
@@ -256,12 +259,20 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
 
     /** */
-    private final PageHandler<Void, Long> rmvRow = new RemoveRowHandler();
+    private final PageHandler<Void, Long> rmvRow;
 
     /**
      *
      */
     private final class RemoveRowHandler extends PageHandler<Void, Long> {
+        /** Indicates whether partition ID should be masked from page ID. */
+        private final boolean maskPartId;
+
+        /** */
+        RemoveRowHandler(boolean maskPartId) {
+            this.maskPartId = maskPartId;
+        }
+
         @Override public Long run(
             int cacheId,
             long pageId,
@@ -293,6 +304,7 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
                     if (oldBucket != newBucket) {
                         // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
+                        pageId = maskPartId ? PageIdUtils.maskPartitionId(pageId) : pageId;
                         if (removeDataPage(pageId, page, pageAddr, io, oldBucket))
                             put(null, pageId, page, pageAddr, newBucket);
                     }
@@ -330,6 +342,9 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
         long metaPageId,
         boolean initNew) throws IgniteCheckedException {
         super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId);
+
+        rmvRow = new RemoveRowHandler(cacheId == 0);
+
         this.evictionTracker = memPlc.evictionTracker();
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
@@ -359,27 +374,22 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
     }
 
     /**
-     * Calculates average fill factor over FreeListImpl instance.
+     * Calculates free space tracked by this FreeListImpl instance.
      *
-     * @return Tuple (numenator, denominator).
+     * @return Free space available for use, in bytes.
      */
-    public T2<Long, Long> fillFactor() {
-        long pageSize = pageSize();
-
-        long totalSize = 0;
-        long loadSize = 0;
+    public long freeSpace() {
+        long freeSpace = 0;
 
         for (int b = BUCKETS - 2; b > 0; b--) {
-            long bsize = pageSize - ((REUSE_BUCKET - b) << shift);
+            long perPageFreeSpace = b << shift;
 
             long pages = bucketsSize[b].longValue();
 
-            loadSize += pages * (pageSize - bsize);
-
-            totalSize += pages * pageSize;
+            freeSpace += pages * perPageFreeSpace;
         }
 
-        return totalSize == 0 ? new T2<>(0L, 0L) : new T2<>(loadSize, totalSize);
+        return freeSpace;
     }
 
     /** {@inheritDoc} */
@@ -492,6 +502,8 @@ public class FreeListImpl extends PagesList implements FreeList, ReuseList {
 
             if (allocated)
                 pageId = allocateDataPage(row.partition());
+            else
+                pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
             DataPageIO init = reuseBucket || allocated ? DataPageIO.VERSIONS.latest() : null;
 

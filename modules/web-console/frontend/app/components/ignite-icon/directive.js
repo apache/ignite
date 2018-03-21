@@ -15,16 +15,14 @@
  * limitations under the License.
  */
 
-import * as icons from '../../../public/images/icons/index.js';
-
 export default function() {
     return {
         restrict: 'A',
         controller: class {
-            static $inject = ['$scope', '$attrs', '$sce', '$element', '$window'];
+            static $inject = ['$scope', '$attrs', '$sce', '$element', '$window', 'IgniteIcon'];
 
-            constructor($scope, $attrs, $sce, $element, $window) {
-                Object.assign(this, {$scope, $attrs, $sce, $element, $window});
+            constructor($scope, $attrs, $sce, $element, $window, IgniteIcon) {
+                Object.assign(this, {$scope, $attrs, $sce, $element, $window, IgniteIcon});
             }
 
             $onInit() {
@@ -43,7 +41,7 @@ export default function() {
 
             $postLink() {
                 this.name = this.$attrs.igniteIcon;
-                this.$element.attr('viewBox', icons[this.name].viewBox);
+                this.$element.attr('viewBox', this.IgniteIcon.getIcon(this.name).viewBox);
 
                 this.render(this.getFragmentURL());
             }

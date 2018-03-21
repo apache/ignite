@@ -23,11 +23,13 @@ import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsClientNe
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsDynamicCacheTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsSingleNodePutGetPersistenceTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsCacheRestoreTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.IgnitePdsDataRegionMetricsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.DefaultPageSizeBackwardsCompatibilityTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsCheckpointSimulationWithRealCpDisabledTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePdsEvictionTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreePageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.BPlusTreeReuseListPageMemoryImplTest;
+import org.apache.ignite.internal.processors.cache.persistence.pagemem.FillFactorMetricTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.MetadataStoragePageMemoryImplTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplNoLoadTest;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryImplTest;
@@ -63,6 +65,9 @@ public class IgnitePdsTestSuite extends TestSuite {
         suite.addTestSuite(BPlusTreePageMemoryImplTest.class);
         suite.addTestSuite(BPlusTreeReuseListPageMemoryImplTest.class);
 
+
+        // Metrics
+        suite.addTestSuite(FillFactorMetricTest.class);
         // Basic API tests.
         suite.addTestSuite(IgniteDbSingleNodePutGetTest.class);
         suite.addTestSuite(IgniteDbMultiNodePutGetTest.class);
@@ -78,6 +83,7 @@ public class IgnitePdsTestSuite extends TestSuite {
         suite.addTestSuite(IgniteClusterActivateDeactivateTestWithPersistence.class);
 
         suite.addTestSuite(IgnitePdsCacheRestoreTest.class);
+        suite.addTestSuite(IgnitePdsDataRegionMetricsTest.class);
 
         suite.addTestSuite(DefaultPageSizeBackwardsCompatibilityTest.class);
 

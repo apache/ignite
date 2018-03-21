@@ -90,18 +90,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Update write type structure.
         /// </summary>
-        /// <param name="exp">Expected type structure.</param>
         /// <param name="pathIdx">Path index.</param>
         /// <param name="updates">Recorded updates.</param>
-        void UpdateWriteStructure(BinaryStructure exp, int pathIdx, IList<BinaryStructureUpdate> updates);
+        void UpdateWriteStructure(int pathIdx, IList<BinaryStructureUpdate> updates);
 
         /// <summary>
         /// Update read type structure.
         /// </summary>
-        /// <param name="exp">Expected type structure.</param>
         /// <param name="pathIdx">Path index.</param>
         /// <param name="updates">Recorded updates.</param>
-        void UpdateReadStructure(BinaryStructure exp, int pathIdx, IList<BinaryStructureUpdate> updates);
+        void UpdateReadStructure(int pathIdx, IList<BinaryStructureUpdate> updates);
 
         /// <summary>
         /// Gets the schema.
