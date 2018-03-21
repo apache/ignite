@@ -77,7 +77,6 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryFuture;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
-import org.apache.ignite.internal.processors.datastructures.GridCacheSetAdapter;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyIterator;
@@ -1792,11 +1791,6 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
         catch (IgniteCheckedException e) {
             throw cacheException(e);
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override public Set<K> asSet() {
-        return new GridCacheSetAdapter<K>((IgniteCacheProxy<K, Object>)this);
     }
 
     /** {@inheritDoc} */

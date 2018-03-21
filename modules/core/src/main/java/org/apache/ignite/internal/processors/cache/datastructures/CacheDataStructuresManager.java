@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridAtomicCacheQueueImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeader;
@@ -361,8 +362,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         Object key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);
 
-        if (key0 instanceof SetItemKey)
-            onSetItemUpdated((SetItemKey)key0, rmv);
+        if (key0 instanceof CollocatedSetItemKey)
+            onSetItemUpdated((CollocatedSetItemKey)key0, rmv);
     }
 
     /**
@@ -398,8 +399,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         throws IgniteCheckedException
     {
         // Non collocated mode enabled only for PARTITIONED cache.
-        final boolean colloc0 =
-            create && (cctx.cache().configuration().getCacheMode() != PARTITIONED || colloc);
+        final boolean colloc0 = cctx.cache().configuration().getCacheMode() == PARTITIONED && colloc;
 
         return set0(name, colloc0, create);
     }
@@ -426,19 +426,24 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
-            if (create) {
-                hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);
+            if (!collocated)
+                hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), false);
+            else {
+                if (create) {
+                    hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);
 
-                GridCacheSetHeader old = (GridCacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
+                    GridCacheSetHeader old = (GridCacheSetHeader)cache.getAndPutIfAbsent(key, hdr);
 
-                if (old != null)
-                    hdr = old;
+                    if (old != null)
+                        hdr = old;
+                }
+                else {
+                    hdr = (GridCacheSetHeader)cache.get(key);
+
+                    if (hdr == null)
+                        return null;
+                }
             }
-            else
-                hdr = (GridCacheSetHeader)cache.get(key);
-
-            if (hdr == null)
-                return null;
 
             GridCacheSetProxy<T> set = setsMap.get(hdr.id());
 
@@ -611,7 +616,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param key Set item key.
      * @param rmv {@code True} if item was removed.
      */
-    private void onSetItemUpdated(SetItemKey key, boolean rmv) {
+    private void onSetItemUpdated(CollocatedSetItemKey key, boolean rmv) {
         GridConcurrentHashSet<SetItemKey> set = setDataMap.get(key.setId());
 
         if (set == null) {

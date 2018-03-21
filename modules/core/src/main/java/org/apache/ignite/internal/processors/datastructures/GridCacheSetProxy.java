@@ -31,9 +31,11 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.jetbrains.annotations.NotNull;
 
@@ -352,14 +354,25 @@ public class GridCacheSetProxy<T> implements IgniteSet<T>, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void close() {
-        gate.enter();
+        IgniteFuture<Boolean> destroyFut = null;
+
+        if (!gate.enterIfNotStopped())
+            return;
 
         try {
             delegate.close();
+
+            if (!delegate.collocated())
+                destroyFut = new IgniteFutureImpl<>(
+                    cctx.kernalContext().cache().dynamicDestroyCache(cctx.cache().name(), false, true,
+                        false));
         }
         finally {
             gate.leave();
         }
+
+        if (destroyFut != null)
+            destroyFut.get();
     }
 
     /** {@inheritDoc} */

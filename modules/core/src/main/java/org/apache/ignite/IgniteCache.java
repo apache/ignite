@@ -1521,16 +1521,4 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @param enabled Statistics enabled flag.
      */
     public void enableStatistics(boolean enabled);
-
-    /**
-     * Set projection to the cache keys.
-     * <p>
-     * Iterator over this set will not fail if set was concurrently updated
-     * by another thread. This means that iterator may or may not return latest
-     * keys depending on whether they were added before or after current
-     * iterator position.
-     *
-     * @return Key set for this cache projection.
-     */
-    public Set<K> asSet();
 }
