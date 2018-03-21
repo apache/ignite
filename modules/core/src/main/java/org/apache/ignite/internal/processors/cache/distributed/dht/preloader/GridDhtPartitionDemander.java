@@ -629,11 +629,11 @@ public class GridDhtPartitionDemander {
         if (topologyChanged(fut)) // Topology already changed (for the future that supply message based on).
             return;
 
-        if (!fut.isActual(supply.rebalanceId())) {
-            // Current future have another rebalance id.
-            // Supple message based on another future.
-            return;
-        }
+//        if (!fut.isActual(supply.rebalanceId())) {
+//            // Current future have another rebalance id.
+//            // Supple message based on another future.
+//            return;
+//        }
 
         if (log.isDebugEnabled())
             log.debug("Received supply message [grp=" + grp.cacheOrGroupName() + ", msg=" + supply + ']');

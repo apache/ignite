@@ -829,6 +829,8 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP = "IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP";
 
+    public static final String IGNITE_DEBUG_ENDLESS_REBALANCE = "IGNITE_DEBUG_ENDLESS_REBALANCE";
+
     /**
      * Enforces singleton.
      */

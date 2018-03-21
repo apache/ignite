@@ -58,32 +58,34 @@ import org.openjdk.jmh.profile.GCProfiler;
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 @State(Scope.Benchmark)
-public class JmhCachePreloaderBenchmark extends JmhAbstractBenchmark {
+public class JmhPreloaderAbstractBenchmark extends JmhAbstractBenchmark {
     /** Property: entries per message. */
     protected static final String PROP_ENTRIES_PER_MESSAGE = "ignite.jmh.preloader.entriesPerMessage";
 
     /** IP finder shared across nodes. */
-    private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+    protected static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Default cache name. */
-    private static final String DEFAULT_CACHE_NAME = "default";
+    protected static final String DEFAULT_CACHE_NAME = "default";
 
-    private int entriesPerMessage;
+    protected int entriesPerMessage;
 
-    private IgniteEx supplierNode;
-    private IgniteEx demanderNode;
+    protected IgniteEx supplierNode;
+    protected IgniteEx demanderNode;
 
-    private GridCachePreloader supplierPreloader;
-    private CacheObjectContext supplierCacheObjCtx;
-    private GridCacheSharedContext<Object, Object> supplierSharedCtx;
-    private IgniteCacheObjectProcessor supplierCacheObjProc;
-    private GridCacheContext supplierCacheCtx;
+    protected GridCachePreloader supplierPreloader;
+    protected CacheObjectContext supplierCacheObjCtx;
+    protected GridCacheSharedContext<Object, Object> supplierSharedCtx;
+    protected IgniteCacheObjectProcessor supplierCacheObjProc;
+    protected GridCacheContext supplierCacheCtx;
+    protected IgniteCache supplierCache;
 
-    private GridCachePreloader demanderPreloader;
-    private CacheObjectContext demanderCacheObjCtx;
-    private GridCacheSharedContext<Object, Object> demanderSharedCtx;
-    private IgniteCacheObjectProcessor demanderCacheObjProc;
-    private GridCacheContext demanderCacheCtx;
+    protected GridCachePreloader demanderPreloader;
+    protected CacheObjectContext demanderCacheObjCtx;
+    protected GridCacheSharedContext<Object, Object> demanderSharedCtx;
+    protected IgniteCacheObjectProcessor demanderCacheObjProc;
+    protected GridCacheContext demanderCacheCtx;
+    protected IgniteCache demanderCache;
 
     /**
      * Setup routine. Child classes must invoke this method first.
@@ -114,6 +116,7 @@ public class JmhCachePreloaderBenchmark extends JmhAbstractBenchmark {
         supplierCacheObjCtx = supplierCacheCtx.cacheObjectContext();
         supplierCacheObjProc = supplierCacheCtx.cacheObjects();
         supplierSharedCtx = supplierCacheCtx.shared();
+        supplierCache = supplierNode.cache(DEFAULT_CACHE_NAME);
 
         entriesPerMessage = intProperty(PROP_ENTRIES_PER_MESSAGE);
 
@@ -129,6 +132,7 @@ public class JmhCachePreloaderBenchmark extends JmhAbstractBenchmark {
         demanderCacheObjCtx = demanderCacheCtx.cacheObjectContext();
         demanderCacheObjProc = demanderCacheCtx.cacheObjects();
         demanderSharedCtx = demanderCacheCtx.shared();
+        demanderCache = demanderNode.cache(DEFAULT_CACHE_NAME);
 
         supplierNode.cluster().setBaselineTopology(2);
 
@@ -213,19 +217,7 @@ public class JmhCachePreloaderBenchmark extends JmhAbstractBenchmark {
         Ignition.stopAll(true);
     }
 
-    @Benchmark
-    public void handleSupplyMessage() throws Exception {
-        try {
-            demanderPreloader.handleSupplyMessage(0, supplierNode.localNode().id(), generateSupplyMessage());
-        }
-        catch (Throwable ex) {
-            ex.printStackTrace();
-
-            throw ex;
-        }
-    }
-
-    private GridDhtPartitionSupplyMessage generateSupplyMessage() throws Exception {
+    protected GridDhtPartitionSupplyMessage generateSupplyMessage() throws Exception {
         GridDhtPartitionSupplyMessage msg = new GridDhtPartitionSupplyMessage(
             4,
             CU.cacheId(DEFAULT_CACHE_NAME),
@@ -247,19 +239,7 @@ public class JmhCachePreloaderBenchmark extends JmhAbstractBenchmark {
         return msg;
     }
 
-    @Benchmark
-    public void handleDemandMessage() throws Exception {
-        try {
-            supplierPreloader.handleDemandMessage(0, demanderNode.localNode().id(), generateDemandMessage());
-        }
-        catch (Throwable ex) {
-            ex.printStackTrace();
-
-            throw ex;
-        }
-    }
-
-    private GridDhtPartitionDemandMessage generateDemandMessage() throws Exception {
+    protected GridDhtPartitionDemandMessage generateDemandMessage() throws Exception {
         GridDhtPartitionDemandMessage msg = new GridDhtPartitionDemandMessage(
             4,
             new AffinityTopologyVersion(2, 2),
@@ -269,51 +249,5 @@ public class JmhCachePreloaderBenchmark extends JmhAbstractBenchmark {
         msg.partitions().addFull(0);
 
         return msg;
-    }
-
-    public static void main(String[] args)throws Exception {
-        run("handleSupplyMessage", 4, 10000);
-        run("handleDemandMessage", 4, 10000);
-
-//        JmhCachePreloaderBenchmark benchmark = new JmhCachePreloaderBenchmark();
-//
-//        benchmark.setup();
-//
-//        benchmark.handleSupplyMessage();
-//
-//        benchmark.tearDown();
-    }
-
-    /**
-     * Run benchmark.
-     *
-     * @param benchmark Benchmark to run.
-     * @param threads Amount of threads.
-     * @throws Exception If failed.
-     */
-    private static void run(String benchmark, int threads, int entriesPerMessage) throws Exception {
-        String simpleClsName = JmhCachePreloaderBenchmark.class.getSimpleName();
-
-        String output = simpleClsName + "-" + benchmark +
-            "-" + threads + "-threads" +
-            "-" + entriesPerMessage + "-epm";
-
-        JmhIdeBenchmarkRunner.create()
-            .forks(1)
-            .threads(threads)
-            .warmupIterations(10)
-            .measurementIterations(60)
-            .benchmarks(simpleClsName + "." + benchmark)
-            .output(output + ".jmh.log")
-            .profilers(GCProfiler.class)
-            .jvmArguments(
-                "-Xms4g",
-                "-Xmx4g",
-                "-XX:+UnlockCommercialFeatures",
-                "-XX:+FlightRecorder",
-                "-XX:StartFlightRecording=delay=30s,dumponexit=true,filename=" + output + ".jfr",
-                JmhIdeBenchmarkRunner.createProperty(PROP_ENTRIES_PER_MESSAGE, entriesPerMessage)
-            )
-            .run();
     }
 }
