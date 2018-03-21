@@ -146,6 +146,11 @@
                 <configuration>
                     <instructions>
                         <Fragment-Host>org.apache.ignite.ignite-core</Fragment-Host>
+                        <Import-Package>
+                            <!--this trick needed because h2database does not export in manifest many packages
+                            like org.h2.command, org.h2.engine etc.-->
+                            !org.h2.*,org.h2,*
+                        </Import-Package>
                     </instructions>
                 </configuration>
             </plugin>
