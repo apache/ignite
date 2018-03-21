@@ -15,20 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
 /**
- * Test suite for all tests located in org.apache.ignite.ml.svm.* package.
+ * <!-- Package description. -->
+ * Contains API for Multi-SVM(support vector machines) algorithms.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    SVMModelTest.class,
-    SVMBinaryTrainerTest.class,
-    SVMMultiClassTrainerTest.class
-})
-public class SVMTestSuite {
-    // No-op.
-}
+package org.apache.ignite.ml.svm.multi;
