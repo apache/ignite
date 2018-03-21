@@ -53,6 +53,7 @@ import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionOptimisticException;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static java.lang.Thread.sleep;
@@ -453,7 +454,9 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                         cntr2.add(1);
                     }
                     catch (CacheException e) {
-                        assertEquals(TransactionTimeoutException.class, X.getCause(e).getClass());
+                        Class<?> cls = X.getCause(e).getClass();
+
+                        assertTrue(cls == TransactionTimeoutException.class || cls == TransactionRollbackException.class);
 
                         cntr2.add(1);
                     }
