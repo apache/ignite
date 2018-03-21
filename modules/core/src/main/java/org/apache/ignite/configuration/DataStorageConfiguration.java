@@ -113,7 +113,7 @@ public class DataStorageConfiguration implements Serializable {
     /** Default number of checkpoints to be kept in WAL after checkpoint is finished */
     public static final int DFLT_WAL_HISTORY_SIZE = 20;
 
-    /** Default number of checkpoints to be kept in WAL after checkpoint is finished, in bytes */
+    /** Default max size of WAL archive files, in bytes */
     public static final long DFLT_WAL_ARCHIVE_MAX_SIZE = 1024 * 1024 * 1024;
 
     /** */
