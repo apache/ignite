@@ -45,9 +45,6 @@ public class SVMLinearBinaryClassificationTrainer implements SingleLabelDatasetT
     /** Regularization parameter. */
     private double lambda = 0.4;
 
-    /** Dataset. */
-    private Dataset<SVMPartitionContext, LabeledDataset<Double, LabeledVector>> dataset;
-
     /**
      * Trains model based on the specified data.
      *
@@ -66,21 +63,24 @@ public class SVMLinearBinaryClassificationTrainer implements SingleLabelDatasetT
             lbExtractor
         );
 
-        this.dataset = datasetBuilder.build(
+        Vector weights;
+
+        try(Dataset<SVMPartitionContext, LabeledDataset<Double, LabeledVector>> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new SVMPartitionContext(),
             partDataBuilder
-        );
+        )) {
+            final int cols = dataset.compute(data -> data.colSize(), (a, b) -> a == null ? b : a);
+            final int weightVectorSizeWithIntercept = cols + 1;
+            weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
 
-        int cols = dataset.compute(org.apache.ignite.ml.structures.Dataset::colSize, (a, b) -> a == null ? b : a);
+            for (int i = 0; i < this.getAmountOfIterations(); i++) {
+                Vector deltaWeights = calculateUpdates(weights, dataset);
+                weights = weights.plus(deltaWeights); // creates new vector
 
-        final int weightVectorSizeWithIntercept = cols + 1;
-        Vector weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
-
-        for (int i = 0; i < this.getAmountOfIterations(); i++) {
-            Vector deltaWeights = calculateUpdates(weights);
-            weights = weights.plus(deltaWeights); // creates new vector
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-
         return new SVMLinearBinaryClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
     }
 
@@ -90,7 +90,7 @@ public class SVMLinearBinaryClassificationTrainer implements SingleLabelDatasetT
     }
 
     /** */
-    private Vector calculateUpdates(Vector weights) {
+    private Vector calculateUpdates(Vector weights, Dataset<SVMPartitionContext, LabeledDataset<Double, LabeledVector>> dataset) {
         return dataset.compute(data -> {
             Vector copiedWeights = weights.copy();
             Vector deltaWeights = initializeWeightsWithZeros(weights.size());

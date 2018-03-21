@@ -422,6 +422,14 @@ namespace ignite
             static void CollectAddresses(const config::Configuration& cfg, std::vector<EndPoint>& endPoints);
 
             /**
+             * Retrieve timeout from parameter.
+             *
+             * @param value Parameter.
+             * @return Timeout.
+             */
+            int32_t RetrieveTimeout(void* value);
+
+            /**
              * Constructor.
              */
             Connection();
@@ -431,6 +439,9 @@ namespace ignite
 
             /** Connection timeout in seconds. */
             int32_t timeout;
+
+            /** Login timeout in seconds. */
+            int32_t loginTimeout;
 
             /** Message parser. */
             Parser parser;

@@ -15,20 +15,31 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm;
-
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+package org.apache.ignite.ml.svm.multi;
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.svm.* package.
+ * On Heap partition data that keeps part of a labels.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    SVMModelTest.class,
-    SVMBinaryTrainerTest.class,
-    SVMMultiClassTrainerTest.class
-})
-public class SVMTestSuite {
-    // No-op.
+public class LabelPartitionDataOnHeap implements AutoCloseable {
+    /** Part of Y vector. */
+    private final double[] y;
+
+    /**
+     * Constructs a new instance of linear system partition data.
+     *
+     * @param y Part of Y vector.
+     */
+    public LabelPartitionDataOnHeap(double[] y) {
+        this.y = y;
+    }
+
+    /** */
+    public double[] getY() {
+        return y;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        // Do nothing, GC will clean up.
+    }
 }
