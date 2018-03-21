@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.client.GridClient;
@@ -444,6 +445,12 @@ public final class IgniteSystemProperties {
      * otherwise only one pass (e.g. only result streaming is possible).
      */
     public static final String IGNITE_SQL_MERGE_TABLE_MAX_SIZE = "IGNITE_SQL_MERGE_TABLE_MAX_SIZE";
+
+    /**
+     * Property controlling the defalut value of {@link SqlFieldsQuery#lazy} setting.
+     * Lazy queries protect from runaway memory consumption in cases where dataset is very large.
+     */
+    public static final String IGNITE_SQL_LAZY_RESULT_SET = "IGNITE_SQL_LAZY_RESULT_SET";
 
     /**
      * Property controlling number of SQL result rows that will be fetched into a merge table at once before

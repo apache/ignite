@@ -20,11 +20,15 @@ package org.apache.ignite.cache.query;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SQL_LAZY_RESULT_SET;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 
 /**
  * SQL Fields query. This query can return specific fields of data based
@@ -46,6 +50,9 @@ import org.jetbrains.annotations.Nullable;
  * @see IgniteCache#query(Query)
  */
 public class SqlFieldsQuery extends Query<List<?>> {
+    /** */
+    private static final boolean DEFAULT_LAZY = getBoolean(IGNITE_SQL_LAZY_RESULT_SET, false);
+
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -72,7 +79,7 @@ public class SqlFieldsQuery extends Query<List<?>> {
     private boolean replicatedOnly;
 
     /** */
-    private boolean lazy;
+    private boolean lazy = DEFAULT_LAZY;
 
     /** Partitions for query */
     private int[] parts;
@@ -300,7 +307,8 @@ public class SqlFieldsQuery extends Query<List<?>> {
      * OutOfMemoryError. Use this flag as a hint for Ignite to fetch result set lazily, thus minimizing memory
      * consumption at the cost of moderate performance hit.
      * <p>
-     * Defaults to {@code false}, meaning that the whole result set is fetched to memory eagerly.
+     * Defaults to {@link IgniteSystemProperties#IGNITE_SQL_LAZY_RESULT_SET} property value, {@code false} if not set,
+     * meaning that the whole result set is fetched to memory eagerly.
      *
      * @param lazy Lazy query execution flag.
      * @return {@code this} For chaining.
