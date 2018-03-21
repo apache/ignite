@@ -139,9 +139,9 @@ BOOST_AUTO_TEST_CASE(TestConnectionUserOperationsQuery)
 {
     Connect(MakeDefaultConnectionString());
 
-    ExecQuery("DROP USER test");
+    ExecQuery("DROP USER \"test\"");
 
-    SQLRETURN ret = ExecQuery("CREATE USER test WITH PASSWORD 'somePass'");
+    SQLRETURN ret = ExecQuery("CREATE USER \"test\" WITH PASSWORD 'somePass'");
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
 
@@ -149,11 +149,19 @@ BOOST_AUTO_TEST_CASE(TestConnectionUserOperationsQuery)
 
     Connect(MakeConnectionString("test", "somePass"));
 
-    ret = ExecQuery("ALTER USER test WITH PASSWORD 'somePass42'");
+    ret = ExecQuery("ALTER USER \"test\" WITH PASSWORD 'somePass42'");
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
 
-    ret = ExecQuery("DROP USER test");
+    Disconnect();
+
+    Connect(MakeConnectionString("test", "somePass42"));
+
+    Disconnect();
+
+    Connect(MakeDefaultConnectionString());
+
+    ret = ExecQuery("DROP USER \"test\"");
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
 
