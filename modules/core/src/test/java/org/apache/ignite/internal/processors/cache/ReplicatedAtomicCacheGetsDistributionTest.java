@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
@@ -31,8 +32,10 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -142,15 +145,58 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
         for (Integer key : keys)
             cache.put(key, VAL_PREFIX + key);
 
-        validateData(keys, batchMode);
+        IgniteCache<Integer, String> clientCache = grid(CLIENT_NAME).getOrCreateCache(CACHE_NAME);
 
-        for (int i = 0; i < gridCount(); i++) {
-            IgniteEx ignite = grid(i);
+        assertTrue(GridTestUtils.waitForCondition(
+            new GridAbsPredicate() {
+                int batchSize = 10;
+                int idx = 0;
 
-            long getsCnt = ignite.cache(CACHE_NAME).localMetrics().getCacheGets();
+                @Override public boolean apply() {
+                    if (idx >= PRIMARY_KEYS_NUMBER)
+                        idx = 0;
 
-            assertTrue(getsCnt > 0);
-        }
+                    try (Transaction tx = grid(CLIENT_NAME).transactions().txStart()) {
+                        if (batchMode) {
+                            Set<Integer> keys0 = new TreeSet<>();
+
+                            for (int i = idx; i < idx + batchSize && i < PRIMARY_KEYS_NUMBER; i++)
+                                keys0.add(keys.get(i));
+
+                            idx += batchSize;
+
+                            Map<Integer, String> results = clientCache.getAll(keys0);
+
+                            for (Map.Entry<Integer, String> entry : results.entrySet())
+                                assertEquals(VAL_PREFIX + entry.getKey(), entry.getValue());
+                        }
+                        else {
+                            for (int i = idx; i < idx + gridCount() && i < PRIMARY_KEYS_NUMBER; i++) {
+                                Integer key = keys.get(i);
+
+                                assertEquals(VAL_PREFIX + key, clientCache.get(key));
+                            }
+
+                            idx += gridCount();
+                        }
+
+                        tx.commit();
+                    }
+
+                    for (int i = 0; i < gridCount(); i++) {
+                        IgniteEx ignite = grid(i);
+
+                        long getsCnt = ignite.cache(CACHE_NAME).localMetrics().getCacheGets();
+
+                        if (getsCnt == 0)
+                            return false;
+                    }
+
+                    return true;
+                }
+            },
+            getTestTimeout())
+        );
     }
 
     /**
@@ -200,38 +246,23 @@ public class ReplicatedAtomicCacheGetsDistributionTest extends GridCacheAbstract
         for (Integer key : keys)
             cache.put(key, VAL_PREFIX + key);
 
-        validateData(keys, batchMode);
-
-        validateRequestsDistribution(destId);
-    }
-
-    /**
-     * @param keys Keys to get.
-     * @param batchMode Test mode.
-     */
-    protected void validateData(List<Integer> keys, boolean batchMode) {
-        IgniteCache<Integer, String> cache = grid(CLIENT_NAME).getOrCreateCache(CACHE_NAME);
+        IgniteCache<Integer, String> clientCache = grid(CLIENT_NAME).getOrCreateCache(CACHE_NAME);
 
         try (Transaction tx = grid(CLIENT_NAME).transactions().txStart()) {
             if (batchMode) {
-                Map<Integer, String> results = cache.getAll(new TreeSet<>(keys));
+                Map<Integer, String> results = clientCache.getAll(new TreeSet<>(keys));
 
                 for (Map.Entry<Integer, String> entry : results.entrySet())
                     assertEquals(VAL_PREFIX + entry.getKey(), entry.getValue());
             }
             else {
                 for (Integer key : keys)
-                    assertEquals(VAL_PREFIX + key, cache.get(key));
+                    assertEquals(VAL_PREFIX + key, clientCache.get(key));
             }
 
             tx.commit();
         }
-    }
 
-    /**
-     * @param destId Destination node id.
-     */
-    protected void validateRequestsDistribution(final UUID destId) {
         for (int i = 0; i < gridCount(); i++) {
             IgniteEx ignite = grid(i);
 
