@@ -25,6 +25,7 @@ import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -59,8 +60,8 @@ public class IgnitePdsMarshallerMappingRestoreOnNodeStartTest extends GridCommon
 
         String tmpDir = System.getProperty("java.io.tmpdir");
 
-        deleteRecursively(Paths.get(tmpDir, "srv0").toFile());
-        deleteRecursively(Paths.get(tmpDir, "srv1").toFile());
+        U.delete(Paths.get(tmpDir, "srv0").toFile());
+        U.delete(Paths.get(tmpDir, "srv1").toFile());
     }
 
     /**

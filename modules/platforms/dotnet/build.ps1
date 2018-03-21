@@ -27,7 +27,7 @@ Builds all parts of Apache Ignite.NET: Java, .NET, NuGet. Copies results to 'bin
 
 Requirements:
 * PowerShell 3
-* JDK 7+
+* JDK 8+
 * MAVEN_HOME environment variable or mvn.bat in PATH
 
 .PARAMETER skipJava
@@ -120,6 +120,10 @@ if (!$skipJava) {
         $mv = "`"" + (join-path $mvHome "bin\mvn.bat") + "`""
         echo "Maven detected at $mv."
     }
+
+    # Install Maven Wrapper
+    cmd /c "$mv -N io.takari:maven:wrapper -Dmaven=3.5.2"
+    $mv = "mvnw.cmd"
 
     # Run Maven
     echo "Starting Java (Maven) build..."

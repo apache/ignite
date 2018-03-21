@@ -63,6 +63,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheAbstractTest.cs" Link="Cache\CacheAbstractTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheAbstractTransactionalTest.cs" Link="Cache\CacheAbstractTransactionalTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheConfigurationTest.cs" Link="Cache\CacheConfigurationTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheCreateTest.cs" Link="Cache\CacheCreateTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CachePartitionedTest.cs" Link="Cache\CachePartitionedTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheTestAsyncWrapper.cs" Link="Cache\CacheTestAsyncWrapper.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Cache\CacheTestKey.cs" Link="Cache\CacheTestKey.cs" />
@@ -96,6 +97,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheTestAsync.cs" Link="ThinClient\Cache\CacheTestAsync.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheClientAsyncWrapper.cs" Link="ThinClient\Cache\CacheClientAsyncWrapper.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheTestKeepBinary.cs" Link="ThinClient\Cache\CacheTestKeepBinary.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CacheTestSsl.cs" Link="ThinClient\Cache\CacheTestSsl.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\CreateCacheTest.cs" Link="ThinClient\Cache\CreateCacheTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\EmptyObject.cs" Link="ThinClient\Cache\EmptyObject.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\Cache\Person.cs" Link="ThinClient\Cache\Person.cs" />
@@ -106,6 +108,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientConnectionTest.cs" Link="ThinClient\ClientConnectionTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\ClientTestBase.cs" Link="ThinClient\ClientTestBase.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Client\IgniteClientConfigurationTest.cs" Link="ThinClient\IgniteClientConfigurationTest.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Client\RawSecureSocketTest.cs" Link="ThinClient\RawSecureSocketTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.cs" Link="Compute\ComputeApiTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Compute\ComputeApiTest.JavaTask.cs" Link="Compute\ComputeApiTest.JavaTask.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicLongTest.cs" Link="DataStructures\AtomicLongTest.cs" />
@@ -113,7 +116,8 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\DataStructures\AtomicSequenceTest.cs" Link="DataStructures\AtomicSequenceTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\EventsTestLocalListeners.cs" Link="Common\EventsTestLocalListeners.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\IgniteConfigurationTest.cs" Link="Common\IgniteConfigurationTest.cs" />
-    <Compile Include="..\Apache.Ignite.Core.Tests\IgniteTestBase.cs" Link="Common\IgniteTestBase.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\TestBase.cs" Link="Common\TestBase.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\SpringTestBase.cs" Link="Common\SpringTestBase.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Log\CustomLoggerTest.cs" Link="Log\CustomLoggerTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\MessagingTest.cs" Link="Common\MessagingTest.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\Plugin\PluginTest.cs" Link="Plugin\PluginTest.cs" />
@@ -128,6 +132,7 @@
     <Compile Include="..\Apache.Ignite.Core.Tests\Services\ServicesTestAsync.cs" Link="Services\ServicesTestAsync.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TaskExtensions.cs" Link="Common\TaskExtensions.cs" />
     <Compile Include="..\Apache.Ignite.Core.Tests\TestUtils.Common.cs" Link="Common\TestUtils.Common.cs" />
+    <Compile Include="..\Apache.Ignite.Core.Tests\Ssl\SslConfigurationTest.cs" Link="Common\SslConfigurationTest.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -143,6 +148,9 @@
     <Content Include="..\Apache.Ignite.Core.Tests\Config\Client\IgniteClientConfiguration.xml" Link="Config\Client\IgniteClientConfiguration.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\Client\server-with-ssl.xml" Link="Config\Client\server-with-ssl.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\Compute\compute-grid1.xml" Link="Config\Compute\compute-grid1.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -156,6 +164,15 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="..\Apache.Ignite.Core.Tests\Config\spring-test.xml" Link="Config\spring-test.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\ssl.xml" Link="Config\ssl.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\KeyStore\server.jks" Link="Config\KeyStore\server.jks">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\Apache.Ignite.Core.Tests\Config\KeyStore\trust.jks" Link="Config\KeyStore\trust.jks">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
@@ -187,6 +204,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\Apache.Ignite.Core.Tests\Config\Client\server.jks" Link="Config\Client\server.jks">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\Apache.Ignite.Core.Tests\Config\Client\thin-client-cert.pfx" Link="Config\Client\thin-client-cert.pfx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\Apache.Ignite.Core.Tests\Config\Client\trust.jks" Link="Config\Client\trust.jks">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="..\Apache.Ignite.Core.Tests\custom_app.config" Link="custom_app.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

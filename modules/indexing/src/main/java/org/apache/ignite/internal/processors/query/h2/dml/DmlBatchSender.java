@@ -17,26 +17,31 @@
 
 package org.apache.ignite.internal.processors.query.h2.dml;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
-import org.apache.ignite.internal.util.typedef.F;
-
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.EntryProcessorResult;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.binary.BinaryObjectImpl;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.odbc.SqlStateCode;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.createJdbcSqlException;
 
@@ -44,6 +49,9 @@ import static org.apache.ignite.internal.processors.cache.query.IgniteQueryError
  * Batch sender class.
  */
 public class DmlBatchSender {
+    /** Comparator. */
+    private static final BatchEntryComparator COMP = new BatchEntryComparator();
+
     /** Cache context. */
     private final GridCacheContext cctx;
 
@@ -51,7 +59,7 @@ public class DmlBatchSender {
     private final int size;
 
     /** Batches. */
-    private final Map<UUID, Map<Object, EntryProcessor<Object, Object, Boolean>>> batches = new HashMap<>();
+    private final Map<UUID, Batch> batches = new HashMap<>();
 
     /** Result count. */
     private long updateCnt;
@@ -62,15 +70,20 @@ public class DmlBatchSender {
     /** Exception. */
     private SQLException err;
 
+    /** Per row updates counter */
+    private int[] cntPerRow;
+
     /**
      * Constructor.
      *
      * @param cctx Cache context.
      * @param size Batch.
+     * @param qryNum Number of queries.
      */
-    public DmlBatchSender(GridCacheContext cctx, int size) {
+    public DmlBatchSender(GridCacheContext cctx, int size, int qryNum) {
         this.cctx = cctx;
         this.size = size;
+        cntPerRow = new int[qryNum];
     }
 
     /**
@@ -78,39 +91,46 @@ public class DmlBatchSender {
      *
      * @param key Key.
      * @param proc Processor.
+     * @param rowNum Row number.
+     * @throws IgniteCheckedException If failed.
      */
-    public void add(Object key, EntryProcessor<Object, Object, Boolean> proc) throws IgniteCheckedException {
+    public void add(Object key, EntryProcessor<Object, Object, Boolean> proc, int rowNum)
+        throws IgniteCheckedException {
+        assert key != null;
+        assert proc != null;
+
         ClusterNode node = cctx.affinity().primaryByKey(key, AffinityTopologyVersion.NONE);
 
         if (node == null)
             throw new IgniteCheckedException("Failed to map key to node.");
 
+        assert rowNum < cntPerRow.length;
+
         UUID nodeId = node.id();
 
-        Map<Object, EntryProcessor<Object, Object, Boolean>> batch = batches.get(nodeId);
+        Batch batch = batches.get(nodeId);
 
         if (batch == null) {
-            batch = new HashMap<>();
+            batch = new Batch();
 
             batches.put(nodeId, batch);
         }
 
-        batch.put(key, proc);
-
-        if (batch.size() >= size) {
+        if (batch.containsKey(key)) { // Force cache update if duplicates found.
             sendBatch(batch);
-
-            batch.clear();
         }
+
+        batch.put(key, rowNum, proc);
+
+        if (batch.size() >= size)
+            sendBatch(batch);
     }
 
     /**
      * Flush any remaining entries.
-     *
-     * @throws IgniteCheckedException If failed.
      */
-    public void flush() throws IgniteCheckedException {
-        for (Map<Object, EntryProcessor<Object, Object, Boolean>> batch : batches.values()) {
+    public void flush() {
+        for (Batch batch : batches.values()) {
             if (!batch.isEmpty())
                 sendBatch(batch);
         }
@@ -138,14 +158,32 @@ public class DmlBatchSender {
     }
 
     /**
+     * Returns per row updates counter as array.
+     *
+     * @return Per row updates counter as array.
+     */
+    public int[] perRowCounterAsArray() {
+        return cntPerRow;
+    }
+
+    /**
+     * Sets row as failed.
+     *
+     * @param rowNum Row number.
+     */
+    public void setFailed(int rowNum) {
+        cntPerRow[rowNum] = Statement.EXECUTE_FAILED;
+    }
+
+    /**
      * Send the batch.
      *
      * @param batch Batch.
-     * @throws IgniteCheckedException If failed.
      */
-    private void sendBatch(Map<Object, EntryProcessor<Object, Object, Boolean>> batch)
-        throws IgniteCheckedException {
+    private void sendBatch(Batch batch) {
         DmlPageProcessingResult pageRes = processPage(cctx, batch);
+
+        batch.clear();
 
         updateCnt += pageRes.count();
 
@@ -156,33 +194,48 @@ public class DmlBatchSender {
 
         if (pageRes.error() != null) {
             if (err == null)
-                err = error();
+                err = pageRes.error();
             else
-                err.setNextException(error());
+                err.setNextException(pageRes.error());
         }
     }
 
     /**
      * Execute given entry processors and collect errors, if any.
      * @param cctx Cache context.
-     * @param rows Rows to process.
+     * @param batch Rows to process.
      * @return Triple [number of rows actually changed; keys that failed to update (duplicates or concurrently
      *     updated ones); chain of exceptions for all keys whose processing resulted in error, or null for no errors].
-     * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings({"unchecked", "ConstantConditions"})
-    private static DmlPageProcessingResult processPage(GridCacheContext cctx,
-        Map<Object, EntryProcessor<Object, Object, Boolean>> rows) throws IgniteCheckedException {
-        Map<Object, EntryProcessorResult<Boolean>> res = cctx.cache().invokeAll(rows);
+    private DmlPageProcessingResult processPage(GridCacheContext cctx, Batch batch) {
+        Map<Object, EntryProcessorResult<Boolean>> res;
 
-        if (F.isEmpty(res))
-            return new DmlPageProcessingResult(rows.size(), null, null);
+        try {
+            res = cctx.cache().invokeAll(batch.rowProcessors());
+        }
+        catch (IgniteCheckedException e) {
+            for (Integer rowNum : batch.rowNumbers().values()) {
+                assert rowNum != null;
 
-        DmlPageProcessingErrorResult splitRes = splitErrors(res);
+                cntPerRow[rowNum] = Statement.EXECUTE_FAILED;
+            }
+
+            return new DmlPageProcessingResult(0, null,
+                new SQLException(e.getMessage(), SqlStateCode.INTERNAL_ERROR, IgniteQueryErrorCode.UNKNOWN, e));
+        }
+
+        if (F.isEmpty(res)) {
+            countAllRows(batch.rowNumbers().values());
+
+            return new DmlPageProcessingResult(batch.size(), null, null);
+        }
+
+        DmlPageProcessingErrorResult splitRes = splitErrors(res, batch);
 
         int keysCnt = splitRes.errorKeys().length;
 
-        return new DmlPageProcessingResult(rows.size() - keysCnt - splitRes.errorCount(), splitRes.errorKeys(),
+        return new DmlPageProcessingResult(batch.size() - keysCnt - splitRes.errorCount(), splitRes.errorKeys(),
             splitRes.error());
     }
 
@@ -191,11 +244,14 @@ public class DmlBatchSender {
      * processing yielded an exception.
      *
      * @param res Result of {@link GridCacheAdapter#invokeAll)}
+     * @param batch Batch.
      * @return pair [array of duplicated/concurrently modified keys, SQL exception for erroneous keys] (exception is
      * null if all keys are duplicates/concurrently modified ones).
      */
-    private static DmlPageProcessingErrorResult splitErrors(Map<Object, EntryProcessorResult<Boolean>> res) {
+    private DmlPageProcessingErrorResult splitErrors(Map<Object, EntryProcessorResult<Boolean>> res, Batch batch) {
         Set<Object> errKeys = new LinkedHashSet<>(res.keySet());
+
+        countAllRows(batch.rowNumbers().values());
 
         SQLException currSqlEx = null;
 
@@ -225,8 +281,137 @@ public class DmlBatchSender {
 
                 errors++;
             }
+            finally {
+                Object key = e.getKey();
+
+                Integer rowNum = batch.rowNumbers().get(key);
+
+                assert rowNum != null;
+
+                cntPerRow[rowNum] = Statement.EXECUTE_FAILED;
+            }
         }
 
         return new DmlPageProcessingErrorResult(errKeys.toArray(), firstSqlEx, errors);
+    }
+
+    /**
+     * Updates counters as if all rowNums were successfully processed.
+     *
+     * @param rowNums Rows.
+     */
+    private void countAllRows(Collection<Integer> rowNums) {
+        for (Integer rowNum : rowNums) {
+            assert rowNum != null;
+
+            if (cntPerRow[rowNum] > -1)
+                cntPerRow[rowNum]++;
+        }
+    }
+
+    /**
+     * Batch for update.
+     */
+    private static class Batch  {
+        /** Map from keys to row numbers. */
+        private Map<Object, Integer> rowNums = new HashMap<>();
+
+        /** Map from keys to entry processors. */
+        private Map<Object, EntryProcessor<Object, Object, Boolean>> rowProcs = new TreeMap<>(COMP);
+
+        /**
+         * Checks if batch contains key.
+         *
+         * @param key Key.
+         * @return {@code True} if contains.
+         */
+        public boolean containsKey(Object key) {
+            boolean res = rowNums.containsKey(key);
+
+            assert res == rowProcs.containsKey(key);
+
+            return res;
+        }
+
+        /**
+         * Returns batch size.
+         *
+         * @return Batch size.
+         */
+        public int size() {
+            int res = rowNums.size();
+
+            assert res == rowProcs.size();
+
+            return res;
+        }
+
+        /**
+         * Adds row to batch.
+         *
+         * @param key Key.
+         * @param rowNum Row number.
+         * @param proc Entry processor.
+         * @return {@code True} if there was an entry associated with the given key.
+         */
+        public boolean put(Object key, Integer rowNum, EntryProcessor<Object, Object, Boolean> proc) {
+            Integer prevNum = rowNums.put(key, rowNum);
+            EntryProcessor prevProc = rowProcs.put(key, proc);
+
+            assert (prevNum == null) == (prevProc == null);
+
+            return prevNum != null;
+        }
+
+        /**
+         * Clears batch.
+         */
+        public void clear() {
+            assert rowNums.size() == rowProcs.size();
+
+            rowNums.clear();
+            rowProcs.clear();
+        }
+
+        /**
+         * Checks if batch is empty.
+         *
+         * @return {@code True} if empty.
+         */
+        public boolean isEmpty() {
+            assert rowNums.size() == rowProcs.size();
+
+            return rowNums.isEmpty();
+        }
+
+        /**
+         * Row numbers map getter.
+         *
+         * @return Row numbers map.
+         */
+        public Map<Object, Integer> rowNumbers() {
+            return rowNums;
+        }
+
+        /**
+         * Row processors map getter.
+         *
+         * @return Row processors map.
+         */
+        public Map<Object, EntryProcessor<Object, Object, Boolean>> rowProcessors() {
+            return rowProcs;
+        }
+    }
+
+    /**
+     * Batch entries comparator.
+     */
+    private static final class BatchEntryComparator implements Comparator<Object> {
+        /** {@inheritDoc} */
+        @Override public int compare(Object first, Object second) {
+            // We assume that only simple types or BinaryObjectImpl are possible. The latter comes from the fact
+            // that we use BinaryObjectBuilder which produces only on-heap binary objects.
+            return BinaryObjectImpl.compareForDml(first, second);
+        }
     }
 }

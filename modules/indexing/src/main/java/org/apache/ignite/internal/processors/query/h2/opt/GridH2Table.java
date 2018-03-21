@@ -21,7 +21,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -54,8 +56,6 @@ import org.h2.table.TableType;
 import org.h2.value.DataType;
 import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.LongAdder8;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap.DEFAULT_COLUMNS_COUNT;
@@ -93,13 +93,13 @@ public class GridH2Table extends TableBase {
     private boolean destroyed;
 
     /** */
-    private final ConcurrentMap<Session, Boolean> sessions = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Session, Boolean> sessions = new ConcurrentHashMap<>();
 
     /** */
     private IndexColumn affKeyCol;
 
     /** */
-    private final LongAdder8 size = new LongAdder8();
+    private final LongAdder size = new LongAdder();
 
     /** */
     private final H2RowFactory rowFactory;
@@ -458,8 +458,6 @@ public class GridH2Table extends TableBase {
 
                     replaced = prevRow0 != null;
                 }
-
-                assert (replaced && prevRow0 != null) || (!replaced && prevRow0 == null) : "Replaced: " + replaced;
 
                 if (!replaced)
                     size.increment();
@@ -994,6 +992,11 @@ public class GridH2Table extends TableBase {
             setColumns(newCols);
 
             desc.refreshMetadataFromTypeDescriptor();
+
+            for (Index idx : getIndexes()) {
+                if (idx instanceof GridH2IndexBase)
+                    ((GridH2IndexBase)idx).refreshColumnIds();
+            }
 
             setModified();
         }

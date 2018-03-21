@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
@@ -73,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.dr.GridDrType;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -102,7 +104,6 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -594,7 +595,7 @@ public class GridCacheUtils {
      */
     public static <K, V> IgniteReducer<Map<K, V>, Map<K, V>> mapsReducer(final int size) {
         return new IgniteReducer<Map<K, V>, Map<K, V>>() {
-            private final Map<K, V> ret = new ConcurrentHashMap8<>(size);
+            private final Map<K, V> ret = new ConcurrentHashMap<>(size);
 
             @Override public boolean collect(Map<K, V> map) {
                 if (map != null)
@@ -1157,7 +1158,7 @@ public class GridCacheUtils {
     public static <K, V> void inTx(IgniteInternalCache<K, V> cache, TransactionConcurrency concurrency,
         TransactionIsolation isolation, IgniteInClosureX<IgniteInternalCache<K ,V>> clo) throws IgniteCheckedException {
 
-        try (GridNearTxLocal tx = cache.txStartEx(concurrency, isolation);) {
+        try (GridNearTxLocal tx = cache.txStartEx(concurrency, isolation)) {
             clo.applyx(cache);
 
             tx.commit();
@@ -1372,6 +1373,15 @@ public class GridCacheUtils {
      */
     public static boolean affinityNode(ClusterNode node, IgnitePredicate<ClusterNode> filter) {
         return !node.isDaemon() && !clientNode(node) && filter.apply(node);
+    }
+
+    /**
+     * @param node Node.
+     * @param discoveryDataClusterState Discovery data cluster state.
+     * @return {@code True} if node is included in BaselineTopology.
+     */
+    public static boolean baselineNode(ClusterNode node, DiscoveryDataClusterState discoveryDataClusterState) {
+        return discoveryDataClusterState.baselineTopology().consistentIds().contains(node.consistentId());
     }
 
     /**
@@ -1668,18 +1678,8 @@ public class GridCacheUtils {
 
         Collection<QueryEntity> entities = cfg.getQueryEntities();
 
-        if (!F.isEmpty(entities)) {
-            Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
-
-            for (QueryEntity entity : entities) {
-                if (!F.isEmpty(entity.getNotNullFields()))
-                    QueryUtils.checkNotNullAllowed(cfg);
-
-                normalEntities.add(QueryUtils.normalizeQueryEntity(entity, cfg.isSqlEscapeAll()));
-            }
-
-            cfg.clearQueryEntities().setQueryEntities(normalEntities);
-        }
+        if (!F.isEmpty(entities))
+            cfg.clearQueryEntities().setQueryEntities(QueryUtils.normalizeQueryEntities(entities, cfg));
     }
 
     /**
@@ -1707,8 +1707,8 @@ public class GridCacheUtils {
         final AffinityTopologyVersion topVer,
         final IgniteLogger log,
         final GridCacheContext cctx,
-        final @Nullable KeyCacheObject key,
-        final @Nullable IgniteCacheExpiryPolicy expiryPlc,
+        @Nullable final KeyCacheObject key,
+        @Nullable final IgniteCacheExpiryPolicy expiryPlc,
         boolean readThrough,
         boolean skipVals
     ) {
@@ -1720,6 +1720,8 @@ public class GridCacheUtils {
             private void process(KeyCacheObject key, CacheObject val, GridCacheVersion ver, GridDhtCacheAdapter colocated) {
                 while (true) {
                     GridCacheEntryEx entry = null;
+
+                    cctx.shared().database().checkpointReadLock();
 
                     try {
                         entry = colocated.entryEx(key, topVer);
@@ -1750,6 +1752,8 @@ public class GridCacheUtils {
                     finally {
                         if (entry != null)
                             cctx.evicts().touch(entry, topVer);
+
+                        cctx.shared().database().checkpointReadUnlock();
                     }
                 }
             }

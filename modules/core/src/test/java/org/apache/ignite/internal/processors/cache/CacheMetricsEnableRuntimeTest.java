@@ -167,6 +167,8 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
 
         grid(0).getOrCreateCache(cacheCfg2);
 
+        awaitPartitionMapExchange();
+
         final CyclicBarrier barrier = new CyclicBarrier(10);
 
         final AtomicInteger gridIdx = new AtomicInteger(-1);
@@ -325,7 +327,7 @@ public class CacheMetricsEnableRuntimeTest extends GridCommonAbstractTest {
      */
     private CacheMetricsMXBean mxBean(int nodeIdx, String cacheName, Class<? extends CacheMetricsMXBean> clazz)
         throws MalformedObjectNameException {
-        ObjectName mbeanName = U.makeCacheMBeanName(getTestIgniteInstanceName(nodeIdx), cacheName,
+        ObjectName mbeanName = U.makeMBeanName(getTestIgniteInstanceName(nodeIdx), cacheName,
             clazz.getName());
 
         MBeanServer mbeanSrv = ManagementFactory.getPlatformMBeanServer();

@@ -21,6 +21,7 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -193,6 +194,27 @@ public class QueryUtils {
         }
 
         return res;
+    }
+
+    /**
+     * Normalize cache query entities.
+     *
+     * @param entities Query entities.
+     * @param cfg Cache config.
+     * @return Normalized query entities.
+     */
+    public static Collection<QueryEntity> normalizeQueryEntities(Collection<QueryEntity> entities,
+        CacheConfiguration<?, ?> cfg) {
+        Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
+
+        for (QueryEntity entity : entities) {
+            if (!F.isEmpty(entity.getNotNullFields()))
+                checkNotNullAllowed(cfg);
+
+            normalEntities.add(normalizeQueryEntity(entity, cfg.isSqlEscapeAll()));
+        }
+
+        return normalEntities;
     }
 
     /**
@@ -389,8 +411,10 @@ public class QueryUtils {
 
         // Key and value classes still can be available if they are primitive or JDK part.
         // We need that to set correct types for _key and _val columns.
-        Class<?> keyCls = U.classForName(qryEntity.findKeyType(), null);
-        Class<?> valCls = U.classForName(qryEntity.findValueType(), null);
+        // We better box these types - otherwise, if user provides, say, raw 'byte' for
+        // key or value (which they could), we'll deem key or value as Object which clearly is not right.
+        Class<?> keyCls = U.box(U.classForName(qryEntity.findKeyType(), null, true));
+        Class<?> valCls = U.box(U.classForName(qryEntity.findValueType(), null, true));
 
         // If local node has the classes and they are externalizable, we must use reflection properties.
         boolean keyMustDeserialize = mustDeserializeBinary(ctx, keyCls);

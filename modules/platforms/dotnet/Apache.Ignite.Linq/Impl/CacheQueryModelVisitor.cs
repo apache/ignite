@@ -103,26 +103,30 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Visits the query model.
         /// </summary>
-        private void VisitQueryModel(QueryModel queryModel, bool includeAllFields)
+        internal void VisitQueryModel(QueryModel queryModel, bool includeAllFields, bool copyAliases = false)
         {
-            _aliases.Push();
+            _aliases.Push(copyAliases);
 
-            var hasDelete = VisitRemoveOperator(queryModel);
-
-            if (!hasDelete)
+            var lastResultOp = queryModel.ResultOperators.LastOrDefault();
+            if (lastResultOp is RemoveAllResultOperator)
+            {
+                VisitRemoveOperator(queryModel);
+            }
+            else if(lastResultOp is UpdateAllResultOperator)
+            {
+                VisitUpdateAllOperator(queryModel);
+            }
+            else
             {
                 // SELECT
                 _builder.Append("select ");
 
                 // TOP 1 FLD1, FLD2
                 VisitSelectors(queryModel, includeAllFields);
-            }
 
-            // FROM ... WHERE ... JOIN ...
-            base.VisitQueryModel(queryModel);
+                // FROM ... WHERE ... JOIN ...
+                base.VisitQueryModel(queryModel);
 
-            if (!hasDelete)
-            {
                 // UNION ...
                 ProcessResultOperatorsEnd(queryModel);
             }
@@ -131,42 +135,68 @@ namespace Apache.Ignite.Linq.Impl
         }
 
         /// <summary>
-        /// Visits the remove operator. Returns true if it is present.
+        /// Visits the remove operator.
         /// </summary>
-        private bool VisitRemoveOperator(QueryModel queryModel)
+        private void VisitRemoveOperator(QueryModel queryModel)
         {
             var resultOps = queryModel.ResultOperators;
 
-            if (resultOps.LastOrDefault() is RemoveAllResultOperator)
+            _builder.Append("delete ");
+
+            if (resultOps.Count == 2)
             {
-                _builder.Append("delete ");
+                var resOp = resultOps[0] as TakeResultOperator;
 
-                if (resultOps.Count == 2)
-                {
-                    var resOp = resultOps[0] as TakeResultOperator;
-
-                    if (resOp == null)
-                    {
-                        throw new NotSupportedException(
-                            "RemoveAll can not be combined with result operators (other than Take): " +
-                            resultOps[0].GetType().Name);
-                    }
-
-                    _builder.Append("top ");
-                    BuildSqlExpression(resOp.Count);
-                    _builder.Append(" ");
-                }
-                else if (resultOps.Count > 2)
-                {
+                if (resOp == null)
                     throw new NotSupportedException(
                         "RemoveAll can not be combined with result operators (other than Take): " +
-                        string.Join(", ", resultOps.Select(x => x.GetType().Name)));
-                }
+                        resultOps[0].GetType().Name);
 
-                return true;
+                _builder.Append("top ");
+                BuildSqlExpression(resOp.Count);
+                _builder.Append(" ");
             }
-                
-            return false;
+            else if (resultOps.Count > 2)
+            {
+                throw new NotSupportedException(
+                    "RemoveAll can not be combined with result operators (other than Take): " +
+                    string.Join(", ", resultOps.Select(x => x.GetType().Name)));
+            }
+
+            // FROM ... WHERE ... JOIN ...
+            base.VisitQueryModel(queryModel);
+        }
+
+        /// <summary>
+        /// Visits the UpdateAll operator.
+        /// </summary>
+        private void VisitUpdateAllOperator(QueryModel queryModel)
+        {
+            var resultOps = queryModel.ResultOperators;
+
+            _builder.Append("update ");
+
+            // FROM ... WHERE ...
+            base.VisitQueryModel(queryModel);
+
+            if (resultOps.Count == 2)
+            {
+                var resOp = resultOps[0] as TakeResultOperator;
+
+                if (resOp == null)
+                    throw new NotSupportedException(
+                        "UpdateAll can not be combined with result operators (other than Take): " +
+                        resultOps[0].GetType().Name);
+
+                _builder.Append("limit ");
+                BuildSqlExpression(resOp.Count);
+            }
+            else if (resultOps.Count > 2)
+            {
+                throw new NotSupportedException(
+                    "UpdateAll can not be combined with result operators (other than Take): " +
+                    string.Join(", ", resultOps.Select(x => x.GetType().Name)));
+            }
         }
 
         /// <summary>
@@ -374,6 +404,10 @@ namespace Apache.Ignite.Linq.Impl
             foreach (var join in subQuery.QueryModel.BodyClauses.OfType<JoinClause>())
                 VisitJoinClause(join, queryModel, i++);
 
+            i = 0;
+            foreach (var where in subQuery.QueryModel.BodyClauses.OfType<WhereClause>())
+                VisitWhereClause(where, i++, false);
+
             // Append grouping
             _builder.Append("group by (");
 
@@ -390,17 +424,27 @@ namespace Apache.Ignite.Linq.Impl
         {
             base.VisitMainFromClause(fromClause, queryModel);
 
-            _builder.AppendFormat("from ");
+            var isUpdateQuery = queryModel.ResultOperators.LastOrDefault() is UpdateAllResultOperator;
+            if (!isUpdateQuery)
+            {
+                _builder.Append("from ");
+            }
+
             ValidateFromClause(fromClause);
             _aliases.AppendAsClause(_builder, fromClause).Append(" ");
 
             var i = 0;
             foreach (var additionalFrom in queryModel.BodyClauses.OfType<AdditionalFromClause>())
             {
-                _builder.AppendFormat(", ");
+                _builder.Append(", ");
                 ValidateFromClause(additionalFrom);
 
                 VisitAdditionalFromClause(additionalFrom, queryModel, i++);
+            }
+
+            if (isUpdateQuery)
+            {
+                BuildSetClauseForUpdateAll(queryModel);
             }
         }
 
@@ -531,7 +575,6 @@ namespace Apache.Ignite.Linq.Impl
             }
         }
 
-
         /// <summary>
         /// Visists Join clause in case of join with local collection
         /// </summary>
@@ -647,9 +690,33 @@ namespace Apache.Ignite.Linq.Impl
         /// <summary>
         /// Builds the SQL expression.
         /// </summary>
-        private void BuildSqlExpression(Expression expression, bool useStar = false, bool includeAllFields = false)
+        private void BuildSqlExpression(Expression expression, bool useStar = false, bool includeAllFields = false,
+            bool visitSubqueryModel = false)
         {
-            new CacheQueryExpressionVisitor(this, useStar, includeAllFields).Visit(expression);
+            new CacheQueryExpressionVisitor(this, useStar, includeAllFields, visitSubqueryModel).Visit(expression);
+        }
+
+        /// <summary>
+        /// Builds SET clause of UPDATE statement
+        /// </summary>
+        private void BuildSetClauseForUpdateAll(QueryModel queryModel)
+        {
+            var updateAllResultOperator = queryModel.ResultOperators.LastOrDefault() as UpdateAllResultOperator;
+            if (updateAllResultOperator != null)
+            {
+                _builder.Append("set ");
+                var first = true;
+                foreach (var update in updateAllResultOperator.Updates)
+                {
+                    if (!first) _builder.Append(", ");
+                    first = false;
+                    BuildSqlExpression(update.Selector);
+                    _builder.Append(" = ");
+                    BuildSqlExpression(update.Value, visitSubqueryModel: true);
+                }
+
+                _builder.Append(" ");
+            }
         }
     }
 }

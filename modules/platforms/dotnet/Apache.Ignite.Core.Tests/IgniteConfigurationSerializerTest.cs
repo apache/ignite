@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -38,6 +38,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Ssl;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Configuration;
@@ -336,6 +337,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(6, dr.MetricsSubIntervalCount);
             Assert.AreEqual("swap2", dr.SwapPath);
             Assert.IsFalse(dr.MetricsEnabled);
+
+            Assert.IsInstanceOf<SslContextFactory>(cfg.SslContextFactory);
         }
 
         /// <summary>
@@ -898,6 +901,9 @@ namespace Apache.Ignite.Core.Tests
                     SocketReceiveBufferSize = 5,
                     SocketSendBufferSize = 6,
                     TcpNoDelay = false,
+                    ThinClientEnabled = false,
+                    OdbcEnabled = false,
+                    JdbcEnabled = false,
                     ThreadPoolSize = 7,
                     IdleTimeout = TimeSpan.FromMinutes(5)
                 },
@@ -994,7 +1000,8 @@ namespace Apache.Ignite.Core.Tests
                             SwapPath = Path.GetTempPath()
                         }
                     }
-                }
+                },
+                SslContextFactory = new SslContextFactory()
             };
         }
 

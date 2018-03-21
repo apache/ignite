@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.binary;
 import java.util.List;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -44,7 +45,6 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -81,10 +81,10 @@ final class BinaryMetadataTransport {
     private final Queue<MetadataUpdateResultFuture> unlabeledFutures = new ConcurrentLinkedQueue<>();
 
     /** */
-    private final ConcurrentMap<SyncKey, MetadataUpdateResultFuture> syncMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<SyncKey, MetadataUpdateResultFuture> syncMap = new ConcurrentHashMap<>();
 
     /** */
-    private final ConcurrentMap<Integer, ClientMetadataRequestFuture> clientReqSyncMap = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<Integer, ClientMetadataRequestFuture> clientReqSyncMap = new ConcurrentHashMap<>();
 
     /** */
     private volatile boolean stopping;
@@ -159,7 +159,8 @@ final class BinaryMetadataTransport {
         MetadataUpdateResultFuture resFut = new MetadataUpdateResultFuture();
 
         if (log.isDebugEnabled())
-            log.debug("Requesting metadata update for " + metadata.typeId());
+            log.debug("Requesting metadata update for " + metadata.typeId() + "; caller thread is blocked on future "
+                + resFut);
 
         synchronized (this) {
             unlabeledFutures.add(resFut);
@@ -418,6 +419,9 @@ final class BinaryMetadataTransport {
 
         /** {@inheritDoc} */
         @Override public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd, MetadataUpdateAcceptedMessage msg) {
+            if (log.isDebugEnabled())
+                log.debug("Received MetadataUpdateAcceptedMessage " + msg);
+
             if (msg.duplicated())
                 return;
 
@@ -468,7 +472,7 @@ final class BinaryMetadataTransport {
             GridFutureAdapter<MetadataUpdateResult> fut = syncMap.get(new SyncKey(typeId, newAcceptedVer));
 
             if (log.isDebugEnabled())
-                log.debug("Completing future for " + metaLocCache.get(typeId));
+                log.debug("Completing future " + fut + " for " + metaLocCache.get(typeId));
 
             if (fut != null)
                 fut.onDone(MetadataUpdateResult.createSuccessfulResult());
