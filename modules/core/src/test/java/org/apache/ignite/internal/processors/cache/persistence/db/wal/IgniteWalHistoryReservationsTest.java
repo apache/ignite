@@ -247,8 +247,6 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRemovesArePreloadedIfHistoryIsAvailable() throws Exception {
-        System.setProperty(IGNITE_PDS_WAL_REBALANCE_THRESHOLD, "0");
-
         int entryCnt = 10_000;
 
         IgniteEx ig0 = (IgniteEx) startGrids(2);
@@ -260,14 +258,10 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
         for (int k = 0; k < entryCnt; k++)
             cache.put(k, k);
 
-        forceCheckpoint();
-
         stopGrid(1);
 
         for (int k = 0; k < entryCnt; k += 2)
             cache.remove(k);
-
-        forceCheckpoint();
 
         IgniteEx ig1 = startGrid(1);
 
