@@ -87,7 +87,8 @@ namespace ignite
                 Close();
             }
 
-            bool TcpSocketClient::Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag)
+            bool TcpSocketClient::Connect(const char* hostname, uint16_t port, int32_t timeout,
+                diagnostic::Diagnosable& diag)
             {
                 LOG_MSG("Host: " << hostname << ", port: " << port);
 
@@ -153,7 +154,7 @@ namespace ignite
                             continue;
                         }
 
-                        res = WaitOnSocket(CONNECT_TIMEOUT, false);
+                        res = WaitOnSocket(timeout, false);
 
                         if (res < 0 || res == WaitResult::TIMEOUT)
                         {
