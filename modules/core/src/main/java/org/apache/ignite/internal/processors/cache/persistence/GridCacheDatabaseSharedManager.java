@@ -3817,7 +3817,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          * @param chp checkpoint which finishing now
          */
         private void onMaxWalArchiveSizeCheckpointFinished(Checkpoint chp) {
-            if(persistenceCfg.getMaxWalArchiveSize() == Integer.MAX_VALUE){
+            if(persistenceCfg.getMaxWalArchiveSize() == Long.MAX_VALUE){
                 finishCheckpoint(chp, 0);
 
                 return;
