@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.StripedExecutorProxy;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1802,7 +1803,8 @@ public class IgnitionEx {
                     cfg.getIgniteInstanceName(),
                     "sys",
                     log);
-            }
+            } else
+                stripedExecSvc = new StripedExecutorProxy(sysExecSvc, log);
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
