@@ -2228,7 +2228,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         client.cache(DEFAULT_CACHE_NAME).put(1, 1);
 
-        reconnectClientNodes(log, Collections.singletonList(client), null, closeSock);
+        reconnectClientNodes(log, Collections.singletonList(client), closeSock);
 
         assertEquals(1, client.cache(DEFAULT_CACHE_NAME).get(1));
 
@@ -4096,13 +4096,11 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      *
      * @param log  Logger.
      * @param clients Clients.
-     * @param disconnectedC Closure which will be run when client node disconnected.
      * @param closeSock {@code True} to simulate reconnect by closing zk client's socket.
      * @throws Exception If failed.
      */
-    public static void reconnectClientNodes(final IgniteLogger log,
+    private static void reconnectClientNodes(final IgniteLogger log,
         List<Ignite> clients,
-        @Nullable Runnable disconnectedC,
         boolean closeSock)
         throws Exception {
         final CountDownLatch disconnectLatch = new CountDownLatch(clients.size());
@@ -4127,22 +4125,10 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
         List<String> zkNodes = new ArrayList<>();
 
-        List<DiscoverySpiTestListener> lsnrs = new ArrayList<>();
-
         for (Ignite client : clients) {
             client.events().localListen(p, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
 
             zkNodes.add(aliveZkNodePath(client));
-
-            if (disconnectedC != null) {
-                DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
-
-                ((IgniteDiscoverySpi)client.configuration().getDiscoverySpi()).setInternalListener(lsnr);
-
-                lsnr.startBlockJoin();
-
-                lsnrs.add(lsnr);
-            }
         }
 
         long timeout = 10_000;
@@ -4195,13 +4181,6 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         }
 
         waitReconnectEvent(log, disconnectLatch);
-
-        if (disconnectedC != null) {
-            disconnectedC.run();
-
-            for (DiscoverySpiTestListener lsnr : lsnrs)
-                lsnr.stopBlockJoin();
-        }
 
         waitReconnectEvent(log, reconnectLatch);
 

@@ -3790,8 +3790,11 @@ public class ZookeeperDiscoveryImpl {
         IgniteThreadPoolExecutor pool;
 
         synchronized (stateMux) {
-            if (connState == ConnectionState.STOPPED)
+            if (connState == ConnectionState.STOPPED) {
+                LT.warn(log, "Do not run closure, node is stopped.");
+
                 return;
+            }
 
             if (utilityPool == null) {
                 utilityPool = new IgniteThreadPoolExecutor("zk-discovery-pool",
