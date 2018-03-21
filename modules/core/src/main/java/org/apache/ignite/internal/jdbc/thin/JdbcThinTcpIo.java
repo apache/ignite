@@ -144,66 +144,83 @@ public class JdbcThinTcpIo {
      * @throws IOException On IO error in handshake.
      */
     public void start(int timeout) throws SQLException, IOException {
-        List<String> inaccessibleAddrs = null;
+        synchronized (mux) {
+            if (ownThread != null) {
+                throw new IgniteException("Concurrent access to JDBC connection is not allowed"
+                    + " [ownThread=" + ownThread.getName()
+                    + ", curThread=" + Thread.currentThread().getName());
+            }
 
-        List<Exception> exceptions = null;
+            ownThread = Thread.currentThread();
+        }
 
-        HostAndPortRange[] srvs = connProps.getAddresses();
+        try {
+            List<String> inaccessibleAddrs = null;
 
-        boolean connected = false;
+            List<Exception> exceptions = null;
 
-        for (int i = 0; i < srvs.length; i++, srvIdx = (srvIdx + 1) % srvs.length) {
-            HostAndPortRange srv = srvs[srvIdx];
+            HostAndPortRange[] srvs = connProps.getAddresses();
 
-            InetAddress[] addrs = getAllAddressesByHost(srv.host());
+            boolean connected = false;
 
-            for (InetAddress addr : addrs) {
-                for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
-                    try {
-                        connect(new InetSocketAddress(addr, port), timeout);
+            for (int i = 0; i < srvs.length; i++, srvIdx = (srvIdx + 1) % srvs.length) {
+                HostAndPortRange srv = srvs[srvIdx];
 
-                        connected = true;
+                InetAddress[] addrs = getAllAddressesByHost(srv.host());
 
-                        break;
-                    }
-                    catch (IOException | SQLException exception) {
-                        if (inaccessibleAddrs == null)
-                            inaccessibleAddrs = new ArrayList<>();
+                for (InetAddress addr : addrs) {
+                    for (int port = srv.portFrom(); port <= srv.portTo(); ++port) {
+                        try {
+                            connect(new InetSocketAddress(addr, port), timeout);
 
-                        inaccessibleAddrs.add(addr.getHostName());
+                            connected = true;
 
-                        if (exceptions == null)
-                            exceptions = new ArrayList<>();
+                            break;
+                        }
+                        catch (IOException | SQLException exception) {
+                            if (inaccessibleAddrs == null)
+                                inaccessibleAddrs = new ArrayList<>();
 
-                        exceptions.add(exception);
+                            inaccessibleAddrs.add(addr.getHostName());
+
+                            if (exceptions == null)
+                                exceptions = new ArrayList<>();
+
+                            exceptions.add(exception);
+                        }
                     }
                 }
+
+                if (connected)
+                    break;
             }
 
-            if (connected)
-                break;
-        }
+            if (!connected && inaccessibleAddrs != null && exceptions != null) {
+                if (exceptions.size() == 1) {
+                    Exception ex = exceptions.get(0);
 
-        if (!connected && inaccessibleAddrs != null && exceptions != null) {
-            if (exceptions.size() == 1) {
-                Exception ex = exceptions.get(0);
+                    if (ex instanceof SQLException)
+                        throw (SQLException)ex;
+                    else if (ex instanceof IOException)
+                        throw (IOException)ex;
+                }
 
-                if (ex instanceof SQLException)
-                    throw (SQLException)ex;
-                else if (ex instanceof IOException)
-                    throw (IOException)ex;
+                SQLException e = new SQLException("Failed to connect to server [url=" + connProps.getUrl() + ']',
+                    SqlStateCode.CLIENT_CONNECTION_FAILED);
+
+                for (Exception ex : exceptions)
+                    e.addSuppressed(ex);
+
+                throw e;
             }
 
-            SQLException e = new SQLException("Failed to connect to server [url=" + connProps.getUrl() + ']',
-                SqlStateCode.CLIENT_CONNECTION_FAILED);
-
-            for (Exception ex : exceptions)
-                e.addSuppressed(ex);
-
-            throw e;
+            handshake(CURRENT_VER);
         }
-
-        handshake(CURRENT_VER);
+        finally {
+            synchronized (mux) {
+                ownThread = null;
+            }
+        }
     }
 
     /**

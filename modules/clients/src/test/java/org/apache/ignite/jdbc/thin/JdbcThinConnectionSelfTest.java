@@ -1786,7 +1786,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testMultithreadingException() throws Exception {
-        int threadCnt = 5;
+        int threadCnt = 10;
 
         final boolean end[] = new boolean[] {false};
 
@@ -1798,12 +1798,21 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
             final IgniteInternalFuture f = GridTestUtils.runMultiThreadedAsync(new Runnable() {
                 @Override public void run() {
                     try {
+                        conn.createStatement();
+
                         while (!end[0])
                             conn.createStatement().execute("SELECT 1");
+
+                        conn.createStatement().execute("SELECT 1");
                     }
                     catch (SQLException e) {
                         end[0] = true;
                         exs[exCnt.getAndIncrement()] = e;
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace(System.err);
+
+                        fail("Unexpected exception (see details above): " + e.getMessage());
                     }
                 }
             }, threadCnt, "run-query");
