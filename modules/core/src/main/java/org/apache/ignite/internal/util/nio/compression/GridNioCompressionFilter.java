@@ -31,10 +31,13 @@ import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.COMPRESSION_META;
 
-/** */
+/**
+ * Compression filter.
+ */
 public final class GridNioCompressionFilter extends GridNioFilterAdapter {
     /** Logger to use. */
     private final IgniteLogger log;
@@ -65,6 +68,10 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
         IgniteLogger log) {
         super("Compression filter");
 
+        assert compressionFactory != null;
+        assert order != null;
+        assert log != null;
+
         this.log = log;
         this.directBuf = directBuf;
         this.order = order;
@@ -87,6 +94,8 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void onSessionOpened(GridNioSession ses) throws IgniteCheckedException {
+        assert ses != null;
+
         if (log.isDebugEnabled())
             log.debug("Remote client connected, creating compression handler: " + ses);
 
@@ -127,12 +136,17 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void onSessionClosed(GridNioSession ses) throws IgniteCheckedException {
+        assert  ses != null;
+
         proceedSessionClosed(ses);
     }
 
     /** {@inheritDoc} */
     @Override public void onExceptionCaught(GridNioSession ses, IgniteCheckedException ex)
         throws IgniteCheckedException {
+        assert ses != null;
+        assert ex != null;
+
         proceedExceptionCaught(ses, ex);
     }
 
@@ -141,6 +155,8 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
     public static void lock(GridNioSession ses) {
+        assert  ses != null;
+
         GridNioCompressionHandler hnd = compressionHandler(ses);
 
         hnd.lock();
@@ -150,6 +166,8 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
      * @param ses NIO session.
      */
     public static void unlock(GridNioSession ses) {
+        assert ses != null;
+
         compressionHandler(ses).unlock();
     }
 
@@ -160,6 +178,9 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
      * @throws IOException If failed to compress.
      */
     public static ByteBuffer compress(GridNioSession ses, ByteBuffer input) throws IOException {
+        assert ses != null;
+        assert input != null;
+
         GridNioCompressionHandler hnd = compressionHandler(ses);
 
         hnd.lock();
@@ -177,15 +198,18 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
         GridNioSession ses,
         Object msg,
         boolean fut,
-        IgniteInClosure<IgniteException> ackC
+        @Nullable IgniteInClosure<IgniteException> ackC
     ) throws IgniteCheckedException {
+        assert ses != null;
+        assert msg != null;
+
         if (!ses.isCompressed() || directMode)
             return proceedSessionWrite(ses, msg, fut, ackC);
 
         ByteBuffer input = checkMessage(ses, msg);
 
         if (!input.hasRemaining())
-            return new GridNioFinishedFuture<Object>(null);
+            return new GridNioFinishedFuture<>(null);
 
         GridNioCompressionHandler hnd = compressionHandler(ses);
 
@@ -206,6 +230,9 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void onMessageReceived(GridNioSession ses, Object msg) throws IgniteCheckedException {
+        assert ses != null;
+        assert msg != null;
+
         if (!ses.isCompressed()) {
             proceedMessageReceived(ses, msg);
 
@@ -240,6 +267,8 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public GridNioFuture<Boolean> onSessionClose(GridNioSession ses) throws IgniteCheckedException {
+        assert ses != null;
+
         if (!ses.isCompressed())
             return proceedSessionClose(ses);
 
@@ -283,11 +312,15 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void onSessionIdleTimeout(GridNioSession ses) throws IgniteCheckedException {
+        assert ses != null;
+
         proceedSessionIdleTimeout(ses);
     }
 
     /** {@inheritDoc} */
     @Override public void onSessionWriteTimeout(GridNioSession ses) throws IgniteCheckedException {
+        assert ses != null;
+
         proceedSessionWriteTimeout(ses);
     }
 
@@ -298,6 +331,8 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
      * @return compression handler.
      */
     private static GridNioCompressionHandler compressionHandler(GridNioSession ses) {
+        assert ses != null;
+
         GridCompressionMeta compressMeta = ses.meta(COMPRESSION_META.ordinal());
 
         assert compressMeta != null;

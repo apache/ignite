@@ -3424,7 +3424,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
         Boolean locAttr = locNode.attribute(ATTR_COMPRESSION_ENABLED);
         Boolean rmtAttr = rmtNode.attribute(ATTR_COMPRESSION_ENABLED);
 
-        return locAttr != null && rmtAttr != null && locAttr || rmtAttr;
+        return locAttr != null && rmtAttr != null && (locAttr || rmtAttr);
 
     }
 
@@ -3588,14 +3588,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     msg = new HandshakeMessage2(locNode.id(),
                         recovery.incrementConnectCount(),
                         recovery.received(),
-                        handshakeConnIdx, isCompressed);
+                        handshakeConnIdx,
+                        isCompressed);
 
                     msgSize += 4;
                 }
                 else {
                     msg = new HandshakeMessage(locNode.id(),
                         recovery.incrementConnectCount(),
-                        recovery.received(), isCompressed);
+                        recovery.received(),
+                        isCompressed);
                 }
 
                 if (log.isDebugEnabled())

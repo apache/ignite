@@ -175,14 +175,20 @@ public final class DeflaterEngine implements CompressionEngine {
         return OK;
     }
 
-    /** */
+    /**
+     *  ByteArrayOutputStream extended by method for access to internal array.
+     */
     static final class ExtendedByteArrayOutputStream extends ByteArrayOutputStream {
-        /** */
+        /** {@inheritDoc} */
         ExtendedByteArrayOutputStream(int size) {
             super(size);
         }
 
-        /** */
+        /**
+         * Get internal byte array to avoid copy data. See {@link #toByteArray()} for details.
+         *
+         * @return Internal byte array.
+         */
         byte[] getByteArray() {
             return buf;
         }

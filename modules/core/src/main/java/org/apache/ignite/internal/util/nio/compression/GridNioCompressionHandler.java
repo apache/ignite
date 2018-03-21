@@ -28,6 +28,7 @@ import org.apache.ignite.internal.util.nio.GridNioException;
 import org.apache.ignite.internal.util.nio.GridNioFuture;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.BUFFER_OVERFLOW;
 import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.OK;
@@ -140,7 +141,7 @@ final class GridNioCompressionHandler extends ReentrantLock {
      * @throws GridNioException If exception occurred while forwarding events to underlying filter.
      * @throws IOException If failed to process compress data.
      */
-    void messageReceived(ByteBuffer buf) throws IgniteCheckedException, IOException {
+    void messageReceived(ByteBuffer buf) throws IOException {
         if (buf.limit() > inNetBuf.remaining()) {
             assert inNetBuf.capacity() + buf.limit() * 2 <= Integer.MAX_VALUE;
 
@@ -166,11 +167,10 @@ final class GridNioCompressionHandler extends ReentrantLock {
     ByteBuffer compress(ByteBuffer src) throws IOException {
         assert isHeldByCurrentThread();
 
-        // The data buffer is (must be) empty, we can reuse the entire
-        // buffer.
+        // The data buffer is (must be) empty, we can reuse the entire buffer.
         outNetBuf.clear();
 
-        // Loop until there is no more data in src
+        // Loop until there is no more data in src.
         while (src.hasRemaining()) {
             CompressionEngineResult res = compressionEngine.compress(src, outNetBuf);
 
@@ -197,7 +197,7 @@ final class GridNioCompressionHandler extends ReentrantLock {
      * @return Write future.
      * @throws GridNioException If send failed.
      */
-    GridNioFuture<?> writeNetBuffer(IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
+    GridNioFuture<?> writeNetBuffer(@Nullable IgniteInClosure<IgniteException> ackC) throws IgniteCheckedException {
         assert isHeldByCurrentThread();
 
         ByteBuffer cp = copy(outNetBuf);

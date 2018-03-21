@@ -21,7 +21,9 @@ import org.apache.ignite.internal.util.nio.compression.CompressionEngine;
 
 import javax.cache.configuration.Factory;
 
-/** */
+/**
+ * Factory for compression engine with LZ4 algorithm.
+ */
 public final class LZ4Factory implements Factory<CompressionEngine> {
     /** */
     private static final long serialVersionUID = 0L;

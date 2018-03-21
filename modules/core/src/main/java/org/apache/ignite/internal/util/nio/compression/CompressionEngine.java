@@ -26,6 +26,7 @@ import java.nio.ByteBuffer;
 public interface CompressionEngine {
     /**
      * Compress source byte buffer.
+     *
      * @param src ByteBuffer containing data to compress.
      * @param buf ByteBuffer to hold outbound network data.
      * @return Result of compression.
@@ -34,6 +35,7 @@ public interface CompressionEngine {
 
     /**
      * Decompress source byte buffer that can contains part of message, one or more messages.
+     *
      * @param src ByteBuffer containing compressed data.
      * @param buf ByteBuffer to hold inbound network data.
      * @return Result of decompression.

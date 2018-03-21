@@ -21,7 +21,9 @@ import org.apache.ignite.internal.util.nio.compression.CompressionEngine;
 
 import javax.cache.configuration.Factory;
 
-/** */
+/**
+ * Factory for Zstd algorithm compression engine.
+ */
 public final class ZstdFactory implements Factory<CompressionEngine> {
     /** */
     private static final long serialVersionUID = 0L;

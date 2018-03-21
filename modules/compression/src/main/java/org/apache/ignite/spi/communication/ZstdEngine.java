@@ -28,7 +28,7 @@ import static org.apache.ignite.internal.util.nio.compression.CompressionEngineR
 import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.OK;
 
 /**
- * Implementation of Zstd algorithm.
+ * Factory for compression engine with Zstd algorithm.
  */
 public final class ZstdEngine implements CompressionEngine {
     /** */
@@ -229,13 +229,11 @@ public final class ZstdEngine implements CompressionEngine {
 
             switch (blockType) {
                 case 0:
+                case 2:
                     off += blockSize;
                     break;
                 case 1:
                     off += 1;
-                    break;
-                case 2:
-                    off += blockSize;
                     break;
             }
         }

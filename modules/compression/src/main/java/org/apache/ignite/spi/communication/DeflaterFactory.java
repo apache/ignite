@@ -21,7 +21,9 @@ import org.apache.ignite.internal.util.nio.compression.CompressionEngine;
 
 import javax.cache.configuration.Factory;
 
-/** */
+/**
+ * Factory for compression engine with deflater algorithm.
+ */
 public final class DeflaterFactory implements Factory<CompressionEngine> {
     /** */
     private static final long serialVersionUID = 0L;

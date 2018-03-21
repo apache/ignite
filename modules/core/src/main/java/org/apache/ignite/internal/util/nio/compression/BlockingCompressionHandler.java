@@ -27,7 +27,9 @@ import org.apache.ignite.internal.util.nio.GridNioException;
 import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.BUFFER_OVERFLOW;
 import static org.apache.ignite.internal.util.nio.compression.CompressionEngineResult.OK;
 
-/** */
+/**
+ * Blocking compression handler.
+ */
 public final class BlockingCompressionHandler {
     /** Size of a net buffers. */
     private static final int NET_BUF_SIZE = 1 << 15;
@@ -57,8 +59,9 @@ public final class BlockingCompressionHandler {
         boolean directBuf,
         ByteOrder order,
         IgniteLogger log) {
-        assert log != null;
         assert compressionEngine != null;
+        assert order != null;
+        assert log != null;
 
         this.log = log;
         this.compressionEngine = compressionEngine;
@@ -135,7 +138,7 @@ public final class BlockingCompressionHandler {
      * @throws GridNioException If exception occurred while forwarding events to underlying filter.
      * @throws IOException If failed to process compress data.
      */
-    public ByteBuffer decompress(ByteBuffer buf) throws IgniteCheckedException, IOException {
+    public ByteBuffer decompress(ByteBuffer buf) throws IOException {
         assert buf != null;
 
         appBuf.clear();
@@ -183,7 +186,7 @@ public final class BlockingCompressionHandler {
         }
         while (res == OK || res == BUFFER_OVERFLOW);
 
-        // prepare to be written again
+        // Prepare to be written again.
         inNetBuf.compact();
     }
 

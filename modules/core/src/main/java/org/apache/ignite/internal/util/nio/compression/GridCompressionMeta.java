@@ -18,8 +18,11 @@
 package org.apache.ignite.internal.util.nio.compression;
 
 import java.nio.ByteBuffer;
+import org.jetbrains.annotations.Nullable;
 
-/** */
+/**
+ * Compression meta.
+ */
 public final class GridCompressionMeta {
     /** GridNioCompressionHandler. */
     private GridNioCompressionHandler hnd;
@@ -42,11 +45,13 @@ public final class GridCompressionMeta {
      * @param compressionEngine Compress engine.
      */
     public void compressionEngine(CompressionEngine compressionEngine) {
+        assert compressionEngine != null;
+
         this.compressionEngine = compressionEngine;
     }
 
     /** */
-    public GridNioCompressionHandler handler() {
+    @Nullable public GridNioCompressionHandler handler() {
         return hnd;
     }
 
@@ -54,11 +59,13 @@ public final class GridCompressionMeta {
      * @param hnd Handler.
      */
     public void handler(GridNioCompressionHandler hnd) {
+        assert hnd != null;
+
         this.hnd = hnd;
     }
 
     /** */
-    ByteBuffer decodedBuffer() {
+    @Nullable ByteBuffer decodedBuffer() {
         return decodedBuf;
     }
 
@@ -66,11 +73,13 @@ public final class GridCompressionMeta {
      * @param decodedBuf Decoded buffer.
      */
     public void decodedBuffer(ByteBuffer decodedBuf) {
+        assert decodedBuf != null;
+
         this.decodedBuf = decodedBuf;
     }
 
     /** */
-    ByteBuffer encodedBuffer() {
+    @Nullable ByteBuffer encodedBuffer() {
         return encodedBuf;
     }
 
@@ -78,6 +87,8 @@ public final class GridCompressionMeta {
      * @param encodedBuf Encoded buffer.
      */
     public void encodedBuffer(ByteBuffer encodedBuf) {
+        assert encodedBuf != null;
+
         this.encodedBuf = encodedBuf;
     }
 }

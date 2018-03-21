@@ -1412,7 +1412,7 @@ public class IgniteConfiguration {
      *
      * @return Network compression engine factory.
      */
-    public Factory<CompressionEngine> getNetworkCompressionFactory() {
+    @Nullable public Factory<CompressionEngine> getNetworkCompressionFactory() {
         return compressionEngineFactory;
     }
 
@@ -1426,7 +1426,7 @@ public class IgniteConfiguration {
      * @param compressionEngineFactory Network compression engine factory.
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setNetworkCompressionFactory(Factory<CompressionEngine> compressionEngineFactory) {
+    public IgniteConfiguration setNetworkCompressionFactory(@Nullable Factory<CompressionEngine> compressionEngineFactory) {
         this.compressionEngineFactory = compressionEngineFactory;
 
         return this;
