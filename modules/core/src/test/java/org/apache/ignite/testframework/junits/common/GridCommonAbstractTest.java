@@ -1657,21 +1657,6 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    protected void forceCheckpoint() throws Exception {
-        for (Ignite ignite : G.allGrids()) {
-            if (ignite.cluster().localNode().isClient())
-                continue;
-
-            IgniteCacheDatabaseSharedManager dbMgr = ((IgniteEx)ignite).context()
-                .cache().context().database();
-
-            dbMgr.waitForCheckpoint("test");
-        }
-    }
-
-    /**
      * @param aff Affinity.
      * @param key Counter.
      * @param node Target node.
