@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.Marshaller;
@@ -345,6 +346,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
         File cacheWorkDir = cacheWorkDirectory(ccfg);
 
+        AllocatedPageTracker allocatedTracker =
+            cctx.database().dataRegion(grpDesc.config().getDataRegionName()).memoryMetrics();
+
         boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir);
 
         File idxFile = new File(cacheWorkDir, INDEX_FILE_NAME);
@@ -355,13 +359,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         FileVersionCheckingFactory pageStoreFactory = new FileVersionCheckingFactory(
             dsCfg.getFileIOFactory(), igniteCfg.getDataStorageConfiguration());
 
-        FilePageStore idxStore = pageStoreFactory.createPageStore(PageMemory.FLAG_IDX, idxFile);
+        FilePageStore idxStore =
+            pageStoreFactory.createPageStore(
+                PageMemory.FLAG_IDX,
+                idxFile,
+                allocatedTracker);
 
         FilePageStore[] partStores = new FilePageStore[grpDesc.config().getAffinity().partitions()];
 
         for (int partId = 0; partId < partStores.length; partId++) {
-            FilePageStore partStore = pageStoreFactory.createPageStore(
-                PageMemory.FLAG_DATA, new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId)));
+            FilePageStore partStore =
+                pageStoreFactory.createPageStore(
+                    PageMemory.FLAG_DATA,
+                    new File(cacheWorkDir, String.format(PART_FILE_TEMPLATE, partId)),
+                    allocatedTracker);
 
             partStores[partId] = partStore;
         }
@@ -534,6 +545,21 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** {@inheritDoc} */
     @Override public boolean hasIndexStore(int grpId) {
         return !grpsWithoutIdx.contains(grpId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long pagesAllocated(int grpId) {
+        CacheStoreHolder holder = idxCacheStores.get(grpId);
+
+        if (holder == null)
+            return 0;
+
+        long pageCnt = holder.idxStore.pages();
+
+        for (int i = 0; i < holder.partStores.length; i++)
+            pageCnt += holder.partStores[i].pages();
+
+        return pageCnt;
     }
 
     /**

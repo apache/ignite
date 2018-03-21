@@ -28,7 +28,7 @@ import org.jsr166.LongAdder8;
 /**
  *
  */
-public class DataRegionMetricsImpl implements DataRegionMetrics {
+public class DataRegionMetricsImpl implements DataRegionMetrics, AllocatedPageTracker {
     /** */
     private final IgniteOutClosure<Long> freeSpaceProvider;
 
@@ -201,8 +201,13 @@ public class DataRegionMetricsImpl implements DataRegionMetrics {
      * Increments totalAllocatedPages counter.
      */
     public void incrementTotalAllocatedPages() {
+        updateTotalAllocatedPages(1);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void updateTotalAllocatedPages(long delta) {
         if (metricsEnabled) {
-            totalAllocatedPages.increment();
+            totalAllocatedPages.add(delta);
 
             updateAllocationRateMetrics();
         }
