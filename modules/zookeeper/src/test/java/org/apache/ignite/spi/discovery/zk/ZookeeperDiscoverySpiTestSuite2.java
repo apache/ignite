@@ -81,8 +81,6 @@ public class ZookeeperDiscoverySpiTestSuite2 extends ZookeeperDiscoverySpiAbstra
         suite.addTestSuite(GridCacheAtomicMultiNodeFullApiSelfTest.class);
         suite.addTestSuite(GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class);
 
-        suite.addTestSuite(CacheContinuousQueryAsyncFailoverAtomicSelfTest.class);
-
         suite.addTestSuite(IgniteCacheLockPartitionOnAffinityRunTxCacheOpTest.class);
 
         suite.addTestSuite(GridCachePartitionedNodeRestartTxSelfTest.class);

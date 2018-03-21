@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.zk.internal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -43,6 +44,9 @@ import org.apache.zookeeper.data.Stat;
  */
 public class ZookeeperClientTest extends GridCommonAbstractTest {
     /** */
+    private static final int SES_TIMEOUT = 60_000;
+
+    /** */
     private TestingCluster zkCluster;
 
     /** {@inheritDoc} */
@@ -53,12 +57,21 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param sesTimeout Session timeout.
+     * @return Client.
+     * @throws Exception If failed.
+     */
+    private ZookeeperClient createClient(int sesTimeout) throws Exception {
+        return new ZookeeperClient(log, zkCluster.getConnectString(), sesTimeout, null);
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testSaveLargeValue() throws Exception {
         startZK(1);
 
-        final ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 3000, null);
+        final ZookeeperClient client = createClient(SES_TIMEOUT);
 
         byte[] data = new byte[1024 * 1024];
 
@@ -89,7 +102,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     public void testClose() throws Exception {
         startZK(1);
 
-        final ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 3000, null);
+        final ZookeeperClient client = createClient(SES_TIMEOUT);
 
         client.createIfNeeded("/apacheIgnite1", null, CreateMode.PERSISTENT);
 
@@ -110,7 +123,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     public void testCreateAll() throws Exception {
         startZK(1);
 
-        ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 3000, null);
+        ZookeeperClient client = createClient(SES_TIMEOUT);
 
         client.createIfNeeded("/apacheIgnite", null, CreateMode.PERSISTENT);
 
@@ -131,7 +144,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     public void testDeleteAll() throws Exception {
         startZK(1);
 
-        ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 3000, null);
+        ZookeeperClient client = createClient(SES_TIMEOUT);
 
         client.createIfNeeded("/apacheIgnite", null, CreateMode.PERSISTENT);
         client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
@@ -142,7 +155,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
 
         client.createIfNeeded("/apacheIgnite/1", null, CreateMode.PERSISTENT);
-        client.deleteAll("/apacheIgnite", Arrays.asList("1"), -1);
+        client.deleteAll("/apacheIgnite", Collections.singletonList("1"), -1);
 
         assertTrue(client.getChildren("/apacheIgnite").isEmpty());
     }
@@ -169,7 +182,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     public void testConnectionLoss2() throws Exception {
         startZK(1);
 
-        ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 3000, null);
+        ZookeeperClient client = createClient(3000);
 
         client.createIfNeeded("/apacheIgnite1", null, CreateMode.PERSISTENT);
 
@@ -208,7 +221,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
             }
         });
 
-        cb.get(10_000);
+        cb.get(60_000);
 
         assertFalse(res.get());
     }
@@ -256,7 +269,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     public void testReconnect1() throws Exception {
         startZK(1);
 
-        ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 30_000, null);
+        ZookeeperClient client = createClient(SES_TIMEOUT);
 
         client.createIfNeeded("/apacheIgnite1", null, CreateMode.PERSISTENT);
 
@@ -287,7 +300,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     public void testReconnect1_Callback() throws Exception {
         startZK(1);
 
-        ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 30_000, null);
+        ZookeeperClient client = createClient(SES_TIMEOUT);
 
         client.createIfNeeded("/apacheIgnite1", null, CreateMode.PERSISTENT);
 
@@ -329,7 +342,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     public void testReconnect1_InCallback() throws Exception {
         startZK(1);
 
-        final ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 30_000, null);
+        final ZookeeperClient client = createClient(SES_TIMEOUT);
 
         client.createIfNeeded("/apacheIgnite1", null, CreateMode.PERSISTENT);
 
@@ -375,7 +388,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     public void testReconnect2() throws Exception {
         startZK(1);
 
-        ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 30_000, null);
+        ZookeeperClient client = createClient(SES_TIMEOUT);
 
         client.createIfNeeded("/apacheIgnite1", null, CreateMode.PERSISTENT);
 
@@ -390,11 +403,13 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
     public void testReconnect3() throws Exception {
         startZK(3);
 
-        ZookeeperClient client = new ZookeeperClient(log, zkCluster.getConnectString(), 30_000, null);
+        ZookeeperClient client = createClient(SES_TIMEOUT);
 
         ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
         for (int i = 0; i < 30; i++) {
+            info("Iteration: " + i);
+
             int idx = rnd.nextInt(3);
 
             zkCluster.getServers().get(idx).restart();
@@ -413,7 +428,7 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
 
         ZookeeperClient client = new ZookeeperClient(log,
             zkCluster.getServers().get(2).getInstanceSpec().getConnectString(),
-            30_000,
+            60_000,
             null);
 
         client.createIfNeeded("/apacheIgnite1", null, CreateMode.PERSISTENT);
