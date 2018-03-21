@@ -178,7 +178,6 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
             ccfg.setWriteSynchronizationMode(PRIMARY_SYNC);
             ccfg.setBackups(0);
             ccfg.setTopologyValidator(new SplitAwareTopologyValidator());
-            ccfg.setRebalanceDelay(5000L);
 
             if (useCacheGrp)
                 ccfg.setGroupName("testGroup");
@@ -411,22 +410,6 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
     }
 
     /**
-     * @param iterable Iterable.
-     */
-    private String iterableAsString(Iterable<?> iterable) {
-        StringBuilder sb = new StringBuilder();
-
-        for (Object i : iterable) {
-            if (sb.length() != 0)
-                sb.append(", ");
-
-            sb.append(i);
-        }
-
-        return sb.toString();
-    }
-
-    /**
      * @param idx Grid to test.
      * @return number of successful puts to caches
      * @throws IgniteException If all tries to put was failed.
@@ -460,13 +443,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
             IgniteCache<Object, Object> cache = g.cache(cacheName);
 
             try {
-                log.info("!!! try put [gridIdx=" + idx + ", cache=" + cacheName + ", key=" + key + "]" );
                 cache.put(key, key);
-                log.info("put success");
-
-                if (cache.localSize() != 1)
-                    log.info("!!!!!!!!!!!!! " + iterableAsString(
-                        cache.localEntries(CachePeekMode.PRIMARY, CachePeekMode.OFFHEAP)));
 
                 assertEquals(1, cache.localSize());
 
@@ -480,8 +457,7 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
                 IgniteException e = new IgniteException("Failed to put entry [gridIdx=" + idx + ", cache=" + cacheName
                     + ", key=" + key + ']', t);
 
-                //log.error(e.getMessage(), e.getCause());
-                log.info("put failed: " + e.getMessage() + ": " + t.getMessage());
+                log.error(e.getMessage(), e.getCause());
 
                 if (ex == null)
                     ex = new IgniteException("Failed to put entry [node=" + g.name() + ']');

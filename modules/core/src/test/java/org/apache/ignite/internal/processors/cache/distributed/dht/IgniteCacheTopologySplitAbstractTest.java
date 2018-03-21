@@ -68,7 +68,7 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
      * @param seg Cluster segment.
      * @param topVer Topology version to wait for.
      */
-    protected void awaitExchangeForTopologyFinished(Collection<Ignite> seg, long topVer) {
+    protected void awaitExchangeVersionFinished(Collection<Ignite> seg, long topVer) {
         AffinityTopologyVersion waitTopVer = new AffinityTopologyVersion(topVer, 0);
 
         for (Ignite grid : seg) {
@@ -77,8 +77,9 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
 
             if (exchFut != null && !exchFut.isDone()) {
                 try {
-                    log.debug("Waiting for topology exchange future [grid=" + grid.name() + ", ver="
-                        + topVer + ", curTopVer=" + grid.cluster().topologyVersion() + "]" );
+                    if (log.isDebugEnabled())
+                        log.debug("Waiting for topology exchange future [grid=" + grid.name() + ", ver="
+                            + topVer + ", curTopVer=" + grid.cluster().topologyVersion() + "]" );
 
                     exchFut.get();
                 }
@@ -88,8 +89,9 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
                 }
             }
 
-            log.debug("Finished topology jexchange future [grid=" + grid.name() + ", curTopVer="
-                + grid.cluster().topologyVersion() + "]" );
+            if (log.isDebugEnabled())
+                log.debug("Finished topology exchange future [grid=" + grid.name() + ", curTopVer="
+                    + grid.cluster().topologyVersion() + "]" );
         }
     }
 
@@ -127,44 +129,8 @@ public abstract class IgniteCacheTopologySplitAbstractTest extends GridCommonAbs
             }
         });
 
-        awaitExchangeForTopologyFinished(seg0, topVer + seg1.size());
-        awaitExchangeForTopologyFinished(seg1, topVer + seg0.size());
-
-/*
-        for (Ignite grid : seg0) {
-            log.info("Seg0, waiting for topology future [grid=" + grid.name() + ", ver="
-                + (topVer + seg1.size()) + ", curTopVer=" + grid.cluster().topologyVersion() + "]" );
-
-            ((IgniteKernal)grid).context().discovery().topologyFuture(topVer + seg1.size()).get();
-
-            log.info("Seg0, finished future [grid=" + grid.name() + ", curTopVer="
-                + grid.cluster().topologyVersion() + "]" );
-        }
-
-        for (Ignite grid : seg1) {
-            log.info("Seg1, waiting for topology future [grid=" + grid.name() + ", ver="
-                + (topVer + seg0.size()) + ", curTopVer=" + grid.cluster().topologyVersion() + "]" );
-
-            ((IgniteKernal)grid).context().discovery().topologyFuture(topVer + seg0.size()).get();
-
-            log.info("Seg1, finished future [grid=" + grid.name() + ", curTopVer="
-                + grid.cluster().topologyVersion() + "]" );
-        }
-
-        // awaitPartitionMapExchange won't work because coordinator is wrong for second segment.
-        for (Ignite grid : G.allGrids()) {
-            GridDhtPartitionsExchangeFuture fut = ((IgniteKernal)grid).context().cache().context().exchange()
-                .lastTopologyFuture();
-
-            log.info("Waiting for last topology future [grid=" + grid.name() + ", fut="
-                + fut.result() + "]" );
-
-            fut.get();
-
-            log.info("Finished last topology future [grid=" + grid.name() + ", topVer="
-                + fut.topologyVersion() + "]" );
-        }
-*/
+        awaitExchangeVersionFinished(seg0, topVer + seg1.size());
+        awaitExchangeVersionFinished(seg1, topVer + seg0.size());
 
         if (log.isInfoEnabled())
             log.info(">>> Finished waiting for split");
