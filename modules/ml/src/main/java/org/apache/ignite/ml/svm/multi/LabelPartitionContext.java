@@ -15,20 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm;
+package org.apache.ignite.ml.svm.multi;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
+import java.io.Serializable;
 
 /**
- * Test suite for all tests located in org.apache.ignite.ml.svm.* package.
+ * Partition context of the SVM classification algorithm.
  */
-@RunWith(Suite.class)
-@Suite.SuiteClasses({
-    SVMModelTest.class,
-    SVMBinaryTrainerTest.class,
-    SVMMultiClassTrainerTest.class
-})
-public class SVMTestSuite {
-    // No-op.
+public class LabelPartitionContext implements Serializable {
+    /** */
+    private static final long serialVersionUID = -7412302212344430126L;
 }
