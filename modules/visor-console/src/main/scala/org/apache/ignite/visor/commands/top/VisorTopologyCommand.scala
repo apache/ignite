@@ -145,9 +145,7 @@ class VisorTopologyCommand extends VisorConsoleCommand {
     def top(args: String) = breakable {
         assert(args != null)
 
-        if (!isConnected)
-            adviseToConnect()
-        else {
+        if (checkConnected()) {
             val argLst = parseArgs(args)
 
             if (hasArgFlag("activate", argLst))

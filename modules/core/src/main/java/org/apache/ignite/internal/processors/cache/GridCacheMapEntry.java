@@ -2545,7 +2545,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             boolean walEnabled = !cctx.isNear() && cctx.group().persistenceEnabled();
 
-            if (cctx.shared().database().persistenceEnabled()) {
+            if (cctx.group().persistenceEnabled()) {
                 unswap(false);
 
                 if (!isNew()) {

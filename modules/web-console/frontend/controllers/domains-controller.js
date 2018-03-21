@@ -81,7 +81,10 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
             return !item.empty && (!item._id || _.find($scope.displayedRows, {_id: item._id}));
         };
 
-        $scope.javaBuiltInClasses = LegacyUtils.javaBuiltInClasses;
+        $scope.javaBuiltInClassesBase = LegacyUtils.javaBuiltInClasses;
+        $scope.javaBuiltInClasses = $scope.javaBuiltInClassesBase.slice();
+        $scope.javaBuiltInClasses.splice(3, 0, 'byte[]');
+
         $scope.compactJavaName = FormUtils.compactJavaName;
         $scope.widthIsSufficient = FormUtils.widthIsSufficient;
         $scope.saveBtnTipText = FormUtils.saveBtnTipText;
@@ -1600,7 +1603,7 @@ export default ['$rootScope', '$scope', '$http', '$state', '$filter', '$timeout'
                         return !stopEdit && ErrorPopover.show(LegacyTable.tableFieldId(index, pairField.idPrefix + pairField.id), 'Field with such ' + pairField.dupObjName + ' already exists!', $scope.ui, 'query');
                 }
 
-                if (pairField.classValidation && !LegacyUtils.isValidJavaClass(pairField.msg, pairValue.value, true, LegacyTable.tableFieldId(index, 'Value' + pairField.id), false, $scope.ui, 'query', stopEdit)) {
+                if (pairField.classValidation && !LegacyUtils.isValidJavaClass(pairField.msg, pairValue.value, ['byte[]'], LegacyTable.tableFieldId(index, 'Value' + pairField.id), false, $scope.ui, 'query', stopEdit)) {
                     if (stopEdit)
                         return false;
 

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.datastructures;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -55,6 +56,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheType;
+import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheInternal;
@@ -72,6 +74,7 @@ import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.GPR;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -185,6 +188,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /**
      *
      */
+    public void onBeforeActivate() {
+        initLatch = new CountDownLatch(1);
+    }
+
+    /**
+     *
+     */
     private void onKernalStart0(){
         initLatch.countDown();
     }
@@ -222,10 +232,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 ((GridCacheLockEx)ds).onStop();
         }
 
-        if (initLatch.getCount() > 0) {
+        CountDownLatch init0 = initLatch;
+
+        if (init0 != null && init0.getCount() > 0) {
             initFailed = true;
 
-            initLatch.countDown();
+            init0.countDown();
+
+            initLatch = null;
         }
 
         Iterator<Map.Entry<Integer, UUID>> iter = qryIdMap.entrySet().iterator();
@@ -242,22 +256,20 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     }
 
     /** {@inheritDoc} */
-    @Override public void onActivate(GridKernalContext ctx) throws IgniteCheckedException {
+    @Override public void onActivate(GridKernalContext ctx) {
         if (log.isDebugEnabled())
-            log.debug("Activate data structure processor [nodeId=" + ctx.localNodeId() +
+            log.debug("Activating data structure processor [nodeId=" + ctx.localNodeId() +
                 " topVer=" + ctx.discovery().topologyVersionEx() + " ]");
 
         initFailed = false;
-
-        initLatch = new CountDownLatch(1);
 
         qryIdMap.clear();
 
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
-        onKernalStart0();
-
         restoreStructuresState(ctx);
+
+        onKernalStart0();
     }
 
     /**
@@ -286,6 +298,8 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         ctx.event().removeLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         onKernalStop(false);
+
+        initLatch = null;
 
         for (GridCacheRemovable v : dsMap.values()) {
             if (v instanceof IgniteChangeGlobalStateSupport)
@@ -662,6 +676,24 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         });
     }
 
+    public void suspend(String cacheName) {
+        for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
+            String cacheName0 = ATOMICS_CACHE_NAME + "@" + e.getKey().groupName();
+
+            if (cacheName0.equals(cacheName))
+                e.getValue().suspend();
+        }
+    }
+
+    public void restart(IgniteInternalCache cache) {
+        for (Map.Entry<GridCacheInternalKey, GridCacheRemovable> e : dsMap.entrySet()) {
+            String cacheName0 = ATOMICS_CACHE_NAME + "@" + e.getKey().groupName();
+
+            if (cacheName0.equals(cache.name()))
+                e.getValue().restart(cache);
+        }
+    }
+
     /**
      * Gets an atomic reference from cache or creates one if it's not cached.
      *
@@ -952,6 +984,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
         assert name != null;
         assert type.isCollection() : type;
+        assert !create || cfg != null;
 
         if (grpName == null) {
             if (cfg != null && cfg.getGroupName() != null)
@@ -960,17 +993,23 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 grpName = DEFAULT_DS_GROUP_NAME;
         }
 
-        assert !create || cfg != null;
-
         final String metaCacheName = ATOMICS_CACHE_NAME + "@" + grpName;
 
         IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> metaCache0 = ctx.cache().cache(metaCacheName);
 
         if (metaCache0 == null) {
-            if (!create)
-                return null;
+            CacheConfiguration ccfg = null;
 
-            ctx.cache().dynamicStartCache(metaCacheConfiguration(cfg, metaCacheName, grpName),
+            if (!create) {
+                DynamicCacheDescriptor desc = ctx.cache().cacheDescriptor(metaCacheName);
+
+                if (desc == null)
+                    return null;
+            }
+            else
+                ccfg = metaCacheConfiguration(cfg, metaCacheName, grpName);
+
+            ctx.cache().dynamicStartCache(ccfg,
                 metaCacheName,
                 null,
                 CacheType.DATA_STRUCTURES,
@@ -1042,9 +1081,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * Awaits for processor initialization.
      */
     private void awaitInitialization() {
-        if (initLatch.getCount() > 0) {
+        CountDownLatch latch0 = initLatch;
+
+        if (latch0 == null)
+            throw new IllegalStateException("Ignite cluster is not active");
+
+        if (latch0.getCount() > 0) {
             try {
-                U.await(initLatch);
+                U.await(latch0);
 
                 if (initFailed)
                     throw new IllegalStateException("Failed to initialize data structures processor.");

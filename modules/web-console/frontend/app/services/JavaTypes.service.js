@@ -36,6 +36,9 @@ const VALID_PACKAGE = /^(([a-zA-Z_$][a-zA-Z0-9_$]*)\.)*([a-zA-Z_$][a-zA-Z0-9_$]*
 // Regular expression to check UUID string representation.
 const VALID_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/im;
 
+// Extended list of Java built-in class names.
+const JAVA_CLASS_STRINGS = JAVA_CLASSES.slice();
+
 /**
  * Utility service for various check on java types.
  */
@@ -45,6 +48,8 @@ export default class JavaTypes {
     constructor(clusterDflts, cacheDflts, igfsDflts) {
         this.enumClasses = _.uniq(this._enumClassesAcc(_.merge(clusterDflts, cacheDflts, igfsDflts), []));
         this.shortEnumClasses = _.map(this.enumClasses, (cls) => this.shortClassName(cls));
+
+        JAVA_CLASS_STRINGS.push({short: 'byte[]', full: 'byte[]', stringValue: '[B'});
     }
 
     /**
@@ -92,6 +97,16 @@ export default class JavaTypes {
         const type = _.find(JAVA_CLASSES, (clazz) => clsName === clazz.short);
 
         return type ? type.full : clsName;
+    }
+
+    /**
+     * @param clsName Class name to check.
+     * @returns {String} Full class name string presentation for java build-in types or source class otherwise.
+     */
+    stringClassName(clsName) {
+        const type = _.find(JAVA_CLASS_STRINGS, (clazz) => clsName === clazz.short);
+
+        return type ? type.stringValue || type.full : clsName;
     }
 
     /**

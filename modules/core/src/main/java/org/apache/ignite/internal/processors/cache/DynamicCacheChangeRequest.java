@@ -68,6 +68,9 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Restart flag. */
     private boolean restart;
 
+    /** Cache active on start or not*/
+    private boolean disabledAfterStart;
+
     /** Destroy. */
     private boolean destroy;
 
@@ -404,6 +407,20 @@ public class DynamicCacheChangeRequest implements Serializable {
         this.locallyConfigured = locallyConfigured;
     }
 
+    /**
+     * @return state of cache after start
+     */
+    public boolean disabledAfterStart() {
+        return disabledAfterStart;
+    }
+
+    /**
+     * @param disabledAfterStart state of cache after start
+     */
+    public void disabledAfterStart(boolean disabledAfterStart) {
+        this.disabledAfterStart = disabledAfterStart;
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return "DynamicCacheChangeRequest [cacheName=" + cacheName() +
@@ -412,6 +429,7 @@ public class DynamicCacheChangeRequest implements Serializable {
             ", clientStartOnly=" + clientStartOnly +
             ", stop=" + stop +
             ", destroy=" + destroy +
+            ", disabledAfterStart" + disabledAfterStart +
             ']';
     }
 }

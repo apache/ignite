@@ -41,13 +41,19 @@ public class OdbcQueryExecuteBatchRequest extends OdbcRequest {
     @GridToStringExclude
     private final Object[][] args;
 
+    /** Query timeout in seconds. */
+    @GridToStringInclude
+    private final int timeout;
+
     /**
      * @param schema Schema.
      * @param sqlQry SQL query.
      * @param last Last page flag.
      * @param args Arguments list.
+     * @param timeout Timeout in seconds.
      */
-    public OdbcQueryExecuteBatchRequest(@Nullable String schema, String sqlQry, boolean last, Object[][] args) {
+    public OdbcQueryExecuteBatchRequest(@Nullable String schema, String sqlQry, boolean last, Object[][] args,
+        int timeout) {
         super(QRY_EXEC_BATCH);
 
         assert sqlQry != null : "SQL query should not be null";
@@ -57,6 +63,7 @@ public class OdbcQueryExecuteBatchRequest extends OdbcRequest {
         this.sqlQry = sqlQry;
         this.last = last;
         this.args = args;
+        this.timeout = timeout;
     }
 
     /**
@@ -86,6 +93,13 @@ public class OdbcQueryExecuteBatchRequest extends OdbcRequest {
      */
     public boolean last() {
         return last;
+    }
+
+    /**
+     * @return Timeout in seconds.
+     */
+    public int timeout() {
+        return timeout;
     }
 
     /** {@inheritDoc} */

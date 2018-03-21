@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include "ignite/common/common.h"
+#include "ignite/odbc/diagnostic/diagnosable.h"
 
 namespace ignite
 {
@@ -34,6 +35,31 @@ namespace ignite
             class SocketClient
             {
             public:
+                /** Buffers size */
+                enum { BUFFER_SIZE = 0x10000 };
+
+                /** The time in seconds the connection needs to remain idle before starts sending keepalive probes. */
+                enum { KEEP_ALIVE_IDLE_TIME = 60 };
+
+                /** The time in seconds between individual keepalive probes. */
+                enum { KEEP_ALIVE_PROBES_PERIOD = 1 };
+
+                /** Connection establishment timeout in seconds. */
+                enum { CONNECT_TIMEOUT = 5 };
+
+                /**
+                 * Non-negative timeout operation result.
+                 */
+                struct WaitResult
+                {
+                    enum T
+                    {
+                        TIMEOUT = 0,
+
+                        SUCCESS = 1
+                    };
+                };
+
                 /**
                  * Constructor.
                  */
@@ -49,9 +75,10 @@ namespace ignite
                  *
                  * @param hostname Remote host name.
                  * @param port TCP service port.
+                 * @param diag Diagnostics collector.
                  * @return True on success.
                  */
-                bool Connect(const char* hostname, uint16_t port);
+                bool Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag);
 
                 /**
                  * Close established connection.
@@ -65,23 +92,55 @@ namespace ignite
                  *
                  * @param data Pointer to data to be sent.
                  * @param size Size of the data in bytes.
-                 * @return Number of bytes that have been sent on success and negative
-                 *         value on failure.
+                 * @param timeout Timeout.
+                 * @return Number of bytes that have been sent on success, 
+                 *     WaitResult::TIMEOUT on timeout and -errno on failure.
                  */
-                int Send(const int8_t* data, size_t size);
+                int Send(const int8_t* data, size_t size, int32_t timeout);
 
                 /**
                  * Receive data from established connection.
                  *
-                 * @param data Pointer to data buffer.
+                 * @param buffer Pointer to data buffer.
                  * @param size Size of the buffer in bytes.
-                 * @return Number of bytes that have been received on success and negative
-                 *         value on failure.
+                 * @param timeout Timeout.
+                 * @return Number of bytes that have been sent on success,
+                 *     WaitResult::TIMEOUT on timeout and -errno on failure.
                  */
-                int Receive(int8_t* buffer, size_t size);
+                int Receive(int8_t* buffer, size_t size, int32_t timeout);
+
+                /**
+                 * Check if the socket is blocking or not.
+                 * @return @c true if the socket is blocking and false otherwise.
+                 */
+                bool IsBlocking() const
+                {
+                    return blocking;
+                }
 
             private:
+                /**
+                 * Tries set socket options.
+                 */
+                void TrySetOptions(diagnostic::Diagnosable& diag);
+
+                /**
+                 * Wait on the socket for any event for specified time.
+                 * This function uses poll to achive timeout functionality
+                 * for every separate socket operation.
+                 *
+                 * @param timeout Timeout.
+                 * @param rd Wait for read if @c true, or for write if @c false.
+                 * @return -errno on error, WaitResult::TIMEOUT on timeout and
+                 *     WaitResult::SUCCESS on success.
+                 */
+                int WaitOnSocket(int32_t timeout, bool rd);
+
+                /** Handle. */
                 intptr_t socketHandle;
+
+                /** Blocking flag. */
+                bool blocking;
 
                 IGNITE_NO_COPY_ASSIGNMENT(SocketClient)
             };

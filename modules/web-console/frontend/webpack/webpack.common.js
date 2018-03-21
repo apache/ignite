@@ -44,7 +44,8 @@ export default {
     entry: {
         polyfill: 'babel-polyfill',
         vendor: path.join(app, 'vendor.js'),
-        app: path.join(app, 'app.js')
+        app: path.join(app, 'app.js'),
+        browserUpdate: path.join(app, 'browserUpdate', 'index.js')
     },
 
     // Output system.

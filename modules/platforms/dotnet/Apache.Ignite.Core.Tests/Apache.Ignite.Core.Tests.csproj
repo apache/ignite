@@ -78,6 +78,7 @@
     <Compile Include="Binary\BinaryReaderWriterTest.cs" />
     <Compile Include="Binary\BinarySelfTestSimpleName.cs" />
     <Compile Include="Binary\EnumsTestOnline.cs" />
+    <Compile Include="Binary\Serializable\GenericCollectionsTest.cs" />
     <Compile Include="Cache\DataRegionMetricsTest.cs" />
     <Compile Include="Cache\DataStorageMetricsTest.cs" />
     <Compile Include="Cache\PersistenceTest.cs" />
@@ -97,6 +98,7 @@
     <Compile Include="Cache\Store\CacheStoreSessionTestSharedFactory.cs" />
     <Compile Include="Client\Cache\CacheTest.cs" />
     <Compile Include="Client\Cache\CacheTestNoMeta.cs" />
+    <Compile Include="Client\Cache\EmptyObject.cs" />
     <Compile Include="Client\Cache\ScanQueryTest.cs" />
     <Compile Include="Client\Cache\Person.cs" />
     <Compile Include="Client\ClientTestBase.cs" />

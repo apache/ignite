@@ -32,6 +32,9 @@ import org.jetbrains.annotations.Nullable;
  * Base class for data transfer objects.
  */
 public abstract class VisorDataTransferObject implements Externalizable {
+    /** */
+    private static final long serialVersionUID = 6920203681702514010L;
+
     /** Magic number to detect correct transfer objects. */
     private static final int MAGIC = 0x42BEEF00;
 
@@ -40,6 +43,9 @@ public abstract class VisorDataTransferObject implements Externalizable {
 
     /** Version 2. */
     protected static final byte V2 = 2;
+
+    /** Version 3. */
+    protected static final byte V3 = 3;
 
     /**
      * @param col Source collection.
