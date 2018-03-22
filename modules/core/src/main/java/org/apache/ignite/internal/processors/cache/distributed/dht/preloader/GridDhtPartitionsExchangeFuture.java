@@ -1213,7 +1213,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteCheckedException If failed.
      */
     private void waitPartitionRelease() throws IgniteCheckedException {
-        Latch releaseLatch = cctx.latch().getOrCreate("exchange-" + exchId.topologyVersion(), exchId.topologyVersion());
+        Latch releaseLatch = cctx.latch().getOrCreate("exchange", exchId.topologyVersion());
 
         IgniteInternalFuture<?> partReleaseFut = cctx.partitionReleaseFuture(initialVersion());
 
