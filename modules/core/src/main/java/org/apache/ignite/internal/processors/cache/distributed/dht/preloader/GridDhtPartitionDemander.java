@@ -674,6 +674,8 @@ public class GridDhtPartitionDemander {
             }
         }
 
+        ctx.database().checkpointReadLock();
+
         try {
             AffinityAssignment aff = grp.affinity().cachedAffinity(topVer);
 
@@ -785,6 +787,9 @@ public class GridDhtPartitionDemander {
                 ", srcNode=" + node.id() +
                 ", err=" + e + ']');
         }
+        finally {
+            ctx.database().checkpointReadUnlock();
+        }
     }
 
     /**
@@ -803,7 +808,7 @@ public class GridDhtPartitionDemander {
         GridCacheEntryInfo entry,
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
-        ctx.database().checkpointReadLock();
+        assert ctx.database().checkpointLockIsHeldByThread();
 
         try {
             GridCacheEntryEx cached = null;
@@ -816,41 +821,34 @@ public class GridDhtPartitionDemander {
                 if (log.isDebugEnabled())
                     log.debug("Rebalancing key [key=" + entry.key() + ", part=" + p + ", node=" + from.id() + ']');
 
-                cctx.shared().database().checkpointReadLock();
+                if (preloadPred == null || preloadPred.apply(entry)) {
+                    if (cached.initialValue(
+                        entry.value(),
+                        entry.version(),
+                        entry.ttl(),
+                        entry.expireTime(),
+                        true,
+                        topVer,
+                        cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
+                        false
+                    )) {
+                        cctx.evicts().touch(cached, topVer); // Start tracking.
 
-                try {
-                    if (preloadPred == null || preloadPred.apply(entry)) {
-                        if (cached.initialValue(
-                            entry.value(),
-                            entry.version(),
-                            entry.ttl(),
-                            entry.expireTime(),
-                            true,
-                            topVer,
-                            cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
-                            false
-                        )) {
-                            cctx.evicts().touch(cached, topVer); // Start tracking.
-
-                            if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
-                                cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(),
-                                    (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
-                                    false, null, null, null, true);
-                        }
-                        else {
-                            cctx.evicts().touch(cached, topVer); // Start tracking.
-
-                            if (log.isDebugEnabled())
-                                log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
-                                    ", part=" + p + ']');
-                        }
+                        if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
+                            cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(),
+                                (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
+                                false, null, null, null, true);
                     }
-                    else if (log.isDebugEnabled())
-                        log.debug("Rebalance predicate evaluated to false for entry (will ignore): " + entry);
+                    else {
+                        cctx.evicts().touch(cached, topVer); // Start tracking.
+
+                        if (log.isDebugEnabled())
+                            log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
+                                ", part=" + p + ']');
+                    }
                 }
-                finally {
-                    cctx.shared().database().checkpointReadUnlock();
-                }
+                else if (log.isDebugEnabled())
+                    log.debug("Rebalance predicate evaluated to false for entry (will ignore): " + entry);
             }
             catch (GridCacheEntryRemovedException ignored) {
                 if (log.isDebugEnabled())
@@ -870,9 +868,6 @@ public class GridDhtPartitionDemander {
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to cache rebalanced entry (will stop rebalancing) [local=" +
                 ctx.localNode() + ", node=" + from.id() + ", key=" + entry.key() + ", part=" + p + ']', e);
-        }
-        finally {
-            ctx.database().checkpointReadUnlock();
         }
 
         return true;
