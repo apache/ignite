@@ -25,7 +25,6 @@ import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
@@ -848,6 +847,16 @@ public final class IgniteSystemProperties {
      * Default is {@code true}.
      */
     public static final String IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP = "IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP";
+
+    /**
+     * Whenever read load balancing is enabled, that means 'get' requests will be distributed between primary and backup
+     * nodes if it is possible and {@link CacheConfiguration#readFromBackup} is {@code true}.
+     *
+     * Default is {@code true}.
+     *
+     * @see CacheConfiguration#readFromBackup
+     */
+    public static final String IGNITE_READ_LOAD_BALANCING = "IGNITE_READ_LOAD_BALANCING";
 
     /**
      * Sets timeout for TCP client recovery descriptor reservation.
