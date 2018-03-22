@@ -32,8 +32,8 @@ import org.springframework.context.annotation.Conditional;
 
 /**
  * General Apache Ignite repository implementation.
+ * This bean should've never been loaded by context directly, only via {@link IgniteRepositoryFactory}
  */
-/**This bean should've never been loaded by context directly, only via {@link IgniteRepositoryFactory}*/
 @Conditional(ConditionFalse.class)
 public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteRepository<T, ID> {
     /** Ignite Cache bound to the repository */
@@ -72,7 +72,7 @@ public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteR
         throw new UnsupportedOperationException("Use IgniteRepository.save(Map<keys,value>) method instead.");
     }
 
-
+    /** {@inheritDoc} */
     @Override public Optional<T> findById(ID id) {
         return Optional.ofNullable(cache.get(id));
     }

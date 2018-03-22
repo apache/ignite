@@ -19,7 +19,6 @@ package org.apache.ignite.springdata.repository.support;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -121,8 +120,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     }
 
     /** {@inheritDoc} */
-    @Override protected Optional<QueryLookupStrategy> getQueryLookupStrategy(final QueryLookupStrategy.Key key,
-                                                                             EvaluationContextProvider evaluationCtxProvider) {
+    @Override protected Optional<QueryLookupStrategy> getQueryLookupStrategy(final QueryLookupStrategy.Key key, EvaluationContextProvider evaluationCtxProvider) {
 
         return Optional.of((mtd, metadata, factory, namedQueries) -> {
 
