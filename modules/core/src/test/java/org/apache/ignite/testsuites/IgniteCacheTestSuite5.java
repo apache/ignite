@@ -107,14 +107,6 @@ public class IgniteCacheTestSuite5 extends TestSuite {
 
         suite.addTestSuite(Cache64kPartitionsTest.class);
 
-        suite.addTestSuite(ReplicatedAtomicCacheGetsDistributionTest.class);
-        suite.addTestSuite(ReplicatedTransactionalOptimisticCacheGetsDistributionTest.class);
-        suite.addTestSuite(ReplicatedTransactionalPessimisticCacheGetsDistributionTest.class);
-
-        suite.addTestSuite(PartitionedAtomicCacheGetsDistributionTest.class);
-        suite.addTestSuite(PartitionedTransactionalOptimisticCacheGetsDistributionTest.class);
-        suite.addTestSuite(PartitionedTransactionalPessimisticCacheGetsDistributionTest.class);
-
         return suite;
     }
 }
