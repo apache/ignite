@@ -67,26 +67,14 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Threads(1)
 public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark {
     /** */
-    final static String NO_COMPRESSION = "NO_COMPRESSION";
-
-    /** */
-    final static String LZ4 = "LZ4";
-
-    /** */
-    final static String ZSTD = "ZSTD";
-
-    /** */
-    final static String DEFLATER = "DEFLATER";
-
-    /** */
     static Ignite snd = null;
 
     /** */
     static Ignite receiver = null;
 
     /** */
-    @Param({NO_COMPRESSION, LZ4, ZSTD, DEFLATER})
-    private String compressionType = NO_COMPRESSION;
+    @Param({"No", "LZ4", "ZSTD", "Deflater"})
+    private Type compressionType = Type.No;
 
     /** */
     @Param({"false", "true"})
@@ -99,7 +87,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
                 return new LZ4Factory();
             case ZSTD:
                 return new ZstdFactory();
-            case DEFLATER:
+            case Deflater:
                 return new DeflaterFactory();
             default:
                 return null;
@@ -437,8 +425,12 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         }
     }
 
-    /** */
-    private enum Type {
+    /**
+     * Type of connection.
+     *
+     * Need public for JMH.
+     * */
+    public enum Type {
         /** */
         No,
         /** */
@@ -458,27 +450,26 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
 
         /** */
         private static Type getType(String comp0, String ssl0) {
-            String comp = String.valueOf(comp0);
-            boolean ssl = Boolean.valueOf(ssl0);
+            Type comp = Type.valueOf(comp0);
 
-            if (NO_COMPRESSION.equals(comp) && ssl)
-                return Ssl;
-            if (NO_COMPRESSION.equals(comp) && !ssl)
-                return No;
-            if (LZ4.equals(comp) && !ssl)
-                return LZ4;
-            if (LZ4.equals(comp) && ssl)
-                return SslLZ4;
-            if (ZSTD.equals(comp) && !ssl)
-                return ZSTD;
-            if (ZSTD.equals(comp) && ssl)
-                return SslZSTD;
-            if (DEFLATER.equals(comp) && !ssl)
-                return Deflater;
-            if (DEFLATER.equals(comp) && ssl)
-                return SslDeflater;
+            if (Boolean.valueOf(ssl0)) {
+                switch (comp) {
+                    case No:
+                        comp = Ssl;
+                        break;
+                    case LZ4:
+                        comp = SslLZ4;
+                        break;
+                    case ZSTD:
+                        comp = SslZSTD;
+                        break;
+                    case Deflater:
+                        comp = SslDeflater;
+                        break;
+                }
+            }
 
-            return No;
+            return comp;
         }
     }
 
