@@ -103,6 +103,7 @@
     "worker-loader": "0.8.1"
   },
   "devDependencies": {
+    "@types/angular": "1.6.43",
     "chai": "4.1.0",
     "glob": "7.1.2",
     "chalk": "2.1.0",
