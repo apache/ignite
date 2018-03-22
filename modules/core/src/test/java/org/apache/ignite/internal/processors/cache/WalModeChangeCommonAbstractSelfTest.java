@@ -31,6 +31,7 @@ import org.apache.ignite.internal.IgniteClientReconnectAbstractTest;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -104,6 +105,19 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
             for (String cacheName : cacheNames)
                 destroyCache(node0, cacheName);
         }
+
+        awaitPartitionMapExchange();
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                for (Ignite node0 : Ignition.allGrids()) {
+                    if (!node0.cacheNames().isEmpty())
+                        return false;
+                }
+
+                return true;
+            }
+        }, 2000));
     }
 
     /**
@@ -114,7 +128,7 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
      */
     @SuppressWarnings("unchecked")
     protected void createCache(Ignite node, CacheConfiguration ccfg) {
-        node.createCache(ccfg);
+        node.getOrCreateCache(ccfg);
     }
 
     /**
