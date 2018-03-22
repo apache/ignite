@@ -22,6 +22,12 @@ import org.apache.ignite.internal.processors.authentication.AuthenticationConfig
 import org.apache.ignite.internal.processors.authentication.AuthenticationOnNotActiveClusterTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorNodeRestartTest;
 import org.apache.ignite.internal.processors.authentication.AuthenticationProcessorSelfTest;
+import org.apache.ignite.internal.processors.cache.PartitionedAtomicCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.PartitionedTransactionalOptimisticCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.PartitionedTransactionalPessimisticCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.ReplicatedAtomicCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalOptimisticCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalPessimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeAdvancedSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAffinityNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeSelfTest;
@@ -78,6 +84,14 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(AuthenticationProcessorSelfTest.class);
         suite.addTestSuite(AuthenticationOnNotActiveClusterTest.class);
         suite.addTestSuite(AuthenticationProcessorNodeRestartTest.class);
+
+        suite.addTestSuite(ReplicatedAtomicCacheGetsDistributionTest.class);
+        suite.addTestSuite(ReplicatedTransactionalOptimisticCacheGetsDistributionTest.class);
+        suite.addTestSuite(ReplicatedTransactionalPessimisticCacheGetsDistributionTest.class);
+
+        suite.addTestSuite(PartitionedAtomicCacheGetsDistributionTest.class);
+        suite.addTestSuite(PartitionedTransactionalOptimisticCacheGetsDistributionTest.class);
+        suite.addTestSuite(PartitionedTransactionalPessimisticCacheGetsDistributionTest.class);
 
         return suite;
     }
