@@ -17,12 +17,17 @@
 
 package org.apache.ignite.internal.jdbc.thin;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.util.Properties;
+import java.util.logging.Handler;
 import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import java.util.logging.StreamHandler;
 import javax.sql.DataSource;
 import org.apache.ignite.IgniteJdbcThinDriver;
 import org.apache.ignite.internal.util.typedef.F;
@@ -34,8 +39,17 @@ public class JdbcThinDataSource extends ConnectionPropertiesImpl implements Data
     /** */
     private static final long serialVersionUID = 0L;
 
+    /** Logger. */
+    private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
+
     /** Login timeout. */
     private int loginTimeout;
+
+    /** Log print writer. */
+    private PrintWriter logOut;
+
+    /** Custom logger handler. */
+    private Handler logHndl;
 
     /** {@inheritDoc} */
     @Override public Connection getConnection() throws SQLException {
@@ -71,12 +85,21 @@ public class JdbcThinDataSource extends ConnectionPropertiesImpl implements Data
 
     /** {@inheritDoc} */
     @Override public PrintWriter getLogWriter() throws SQLException {
-        return null;
+        return logOut;
     }
 
     /** {@inheritDoc} */
     @Override public void setLogWriter(PrintWriter out) throws SQLException {
-        // No-op.
+        if (logHndl != null)
+            LOG.removeHandler(logHndl);
+
+        logOut = out;
+
+        if (out != null) {
+            logHndl = new StreamHandler(new WriterOutputStream(out), new SimpleFormatter());
+
+            LOG.addHandler(logHndl);
+        }
     }
 
     /** {@inheritDoc} */
@@ -109,5 +132,25 @@ public class JdbcThinDataSource extends ConnectionPropertiesImpl implements Data
      */
     public void setURL(String url) throws SQLException {
         setUrl(url);
+    }
+
+    /**
+     *
+     */
+    private static final class WriterOutputStream extends OutputStream {
+        /** Print Writer. */
+        private PrintWriter pw;
+
+        /**
+         * @param pw Print writer.
+         */
+        WriterOutputStream(PrintWriter pw) {
+            this.pw = pw;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(int b) throws IOException {
+            write(new byte[] { (byte)b }, 0, 1);
+        }
     }
 }

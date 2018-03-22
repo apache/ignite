@@ -17,7 +17,6 @@
 
 package org.apache.ignite;
 
-import java.io.PrintWriter;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
@@ -200,10 +199,7 @@ public class IgniteJdbcThinDriver implements Driver {
                 DriverManager.registerDriver(INSTANCE);
             }
         } catch (SQLException e) {
-            PrintWriter writer = DriverManager.getLogWriter();
-
-            if (writer != null)
-                e.printStackTrace(writer);
+            throw new RuntimeException("Can't register Ignite JDBC thin driver!", e);
         }
         return INSTANCE;
     }
