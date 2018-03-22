@@ -15,25 +15,34 @@
  * limitations under the License.
  */
 
-export csv from './csv.svg';
-export cross from './cross.svg';
-export gear from './gear.svg';
-export clock from './clock.svg';
-export manual from './manual.svg';
-export download from './download.svg';
-export filter from './filter.svg';
-export search from './search.svg';
-export refresh from './refresh.svg';
-export sort from './sort.svg';
-export info from './info.svg';
-export check from './check.svg';
-export checkmark from './checkmark.svg';
-export alert from './alert.svg';
-export attention from './attention.svg';
-export connectedClusters from './connectedClusters.svg';
-export exclamation from './exclamation.svg';
-export collapse from './collapse.svg';
-export expand from './expand.svg';
-export plus from './plus.svg';
-export home from './home.svg';
+breadcrumbs {
+    $side-margin: 5px;
 
+    padding-left: $side-margin;
+    padding-right: $side-margin;
+    display: inline-flex;
+    align-items: center;
+    flex-direction: row;
+
+    height: 26px;
+    border-radius: 4px;
+    background-color: rgba(197, 197, 197, 0.1);
+    font-family: Roboto, sans-serif;
+    font-size: 12px;
+    line-height: 1.08;
+    text-align: left;
+    color: #393939;
+
+    .#{&}__home {
+        margin-left: $side-margin;
+        margin-right: $side-margin;
+        vertical-align: -1px;
+        width: 12px;
+        height: 12px;
+    }
+
+    [ui-sref] + [ui-sref]:before {
+        content: '/';
+        margin: 0 $side-margin;
+    }
+}

@@ -25,4 +25,13 @@ const mouseenterTrigger = ClientFunction((selector = '') => {
     });
 });
 
-module.exports = { mouseenterTrigger };
+const getLocationPathname = ClientFunction(() => Promise.resolve(location.pathname));
+
+/**
+ * Fake visibility predicate, use with selector.filter method.
+ *
+ * @param {Element} node
+ */
+const isVisible = (node) => !!node.getBoundingClientRect().width;
+
+module.exports = { mouseenterTrigger, getLocationPathname, isVisible };

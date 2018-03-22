@@ -247,7 +247,7 @@ class Paragraph {
 }
 
 // Controller for SQL notebook screen.
-export default class {
+export class NotebookCtrl {
     static $inject = ['$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$filter', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'AgentManager', 'IgniteChartColors', 'IgniteNotebook', 'IgniteNodes', 'uiGridExporterConstants', 'IgniteVersion', 'IgniteActivitiesData', 'JavaTypes', 'IgniteCopyToClipboard', CSV.name];
 
     /**
@@ -264,6 +264,8 @@ export default class {
         $ctrl.cacheMetadataTemplateUrl = cacheMetadataTemplateUrl;
         $ctrl.chartSettingsTemplateUrl = chartSettingsTemplateUrl;
         $ctrl.demoStarted = false;
+
+        this.isDemo = $root.IgniteDemoMode;
 
         const _tryStopRefresh = function(paragraph) {
             paragraph.cancelRefresh($interval);
