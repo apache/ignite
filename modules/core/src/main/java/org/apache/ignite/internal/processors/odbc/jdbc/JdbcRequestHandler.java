@@ -40,6 +40,7 @@ import org.apache.ignite.internal.IgniteVersionUtils;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadAckClientParameters;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
@@ -113,6 +114,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
     /** Protocol version. */
     private ClientListenerProtocolVersion protocolVer;
 
+    /** Authentication context */
+    private AuthorizationContext actx;
+
     /**
      * Constructor.
      * @param ctx Context.
@@ -125,12 +129,13 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param autoCloseCursors Flag to automatically close server cursors.
      * @param lazy Lazy query execution flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
+     * @param actx Authentication context.
      * @param protocolVer Protocol version.
      */
     public JdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
         boolean distributedJoins, boolean enforceJoinOrder, boolean collocated, boolean replicatedOnly,
         boolean autoCloseCursors, boolean lazy, boolean skipReducerOnUpdate,
-        ClientListenerProtocolVersion protocolVer) {
+        AuthorizationContext actx, ClientListenerProtocolVersion protocolVer) {
         this.ctx = ctx;
 
         this.cliCtx = new SqlClientContext(
@@ -147,6 +152,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         this.maxCursors = maxCursors;
         this.autoCloseCursors = autoCloseCursors;
         this.protocolVer = protocolVer;
+        this.actx = actx;
 
         log = ctx.log(getClass());
     }
@@ -162,6 +168,9 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
         if (!busyLock.enterBusy())
             return new JdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                 "Failed to handle JDBC request because node is stopping.");
+
+        if (actx != null)
+            AuthorizationContext.context(actx);
 
         try {
             switch (req.type()) {
@@ -206,6 +215,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                 "Unsupported JDBC request [req=" + req + ']');
         }
         finally {
+            AuthorizationContext.clear();
+
             busyLock.leaveBusy();
         }
     }
