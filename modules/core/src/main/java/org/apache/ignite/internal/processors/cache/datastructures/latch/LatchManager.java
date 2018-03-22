@@ -92,7 +92,7 @@ public class LatchManager {
         try {
             ClusterNode coordinator = discovery.oldestAliveServerNode(topVer);
 
-            if (coordinator == null) {
+            if (coordinator == null || !discovery.alive(coordinator)) {
                 LatchProxy latch = new LatchProxy(id, null, null);
                 latch.complete();
 
