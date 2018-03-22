@@ -50,7 +50,7 @@ class CachePutGetExample {
 
         // get values sequentially
         let value;
-        for (let key = 0; key < 3; key++) {
+        for (let key of keys) {
             value = await this._cache.get(key);
             if (value !== this.generateValue(key)) {
                 console.log('Unexpected cache value!');
