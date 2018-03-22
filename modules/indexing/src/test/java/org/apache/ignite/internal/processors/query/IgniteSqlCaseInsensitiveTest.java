@@ -611,7 +611,7 @@ public class IgniteSqlCaseInsensitiveTest extends GridCommonAbstractTest {
         SqlFieldsQuery qry = new SqlFieldsQuery(sqlText);
         if(!F.isEmpty(args))
             qry = qry.setArgs(args);
-        return qryProc.querySqlFieldsNoCache(qry, true).getAll();
+        return qryProc.querySqlFields(qry, true).getAll();
     }
 
     /** */
