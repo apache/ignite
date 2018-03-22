@@ -15,48 +15,92 @@
  * limitations under the License.
  */
 
-import './style.scss';
 import angular from 'angular';
 
-import templateUrl from './template.tpl.pug';
+import queriesNotebooksList from './components/queries-notebooks-list';
+import queriesNotebook from './components/queries-notebook';
+import pageQueriesCmp from './component';
 
-import NotebookData from './Notebook.data';
-import Notebook from './Notebook.service';
-import notebook from './notebook.controller';
-import controller from './controller';
+import template from 'views/base2.pug';
+// This template is deprecated for notebooks view
+import legacyTemplate from 'views/base.pug';
+
+import Notebook from './notebook.service';
 
 export default angular.module('ignite-console.sql', [
-    'ui.router'
+    'ui.router',
+    queriesNotebooksList.name,
+    queriesNotebook.name
 ])
-.component('pageQueries', {
-    controller,
-    templateUrl
-})
-.config(['$stateProvider', ($stateProvider) => {
-    // set up the states
-    $stateProvider
-        .state('base.sql', {
-            url: '/queries',
-            abstract: true,
-            template: '<ui-view></ui-view>'
-        })
-        .state('base.sql.notebook', {
-            url: '/notebook/{noteId}',
-            component: 'pageQueries',
-            permission: 'query',
-            tfMetaTags: {
-                title: 'Query notebook'
+    .component('pageQueries', pageQueriesCmp)
+    .component('pageQueriesSlot', {
+        require: {
+            pageQueries: '^pageQueries'
+        },
+        bindings: {
+            slotName: '<'
+        },
+        controller: class {
+            static $inject = ['$transclude', '$timeout'];
+
+            constructor($transclude, $timeout) {
+                this.$transclude = $transclude;
+                this.$timeout = $timeout;
             }
-        })
-        .state('base.sql.demo', {
-            url: '/demo',
-            component: 'pageQueries',
-            permission: 'query',
-            tfMetaTags: {
-                title: 'SQL demo'
+
+            $postLink() {
+                this.$timeout(() => {
+                    this.$transclude((clone) => {
+                        this.pageQueries[this.slotName].empty();
+                        clone.appendTo(this.pageQueries[this.slotName]);
+                    });
+                });
             }
-        });
-}])
-.service('IgniteNotebookData', NotebookData)
-.service('IgniteNotebook', Notebook)
-.controller('notebookController', notebook);
+        },
+        transclude: true
+    })
+    .service('IgniteNotebook', Notebook)
+    .config(['$stateProvider', ($stateProvider) => {
+        // set up the states
+        $stateProvider
+            .state('base.sql', {
+                abstract: true,
+                views: {
+                    '@': {
+                        template
+                    },
+                    '@base.sql': {
+                        template: '<ui-view></ui-view>'
+                    }
+                }
+            })
+            .state('base.sql.tabs', {
+                url: '/queries',
+                component: 'pageQueries',
+                redirectTo: 'base.sql.tabs.notebooks-list',
+                permission: 'query'
+            })
+            .state('base.sql.tabs.notebooks-list', {
+                url: '/notebooks',
+                component: 'queriesNotebooksList',
+                permission: 'query',
+                tfMetaTags: {
+                    title: 'Notebooks'
+                }
+            })
+            .state('base.sql.tabs.notebook', {
+                url: '/notebook/{noteId}',
+                views: {
+                    '@': {
+                        template: legacyTemplate
+                    },
+                    '@base.sql.tabs.notebook': {
+                        component: 'queriesNotebook'
+                    }
+                },
+                permission: 'query',
+                tfMetaTags: {
+                    title: 'Query notebook'
+                }
+            });
+    }]);
