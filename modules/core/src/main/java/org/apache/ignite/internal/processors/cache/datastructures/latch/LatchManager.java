@@ -22,6 +22,7 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -112,7 +113,8 @@ public class LatchManager {
                     List<ClusterNode> acks = pendingAcks.get(id);
 
                     for (ClusterNode node : acks) {
-                        if (latch.hasParticipant(node)) {
+                        if (latch.hasParticipant(node) && !latch.hasAckFrom(node)) {
+                            latch.ack(node);
                             latch.countDown();
                         }
                     }
@@ -166,7 +168,8 @@ public class LatchManager {
                 if (activeLatches.containsKey(latchId)) {
                     LatchImpl latch = activeLatches.get(latchId);
 
-                    if (latch.hasParticipant(node)) {
+                    if (latch.hasParticipant(node) && !latch.hasAckFrom(node)) {
+                        latch.ack(node);
                         latch.countDown();
 
                         if (latch.isCompleted())
@@ -210,9 +213,10 @@ public class LatchManager {
 
             for (Map.Entry<Object, LatchImpl> latchEntry : activeLatches.entrySet()) {
                 LatchImpl latch = latchEntry.getValue();
-                if (latch.hasParticipant(node)) {
+                if (latch.hasParticipant(node) && !latch.hasAckFrom(node)) {
                     log.warning("[SERVER] Process node left " + node.id() + " " + latch.id);
 
+                    latch.ack(node);
                     latch.countDown();
 
                     if (latch.isCompleted())
@@ -239,7 +243,9 @@ public class LatchManager {
     class LatchImpl extends CompletableLatch {
         private final AtomicInteger permits;
 
-        public LatchImpl(String id, Collection<ClusterNode> participants, AtomicInteger permits) {
+        private final Set<UUID> acks = new GridConcurrentHashSet<>();
+
+        LatchImpl(String id, Collection<ClusterNode> participants, AtomicInteger permits) {
             super(id, participants);
             this.permits = permits;
 
@@ -259,10 +265,17 @@ public class LatchManager {
             });
         }
 
+        boolean hasAckFrom(ClusterNode node) {
+            return acks.contains(node.id());
+        }
+
+        void ack(ClusterNode node) {
+            acks.add(node.id());
+        }
+
         @Override public void countDown() {
             if (isCompleted())
                 return;
-
 
             int done = permits.decrementAndGet();
 
@@ -276,13 +289,13 @@ public class LatchManager {
     class LatchProxy extends CompletableLatch {
         private final ClusterNode coordinator;
 
-        public LatchProxy(String id, ClusterNode coordinator, Collection<ClusterNode> participants) {
+        LatchProxy(String id, ClusterNode coordinator, Collection<ClusterNode> participants) {
             super(id, participants);
 
             this.coordinator = coordinator;
         }
 
-        public boolean hasCoordinator(ClusterNode node) {
+        boolean hasCoordinator(ClusterNode node) {
             return coordinator.id().equals(node.id());
         }
 
@@ -305,24 +318,24 @@ public class LatchManager {
 
         protected final GridFutureAdapter<?> complete = new GridFutureAdapter<>();
 
-        public CompletableLatch(String id, Collection<ClusterNode> participants) {
+        CompletableLatch(String id, Collection<ClusterNode> participants) {
             this.id = id;
             this.participants = participants.stream().map(ClusterNode::id).collect(Collectors.toSet());
         }
 
-        public boolean hasParticipant(ClusterNode node) {
+        boolean hasParticipant(ClusterNode node) {
             return participants.contains(node.id());
         }
 
-        public boolean isCompleted() {
+        boolean isCompleted() {
             return complete.isDone();
         }
 
-        public void complete() {
+        void complete() {
             complete.onDone();
         }
 
-        public void complete(Throwable error) {
+        void complete(Throwable error) {
             complete.onDone(error);
         }
 
