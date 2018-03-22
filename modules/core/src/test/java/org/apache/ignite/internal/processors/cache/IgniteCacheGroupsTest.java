@@ -86,6 +86,7 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.lang.GridPlainCallable;
 import org.apache.ignite.internal.util.lang.gridfunc.ContainsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -3706,6 +3707,61 @@ public class IgniteCacheGroupsTest extends GridCommonAbstractTest {
 
         for (int i = 0; i < 100; i++)
             assertEquals(i, cache0.get(i));
+    }
+
+    public void testMulti() throws Exception {
+        Ignite ignite = startGridsMultiThreaded(5);
+
+        AtomicBoolean stop = new AtomicBoolean(false);
+
+        IgniteInternalFuture fut1 = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override
+            public void run() {
+                while (!stop.get()) {
+                    if (G.allGrids().size() < 3)
+                        continue;
+
+                    int idx = ThreadLocalRandom.current().nextInt(5);
+                    try {
+                        stopGrid(idx);
+                    } catch (Exception ignored) {}
+
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }, 2, "node-stopper");
+
+        IgniteInternalFuture fut2 = GridTestUtils.runMultiThreadedAsync(new Runnable() {
+            @Override
+            public void run() {
+                while (!stop.get()) {
+                    if (G.allGrids().size() >= 5)
+                        continue;
+
+                    int idx = ThreadLocalRandom.current().nextInt(5);
+                    try {
+                        startGrid(idx);
+                    } catch (Exception ignored) {}
+
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }, 2, "node-starter");
+
+        Thread.sleep(50000);
+
+        stop.set(true);
+
+        fut1.get();
+        fut2.get();
     }
 
     /**

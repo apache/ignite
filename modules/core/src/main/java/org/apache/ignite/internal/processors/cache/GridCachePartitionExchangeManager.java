@@ -2031,6 +2031,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (evt.type() == EVT_NODE_JOINED) {
                         if (fut.mergeJoinExchange(curFut))
                             awaited++;
+
+                        cctx.latch().release("exchange-" + fut.initialVersion(), evt.eventNode());
                     }
                 }
                 else {

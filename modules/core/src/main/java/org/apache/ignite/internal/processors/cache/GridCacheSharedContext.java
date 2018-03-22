@@ -44,6 +44,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.datastructures.latch.LatchManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
@@ -125,6 +126,9 @@ public class GridCacheSharedContext<K, V> {
 
     /** Ttl cleanup manager. */
     private GridCacheSharedTtlCleanupManager ttlMgr;
+
+    /** Distributed latch manager. */
+    private LatchManager latchMgr;
 
     /** Cache contexts map. */
     private ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
@@ -240,6 +244,8 @@ public class GridCacheSharedContext<K, V> {
         for (PluginProvider prv : kernalCtx.plugins().allProviders())
             if (prv instanceof IgniteChangeGlobalStateSupport)
                 stateAwareMgrs.add(((IgniteChangeGlobalStateSupport)prv));
+
+        latchMgr = new LatchManager(kernalCtx);
     }
 
     /**
@@ -714,6 +720,10 @@ public class GridCacheSharedContext<K, V> {
      * */
     public GridCacheSharedTtlCleanupManager ttl() {
         return ttlMgr;
+    }
+
+    public LatchManager latch() {
+        return latchMgr;
     }
 
     /**
