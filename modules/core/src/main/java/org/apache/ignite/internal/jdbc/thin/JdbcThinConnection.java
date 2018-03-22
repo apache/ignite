@@ -73,9 +73,6 @@ public class JdbcThinConnection implements Connection {
     /** Logger. */
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
-    /** Connection URL. */
-    private String url;
-
     /** Schema name. */
     private String schema;
 
@@ -131,8 +128,6 @@ public class JdbcThinConnection implements Connection {
      * @throws SQLException In case Ignite client failed to start.
      */
     public JdbcThinConnection(ConnectionProperties connProps) throws SQLException {
-        url = connProps.getUrl();
-
         this.connProps = connProps;
 
         holdability = HOLD_CURSORS_OVER_COMMIT;
@@ -800,7 +795,7 @@ public class JdbcThinConnection implements Connection {
      * @return Connection URL.
      */
     public String url() {
-        return url;
+        return connProps.getUrl();
     }
 
     /**
