@@ -109,14 +109,11 @@ final class RegularDataUtils {
             words[i] = word;
         }
 
-        return new Language(lengths, probabilities, words);
+        return new Language(probabilities, words);
     }
 
     /** */
-    private static class Language {
-        /** */
-        private final int[] lengths;
-
+    private static final class Language {
         /** */
         private final double[] probabilities;
 
@@ -124,8 +121,7 @@ final class RegularDataUtils {
         private final byte[][] words;
 
         /** */
-        private Language(int[] lengths, double[] probabilities, byte[][] words) {
-            this.lengths = lengths;
+        private Language(double[] probabilities, byte[][] words) {
             this.probabilities = probabilities;
             this.words = words;
         }

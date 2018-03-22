@@ -17,6 +17,18 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.tcp;
 
+import java.text.DecimalFormat;
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Random;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
@@ -29,19 +41,22 @@ import org.apache.ignite.messaging.MessagingListenActor;
 import org.apache.ignite.spi.communication.DeflaterFactory;
 import org.apache.ignite.spi.communication.LZ4Factory;
 import org.apache.ignite.spi.communication.ZstdFactory;
-import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.annotations.AuxCounters;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.Param;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.Threads;
+import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.results.RunResult;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
-
-import javax.cache.configuration.Factory;
-import java.text.DecimalFormat;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Tests for SPI compression and SSL.
@@ -126,6 +141,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         sendAndReceive(state, counters);
     }
 
+    /** */
     public static class IoState {
         /** */
         final IgniteMessaging messaging;
@@ -136,6 +152,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         /** */
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>();
 
+        /** */
         public IoState() {
             messaging = snd.message(snd.cluster().forNodeId(receiver.cluster().localNode().id()));
         }
@@ -170,7 +187,11 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         }
     }
 
-    public final void sendAndReceive(IoState state, EventCounters counters) {
+    /**
+     * @param state State.
+     * @param counters Counters.
+     */
+    public static void sendAndReceive(IoState state, EventCounters counters) {
         long b = snd.cluster().localNode().metrics().getSentBytesCount();
 
         state.latch.set(new CountDownLatch(1));
@@ -193,7 +214,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
      * Send and receive message with random data.
      */
     @Benchmark
-    public final void sendAndReceiveSize(final IoSendReceiveSizeState state, final EventCounters counters) {
+    public final void sendAndReceiveSize(IoSendReceiveSizeState state, EventCounters counters) {
         sendAndReceive(state, counters);
     }
 
@@ -299,7 +320,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             double val = result.getPrimaryResult().getScore();
             double error = result.getPrimaryResult().getScoreError();
 
-            if (result.getPrimaryResult().getLabel().equals("sendAndReceiveBaseline")) {
+            if ("sendAndReceiveBaseline".equals(result.getPrimaryResult().getLabel())) {
                 baseline.put(type, new Result(val, error, 0));
 
                 continue;
@@ -316,13 +337,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
                 case "sendAndReceiveSize": {
                     int size = Integer.valueOf(result.getParams().getParam("size"));
 
-                    EnumMap<Type, Result> map = sizedResults.get(size);
-
-                    if (map == null) {
-                        map = new EnumMap<>(Type.class);
-
-                        sizedResults.put(size, map);
-                    }
+                    EnumMap<Type, Result> map = sizedResults.computeIfAbsent(size, k -> new EnumMap<>(Type.class));
 
                     map.put(type, new Result(val, error, avgSize));
 
@@ -331,13 +346,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
                 case "sendAndReceiveSizeGood": {
                     int size = Integer.valueOf(result.getParams().getParam("size"));
 
-                    EnumMap<Type, Result> map = sizedNiceResults.get(size);
-
-                    if (map == null) {
-                        map = new EnumMap<>(Type.class);
-
-                        sizedNiceResults.put(size, map);
-                    }
+                    EnumMap<Type, Result> map = sizedNiceResults.computeIfAbsent(size, k -> new EnumMap<>(Type.class));
 
                     map.put(type, new Result(val, error, avgSize));
 
@@ -372,7 +381,9 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     }
 
     /** */
-    private static void printThroughput(Map<Integer, EnumMap<Type, Result>> results, EnumMap<Type, Result> baselineStat,
+    private static void printThroughput(Map<Integer,
+        EnumMap<Type, Result>> results,
+        EnumMap<Type, Result> baselineStat,
         EnumMap<Type, Result> baseline) {
 
         DecimalFormat df = new DecimalFormat("#0.00");
@@ -380,24 +391,33 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         for (Entry<Integer, EnumMap<Type, Result>> entry : results.entrySet()) {
             int size = entry.getKey();
 
-            System.out.println("||Type||MsgSize||MsgPerSecond||RealMbitsPerSecond||EffectiveMbitsPerSecond||CompressionRatio||");
+            System.out.println(
+                "||Type||MsgSize||MsgPerSecond||RealMbitsPerSecond||EffectiveMbitsPerSecond||CompressionRatio||"
+            );
             for (Entry<Type, Result> resultEntry : entry.getValue().entrySet()) {
                 double statTime = baselineStat.get(resultEntry.getKey()).val - baseline.get(resultEntry.getKey()).val;
 
                 double baselineAvgSize = Math.round(baselineStat.get(resultEntry.getKey()).avgSize);
                 double val = resultEntry.getValue().val - statTime;
 
-                double error = val* sqrtSum(resultEntry.getValue().error/resultEntry.getValue().val,
-                    baselineStat.get(resultEntry.getKey()).error/baselineStat.get(resultEntry.getKey()).val,
-                    baseline.get(resultEntry.getKey()).error/baseline.get(resultEntry.getKey()).val);
+                double error = val * sqrtSum(resultEntry.getValue().error / resultEntry.getValue().val,
+                    baselineStat.get(resultEntry.getKey()).error / baselineStat.get(resultEntry.getKey()).val,
+                    baseline.get(resultEntry.getKey()).error / baseline.get(resultEntry.getKey()).val);
 
                 double avgSize = Math.round(resultEntry.getValue().avgSize);
 
-                System.out.println("|" + resultEntry.getKey() + "|" +
-                     size + "|" +
-                    df.format(1.0E6 / val) + " ∈ [" + df.format(1.0E6 / (val + error)) + " : " + df.format(1.0E6 / (val - error)) + "]" + "|" +
-                    df.format(avgSize / val * 8) + " ∈ [" + df.format(avgSize / (val + error) * 8) + " : " + df.format(avgSize / (val - error) * 8) + "]" + "|" +
-                    df.format(size / val * 8) + " ∈ [" + df.format(size / (val + error) * 8) + " : " + df.format(size / (val - error) * 8) + "]" + "|" +
+                System.out.println("|" + resultEntry.getKey() + "|" + size + "|" +
+                    df.format(1.0E6 / val) + " ∈ [" +
+                    df.format(1.0E6 / (val + error)) + " : " + df.format(1.0E6 / (val - error)) +
+                    "]" + "|" +
+                    df.format(avgSize / val * 8) + " ∈ ["
+                    + df.format(avgSize / (val + error) * 8) + " : " +
+                    df.format(avgSize / (val - error) * 8) +
+                    "]" + "|" +
+                    df.format(size / val * 8) + " ∈ [" +
+                    df.format(size / (val + error) * 8) + " : " +
+                    df.format(size / (val - error) * 8) +
+                    "]" + "|" +
                     df.format(size / (avgSize - baselineAvgSize)) + "|");
             }
         }
@@ -427,21 +447,21 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             String comp = String.valueOf(comp0);
             boolean ssl = Boolean.valueOf(ssl0);
 
-            if (comp.equals("NO_COMPRESSION") && ssl)
+            if ("NO_COMPRESSION".equals(comp) && ssl)
                 return Ssl;
-            if (comp.equals("NO_COMPRESSION") && !ssl)
+            if ("NO_COMPRESSION".equals(comp) && !ssl)
                 return No;
-            if (comp.equals("LZ4") && !ssl)
+            if ("LZ4".equals(comp) && !ssl)
                 return LZ4;
-            if (comp.equals("LZ4") && ssl)
+            if ("LZ4".equals(comp) && ssl)
                 return SslLZ4;
-            if (comp.equals("ZSTD") && !ssl)
+            if ("ZSTD".equals(comp) && !ssl)
                 return ZSTD;
-            if (comp.equals("ZSTD") && ssl)
+            if ("ZSTD".equals(comp) && ssl)
                 return SslZSTD;
-            if (comp.equals("DEFLATER") && !ssl)
+            if ("DEFLATER".equals(comp) && !ssl)
                 return Deflater;
-            if (comp.equals("DEFLATER") && ssl)
+            if ("DEFLATER".equals(comp) && ssl)
                 return SslDeflater;
 
             return No;
@@ -449,7 +469,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     }
 
     /** */
-    private static class Result {
+    private static final class Result {
         /** */
         private final double val;
 
