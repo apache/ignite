@@ -22,4 +22,5 @@ package org.apache.ignite.internal.managers.discovery;
  * that is delivered only on server nodes of the cluster.
  */
 public interface DiscoveryServerOnlyCustomMessage extends DiscoveryCustomMessage {
+    // No-op.
 }
