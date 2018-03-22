@@ -1,6 +1,7 @@
 package org.apache.ignite.internal.processors.cache.datastructures.latch;
 
 import java.nio.ByteBuffer;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -14,10 +15,13 @@ public class LatchAckMessage implements Message {
 
     private String latchId;
 
+    private AffinityTopologyVersion topVer;
+
     private boolean isFinal;
 
-    public LatchAckMessage(String latchId, boolean isFinal) {
+    public LatchAckMessage(String latchId, AffinityTopologyVersion topVer, boolean isFinal) {
         this.latchId = latchId;
+        this.topVer = topVer;
         this.isFinal = isFinal;
     }
 
@@ -30,6 +34,10 @@ public class LatchAckMessage implements Message {
 
     public boolean isFinal() {
         return isFinal;
+    }
+
+    public AffinityTopologyVersion topVer() {
+        return topVer;
     }
 
     @Override
@@ -52,6 +60,12 @@ public class LatchAckMessage implements Message {
 
             case 1:
                 if (!writer.writeString("latchId", latchId))
+                    return false;
+
+                writer.incrementState();
+
+            case 2:
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -83,6 +97,14 @@ public class LatchAckMessage implements Message {
                     return false;
 
                 reader.incrementState();
+
+            case 2:
+                topVer = reader.readMessage("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(LatchAckMessage.class);
@@ -95,7 +117,7 @@ public class LatchAckMessage implements Message {
 
     @Override
     public byte fieldsCount() {
-        return 2;
+        return 3;
     }
 
     @Override
