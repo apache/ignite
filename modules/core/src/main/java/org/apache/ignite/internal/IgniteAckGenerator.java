@@ -445,7 +445,7 @@ class IgniteAckGenerator {
      *
      * @param rtBean Java runtime bean.
      */
-    private void ackStart(RuntimeMXBean rtBean) {
+    void ackStart(RuntimeMXBean rtBean) {
         ClusterNode locNode = ctx.cluster().get().localNode();
 
         String igniteInstanceName = cfg.getIgniteInstanceName();
