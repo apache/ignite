@@ -14,17 +14,4 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-header.header-with-selector
-    div
-        .queries-title
-        cluster-selector
-    .queries-buttons
-
-div
-    ul.tabs.tabs--blue
-        li(role='presentation' ui-sref-active='active')
-            a(ui-sref='base.sql.tabs.notebooks-list')
-                span Notebooks
-                span.badge.badge--blue {{ $ctrl.notebooks.length }}
-
-    ui-view
+svg.breadcrumbs__home(ignite-icon='home')

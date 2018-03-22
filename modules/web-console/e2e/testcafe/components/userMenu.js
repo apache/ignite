@@ -15,25 +15,20 @@
  * limitations under the License.
  */
 
-export csv from './csv.svg';
-export cross from './cross.svg';
-export gear from './gear.svg';
-export clock from './clock.svg';
-export manual from './manual.svg';
-export download from './download.svg';
-export filter from './filter.svg';
-export search from './search.svg';
-export refresh from './refresh.svg';
-export sort from './sort.svg';
-export info from './info.svg';
-export check from './check.svg';
-export checkmark from './checkmark.svg';
-export alert from './alert.svg';
-export attention from './attention.svg';
-export connectedClusters from './connectedClusters.svg';
-export exclamation from './exclamation.svg';
-export collapse from './collapse.svg';
-export expand from './expand.svg';
-export plus from './plus.svg';
-export home from './home.svg';
+import {Selector, t} from 'testcafe';
 
+const _selector = Selector('[ignite-userbar]');
+
+export const userMenu = {
+    _selector,
+    button: _selector.find('[bs-dropdown]'),
+    /** 
+     * Clicks on user menu option.
+     * @param {string} label Menu option label to click on
+     */
+    async clickOption(label) {
+        return t
+            .hover(this.button)
+            .click(_selector.find(`[role="menuitem"]`).withText(label));
+    }
+};

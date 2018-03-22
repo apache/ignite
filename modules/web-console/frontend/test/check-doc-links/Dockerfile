@@ -15,28 +15,19 @@
 # limitations under the License.
 #
 
-version: '2'
-services:
-  mongodb:
-    image: 'mongo:latest'
-    container_name: 'mongodb'
+FROM node:8.10-alpine
 
-  testenv:
-    build:
-      context: '../'
-      dockerfile: './e2e/testenv/Dockerfile'
-    environment:
-      - mongodb_url=mongodb://mongodb:27017/console-e2e
-    depends_on:
-      - mongodb
+# Install frontend & backend apps.
+RUN mkdir -p /opt/web-console
 
-  e2e:
-    build: './testcafe'
-    environment:
-      - DB_URL=mongodb://mongodb:27017/console-e2e
-      - APP_URL=http://testenv:9001/
-      - TEAMCITY=true
-      - QUARANTINE_MODE=true
-    depends_on:
-      - mongodb
-      - testenv
+# Copy source.
+WORKDIR /opt/web-console
+COPY . ./frontend
+
+# Install node modules.
+WORKDIR /opt/web-console/frontend
+RUN npm install
+
+WORKDIR /opt/web-console/frontend/test/check-doc-links
+
+ENTRYPOINT ["node", "check-doc-links.js"]
