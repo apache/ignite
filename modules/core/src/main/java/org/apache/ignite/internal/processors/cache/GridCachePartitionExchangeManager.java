@@ -1250,6 +1250,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     m.addPartitionUpdateCounters(grp.groupId(),
                         newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
+
+                    m.addPartitionSizes(grp.groupId(), grp.topology().partitionSizes());
                 }
             }
         }
@@ -1272,6 +1274,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 m.addPartitionUpdateCounters(top.groupId(),
                     newCntrMap ? cntrsMap : CachePartitionPartialCountersMap.toCountersMap(cntrsMap));
+
+                m.addPartitionSizes(top.groupId(), top.partitionSizes());
             }
         }
 

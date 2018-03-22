@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -80,6 +81,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPar
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsStateValidator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFutureAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.SnapshotDiscoveryMessage;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -291,6 +293,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
     @GridToStringExclude
     private GridDhtPartitionsExchangeFuture mergedWith;
 
+    /** Validator for partition states. */
+    @GridToStringExclude
+    private final GridDhtPartitionsStateValidator validator;
+
     /**
      * @param cctx Cache context.
      * @param busyLock Busy lock.
@@ -315,6 +321,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         this.exchId = exchId;
         this.exchActions = exchActions;
         this.affChangeMsg = affChangeMsg;
+        this.validator = new GridDhtPartitionsStateValidator(cctx);
 
         log = cctx.logger(getClass());
         exchLog = cctx.logger(EXCHANGE_LOG);
@@ -2506,6 +2513,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
 
+            validatePartitionsState();
+
             if (firstDiscoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 assert firstDiscoEvt instanceof DiscoveryCustomEvent;
 
@@ -2686,6 +2695,33 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 onDone(new IgniteNeedReconnectException(cctx.localNode(), e));
             else
                 onDone(e);
+        }
+    }
+
+    /**
+     * Validates that partition update counters and cache sizes for all caches are consistent.
+     */
+    private void validatePartitionsState() {
+        for (Map.Entry<Integer, CacheGroupDescriptor> e : cctx.affinity().cacheGroups().entrySet()) {
+            CacheGroupDescriptor grpDesc = e.getValue();
+            if (grpDesc.config().getCacheMode() == CacheMode.LOCAL)
+                continue;
+
+            int grpId = e.getKey();
+
+            CacheGroupContext grpCtx = cctx.cache().cacheGroup(grpId);
+
+            GridDhtPartitionTopology top = grpCtx != null ?
+                    grpCtx.topology() :
+                    cctx.exchange().clientTopology(grpId, events().discoveryCache());
+
+            try {
+                validator.validatePartitionCountersAndSizes(this, top, msgs);
+            }
+            catch (IgniteCheckedException ex) {
+                U.warn(log, "Partition states validation was failed for cache " + grpDesc.cacheOrGroupName(), ex);
+                // TODO: Handle such errors https://issues.apache.org/jira/browse/IGNITE-7833
+            }
         }
     }
 
