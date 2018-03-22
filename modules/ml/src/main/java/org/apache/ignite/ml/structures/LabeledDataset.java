@@ -17,7 +17,6 @@
 
 package org.apache.ignite.ml.structures;
 
-import java.util.List;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.exceptions.CardinalityException;
 import org.apache.ignite.ml.math.exceptions.NoDataException;
@@ -96,6 +95,7 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> i
     public LabeledDataset(Row[] data, int colSize) {
         super(data, colSize);
     }
+
 
     /**
      * Creates new local Labeled Dataset by matrix and vector of labels.
@@ -217,6 +217,7 @@ public class LabeledDataset<L, Row extends LabeledVector> extends Dataset<Row> i
         return res;
     }
 
+    /** Closes LabeledDataset. */
     @Override public void close() throws Exception {
 
     }
