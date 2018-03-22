@@ -47,7 +47,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * kNN algorithm model to solve multi-class classification task.
  */
-public class KNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNModelFormat> {
+public class KNNClassificationModel<K, V> implements Model<Vector, Double>, Exportable<KNNModelFormat> {
     /** Amount of nearest neighbors. */
     protected int k = 5;
 
@@ -61,33 +61,21 @@ public class KNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNMode
     private Dataset<KNNPartitionContext, LabeledDataset<Double, LabeledVector>> dataset;
 
     /**
-     * @param datasetBuilder
-     * @param featureExtractor
-     * @param lbExtractor
-     * @param cols
+     * Builds the model via prepared dataset.
+     * @param dataset Specially prepared object to run algorithm over it.
      */
-    public KNNModel(DatasetBuilder<K, V> datasetBuilder,
-        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor, int cols) {
-
-        PartitionDataBuilder<K, V, KNNPartitionContext, LabeledDataset<Double, LabeledVector>> partDataBuilder = new KNNPartitionDataBuilderOnHeap<>(
-            featureExtractor,
-            lbExtractor,
-            cols
-        );
-
-        if (datasetBuilder != null) {
-            this.dataset = datasetBuilder.build(
-                (upstream, upstreamSize) -> new KNNPartitionContext(),
-                partDataBuilder
-            );
-        }
+    public KNNClassificationModel(Dataset<KNNPartitionContext, LabeledDataset<Double, LabeledVector>> dataset) {
+        this.dataset = dataset;
     }
 
     /** {@inheritDoc} */
     @Override public Double apply(Vector v) {
-        List<LabeledVector> neighbors = findKNearestNeighbors(v);
+        if(dataset != null) {
+            List<LabeledVector> neighbors = findKNearestNeighbors(v);
 
-        return classify(neighbors, v, stgy);
+            return classify(neighbors, v, stgy);
+        } else
+            throw new IllegalStateException("The train kNN dataset is null");
     }
 
     /** */
@@ -102,7 +90,7 @@ public class KNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNMode
      * @param k Amount of nearest neighbors.
      * @return Model.
      */
-    public KNNModel<K, V> withK(int k) {
+    public KNNClassificationModel<K, V> withK(int k) {
         this.k = k;
         return this;
     }
@@ -112,7 +100,7 @@ public class KNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNMode
      * @param stgy Strategy of calculations.
      * @return Model.
      */
-    public KNNModel<K, V> withStrategy(KNNStrategy stgy) {
+    public KNNClassificationModel<K, V> withStrategy(KNNStrategy stgy) {
         this.stgy = stgy;
         return this;
     }
@@ -122,7 +110,7 @@ public class KNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNMode
      * @param distanceMeasure Distance measure.
      * @return Model.
      */
-    public KNNModel<K, V> withDistanceMeasure(DistanceMeasure distanceMeasure) {
+    public KNNClassificationModel<K, V> withDistanceMeasure(DistanceMeasure distanceMeasure) {
         this.distanceMeasure = distanceMeasure;
         return this;
     }
@@ -270,7 +258,7 @@ public class KNNModel<K, V> implements Model<Vector, Double>, Exportable<KNNMode
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        KNNModel that = (KNNModel)obj;
+        KNNClassificationModel that = (KNNClassificationModel)obj;
 
         return k == that.k && distanceMeasure.equals(that.distanceMeasure) && stgy.equals(that.stgy);
     }

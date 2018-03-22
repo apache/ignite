@@ -23,13 +23,12 @@ import java.util.Map;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.knn.classification.KNNModel;
+import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
+import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
 import org.apache.ignite.ml.knn.classification.KNNStrategy;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.EuclideanDistance;
-import org.apache.ignite.ml.math.exceptions.knn.SmallTrainingDatasetSizeException;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.structures.LabeledDataset;
 
 /** Tests behaviour of KNNClassificationTest. */
 public class KNNClassificationTest extends BaseKNNTest {
@@ -45,7 +44,9 @@ public class KNNClassificationTest extends BaseKNNTest {
         data.put(4, new double[] {-1.0, -2.0, 2.0});
         data.put(5, new double[] {-2.0, -1.0, 2.0});
 
-        KNNModel<Integer, double[]> knnMdl = new KNNModel<>(
+        KNNClassificationTrainer<Integer, double[]> trainer = new KNNClassificationTrainer<>();
+
+        KNNClassificationModel knnMdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[2],
@@ -72,9 +73,9 @@ public class KNNClassificationTest extends BaseKNNTest {
         data.put(4, new double[] {-1.0, -2.0, 2.0});
         data.put(5, new double[] {-2.0, -1.0, 2.0});
 
+        KNNClassificationTrainer<Integer, double[]> trainer = new KNNClassificationTrainer<>();
 
-
-        KNNModel<Integer, double[]> knnMdl = new KNNModel<>(
+        KNNClassificationModel knnMdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[2],
@@ -82,7 +83,6 @@ public class KNNClassificationTest extends BaseKNNTest {
         ).withK(1)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(KNNStrategy.SIMPLE);
-
 
         Vector firstVector = new DenseLocalOnHeapVector(new double[] {2.0, 2.0});
         assertEquals(knnMdl.apply(firstVector), 1.0);
@@ -102,7 +102,9 @@ public class KNNClassificationTest extends BaseKNNTest {
         data.put(4, new double[] {-1.0, -2.0, 2.0});
         data.put(5, new double[] {-2.0, -1.0, 2.0});
 
-        KNNModel<Integer, double[]> knnMdl = new KNNModel<>(
+        KNNClassificationTrainer<Integer, double[]> trainer = new KNNClassificationTrainer<>();
+
+        KNNClassificationModel knnMdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[2],
@@ -110,6 +112,7 @@ public class KNNClassificationTest extends BaseKNNTest {
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(KNNStrategy.SIMPLE);
+
 
         Vector vector = new DenseLocalOnHeapVector(new double[] {-1.01, -1.01});
         assertEquals(knnMdl.apply(vector), 2.0);
@@ -127,7 +130,9 @@ public class KNNClassificationTest extends BaseKNNTest {
         data.put(4, new double[] {-1.0, -2.0, 2.0});
         data.put(5, new double[] {-2.0, -1.0, 2.0});
 
-        KNNModel<Integer, double[]> knnMdl = new KNNModel<>(
+        KNNClassificationTrainer<Integer, double[]> trainer = new KNNClassificationTrainer<>();
+
+        KNNClassificationModel knnMdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
             (k, v) -> v[2],

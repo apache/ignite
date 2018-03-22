@@ -23,7 +23,7 @@ import org.apache.ignite.ml.math.distances.DistanceMeasure;
 /**
  * kNN model representation.
  *
- * @see KNNModel
+ * @see KNNClassificationModel
  */
 public class KNNModelFormat implements Serializable {
     /** Amount of nearest neighbors. */
