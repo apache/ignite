@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import org.apache.ignite.IgniteCheckedException;
@@ -98,31 +99,16 @@ import static org.apache.ignite.internal.processors.cache.mvcc.txlog.TxLog.TX_LO
  */
 public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifecycleListener {
     /** */
-    private static final BiFunction<List<LockFuture>, List<LockFuture>, List<LockFuture>> CONC = new BiFunction<List<LockFuture>, List<LockFuture>, List<LockFuture>>() {
-        @Override
-        public List<LockFuture> apply(List<LockFuture> l1, List<LockFuture> l2) {
+    private static final BiFunction<List<LockFuture>, List<LockFuture>, List<LockFuture>> CONC =
+        new BiFunction<List<LockFuture>, List<LockFuture>, List<LockFuture>>() {
+        /** {@inheritDoc} */
+        @Override public List<LockFuture> apply(List<LockFuture> l1, List<LockFuture> l2) {
             ArrayList<LockFuture> res = new ArrayList<>(l1.size() + l2.size());
 
             res.addAll(l1);
             res.addAll(l2);
 
             return res;
-        }
-    };
-
-    /** */
-    private static final BiFunction<Long, Integer, Integer> INC = new BiFunction<Long, Integer, Integer>() {
-        @Override
-        public Integer apply(Long k, Integer v) {
-            return v == null ? 1 : v + 1;
-        }
-    };
-
-    /** */
-    private static final BiFunction<Long, Integer, Integer> DEC = new BiFunction<Long, Integer, Integer>() {
-        @Override
-        public Integer apply(Long k, Integer v) {
-            return v == null || v.longValue() == 1 ? null : v - 1;
         }
     };
 
@@ -165,7 +151,8 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
     /** */
     private final AtomicLong futIdCntr = new AtomicLong(0);
 
-    GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
+    /** */
+    private final GridSpinReadWriteLock lock = new GridSpinReadWriteLock();
 
     /** */
     private final CountDownLatch crdLatch = new CountDownLatch(1);
@@ -473,10 +460,10 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
         int size = txs.size();
 
         for (int i = 0; i < size; i++) {
-            long txId = txs.get(i);
+            long txVer = txs.get(i);
 
-            if (txId < trackCntr)
-                trackCntr = txId;
+            if (txVer < trackCntr)
+                trackCntr = txVer;
         }
 
         return trackCntr;
@@ -769,10 +756,10 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
 
         lock.writeLock();
 
-        long ver = mvccCntr.incrementAndGet(), cleanupVer = -1;
+        long ver = mvccCntr.incrementAndGet(), cleanupVer = committedCntr.get();
 
         for (Long txVer : activeTxs) {
-            if (cleanupVer == -1 || txVer < cleanupVer)
+            if (txVer < cleanupVer)
                 cleanupVer = txVer;
 
             res.addTx(txVer);
@@ -787,10 +774,9 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
         long minQry = activeQueries.minimalQueryCounter();
 
         if (minQry != -1)
-            cleanupVer = cleanupVer == -1 ? minQry : Math.min(cleanupVer, minQry);
+            cleanupVer = Math.min(cleanupVer, minQry);
 
-        if (cleanupVer > minQry)
-            cleanupVer--;
+        cleanupVer--;
 
         res.init(futId, crdVer, ver, cleanupVer);
 
@@ -838,6 +824,7 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("ConstantConditions")
     @Override public void beforeMemoryRestore(IgniteCacheDatabaseSharedManager mgr) throws IgniteCheckedException {
         assert CU.isPersistenceEnabled(ctx.config());
         assert txLog == null;
@@ -886,7 +873,7 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
      */
     class ActiveQueries {
         /** */
-        private final Map<UUID, TreeMap<Long, Integer>> activeQueries = new HashMap<>();
+        private final Map<UUID, TreeMap<Long, AtomicInteger>> activeQueries = new HashMap<>();
 
         /** */
         private Long minQry;
@@ -900,45 +887,68 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
 
             lock.writeLock();
 
-            long ver = committedCntr.get();
+            long ver = committedCntr.get(), trackVer = ver;
 
             for (Long txVer : activeTxs) {
-                if (txVer < ver)
+                assert txVer != ver;
+
+                if (txVer < ver) {
                     res.addTx(txVer);
+
+                    if (txVer < trackVer)
+                        trackVer = txVer;
+                }
             }
 
             lock.writeUnlock();
 
-            TreeMap<Long, Integer> nodeMap = activeQueries.get(nodeId);
+            TreeMap<Long, AtomicInteger> nodeMap = activeQueries.get(nodeId);
 
-            if (nodeMap == null)
+            if (nodeMap == null) {
                 activeQueries.put(nodeId, nodeMap = new TreeMap<>());
 
-            nodeMap.compute(ver, INC);
+                nodeMap.put(trackVer, new AtomicInteger(1));
+            }
+            else {
+                AtomicInteger cntr = nodeMap.get(trackVer);
+
+                if (cntr == null)
+                    nodeMap.put(trackVer, new AtomicInteger(1));
+                else
+                    cntr.incrementAndGet();
+            }
 
             if (minQry == null)
-                minQry = ver;
+                minQry = trackVer;
 
             res.init(futId, crdVer, ver, MVCC_COUNTER_NA);
 
             return res;
         }
 
-        synchronized void onQueryDone(UUID nodeId, Long mvccCntr) {
-            TreeMap<Long, Integer> nodeMap = activeQueries.get(nodeId);
+        synchronized void onQueryDone(UUID nodeId, Long ver) {
+            TreeMap<Long, AtomicInteger> nodeMap = activeQueries.get(nodeId);
 
             if (nodeMap == null)
                 return;
 
             assert minQry != null;
 
-            nodeMap.compute(mvccCntr, DEC);
+            AtomicInteger cntr = nodeMap.get(ver);
 
-            if (nodeMap.isEmpty())
-                activeQueries.remove(nodeId);
+            assert cntr != null && cntr.get() > 0;
 
-            if (mvccCntr == minQry.longValue())
-                minQry = activeMinimal();
+            if (cntr.decrementAndGet() == 0) {
+                nodeMap.remove(ver);
+
+                if (nodeMap.isEmpty())
+                    activeQueries.remove(nodeId);
+
+                if (ver.equals(minQry))
+                    minQry = activeMinimal();
+            }
+
+
         }
 
         synchronized void onNodeFailed(UUID nodeId) {
@@ -950,7 +960,7 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
         private Long activeMinimal() {
             Long min = null;
 
-            for (TreeMap<Long,Integer> s : activeQueries.values()) {
+            for (TreeMap<Long,AtomicInteger> s : activeQueries.values()) {
                 Long first = s.firstKey();
 
                 if (min == null || first < min)
@@ -968,9 +978,7 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
     private synchronized MvccSnapshotResponse assignQueryCounter(UUID qryNodeId, long futId) {
         assert crdVer != 0;
 
-        MvccSnapshotResponse res = activeQueries.assignQueryCounter(qryNodeId, futId);
-
-        return res;
+        return activeQueries.assignQueryCounter(qryNodeId, futId);
     }
 
     /**

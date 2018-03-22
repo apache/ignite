@@ -1776,7 +1776,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     partId,
                     cctx);
 
-                dataTree.iterate(updateRow, new MvccMinSearchRow(cacheId, key), updateRow);
+                dataTree.iterate(new MvccMaxSearchRow(cacheId, key), new MvccMinSearchRow(cacheId, key), updateRow);
 
                 ResultType res = updateRow.resultType();
 
@@ -1862,7 +1862,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     partId,
                     cctx);
 
-                dataTree.iterate(updateRow, new MvccMinSearchRow(cacheId, key), updateRow);
+                dataTree.iterate(new MvccMaxSearchRow(cacheId, key) , new MvccMinSearchRow(cacheId, key), updateRow);
 
                 ResultType res = updateRow.resultType();
 
