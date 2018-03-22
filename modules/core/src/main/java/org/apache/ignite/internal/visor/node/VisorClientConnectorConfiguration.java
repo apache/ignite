@@ -55,7 +55,31 @@ public class VisorClientConnectorConfiguration extends VisorDataTransferObject {
     private boolean tcpNoDelay;
 
     /** Thread pool size. */
-    private int threadPoolSize ;
+    private int threadPoolSize;
+
+    /** Idle timeout. */
+    private long idleTimeout;
+
+    /** JDBC connections enabled flag. */
+    private boolean jdbcEnabled;
+
+    /** ODBC connections enabled flag. */
+    private boolean odbcEnabled;
+
+    /** JDBC connections enabled flag. */
+    private boolean thinCliEnabled;
+
+    /** SSL enable flag, default is disabled. */
+    private boolean sslEnabled;
+
+    /** If to use SSL context factory from Ignite configuration. */
+    private boolean useIgniteSslCtxFactory;
+
+    /** SSL need client auth flag. */
+    private boolean sslClientAuth;
+
+    /** SSL connection factory class name. */
+    private String sslCtxFactory;
 
     /**
      * Default constructor.
@@ -78,6 +102,14 @@ public class VisorClientConnectorConfiguration extends VisorDataTransferObject {
         sockRcvBufSize = cfg.getSocketReceiveBufferSize();
         tcpNoDelay = cfg.isTcpNoDelay();
         threadPoolSize = cfg.getThreadPoolSize();
+        idleTimeout = cfg.getIdleTimeout();
+        jdbcEnabled = cfg.isJdbcEnabled();
+        odbcEnabled = cfg.isOdbcEnabled();
+        thinCliEnabled = cfg.isThinClientEnabled();
+        sslEnabled = false;
+        useIgniteSslCtxFactory = false;
+        sslClientAuth = false;
+        sslCtxFactory = null;
     }
 
     /**
@@ -135,6 +167,67 @@ public class VisorClientConnectorConfiguration extends VisorDataTransferObject {
         return threadPoolSize;
     }
 
+    /**
+     * @return Idle timeout.
+     */
+    public long getIdleTimeout() {
+        return idleTimeout;
+    }
+
+    /**
+     * @return JDBC connections enabled flag.
+     */
+    public boolean isJdbcEnabled() {
+        return jdbcEnabled;
+    }
+
+    /**
+     * @return ODBC connections enabled flag.
+     */
+    public boolean isOdbcEnabled() {
+        return odbcEnabled;
+    }
+
+    /**
+     * @return JDBC connections enabled flag.
+     */
+    public boolean isThinClientEnabled() {
+        return thinCliEnabled;
+    }
+
+    /**
+     * @return SSL enable flag, default is disabled.
+     */
+    public boolean isSslEnabled() {
+        return sslEnabled;
+    }
+
+    /**
+     * @return If to use SSL context factory from Ignite configuration.
+     */
+    public boolean isUseIgniteSslContextFactory() {
+        return useIgniteSslCtxFactory;
+    }
+
+    /**
+     * @return SSL need client auth flag.
+     */
+    public boolean isSslClientAuth() {
+        return sslClientAuth;
+    }
+
+    /**
+     * @return SSL connection factory.
+     */
+    public String getSslContextFactory() {
+        return sslCtxFactory;
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte getProtocolVersion() {
+        return V2;
+    }
+
     /** {@inheritDoc} */
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, host);
@@ -142,9 +235,17 @@ public class VisorClientConnectorConfiguration extends VisorDataTransferObject {
         out.writeInt(portRange);
         out.writeInt(maxOpenCursorsPerConn);
         out.writeInt(sockSndBufSize);
-        out.writeInt(sockRcvBufSize );
+        out.writeInt(sockRcvBufSize);
         out.writeBoolean(tcpNoDelay);
         out.writeInt(threadPoolSize);
+        out.writeLong(idleTimeout);
+        out.writeBoolean(jdbcEnabled);
+        out.writeBoolean(odbcEnabled);
+        out.writeBoolean(thinCliEnabled);
+        out.writeBoolean(sslEnabled);
+        out.writeBoolean(useIgniteSslCtxFactory);
+        out.writeBoolean(sslClientAuth);
+        U.writeString(out, sslCtxFactory);
     }
 
     /** {@inheritDoc} */
@@ -157,6 +258,17 @@ public class VisorClientConnectorConfiguration extends VisorDataTransferObject {
         sockRcvBufSize = in.readInt();
         tcpNoDelay = in.readBoolean();
         threadPoolSize = in.readInt();
+
+        if (protoVer > V1) {
+            idleTimeout = in.readLong();
+            jdbcEnabled = in.readBoolean();
+            odbcEnabled = in.readBoolean();
+            thinCliEnabled = in.readBoolean();
+            sslEnabled = in.readBoolean();
+            useIgniteSslCtxFactory = in.readBoolean();
+            sslClientAuth = in.readBoolean();
+            sslCtxFactory = U.readString(in);
+        }
     }
 
     /** {@inheritDoc} */

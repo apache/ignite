@@ -94,7 +94,7 @@ export default ['IgniteVersion', 'SpringTransformer', function(Version, spring) 
                         return acc;
                     }, []);
 
-                    return spring.clusterCheckpoint(cluster, clusterCaches);
+                    return spring.clusterCheckpoint(cluster, available, clusterCaches);
                 };
 
                 break;

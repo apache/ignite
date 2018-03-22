@@ -38,7 +38,10 @@ public class PagesWriteThrottle {
     private static final double BACKOFF_RATIO = 1.05;
 
     /** Exponential backoff counter. */
-    private final AtomicInteger exponentialBackoffCntr = new AtomicInteger(0);
+    private final AtomicInteger inCheckpointCntr = new AtomicInteger(0);
+
+    /** Exponential backoff counter (for pages in checkpoint). */
+    private final AtomicInteger notInCheckpointCntr = new AtomicInteger(0);
     /**
      * @param pageMemory Page memory.
      * @param dbSharedMgr Database manager.
@@ -87,19 +90,23 @@ public class PagesWriteThrottle {
             }
         }
 
+        AtomicInteger cntr = isInCheckpoint ? inCheckpointCntr : notInCheckpointCntr;
+
         if (shouldThrottle) {
-            int throttleLevel = exponentialBackoffCntr.getAndIncrement();
+            int throttleLevel = cntr.getAndIncrement();
 
             LockSupport.parkNanos((long)(STARTING_THROTTLE_NANOS * Math.pow(BACKOFF_RATIO, throttleLevel)));
         }
         else
-            exponentialBackoffCntr.set(0);
+            cntr.set(0);
     }
 
     /**
      *
      */
     public void onFinishCheckpoint() {
-        exponentialBackoffCntr.set(0);
+        inCheckpointCntr.set(0);
+
+        notInCheckpointCntr.set(0);
     }
 }
