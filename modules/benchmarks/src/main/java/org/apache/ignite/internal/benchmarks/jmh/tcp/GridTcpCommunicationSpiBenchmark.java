@@ -67,14 +67,26 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 @Threads(1)
 public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark {
     /** */
+    final static String NO_COMPRESSION = "NO_COMPRESSION";
+
+    /** */
+    final static String LZ4 = "LZ4";
+
+    /** */
+    final static String ZSTD = "ZSTD";
+
+    /** */
+    final static String DEFLATER = "DEFLATER";
+
+    /** */
     static Ignite snd = null;
 
     /** */
     static Ignite receiver = null;
 
     /** */
-    @Param({"NO_COMPRESSION", "LZ4", "ZSTD", "DEFLATER"})
-    private String compressionType = "NO_COMPRESSION";
+    @Param({NO_COMPRESSION, LZ4, ZSTD, DEFLATER})
+    private String compressionType = NO_COMPRESSION;
 
     /** */
     @Param({"false", "true"})
@@ -83,11 +95,11 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     /** {@inheritDoc} */
     @Override protected final Factory<CompressionEngine> compressionEngineFactory() {
         switch (compressionType) {
-            case "LZ4":
+            case LZ4:
                 return new LZ4Factory();
-            case "ZSTD":
+            case ZSTD:
                 return new ZstdFactory();
-            case "DEFLATER":
+            case DEFLATER:
                 return new DeflaterFactory();
             default:
                 return null;
@@ -99,7 +111,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         return isSsl;
     }
 
-    /** */
+    /** Benchmark states with zero size message. */
     @State(Scope.Benchmark)
     public static class IoSendReceiveBaselineState extends IoState {
         /** */
@@ -109,7 +121,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             msg = new byte[0];
 
             receiver.message().localListen(null, new MessagingListenActor<byte[]>() {
-                @Override protected void receive(UUID nodeId, byte[] rcvMsg) throws Throwable {
+                @Override protected void receive(UUID nodeId, byte[] rcvMsg) {
                     latch.get().countDown();
                 }
             });
@@ -141,8 +153,8 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         sendAndReceive(state, counters);
     }
 
-    /** */
-    public static class IoState {
+    /** Base class for all benchmark states. */
+    static class IoState {
         /** */
         final IgniteMessaging messaging;
 
@@ -153,12 +165,12 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>();
 
         /** */
-        public IoState() {
+        IoState() {
             messaging = snd.message(snd.cluster().forNodeId(receiver.cluster().localNode().id()));
         }
     }
 
-    /** */
+    /** Benchmark states with sized message with unregular data. */
     @State(Scope.Benchmark)
     public static class IoSendReceiveSizeState extends IoState {
         /** */
@@ -170,7 +182,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             super();
 
             receiver.message().localListen(null, new MessagingListenActor<byte[]>() {
-                @Override protected void receive(UUID nodeId, byte[] rcvMsg) throws Throwable {
+                @Override protected void receive(UUID nodeId, byte[] rcvMsg) {
                     latch.get().countDown();
                 }
             });
@@ -188,10 +200,12 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     }
 
     /**
+     * Base method for benchmarks.
+     *
      * @param state State.
      * @param counters Counters.
      */
-    public static void sendAndReceive(IoState state, EventCounters counters) {
+    private static void sendAndReceive(IoState state, EventCounters counters) {
         long b = snd.cluster().localNode().metrics().getSentBytesCount();
 
         state.latch.set(new CountDownLatch(1));
@@ -218,7 +232,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         sendAndReceive(state, counters);
     }
 
-    /** */
+    /** Counters. */
     @State(Scope.Thread)
     @AuxCounters(AuxCounters.Type.EVENTS)
     public static class EventCounters {
@@ -229,7 +243,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         public int sentMessages = 0;
     }
 
-    /** */
+    /** Benchmark states with sized message with regular data. */
     @State(Scope.Benchmark)
     public static class IoSendReceiveSizeGoodState extends IoState {
         /** */
@@ -241,7 +255,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             super();
 
             receiver.message().localListen(null, new MessagingListenActor<byte[]>() {
-                @Override protected void receive(UUID nodeId, byte[] rcvMsg) throws Throwable {
+                @Override protected void receive(UUID nodeId, byte[] rcvMsg) {
                     latch.get().countDown();
                 }
             });
@@ -374,8 +388,8 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     private static double sqrtSum(double... xs) {
         double sum = 0.0;
 
-        for (double x: xs)
-            sum += (x*x);
+        for (double x : xs)
+            sum += (x * x);
 
         return Math.sqrt(sum);
     }
@@ -447,21 +461,21 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             String comp = String.valueOf(comp0);
             boolean ssl = Boolean.valueOf(ssl0);
 
-            if ("NO_COMPRESSION".equals(comp) && ssl)
+            if (NO_COMPRESSION.equals(comp) && ssl)
                 return Ssl;
-            if ("NO_COMPRESSION".equals(comp) && !ssl)
+            if (NO_COMPRESSION.equals(comp) && !ssl)
                 return No;
-            if ("LZ4".equals(comp) && !ssl)
+            if (LZ4.equals(comp) && !ssl)
                 return LZ4;
-            if ("LZ4".equals(comp) && ssl)
+            if (LZ4.equals(comp) && ssl)
                 return SslLZ4;
-            if ("ZSTD".equals(comp) && !ssl)
+            if (ZSTD.equals(comp) && !ssl)
                 return ZSTD;
-            if ("ZSTD".equals(comp) && ssl)
+            if (ZSTD.equals(comp) && ssl)
                 return SslZSTD;
-            if ("DEFLATER".equals(comp) && !ssl)
+            if (DEFLATER.equals(comp) && !ssl)
                 return Deflater;
-            if ("DEFLATER".equals(comp) && ssl)
+            if (DEFLATER.equals(comp) && ssl)
                 return SslDeflater;
 
             return No;

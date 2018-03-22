@@ -20,13 +20,13 @@ package org.apache.ignite.internal.benchmarks.jmh.tcp;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
-/** */
+/** Generates regular data with statistics close to native texts. */
 final class RegularDataUtils {
     /**
-     * Return regular data with statistics close to native texts.
+     * Generates regular data with statistics close to native texts.
      *
      * @param size Size of generating data.
-     * @param n Number of words.
+     * @param n Number of words in language.
      * @return Regular data.
      */
     static byte[] generateRegularData(int size, int n) {
@@ -34,10 +34,10 @@ final class RegularDataUtils {
 
         Language language = generateLanguage(n);
 
-        Random random = new Random(3L);
+        Random rnd = new Random(3L);
 
         while (buf.hasRemaining()) {
-            byte[] word = language.words[getIndex(language.probabilities, random.nextDouble())];
+            byte[] word = language.words[getIndex(language.probabilities, rnd.nextDouble())];
 
             buf.put(word, 0, (buf.remaining() < word.length) ? buf.remaining() : word.length);
         }
@@ -107,10 +107,10 @@ final class RegularDataUtils {
 
         int[] lengths = new int[size];
 
-        Random random = new Random(31L);
+        Random rnd = new Random(31L);
 
         for (int i = 0; i < size; i++)
-            lengths[i] = 1 + getIndex(probabilities, random.nextDouble());
+            lengths[i] = 1 + getIndex(probabilities, rnd.nextDouble());
 
         return lengths;
     }
@@ -149,12 +149,12 @@ final class RegularDataUtils {
 
         byte[][] words = new byte[size][];
 
-        Random random = new Random(314L);
+        Random rnd = new Random(314L);
 
         for (int i = 0; i < size; i++) {
             byte[] word = new byte[lengths[i]];
 
-            random.nextBytes(word);
+            rnd.nextBytes(word);
 
             words[i] = word;
         }
