@@ -35,7 +35,13 @@ import org.apache.ignite.internal.processors.cache.EntryVersionConsistencyReadTh
 import org.apache.ignite.internal.processors.cache.IgniteCachePutStackOverflowSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheReadThroughEvictionsVariationsSuite;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStoreCollectionTest;
+import org.apache.ignite.internal.processors.cache.PartitionedAtomicCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.PartitionedTransactionalOptimisticCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.PartitionedTransactionalPessimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.PartitionsExchangeOnDiscoveryHistoryOverflowTest;
+import org.apache.ignite.internal.processors.cache.ReplicatedAtomicCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalOptimisticCacheGetsDistributionTest;
+import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalPessimisticCacheGetsDistributionTest;
 import org.apache.ignite.internal.processors.cache.distributed.Cache64kPartitionsTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentNodeJoinValidationTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheLateAffinityAssignmentTest;
@@ -100,6 +106,14 @@ public class IgniteCacheTestSuite5 extends TestSuite {
         suite.addTestSuite(ConcurrentCacheStartTest.class);
 
         suite.addTestSuite(Cache64kPartitionsTest.class);
+
+        suite.addTestSuite(ReplicatedAtomicCacheGetsDistributionTest.class);
+        suite.addTestSuite(ReplicatedTransactionalOptimisticCacheGetsDistributionTest.class);
+        suite.addTestSuite(ReplicatedTransactionalPessimisticCacheGetsDistributionTest.class);
+
+        suite.addTestSuite(PartitionedAtomicCacheGetsDistributionTest.class);
+        suite.addTestSuite(PartitionedTransactionalOptimisticCacheGetsDistributionTest.class);
+        suite.addTestSuite(PartitionedTransactionalPessimisticCacheGetsDistributionTest.class);
 
         return suite;
     }
