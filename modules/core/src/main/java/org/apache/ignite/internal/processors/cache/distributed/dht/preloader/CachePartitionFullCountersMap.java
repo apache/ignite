@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.preloader;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -90,6 +91,27 @@ public class CachePartitionFullCountersMap implements Serializable {
      */
     public void updateCounter(int p, long updCntr) {
         updCntrs[p] = updCntr;
+    }
+
+    /**
+     * Creates submap for provided partition IDs.
+     *
+     * @param parts Partition IDs.
+     * @return Partial counters map.
+     */
+    public CachePartitionPartialCountersMap subMap(Set<Integer> parts) {
+        CachePartitionPartialCountersMap res = new CachePartitionPartialCountersMap(parts.size());
+
+        for (int p = 0; p < updCntrs.length; p++) {
+            if (!parts.contains(p))
+                continue;
+
+            res.add(p, initialUpdCntrs[p], updCntrs[p]);
+        }
+
+        assert res.size() == parts.size();
+
+        return res;
     }
 
     /**

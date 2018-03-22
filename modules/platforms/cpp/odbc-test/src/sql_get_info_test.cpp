@@ -19,8 +19,7 @@
 #   include <windows.h>
 #endif
 
-#include <sql.h>
-#include <sqlext.h>
+#include "ignite/odbc/system/odbc_constants.h"
 
 #include <vector>
 #include <string>
@@ -453,7 +452,9 @@ BOOST_AUTO_TEST_CASE(TestValues)
     CheckIntInfo(SQL_SUBQUERIES, SQL_SQ_CORRELATED_SUBQUERIES | SQL_SQ_COMPARISON | SQL_SQ_EXISTS | SQL_SQ_IN |
         SQL_SQ_QUANTIFIED);
 
-    CheckShortInfo(SQL_MAX_CONCURRENT_ACTIVITIES, 32);
+    CheckIntInfo(SQL_FETCH_DIRECTION, SQL_FD_FETCH_NEXT | SQL_FD_FETCH_PRIOR);
+
+    CheckShortInfo(SQL_MAX_CONCURRENT_ACTIVITIES, 0);
     CheckShortInfo(SQL_CURSOR_COMMIT_BEHAVIOR, SQL_CB_PRESERVE);
     CheckShortInfo(SQL_CURSOR_ROLLBACK_BEHAVIOR, SQL_CB_PRESERVE);
     CheckShortInfo(SQL_TXN_CAPABLE, SQL_TC_NONE);
@@ -472,7 +473,7 @@ BOOST_AUTO_TEST_CASE(TestValues)
     CheckShortInfo(SQL_MAX_COLUMNS_IN_TABLE, 0);
     CheckShortInfo(SQL_MAX_CURSOR_NAME_LEN, 0);
     CheckShortInfo(SQL_MAX_DRIVER_CONNECTIONS, 0);
-    CheckShortInfo(SQL_MAX_IDENTIFIER_LEN, 128);
+    CheckShortInfo(SQL_MAX_IDENTIFIER_LEN, 0);
     CheckShortInfo(SQL_MAX_PROCEDURE_NAME_LEN, 0);
     CheckShortInfo(SQL_MAX_SCHEMA_NAME_LEN, 0);
     CheckShortInfo(SQL_MAX_TABLE_NAME_LEN, 0);

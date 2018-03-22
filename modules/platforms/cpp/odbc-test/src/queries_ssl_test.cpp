@@ -166,6 +166,28 @@ BOOST_AUTO_TEST_CASE(TestConnectionSslReject)
     BOOST_CHECK_EQUAL(std::string("08001"), GetOdbcErrorState(SQL_HANDLE_DBC, dbc));
 }
 
+BOOST_AUTO_TEST_CASE(TestLoginTimeout)
+{
+    Prepare();
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_LOGIN_TIMEOUT, reinterpret_cast<SQLPOINTER>(1), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    std::string connectStr0 = MakeDefaultConnectionString();
+    std::vector<SQLCHAR> connectStr(connectStr0.begin(), connectStr0.end());
+
+    SQLCHAR outstr[ODBC_BUFFER_SIZE];
+    SQLSMALLINT outstrlen;
+
+    // Connecting to ODBC server.
+    ret = SQLDriverConnect(dbc, NULL, &connectStr[0], static_cast<SQLSMALLINT>(connectStr.size()),
+        outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
+}
+
 BOOST_AUTO_TEST_CASE(TestConnectionTimeoutQuery)
 {
     Connect(MakeDefaultConnectionString());

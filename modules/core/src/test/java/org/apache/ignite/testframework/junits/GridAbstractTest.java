@@ -1063,12 +1063,13 @@ public abstract class GridAbstractTest extends TestCase {
     private void stopGridUnhandledEx(@Nullable String igniteInstanceName, boolean cancel,
         boolean awaitTop) throws Throwable {
         try {
-            Ignite ignite = grid(igniteInstanceName);
+            IgniteEx ignite = grid(igniteInstanceName);
 
             assert ignite != null : "Ignite returned null grid for name: " + igniteInstanceName;
 
-            info(">>> Stopping grid [name=" + ignite.name() + ", id=" +
-                ((IgniteKernal)ignite).context().localNodeId() + ']');
+            UUID id = ignite instanceof IgniteProcessProxy ? ignite.localNode().id() : ignite.context().localNodeId();
+
+            info(">>> Stopping grid [name=" + ignite.name() + ", id=" + id + ']');
 
             if (!isRemoteJvm(igniteInstanceName))
                 G.stop(igniteInstanceName, cancel);
