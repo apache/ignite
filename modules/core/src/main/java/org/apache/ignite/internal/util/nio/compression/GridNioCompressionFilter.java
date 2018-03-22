@@ -305,6 +305,9 @@ public final class GridNioCompressionFilter extends GridNioFilterAdapter {
      */
     private GridNioFuture<Boolean> shutdownSession(GridNioSession ses, GridNioCompressionHandler hnd)
         throws IgniteCheckedException {
+        assert ses != null;
+        assert hnd != null;
+
         hnd.writeNetBuffer(null);
 
         return proceedSessionClose(ses);
