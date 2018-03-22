@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.affinity.AffinityCentralizedFunction;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
@@ -53,7 +54,9 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
 /**
@@ -367,6 +370,9 @@ public class GridAffinityAssignmentCache {
 
         idealAssignment = assignment;
 
+        if (ctx.cache().cacheMode(cacheOrGrpName) == PARTITIONED)
+            printDistribution(assignment, sorted.size());
+
         if (hasBaseline) {
             baselineTopology = discoCache.state().baselineTopology();
             assert baselineAssignment != null;
@@ -415,6 +421,48 @@ public class GridAffinityAssignmentCache {
         }
 
         return result;
+    }
+
+    /**
+     * @param assignment List indexed by partition number.
+     * @param dataNodesCnt Data nodes count.
+     */
+    private void printDistribution(List<List<ClusterNode>> assignment, int dataNodesCnt) {
+        Float ignitePartDistribution = IgniteSystemProperties.getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 0.1f);
+
+        int locPrimaryCnt = 0;
+        int locBackupCnt = 0;
+
+        for (List<ClusterNode> partitionAssign : assignment) {
+            if (partitionAssign != null) {
+                for (int i = 0; i < partitionAssign.size(); i++) {
+                    ClusterNode n = partitionAssign.get(i);
+
+                    if (n != null && n.isLocal()) {
+                        if (i == 0)
+                            locPrimaryCnt++;
+                        else
+                            locBackupCnt++;
+                    }
+                }
+            }
+        }
+
+        float expCnt = partsCnt / dataNodesCnt;
+        float expPercent = expCnt / partsCnt * 100;
+
+        float deltaPrimary = Math.abs(1 - (float)locPrimaryCnt / expCnt);
+        float deltaBackup = Math.abs(1 - (float)locBackupCnt / (expCnt * backups));
+
+        if (deltaPrimary > ignitePartDistribution || deltaBackup > ignitePartDistribution) {
+            log.info(String.format("Local node affinity assignment distribution is not ideal " +
+                    "[cache=%s, expectedPrimary=%.2f(%.2f%%), expectedBackups=%.2f(%.2f%%), " +
+                    "primary=%d(%.2f%%), backups=%d(%.2f%%)]", cacheOrGrpName,
+                expCnt, expPercent,
+                expCnt * backups, expPercent * backups,
+                locPrimaryCnt, (float)locPrimaryCnt / partsCnt * 100,
+                locBackupCnt, (float)locBackupCnt / partsCnt * 100));
+        }
     }
 
     /**
