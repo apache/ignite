@@ -16,15 +16,19 @@
  */
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataPageEvictionMode;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -90,12 +94,12 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         DataRegionConfiguration dfltPlcCfg = new DataRegionConfiguration();
         dfltPlcCfg.setName("dfltPlc");
-        dfltPlcCfg.setInitialSize(10 * 1024 * 1024);
-        dfltPlcCfg.setMaxSize(10 * 1024 * 1024);
+        dfltPlcCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
+        dfltPlcCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
 
         DataRegionConfiguration bigPlcCfg = new DataRegionConfiguration();
         bigPlcCfg.setName("bigPlc");
-        bigPlcCfg.setMaxSize(1024 * 1024 * 1024);
+        bigPlcCfg.setMaxSize(BIG_MEM_PLC_SIZE);
 
         memCfg.setDataRegionConfigurations(bigPlcCfg);
         memCfg.setDefaultDataRegionConfiguration(dfltPlcCfg);
@@ -168,5 +172,158 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         catch (Exception e) {
             fail("With properly sized DataRegion no exceptions are expected to be thrown.");
         }
+    }
+
+    /**
+     * Verifies that {@link IgniteCheckedException} is thrown when swap and persistence are enabled at the same time
+     * for a data region.
+     */
+    public void testSetPersistenceAndSwap() {
+        DataRegionConfiguration invCfg = new DataRegionConfiguration();
+
+        invCfg.setName("invCfg");
+        invCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
+        invCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
+        // Enabling the persistence.
+        invCfg.setPersistenceEnabled(true);
+        // Enabling the swap space.
+        invCfg.setSwapPath("/path/to/some/directory");
+
+        memCfg = new DataStorageConfiguration();
+        memCfg.setDataRegionConfigurations(invCfg);
+
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+        ccfg.setDataRegionName("ccfg");
+
+        GridTestUtils.assertThrows(log(), new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                startGrid(0);
+                return null;
+            }
+        }, IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
+    }
+
+    /**
+     * Verifies that {@link IgniteCheckedException} is thrown when page eviction threshold isn't between 0.5 and 0.999.
+     */
+    public void testSetInvalidEviction() {
+        final double SMALL_EVICTION_THRESHOLD = 0.1D;
+        final double BIG_EVICTION_THRESHOLD = 1.0D;
+        DataRegionConfiguration invCfg = new DataRegionConfiguration();
+
+        invCfg.setName("invCfg");
+        invCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
+        invCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
+        invCfg.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU);
+        // Setting the page eviction threshold less than 0.5
+        invCfg.setEvictionThreshold(SMALL_EVICTION_THRESHOLD);
+
+        memCfg = new DataStorageConfiguration();
+        memCfg.setDataRegionConfigurations(invCfg);
+
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        GridTestUtils.assertThrows(log(), new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                startGrid(0);
+                return null;
+            }
+        }, IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
+
+        // Setting the page eviction threshold greater than 0.999
+        invCfg.setEvictionThreshold(BIG_EVICTION_THRESHOLD);
+        memCfg.setDataRegionConfigurations(invCfg);
+
+        GridTestUtils.assertThrows(log(), new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                startGrid(0);
+                return null;
+            }
+        }, IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
+    }
+
+    /**
+     * Verifies that {@link IgniteCheckedException} is thrown when evicted pages pool size is less than 10 and
+     * greater than DataRegionConfiguration.getMaxSize() / DataStorageConfiguration.getPageSize() / 10.
+     */
+    public void testInvalidEmptyPagesPoolSize() {
+        final int SMALL_PAGES_POOL_SIZE = 5;
+        long expectedMaxPoolSize;
+        DataRegionConfiguration invCfg = new DataRegionConfiguration();
+
+        invCfg.setName("invCfg");
+        invCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
+        invCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
+        invCfg.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU);
+        // Setting the pages pool size less than 10
+        invCfg.setEmptyPagesPoolSize(SMALL_PAGES_POOL_SIZE);
+
+        memCfg = new DataStorageConfiguration();
+        memCfg.setDataRegionConfigurations(invCfg);
+
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        GridTestUtils.assertThrows(log(), new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                startGrid(0);
+                return null;
+            }
+        }, IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
+
+        expectedMaxPoolSize = invCfg.getMaxSize() / memCfg.getPageSize() / 10;
+
+        if (expectedMaxPoolSize < Integer.MAX_VALUE) {
+            invCfg.setEmptyPagesPoolSize((int)expectedMaxPoolSize + 1);
+            memCfg.setDataRegionConfigurations(invCfg);
+
+            GridTestUtils.assertThrows(log(), new Callable<Object>() {
+                @Nullable @Override public Object call() throws Exception {
+                    startGrid(0);
+                    return null;
+                }
+            }, IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
+        }
+    }
+
+    /**
+     * Verifies that {@link IgniteCheckedException} is thrown when IgniteCheckedException if validation of
+     * memory metrics properties fails.
+     */
+    public void testInvalidMetricsProperties() throws Exception {
+        final long SMALL_RATE_TIME_INTERVAL_MS = 999;
+        final int NEG_SUB_INTERVAL_COUNT = -1000;
+        long expectedMaxPoolSize;
+        DataRegionConfiguration invCfg = new DataRegionConfiguration();
+
+        invCfg.setName("invCfg");
+        invCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
+        invCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
+        invCfg.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU);
+        // Setting the metrics rate time less then 1000ms
+        invCfg.setMetricsRateTimeInterval(SMALL_RATE_TIME_INTERVAL_MS);
+
+        memCfg = new DataStorageConfiguration();
+        memCfg.setDataRegionConfigurations(invCfg);
+
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        GridTestUtils.assertThrows(log(), new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                startGrid(0);
+                return null;
+            }
+        }, IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
+
+        invCfg.setMetricsRateTimeInterval(memCfg.getDefaultDataRegionConfiguration().getMetricsRateTimeInterval());
+        // Setting the metrics sub interval count as negative
+        invCfg.setMetricsSubIntervalCount(NEG_SUB_INTERVAL_COUNT);
+        memCfg.setDataRegionConfigurations(invCfg);
+
+        GridTestUtils.assertThrows(log(), new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                startGrid(0);
+                return null;
+            }
+        }, IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
     }
 }
