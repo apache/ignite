@@ -15,25 +15,26 @@
  * limitations under the License.
  */
 
-export csv from './csv.svg';
-export cross from './cross.svg';
-export gear from './gear.svg';
-export clock from './clock.svg';
-export manual from './manual.svg';
-export download from './download.svg';
-export filter from './filter.svg';
-export search from './search.svg';
-export refresh from './refresh.svg';
-export sort from './sort.svg';
-export info from './info.svg';
-export check from './check.svg';
-export checkmark from './checkmark.svg';
-export alert from './alert.svg';
-export attention from './attention.svg';
-export connectedClusters from './connectedClusters.svg';
-export exclamation from './exclamation.svg';
-export collapse from './collapse.svg';
-export expand from './expand.svg';
-export plus from './plus.svg';
-export home from './home.svg';
+import {Selector, t} from 'testcafe';
 
+export class ModalInput {
+    constructor() {
+        this.valueInput = Selector('#input-fieldInput');
+    }
+
+    async enterValue(value) {
+        await t.typeText(this.valueInput, value);
+    }
+
+    async confirm() {
+        await t.click('#copy-btn-confirm');
+    }
+
+    async cancel() {
+        await t.click('#copy-btn-cancel');
+    }
+
+    async close() {
+        await t.click('.modal .close');
+    }
+}

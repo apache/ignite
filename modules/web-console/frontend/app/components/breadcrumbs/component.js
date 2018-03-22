@@ -15,25 +15,29 @@
  * limitations under the License.
  */
 
-export csv from './csv.svg';
-export cross from './cross.svg';
-export gear from './gear.svg';
-export clock from './clock.svg';
-export manual from './manual.svg';
-export download from './download.svg';
-export filter from './filter.svg';
-export search from './search.svg';
-export refresh from './refresh.svg';
-export sort from './sort.svg';
-export info from './info.svg';
-export check from './check.svg';
-export checkmark from './checkmark.svg';
-export alert from './alert.svg';
-export attention from './attention.svg';
-export connectedClusters from './connectedClusters.svg';
-export exclamation from './exclamation.svg';
-export collapse from './collapse.svg';
-export expand from './expand.svg';
-export plus from './plus.svg';
-export home from './home.svg';
+import template from './template.pug';
+import './style.scss';
 
+export class Breadcrumbs {
+    static $inject = ['$transclude', '$element'];
+    /**
+     * @param {ng.ITranscludeFunction} $transclude
+     * @param {JQLite} $element
+     */
+    constructor($transclude, $element) {
+        this.$transclude = $transclude;
+        this.$element = $element;
+    }
+    $postLink() {
+        this.$transclude((clone) => {
+            clone.first().prepend(this.$element.find('.breadcrumbs__home'));
+            this.$element.append(clone);
+        });
+    }
+}
+
+export default {
+    controller: Breadcrumbs,
+    template,
+    transclude: true
+};

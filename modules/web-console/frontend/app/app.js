@@ -130,6 +130,7 @@ import protectFromBsSelectRender from './components/protect-from-bs-select-rende
 import uiGridHovering from './components/ui-grid-hovering';
 import uiGridFilters from './components/ui-grid-filters';
 import listEditable from './components/list-editable';
+import breadcrumbs from './components/breadcrumbs';
 import clusterSelector from './components/cluster-selector';
 import connectedClusters from './components/connected-clusters';
 import pageSignIn from './components/page-signin';
@@ -226,6 +227,7 @@ angular.module('ignite-console', [
     pageLanding.name,
     pagePasswordChanged.name,
     pagePasswordReset.name,
+    breadcrumbs.name,
     // Ignite modules.
     IgniteModules.name
 ])
