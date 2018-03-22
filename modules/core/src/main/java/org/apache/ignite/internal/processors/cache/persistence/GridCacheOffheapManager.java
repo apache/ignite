@@ -271,7 +271,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                         if (needSnapshot) {
                             pageCnt = this.ctx.pageStore().pages(grpId, store.partId());
-                            io.setCandidatePageCount(partMetaPageAddr, pageCnt);
+
+                            io.setCandidatePageCount(partMetaPageAddr, size == 0 ? 0: pageCnt);
 
                             if (saveMeta) {
                                 saveMeta(ctx);
