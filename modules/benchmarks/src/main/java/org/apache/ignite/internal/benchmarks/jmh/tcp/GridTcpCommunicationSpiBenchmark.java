@@ -17,6 +17,18 @@
 
 package org.apache.ignite.internal.benchmarks.jmh.tcp;
 
+import java.text.DecimalFormat;
+import java.util.Collection;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Random;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.Ignition;
@@ -29,19 +41,22 @@ import org.apache.ignite.messaging.MessagingListenActor;
 import org.apache.ignite.spi.communication.DeflaterFactory;
 import org.apache.ignite.spi.communication.LZ4Factory;
 import org.apache.ignite.spi.communication.ZstdFactory;
-import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.annotations.AuxCounters;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.Param;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.Threads;
+import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.results.RunResult;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
-
-import javax.cache.configuration.Factory;
-import java.text.DecimalFormat;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Tests for SPI compression and SSL.
@@ -58,8 +73,8 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     static Ignite receiver = null;
 
     /** */
-    @Param({"NO_COMPRESSION", "LZ4", "ZSTD", "DEFLATER"})
-    private String compressionType = "NO_COMPRESSION";
+    @Param({"No", "LZ4", "ZSTD", "Deflater"})
+    private Type compressionType = Type.No;
 
     /** */
     @Param({"false", "true"})
@@ -68,11 +83,11 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     /** {@inheritDoc} */
     @Override protected final Factory<CompressionEngine> compressionEngineFactory() {
         switch (compressionType) {
-            case "LZ4":
+            case LZ4:
                 return new LZ4Factory();
-            case "ZSTD":
+            case ZSTD:
                 return new ZstdFactory();
-            case "DEFLATER":
+            case Deflater:
                 return new DeflaterFactory();
             default:
                 return null;
@@ -84,7 +99,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         return isSsl;
     }
 
-    /** */
+    /** Benchmark states with zero size message. */
     @State(Scope.Benchmark)
     public static class IoSendReceiveBaselineState extends IoState {
         /** */
@@ -94,7 +109,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             msg = new byte[0];
 
             receiver.message().localListen(null, new MessagingListenActor<byte[]>() {
-                @Override protected void receive(UUID nodeId, byte[] rcvMsg) throws Throwable {
+                @Override protected void receive(UUID nodeId, byte[] rcvMsg) {
                     latch.get().countDown();
                 }
             });
@@ -126,7 +141,8 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         sendAndReceive(state, counters);
     }
 
-    public static class IoState {
+    /** Base class for all benchmark states. */
+    static class IoState {
         /** */
         final IgniteMessaging messaging;
 
@@ -136,12 +152,13 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         /** */
         final AtomicReference<CountDownLatch> latch = new AtomicReference<>();
 
-        public IoState() {
+        /** */
+        IoState() {
             messaging = snd.message(snd.cluster().forNodeId(receiver.cluster().localNode().id()));
         }
     }
 
-    /** */
+    /** Benchmark states with sized message with unregular data. */
     @State(Scope.Benchmark)
     public static class IoSendReceiveSizeState extends IoState {
         /** */
@@ -153,7 +170,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             super();
 
             receiver.message().localListen(null, new MessagingListenActor<byte[]>() {
-                @Override protected void receive(UUID nodeId, byte[] rcvMsg) throws Throwable {
+                @Override protected void receive(UUID nodeId, byte[] rcvMsg) {
                     latch.get().countDown();
                 }
             });
@@ -170,7 +187,13 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         }
     }
 
-    public final void sendAndReceive(IoState state, EventCounters counters) {
+    /**
+     * Base method for benchmarks.
+     *
+     * @param state State.
+     * @param counters Counters.
+     */
+    private static void sendAndReceive(IoState state, EventCounters counters) {
         long b = snd.cluster().localNode().metrics().getSentBytesCount();
 
         state.latch.set(new CountDownLatch(1));
@@ -193,11 +216,11 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
      * Send and receive message with random data.
      */
     @Benchmark
-    public final void sendAndReceiveSize(final IoSendReceiveSizeState state, final EventCounters counters) {
+    public final void sendAndReceiveSize(IoSendReceiveSizeState state, EventCounters counters) {
         sendAndReceive(state, counters);
     }
 
-    /** */
+    /** Counters. */
     @State(Scope.Thread)
     @AuxCounters(AuxCounters.Type.EVENTS)
     public static class EventCounters {
@@ -208,7 +231,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         public int sentMessages = 0;
     }
 
-    /** */
+    /** Benchmark states with sized message with regular data. */
     @State(Scope.Benchmark)
     public static class IoSendReceiveSizeGoodState extends IoState {
         /** */
@@ -220,7 +243,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             super();
 
             receiver.message().localListen(null, new MessagingListenActor<byte[]>() {
-                @Override protected void receive(UUID nodeId, byte[] rcvMsg) throws Throwable {
+                @Override protected void receive(UUID nodeId, byte[] rcvMsg) {
                     latch.get().countDown();
                 }
             });
@@ -299,7 +322,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
             double val = result.getPrimaryResult().getScore();
             double error = result.getPrimaryResult().getScoreError();
 
-            if (result.getPrimaryResult().getLabel().equals("sendAndReceiveBaseline")) {
+            if ("sendAndReceiveBaseline".equals(result.getPrimaryResult().getLabel())) {
                 baseline.put(type, new Result(val, error, 0));
 
                 continue;
@@ -316,13 +339,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
                 case "sendAndReceiveSize": {
                     int size = Integer.valueOf(result.getParams().getParam("size"));
 
-                    EnumMap<Type, Result> map = sizedResults.get(size);
-
-                    if (map == null) {
-                        map = new EnumMap<>(Type.class);
-
-                        sizedResults.put(size, map);
-                    }
+                    EnumMap<Type, Result> map = sizedResults.computeIfAbsent(size, k -> new EnumMap<>(Type.class));
 
                     map.put(type, new Result(val, error, avgSize));
 
@@ -331,13 +348,7 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
                 case "sendAndReceiveSizeGood": {
                     int size = Integer.valueOf(result.getParams().getParam("size"));
 
-                    EnumMap<Type, Result> map = sizedNiceResults.get(size);
-
-                    if (map == null) {
-                        map = new EnumMap<>(Type.class);
-
-                        sizedNiceResults.put(size, map);
-                    }
+                    EnumMap<Type, Result> map = sizedNiceResults.computeIfAbsent(size, k -> new EnumMap<>(Type.class));
 
                     map.put(type, new Result(val, error, avgSize));
 
@@ -365,14 +376,16 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
     private static double sqrtSum(double... xs) {
         double sum = 0.0;
 
-        for (double x: xs)
-            sum += (x*x);
+        for (double x : xs)
+            sum += (x * x);
 
         return Math.sqrt(sum);
     }
 
     /** */
-    private static void printThroughput(Map<Integer, EnumMap<Type, Result>> results, EnumMap<Type, Result> baselineStat,
+    private static void printThroughput(Map<Integer,
+        EnumMap<Type, Result>> results,
+        EnumMap<Type, Result> baselineStat,
         EnumMap<Type, Result> baseline) {
 
         DecimalFormat df = new DecimalFormat("#0.00");
@@ -380,31 +393,44 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
         for (Entry<Integer, EnumMap<Type, Result>> entry : results.entrySet()) {
             int size = entry.getKey();
 
-            System.out.println("||Type||MsgSize||MsgPerSecond||RealMbitsPerSecond||EffectiveMbitsPerSecond||CompressionRatio||");
+            System.out.println(
+                "||Type||MsgSize||MsgPerSecond||RealMbitsPerSecond||EffectiveMbitsPerSecond||CompressionRatio||"
+            );
             for (Entry<Type, Result> resultEntry : entry.getValue().entrySet()) {
                 double statTime = baselineStat.get(resultEntry.getKey()).val - baseline.get(resultEntry.getKey()).val;
 
                 double baselineAvgSize = Math.round(baselineStat.get(resultEntry.getKey()).avgSize);
                 double val = resultEntry.getValue().val - statTime;
 
-                double error = val* sqrtSum(resultEntry.getValue().error/resultEntry.getValue().val,
-                    baselineStat.get(resultEntry.getKey()).error/baselineStat.get(resultEntry.getKey()).val,
-                    baseline.get(resultEntry.getKey()).error/baseline.get(resultEntry.getKey()).val);
+                double error = val * sqrtSum(resultEntry.getValue().error / resultEntry.getValue().val,
+                    baselineStat.get(resultEntry.getKey()).error / baselineStat.get(resultEntry.getKey()).val,
+                    baseline.get(resultEntry.getKey()).error / baseline.get(resultEntry.getKey()).val);
 
                 double avgSize = Math.round(resultEntry.getValue().avgSize);
 
-                System.out.println("|" + resultEntry.getKey() + "|" +
-                     size + "|" +
-                    df.format(1.0E6 / val) + " ∈ [" + df.format(1.0E6 / (val + error)) + " : " + df.format(1.0E6 / (val - error)) + "]" + "|" +
-                    df.format(avgSize / val * 8) + " ∈ [" + df.format(avgSize / (val + error) * 8) + " : " + df.format(avgSize / (val - error) * 8) + "]" + "|" +
-                    df.format(size / val * 8) + " ∈ [" + df.format(size / (val + error) * 8) + " : " + df.format(size / (val - error) * 8) + "]" + "|" +
+                System.out.println("|" + resultEntry.getKey() + "|" + size + "|" +
+                    df.format(1.0E6 / val) + " ∈ [" +
+                    df.format(1.0E6 / (val + error)) + " : " + df.format(1.0E6 / (val - error)) +
+                    "]" + "|" +
+                    df.format(avgSize / val * 8) + " ∈ ["
+                    + df.format(avgSize / (val + error) * 8) + " : " +
+                    df.format(avgSize / (val - error) * 8) +
+                    "]" + "|" +
+                    df.format(size / val * 8) + " ∈ [" +
+                    df.format(size / (val + error) * 8) + " : " +
+                    df.format(size / (val - error) * 8) +
+                    "]" + "|" +
                     df.format(size / (avgSize - baselineAvgSize)) + "|");
             }
         }
     }
 
-    /** */
-    private enum Type {
+    /**
+     * Type of connection.
+     *
+     * Need public for JMH.
+     * */
+    public enum Type {
         /** */
         No,
         /** */
@@ -424,32 +450,31 @@ public class GridTcpCommunicationSpiBenchmark extends JmhCacheAbstractBenchmark 
 
         /** */
         private static Type getType(String comp0, String ssl0) {
-            String comp = String.valueOf(comp0);
-            boolean ssl = Boolean.valueOf(ssl0);
+            Type comp = Type.valueOf(comp0);
 
-            if (comp.equals("NO_COMPRESSION") && ssl)
-                return Ssl;
-            if (comp.equals("NO_COMPRESSION") && !ssl)
-                return No;
-            if (comp.equals("LZ4") && !ssl)
-                return LZ4;
-            if (comp.equals("LZ4") && ssl)
-                return SslLZ4;
-            if (comp.equals("ZSTD") && !ssl)
-                return ZSTD;
-            if (comp.equals("ZSTD") && ssl)
-                return SslZSTD;
-            if (comp.equals("DEFLATER") && !ssl)
-                return Deflater;
-            if (comp.equals("DEFLATER") && ssl)
-                return SslDeflater;
+            if (Boolean.valueOf(ssl0)) {
+                switch (comp) {
+                    case No:
+                        comp = Ssl;
+                        break;
+                    case LZ4:
+                        comp = SslLZ4;
+                        break;
+                    case ZSTD:
+                        comp = SslZSTD;
+                        break;
+                    case Deflater:
+                        comp = SslDeflater;
+                        break;
+                }
+            }
 
-            return No;
+            return comp;
         }
     }
 
     /** */
-    private static class Result {
+    private static final class Result {
         /** */
         private final double val;
 

@@ -20,131 +20,163 @@ package org.apache.ignite.internal.benchmarks.jmh.tcp;
 import java.nio.ByteBuffer;
 import java.util.Random;
 
-/** */
+/** Generates regular data with statistics close to native texts. */
 final class RegularDataUtils {
     /**
-     * Poisson distribution.
+     * Generates regular data with statistics close to native texts.
+     *
+     * @param size Size of generating data.
+     * @param n Number of words in language.
+     * @return Regular data.
      */
-    private static double poisson(int k, double a) {
-        double x = StrictMath.exp(-a);
+    static byte[] generateRegularData(int size, int n) {
+        ByteBuffer buf = ByteBuffer.allocate(size);
+
+        Language language = generateLanguage(n);
+
+        Random rnd = new Random(3L);
+
+        while (buf.hasRemaining()) {
+            byte[] word = language.words[getIndex(language.probabilities, rnd.nextDouble())];
+
+            buf.put(word, 0, (buf.remaining() < word.length) ? buf.remaining() : word.length);
+        }
+
+        return buf.array();
+    }
+
+    /**
+     * Poisson distribution.
+     *
+     * @param k Number of events is first parameter of poisson distribution.
+     * @param l Lambda is second parameter of poisson distribution.
+     * @return Probability.
+     */
+    private static double poisson(int k, double l) {
+        double x = StrictMath.exp(-l);
 
         for (int i = 1; i < k; i++)
-            x *= (a / i);
+            x *= (l / i);
 
         return x;
     }
 
     /**
      * Distribution for Ziph's law.
+     *
+     * @param length Length of word.
+     * @return Probability.
      */
-    private static double ziph(int k) {
-        return 1.0 / k;
+    private static double ziph(int length) {
+        return 1.0 / length;
     }
 
-    /** Convert weights to distribution. */
-    private static void normalize(double... x) {
-        if (x.length < 1)
+    /**
+     * Convert weights to distribution in place.
+     *
+     * @param weights Weights.
+     */
+    private static void normalize(double... weights) {
+        if (weights.length < 1)
             return;
 
-        double sum = x[0];
+        double sum = weights[0];
 
-        for (int i = 1; i < x.length; i++) {
-            sum += x[i];
-            x[i] += x[i - 1];
+        for (int i = 1; i < weights.length; i++) {
+            sum += weights[i];
+            weights[i] += weights[i - 1];
         }
 
-        for (int i = 0; i < x.length; i++)
-            x[i] /= sum;
+        for (int i = 0; i < weights.length; i++)
+            weights[i] /= sum;
     }
 
-    /** Return lengths of words. */
-    private static int[] getLengths(int n) {
-        double[] probabilities = new double[n];
+    /**
+     * Generates random lengths from poisson distribution.
+     *
+     * @param size Size of generating lengths.
+     * @return Lengths of words.
+     */
+    private static int[] getLengths(int size) {
+        double[] probabilities = new double[size];
 
-        for (int i = 0; i < n; i++)
-            probabilities[i] = poisson(i, StrictMath.log(n));
+        for (int i = 0; i < size; i++)
+            probabilities[i] = poisson(i, StrictMath.log(size));
 
         normalize(probabilities);
 
-        int[] lengths = new int[n];
+        int[] lengths = new int[size];
 
-        Random random = new Random(31L);
+        Random rnd = new Random(31L);
 
-        for (int i = 0; i < n; i++)
-            lengths[i] = 1 + getIndex(probabilities, random.nextDouble());
+        for (int i = 0; i < size; i++)
+            lengths[i] = 1 + getIndex(probabilities, rnd.nextDouble());
 
         return lengths;
     }
 
-    /** Help to get weighted random index. */
-    private static int getIndex(double[] ps, double x) {
+    /**
+     * Help to get weighted random index.
+     *
+     * @param distribution Distribution.
+     * @param x Random double.
+     * @return Index.
+     */
+    private static int getIndex(double[] distribution, double x) {
         int i = 0;
 
-        while (x > ps[i])
+        while (x > distribution[i])
             i++;
 
         return i;
     }
 
-    /** */
-    private static Language generateLanguage(int n) {
-        int[] lengths = getLengths(n);
+    /**
+     * Generate {@link Language}.
+     *
+     * @param size Size of language.
+     * @return Language.
+     */
+    private static Language generateLanguage(int size) {
+        int[] lengths = getLengths(size);
 
-        double[] probabilities = new double[n];
+        double[] probabilities = new double[size];
 
-        for (int i = 0; i < n; i++)
+        for (int i = 0; i < size; i++)
             probabilities[i] = ziph(lengths[i]);
 
         normalize(probabilities);
 
-        byte[][] words = new byte[n][];
+        byte[][] words = new byte[size][];
 
-        Random random = new Random(314L);
+        Random rnd = new Random(314L);
 
-        for (int i = 0; i < n; i++) {
+        for (int i = 0; i < size; i++) {
             byte[] word = new byte[lengths[i]];
 
-            random.nextBytes(word);
+            rnd.nextBytes(word);
 
             words[i] = word;
         }
 
-        return new Language(lengths, probabilities, words);
+        return new Language(probabilities, words);
     }
 
-    /** */
-    private static class Language {
-        /** */
-        private final int[] lengths;
-
+    /** Language with weighted words. */
+    private static final class Language {
         /** */
         private final double[] probabilities;
 
         /** */
         private final byte[][] words;
 
-        /** */
-        private Language(int[] lengths, double[] probabilities, byte[][] words) {
-            this.lengths = lengths;
+        /**
+         * @param probabilities Probabilities.
+         * @param words Words.
+         */
+        private Language(double[] probabilities, byte[][] words) {
             this.probabilities = probabilities;
             this.words = words;
         }
-    }
-
-    /** Return regular data with statistics close to native texts. */
-    static byte[] generateRegularData(int size, int n) {
-        ByteBuffer buf = ByteBuffer.allocate(size);
-
-        Language language = generateLanguage(n);
-
-        Random random = new Random(3L);
-
-        while (buf.hasRemaining()) {
-            byte[] word = language.words[getIndex(language.probabilities, random.nextDouble())];
-
-            buf.put(word, 0, (buf.remaining() < word.length) ? buf.remaining() : word.length);
-        }
-
-        return buf.array();
     }
 }
