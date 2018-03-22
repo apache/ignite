@@ -120,6 +120,8 @@ public final class ZstdEngine implements CompressionEngine {
                 src, src.position(),src.limit() - src.position());
 
             if (Zstd.isError(size)) {
+                src.limit(oldLimit);
+
                 if (size == ZSTD_ERROR_DST_SIZE_TOO_SMALL)
                     return BUFFER_OVERFLOW;
 
