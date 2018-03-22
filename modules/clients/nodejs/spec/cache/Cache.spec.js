@@ -35,6 +35,7 @@ describe('cache configuration operations test suite >', () => {
             then(async () => {
                 await TestingHelper.init();
                 igniteClient = TestingHelper.igniteClient;
+                await testSuiteCleanup(done);
             }).
             then(done).
             catch(error => done.fail(error));
@@ -43,8 +44,7 @@ describe('cache configuration operations test suite >', () => {
     afterAll((done) => {
         Promise.resolve().
             then(async () => {
-                await igniteClient.destroyCache(CACHE_NAME);
-                await igniteClient.destroyCache(CACHE_NAME2);
+                await testSuiteCleanup(done);
                 await TestingHelper.cleanUp();
             }).
             then(done).
@@ -167,6 +167,11 @@ describe('cache configuration operations test suite >', () => {
             catch(error => done.fail(error));
     });
 
+    async function testSuiteCleanup(done) {
+        await TestingHelper.destroyCache(CACHE_NAME, done);
+        await TestingHelper.destroyCache(CACHE_NAME2, done);
+    }
+
     async function obtainCacheWithWrongName(method, done) {
         const wrongNames = [undefined, null, ''];
         for (let name of wrongNames) {
@@ -175,7 +180,7 @@ describe('cache configuration operations test suite >', () => {
                 cache = await method(name);
             }
             catch (err) {
-                checkIllegalArgumentError(err, done);
+                TestingHelper.checkIllegalArgumentError(err, done);
             }
         }
     }
@@ -188,14 +193,8 @@ describe('cache configuration operations test suite >', () => {
                 cache = await method(CACHE_NAME, config);
             }
             catch (err) {
-                checkIllegalArgumentError(err, done);
+                TestingHelper.checkIllegalArgumentError(err, done);
             }
-        }
-    }
-
-    function checkIllegalArgumentError(error, done) {
-        if (!(error instanceof Errors.IllegalArgumentError)) {
-            done.fail('unexpected error: ' + error);
         }
     }
 

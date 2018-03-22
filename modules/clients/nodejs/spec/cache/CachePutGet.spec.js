@@ -33,6 +33,7 @@ describe('cache put get test suite >', () => {
             then(async () => {
                 await TestingHelper.init();
                 igniteClient = TestingHelper.igniteClient;
+                await testSuiteCleanup(done);
                 await igniteClient.getOrCreateCache(CACHE_NAME);
             }).
             then(done).
@@ -42,7 +43,7 @@ describe('cache put get test suite >', () => {
     afterAll((done) => {
         Promise.resolve().
             then(async () => {
-                await igniteClient.destroyCache(CACHE_NAME);
+                await testSuiteCleanup(done);
                 await TestingHelper.cleanUp();
             }).
             then(done).
@@ -333,5 +334,9 @@ describe('cache put get test suite >', () => {
                     `Maps are not equal: valueType=${valueType.mapValueType}, put value=${value}, get value=${result}`);
             }
         });
+    }
+
+    async function testSuiteCleanup(done) {
+        await TestingHelper.destroyCache(CACHE_NAME, done);
     }
 });

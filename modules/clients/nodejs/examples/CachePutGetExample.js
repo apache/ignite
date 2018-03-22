@@ -24,34 +24,40 @@ const ENDPOINT = '127.0.0.1:10800';
 const PAUSE_MS = 5000;
 const CACHE_NAME = 'test_cache';
 
-// description - TBD 
+// This example demonstrates basic Cache and Key-Value Queries operations.
+// - connects to ENDPOINT node
+// - creates CACHE_NAME cache if it doesn't exist
+//   -- specifies key type as TYPE_CODE.INTEGER
+//   -- specifies value type as TYPE_CODE.STRING
+// - periodically puts and gets data to/from the same keys
+//   -- puts several values in parallel
+//   -- gets values sequentially and compares with original values
+//   -- pauses for PAUSE_MS time and repeats put/get
 class CachePutGetExample {
     constructor() {
         this._cache = null;
     }
-  
+
     async putGetValues() {
         // put multiple values in parallel
+        let keys = [0, 1, 2]; 
         await Promise.all([
-            await this._cache.put(0, this.getValue(0)),
-            await this._cache.put(1, this.getValue(1)),
-            await this._cache.put(2, this.getValue(2))
+            await this._cache.put(keys[0], this.generateValue(keys[0])),
+            await this._cache.put(keys[1], this.generateValue(keys[1])),
+            await this._cache.put(keys[2], this.generateValue(keys[2]))
         ]);
         console.log('Cache values put successfully');
 
-        let value;
         // get values sequentially
+        let value;
         for (let key = 0; key < 3; key++) {
             value = await this._cache.get(key);
-            if (value !== this.getValue(key)) {
+            if (value !== this.generateValue(key)) {
                 console.log('Unexpected cache value!');
                 return;
             }
         }
         console.log('Cache values get successfully');
-
-        await this.pause();
-        await this.putGetValues();
     }
 
     async start() {
@@ -59,13 +65,16 @@ class CachePutGetExample {
         try {
             await igniteClient.connect(
                 new IgniteClientConfiguration(ENDPOINT), this.onDisconnect);
-            console.log('Client is statrted');
+            console.log('Client is started');
 
             this._cache = (await igniteClient.getOrCreateCache(CACHE_NAME)).
                 setKeyType(ObjectType.TYPE_CODE.INTEGER).
                 setValueType(ObjectType.TYPE_CODE.STRING);
 
-            await this.putGetValues();
+            while (true) {
+                await this.putGetValues();
+                await this.pause();
+            }
         }
         catch (err) {
             console.log(err.message);
@@ -75,7 +84,7 @@ class CachePutGetExample {
         }
     }
 
-    getValue(key) {
+    generateValue(key) {
         return 'value' + key;
     }
 

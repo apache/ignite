@@ -23,6 +23,7 @@ const config = require('./config');
 
 const IgniteClient = require('apache-ignite-client');
 const IgniteClientConfiguration = IgniteClient.IgniteClientConfiguration;
+const Errors = IgniteClient.Errors;
 
 const TIMEOUT_MS = 20000;
 
@@ -51,6 +52,29 @@ class TestingHelper {
 
     static get igniteClient() {
         return TestingHelper._igniteClient;
+    }
+
+    static async destroyCache(cacheName, done) {
+        try {
+            await TestingHelper.igniteClient.destroyCache(cacheName);
+        }
+        catch (err) {
+            TestingHelper.checkOperationError(err, done);
+        }
+    }
+
+    static checkOperationError(error, done) {
+        TestingHelper.checkError(error, Errors.OperationError, done)
+    }
+
+    static checkIllegalArgumentError(error, done) {
+        TestingHelper.checkError(error, Errors.IllegalArgumentError, done)
+    }
+
+    static checkError(error, errorType, done) {
+        if (!(error instanceof errorType)) {
+            done.fail('unexpected error: ' + error);
+        }
     }
 }
 
