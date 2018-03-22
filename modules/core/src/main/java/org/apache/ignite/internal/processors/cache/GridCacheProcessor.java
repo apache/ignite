@@ -699,6 +699,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         ctx.state().cacheProcessorStarted();
+        ctx.authentication().cacheProcessorStarted();
     }
 
     /**
