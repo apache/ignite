@@ -1303,12 +1303,25 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         releaseLatch.countDown();
 
-        try {
-            releaseLatch.await();
-        }
-        catch (IgniteCheckedException e) {
-            if (log.isInfoEnabled())
-                log.warning("Unable to await release latch: " + e.getMessage());
+        if (!localJoinExchange()) {
+            try {
+                while (true) {
+                    try {
+                        releaseLatch.await(futTimeout, TimeUnit.MILLISECONDS);
+
+                        break;
+                    }
+                    catch (IgniteFutureTimeoutCheckedException e) {
+                        U.warn(log, "Unable to await release latch within timeout: " + releaseLatch);
+
+                        // Try to resend ack.
+                        releaseLatch.countDown();
+                    }
+                }
+            }
+            catch (IgniteCheckedException e) {
+                U.warn(log, "Stop waiting for release latch: " + e.getMessage());
+            }
         }
     }
 
