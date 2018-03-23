@@ -17,6 +17,17 @@
 
 package org.apache.ignite.console.agent.rest;
 
+import java.io.IOException;
+import java.io.StringWriter;
+import java.net.ConnectException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -25,13 +36,6 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.net.ConnectException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import okhttp3.Dispatcher;
 import okhttp3.FormBody;
 import okhttp3.HttpUrl;
@@ -43,6 +47,7 @@ import okhttp3.Response;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.ignite.internal.processors.rest.protocols.http.jetty.GridJettyObjectMapper;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteProductVersion;
@@ -81,14 +86,17 @@ public class RestExecutor {
     /** */
     private final OkHttpClient httpClient;
 
-    /** Node URL. */
-    private String nodeUrl;
+    /** Node URLs. */
+    private Set<String> nodeUrls = new LinkedHashSet<>();
+
+    /** Latest alive node URL. */
+    private volatile String latestNodeUrl;
 
     /**
      * Default constructor.
      */
     public RestExecutor(String nodeUrl) {
-        this.nodeUrl = nodeUrl;
+        Collections.addAll(nodeUrls, nodeUrl.split(","));
 
         Dispatcher dispatcher = new Dispatcher();
         
@@ -113,7 +121,7 @@ public class RestExecutor {
     }
 
     /** */
-    private RestResult sendRequest(boolean demo, String path, Map<String, Object> params,
+    private RestResult sendRequest0(String nodeUrl, boolean demo, String path, Map<String, Object> params,
         Map<String, Object> headers, String body) throws IOException {
         if (demo && AgentClusterDemo.getDemoUrl() == null) {
             try {
@@ -161,7 +169,7 @@ public class RestExecutor {
 
             reqBuilder.post(formBody.build());
         }
-        
+
         reqBuilder.url(urlBuilder.build());
 
         try (Response resp = httpClient.newCall(reqBuilder.build()).execute()) {
@@ -188,12 +196,70 @@ public class RestExecutor {
 
             return RestResult.fail(STATUS_FAILED, "Failed to execute REST command: " + resp.message());
         }
-        catch (ConnectException ignored) {
+    }
+
+    /**
+     * Send request to cluster.
+     *
+     * @param demo {@code true} If demo mode.
+     * @param path Request path.
+     * @param params Request params.
+     * @param headers Request headers.
+     * @param body Request body.
+     * @return Request result.
+     * @throws IOException If failed to process request.
+     */
+    private RestResult sendRequest(boolean demo, String path, Map<String, Object> params,
+        Map<String, Object> headers, String body) throws IOException {
+        String url = latestNodeUrl;
+
+        try {
+            if (F.isEmpty(url)) {
+                Iterator<String> it = nodeUrls.iterator();
+
+                while (it.hasNext()) {
+                    String nodeUrl = it.next();
+
+                    try {
+                        RestResult res = sendRequest0(nodeUrl, demo, path, params, headers, body);
+
+                        log.info("Connected to cluster [url=" + nodeUrl + "]");
+
+                        latestNodeUrl = nodeUrl;
+
+                        return res;
+                    }
+                    catch (ConnectException ignored) {
+                        String msg = "Failed connect to cluster [url=" + nodeUrl + ", parameters=" + params + "]";
+
+                        LT.warn(log, msg);
+
+                        if (!it.hasNext())
+                            throw new ConnectException(msg);
+                    }
+                }
+
+                throw new ConnectException("Failed connect to cluster [urls=" + nodeUrls + ", parameters=" + params + "]");
+            }
+            else {
+                try {
+                    return sendRequest0(url, demo, path, params, headers, body);
+                }
+                catch (ConnectException e) {
+                    latestNodeUrl = null;
+
+                    if (nodeUrls.size() > 1)
+                        return sendRequest(demo, path, params, headers, body);
+
+                    throw e;
+                }
+            }        }
+        catch (ConnectException ce) {
             LT.warn(log, "Failed connect to cluster. " +
                 "Please ensure that nodes have [ignite-rest-http] module in classpath " +
                 "(was copied from libs/optional to libs folder).");
 
-            throw new ConnectException("Failed connect to cluster [url=" + urlBuilder + ", parameters=" + params + "]");
+            throw ce;
         }
     }
 
