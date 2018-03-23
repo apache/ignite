@@ -214,6 +214,9 @@ public class IgniteConfiguration {
     /** Default timeout after which long query warning will be printed. */
     public static final long DFLT_LONG_QRY_WARN_TIMEOUT = 3000;
 
+    /** Default value for disable WAL during rebalancing flag. */
+    public static final boolean DFLT_DISABLE_WAL_DURING_REBALANCING = true;
+
     /** Optional local Ignite instance name. */
     private String igniteInstanceName;
 
@@ -492,6 +495,9 @@ public class IgniteConfiguration {
 
     /** Failure handler. */
     private FailureHandler failureHnd;
+
+    /** Disable WAL during rebalancing. */
+    private boolean disableWalDuringRebalancing = DFLT_DISABLE_WAL_DURING_REBALANCING;
 
     /**
      * Creates valid grid configuration with all default values.
@@ -2975,6 +2981,25 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setAuthenticationEnabled(boolean authEnabled) {
         this.authEnabled = authEnabled;
+
+        return this;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public boolean isDisableWalDuringRebalancing() {
+        return disableWalDuringRebalancing;
+    }
+
+    /**
+     *
+     * @param value
+     * @return
+     */
+    public IgniteConfiguration setDisableWalDuringRebalancing(boolean value) {
+        disableWalDuringRebalancing = value;
 
         return this;
     }
