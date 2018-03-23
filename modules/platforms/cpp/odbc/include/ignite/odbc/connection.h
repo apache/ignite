@@ -451,6 +451,9 @@ namespace ignite
             /** Login timeout in seconds. */
             int32_t loginTimeout;
 
+            /** Autocommit flag. */
+            bool autoCommit;
+
             /** Message parser. */
             Parser parser;
 
