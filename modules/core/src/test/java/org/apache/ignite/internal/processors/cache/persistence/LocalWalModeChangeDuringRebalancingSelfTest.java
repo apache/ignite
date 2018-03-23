@@ -45,6 +45,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
+        stopAllGrids();
+
         cleanPersistenceDir();
     }
 
