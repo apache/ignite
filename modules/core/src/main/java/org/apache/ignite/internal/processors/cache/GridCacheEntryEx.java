@@ -347,6 +347,7 @@ public interface GridCacheEntryEx {
      * @param topVer Topology version.
      * @param updateCntr Update counter.
      * @param mvccVer Mvcc version.
+     * @param op Cache operation.
      * @return Tuple containing success flag and old value. If success is {@code false},
      *      then value is {@code null}.
      * @throws IgniteCheckedException If storing value failed.
@@ -359,7 +360,8 @@ public interface GridCacheEntryEx {
             long ttl0,
             AffinityTopologyVersion topVer,
             @Nullable Long updateCntr,
-            MvccSnapshot mvccVer) throws IgniteCheckedException, GridCacheEntryRemovedException;
+            MvccSnapshot mvccVer,
+            GridCacheOperation op) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * @param tx Cache transaction.

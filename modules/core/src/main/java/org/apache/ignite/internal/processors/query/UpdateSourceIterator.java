@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 
 /** */
@@ -25,4 +26,9 @@ public interface UpdateSourceIterator<T> extends GridCloseableIterator<T> {
      * Callback method which should be called before moving iteration into another thread.
      */
     public void beforeDetach();
+
+    /**
+     * @return CacheOperation.
+     */
+    public GridCacheOperation operation();
 }

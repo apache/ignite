@@ -547,6 +547,42 @@ public final class UpdatePlan {
     }
 
     /**
+     * @param args Query parameters.
+     * @return Iterator.
+     * @throws IgniteCheckedException If failed.
+     */
+    public IgniteBiTuple getFastRow(Object[] args) throws IgniteCheckedException {
+        if (fastUpdate != null)
+            return fastUpdate.getRow(args);
+
+        return null;
+    }
+
+    /**
+     * @param row Row.
+     * @return Resulting entry.
+     * @throws IgniteCheckedException If failed.
+     */
+    public IgniteBiTuple processRowForTx(List<?> row) throws IgniteCheckedException {
+        switch (mode()) {
+            case INSERT:
+            case MERGE:
+                return processRow(row);
+
+            case UPDATE: {
+                T3<Object, Object, Object> row0 = processRowForUpdate(row);
+
+                return new IgniteBiTuple<>(row0.get1(), row0.get3());
+            }
+            case DELETE:
+                return new IgniteBiTuple<>(row.get(0), null);
+
+            default:
+                throw new UnsupportedOperationException(String.valueOf(mode()));
+        }
+    }
+
+    /**
      * Abstract iterator.
      */
     private abstract static class AbstractIterator extends GridCloseableIteratorAdapter<Object> {
@@ -845,7 +881,7 @@ public final class UpdatePlan {
 
                     desc.validateKeyAndValue(key, val);
 
-                    curr = new Object[] {key, null, new DmlTxInsertEntryProcessor(val), null};
+                    curr = new Object[] {key, val};
 
                     return;
                 }

@@ -99,6 +99,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.DEL
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPDATE;
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.CONCURRENT_UPDATE;
+import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
 import static org.apache.ignite.internal.processors.dr.GridDrType.DR_NONE;
 
 /**
@@ -955,13 +956,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public final GridCacheUpdateTxResult mvccSet(
-            IgniteInternalTx tx,
-            UUID affNodeId,
-            CacheObject val,
-            long ttl0,
-            AffinityTopologyVersion topVer,
-            @Nullable Long updateCntr,
-            MvccSnapshot mvccVer) throws IgniteCheckedException, GridCacheEntryRemovedException {
+        IgniteInternalTx tx,
+        UUID affNodeId,
+        CacheObject val,
+        long ttl0,
+        AffinityTopologyVersion topVer,
+        @Nullable Long updateCntr,
+        MvccSnapshot mvccVer,
+        GridCacheOperation op) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert tx != null;
 
         final boolean valid = valid(tx.topologyVersion());
@@ -1015,10 +1017,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 IgniteInternalFuture lockFut = cctx.kernalContext().coordinators().waitFor(cctx, lockVer);
 
-                lockFut.listen(new MvccUpdateLockListener(tx, this, affNodeId, topVer, val, ttl0, updateCntr, mvccVer, resFut));
+                lockFut.listen(new MvccUpdateLockListener(tx, this, affNodeId, topVer, val, ttl0, updateCntr, mvccVer,
+                    op, resFut));
 
                 return new GridCacheUpdateTxResult(false, resFut);
             }
+            else if (op == CREATE && res.resultType() == ResultType.PREV_NOT_NULL)
+                throw new IgniteSQLException("Duplicate key during INSERT [key=" + key + ']', DUPLICATE_KEY);
 
             if (cctx.deferredDelete() && deletedUnlocked() && !detached())
                 deletedUnlocked(false);
@@ -4647,6 +4652,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         private GridCacheMapEntry entry;
 
         /** */
+        private GridCacheOperation op;
+
+        /** */
         MvccUpdateLockListener(IgniteInternalTx tx,
             GridCacheMapEntry entry,
             UUID affNodeId,
@@ -4655,6 +4663,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             long ttl,
             Long updateCntr,
             MvccSnapshot mvccVer,
+            GridCacheOperation op,
             GridFutureAdapter<GridCacheUpdateTxResult> resFut) {
             this.tx = tx;
             this.entry = entry;
@@ -4664,6 +4673,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             this.ttl = ttl;
             this.updateCntr = updateCntr;
             this.mvccVer = mvccVer;
+            this.op = op;
             this.resFut = resFut;
         }
 
@@ -4727,6 +4737,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     entry.unlockEntry();
 
                     cctx.kernalContext().coordinators().waitFor(cctx, res.resultVersion()).listen(this);
+
+                    return;
+                }
+                else if (op == CREATE && res.resultType() == ResultType.PREV_NOT_NULL) {
+                    resFut.onDone(new IgniteSQLException("Duplicate key during INSERT [key=" + entry.key() + ']',
+                        DUPLICATE_KEY));
 
                     return;
                 }

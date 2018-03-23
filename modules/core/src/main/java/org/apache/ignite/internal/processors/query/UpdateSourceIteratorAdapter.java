@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapterEx;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 
@@ -26,13 +27,21 @@ public abstract class UpdateSourceIteratorAdapter<T> extends GridCloseableIterat
     /** */
     private static final long serialVersionUID = 7261873149950232220L;
     /** */
+    private final GridCacheOperation op;
+    /** */
     private final GridCloseableIterator<T> delegate;
 
     /**
      * @param delegate Source iterator.
      */
-    public UpdateSourceIteratorAdapter(GridCloseableIterator<T> delegate) {
+    public UpdateSourceIteratorAdapter(GridCacheOperation op, GridCloseableIterator<T> delegate) {
+        this.op = op;
         this.delegate = delegate;
+    }
+
+    /** {@inheritDoc} */
+    @Override public GridCacheOperation operation() {
+        return op;
     }
 
     /** {@inheritDoc} */

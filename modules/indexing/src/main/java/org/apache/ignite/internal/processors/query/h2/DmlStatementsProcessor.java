@@ -52,6 +52,7 @@ import org.apache.ignite.internal.processors.bulkload.BulkLoadProcessor;
 import org.apache.ignite.internal.processors.bulkload.BulkLoadStreamerWriter;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
@@ -78,6 +79,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.msg.GridH2QueryReq
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.IgniteClosureX;
 import org.apache.ignite.internal.util.lang.IgniteSingletonIterator;
 import org.apache.ignite.internal.util.typedef.F;
@@ -92,6 +94,7 @@ import org.h2.command.dml.Delete;
 import org.h2.command.dml.Insert;
 import org.h2.command.dml.Merge;
 import org.h2.command.dml.Update;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode.DUPLICATE_KEY;
@@ -509,14 +512,6 @@ public class DmlStatementsProcessor {
 
             DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
 
-            if (distributedPlan == null)
-                throw new IgniteSQLException("Only distributed updates are supported at the moment",
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
-            if (plan.mode() == UpdateMode.INSERT && !plan.isLocalSubquery())
-                throw new IgniteSQLException("Insert from select is unsupported at the moment.",
-                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-
             GridNearTxLocal tx = idx.activeTx();
 
             boolean implicit = (tx == null);
@@ -527,19 +522,9 @@ public class DmlStatementsProcessor {
             if (implicit)
                 tx = idx.txStart(cctx, fieldsQry.getTimeout());
 
-            idx.requestMvccVersion(cctx, tx);
+            MvccSnapshot mvccSnapshot = idx.requestMvccVersion(cctx, tx);
 
             try (GridNearTxLocal toCommit = commit ? tx : null) {
-                int[] ids = U.toIntArray(distributedPlan.getCacheIds());
-
-                int flags = 0;
-
-                if (fieldsQry.isEnforceJoinOrder())
-                    flags |= GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
-
-                if (distributedPlan.isReplicatedOnly())
-                    flags |= GridH2QueryRequest.FLAG_REPLICATED;
-
                 long timeout;
 
                 if (implicit)
@@ -549,6 +534,61 @@ public class DmlStatementsProcessor {
 
                     timeout = tm1 > 0 && tm2 > 0 ? Math.min(tm1, tm2) : Math.max(tm1, tm2);
                 }
+
+                if (distributedPlan == null || ((plan.mode() == UpdateMode.INSERT || plan.mode() == UpdateMode.MERGE) &&
+                    !plan.isLocalSubquery())) {
+                    MvccQueryTracker mvccQueryTracker = new MvccQueryTracker(cctx,
+                        cctx.shared().coordinators().currentCoordinator(),
+                        mvccSnapshot);
+
+                    UpdateSourceIterator<IgniteBiTuple> it;
+
+                    GridCacheOperation op = cacheOperation(plan.mode());
+
+                    if (plan.fastResult())
+                        it = new DmlUpdateSingleEntryIterator<>(op, plan.getFastRow(fieldsQry.getArgs()));
+                    else {
+                        if (plan.hasRows())
+                            it = new DmlUpdateResultsIterator(op, plan, plan.createRows(fieldsQry.getArgs()));
+                        else {
+                            SqlFieldsQuery newFieldsQry = new SqlFieldsQuery(plan.selectQuery(),
+                                fieldsQry.isCollocated())
+                                .setArgs(fieldsQry.getArgs())
+                                .setDistributedJoins(fieldsQry.isDistributedJoins())
+                                .setEnforceJoinOrder(fieldsQry.isEnforceJoinOrder())
+                                .setLocal(fieldsQry.isLocal())
+                                .setPageSize(fieldsQry.getPageSize())
+                                .setTimeout((int)timeout, TimeUnit.MILLISECONDS);
+
+                            FieldsQueryCursor cur = idx.querySqlFields(schemaName, newFieldsQry, null, true,
+                                true, mvccQueryTracker, cancel).get(0);
+
+                            it = new UpdateIteratorAdapter<>(op, new TxDmlReducerIterator(plan, cur));
+                        }
+                    }
+
+                    tx.addActiveCache(cctx, false);
+
+                    IgniteInternalFuture<Long> fut = tx.updateAsync(cctx, mvccSnapshot, op, it,
+                        fieldsQry.getPageSize(), timeout);
+
+                    UpdateResult res = new UpdateResult(fut.get(), X.EMPTY_OBJECT_ARRAY);
+
+                    if (commit)
+                        toCommit.commit();
+
+                    return res;
+                }
+
+                int[] ids = U.toIntArray(distributedPlan.getCacheIds());
+
+                int flags = 0;
+
+                if (fieldsQry.isEnforceJoinOrder())
+                    flags |= GridH2QueryRequest.FLAG_ENFORCE_JOIN_ORDER;
+
+                if (distributedPlan.isReplicatedOnly())
+                    flags |= GridH2QueryRequest.FLAG_REPLICATED;
 
                 int[] parts = fieldsQry.getPartitions();
 
@@ -1154,31 +1194,7 @@ public class DmlStatementsProcessor {
             }, cancel);
         }
 
-        return new UpdateSourceIteratorAdapter(plan.iteratorForTransaction(cur, topVer)) {
-            /** */
-            private static final long serialVersionUID = 6035896197816149820L;
-
-            /** */
-            private volatile Connection conn;
-
-            /** {@inheritDoc} */
-            @Override public void beforeDetach() {
-                Connection conn0 = conn = idx.detach();
-
-                if (isClosed()) // Double check
-                    U.close(conn0, log);
-            }
-
-            /** {@inheritDoc} */
-            @Override protected void onClose() throws IgniteCheckedException {
-                super.onClose();
-
-                Connection conn0 = conn;
-
-                if (conn0 != null)
-                    U.close(conn0, log);
-            }
-        };
+        return new UpdateIteratorAdapter(cacheOperation(plan.mode()), plan.iteratorForTransaction(cur, topVer));
     }
 
     /**
@@ -1373,6 +1389,25 @@ public class DmlStatementsProcessor {
     }
 
     /**
+     * @param mode Update mode.
+     * @return Cache operation.
+     */
+    private static GridCacheOperation cacheOperation(UpdateMode mode) {
+        switch (mode) {
+            case INSERT:
+                return GridCacheOperation.CREATE;
+            case MERGE:
+            case UPDATE:
+                return GridCacheOperation.UPDATE;
+            case DELETE:
+                return GridCacheOperation.DELETE;
+
+            default:
+                throw new UnsupportedOperationException(String.valueOf(mode));
+        }
+    }
+
+    /**
      * Check update result for erroneous keys and throws concurrent update exception if necessary.
      *
      * @param r Update result.
@@ -1413,6 +1448,186 @@ public class DmlStatementsProcessor {
          */
         @Override public IgniteBiTuple<?, ?> applyx(List<?> record) throws IgniteCheckedException {
             return plan.processRow(record);
+        }
+    }
+
+    /** */
+    private class UpdateIteratorAdapter<T> extends UpdateSourceIteratorAdapter<T> {
+        /** */
+        private static final long serialVersionUID = 6035896197816149820L;
+
+        /** */
+        private volatile Connection conn;
+
+        /** */
+        UpdateIteratorAdapter(GridCacheOperation op, GridCloseableIterator<T> it) {
+            super(op, it);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void beforeDetach() {
+            Connection conn0 = conn = idx.detach();
+
+            if (isClosed()) // Double check
+                U.close(conn0, log);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onClose() throws IgniteCheckedException {
+            super.onClose();
+
+            Connection conn0 = conn;
+
+            if (conn0 != null)
+                U.close(conn0, log);
+        }
+    }
+
+    /** */
+    private static class DmlUpdateResultsIterator
+        implements UpdateSourceIterator<IgniteBiTuple> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private GridCacheOperation op;
+
+        /** */
+        private UpdatePlan plan;
+
+        /** */
+        private Iterator<List<?>> it;
+
+        /** */
+        DmlUpdateResultsIterator(GridCacheOperation op, UpdatePlan plan, Iterable<List<?>> rows) {
+            this.op = op;
+            this.plan = plan;
+            this.it = rows.iterator();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void beforeDetach() {
+            //No-op
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCacheOperation operation() {
+            return op;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isClosed() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IgniteCheckedException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        public boolean hasNextX() throws IgniteCheckedException {
+            return it.hasNext();
+        }
+
+        /** {@inheritDoc} */
+        public IgniteBiTuple nextX() throws IgniteCheckedException {
+            return plan.processRowForTx(it.next());
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeX() throws IgniteCheckedException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return it.hasNext();
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteBiTuple next() {
+            throw new UnsupportedOperationException("not implemented");
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<IgniteBiTuple> iterator() {
+            throw new UnsupportedOperationException("not implemented");
+        }
+    }
+
+    /** */
+    private static class DmlUpdateSingleEntryIterator<T> implements UpdateSourceIterator<T> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private GridCacheOperation op;
+
+        /** */
+        private boolean first = true;
+
+        /** */
+        private T entry;
+
+        /** */
+        DmlUpdateSingleEntryIterator(GridCacheOperation op, T entry) {
+            this.op = op;
+            this.entry = entry;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void beforeDetach() {
+            //No-op
+        }
+
+        /** {@inheritDoc} */
+        @Override public GridCacheOperation operation() {
+            return op;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isClosed() {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws IgniteCheckedException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        public boolean hasNextX() throws IgniteCheckedException {
+            return first;
+        }
+
+        /** {@inheritDoc} */
+        public T nextX() throws IgniteCheckedException {
+            T res = first ? entry : null;
+
+            first = false;
+
+            return res;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeX() throws IgniteCheckedException {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean hasNext() {
+            return first;
+        }
+
+        /** {@inheritDoc} */
+        @Override public T next() {
+            throw new UnsupportedOperationException("not implemented");
+        }
+
+        /** {@inheritDoc} */
+        @NotNull @Override public Iterator<T> iterator() {
+            throw new UnsupportedOperationException("not implemented");
         }
     }
 }

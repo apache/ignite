@@ -615,7 +615,7 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                     GridCacheUpdateTxResult updRes;
 
                                                     if (cacheCtx.mvccEnabled())
-                                                        updRes = cached.mvccSet(this, nodeId, val, txEntry.ttl(), topVer, txEntry.updateCounter(), mvccSnapshotForUpdate());
+                                                        updRes = cached.mvccSet(this, nodeId, val, txEntry.ttl(), topVer, txEntry.updateCounter(), mvccSnapshotForUpdate(), null);
                                                     else
                                                         updRes = cached.innerSet(this,
                                                             eventNodeId(),

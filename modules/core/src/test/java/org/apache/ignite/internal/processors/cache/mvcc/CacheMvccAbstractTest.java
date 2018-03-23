@@ -119,6 +119,9 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     protected CacheConfiguration ccfg;
 
     /** */
+    protected CacheConfiguration[] ccfgs;
+
+    /** */
     protected static final int TX_TIMEOUT = 3000;
 
     /** {@inheritDoc} */
@@ -136,8 +139,13 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
+        assert (ccfg == null) || (ccfgs == null);
+
         if (ccfg != null)
             cfg.setCacheConfiguration(ccfg);
+
+        if (ccfgs != null)
+            cfg.setCacheConfiguration(ccfgs);
 
         if (nodeAttr != null)
             cfg.setUserAttributes(F.asMap(nodeAttr, true));
