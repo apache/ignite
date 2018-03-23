@@ -25,6 +25,7 @@
 
 #include "ignite/odbc/log.h"
 #include "ignite/odbc/utility.h"
+#include "ignite/odbc/environment.h"
 #include "ignite/odbc/statement.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
@@ -54,7 +55,8 @@ namespace ignite
 {
     namespace odbc
     {
-        Connection::Connection() :
+        Connection::Connection(Environment* env) :
+            env(env),
             socket(),
             timeout(0),
             loginTimeout(SocketClient::DEFALT_CONNECT_TIMEOUT),
@@ -182,6 +184,11 @@ namespace ignite
         void Connection::Release()
         {
             IGNITE_ODBC_API_CALL(InternalRelease());
+        }
+
+        void Connection::Deregister()
+        {
+            env->DeregisterConnection(this);
         }
 
         SqlResult::Type Connection::InternalRelease()

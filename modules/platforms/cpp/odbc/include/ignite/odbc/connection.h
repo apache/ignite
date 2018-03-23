@@ -99,6 +99,11 @@ namespace ignite
             void Release();
 
             /**
+             * Deregister self from the parent.
+             */
+            void Deregister();
+
+            /**
              * Create statement associated with the connection.
              *
              * @return Pointer to valid instance on success and NULL on failure.
@@ -432,7 +437,10 @@ namespace ignite
             /**
              * Constructor.
              */
-            Connection();
+            Connection(Environment* env);
+
+            /** Parent. */
+            Environment* env;
 
             /** Client Socket. */
             std::auto_ptr<SocketClient> socket;
