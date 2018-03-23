@@ -60,6 +60,7 @@ namespace ignite
             socket(),
             timeout(0),
             loginTimeout(SocketClient::DEFALT_CONNECT_TIMEOUT),
+            autoCommit(true),
             parser(),
             config(),
             info(config)
@@ -512,6 +513,18 @@ namespace ignite
                     break;
                 }
 
+                case SQL_ATTR_AUTOCOMMIT:
+                {
+                    SQLUINTEGER *val = reinterpret_cast<SQLUINTEGER*>(buf);
+
+                    *val = autoCommit ? SQL_AUTOCOMMIT_ON : SQL_AUTOCOMMIT_OFF;
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_INTEGER;
+
+                    break;
+                }
+
                 default:
                 {
                     AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
@@ -563,6 +576,23 @@ namespace ignite
 
                     if (GetDiagnosticRecords().GetStatusRecordsNumber() != 0)
                         return SqlResult::AI_SUCCESS_WITH_INFO;
+
+                    break;
+                }
+
+                case SQL_ATTR_AUTOCOMMIT:
+                {
+                    SQLUINTEGER mode = static_cast<SQLUINTEGER>(reinterpret_cast<ptrdiff_t>(value));
+
+                    if (mode != SQL_AUTOCOMMIT_ON && mode != SQL_AUTOCOMMIT_OFF)
+                    {
+                        AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                            "Specified attribute is not supported.");
+
+                        return SqlResult::AI_ERROR;
+                    }
+
+                    autoCommit = mode == SQL_AUTOCOMMIT_ON;
 
                     break;
                 }
