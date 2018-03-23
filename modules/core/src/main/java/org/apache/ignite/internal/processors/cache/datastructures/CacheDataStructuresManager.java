@@ -271,6 +271,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             throw U.convertException(e);
         } finally {
             initSetLatch.countDown();
+
+            recoveryState.set(State.COMPLETE);
         }
     }
 
@@ -533,11 +535,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      */
     @Nullable public GridConcurrentHashSet<SetItemKey> setData(IgniteUuid id) {
         try {
-            if (recoveryState.get() == State.IN_PROGRESS) {
+            if (recoveryState.get() == State.IN_PROGRESS)
                 U.await(initSetLatch);
-
-                recoveryState.set(State.COMPLETE);
-            }
 
             return setDataMap.get(id);
         }
