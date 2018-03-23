@@ -71,9 +71,9 @@ public class LatchManager {
     public void release(String id, AffinityTopologyVersion topVer, ClusterNode node) {
         lock.writeLock().lock();
 
-        try {
-            final T2<String, AffinityTopologyVersion> latchId = new T2<>(id, topVer);
+        final T2<String, AffinityTopologyVersion> latchId = new T2<>(id, topVer);
 
+        try {
             assert !activeLatches.containsKey(latchId);
 
             pendingAcks.remove(latchId);
@@ -81,10 +81,12 @@ public class LatchManager {
             // Send final ack.
             io.sendToGridTopic(node, GridTopic.TOPIC_LATCH, new LatchAckMessage(id, topVer, true), GridIoPolicy.SYSTEM_POOL);
 
-            log.warning("Final ack sent to " + node.id() + " " + id);
+            if (log.isDebugEnabled())
+                log.debug("Release final ack is sent [latch=" + latchId + ", to=" + node.id() + "]");
         }
         catch (IgniteCheckedException e) {
-            log.warning("Unable to release latch on " + node.id(), e);
+            if (log.isDebugEnabled())
+                log.debug("Unable to send release final ack [latch=" + latchId + ", to=" + node.id() + "]: " + e.getMessage());
         }
         finally {
             lock.writeLock().unlock();
@@ -97,17 +99,18 @@ public class LatchManager {
         if (activeLatches.containsKey(latchId))
             return activeLatches.get(latchId);
 
-        LatchImpl latch = new LatchImpl(id, topVer, participants, new AtomicInteger(participants.size()));
+        LatchImpl latch = new LatchImpl(id, topVer, participants);
 
         activeLatches.put(latchId, latch);
 
-        log.warning("Server latch is created " + id + " " + topVer + " " + participants.size());
+        if (log.isDebugEnabled())
+            log.debug("Server latch is created [latch=" + latchId + ", participantsSize=" + participants.size() + "]");
 
         if (pendingAcks.containsKey(latchId)) {
             Set<UUID> acks = pendingAcks.get(latchId);
 
             for (UUID node : acks) {
-                if (latch.hasParticipant(node) && !latch.hasAckFrom(node)) {
+                if (latch.hasParticipant(node) && !latch.hasAck(node)) {
                     latch.ack(node);
                     latch.countDown();
                 }
@@ -123,9 +126,32 @@ public class LatchManager {
         return latch;
     }
 
-    public Latch getOrCreate(String id, AffinityTopologyVersion topVer) {
+    private Latch createClientLatch(String id, AffinityTopologyVersion topVer, ClusterNode coordinator, Collection<ClusterNode> participants) {
         final T2<String, AffinityTopologyVersion> latchId = new T2<>(id, topVer);
 
+        if (proxyLatches.containsKey(latchId))
+            return proxyLatches.get(latchId);
+
+        LatchProxy latch = new LatchProxy(id, topVer, coordinator, participants);
+
+        if (log.isDebugEnabled())
+            log.debug("Client latch is created [latch=" + latchId
+                    + ", crd=" + coordinator
+                    + ", participantsSize=" + participants.size() + "]");
+
+        // There is final ack for created latch.
+        if (pendingAcks.containsKey(latchId)) {
+            latch.complete();
+            pendingAcks.remove(latchId);
+        }
+        else {
+            proxyLatches.put(latchId, latch);
+        }
+
+        return latch;
+    }
+
+    public Latch getOrCreate(String id, AffinityTopologyVersion topVer) {
         lock.writeLock().lock();
 
         try {
@@ -143,28 +169,10 @@ public class LatchManager {
 
             Collection<ClusterNode> participants = discovery.discoCache(topVer).aliveServerNodes();
 
-            if (coordinator.isLocal()) {
+            if (coordinator.isLocal())
                 return createServerLatch(id, topVer, participants);
-            }
-            else {
-                if (proxyLatches.containsKey(latchId))
-                    return proxyLatches.get(latchId);
-
-                LatchProxy latch = new LatchProxy(id, topVer, coordinator, participants);
-
-                log.warning("Client latch was created " + id + " " + topVer + " " + participants);
-
-                // There is final ack for already created latch.
-                if (pendingAcks.containsKey(latchId)) {
-                    latch.complete();
-                    pendingAcks.remove(latchId);
-                }
-                else {
-                    proxyLatches.put(latchId, latch);
-                }
-
-                return latch;
-            }
+            else
+                return createClientLatch(id, topVer, coordinator, participants);
         }
         finally {
             lock.writeLock().unlock();
@@ -183,7 +191,8 @@ public class LatchManager {
             T2<String, AffinityTopologyVersion> latchId = new T2<>(message.latchId(), message.topVer());
 
             if (message.isFinal()) {
-                log.warning("Process final ack from " + coordinator.id() + " " + latchId);
+                if (log.isDebugEnabled())
+                    log.debug("Process final ack [latch=" + latchId + ", from=" + from + "]");
 
                 if (proxyLatches.containsKey(latchId)) {
                     LatchProxy latch = proxyLatches.remove(latchId);
@@ -194,12 +203,13 @@ public class LatchManager {
                     pendingAcks.get(latchId).add(from);
                 }
             } else {
-                log.warning("Process ack from " + from + " " + latchId);
+                if (log.isDebugEnabled())
+                    log.debug("Process ack [latch=" + latchId + ", from=" + from + "]");
 
                 if (activeLatches.containsKey(latchId)) {
                     LatchImpl latch = activeLatches.get(latchId);
 
-                    if (latch.hasParticipant(from) && !latch.hasAckFrom(from)) {
+                    if (latch.hasParticipant(from) && !latch.hasAck(from)) {
                         latch.ack(from);
                         latch.countDown();
 
@@ -219,23 +229,15 @@ public class LatchManager {
     }
 
     private void becomeNewCoordinator() {
-        log.warning("Become new coordinator.");
+        if (log.isInfoEnabled())
+            log.info("Become new coordinator " + coordinator.id());
 
-        // Restore latches from pending acks.
-        for (T2<String, AffinityTopologyVersion> latchId : pendingAcks.keySet()) {
-            String id = latchId.get1();
+        List<T2<String, AffinityTopologyVersion>> latchesToRestore = new ArrayList<>();
+        // Restore latches from pending acks and own proxy latches.
+        latchesToRestore.addAll(pendingAcks.keySet());
+        latchesToRestore.addAll(proxyLatches.keySet());
 
-            AffinityTopologyVersion topVer = latchId.get2();
-
-            Collection<ClusterNode> participants = discovery.discoCache(topVer).aliveServerNodes();
-
-            if (!participants.isEmpty()) {
-                createServerLatch(id, topVer, participants);
-            }
-        }
-
-        // Restore latches from current proxy latches.
-        for (T2<String, AffinityTopologyVersion> latchId : proxyLatches.keySet()) {
+        for (T2<String, AffinityTopologyVersion> latchId : latchesToRestore) {
             String id = latchId.get1();
 
             AffinityTopologyVersion topVer = latchId.get2();
@@ -252,7 +254,8 @@ public class LatchManager {
         lock.writeLock().lock();
 
         try {
-            log.warning("Process node left " + left.id());
+            if (log.isDebugEnabled())
+                log.debug("Process node left " + left.id());
 
             ClusterNode coordinator = discovery.oldestAliveServerNode(AffinityTopologyVersion.NONE);
 
@@ -283,8 +286,9 @@ public class LatchManager {
             for (Map.Entry<T2<String, AffinityTopologyVersion>, LatchImpl> latchEntry : activeLatches.entrySet()) {
                 LatchImpl latch = latchEntry.getValue();
 
-                if (latch.hasParticipant(left.id()) && !latch.hasAckFrom(left.id())) {
-                    log.warning("[SERVER] Process node left " + left.id() + " " + latch.id);
+                if (latch.hasParticipant(left.id()) && !latch.hasAck(left.id())) {
+                    if (log.isDebugEnabled())
+                        log.debug("Process node left [latch=" + latchEntry.getKey() + ", left=" + left.id() + "]");
 
                     latch.ack(left.id());
                     latch.countDown();
@@ -294,7 +298,7 @@ public class LatchManager {
                 }
             }
 
-            // Coordinator was changed.
+            // Coordinator is changed.
             if (coordinator.isLocal() && this.coordinator.id() != coordinator.id()) {
                 this.coordinator = coordinator;
 
@@ -311,45 +315,49 @@ public class LatchManager {
 
         private final Set<UUID> acks = new GridConcurrentHashSet<>();
 
-        LatchImpl(String id, AffinityTopologyVersion topVer, Collection<ClusterNode> participants, AtomicInteger permits) {
+        LatchImpl(String id, AffinityTopologyVersion topVer, Collection<ClusterNode> participants) {
             super(id, topVer, participants);
-            this.permits = permits;
+            this.permits = new AtomicInteger(participants.size());
 
             this.complete.listen(f -> {
+                // Send final acks.
                 for (ClusterNode node : participants) {
-/*
-                    if (node.isLocal())
-                        continue;
-*/
-
-                    // Send final acks.
                     try {
-                        io.sendToGridTopic(node, GridTopic.TOPIC_LATCH, new LatchAckMessage(id, topVer, true), GridIoPolicy.SYSTEM_POOL);
-                        log.warning("Final ack is sent to " + node.id() + " " + id);
+                        if (discovery.alive(node)) {
+                            io.sendToGridTopic(node, GridTopic.TOPIC_LATCH, new LatchAckMessage(id, topVer, true), GridIoPolicy.SYSTEM_POOL);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Final ack is sent [latch=" + printableId() + ", to=" + node.id() + "]");
+                        }
                     } catch (IgniteCheckedException e) {
-                        // Ignore
+                        if (log.isDebugEnabled())
+                            log.debug("Unable to send final ack [latch=" + printableId() + ", to=" + node.id() + "]");
                     }
                 }
             });
         }
 
-        boolean hasAckFrom(UUID nodeId) {
-            return acks.contains(nodeId);
+        boolean hasAck(UUID from) {
+            return acks.contains(from);
         }
 
-        void ack(UUID nodeId) {
-            acks.add(nodeId);
+        void ack(UUID from) {
+            if (log.isDebugEnabled())
+                log.debug("Ack is accepted [latch=" + printableId() + ", from=" + from + "]");
+
+            acks.add(from);
         }
 
         @Override public void countDown() {
             if (isCompleted())
                 return;
 
-            int done = permits.decrementAndGet();
+            int remaining = permits.decrementAndGet();
 
-            log.warning("Count down " + id + " " + done);
+            if (log.isDebugEnabled())
+                log.debug("Count down + [latch=" + printableId() + ", remaining=" + remaining + "]");
 
-            if (done == 0)
+            if (remaining == 0)
                 complete();
         }
     }
@@ -372,6 +380,9 @@ public class LatchManager {
         void newCoordinator(ClusterNode coordinator) {
             this.coordinator = coordinator;
 
+            if (log.isDebugEnabled())
+                log.debug("Coordinator is changed [latch=" + printableId() + ", crd=" + coordinator.id() + "]");
+
             synchronized (this) {
                 if (sent) {
                     sendAck();
@@ -385,9 +396,11 @@ public class LatchManager {
 
                 io.sendToGridTopic(coordinator, GridTopic.TOPIC_LATCH, new LatchAckMessage(id, topVer, false), GridIoPolicy.SYSTEM_POOL);
 
-                log.warning("Ack is sent to " + coordinator.id());
+                if (log.isDebugEnabled())
+                    log.debug("Ack is sent + [latch=" + printableId() + ", to=" + coordinator.id() + "]");
             } catch (IgniteCheckedException e) {
-                log.warning("Unable to send ack to " + coordinator);
+                if (log.isDebugEnabled())
+                    log.debug("Unable to send ack [latch=" + printableId() + ", to=" + coordinator.id() + "]: " + e.getMessage());
             }
         }
 
@@ -430,6 +443,10 @@ public class LatchManager {
 
         void complete(Throwable error) {
             complete.onDone(error);
+        }
+
+        String printableId() {
+            return id + "-" + topVer;
         }
 
         @Override public void await() throws IgniteCheckedException {
