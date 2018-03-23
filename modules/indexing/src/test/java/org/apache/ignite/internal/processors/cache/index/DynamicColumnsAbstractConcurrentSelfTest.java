@@ -59,6 +59,8 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
 import static org.apache.ignite.internal.IgniteClientReconnectAbstractTest.TestTcpDiscoverySpi;
 
@@ -143,7 +145,11 @@ public abstract class DynamicColumnsAbstractConcurrentSelfTest extends DynamicCo
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration commonConfiguration(int idx) throws Exception {
-        return super.commonConfiguration(idx).setDiscoverySpi(new TestTcpDiscoverySpi());
+        TestTcpDiscoverySpi spi = new TestTcpDiscoverySpi();
+        spi.setIpFinder(new TcpDiscoveryVmIpFinder());
+
+        return super.commonConfiguration(idx)
+            .setDiscoverySpi(spi);
     }
 
     /**
