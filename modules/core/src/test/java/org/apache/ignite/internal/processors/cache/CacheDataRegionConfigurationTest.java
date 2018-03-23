@@ -64,26 +64,25 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    /** */
+    private void checkStartGridException(Class<? extends Throwable> ex, String message) {
+        GridTestUtils.assertThrows(log(), new Callable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                startGrid(0);
+                return null;
+            }
+        }, ex, message);
+    }
+
     /**
      * Verifies that proper exception is thrown when DataRegion is misconfigured for cache.
      */
-    public void testMissingDataRegion() throws Exception {
+    public void testMissingDataRegion() {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         ccfg.setDataRegionName("nonExistingMemPlc");
 
-        try {
-            startGrid(0);
-        }
-        catch (IgniteCheckedException e) {
-            String msg = e.getMessage();
-
-            assertTrue("Not expected exception was thrown: " + e, msg.contains("Requested DataRegion is not configured"));
-
-            return;
-        }
-
-        fail("Expected exception was not thrown: missing DataRegion");
+        checkStartGridException(IgniteCheckedException.class, "Requested DataRegion is not configured");
     }
 
     /**
@@ -195,20 +194,14 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
         ccfg.setDataRegionName("ccfg");
 
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
-                startGrid(0);
-                return null;
-            }
-        }, IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
+        checkStartGridException(IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
     }
 
     /**
-     * Verifies that {@link IgniteCheckedException} is thrown when page eviction threshold isn't between 0.5 and 0.999.
+     * Verifies that {@link IgniteCheckedException} is thrown when page eviction threshold is less than 0.5.
      */
-    public void testSetInvalidEviction() {
+    public void testSetSmallInvalidEviction() {
         final double SMALL_EVICTION_THRESHOLD = 0.1D;
-        final double BIG_EVICTION_THRESHOLD = 1.0D;
         DataRegionConfiguration invCfg = new DataRegionConfiguration();
 
         invCfg.setName("invCfg");
@@ -223,32 +216,36 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
-                startGrid(0);
-                return null;
-            }
-        }, IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
-
-        // Setting the page eviction threshold greater than 0.999
-        invCfg.setEvictionThreshold(BIG_EVICTION_THRESHOLD);
-        memCfg.setDataRegionConfigurations(invCfg);
-
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
-                startGrid(0);
-                return null;
-            }
-        }, IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
+        checkStartGridException(IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
     }
 
     /**
-     * Verifies that {@link IgniteCheckedException} is thrown when evicted pages pool size is less than 10 and
-     * greater than DataRegionConfiguration.getMaxSize() / DataStorageConfiguration.getPageSize() / 10.
+     * Verifies that {@link IgniteCheckedException} is thrown when page eviction threshold is greater than 0.999.
      */
-    public void testInvalidEmptyPagesPoolSize() {
+    public void testSetBigInvalidEviction() {
+        final double BIG_EVICTION_THRESHOLD = 1.0D;
+        DataRegionConfiguration invCfg = new DataRegionConfiguration();
+
+        invCfg.setName("invCfg");
+        invCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
+        invCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
+        invCfg.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU);
+        // Setting the page eviction threshold greater than 0.999
+        invCfg.setEvictionThreshold(BIG_EVICTION_THRESHOLD);
+
+        memCfg = new DataStorageConfiguration();
+        memCfg.setDataRegionConfigurations(invCfg);
+
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        checkStartGridException(IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
+    }
+
+    /**
+     * Verifies that {@link IgniteCheckedException} is thrown when empty pages pool size is less than 10
+     */
+    public void testInvalidSmallEmptyPagesPoolSize() {
         final int SMALL_PAGES_POOL_SIZE = 5;
-        long expectedMaxPoolSize;
         DataRegionConfiguration invCfg = new DataRegionConfiguration();
 
         invCfg.setName("invCfg");
@@ -263,36 +260,46 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
-                startGrid(0);
-                return null;
-            }
-        }, IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
+        checkStartGridException(IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
+    }
+
+    /**
+     * Verifies that {@link IgniteCheckedException} is thrown when empty pages pool size is greater than
+     * DataRegionConfiguration.getMaxSize() / DataStorageConfiguration.getPageSize() / 10.
+     */
+    public void testInvalidBigEmptyPagesPoolSize() {
+        final int DFLT_PAGE_SIZE = 1024;
+        long expectedMaxPoolSize;
+        DataRegionConfiguration invCfg = new DataRegionConfiguration();
+
+        invCfg.setName("invCfg");
+        invCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
+        invCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
+        invCfg.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU);
+
+        memCfg = new DataStorageConfiguration();
+        memCfg.setDataRegionConfigurations(invCfg);
+        memCfg.setPageSize(DFLT_PAGE_SIZE);
+
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
         expectedMaxPoolSize = invCfg.getMaxSize() / memCfg.getPageSize() / 10;
 
         if (expectedMaxPoolSize < Integer.MAX_VALUE) {
+            // Setting the empty pages pool size greater than
+            // DataRegionConfiguration.getMaxSize() / DataStorageConfiguration.getPageSize() / 10
             invCfg.setEmptyPagesPoolSize((int)expectedMaxPoolSize + 1);
             memCfg.setDataRegionConfigurations(invCfg);
-
-            GridTestUtils.assertThrows(log(), new Callable<Object>() {
-                @Nullable @Override public Object call() throws Exception {
-                    startGrid(0);
-                    return null;
-                }
-            }, IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
+            checkStartGridException(IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
         }
     }
 
     /**
      * Verifies that {@link IgniteCheckedException} is thrown when IgniteCheckedException if validation of
-     * memory metrics properties fails.
+     * memory metrics properties fails. Metrics rate time interval must not be less than 1000ms.
      */
-    public void testInvalidMetricsProperties() throws Exception {
+    public void testInvalidMetricsProperties() {
         final long SMALL_RATE_TIME_INTERVAL_MS = 999;
-        final int NEG_SUB_INTERVAL_COUNT = -1000;
-        long expectedMaxPoolSize;
         DataRegionConfiguration invCfg = new DataRegionConfiguration();
 
         invCfg.setName("invCfg");
@@ -307,23 +314,29 @@ public class CacheDataRegionConfigurationTest extends GridCommonAbstractTest {
 
         ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
 
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
-                startGrid(0);
-                return null;
-            }
-        }, IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
+        checkStartGridException(IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
+    }
 
-        invCfg.setMetricsRateTimeInterval(memCfg.getDefaultDataRegionConfiguration().getMetricsRateTimeInterval());
+    /**
+     * Verifies that {@link IgniteCheckedException} is thrown when IgniteCheckedException if validation of
+     * memory metrics properties fails. Metrics sub interval count must be positive.
+     */
+    public void testInvalidSubIntervalCount() {
+        final int NEG_SUB_INTERVAL_COUNT = -1000;
+        DataRegionConfiguration invCfg = new DataRegionConfiguration();
+
+        invCfg.setName("invCfg");
+        invCfg.setInitialSize(DFLT_MEM_PLC_SIZE);
+        invCfg.setMaxSize(DFLT_MEM_PLC_SIZE);
+        invCfg.setPageEvictionMode(DataPageEvictionMode.RANDOM_LRU);
         // Setting the metrics sub interval count as negative
         invCfg.setMetricsSubIntervalCount(NEG_SUB_INTERVAL_COUNT);
+
+        memCfg = new DataStorageConfiguration();
         memCfg.setDataRegionConfigurations(invCfg);
 
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Nullable @Override public Object call() throws Exception {
-                startGrid(0);
-                return null;
-            }
-        }, IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
+        ccfg = new CacheConfiguration(DEFAULT_CACHE_NAME);
+
+        checkStartGridException(IgniteCheckedException.class, "Failed to start processor: GridProcessorAdapter []");
     }
 }

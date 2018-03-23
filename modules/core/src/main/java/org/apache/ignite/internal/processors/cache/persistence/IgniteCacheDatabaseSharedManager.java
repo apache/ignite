@@ -492,9 +492,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     private void checkRegionMemoryStorageType(DataRegionConfiguration regCfg) throws IgniteCheckedException {
         if (regCfg.isPersistenceEnabled() && regCfg.getSwapPath() != null)
-            throw new IgniteCheckedException("DataRegionConfiguration must not have enabled both persistence " +
-                "storage and swap space at the same time (Use DataRegionConfiguration.setSwapPath(null) property " +
-                "to disable the swap space usage or DataRegionConfiguration.setPersistenceEnabled(false) property " +
+            throw new IgniteCheckedException("DataRegionConfiguration must not have both persistence " +
+                "storage and swap space enabled at the same time (Use DataRegionConfiguration.setSwapPath(null)  " +
+                "to disable the swap space usage or DataRegionConfiguration.setPersistenceEnabled(false) " +
                 "to disable the persistence) [name=" + regCfg.getName() + ", swapPath=" + regCfg.getSwapPath() +
                 ", persistenceEnabled=" + regCfg.isPersistenceEnabled() + "]"
             );
