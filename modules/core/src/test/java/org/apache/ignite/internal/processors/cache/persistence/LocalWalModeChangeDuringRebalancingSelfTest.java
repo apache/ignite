@@ -69,7 +69,10 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         assertTrue("WAL should be disabled until rebalancing is finished", !grpCtx.walEnabled());
 
-        newIgnite.cache(DEFAULT_CACHE_NAME).rebalance().get();
+        for (int i = 0; i < 4; i++)
+            grid(i).cache(DEFAULT_CACHE_NAME).rebalance().get();
+
+        awaitPartitionMapExchange();
 
         assertTrue("WAL should be enabled after rebalancing is finished", grpCtx.walEnabled());
 
