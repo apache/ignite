@@ -18,6 +18,7 @@
 package org.apache.ignite.jdbc.thin;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -135,6 +136,18 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
+
+        IgniteCache<Integer, Salary> salaryCache = jcache(grid(0), cacheConfiguration(
+            new QueryEntityEx(
+                new QueryEntity(Integer.class.getName(), Salary.class.getName())
+                    .addQueryField("id", Integer.class.getName(), null)
+                    .addQueryField("amount", BigDecimal.class.getName(), null)
+                    .setIndexes(Arrays.asList(
+                        new QueryIndex("id"),
+                        new QueryIndex("amount"))))
+                .setNotNullFields(new HashSet<>(Arrays.asList("id", "amount")))
+        ), "pers");
+
         try (Connection conn = DriverManager.getConnection(URL)) {
             Statement stmt = conn.createStatement();
 
@@ -143,6 +156,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             stmt.execute("CREATE TABLE \"Quoted\" (\"Id\" INT primary key, \"Name\" VARCHAR(50)) WITH WRAP_KEY");
             stmt.execute("CREATE INDEX \"MyTestIndex quoted\" on \"Quoted\" (\"Id\" DESC)");
             stmt.execute("CREATE INDEX IDX ON TEST (ID ASC)");
+            stmt.execute("CREATE TABLE TEST_DECIMAL_COLUMN (ID INT primary key, DEC_COL DECIMAL(8, 9))");
         }
     }
 
@@ -663,6 +677,22 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         private Organization(int id, String name) {
             this.id = id;
             this.name = name;
+        }
+    }
+
+    /**
+     * Salary.
+     */
+    @SuppressWarnings("UnusedDeclaration")
+    private static class Salary {
+        private BigDecimal amount;
+
+        public BigDecimal getAmount() {
+            return amount;
+        }
+
+        public void setAmount(BigDecimal amount) {
+            this.amount = amount;
         }
     }
 }

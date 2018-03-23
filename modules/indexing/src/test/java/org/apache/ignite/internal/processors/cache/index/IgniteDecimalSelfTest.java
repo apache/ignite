@@ -42,7 +42,7 @@ import static java.util.Arrays.asList;
 /**
  * Test to check decimal columns.
  */
-public class H2DecimalSelfTest extends AbstractSchemaSelfTest {
+public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
     private static final int SCALE = 8;
 
     private static final int PRECISION = 9;
@@ -54,8 +54,6 @@ public class H2DecimalSelfTest extends AbstractSchemaSelfTest {
     private static final String SALARY_CACHE = "SALARY_CACHE";
 
     private static final String SALARY_TAB_NAME = "SALARY";
-
-    private static final String AMOUNT = "AMOUNT";
 
     private static final MathContext MATH_CTX = new MathContext(PRECISION);
 

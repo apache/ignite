@@ -22,6 +22,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.h2.command.Parser;
 import org.h2.expression.Expression;
 import org.h2.table.Column;
+import org.h2.value.Value;
 
 /**
  * Column.
@@ -132,14 +133,14 @@ public class GridSqlColumn extends GridSqlElement {
      * @return Scale.
      */
     public int scale() {
-        return -1; //TODO: implement me;
+        return col.getScale();
     }
 
     /**
      * @return Precision.
      */
     public int precision() {
-        return -1; //TODO: implement me;
+        return (int) col.getPrecision();
     }
 
     /**

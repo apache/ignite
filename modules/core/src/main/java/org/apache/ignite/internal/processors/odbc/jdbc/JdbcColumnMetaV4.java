@@ -25,16 +25,17 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  * JDBC column metadata V4.
  */
 public class JdbcColumnMetaV4 extends JdbcColumnMetaV3 {
-    /** Decimal field scale */
+    /** Decimal field scale. */
     private int scale;
 
-    /** Decimal field precision */
+    /** Decimal field precision. */
     private int precision;
 
     /**
      * Default constructor is used for serialization.
      */
-    public JdbcColumnMetaV4() {
+    JdbcColumnMetaV4() {
+        // No-op.
     }
 
     /**
@@ -50,7 +51,9 @@ public class JdbcColumnMetaV4 extends JdbcColumnMetaV3 {
     public JdbcColumnMetaV4(String schemaName, String tblName, String colName, Class<?> cls, boolean nullable,
         Object dfltVal, int scale, int precision) {
         super(schemaName, tblName, colName, cls, nullable, dfltVal);
+
         this.scale = scale;
+
         this.precision = precision;
     }
 
