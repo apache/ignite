@@ -31,6 +31,7 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -52,9 +53,6 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
 
     /** Parameter for Ignite.reentrantLock(). */
     private static final boolean failoverSafe = true;
-
-    /** Parameter for Ignite.reentrantLock(). */
-    private static final boolean fair = true;
 
     /** Number of nodes. */
     static final int MAX_NODES = 10;
@@ -96,6 +94,10 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         /** */
         public final IgniteLock igniteLock;
 
+        /** Parameter for Ignite.reentrantLock(). */
+        @Param({"false", "true"})
+        public boolean fair = true;
+
         /** */
         public IgniteLockState() {
             igniteLock = nodes[countForThread.getAndIncrement() % MAX_NODES]
@@ -120,17 +122,16 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         /** */
         public final IgniteLock igniteLock;
 
+        /** Parameter for Ignite.reentrantLock(). */
+        @Param({"false", "true"})
+        public boolean fair = true;
+
         /** */
         public IgniteLockState2() {
             final int k = countForThread.getAndIncrement() % MAX_NODES;
 
             igniteLock = nodes[k]
                 .reentrantLock(lockKey + "2", fair, true);
-        }
-
-        @TearDown(Level.Trial)
-        public void down() {
-            igniteLock.close();
         }
     }
 
