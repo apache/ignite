@@ -17,10 +17,12 @@
 
 const DEMO_NOTEBOOK = {
     name: 'SQL demo',
+    _id: 'demo',
     paragraphs: [
         {
             name: 'Query with refresh rate',
             cacheName: 'CarCache',
+            qryType: 'query',
             pageSize: 100,
             limit: 0,
             query: [
@@ -38,6 +40,7 @@ const DEMO_NOTEBOOK = {
         {
             name: 'Simple query',
             cacheName: 'CarCache',
+            qryType: 'query',
             pageSize: 100,
             limit: 0,
             query: 'SELECT * FROM "CarCache".Car',
@@ -52,6 +55,7 @@ const DEMO_NOTEBOOK = {
         {
             name: 'Query with aggregates',
             cacheName: 'ParkingCache',
+            qryType: 'query',
             pageSize: 100,
             limit: 0,
             query: [
