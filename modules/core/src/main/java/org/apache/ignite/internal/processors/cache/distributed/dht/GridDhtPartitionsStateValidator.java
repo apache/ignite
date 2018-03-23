@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -85,9 +86,11 @@ public class GridDhtPartitionsStateValidator {
             throw new IgniteCheckedException("Partitions update counters are inconsistent for " + fold(topVer, result));
 
         // For sizes validation ignore also nodes which are not able to send cache sizes.
-        for (UUID id : messages.keySet())
-            if (cctx.discovery().node(topVer, id).version().compareTo(SIZES_VALIDATION_AVAILABLE_SINCE) < 0)
+        for (UUID id : messages.keySet()) {
+            ClusterNode node = cctx.discovery().node(id);
+            if (node != null && node.version().compareTo(SIZES_VALIDATION_AVAILABLE_SINCE) < 0)
                 ignoringNodes.add(id);
+        }
 
         // Validate cache sizes.
         result = validatePartitionsSizes(top, messages, ignoringNodes);
