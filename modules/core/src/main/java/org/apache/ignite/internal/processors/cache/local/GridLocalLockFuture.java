@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -78,7 +79,16 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
     @GridToStringInclude
     private long threadId;
 
-    /** Keys locked so far. */
+    /**
+     * Keys locked so far.
+     *
+     * Thread created this object iterates over entries and tries to lock each of them.
+     * If it finds some entry already locked by another thread it registers callback which will be executed
+     * by the thread owning the lock.
+     *
+     * Thus access to this collection must be synchronized except cases
+     * when this object is yet local to the thread created it.
+     */
     @GridToStringExclude
     private List<GridLocalCacheEntry> entries;
 
@@ -308,9 +318,11 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
     }
 
     /**
-     * @return Entries.
+     * Need of synchronization here is explained in the field's {@link GridLocalLockFuture#entries} comment.
+     *
+     * @return Copy of entries collection.
      */
-    public synchronized Collection<GridLocalCacheEntry> entriesCopy() {
+    private synchronized Collection<GridLocalCacheEntry> entriesCopy() {
         return new ArrayList<>(entries());
     }
 
