@@ -131,7 +131,7 @@ public class H2DecimalSelfTest extends AbstractSchemaSelfTest {
      * @throws Exception If failed.
      */
     public void testConfiguredFromQueryEntity() throws Exception {
-        checkDecimalInfo(SALARY_TAB_NAME, AMOUNT, SCALE, PRECISION);
+        checkDecimalInfo(SALARY_TAB_NAME, "amount", SCALE, PRECISION);
     }
 
     /**
@@ -146,7 +146,7 @@ public class H2DecimalSelfTest extends AbstractSchemaSelfTest {
 
         IgniteCache<Integer, Salary> cache = grid.createCache(ccfg);
 
-        checkDecimalInfo(tabName, AMOUNT, SCALE, PRECISION);
+        checkDecimalInfo(tabName, "amount", SCALE, PRECISION);
     }
 
     /**
