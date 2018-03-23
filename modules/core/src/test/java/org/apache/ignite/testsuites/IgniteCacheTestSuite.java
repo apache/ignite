@@ -50,6 +50,10 @@ import org.apache.ignite.internal.processors.cache.CacheFutureExceptionSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheNamesSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheNamesWithSpecialCharactersTest;
 import org.apache.ignite.internal.processors.cache.CachePutEventListenerErrorSelfTest;
+import org.apache.ignite.internal.processors.cache.CacheSortingKeysAtomicNearTest;
+import org.apache.ignite.internal.processors.cache.CacheSortingKeysAtomicTest;
+import org.apache.ignite.internal.processors.cache.CacheSortingKeysTransactionalNearTest;
+import org.apache.ignite.internal.processors.cache.CacheSortingKeysTransactionalTest;
 import org.apache.ignite.internal.processors.cache.CacheTxFastFinishTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityApiSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityMapperSelfTest;
@@ -322,6 +326,11 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(GridStoreLoadCacheTest.class);
         suite.addTestSuite(CacheStoreReadFromBackupTest.class);
         suite.addTestSuite(CacheTransactionalStoreReadFromBackupTest.class);
+
+        suite.addTestSuite(CacheSortingKeysAtomicNearTest.class);
+        suite.addTestSuite(CacheSortingKeysAtomicTest.class);
+        suite.addTestSuite(CacheSortingKeysTransactionalNearTest.class);
+        suite.addTestSuite(CacheSortingKeysTransactionalTest.class);
 
         return suite;
     }

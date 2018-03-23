@@ -990,6 +990,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
+        map = U.tryToSort(map, ctx.cacheObjectContext());
+        invokeMap= U.tryToSort(invokeMap, ctx.cacheObjectContext());
+        conflictPutMap = U.tryToSort(conflictPutMap, ctx.cacheObjectContext());
+        conflictRmvMap = U.tryToSort(conflictRmvMap, ctx.cacheObjectContext());
+
         if (opCtx != null && opCtx.hasDataCenterId()) {
             assert conflictPutMap == null : conflictPutMap;
             assert conflictRmvMap == null : conflictRmvMap;
@@ -1297,6 +1302,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         int taskNameHash = ctx.kernalContext().job().currentTaskNameHash();
 
         Collection<GridCacheVersion> drVers = null;
+
+        keys = U.tryToSort(keys, ctx.cacheObjectContext());
 
         if (opCtx != null && keys != null && opCtx.hasDataCenterId()) {
             assert conflictMap == null : conflictMap;

@@ -674,8 +674,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             dataCenterId = null;
 
         // Cached entry may be passed only from entry wrapper.
-        final Map<?, ?> map0 = map;
-        final Map<?, EntryProcessor<K, V, Object>> invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>)invokeMap;
+        final Map<?, ?> map0 = U.tryToSort(map, cacheCtx.cacheObjectContext());
+        final Map<?, EntryProcessor<K, V, Object>> invokeMap0 = U.tryToSort(invokeMap, cacheCtx.cacheObjectContext());
 
         if (log.isDebugEnabled())
             log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map0 + ", retval=" + retval + "]");
@@ -1450,10 +1450,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (drMap != null) {
             assert keys == null;
 
+            drMap = U.tryToSort(drMap, cacheCtx.cacheObjectContext());
+
             keys0 = drMap.keySet();
         }
         else
-            keys0 = keys;
+            keys0 = U.tryToSort(keys, cacheCtx.cacheObjectContext());
 
         CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 

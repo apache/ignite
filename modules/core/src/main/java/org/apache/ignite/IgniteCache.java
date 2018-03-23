@@ -326,6 +326,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * This method does not acquire lock immediately, you have to call appropriate method on returned instance.
      * Returned lock does not support {@link Lock#newCondition()} method,
      * other methods defined in {@link Lock} are supported.
+     * <p>
+     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param keys Keys for lock.
      * @return New lock instance associated with passed key.
@@ -578,6 +584,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      * Please refer to documentation for {@link CacheAtomicityMode#ATOMIC} for information on
      * system behavior in crash scenarios for atomic caches.
+     * <p>
+     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param map Map containing keys and entry processors to be applied to values.
      * @param args Additional arguments to pass to the {@link EntryProcessor}.
@@ -593,6 +605,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     /**
      * Asynchronously version of the {@link #invokeAll(Map, Object...)} method.
+     * <p>
+     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param map Map containing keys and entry processors to be applied to values.
      * @param args Additional arguments to pass to the {@link EntryProcessor}.
@@ -663,6 +681,13 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     /**
      * {@inheritDoc}
+     * <p>
+     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
+     *
      * @throws TransactionException If operation within transaction is failed.
      */
     @IgniteAsyncSupported
@@ -677,6 +702,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@link CacheLoader} is called in an attempt to load the entry. If an
      * entry cannot be loaded for a given key, the key will not be present in
      * the returned Map.
+     * <p>
+     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param keys Keys set.
      * @return a Future representing pending completion of the operation.
@@ -692,6 +723,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@link CacheLoader} is called in an attempt to load the entry. If an
      * entry cannot be loaded for a given key, the key will not be present in
      * the returned Collection.
+     * <p>
+     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param keys The keys whose associated values are to be returned.
      * @return A collection of entries that were found for the given keys. Entries not found
@@ -715,6 +752,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * {@link CacheLoader} is called in an attempt to load the entry. If an
      * entry cannot be loaded for a given key, the key will not be present in
      * the returned Collection.
+     * <p>
+     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param keys The keys whose associated values are to be returned.
      * @return a Future representing pending completion of the operation.
@@ -837,6 +880,13 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     /**
      * {@inheritDoc}
+     * <p>
+     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
+     *
      * @throws TransactionException If operation within transaction is failed.
      */
     @IgniteAsyncSupported
@@ -858,6 +908,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      * In Default Consistency mode, individual puts occur atomically but not
      * the entire putAll.  Listeners may observe individual updates.
+     * <p>
+     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param map Map containing keys and values to put into the cache.
      * @return a Future representing pending completion of the operation.
@@ -1038,6 +1094,13 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     /**
      * {@inheritDoc}
+     * <p>
+     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
+     *
      * @throws TransactionException If operation within transaction is failed.
      */
     @IgniteAsyncSupported
@@ -1054,6 +1117,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *   <li>if the cache is a write-through cache, the {@link CacheWriter}</li>
      * </ul>
      * If the key set is empty, the {@link CacheWriter} is not called.
+     * <p>
+     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param keys Keys set.
      * @return a Future representing pending completion of the operation.
@@ -1150,6 +1219,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Clears entries from the cache and swap storage, without notifying listeners or
      * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
      * and is not participating in a transaction.
+     * <p>
+     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param keys Keys to clear.
      * @throws IllegalStateException if the cache is {@link #isClosed()}
@@ -1162,6 +1237,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * Asynchronously clears entries from the cache and swap storage, without notifying listeners or
      * {@link CacheWriter}s. Entry is cleared only if it is not currently locked,
      * and is not participating in a transaction.
+     * <p>
+     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param keys Keys to clear.
      * @return a Future representing pending completion of the operation.
@@ -1295,6 +1376,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      * Please refer to documentation for {@link CacheAtomicityMode#ATOMIC} for information on
      * system behavior in crash scenarios for atomic caches.
+     * <p>
+     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @throws TransactionException If operation within transaction is failed.
      */
@@ -1324,6 +1411,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * <p>
      * Please refer to documentation for {@link CacheAtomicityMode#ATOMIC} for information on
      * system behavior in crash scenarios for atomic caches.
+     * <p>
+     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param keys The set of keys.
      * @param entryProcessor The {@link EntryProcessor} to invoke.
@@ -1357,6 +1450,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * An instance of entry processor must be stateless as it may be invoked multiple times on primary and
      * backup nodes in the cache. It is guaranteed that the value passed to the entry processor will be always
      * the same.
+     * <p>
+     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param keys The set of keys for entries to process.
      * @param entryProcessor The {@link CacheEntryProcessor} to invoke.
@@ -1401,6 +1500,12 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * An instance of entry processor must be stateless as it may be invoked multiple times on primary and
      * backup nodes in the cache. It is guaranteed that the value passed to the entry processor will be always
      * the same.
+     * <p>
+     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param keys The set of keys for entries to process.
      * @param entryProcessor The {@link CacheEntryProcessor} to invoke.

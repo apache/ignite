@@ -1132,6 +1132,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @throws IgniteCheckedException In case of error.
      */
     private void clear(@Nullable Set<? extends K> keys) throws IgniteCheckedException {
+        keys = (Set) U.tryToSort(keys, ctx.cacheObjectContext());
+
         if (isLocal()) {
             if (keys == null)
                 clearLocally(true, false, false);
@@ -1149,12 +1151,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Future.
      */
     private IgniteInternalFuture<?> clearAsync(@Nullable final Set<? extends K> keys) {
+        Set<? extends K> keys0 = (Set) U.tryToSort(keys, ctx.cacheObjectContext());
+
         if (isLocal())
-            return clearLocallyAsync(keys);
+            return clearLocallyAsync(keys0);
         else
-            return executeClearTask(keys, false).chain(new CX1<IgniteInternalFuture<?>, Object>() {
+            return executeClearTask(keys0, false).chain(new CX1<IgniteInternalFuture<?>, Object>() {
                 @Override public Object applyx(IgniteInternalFuture<?> fut) throws IgniteCheckedException {
-                    executeClearTask(keys, true).get();
+                    executeClearTask(keys0, true).get();
 
                     return null;
                 }
@@ -1474,6 +1478,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public final Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
         A.notNull(keys, "keys");
 
+        keys = U.tryToSort(keys, ctx.cacheObjectContext());
+
         boolean statsEnabled = ctx.statisticsEnabled();
 
         long start = statsEnabled ? System.nanoTime() : 0L;
@@ -1493,6 +1499,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public Collection<CacheEntry<K, V>> getEntries(@Nullable Collection<? extends K> keys)
         throws IgniteCheckedException {
         A.notNull(keys, "keys");
+
+        keys = U.tryToSort(keys, ctx.cacheObjectContext());
 
         boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -1518,6 +1526,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys) {
         A.notNull(keys, "keys");
 
+        Collection<? extends K> keys0 = U.tryToSort(keys, ctx.cacheObjectContext());
+
         final boolean statsEnabled = ctx.statisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
@@ -1527,7 +1537,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
         IgniteInternalFuture<Map<K, V>> fut = getAllAsync(
-            keys,
+            keys0,
             !ctx.config().isReadFromBackup(),
             /*skip tx*/false,
             opCtx != null ? opCtx.subjectId() : null,
@@ -1540,7 +1550,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (ctx.config().getInterceptor() != null)
             return fut.chain(new CX1<IgniteInternalFuture<Map<K, V>>, Map<K, V>>() {
                 @Override public Map<K, V> applyx(IgniteInternalFuture<Map<K, V>> f) throws IgniteCheckedException {
-                    return interceptGet(keys, f.get());
+                    return interceptGet(keys0, f.get());
                 }
             });
 
@@ -1555,6 +1565,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         @Nullable final Collection<? extends K> keys) {
         A.notNull(keys, "keys");
 
+        Collection<? extends K> keys0 = U.tryToSort(keys, ctx.cacheObjectContext());
+
         final boolean statsEnabled = ctx.statisticsEnabled();
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
@@ -1565,7 +1577,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         IgniteInternalFuture<Map<K, EntryGetResult>> fut =
             (IgniteInternalFuture<Map<K, EntryGetResult>>)((IgniteInternalFuture)getAllAsync(
-                keys,
+                keys0,
                 !ctx.config().isReadFromBackup(),
                 /*skip tx*/false,
                 opCtx != null ? opCtx.subjectId() : null,
@@ -1582,7 +1594,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 @Override public Collection<CacheEntry<K, V>> applyx(
                     IgniteInternalFuture<Map<K, EntryGetResult>> f) throws IgniteCheckedException {
                     if (intercept)
-                        return interceptGetEntries(keys, f.get());
+                        return interceptGetEntries(keys0, f.get());
                     else {
                         Map<K, CacheEntry<K, V>> res = U.newHashMap(f.get().size());
 

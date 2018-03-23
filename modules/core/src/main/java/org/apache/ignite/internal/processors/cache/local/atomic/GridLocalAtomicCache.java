@@ -710,10 +710,13 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     ) {
         final GridCacheOperation op = invokeMap != null ? TRANSFORM : UPDATE;
 
-        final Collection<? extends K> keys =
-            map != null ? map.keySet() : invokeMap != null ? invokeMap.keySet() : null;
+        Map<? extends K, ? extends V> map0 = U.tryToSort(map, ctx.cacheObjectContext());
+        Map<? extends K, ? extends EntryProcessor> invokeMap0 = U.tryToSort(invokeMap, ctx.cacheObjectContext());
 
-        final Collection<?> vals = map != null ? map.values() : invokeMap != null ? invokeMap.values() : null;
+        final Collection<? extends K> keys =
+            map0 != null ? map0.keySet() : invokeMap0 != null ? invokeMap0.keySet() : null;
+
+        final Collection<?> vals = map0 != null ? map0.values() : invokeMap0 != null ? invokeMap0.values() : null;
 
         final boolean writeThrough = ctx.writeThrough();
 

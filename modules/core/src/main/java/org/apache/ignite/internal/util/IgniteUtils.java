@@ -109,9 +109,12 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.StringTokenizer;
 import java.util.TimeZone;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
@@ -164,6 +167,7 @@ import org.apache.ignite.IgniteIllegalStateException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
@@ -193,9 +197,11 @@ import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.mxbean.IgniteStandardMXBean;
+import org.apache.ignite.internal.processors.cache.CacheObjectValueContext;
 import org.apache.ignite.internal.processors.cache.GridCacheAttributes;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
@@ -10539,6 +10545,183 @@ public abstract class IgniteUtils {
          */
         public long getLockUnlockCounter() {
             return cnt.get();
+        }
+    }
+
+    /**
+     * @param col Collection to sort.
+     * @param ctx Cache context to get value if keys in given map are CacheKeyObjects.
+     * @return {@code null} if given collection was null, same {@code col} if it contains only one entry or
+     * it is already sorted (and given comparator same as current),
+     *  and {@code SortedSet} if it was successfully sorted.
+     */
+    public static Collection tryToSort(@Nullable Collection col, CacheObjectValueContext ctx) {
+        if (col == null || col.size() == 1 || col instanceof SortedSet)
+            return col;
+
+        if (!isKeyCacheObjectsCollection(col)) {
+            SortedSet sortedSet;
+
+            if (isComparableCollection(col))
+                sortedSet = new TreeSet<>();
+            else
+                sortedSet = new TreeSet<>(new HashcodeComparator());
+
+            sortedSet.addAll(col);
+
+            return sortedSet;
+        }
+
+        return tryToSortCacheKeyObjects((Collection<KeyCacheObject>)col, ctx);
+    }
+
+    /**
+     * @param col Set to sort.
+     * @param ctx Cache context to get value from CacheKeyObject.
+     * @return {@code null} if given map was null, same {@code map} if it contains only one entry or
+     * it is already sorted (and given comparator same as current),
+     *  and {@code SortedMap} if it was successfully sorted.
+     */
+    private static Set<KeyCacheObject> tryToSortCacheKeyObjects(Collection<KeyCacheObject> col,
+        CacheObjectValueContext ctx) {
+        assert col != null;
+        assert ctx != null;
+
+        SortedSet<KeyCacheObject> sortedSet;
+
+        sortedSet = new TreeSet<>(new KeyCacheObjectComparator(ctx));
+
+        sortedSet.addAll(col);
+
+        return sortedSet;
+    }
+
+    /**
+     * @param col Collection.
+     * @return {@code true} if collection contains KeyCacheObject. {@code false} otherwise.
+     */
+    private static boolean isKeyCacheObjectsCollection(Collection col) {
+        for (Object obj : col) {
+            if (obj instanceof KeyCacheObject)
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param col Collection.
+     * @return {@code true} if collection contains KeyCacheObject. {@code false} otherwise.
+     */
+    private static boolean  isComparableCollection(Collection col) {
+        for (Object obj : col) {
+            if (!(obj instanceof Comparable))
+                return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * @param map Map to sort.
+     * @param ctx Cache context to get value if keys in given map are CacheKeyObjects.
+     * @return {@code null} if given map was null, same {@code map} if it contains only one entry or
+     * it is already sorted (and given comparator same as current),
+     *  {@code new SortedMap} if it was successfully sorted.
+     */
+    public static Map tryToSort(@Nullable Map map, CacheObjectValueContext ctx) {
+        if (map == null || map.size() == 1 || map instanceof SortedMap)
+            return map;
+
+        if (!isKeyCacheObjectsCollection(map.keySet())) {
+            SortedMap sortedMap;
+
+            if (isComparableCollection(map.keySet()))
+                sortedMap = new TreeMap<>();
+            else
+                sortedMap = new TreeMap<>(new HashcodeComparator());
+
+            sortedMap.putAll(map);
+
+            return sortedMap;
+        }
+
+        return tryToSortCacheKeyObjects((Map<KeyCacheObject, ?>)map, ctx);
+    }
+
+    /**
+     * @param map Map to sort.
+     * @param ctx Cache context to get value from CacheKeyObject.
+     * @return {@code null} if given map was null, same {@code map} if it contains only one entry or
+     * it is already sorted (and given comparator same as current),
+     *  {@code new SortedMap} if it was successfully sorted.
+     */
+    private static <V> Map<KeyCacheObject, V> tryToSortCacheKeyObjects(Map<KeyCacheObject, V> map,
+        CacheObjectValueContext ctx) {
+        assert map != null;
+        assert ctx != null;
+
+        SortedMap<KeyCacheObject, V> sortedMap;
+
+        sortedMap = new TreeMap<>(new KeyCacheObjectComparator(ctx));
+
+        sortedMap.putAll(map);
+
+        return sortedMap;
+    }
+
+    /**
+     * Compare values inside KeyCacheObjects.
+     */
+    private static final class KeyCacheObjectComparator implements Comparator<KeyCacheObject> {
+        /** */
+        private final CacheObjectValueContext ctx;
+
+        /**
+         * @param ctx Context.
+         */
+        private KeyCacheObjectComparator(CacheObjectValueContext ctx) {
+            this.ctx = ctx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int compare(KeyCacheObject o1, KeyCacheObject o2) {
+            Object v1 = getValueFromKeyCacheObject(o1, ctx);
+            Object v2 = getValueFromKeyCacheObject(o2, ctx);
+
+            if (v1 == null && v2 != null)
+                return -1;
+
+            if (v1 == null)
+                return 0;
+
+            if (v2 == null)
+                return 1;
+
+            try {
+                if (v1 instanceof Comparable && v1.getClass().equals(v2.getClass()))
+                    return ((Comparable)v1).compareTo(v2);
+            } catch (ClassCastException ignore) {}
+
+            return Integer.compare(v1.hashCode(), v2.hashCode());
+        }
+
+        private Object getValueFromKeyCacheObject(KeyCacheObject key, CacheObjectValueContext ctx) {
+            try {
+                return key.value(ctx, false);
+            } catch (BinaryInvalidTypeException e) {
+                return key.hashCode();
+            }
+        }
+    }
+
+    /**
+     * Compare objects by their hashcode.
+     */
+    private static final class HashcodeComparator implements Comparator<Object> {
+        /** {@inheritDoc} */
+        @Override public int compare(Object o1, Object o2) {
+            return Integer.compare(o1.hashCode(), o2.hashCode());
         }
     }
 }
