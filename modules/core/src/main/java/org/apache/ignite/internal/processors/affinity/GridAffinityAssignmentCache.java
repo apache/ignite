@@ -55,6 +55,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_AFFINITY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD;
+import static org.apache.ignite.IgniteSystemProperties.getFloat;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
@@ -65,6 +66,9 @@ import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVE
 public class GridAffinityAssignmentCache {
     /** Cleanup history size. */
     private final int MAX_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 500);
+
+    /** Partition distribution. */
+    private final float partDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 0.1f);
 
     /** Group name if specified or cache name. */
     private final String cacheOrGrpName;
@@ -424,44 +428,40 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * @param assignment List indexed by partition number.
-     * @param dataNodesCnt Data nodes count.
+     * Logs partitions distribution if value of {@link IgniteSystemProperties#IGNITE_AFFINITY_HISTORY_SIZE} is exceeded.
+     *
+     * @param assignments Assignment to verify.
+     * @param nodes Affinity nodes number.
      */
-    private void printDistribution(List<List<ClusterNode>> assignment, int dataNodesCnt) {
-        Float ignitePartDistribution = IgniteSystemProperties.getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 0.1f);
-
+    private void printDistribution(List<List<ClusterNode>> assignments, int nodes) {
         int locPrimaryCnt = 0;
         int locBackupCnt = 0;
 
-        for (List<ClusterNode> partitionAssign : assignment) {
-            if (partitionAssign != null) {
-                for (int i = 0; i < partitionAssign.size(); i++) {
-                    ClusterNode n = partitionAssign.get(i);
+        for (List<ClusterNode> assignment : assignments) {
+            for (int i = 0; i < assignment.size(); i++) {
+                ClusterNode node = assignment.get(i);
 
-                    if (n != null && n.isLocal()) {
-                        if (i == 0)
-                            locPrimaryCnt++;
-                        else
-                            locBackupCnt++;
-                    }
+                if (node.isLocal()) {
+                    if (i == 0)
+                        locPrimaryCnt++;
+                    else
+                        locBackupCnt++;
                 }
             }
         }
 
-        float expCnt = partsCnt / dataNodesCnt;
+        float expCnt = (float)partsCnt / nodes;
         float expPercent = expCnt / partsCnt * 100;
 
         float deltaPrimary = Math.abs(1 - (float)locPrimaryCnt / expCnt);
         float deltaBackup = Math.abs(1 - (float)locBackupCnt / (expCnt * backups));
 
-        if (deltaPrimary > ignitePartDistribution || deltaBackup > ignitePartDistribution) {
+        if (deltaPrimary > partDistribution || deltaBackup > partDistribution) {
             log.info(String.format("Local node affinity assignment distribution is not ideal " +
                     "[cache=%s, expectedPrimary=%.2f(%.2f%%), expectedBackups=%.2f(%.2f%%), " +
-                    "primary=%d(%.2f%%), backups=%d(%.2f%%)]", cacheOrGrpName,
-                expCnt, expPercent,
-                expCnt * backups, expPercent * backups,
-                locPrimaryCnt, (float)locPrimaryCnt / partsCnt * 100,
-                locBackupCnt, (float)locBackupCnt / partsCnt * 100));
+                    "primary=%d(%.2f%%), backups=%d(%.2f%%)]",
+                cacheOrGrpName, expCnt, expPercent, expCnt * backups, expPercent * backups,
+                locPrimaryCnt, (float)locPrimaryCnt / partsCnt * 100, locBackupCnt, (float)locBackupCnt / partsCnt * 100));
         }
     }
 
