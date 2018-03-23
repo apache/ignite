@@ -19,12 +19,13 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
 import java.util.Set;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -58,7 +59,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstractTest {
     /** Nodes count. */
-    private static final int NODES_CNT = 2;
+    private static final int NODES_CNT = 3;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -114,17 +115,14 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testDeadlock() throws Exception {
-        // Sometimes boh transactions perform commit, so we repeat attempt.
-        while (!doTestDeadlock()) {}
+        doTestDeadlock();
     }
 
     /**
      * @throws Exception If failed.
      */
     private boolean doTestDeadlock() throws Exception {
-        TestCommunicationSpi.init(2);
-
-        final CyclicBarrier barrier = new CyclicBarrier(2);
+        TestCommunicationSpi.init(log, 2);
 
         final AtomicInteger threadCnt = new AtomicInteger();
 
@@ -132,29 +130,28 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
 
         final AtomicInteger commitCnt = new AtomicInteger();
 
+        awaitPartitionMapExchange();
+
         IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
                 int threadNum = threadCnt.getAndIncrement();
 
                 Ignite ignite = ignite(0);
 
-                IgniteCache<Integer, Integer> cache1 = ignite.cache("cache" + (threadNum == 0 ? 0 : 1));
-
-                IgniteCache<Integer, Integer> cache2 = ignite.cache("cache" + (threadNum == 0 ? 1 : 0));
+                IgniteCache<Integer, Integer> cache1 = cacheForThread(ignite, threadNum, 0);
+                IgniteCache<Integer, Integer> cache2 = cacheForThread(ignite, threadNum, 1);
 
                 try (Transaction tx =
-                         ignite.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, 500, 0)
+                         ignite.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, 5000, 0)
                 ) {
-                    int key1 = primaryKey(cache1);
+                    int key1 = remoteKeyForThread(threadNum, 0);
 
                     log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode() +
                         ", tx=" + tx + ", key=" + key1 + ", cache=" + cache1.getName() + ']');
 
                     cache1.put(key1, 0);
 
-                    barrier.await();
-
-                    int key2 = primaryKey(cache2);
+                    int key2 = remoteKeyForThread(threadNum, 1);
 
                     log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode() +
                         ", tx=" + tx + ", key=" + key2 + ", cache=" + cache2.getName() + ']');
@@ -166,22 +163,26 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
                     commitCnt.incrementAndGet();
                 }
                 catch (Throwable e) {
+                    log.error("Got exception", e);
+
                     // At least one stack trace should contain TransactionDeadlockException.
                     if (hasCause(e, TransactionTimeoutException.class) &&
                         hasCause(e, TransactionDeadlockException.class)
                         ) {
                         if (deadlock.compareAndSet(false, true))
-                            U.error(log, "At least one stack trace should contain " +
-                                TransactionDeadlockException.class.getSimpleName(), e);
+                            log.info("Successfully set deadlock flag");
+                        else
+                            log.info("Deadlock flag already set");
                     }
+                    else
+                        log.info("Unexpected exception");
                 }
             }
         }, 2, "tx-thread");
 
         fut.get();
 
-        if (commitCnt.get() == 2)
-            return false;
+        assertFalse("Commits must fail", commitCnt.get() == 2);
 
         assertTrue(deadlock.get());
 
@@ -199,6 +200,25 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
     }
 
     /**
+     * @param ignite Ignite.
+     * @param threadNum Thread number.
+     * @param cacheNum Cache number.
+     */
+    private IgniteCache<Integer, Integer> cacheForThread(Ignite ignite, int threadNum, int cacheNum) {
+        return ignite.cache("cache" + (threadNum == cacheNum ? 0 : 1));
+    }
+
+    /**
+     * @param threadNum Thread number.
+     * @param keyNum Key number.
+     */
+    private int remoteKeyForThread(int threadNum, int keyNum) throws IgniteCheckedException {
+        Ignite ignite = threadNum == keyNum ? grid(1) : grid(2);
+
+        return primaryKey(cacheForThread(ignite, threadNum, keyNum));
+    }
+
+    /**
      *
      */
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
@@ -208,12 +228,16 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
         /** Tx ids. */
         private static final Set<GridCacheVersion> TX_IDS = new GridConcurrentHashSet<>();
 
+        /** Logger. */
+        private static volatile IgniteLogger log;
+
         /**
          * @param txCnt Tx count.
          */
-        private static void init(int txCnt) {
+        private static void init(IgniteLogger log, int txCnt) {
             TX_CNT = txCnt;
             TX_IDS.clear();
+            TestCommunicationSpi.log = log;
         }
 
         /** {@inheritDoc} */
@@ -230,7 +254,11 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
 
                     GridCacheVersion txId = req.version();
 
+                    log.info("Request for tx: " + txId);
+
                     if (TX_IDS.contains(txId)) {
+                        log.info("Start waiting for tx: " + txId);
+
                         while (TX_IDS.size() < TX_CNT) {
                             try {
                                 U.sleep(50);
@@ -239,12 +267,16 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
                                 e.printStackTrace();
                             }
                         }
+
+                        log.info("Finish waiting for tx: " + txId);
                     }
                 }
                 else if (msg0 instanceof GridNearTxPrepareResponse) {
                     GridNearTxPrepareResponse res = (GridNearTxPrepareResponse)msg0;
 
                     GridCacheVersion txId = res.version();
+
+                    log.info("Response for tx: " + txId);
 
                     TX_IDS.add(txId);
                 }
@@ -253,5 +285,4 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
             super.sendMessage(node, msg, ackC);
         }
     }
-
 }
