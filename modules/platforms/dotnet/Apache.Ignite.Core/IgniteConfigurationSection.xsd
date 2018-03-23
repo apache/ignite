@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 
 <!--
   Licensed to the Apache Software Foundation (ASF) under one or more
@@ -2218,6 +2218,11 @@
               <xs:annotation>
                 <xs:documentation>Whether Java console output should be redirected to Console.Out and Console.Error.</xs:documentation>
               </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="authenticationEnabled" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Whether user authentication is enabled for cluster.</xs:documentation>
+                </xs:annotation>
             </xs:attribute>
         </xs:complexType>
     </xs:element>
