@@ -1826,17 +1826,19 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             if (updateRebalanceVer)
                 updateRebalanceVersion(assignment.assignment());
 
-            boolean hasOwning = false;
+            if (ctx.gridConfig().isDisableWalDuringRebalancing()) {
+                boolean hasOwning = false;
 
-            for (GridDhtLocalPartition locPart : currentLocalPartitions()) {
-                if (locPart.state() == OWNING) {
-                    hasOwning = true;
+                for (GridDhtLocalPartition locPart : currentLocalPartitions()) {
+                    if (locPart.state() == OWNING) {
+                        hasOwning = true;
 
-                    break;
+                        break;
+                    }
                 }
-            }
 
-            grp.walEnabled(hasOwning);
+                grp.walEnabled(hasOwning);
+            }
         }
         finally {
             lock.writeLock().unlock();
