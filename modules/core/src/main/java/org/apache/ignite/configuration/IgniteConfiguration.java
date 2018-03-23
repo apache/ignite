@@ -296,7 +296,7 @@ public class IgniteConfiguration {
     private int[] inclEvtTypes;
 
     /** Network compression factory. */
-    private Factory<CompressionEngine> compressionEngineFactory;
+    @Nullable private Factory<CompressionEngine> compressionEngineFactory;
 
     /** Network compression enabled flag. */
     private boolean compressionEnabled = DFLT_COMPRESSION_ENABLED;
