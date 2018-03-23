@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -68,6 +69,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
@@ -1825,6 +1827,20 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             if (updateRebalanceVer)
                 updateRebalanceVersion(assignment.assignment());
+
+            if (IgniteSystemProperties.getBoolean(IGNITE_DISABLE_WAL_DURING_REBALANCE, false)) {
+                boolean hasOwning = false;
+
+                for (GridDhtLocalPartition locPart : currentLocalPartitions()) {
+                    if (locPart.state() == OWNING) {
+                        hasOwning = true;
+
+                        break;
+                    }
+                }
+
+                grp.walEnabled(hasOwning);
+            }
         }
         finally {
             lock.writeLock().unlock();

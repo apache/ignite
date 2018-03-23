@@ -68,6 +68,10 @@ public class JmhPreloaderAbstractBenchmark extends JmhAbstractBenchmark {
     /** Property: entries per message. */
     protected static final String PROP_REBALANCE_TYPE = "ignite.jmh.preloader.rebalanceType";
 
+    /** Property: entries per message. */
+    protected static final String PROP_DISABLE_WAL_DURING_REBALANCE = "ignite.jmh.preloader.disableWal";
+
+
     /** IP finder shared across nodes. */
     protected static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
@@ -121,6 +125,8 @@ public class JmhPreloaderAbstractBenchmark extends JmhAbstractBenchmark {
             System.setProperty(IgniteSystemProperties.IGNITE_DEBUG_ENDLESS_REBALANCE, "true");
         else
             System.setProperty(IgniteSystemProperties.IGNITE_DEBUG_ENDLESS_REBALANCE, "false");
+
+        System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCE, Boolean.toString(booleanProperty(PROP_DISABLE_WAL_DURING_REBALANCE, false)));
 
         supplierNode = (IgniteEx) Ignition.start(configuration("supplier"));
 

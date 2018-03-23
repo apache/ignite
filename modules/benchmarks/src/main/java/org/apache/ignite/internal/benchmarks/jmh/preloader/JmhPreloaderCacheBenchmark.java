@@ -82,28 +82,14 @@ public class JmhPreloaderCacheBenchmark extends JmhPreloaderAbstractBenchmark {
     }
 
     public static void main(String[] args) throws Exception {
-        run("supplierPut", 1, 10000, RebalanceType.ENDLESS);
-        run("supplierPut", 2, 10000, RebalanceType.ENDLESS);
-        run("supplierPut", 4, 10000, RebalanceType.ENDLESS);
-        run("supplierPut", 8, 10000, RebalanceType.ENDLESS);
-
-//        run("supplierPut", 1, 10000, RebalanceType.SYNTHETIC);
-//        run("supplierPut", 2, 10000, RebalanceType.SYNTHETIC);
-//        run("supplierPut", 4, 10000, RebalanceType.SYNTHETIC);
-//        run("supplierPut", 8, 10000, RebalanceType.SYNTHETIC);
-
-        run("supplierPut", 1, 10000, RebalanceType.NONE);
-        run("supplierPut", 2, 10000, RebalanceType.NONE);
-        run("supplierPut", 4, 10000, RebalanceType.NONE);
-        run("supplierPut", 8, 10000, RebalanceType.NONE);
-
-//        run("demanderPut", 1, 10000, true);
-//        run("demanderPut", 2, 10000, true);
-//
-//        run("demanderPut", 1, 10000, false);
-//        run("demanderPut", 2, 10000, false);
-
-//        run("demanderPut", 1, 10000);
+        run("supplierPut", 1, 10000, RebalanceType.ENDLESS, true);
+        run("supplierPut", 1, 10000, RebalanceType.ENDLESS, false);
+        run("supplierPut", 2, 10000, RebalanceType.ENDLESS, true);
+        run("supplierPut", 2, 10000, RebalanceType.ENDLESS, false);
+//        run("supplierPut", 4, 10000, RebalanceType.ENDLESS, true);
+//        run("supplierPut", 4, 10000, RebalanceType.ENDLESS, false);
+//        run("supplierPut", 8, 10000, RebalanceType.ENDLESS, true);
+//        run("supplierPut", 8, 10000, RebalanceType.ENDLESS, false);
 
 //        JmhPreloaderCacheBenchmark benchmark = new JmhPreloaderCacheBenchmark();
 //
@@ -122,13 +108,14 @@ public class JmhPreloaderCacheBenchmark extends JmhPreloaderAbstractBenchmark {
      * @param threads Amount of threads.
      * @throws Exception If failed.
      */
-    private static void run(String benchmark, int threads, int entriesPerMessage, RebalanceType rebalanceType) throws Exception {
+    private static void run(String benchmark, int threads, int entriesPerMessage, RebalanceType rebalanceType, boolean disableWalDuringRebalance) throws Exception {
         String simpleClsName = JmhPreloaderCacheBenchmark.class.getSimpleName();
 
         String output = simpleClsName + "-" + benchmark +
             "-" + threads + "-threads" +
             "-" + entriesPerMessage + "-epm" +
-            "-" + rebalanceType + "-rebalance";
+            "-" + rebalanceType + "-rebalance" +
+            "-" + disableWalDuringRebalance + "-disableWal";
 
         JmhIdeBenchmarkRunner.create()
             .forks(1)
@@ -145,7 +132,8 @@ public class JmhPreloaderCacheBenchmark extends JmhPreloaderAbstractBenchmark {
                 "-XX:+FlightRecorder",
                 "-XX:StartFlightRecording=delay=30s,dumponexit=true,filename=" + output + ".jfr",
                 JmhIdeBenchmarkRunner.createProperty(PROP_ENTRIES_PER_MESSAGE, entriesPerMessage),
-                JmhIdeBenchmarkRunner.createProperty(PROP_REBALANCE_TYPE, rebalanceType)
+                JmhIdeBenchmarkRunner.createProperty(PROP_REBALANCE_TYPE, rebalanceType),
+                JmhIdeBenchmarkRunner.createProperty(PROP_DISABLE_WAL_DURING_REBALANCE, disableWalDuringRebalance)
             )
             .run();
     }

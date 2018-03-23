@@ -831,6 +831,8 @@ public final class IgniteSystemProperties {
 
     public static final String IGNITE_DEBUG_ENDLESS_REBALANCE = "IGNITE_DEBUG_ENDLESS_REBALANCE";
 
+    public static final String IGNITE_DISABLE_WAL_DURING_REBALANCE = "IGNITE_DISABLE_WAL_DURING_REBALANCE";
+
     /**
      * Enforces singleton.
      */
