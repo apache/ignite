@@ -46,6 +46,7 @@ import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.IgniteMock;
 import org.apache.ignite.testframework.junits.IgniteTestResources;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractTest;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_COMPRESSION_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
@@ -81,7 +82,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
     protected boolean useSsl = false;
 
     /** */
-    protected Factory<CompressionEngine> compressionEngineFactory = null;
+    @Nullable protected Factory<CompressionEngine> compressionEngineFactory = null;
 
     /**
      *
