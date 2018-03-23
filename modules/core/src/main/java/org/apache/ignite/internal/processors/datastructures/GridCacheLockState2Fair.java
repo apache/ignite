@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.UUID;
 import org.jetbrains.annotations.Nullable;
@@ -37,6 +38,21 @@ public final class GridCacheLockState2Fair extends GridCacheLockState2Base<LockO
         super();
     }
 
+    /** {@inheritDoc} */
+    @Override GridCacheLockState2Base<LockOwner> withNode(UUID node) {
+        GridCacheLockState2Fair state = new GridCacheLockState2Fair();
+
+        state.nodes = new HashSet<>(this.nodes);
+
+        state.addNode(node);
+
+        state.ownerSet = this.ownerSet;
+        state.owners = this.owners;
+        state.gridStartTime = this.gridStartTime;
+
+        return state;
+    }
+
     /**
      * Constructor.
      *
@@ -51,7 +67,7 @@ public final class GridCacheLockState2Fair extends GridCacheLockState2Base<LockO
         if (owners == null || owners.isEmpty())
             return null;
 
-        boolean lockReleased = owners.getFirst().nodeId.equals(id);
+        boolean lockReleased = owners.getFirst().nodeId().equals(id);
 
         Iterator<LockOwner> iter = owners.iterator();
 
@@ -60,7 +76,7 @@ public final class GridCacheLockState2Fair extends GridCacheLockState2Base<LockO
         while (iter.hasNext()) {
             LockOwner tuple = iter.next();
 
-            if (tuple.nodeId.equals(id)) {
+            if (tuple.nodeId().equals(id)) {
                 ownerSet.remove(tuple);
 
                 iter.remove();
@@ -73,10 +89,27 @@ public final class GridCacheLockState2Fair extends GridCacheLockState2Base<LockO
     }
 
     /** {@inheritDoc} */
+    @Override protected boolean checkConsistency() {
+        if (owners.size() != ownerSet.size())
+            return false;
+
+        for (LockOwner owner : ownerSet)
+            if (!nodes.contains(owner.nodeId()))
+                return false;
+
+        for (LockOwner owner : owners) {
+            if (!ownerSet.contains(owner))
+                return false;
+        }
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public void writeItem(ObjectOutput out, LockOwner item) throws IOException {
-        out.writeLong(item.nodeId.getMostSignificantBits());
-        out.writeLong(item.nodeId.getLeastSignificantBits());
-        out.writeLong(item.threadId);
+        out.writeLong(item.nodeId().getMostSignificantBits());
+        out.writeLong(item.nodeId().getLeastSignificantBits());
+        out.writeLong(item.threadId());
     }
 
     /** {@inheritDoc} */

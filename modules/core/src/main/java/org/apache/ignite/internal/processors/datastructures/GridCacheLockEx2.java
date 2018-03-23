@@ -62,12 +62,12 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean hasWaiters(IgniteCondition condition) {
+    @Override public boolean hasWaiters(IgniteCondition cond) {
         throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
-    @Override public int getWaitQueueLength(IgniteCondition condition) {
+    @Override public int getWaitQueueLength(IgniteCondition cond) {
         throw new UnsupportedOperationException();
     }
 
@@ -101,27 +101,27 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
     abstract IgniteInClosure<GridCacheIdMessage> getReleaser();
 
     /** Reused latch where await can return an exception in case if the releasing thread failed. */
-    static class Latch {
+    static final class Latch {
         /** */
         private final ReentrantLock lock = new ReentrantLock();
 
         /** */
-        private final Condition condition = lock.newCondition();
+        private final Condition cond = lock.newCondition();
 
         /** */
-        private int count = 0;
+        private int cnt = 0;
 
         /** The exception will non-null if release is impossible. */
-        private IgniteException exception;
+        private IgniteException e;
 
         /** Release latch. */
         void release() {
             lock.lock();
 
             try {
-                count--;
+                cnt--;
 
-                condition.signal();
+                cond.signal();
             }
             finally {
                 lock.unlock();
@@ -131,17 +131,17 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
         /**
          * Sending exception to the waiting thread.
          *
-         * @param exception The reason why the release is impossible.
+         * @param e The reason why the release is impossible.
          */
-        void fail(@Nullable IgniteException exception) {
+        void fail(@Nullable IgniteException e) {
             lock.lock();
 
             try {
-                count--;
+                cnt--;
 
-                this.exception = exception;
+                this.e = e;
 
-                condition.signal();
+                cond.signal();
             }
             finally {
                 lock.unlock();
@@ -157,16 +157,16 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
             lock.lock();
 
             try {
-                count++;
+                cnt++;
 
-                if (count > 0)
-                    condition.awaitUninterruptibly();
+                if (cnt > 0)
+                    cond.awaitUninterruptibly();
 
-                if (exception != null)
-                    throw exception;
+                if (e != null)
+                    throw e;
             }
             finally {
-                exception = null;
+                e = null;
 
                 lock.unlock();
             }
@@ -182,16 +182,16 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
             lock.lock();
 
             try {
-                count++;
+                cnt++;
 
-                if (count > 0)
-                    condition.await();
+                if (cnt > 0)
+                    cond.await();
 
-                if (exception != null)
-                    throw exception;
+                if (e != null)
+                    throw e;
             }
             finally {
-                exception = null;
+                e = null;
 
                 lock.unlock();
             }
@@ -203,7 +203,7 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
          * @param timeout The maximum time to wait.
          * @param unit The time unit of the {@code timeout} argument.
          * @return {@code true} if the release was called and {@code false} if the waiting time elapsed before the count
-         * reached zero.
+         *     reached zero.
          * @throws IgniteException If release is impossible.
          * @throws InterruptedException If interrupted.
          */
@@ -215,37 +215,34 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
             try {
                 boolean flag = true;
 
-                count++;
+                cnt++;
 
-                if (count > 0)
-                    flag = condition.await(timeout, unit);
+                if (cnt > 0)
+                    flag = cond.await(timeout, unit);
 
-                if (flag && exception != null)
-                    throw exception;
+                if (flag && e != null)
+                    throw e;
 
                 return flag;
             }
             finally {
-                exception = null;
+                e = null;
 
                 lock.unlock();
             }
         }
 
         /**
-         * Queries whether any threads are waiting to acquire this lock. Note that
-         * because cancellations may occur at any time, a {@code true}
-         * return does not guarantee that any other thread will ever
-         * acquire this lock.  This method is designed primarily for use in
-         * monitoring of the system state.
+         * Queries whether any threads are waiting to acquire this lock. Note that because cancellations may occur at
+         * any time, a {@code true} return does not guarantee that any other thread will ever acquire this lock.  This
+         * method is designed primarily for use in monitoring of the system state.
          *
-         * @return {@code true} if there may be other threads waiting to
-         *         acquire the lock
+         * @return {@code true} if there may be other threads waiting to acquire the lock
          */
         boolean hasQueuedThreads() {
             if (lock.tryLock()) {
                 try {
-                    return count != 0;
+                    return cnt != 0;
                 }
                 finally {
                     lock.unlock();
@@ -256,7 +253,7 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
     }
 
     /** Thread local counter for reentrant locking. */
-    static class ReentrantCount extends ThreadLocal<Integer> {
+    static final class ReentrantCount extends ThreadLocal<Integer> {
         /** {@inheritDoc} */
         @Override protected Integer initialValue() {
             return 0;
@@ -264,11 +261,11 @@ abstract class GridCacheLockEx2 implements IgniteLock, GridCacheRemovable {
 
         /** Increment thread local count. */
         void increment() {
-            int count = get();
+            int cnt = get();
 
-            assert count != Integer.MAX_VALUE : "Maximum lock count exceeded";
+            assert cnt != Integer.MAX_VALUE : "Maximum lock count exceeded";
 
-            set(count + 1);
+            set(cnt + 1);
         }
 
         /** Decrement thread local count. */

@@ -51,8 +51,6 @@ public final class AcquireIfFreeUnfairProcessor extends ReentrantProcessor<UUID>
 
     /** {@inheritDoc} */
     @Override protected LockStateUpdateResult lock(GridCacheLockState2Base<UUID> state) {
-        assert state != null;
-
         return state.lockIfFree(nodeId);
     }
 

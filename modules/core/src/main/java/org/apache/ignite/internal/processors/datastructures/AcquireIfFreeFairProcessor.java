@@ -51,16 +51,14 @@ public final class AcquireIfFreeFairProcessor extends ReentrantProcessor<LockOwn
 
     /** {@inheritDoc} */
     @Override protected LockStateUpdateResult lock(GridCacheLockState2Base<LockOwner> state) {
-        assert state != null;
-
         return state.lockIfFree(owner);
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(owner.nodeId.getMostSignificantBits());
-        out.writeLong(owner.nodeId.getLeastSignificantBits());
-        out.writeLong(owner.threadId);
+        out.writeLong(owner.nodeId().getMostSignificantBits());
+        out.writeLong(owner.nodeId().getLeastSignificantBits());
+        out.writeLong(owner.threadId());
     }
 
     /** {@inheritDoc} */

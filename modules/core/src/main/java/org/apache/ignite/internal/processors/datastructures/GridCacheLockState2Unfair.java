@@ -21,6 +21,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.HashSet;
 import java.util.UUID;
 import org.jetbrains.annotations.Nullable;
 
@@ -34,6 +35,21 @@ public final class GridCacheLockState2Unfair extends GridCacheLockState2Base<UUI
      */
     public GridCacheLockState2Unfair() {
         super();
+    }
+
+    /** {@inheritDoc} */
+    @Override GridCacheLockState2Base<UUID> withNode(UUID node) {
+        GridCacheLockState2Unfair state = new GridCacheLockState2Unfair();
+
+        state.nodes = new HashSet<>(this.nodes);
+
+        state.addNode(node);
+
+        state.ownerSet = this.ownerSet;
+        state.owners = this.owners;
+        state.gridStartTime = this.gridStartTime;
+
+        return state;
     }
 
     /**
@@ -68,5 +84,21 @@ public final class GridCacheLockState2Unfair extends GridCacheLockState2Base<UUI
     /** {@inheritDoc} */
     @Override public UUID readItem(ObjectInput in) throws IOException {
         return new UUID(in.readLong(), in.readLong());
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean checkConsistency() {
+        if (owners.size() != ownerSet.size())
+            return false;
+
+        if (!nodes.containsAll(ownerSet))
+            return false;
+
+        for (UUID id : owners) {
+            if (!ownerSet.contains(id))
+                return false;
+        }
+
+        return true;
     }
 }

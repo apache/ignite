@@ -25,72 +25,62 @@ import java.util.UUID;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.cache.CacheEntryProcessor;
-import org.jetbrains.annotations.Nullable;
 
-/** {@link CacheEntryProcessor} for a release operation in fair mode. */
-public final class ReleaseFairProcessor
-    implements CacheEntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>, LockOwner>,
-    Externalizable {
+/** {@link CacheEntryProcessor} for a adding node into state. */
+public final class AddNodeProcessor
+    implements CacheEntryProcessor<GridCacheInternalKey, GridCacheLockState2Base, Boolean>, Externalizable {
     /** */
-    private static final long serialVersionUID = 6727594514511280293L;
+    private static final long serialVersionUID = -5203497119305044926L;
 
     /** Lock owner. */
-    private LockOwner owner;
+    private UUID nodeId;
 
     /**
      * Empty constructor required for {@link Externalizable}.
      */
-    public ReleaseFairProcessor() {
+    public AddNodeProcessor() {
         // No-op.
     }
 
     /**
      * Constructor.
      *
-     * @param owner Lock owner.
+     * @param nodeId Node.
      */
-    ReleaseFairProcessor(LockOwner owner) {
-        assert owner != null;
+    public AddNodeProcessor(UUID nodeId) {
+        assert nodeId != null;
 
-        this.owner = owner;
+        this.nodeId = nodeId;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public LockOwner process(
-        MutableEntry<GridCacheInternalKey, GridCacheLockState2Base<LockOwner>> entry,
-        Object... objects) throws EntryProcessorException {
+    @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Base> entry,
+        Object... arguments) throws EntryProcessorException {
+        if (!entry.exists())
+            return false;
 
-        assert entry != null;
+        GridCacheLockState2Base state = entry.getValue();
 
-        if (entry.exists()) {
-            GridCacheLockState2Base<LockOwner> state = entry.getValue();
+        assert state != null;
 
-            assert state.checkConsistency();
+        assert state.checkConsistency();
 
-            LockOwner nextOwner = state.unlock(owner);
-
-            // Always update value in right using.
+        if (state.addNode(nodeId))
             entry.setValue(state);
 
-            assert state.checkConsistency();
+        assert state.checkConsistency();
 
-            return nextOwner;
-        }
-
-        return null;
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(owner.nodeId().getMostSignificantBits());
-        out.writeLong(owner.nodeId().getLeastSignificantBits());
-        out.writeLong(owner.threadId());
+        out.writeLong(nodeId.getMostSignificantBits());
+        out.writeLong(nodeId.getLeastSignificantBits());
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
-        UUID nodeId = new UUID(in.readLong(), in.readLong());
-
-        owner = new LockOwner(nodeId, in.readLong());
+        nodeId = new UUID(in.readLong(), in.readLong());
     }
 }

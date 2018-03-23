@@ -67,10 +67,19 @@ public final class RemoveProcessor<T>
         if (entry.exists()) {
             GridCacheLockState2Base<T> state = entry.getValue();
 
+            assert state.checkConsistency();
+
             T nextOwner = state.onNodeRemoved(nodeId);
 
-            // Always update value in right using.
-            entry.setValue(state);
+            state.removeNode(nodeId);
+
+            // Always updates value in right using.
+            if (state.canRemove())
+                entry.remove();
+            else
+                entry.setValue(state);
+
+            state.checkConsistency();
 
             return nextOwner;
         }

@@ -28,27 +28,28 @@ import org.apache.ignite.cache.CacheEntryProcessor;
  */
 abstract class ReentrantProcessor<T>
     implements CacheEntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<T>, Boolean>, Externalizable {
-
     /** {@inheritDoc} */
     @Override public Boolean process(MutableEntry<GridCacheInternalKey, GridCacheLockState2Base<T>> entry,
         Object... objects) {
 
-        assert entry != null;
-        assert entry.exists();
+        assert entry.exists() : entry.getKey();
 
         GridCacheLockState2Base<T> state = entry.getValue();
 
-        LockStateUpdateResult result = lock(state);
+        assert state != null;
 
-        assert state.ownerSet.size() == state.owners.size();
-        assert !state.owners.isEmpty();
+        assert state.checkConsistency();
+
+        LockStateUpdateResult res = lock(state);
 
         // Write result if necessary
-        if (result.modified) {
+        if (res.modified) {
+            assert state.checkConsistency();
+
             entry.setValue(state);
         }
 
-        return result.locked;
+        return res.locked;
     }
 
     /** Specific operation around a locking. */

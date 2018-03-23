@@ -28,8 +28,8 @@ import org.apache.ignite.cache.CacheEntryProcessor;
 import org.jetbrains.annotations.Nullable;
 
 /** {@link CacheEntryProcessor} for a release operation in unfair mode. */
-public final class ReleaseUnfairProcessor implements CacheEntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<UUID>, UUID>,
-    Externalizable {
+public final class ReleaseUnfairProcessor
+    implements CacheEntryProcessor<GridCacheInternalKey, GridCacheLockState2Base<UUID>, UUID>, Externalizable {
     /** */
     private static final long serialVersionUID = 6727594514511280293L;
 
@@ -63,10 +63,14 @@ public final class ReleaseUnfairProcessor implements CacheEntryProcessor<GridCac
         if (entry.exists()) {
             GridCacheLockState2Base<UUID> state = entry.getValue();
 
+            assert state.checkConsistency();
+
             UUID nextId = state.unlock(nodeId);
 
             // Always update value in right using.
             entry.setValue(state);
+
+            assert state.checkConsistency();
 
             return nextId;
         }

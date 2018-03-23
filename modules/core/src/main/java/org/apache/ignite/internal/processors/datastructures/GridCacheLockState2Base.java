@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayDeque;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.UUID;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -34,15 +35,15 @@ import org.jetbrains.annotations.Nullable;
  * @param <T> Lock owner.
  */
 abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureValue {
-    /** */
-    private long gridStartTime;
-
     /** Queue containing nodes that are waiting to acquire this lock. */
     @GridToStringInclude
-    ArrayDeque<T> owners;
-
+    protected ArrayDeque<T> owners;
     /** For fast {@link HashSet#contains}. */
-    HashSet<T> ownerSet;
+    protected HashSet<T> ownerSet;
+    /** Set of nodes for safety remove this state */
+    protected HashSet<UUID> nodes;
+    /** */
+    protected long gridStartTime;
 
     /**
      * Constructor.
@@ -52,6 +53,7 @@ abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureVal
     GridCacheLockState2Base(long gridStartTime) {
         owners = new ArrayDeque<>();
         ownerSet = new HashSet<>();
+        nodes = new HashSet<>();
 
         this.gridStartTime = gridStartTime;
     }
@@ -65,11 +67,11 @@ abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureVal
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = (int)(gridStartTime ^ (gridStartTime >>> 32));
+        int res = (int) (gridStartTime ^ (gridStartTime >>> 32));
 
-        result = 31 * result + (owners != null ? owners.hashCode() : 0);
+        res = 31 * res + (owners != null ? owners.hashCode() : 0);
 
-        return result;
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -80,9 +82,21 @@ abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureVal
         if (o == null || getClass() != o.getClass())
             return false;
 
-        GridCacheLockState2Base state = (GridCacheLockState2Base)o;
+        GridCacheLockState2Base state = (GridCacheLockState2Base) o;
 
-        return Objects.equals(owners, state.owners);
+
+        if (ownerSet.size() != state.ownerSet.size())
+            return false;
+
+        Iterator<T> iter1 = owners.iterator();
+        Iterator<T> iter2 = state.owners.iterator();
+
+        while (iter1.hasNext() && iter2.hasNext()) {
+            if (!Objects.equals(iter1.next(), iter2.next()))
+                return false;
+        }
+
+        return true;
     }
 
     /** {@inheritDoc} */
@@ -95,13 +109,35 @@ abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureVal
         return gridStartTime;
     }
 
+    /** Add node. */
+    boolean addNode(UUID node) {
+        return nodes.add(node);
+    }
+
+    /** Has node. */
+    boolean hasNode(UUID node) {
+        return nodes.contains(node);
+    }
+
+    /** Create partial copy with one more node. */
+    abstract GridCacheLockState2Base<T> withNode(UUID node);
+
+    /** Remove node. */
+    void removeNode(UUID node) {
+        nodes.remove(node);
+    }
+
+    /** Can remove the state. */
+    boolean canRemove() {
+        return nodes.isEmpty();
+    }
+
     /** Will take lock if it is free. */
     LockStateUpdateResult lockIfFree(T owner) {
-        LockStateUpdateResult result = new LockStateUpdateResult(true, false);
+        LockStateUpdateResult res = new LockStateUpdateResult(true, false);
 
-        if (owners == null) {
+        if (owners == null)
             owners = new ArrayDeque<>();
-        }
 
         if (ownerSet == null)
             ownerSet = new HashSet<>();
@@ -110,26 +146,25 @@ abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureVal
             owners.add(owner);
             ownerSet.add(owner);
 
-            result.modified = true;
+            res.modified = true;
 
-            return result;
+            return res;
         }
 
         if (owners.getFirst().equals(owner))
-            return result;
+            return res;
 
-        result.locked = false;
+        res.locked = false;
 
-        return result;
+        return res;
     }
 
     /** Will take lock if it is free, or remove node from the waiting queue. */
     LockStateUpdateResult lockOrRemove(T owner) {
-        LockStateUpdateResult result = new LockStateUpdateResult(true, false);
+        LockStateUpdateResult res = new LockStateUpdateResult(true, false);
 
-        if (owners == null) {
+        if (owners == null)
             owners = new ArrayDeque<>();
-        }
 
         if (ownerSet == null)
             ownerSet = new HashSet<>();
@@ -138,31 +173,30 @@ abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureVal
             owners.add(owner);
             ownerSet.add(owner);
 
-            result.modified = true;
+            res.modified = true;
 
-            return result;
+            return res;
         }
 
         if (owners.getFirst().equals(owner))
-            return result;
+            return res;
 
-        result.locked = false;
+        res.locked = false;
 
         if (ownerSet.remove(owner)) {
             owners.remove(owner);
-            result.modified = true;
+            res.modified = true;
         }
 
-        return result;
+        return res;
     }
 
     /** Will take lock if it is free, or will add node to the waiting queue. */
     LockStateUpdateResult lockOrAdd(T owner) {
-        LockStateUpdateResult result = new LockStateUpdateResult(true, false);
+        LockStateUpdateResult res = new LockStateUpdateResult(true, false);
 
-        if (owners == null) {
+        if (owners == null)
             owners = new ArrayDeque<>();
-        }
 
         if (ownerSet == null)
             ownerSet = new HashSet<>();
@@ -171,25 +205,25 @@ abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureVal
             owners.add(owner);
             ownerSet.add(owner);
 
-            result.modified = true;
+            res.modified = true;
 
-            return result;
+            return res;
         }
 
         if (owners.getFirst().equals(owner))
-            return result;
+            return res;
 
         // Optimization for fast contains.
         if (!ownerSet.contains(owner)) {
             owners.add(owner);
             ownerSet.add(owner);
 
-            result.modified = true;
+            res.modified = true;
         }
 
-        result.locked = false;
+        res.locked = false;
 
-        return result;
+        return res;
     }
 
     /** Remove node from first position in waiting list. */
@@ -220,37 +254,47 @@ abstract class GridCacheLockState2Base<T> extends VolatileAtomicDataStructureVal
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(gridStartTime);
 
-        out.writeBoolean(owners != null);
+        assert owners != null;
 
-        if (owners != null) {
-            out.writeInt(owners.size());
+        out.writeInt(owners.size());
 
-            for (T item : owners) {
-                writeItem(out, item);
-            }
+        for (T item : owners)
+            writeItem(out, item);
+
+        assert nodes != null;
+
+        out.writeInt(nodes.size());
+
+        for (UUID node : nodes) {
+            out.writeLong(node.getMostSignificantBits());
+            out.writeLong(node.getLeastSignificantBits());
         }
     }
-
-    /** Read T object from stream. */
-    protected abstract T readItem(ObjectInput in) throws IOException;
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
         gridStartTime = in.readLong();
 
-        if (in.readBoolean()) {
-            int size = in.readInt();
+        int size = in.readInt();
 
-            owners = new ArrayDeque<>(size);
+        owners = new ArrayDeque<>(size);
 
-            for (int i = 0; i < size; i++)
-                owners.add(readItem(in));
+        for (int i = 0; i < size; i++)
+            owners.add(readItem(in));
 
-            ownerSet = new HashSet<>(owners);
-        }
-        else {
-            owners = null;
-            ownerSet = null;
-        }
+        ownerSet = new HashSet<>(owners);
+
+        int nodesSize = in.readInt();
+
+        nodes = new HashSet<>(nodesSize);
+
+        for (int i = 0; i < nodesSize; i++)
+            nodes.add(new UUID(in.readLong(), in.readLong()));
     }
+
+    /** Read T object from stream. */
+    protected abstract T readItem(ObjectInput in) throws IOException;
+
+    /** */
+    protected abstract boolean checkConsistency();
 }

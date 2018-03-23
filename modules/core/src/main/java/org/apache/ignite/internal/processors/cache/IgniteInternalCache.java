@@ -1703,7 +1703,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @return Invoke result.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public <T> EntryProcessorResult<T> invoke(K key,
+    public <T> EntryProcessorResult<T> invoke(K key,
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) throws IgniteCheckedException;
 

@@ -29,10 +29,10 @@ public final class LockOwner implements Externalizable {
     private static final long serialVersionUID = -5203487119206054926L;
 
     /** Node ID. */
-    UUID nodeId;
+    private UUID nodeId;
 
     /** Thread ID. */
-    long threadId;
+    private long threadId;
 
     /**
      * Required by {@link Externalizable}.
@@ -54,6 +54,27 @@ public final class LockOwner implements Externalizable {
         this.threadId = threadId;
     }
 
+    /**
+     * @return Node ID.
+     */
+    public UUID nodeId() {
+        return nodeId;
+    }
+
+    /**
+     * @return Thread ID.
+     */
+    public long threadId() {
+        return threadId;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        int res = nodeId.hashCode();
+        res = 31 * res + (int) (threadId ^ (threadId >>> 32));
+        return res;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
@@ -61,18 +82,11 @@ public final class LockOwner implements Externalizable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        LockOwner thread = (LockOwner)o;
+        LockOwner thread = (LockOwner) o;
 
         if (threadId != thread.threadId)
             return false;
         return nodeId.equals(thread.nodeId);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        int result = nodeId.hashCode();
-        result = 31 * result + (int)(threadId ^ (threadId >>> 32));
-        return result;
     }
 
     /** {@inheritDoc} */

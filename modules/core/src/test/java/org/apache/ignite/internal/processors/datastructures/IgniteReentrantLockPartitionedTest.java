@@ -22,6 +22,10 @@ import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
+/**
+ * Tests for {@link GridCacheLockImpl2Fair} and for {@link GridCacheLockImpl2Unfair}
+ * with {@link CacheMode#PARTITIONED} mode.
+ */
 public class IgniteReentrantLockPartitionedTest extends IgniteReentrantLockTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
