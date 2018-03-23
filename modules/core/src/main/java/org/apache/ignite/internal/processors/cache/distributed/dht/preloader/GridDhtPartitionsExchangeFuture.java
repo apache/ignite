@@ -2728,6 +2728,10 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     grpCtx.topology() :
                     cctx.exchange().clientTopology(grpId, events().discoveryCache());
 
+            // Do not validate read or write through caches.
+            if (grpCtx.config().isReadThrough() || grpCtx.config().isWriteThrough())
+                continue;
+
             try {
                 validator.validatePartitionCountersAndSizes(this, top, msgs);
             }
