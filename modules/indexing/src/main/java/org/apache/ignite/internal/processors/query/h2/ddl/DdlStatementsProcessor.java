@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropIndex;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDropTable;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTruncateTable;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
@@ -70,6 +71,7 @@ import org.h2.command.ddl.CreateIndex;
 import org.h2.command.ddl.CreateTable;
 import org.h2.command.ddl.DropIndex;
 import org.h2.command.ddl.DropTable;
+import org.h2.command.ddl.TruncateTable;
 import org.h2.table.Column;
 import org.h2.value.DataType;
 
@@ -279,7 +281,7 @@ public class DdlStatementsProcessor {
                     newIdx, cmd.ifNotExists(), 0);
             }
             else if (stmt0 instanceof GridSqlDropIndex) {
-                GridSqlDropIndex cmd = (GridSqlDropIndex) stmt0;
+                GridSqlDropIndex cmd = (GridSqlDropIndex)stmt0;
 
                 GridH2Table tbl = idx.dataTableForIndex(cmd.schemaName(), cmd.indexName());
 
@@ -329,6 +331,17 @@ public class DdlStatementsProcessor {
                         cmd.cacheGroup(), cmd.dataRegionName(), cmd.affinityKey(), cmd.atomicityMode(),
                         cmd.writeSynchronizationMode(), cmd.backups(), cmd.ifNotExists());
                 }
+            }
+            else if (stmt0 instanceof GridSqlTruncateTable) {
+                GridSqlTruncateTable cmd = (GridSqlTruncateTable)stmt0;
+
+                GridH2Table tbl = idx.dataTable(cmd.schemaName(), cmd.tableName());
+
+                if (tbl == null)
+                    throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND,
+                        cmd.tableName());
+                else
+                    ctx.query().dynamicTableTruncate(tbl.cacheName());
             }
             else if (stmt0 instanceof GridSqlDropTable) {
                 GridSqlDropTable cmd = (GridSqlDropTable)stmt0;
@@ -557,6 +570,7 @@ public class DdlStatementsProcessor {
 
     /**
      * Convert this statement to query entity and do Ignite specific sanity checks on the way.
+     *
      * @return Query entity mimicking this SQL statement.
      */
     private static QueryEntity toQueryEntity(GridSqlCreateTable createTbl) {
@@ -651,6 +665,6 @@ public class DdlStatementsProcessor {
      */
     public static boolean isDdlStatement(Prepared cmd) {
         return cmd instanceof CreateIndex || cmd instanceof DropIndex || cmd instanceof CreateTable ||
-            cmd instanceof DropTable || cmd instanceof AlterTableAlterColumn;
+            cmd instanceof TruncateTable || cmd instanceof DropTable || cmd instanceof AlterTableAlterColumn;
     }
 }

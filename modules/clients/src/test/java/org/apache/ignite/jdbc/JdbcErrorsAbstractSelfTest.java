@@ -667,6 +667,9 @@ public abstract class JdbcErrorsAbstractSelfTest extends GridCommonAbstractTest 
         checkSqlErrorMessage("drop table wrong", "42000",
             "Table doesn't exist: WRONG");
 
+        checkSqlErrorMessage("truncate table wrong", "42000",
+            "Table \"WRONG\" not found");
+
         checkSqlErrorMessage("create index idx1 on wrong (val)", "42000",
             "Table doesn't exist: WRONG");
 

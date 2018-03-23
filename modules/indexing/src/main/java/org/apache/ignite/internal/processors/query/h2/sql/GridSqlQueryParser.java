@@ -55,6 +55,7 @@ import org.h2.command.ddl.DefineCommand;
 import org.h2.command.ddl.DropIndex;
 import org.h2.command.ddl.DropTable;
 import org.h2.command.ddl.SchemaCommand;
+import org.h2.command.ddl.TruncateTable;
 import org.h2.command.dml.Delete;
 import org.h2.command.dml.Explain;
 import org.h2.command.dml.Insert;
@@ -139,11 +140,12 @@ public class GridSqlQueryParser {
 
     /** */
     private static final GridSqlOperationType[] COMPARISON_TYPES =
-        {EQUAL, BIGGER_EQUAL, BIGGER, SMALLER_EQUAL,
-        SMALLER, NOT_EQUAL, IS_NULL, IS_NOT_NULL,
-        null, null, null, SPATIAL_INTERSECTS /* 11 */,
-        null, null, null, null, EQUAL_NULL_SAFE /* 16 */,
-        null, null, null, null, NOT_EQUAL_NULL_SAFE /* 21 */};
+        {
+            EQUAL, BIGGER_EQUAL, BIGGER, SMALLER_EQUAL,
+            SMALLER, NOT_EQUAL, IS_NULL, IS_NOT_NULL,
+            null, null, null, SPATIAL_INTERSECTS /* 11 */,
+            null, null, null, null, EQUAL_NULL_SAFE /* 16 */,
+            null, null, null, null, NOT_EQUAL_NULL_SAFE /* 21 */};
 
     /** */
     private static final Getter<Select, Expression> CONDITION = getter(Select.class, "condition");
@@ -402,6 +404,9 @@ public class GridSqlQueryParser {
     /** */
     private static final Getter<Column, Expression> COLUMN_CHECK_CONSTRAINT = getter(Column.class, "checkConstraint");
 
+    /** */
+    private static final Getter<TruncateTable, Table> TRUNCATE_TABLE = getter(TruncateTable.class, "table");
+
     /** Class for private class: 'org.h2.command.CommandList'. */
     private static final Class<? extends Command> CLS_COMMAND_LIST;
 
@@ -516,7 +521,7 @@ public class GridSqlQueryParser {
 
     /**
      * @param useOptimizedSubqry If we have to find correct order for table filters in FROM clause.
-     *                           Relies on uniqueness of table filter aliases.
+     * Relies on uniqueness of table filter aliases.
      */
     public GridSqlQueryParser(boolean useOptimizedSubqry) {
         optimizedTableFilterOrder = useOptimizedSubqry ? new HashMap<String, Integer>() : null;
@@ -600,7 +605,6 @@ public class GridSqlQueryParser {
         return res;
     }
 
-
     /**
      * @param tbl Table.
      */
@@ -617,7 +621,7 @@ public class GridSqlQueryParser {
             // Other stuff can be cached because we will have separate instances in
             // different table filters anyways. Thus the semantics will be correct.
             if (tbl instanceof TableView) {
-                Query qry = VIEW_QUERY.get((TableView) tbl);
+                Query qry = VIEW_QUERY.get((TableView)tbl);
 
                 res = new GridSqlSubquery(parseQuery(qry));
             }
@@ -910,8 +914,6 @@ public class GridSqlQueryParser {
         return res;
     }
 
-
-
     /**
      * Parse {@code DROP INDEX} statement.
      *
@@ -1145,6 +1147,29 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * Parse {@code TRUNCATE TABLE} statement.
+     *
+     * @param truncateTbl {@code TRUNCATE TABLE} statement.
+     * @see <a href="http://h2database.com/html/grammar.html#truncate_table">H2 {@code TRUNCATE TABLE} spec.</a>
+     */
+    private GridSqlTruncateTable parseTruncateTable(TruncateTable truncateTbl) {
+        GridSqlTruncateTable res = new GridSqlTruncateTable();
+
+        Table tbl = TRUNCATE_TABLE.get(truncateTbl);
+
+        if (tbl == null)
+            throw new IgniteSQLException("Table cannot be truncated", IgniteQueryErrorCode.TABLE_NOT_FOUND);
+
+        Schema schema = tbl.getSchema();
+
+        res.schemaName(schema.getName());
+
+        res.tableName(tbl.getName());
+
+        return res;
+    }
+
+    /**
      * Parse {@code DROP TABLE} statement.
      *
      * @param dropTbl {@code DROP TABLE} statement.
@@ -1166,6 +1191,7 @@ public class GridSqlQueryParser {
 
     /**
      * Parse {@code ALTER TABLE} statement.
+     *
      * @param stmt H2 statement.
      */
     private GridSqlStatement parseAlterColumn(AlterTableAlterColumn stmt) {
@@ -1206,6 +1232,7 @@ public class GridSqlQueryParser {
 
     /**
      * Turn H2 column to grid column and check requested features.
+     *
      * @param col H2 column.
      * @return Grid column.
      */
@@ -1257,16 +1284,16 @@ public class GridSqlQueryParser {
 
     /**
      * Parse {@code ALTER TABLE ... ADD COLUMN} statement.
+     *
      * @param addCol H2 statement.
      * @return Grid SQL statement.
-     *
      * @see <a href="http://www.h2database.com/html/grammar.html#alter_table_add"></a>
      */
     private GridSqlStatement parseAddColumn(AlterTableAlterColumn addCol) {
         assert addCol.getType() == CommandInterface.ALTER_TABLE_ADD_COLUMN;
 
         if (ALTER_COLUMN_BEFORE_COL.get(addCol) != null || ALTER_COLUMN_AFTER_COL.get(addCol) != null)
-            throw new IgniteSQLException("ALTER TABLE ADD COLUMN BEFORE/AFTER is not supported" ,
+            throw new IgniteSQLException("ALTER TABLE ADD COLUMN BEFORE/AFTER is not supported",
                 IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
 
         GridSqlAlterTableAddColumn res = new GridSqlAlterTableAddColumn();
@@ -1303,6 +1330,7 @@ public class GridSqlQueryParser {
 
     /**
      * Parse {@code ALTER TABLE ... DROP COLUMN} statement.
+     *
      * @param dropCol H2 statement.
      * @see <a href="http://www.h2database.com/html/grammar.html#alter_table_add"></a>
      */
@@ -1495,6 +1523,7 @@ public class GridSqlQueryParser {
 
     /**
      * Check that param with mandatory value has it specified.
+     *
      * @param name Param name.
      * @param val Param value to check.
      */
@@ -1505,6 +1534,7 @@ public class GridSqlQueryParser {
 
     /**
      * Parse given value as integer, or throw an {@link IgniteSQLException} if it's not of matching format.
+     *
      * @param name param name.
      * @param val param value.
      * @return parsed int value.
@@ -1557,9 +1587,10 @@ public class GridSqlQueryParser {
 
     /**
      * Check if query may be run locally on all caches mentioned in the query.
+     *
      * @param replicatedOnlyQry replicated-only query flag from original {@link SqlFieldsQuery}.
      * @return {@code true} if query may be run locally on all caches mentioned in the query, i.e. there's no need
-     *     to run distributed query.
+     * to run distributed query.
      * @see SqlFieldsQuery#isReplicatedOnly()
      */
     public boolean isLocalQuery(boolean replicatedOnlyQry) {
@@ -1590,9 +1621,10 @@ public class GridSqlQueryParser {
 
     /**
      * Get first (i.e. random, as we need any one) partitioned cache from parsed query
-     *     to determine expected query parallelism.
+     * to determine expected query parallelism.
+     *
      * @return Context for the first of partitioned caches mentioned in the query,
-     *     or {@code null} if it does not involve partitioned caches.
+     * or {@code null} if it does not involve partitioned caches.
      */
     public GridCacheContext getFirstPartitionedCache() {
         for (Object o : h2ObjToGridObj.values()) {
@@ -1645,6 +1677,9 @@ public class GridSqlQueryParser {
 
         if (stmt instanceof CreateTable)
             return parseCreateTable((CreateTable)stmt);
+
+        if (stmt instanceof TruncateTable)
+            return parseTruncateTable((TruncateTable)stmt);
 
         if (stmt instanceof DropTable)
             return parseDropTable((DropTable)stmt);
