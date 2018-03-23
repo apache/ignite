@@ -85,7 +85,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.GridBusyLock;
-import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridAbsClosure;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -790,39 +789,15 @@ public final class GridTestUtils {
         final List<Callable<?>> calls = Collections.<Callable<?>>nCopies(threadNum, call);
         final GridTestSafeThreadFactory threadFactory = new GridTestSafeThreadFactory(threadName);
 
-        // Future that supports cancel() operation.
-        GridFutureAdapter<Long> cancelFut = new GridFutureAdapter<Long>() {
-            @Override public boolean cancel() {
-                if (onCancelled()) {
-                    threadFactory.interruptAllThreads();
-
-                    onCancelled();
-
-                    return true;
-                }
-
-                return false;
-            }
-        };
-
         // Async execution future (doesn't support cancel()).
-        IgniteInternalFuture<Long> runFut = runAsync(new Callable<Long>() {
-            @Override public Long call() throws Exception {
-                return runMultiThreaded(calls, threadFactory);
-            }
+        IgniteInternalFuture<Long> runFut = runAsync(() -> runMultiThreaded(calls, threadFactory));
+
+        runFut.listen(fut -> {
+            if (fut.isCancelled())
+                threadFactory.interruptAllThreads();
         });
 
-        // Compound future, that adds cancel() support to execution future.
-        GridCompoundFuture<Long, Long> compFut = new GridCompoundFuture<>(F.sumLongReducer());
-
-        compFut.add(cancelFut);
-        compFut.add(runFut);
-
-        compFut.markInitialized();
-
-        cancelFut.onDone();
-
-        return compFut;
+        return runFut;
     }
 
     /**
@@ -888,9 +863,9 @@ public final class GridTestUtils {
             @Override public boolean cancel() throws IgniteCheckedException {
                 super.cancel();
 
-                thrFactory.interruptAllThreads();
-
                 onCancelled();
+
+                thrFactory.interruptAllThreads();
 
                 return true;
             }
