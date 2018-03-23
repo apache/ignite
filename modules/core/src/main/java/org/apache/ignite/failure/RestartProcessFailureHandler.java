@@ -18,17 +18,30 @@
 package org.apache.ignite.failure;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Provides facility to handle failures by custom user implementations,
- * which can be configured by {@link IgniteConfiguration#setFailureHandler(FailureHandler)} method.
+ * Specific implementation that could be used only with ignite.(sh|bat).
+ * Process will be terminated using Ignition.restart(true) call.
  */
-public interface FailureHandler {
-    /**
-     * @param ignite Ignite instance.
-     * @param failureCtx Failure context.
-     * @return Whether kernal context must be invalidated or not.
-     */
-    public boolean onFailure(Ignite ignite, FailureContext failureCtx);
+public class RestartProcessFailureHandler implements FailureHandler {
+    /** {@inheritDoc} */
+    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+        new Thread(
+            new Runnable() {
+                @Override public void run() {
+                    final IgniteLogger log = ignite.log();
+
+                    U.warn(log, "Restarting JVM on Ignite failure: " + failureCtx);
+
+                    G.restart(true);
+                }
+            },
+            "node-restarter"
+        ).start();
+
+        return true;
+    }
 }

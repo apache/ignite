@@ -15,22 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.failure;
+package org.apache.ignite.failure;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.Ignition;
-import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * This implementation will try to stop node if tryStop value is true.
  * If node can't be stopped during provided timeout or tryStop value is false
- * then JVM process will be terminated forcibly ( Runtime.halt() ).
+ * then JVM process will be terminated forcibly using Runtime.getRuntime().halt().
  */
 public class StopNodeOrHaltFailureHandler implements FailureHandler {
     /** Try stop. */
@@ -51,7 +49,7 @@ public class StopNodeOrHaltFailureHandler implements FailureHandler {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onFailure(FailureContext failureCtx, Ignite ignite) {
+    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
         final IgniteLogger log = ignite.log();
 
         if (tryStop) {

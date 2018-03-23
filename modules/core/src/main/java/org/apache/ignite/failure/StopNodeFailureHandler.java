@@ -15,33 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.failure;
+package org.apache.ignite.failure;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Specific implementation that could be used only with ignite.(sh|bat).
- * Process must be terminated using Ignition.restart(true) call.
+ * This implementation will stop Ignite node in case of critical error using IgnitionEx.stop(nodeName, true, true) call.
  */
-public class RestartProcessFailureHandler implements FailureHandler {
+public class StopNodeFailureHandler implements FailureHandler {
     /** {@inheritDoc} */
-    @Override public boolean onFailure(FailureContext failureCtx, Ignite ignite) {
+    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
         new Thread(
             new Runnable() {
                 @Override public void run() {
                     final IgniteLogger log = ignite.log();
 
-                    U.warn(log, "Restarting JVM on Ignite failure: " + failureCtx);
+                    U.warn(log, "Stopping local node on Ignite failure: " + failureCtx);
 
-                    G.restart(true);
+                    IgnitionEx.stop(ignite.name(), true, true);
                 }
             },
-            "node-restarter"
+            "node-stopper"
         ).start();
 
         return true;

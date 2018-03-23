@@ -18,24 +18,24 @@
 package org.apache.ignite.failure;
 
 /**
- * Failure Context.
+ * Failure context class, which instances handled by configured FailureHandler instance when Ignite failure occurs.
  */
 public class FailureContext {
     /** Type. */
     private final FailureType type;
 
-    /** Cause. */
-    private final Throwable cause;
+    /** Error. */
+    private final Throwable error;
 
     /**
      * @param type Type.
-     * @param cause Cause.
+     * @param error Cause.
      */
-    public FailureContext(FailureType type, Throwable cause) {
+    public FailureContext(FailureType type, Throwable error) {
         assert type != null;
 
         this.type = type;
-        this.cause = cause;
+        this.error = error;
     }
 
     /**
@@ -46,16 +46,17 @@ public class FailureContext {
     }
 
     /**
-     * @return cause or {@code null}.
+     * @return error or {@code null}.
      */
-    public Throwable cause() {
-        return cause;
+    public Throwable error() {
+        return error;
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
-        return "FailureContext{" +
+        return "FailureContext [" +
             "type=" + type +
-            ", cause=" + cause +
-            '}';
+            ", error=" + error +
+            ']';
     }
 }

@@ -15,18 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.failure;
-
-import org.apache.ignite.Ignite;
-import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureHandler;
-
 /**
- * Just ignores any failure. It's useful for tests and debugging.
+ * <!-- Package description. -->
+ * Failure processor.
  */
-public class NoOpFailureHandler implements FailureHandler {
-    /** {@inheritDoc} */
-    @Override public boolean onFailure(FailureContext failureCtx, Ignite ignite) {
-        return false;
-    }
-}
+package org.apache.ignite.internal.processors.failure;

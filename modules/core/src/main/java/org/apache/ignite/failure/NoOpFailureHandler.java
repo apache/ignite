@@ -15,31 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.failure;
+package org.apache.ignite.failure;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureHandler;
-import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
-public class StopNodeFailureHandler implements FailureHandler {
+/**
+ * Just ignores any failure. It's useful for tests and debugging.
+ */
+public class NoOpFailureHandler implements FailureHandler {
     /** {@inheritDoc} */
-    @Override public boolean onFailure(FailureContext failureCtx, Ignite ignite) {
-        new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    final IgniteLogger log = ignite.log();
-
-                    U.warn(log, "Stopping local node on Ignite failure: " + failureCtx);
-
-                    IgnitionEx.stop(ignite.name(), true, true);
-                }
-            },
-            "node-stopper"
-        ).start();
-
-        return true;
+    @Override public boolean onFailure(Ignite ignite, FailureContext failureCtx) {
+        return false;
     }
 }

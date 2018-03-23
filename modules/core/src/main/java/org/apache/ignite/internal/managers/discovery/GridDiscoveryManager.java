@@ -60,6 +60,8 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.failure.RestartProcessFailureHandler;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -2467,6 +2469,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         private final BlockingQueue<GridTuple6<Integer, AffinityTopologyVersion, ClusterNode,
             DiscoCache, Collection<ClusterNode>, DiscoveryCustomMessage>> evts = new LinkedBlockingQueue<>();
 
+        /** Restart process handler. */
+        private final RestartProcessFailureHandler restartProcHnd = new RestartProcessFailureHandler();
+
+        /** Stop node handler. */
+        private final StopNodeFailureHandler stopNodeHnd = new StopNodeFailureHandler();
+
         /** Node segmented event fired flag. */
         private boolean nodeSegFired;
 
@@ -2748,15 +2756,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 U.error(log, "Failed to disconnect discovery SPI.", e);
             }
 
-            // FIXME !!!
             switch (segPlc) {
                 case STOP:
-                    ctx.failure().stopNode(new FailureContext(FailureType.SEGMENTATION, null));
+                    ctx.failure().handleFailure(new FailureContext(FailureType.SEGMENTATION, null), stopNodeHnd);
 
                     break;
 
                 case RESTART_JVM:
-                    ctx.failure().restartJvm(new FailureContext(FailureType.SEGMENTATION, null));
+                    ctx.failure().handleFailure(new FailureContext(FailureType.SEGMENTATION, null), restartProcHnd);
 
                     break;
 

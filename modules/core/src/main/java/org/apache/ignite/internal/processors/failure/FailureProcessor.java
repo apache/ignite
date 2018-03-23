@@ -15,32 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.failure;
+package org.apache.ignite.internal.processors.failure;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.StopNodeOrHaltFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
-import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.resources.IgniteInstanceResource;
 
 /**
  * General failure processing API
  */
 public class FailureProcessor extends GridProcessorAdapter {
-    /** Default stop node timeout. */
-    private static final long DFLT_STOP_NODE_TIMEOUT = 60 * 1000;
-
     /** Ignite. */
-    @IgniteInstanceResource private Ignite ignite; // FIXME inject ignite instance into FailureHandler!
-
-    /** Lock. */
-    private final Object lock = new Object();
+    private final Ignite ignite;
 
     /** Handler. */
     private volatile FailureHandler hnd;
@@ -50,6 +40,8 @@ public class FailureProcessor extends GridProcessorAdapter {
      */
     public FailureProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        this.ignite = ctx.grid();
     }
 
     /** {@inheritDoc} */
@@ -66,7 +58,7 @@ public class FailureProcessor extends GridProcessorAdapter {
      *
      */
     protected FailureHandler getDefaultFailureHandler() {
-        return new StopNodeOrHaltFailureHandler(true, DFLT_STOP_NODE_TIMEOUT);
+        return new StopNodeOrHaltFailureHandler(false, 0);
     }
 
     /**
@@ -87,50 +79,19 @@ public class FailureProcessor extends GridProcessorAdapter {
      *
      * @param failureCtx Failure context.
      */
-    public synchronized void process(FailureContext failureCtx) {
-        synchronized (lock) {
-            if (ctx.invalidationCause() != null) // Node already terminating, no reason to process more errors.
-                return;
-
-            final FailureHandler hnd = handler();
-
-            if (hnd.onFailure(failureCtx, ignite)) // FIXME do not pass ignite as parameter, just inject into handler!
-                ctx.invalidate(failureCtx);
-        }
-    }
-    /**
-     * Restarts JVM.
-     */
-    public void restartJvm(final FailureContext failureCtx) {
-        new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    final IgniteLogger log = ctx.log(getClass());
-
-                    U.warn(log, "Restarting JVM on Ignite failure: " + failureCtx);
-
-                    G.restart(true);
-                }
-            },
-            "node-restarter"
-        ).start();
+    public void process(FailureContext failureCtx) {
+        handleFailure(failureCtx, handler());
     }
 
     /**
-     * Stops local node.
+     * @param failureCtx Failure context.
+     * @param hnd Handler.
      */
-    public void stopNode(final FailureContext failureCtx) {
-        new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    final IgniteLogger log = ctx.log(getClass());
+    public synchronized void handleFailure(FailureContext failureCtx, FailureHandler hnd) {
+        if (ctx.invalidationCause() != null) // Node already terminating, no reason to process more errors.
+            return;
 
-                    U.warn(log, "Stopping local node on Ignite failure: " + failureCtx);
-
-                    IgnitionEx.stop(ctx.igniteInstanceName(), true, true, 60 * 1000);
-                }
-            },
-            "node-stopper"
-        ).start();
+        if (hnd.onFailure(ignite, failureCtx))
+            ctx.invalidate(failureCtx);
     }
 }

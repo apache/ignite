@@ -15,20 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.failure;
-
-import org.apache.ignite.Ignite;
-import org.apache.ignite.configuration.IgniteConfiguration;
-
 /**
- * Provides facility to handle failures by custom user implementations,
- * which can be configured by {@link IgniteConfiguration#setFailureHandler(FailureHandler)} method.
+ * <!-- Package description. -->
+ * Contains <b>Failure handling public API</b> with standard FailureHandler implementations.
  */
-public interface FailureHandler {
-    /**
-     * @param ignite Ignite instance.
-     * @param failureCtx Failure context.
-     * @return Whether kernal context must be invalidated or not.
-     */
-    public boolean onFailure(Ignite ignite, FailureContext failureCtx);
-}
+package org.apache.ignite.failure;
