@@ -101,7 +101,12 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                 if (ver.compareTo(OdbcConnectionContext.VER_2_3_2) >= 0)
                     timeout = reader.readInt();
 
-                res = new OdbcQueryExecuteRequest(schema, sql, params, timeout);
+                boolean autoCommit = true;
+
+                if (ver.compareTo(OdbcConnectionContext.VER_2_5_0) >= 0)
+                    autoCommit = reader.readBoolean();
+
+                res = new OdbcQueryExecuteRequest(schema, sql, params, timeout, autoCommit);
 
                 break;
             }
@@ -123,7 +128,12 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
                 if (ver.compareTo(OdbcConnectionContext.VER_2_3_2) >= 0)
                     timeout = reader.readInt();
 
-                res = new OdbcQueryExecuteBatchRequest(schema, sql, last, params, timeout);
+                boolean autoCommit = true;
+
+                if (ver.compareTo(OdbcConnectionContext.VER_2_5_0) >= 0)
+                    autoCommit = reader.readBoolean();
+
+                res = new OdbcQueryExecuteBatchRequest(schema, sql, last, params, timeout, autoCommit);
 
                 break;
             }
