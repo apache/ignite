@@ -33,8 +33,10 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
  */
 public class Chromosome {
 
+    /** primary key of Chromosome */
     private static final AtomicLong ID_GEN = new AtomicLong();
 
+    /** fitness score */
     @QuerySqlField(index = true)
     private double fitnessScore = -1;
 

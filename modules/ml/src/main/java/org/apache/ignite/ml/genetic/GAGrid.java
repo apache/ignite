@@ -43,6 +43,7 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
  */
 public class GAGrid {
 
+    /** Ignite logger */
     IgniteLogger igniteLogger = null;
     /** GAConfiguraton */
     private GAConfiguration config = null;

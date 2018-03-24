@@ -39,8 +39,13 @@ import org.junit.Test;
 
 public class GAGridInitializePopulationTest {
 
+    /** Ignite instance */
     private Ignite ignite = null;
+
+    /** GAGrid **/
     private GAGrid gaGrid = null;
+
+    /** GAConfiguraton */
     private GAConfiguration gaConfig = null;
 
     @Before

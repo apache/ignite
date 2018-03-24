@@ -36,6 +36,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
  */
 public class Gene {
 
+    /** primary key of Gene */
     private static final AtomicLong ID_GEN = new AtomicLong();
 
     /** Id (indexed). */

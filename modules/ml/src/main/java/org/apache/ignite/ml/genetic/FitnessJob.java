@@ -42,9 +42,11 @@ public class FitnessJob extends ComputeJobAdapter {
      */
     private Long key;
 
+    /** Ignite instance */
     @IgniteInstanceResource
     private Ignite ignite = null;
 
+    /** Ignite logger */
     @LoggerResource
     private IgniteLogger log = null;
 

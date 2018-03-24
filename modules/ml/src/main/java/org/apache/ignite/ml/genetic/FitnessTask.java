@@ -41,10 +41,11 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  */
 public class FitnessTask extends ComputeTaskAdapter<List<Long>, Boolean> {
 
+    /** Ignite instance */
     @IgniteInstanceResource
     private Ignite ignite = null;
 
-    /** GAConfiguration **/
+    /** GAConfiguration */
     private GAConfiguration config = null;
 
     /**

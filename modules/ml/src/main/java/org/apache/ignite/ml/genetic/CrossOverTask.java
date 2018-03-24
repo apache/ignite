@@ -47,6 +47,7 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  */
 public class CrossOverTask extends ComputeTaskAdapter<List<Long>, Boolean> {
 
+    /** Ignite instance */
     @IgniteInstanceResource
     private Ignite ignite = null;
 

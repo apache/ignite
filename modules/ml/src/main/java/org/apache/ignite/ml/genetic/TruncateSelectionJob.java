@@ -42,6 +42,7 @@ public class TruncateSelectionJob extends ComputeJobAdapter {
     /** primary keys of genes to be used in mutation */
     private List<Long> mutatedGeneKeys;
 
+    /** Ignite instance */
     @IgniteInstanceResource
     private Ignite ignite = null;
 

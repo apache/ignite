@@ -44,9 +44,9 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 /**
  * Responsible for performing truncate selection.
  */
-
 public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolean> {
 
+    /** Ignite resource */
     @IgniteInstanceResource
     private Ignite ignite = null;
 

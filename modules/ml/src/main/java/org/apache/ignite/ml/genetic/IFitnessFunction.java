@@ -28,7 +28,6 @@ import java.util.List;
  *
  * </p>
  */
-
 public interface IFitnessFunction {
 
     /**

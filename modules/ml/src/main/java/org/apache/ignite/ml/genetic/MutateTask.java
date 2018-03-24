@@ -49,9 +49,11 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  */
 public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
 
+    /** Ignite instance */
     @IgniteInstanceResource
     private Ignite ignite = null;
 
+    /** GAConfiguration */
     private GAConfiguration config = null;
 
     /**
