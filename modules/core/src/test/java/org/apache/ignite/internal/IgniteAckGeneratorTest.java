@@ -21,7 +21,6 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -57,6 +56,9 @@ public class IgniteAckGeneratorTest extends GridCommonAbstractTest {
     /** Logger string. */
     private static String logStr;
 
+    /** Config config. */
+    private String cfgStr;
+
     /**
      * {@inheritDoc}
      */
@@ -66,6 +68,8 @@ public class IgniteAckGeneratorTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(defaultCacheConfiguration());
 
         when(log.isInfoEnabled()).thenReturn(true);
+
+//        when(log.isDebugEnabled()).thenReturn(true);
 
         userAttr.put("Name", "John Gold");
 
@@ -85,6 +89,8 @@ public class IgniteAckGeneratorTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         startGrid(0);
+
+        cfgStr = cfg.toString();
 
         logStr = log.toString();
     }
@@ -108,6 +114,15 @@ public class IgniteAckGeneratorTest extends GridCommonAbstractTest {
      */
     public void testAckConfigUrl() throws Exception {
         assertTrue(logStr.contains(System.getProperty(IGNITE_CONFIG_URL, "n/a")));
+    }
+
+    /**
+     *
+     */
+    public void testAckConfiguration() throws Exception{
+        System.out.println("~~!" + cfgStr);
+        System.out.println(logStr);
+        assertTrue(logStr.contains("IgniteConfiguration"));
     }
 
     /**
@@ -179,6 +194,28 @@ public class IgniteAckGeneratorTest extends GridCommonAbstractTest {
         assertTrue(logStr.contains(cfg.getIgniteHome()));
 
         assertTrue(logStr.contains(String.valueOf(rtBean.getInputArguments())));
+    }
+
+    /**
+     *
+     */
+    public void testAckLogger() throws Exception{
+//        assertTrue(logStr.contains(log.info));
+    }
+
+    /**
+     *
+     */
+    public void testAckClassPath(){
+        RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
+
+        System.out.println(log.isDebugEnabled());
+
+        System.out.println("~~!" + rtBean.getBootClassPath());
+
+        System.out.println(logStr);
+//
+        assertTrue(logStr.contains(rtBean.getBootClassPath()));
     }
 
     /**

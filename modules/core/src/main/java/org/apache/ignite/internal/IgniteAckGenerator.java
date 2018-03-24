@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,16 +55,11 @@ class IgniteAckGenerator {
     /**
      * @param log Logger.
      */
-    IgniteAckGenerator(GridLoggerProxy log, IgniteConfiguration cfg, GridKernalContextImpl ctx) {
+    IgniteAckGenerator(GridLoggerProxy log, IgniteConfiguration cfg) {
         this.cfg = cfg;
 
         this.log = log;
-
-        this.ctx = ctx;
     }
-    /**Implementation of kernal context. */
-    private GridKernalContextImpl ctx;
-
     /** Logger. */
     private GridLoggerProxy log;
 
@@ -433,7 +429,7 @@ class IgniteAckGenerator {
     /**
      * Prints security status.
      */
-    void ackSecurity() {
+    void ackSecurity(GridKernalContextImpl ctx) {
         assert log != null;
 
         U.quietAndInfo(log, "Security status [authentication=" + onOff(ctx.security().enabled())
@@ -445,7 +441,7 @@ class IgniteAckGenerator {
      *
      * @param rtBean Java runtime bean.
      */
-    void ackStart(RuntimeMXBean rtBean) {
+    void ackStart(RuntimeMXBean rtBean, GridKernalContextImpl ctx) {
         ClusterNode locNode = ctx.cluster().get().localNode();
 
         String igniteInstanceName = cfg.getIgniteInstanceName();

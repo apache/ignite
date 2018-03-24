@@ -790,19 +790,22 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         RuntimeMXBean rtBean = ManagementFactory.getRuntimeMXBean();
 
-        IgniteAckGenerator info = new IgniteAckGenerator(log, cfg, ctx);
+        IgniteAckGenerator info = new IgniteAckGenerator(log, cfg);
 
         // Ack various information.
         info.ackAsciiLogo();
         info.ackConfigUrl();
+        info.ackConfiguration(cfg);
         info.ackDaemon(isDaemon());
         info.ackOsInfo();
         info.ackLanguageRuntime(getLanguage());
         info.ackRemoteManagement(isJmxRemoteEnabled(), isRestartEnabled());
+        info.ackLogger();
         info.ackVmArguments(rtBean);
         info.ackClassPaths(rtBean);
         info.ackSystemProperties();
         info.ackEnvironmentVariables();
+        info.ackMemoryConfiguration();
         info.ackCacheConfiguration();
         info.ackP2pConfiguration();
         info.ackRebalanceConfiguration();
@@ -927,7 +930,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startManager(new GridCollisionManager(ctx));
             startManager(new GridIndexingManager(ctx));
 
-            info.ackSecurity();
+            info.ackSecurity(ctx);
 
             // Assign discovery manager to context before other processors start so they
             // are able to register custom event listener.
@@ -1283,7 +1286,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         U.quietAndInfo(log, "To start Console Management & Monitoring run ignitevisorcmd.{sh|bat}");
 
-        info.ackStart(rtBean);
+        info.ackStart(rtBean, ctx);
 
         if (!isDaemon())
             ctx.discovery().ackTopology(localNode().order());
