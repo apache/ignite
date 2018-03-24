@@ -63,11 +63,11 @@ public class SVMPartitionDataBuilderOnHeap<K, V, C extends Serializable>
     /** {@inheritDoc} */
     @Override public LabeledDataset<Double, LabeledVector> build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
                                                                  C ctx) {
-
         double[][] x = new double[Math.toIntExact(upstreamDataSize)][cols];
         double[] y = new double[Math.toIntExact(upstreamDataSize)];
 
         int ptr = 0;
+
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
             double[] row = xExtractor.apply(entry.getKey(), entry.getValue());
