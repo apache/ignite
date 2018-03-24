@@ -22,7 +22,6 @@ import java.util.List;
 /**
  * POJO to model a movie.
  */
-
 public class Movie {
     /** name of movie */
     private String name;
