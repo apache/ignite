@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.TreeMap;
 import javax.cache.Cache;
+import javax.persistence.EntityNotFoundException;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.examples.model.Person;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -108,7 +109,7 @@ public class SpringDataExample {
      */
     private static void findPersons() {
         // Getting Person with specific ID.
-        Person person = repo.findOne(2L);
+        Person person = repo.findById(2L).orElseThrow(() -> new EntityNotFoundException("Entity with id " + 2L + " not found"));
 
         System.out.println("\n>>> Found Person [id=" + 2L + ", val=" + person + "]");
 
@@ -119,7 +120,7 @@ public class SpringDataExample {
         for (long i = 0; i < 5; i++)
             ids.add(i);
 
-        Iterator<Person> persons = repo.findAll(ids).iterator();
+        Iterator<Person> persons = repo.findAllById(ids).iterator();
 
         System.out.println("\n>>> Persons list for specific ids: ");
 
