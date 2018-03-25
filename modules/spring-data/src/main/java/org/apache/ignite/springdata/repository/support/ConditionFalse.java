@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.ignite.springdata.repository.support;
 
 import org.springframework.context.annotation.Condition;
@@ -25,6 +26,8 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
  * Tells spring context never load bean with such Condition.
  */
 public class ConditionFalse implements Condition {
+
+    /**{@inheritDoc}*/
     @Override public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         return false;
     }

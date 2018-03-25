@@ -37,7 +37,7 @@ import org.springframework.context.annotation.Conditional;
 @Conditional(ConditionFalse.class)
 public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteRepository<T, ID> {
     /** Ignite Cache bound to the repository */
-    private IgniteCache<ID, T> cache;
+    private final IgniteCache<ID, T> cache;
 
     /**
      * Repository constructor.
