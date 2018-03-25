@@ -34,10 +34,6 @@
     <version>2.5.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
-    <properties>
-        <google.client.version>1.22.0</google.client.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
@@ -48,7 +44,7 @@
         <dependency>
             <groupId>com.google.api-client</groupId>
             <artifactId>google-api-client</artifactId>
-            <version>${google.client.version}</version>
+            <version>1.22.0</version>
         </dependency>
 
         <dependency>
@@ -58,21 +54,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.http-client</groupId>
-            <artifactId>google-http-client</artifactId>
-            <version>${google.client.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.http-client</groupId>
-            <artifactId>google-http-client-jackson2</artifactId>
-            <version>${google.client.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.oauth-client</groupId>
-            <artifactId>google-oauth-client</artifactId>
-            <version>${google.client.version}</version>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson2.version}</version>
         </dependency>
 
         <dependency>
@@ -112,4 +96,27 @@
 
     </dependencies>
 
+    <build>
+        <plugins>
+
+            <plugin>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy-libs</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>target/libs</outputDirectory>
+                            <includeScope>runtime</includeScope>
+                            <excludeTransitive>false</excludeTransitive>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+    </build>
 </project>
