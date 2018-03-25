@@ -29,7 +29,6 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -43,7 +42,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTAN
  */
 public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     /** Pattern to test. */
-    private static final String CHECK_MSG_PREFIX = "Local node affinity assignment distribution is not ideal ";
+    private static final String LOG_MESSAGE_PREFIX = "Local node affinity assignment distribution is not ideal ";
 
     /** Partitions number. */
     private int parts = 0;
@@ -83,7 +82,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
 
         String testsLog = runAndGetExchangeLog(2, 1, 2);
 
-        assertFalse(testsLog.contains(CHECK_MSG_PREFIX));
+        assertFalse(testsLog.contains(LOG_MESSAGE_PREFIX));
     }
 
     /**
@@ -94,7 +93,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
 
         String testsLog = runAndGetExchangeLog(120, 2, 3);
 
-        assertFalse(testsLog.contains(CHECK_MSG_PREFIX));
+        assertFalse(testsLog.contains(LOG_MESSAGE_PREFIX));
     }
 
     /**
@@ -103,7 +102,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     public void testNotIdealPartitionDistributionLogging1() throws Exception {
         String testsLog = runAndGetExchangeLog(4, 4, 4);
 
-        String exp = CHECK_MSG_PREFIX + "[cache=default, expectedPrimary=1,00(25,00%), expectedBackups=4,00(100,00%), " +
+        String exp = LOG_MESSAGE_PREFIX + "[cache=default, expectedPrimary=1,00(25,00%), expectedBackups=4,00(100,00%), " +
             "primary=1(25,00%), backups=3(75,00%)]";
 
         assertTrue(testsLog.contains(exp));
@@ -117,7 +116,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
 
         String testsLog = runAndGetExchangeLog(4, 4, 4);
 
-        assertFalse(testsLog.contains(CHECK_MSG_PREFIX));
+        assertFalse(testsLog.contains(LOG_MESSAGE_PREFIX));
     }
 
     /**
@@ -128,7 +127,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
 
         String testsLog = runAndGetExchangeLog(39, 6, 3);
 
-        String exp = CHECK_MSG_PREFIX + "[cache=default, expectedPrimary=13,00(33,33%), expectedBackups=78,00(200,00%), " +
+        String exp = LOG_MESSAGE_PREFIX + "[cache=default, expectedPrimary=13,00(33,33%), expectedBackups=78,00(200,00%), " +
             "primary=13(33,33%), backups=26(66,67%)]";
 
         assertTrue(testsLog.contains(exp));
@@ -142,10 +141,16 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
 
         String testsLog = runAndGetExchangeLog(39, 6, 3);
 
-        assertFalse(testsLog.contains(CHECK_MSG_PREFIX));
+        assertFalse(testsLog.contains(LOG_MESSAGE_PREFIX));
     }
 
     /**
+     * Starts a specified number of Ignite nodes and log partition node exchange during a last node's startup.
+     *
+     * @param parts Partitions number.
+     * @param backups Backups number.
+     * @param nodes Nodes number.
+     * @return Log of latest partition map exchange.
      * @throws Exception In case of an error.
      */
     private String runAndGetExchangeLog(int parts, int backups, int nodes) throws Exception {
@@ -172,8 +177,6 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        X.println("***" + log.toString());
-
         return log.toString();
     }
 
@@ -190,7 +193,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
         /**
          * @param parts Number of partitions for one cache.
          */
-        TestAffinityFunction(int parts) {
+        private TestAffinityFunction(int parts) {
             this.parts = parts;
         }
 
