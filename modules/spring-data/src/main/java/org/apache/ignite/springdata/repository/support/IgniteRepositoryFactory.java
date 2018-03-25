@@ -120,8 +120,8 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     }
 
     /** {@inheritDoc} */
-    @Override protected Optional<QueryLookupStrategy> getQueryLookupStrategy(final QueryLookupStrategy.Key key, EvaluationContextProvider evaluationCtxProvider) {
-
+    @Override protected Optional<QueryLookupStrategy> getQueryLookupStrategy(final QueryLookupStrategy.Key key,
+        EvaluationContextProvider evaluationCtxProvider) {
         return Optional.of((mtd, metadata, factory, namedQueries) -> {
 
             final Query annotation = mtd.getAnnotation(Query.class);
@@ -137,10 +137,10 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
 
             if (key == QueryLookupStrategy.Key.USE_DECLARED_QUERY)
                 throw new IllegalStateException("To use QueryLookupStrategy.Key.USE_DECLARED_QUERY, pass " +
-                        "a query string via org.apache.ignite.springdata.repository.config.Query annotation.");
+                    "a query string via org.apache.ignite.springdata.repository.config.Query annotation.");
 
             return new IgniteRepositoryQuery(metadata, IgniteQueryGenerator.generateSql(mtd, metadata), mtd,
-                    factory, ignite.getOrCreateCache(repoToCache.get(metadata.getRepositoryInterface())));
+                factory, ignite.getOrCreateCache(repoToCache.get(metadata.getRepositoryInterface())));
         });
     }
 
