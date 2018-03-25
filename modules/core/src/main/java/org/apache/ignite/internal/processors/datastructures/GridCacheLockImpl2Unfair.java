@@ -650,7 +650,7 @@ public final class GridCacheLockImpl2Unfair extends GridCacheLockEx2 {
      */
     private static final class LocalSync implements Lock {
         /** Max time of local lock holding. */
-        private static final long MAX_TIME = 50_000_000L;
+        private static final long MAX_TIME = Long.MAX_VALUE;//50_000_000L;
         /** */
         private final ReentrantLock lock = new ReentrantLock();
         /** A number of threads in a local waiting queue. */
