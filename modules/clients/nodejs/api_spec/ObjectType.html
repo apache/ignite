@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Class: ObjectType</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Class: ObjectType</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2><span class="attribs"><span class="type-signature"></span></span>ObjectType<span class="signature">(typeCode)</span><span class="type-signature"></span></h2>
+        
+            <div class="class-description"><p>Class representing a type of object.</p>
+<p>Every type has mandatory type code <a href="ObjectType.html#.TYPE_CODE">ObjectType.TYPE_CODE</a>.
+Some of the types requires subtypes (eg. kind of map or kind of collection) which have defaults.</p>
+<p>This class helps the Ignite client to make a mapping between JavaScript types
+and types used by Ignite.</p>
+<p>In many methods the Ignite client does not require to directly specify an object type.
+In this case the Ignite client does automatical mapping between some of the JavaScript types
+and object types - according to the following mapping table:</p>
+<p><pre>
+     JavaScript type         : type code (<a href="ObjectType.html#.TYPE_CODE">ObjectType.TYPE_CODE</a>)
+     null                    : NULL
+     number                  : DOUBLE
+     string                  : STRING
+     boolean                 : BOOLEAN
+     Date                    : DATE
+     Map                     : MAP (HASH_MAP)
+     Array of number         : DOUBLE_ARRAY
+     Array of string         : STRING_ARRAY
+     Array of boolean        : BOOLEAN_ARRAY
+     Array of Date           : DATE_ARRAY
+</pre>
+Note: type of an array content is determined by the type of the first element of the array
+(empty array has no automatical mapping).</p>
+<p>All other JavaScript types have no automatical mapping.</p></div>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+    
+    <h2>Constructor</h2>
+    
+
+    
+    <h4 class="name" id="ObjectType"><span class="type-signature"></span>new ObjectType<span class="signature">(typeCode)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Creates an instance of object type for the specified type code.</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>typeCode</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">integer</span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>type code, one of the <a href="ObjectType.html#.TYPE_CODE">ObjectType.TYPE_CODE</a> constants.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line119">line 119</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    </div>
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Members</h3>
+
+        
+            
+<h4 class="name" id=".MAP_SUBTYPE"><span class="type-signature">(static, readonly) </span>MAP_SUBTYPE<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    <p>Supported kinds of map.</p>
+</div>
+
+
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>HASH_MAP</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>1</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>LINKED_HASH_MAP</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>2</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line76">line 76</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+            
+<h4 class="name" id=".TYPE_CODE"><span class="type-signature">(static, readonly) </span>TYPE_CODE<span class="type-signature"></span></h4>
+
+
+
+
+<div class="description">
+    <p>Supported type codes.</p>
+</div>
+
+
+
+
+
+
+
+    <h5 class="subsection-title">Properties:</h5>
+
+    
+
+<table class="props">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>BYTE</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>1</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>SHORT</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>2</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>INTEGER</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>3</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>LONG</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>4</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>FLOAT</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>5</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>DOUBLE</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>6</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>CHAR</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>7</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>BOOLEAN</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>8</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>STRING</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>9</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>DATE</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>11</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>BYTE_ARRAY</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>12</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>SHORT_ARRAY</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>13</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>INTEGER_ARRAY</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>14</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>LONG_ARRAY</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>15</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>FLOAT_ARRAY</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>16</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>DOUBLE_ARRAY</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>17</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>CHAR_ARRAY</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>18</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>BOOLEAN_ARRAY</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>19</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>STRING_ARRAY</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>20</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>DATE_ARRAY</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>22</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>MAP</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>25</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>NULL</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>101</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line22">line 22</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+        
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="setMapSubType"><span class="type-signature"></span>setMapSubType<span class="signature">(mapSubType, mapKeyType<span class="signature-attributes">opt</span>, mapValueType<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {<a href="ObjectType.html">ObjectType</a>}</span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    <p>Specifies a kind of map.
+Optionally specifies types of keys and/or values in the map.</p>
+<p>If key and/or value type is not specified then during operations the Ignite client
+will do automatic mapping between some of the JavaScript types and object types -
+according to the mapping table defined in the description of the <a href="ObjectType.html">ObjectType</a> class.</p>
+<p>By default: HASH_MAP</p>
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+        <th>Attributes</th>
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>mapSubType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last"><p>map subtype, one of the <a href="ObjectType.html#.MAP_SUBTYPE">ObjectType.MAP_SUBTYPE</a> constants.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>mapKeyType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="ObjectType.html">ObjectType</a></span>
+|
+
+<span class="param-type">integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last"><p>type of the keys in the map:</p>
+<ul>
+<li>either an instance of object type</li>
+<li>or a type code (means object type with this type code and with default subtype, if applicable)</li>
+<li>or null or not specified (means the type is not specified)</li>
+</ul></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>mapValueType</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type"><a href="ObjectType.html">ObjectType</a></span>
+|
+
+<span class="param-type">integer</span>
+
+
+            
+            </td>
+
+            
+                <td class="attributes">
+                
+                    &lt;optional><br>
+                
+
+                
+
+                
+                </td>
+            
+
+            
+                <td class="default">
+                
+                    null
+                
+                </td>
+            
+
+            <td class="description last"><p>type of the values in the map:</p>
+<ul>
+<li>either an instance of object type</li>
+<li>or a type code (means object type with this type code and with default subtype, if applicable)</li>
+<li>or null or not specified (means the type is not specified)</li>
+</ul></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line162">line 162</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+<h5>Throws:</h5>
+<ul>
+        <li>
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        <p>if this object type is not a map.</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type"><a href="IllegalArgumentError.html">IllegalArgumentError</a></span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+</li>
+    
+        <li>
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        <p>if the provided subtype is null or not supported.</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type"><a href="UnsupportedTypeError.html">UnsupportedTypeError</a></span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+</li>
+    
+        <li>
+
+<dl>
+    <dt>
+        <div class="param-desc">
+        <p>if other error.</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl>
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type"><a href="IgniteClientError.html">IgniteClientError</a></span>
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+</li>
+    </ul>
+
+
+<h5>Returns:</h5>
+
+        
+<div class="param-desc">
+    <ul>
+<li>the same instance of the object type.</li>
+</ul>
+</div>
+
+
+
+<dl>
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type"><a href="ObjectType.html">ObjectType</a></span>
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalArgumentError.html">IllegalArgumentError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="InternalError.html">InternalError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li><li><a href="TypeCastError.html">TypeCastError</a></li><li><a href="UnsupportedTypeError.html">UnsupportedTypeError</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sun Mar 25 2018 16:30:30 GMT+0300 (Russia TZ 2 Standard Time)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
