@@ -37,7 +37,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -2729,7 +2728,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     cctx.exchange().clientTopology(grpId, events().discoveryCache());
 
             // Do not validate read or write through caches.
-            if (grpCtx.config().isReadThrough() || grpCtx.config().isWriteThrough())
+            if (grpCtx == null || grpCtx.config().isReadThrough() || grpCtx.config().isWriteThrough())
                 continue;
 
             try {
