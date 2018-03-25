@@ -26,6 +26,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
 import java.util.Random;
+import javax.cache.CacheException;
 import javax.cache.integration.CacheLoaderException;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
@@ -576,12 +577,18 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         try {
             c1.loadCache(null, "PersonKeyWrong", "SELECT * FROM Person");
         }
-        catch (CacheLoaderException e) {
-            String msg = e.getMessage();
+        catch (CacheException e) {
+            Throwable t = e;
 
-            assertTrue("Unexpected exception: " + msg,
-                ("Provided key type is not found in store or cache configuration " +
-                    "[cache=" + CACHE_NAME + ", key=PersonKeyWrong]").equals(msg));
+            while (!(t instanceof CacheLoaderException) && t.getCause() != null)
+                t = t.getCause();
+
+            if (!(t instanceof CacheLoaderException))
+                fail("Unexpected exception: " + t);
+
+            String expMsg = "Provided key type is not found in store or cache configuration " +
+                "[cache=" + CACHE_NAME + ", key=PersonKeyWrong]";
+            assertEquals("Unexpected exception message: " + t.getMessage(), expMsg, t.getMessage());
         }
     }
 }
