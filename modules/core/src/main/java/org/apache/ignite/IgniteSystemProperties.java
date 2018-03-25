@@ -850,9 +850,9 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_BPLUS_TREE_LOCK_RETRIES = "IGNITE_BPLUS_TREE_LOCK_RETRIES";
 
     /**
-     * The distribution will be logged if the actual exceeds the ideal by the specified amount.
-     * <p>
-     * Default is 0.1.
+     * The threshold above which partition distribution will be logged.
+     *
+     * The default is '0.1', that means: warn about nodes with 10+% difference.
      */
     public static final String IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD = "IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD";
 

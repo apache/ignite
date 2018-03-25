@@ -428,10 +428,11 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * Logs partitions distribution if value of {@link IgniteSystemProperties#IGNITE_AFFINITY_HISTORY_SIZE} is exceeded.
+     * Calculates and logs partitions distribution if threshold {@link #partDistribution} is exceeded.
      *
-     * @param assignments Assignment to verify.
+     * @param assignments Assignment to calculate partitions distribution.
      * @param nodes Affinity nodes number.
+     * @see IgniteSystemProperties#IGNITE_AFFINITY_HISTORY_SIZE
      */
     private void printDistribution(List<List<ClusterNode>> assignments, int nodes) {
         int locPrimaryCnt = 0;
