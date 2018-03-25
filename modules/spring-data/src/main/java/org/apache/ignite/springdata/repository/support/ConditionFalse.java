@@ -26,7 +26,6 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
  * Tells spring context never load bean with such Condition.
  */
 public class ConditionFalse implements Condition {
-
     /**{@inheritDoc}*/
     @Override public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         return false;
