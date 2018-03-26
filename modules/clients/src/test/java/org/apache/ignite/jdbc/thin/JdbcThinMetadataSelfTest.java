@@ -246,7 +246,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "org.ORGANIZATION",
                 "pers.PERSON",
                 "PUBLIC.TEST",
-                "PUBLIC.Quoted"));
+                "PUBLIC.Quoted",
+                "PUBLIC.TEST_DECIMAL_COLUMN"));
 
             Set<String> actualTbls = new HashSet<>(expectedTbls.size());
 
@@ -401,6 +402,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
 
             while(rs.next()) {
                 int precision = rs.getInt("DECIMAL_DIGITS");
+
                 int scale = rs.getInt("COLUMN_SIZE");
 
                 actualCols.add(rs.getString("TABLE_SCHEM") + '.'
@@ -410,10 +412,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                     + (precision == 0 ? "" : ("." + precision))
                     + (scale == 0 ? "" : ("." + scale))
                 );
-            }
-
-            for (String col : actualCols) {
-                System.out.println(col);
             }
 
             assert expectedCols.equals(actualCols) : "expectedCols=" + expectedCols +
@@ -547,7 +545,8 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "pers.PERSON.PK_pers_PERSON._KEY",
                 "PUBLIC.TEST.PK_PUBLIC_TEST.ID",
                 "PUBLIC.TEST.PK_PUBLIC_TEST.NAME",
-                "PUBLIC.Quoted.PK_PUBLIC_Quoted.Id"));
+                "PUBLIC.Quoted.PK_PUBLIC_Quoted.Id",
+                "PUBLIC.TEST_DECIMAL_COLUMN.ID._KEY"));
 
             Set<String> actualPks = new HashSet<>(expectedPks.size());
 
@@ -678,22 +677,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         private Organization(int id, String name) {
             this.id = id;
             this.name = name;
-        }
-    }
-
-    /**
-     * Salary.
-     */
-    @SuppressWarnings("UnusedDeclaration")
-    private static class Salary {
-        private BigDecimal amount;
-
-        public BigDecimal getAmount() {
-            return amount;
-        }
-
-        public void setAmount(BigDecimal amount) {
-            this.amount = amount;
         }
     }
 }

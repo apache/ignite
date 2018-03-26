@@ -518,7 +518,7 @@ public class PlatformConfigurationUtils {
 
                 int precision = in.readInt();
 
-                if (scale != 0 || precision != 0)
+                if (scale != -1 || precision != -1)
                     decimalInfo.put(fieldName, new IgniteBiTuple<>(scale, precision));
             }
 
@@ -1035,7 +1035,6 @@ public class PlatformConfigurationUtils {
                 writer.writeBoolean(notNullFields != null && notNullFields.contains(field.getKey()));
                 writer.writeObject(defVals != null ? defVals.get(field.getKey()) : null);
 
-
                 if (decimalInfo != null && decimalInfo.containsKey(field.getKey())) {
                     IgniteBiTuple<Integer, Integer> info = decimalInfo.get(field.getKey());
 
@@ -1043,8 +1042,8 @@ public class PlatformConfigurationUtils {
                     writer.writeInt(info.get2());
                 }
                 else {
-                    writer.writeInt(0);
-                    writer.writeInt(0);
+                    writer.writeInt(-1);
+                    writer.writeInt(-1);
                 }
             }
         }

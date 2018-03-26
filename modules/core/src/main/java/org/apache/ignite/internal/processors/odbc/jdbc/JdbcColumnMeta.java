@@ -142,7 +142,7 @@ public class JdbcColumnMeta implements JdbcRawBinarylizable {
     }
 
     /**
-     * @return Column's scale.
+     * @return Column's precision.
      */
     public int precision() {
         return -1;
