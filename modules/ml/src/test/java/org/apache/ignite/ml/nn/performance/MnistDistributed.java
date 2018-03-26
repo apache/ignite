@@ -26,23 +26,13 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.nn.Activators;
-import org.apache.ignite.ml.nn.LabeledVectorsCache;
-import org.apache.ignite.ml.nn.MLPGroupUpdateTrainerCacheInput;
-import org.apache.ignite.ml.nn.MultilayerPerceptron;
-import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
-import org.apache.ignite.ml.nn.trainers.distributed.MLPGroupUpdateTrainer;
-import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.ml.nn.performance.MnistMLPTestUtil.createDataset;
 import static org.apache.ignite.ml.nn.performance.MnistMLPTestUtil.loadMnist;
 
 /**
@@ -87,28 +77,28 @@ public class MnistDistributed extends GridCommonAbstractTest {
         Stream<DenseLocalOnHeapVector> trainingMnist = trainingAndTest.get1();
         List<DenseLocalOnHeapVector> trainingMnistLst = trainingMnist.collect(Collectors.toList());
 
-        IgniteCache<Integer, LabeledVector<Vector, Vector>> labeledVectorsCache = LabeledVectorsCache.createNew(ignite);
-        loadIntoCache(trainingMnistLst, labeledVectorsCache);
-
-        MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).
-            withMaxGlobalSteps(35).
-            withSyncPeriod(2);
-
-        MLPArchitecture arch = new MLPArchitecture(FEATURES_CNT).
-            withAddedLayer(hiddenNeuronsCnt, true, Activators.SIGMOID).
-            withAddedLayer(10, false, Activators.SIGMOID);
-
-        MultilayerPerceptron mdl = trainer.train(new MLPGroupUpdateTrainerCacheInput(arch, 9, labeledVectorsCache, 2000));
-
-        IgniteBiTuple<Matrix, Matrix> testDs = createDataset(trainingAndTest.get2(), 10_000, FEATURES_CNT);
-
-        Vector truth = testDs.get2().foldColumns(VectorUtils::vec2Num);
-        Vector predicted = mdl.apply(testDs.get1()).foldColumns(VectorUtils::vec2Num);
-
-        Tracer.showAscii(truth);
-        Tracer.showAscii(predicted);
-
-        X.println("Accuracy: " + VectorUtils.zipWith(predicted, truth, (x, y) -> x.equals(y) ? 1.0 : 0.0).sum() / truth.size() * 100 + "%.");
+//        IgniteCache<Integer, LabeledVector<Vector, Vector>> labeledVectorsCache = LabeledVectorsCache.createNew(ignite);
+//        loadIntoCache(trainingMnistLst, labeledVectorsCache);
+//
+//        MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).
+//            withMaxGlobalSteps(35).
+//            withSyncPeriod(2);
+//
+//        MLPArchitecture arch = new MLPArchitecture(FEATURES_CNT).
+//            withAddedLayer(hiddenNeuronsCnt, true, Activators.SIGMOID).
+//            withAddedLayer(10, false, Activators.SIGMOID);
+//
+//        MultilayerPerceptron mdl = trainer.train(new MLPGroupUpdateTrainerCacheInput(arch, 9, labeledVectorsCache, 2000));
+//
+//        IgniteBiTuple<Matrix, Matrix> testDs = createDataset(trainingAndTest.get2(), 10_000, FEATURES_CNT);
+//
+//        Vector truth = testDs.get2().foldColumns(VectorUtils::vec2Num);
+//        Vector predicted = mdl.apply(testDs.get1()).foldColumns(VectorUtils::vec2Num);
+//
+//        Tracer.showAscii(truth);
+//        Tracer.showAscii(predicted);
+//
+//        X.println("Accuracy: " + VectorUtils.zipWith(predicted, truth, (x, y) -> x.equals(y) ? 1.0 : 0.0).sum() / truth.size() * 100 + "%.");
     }
 
     /**

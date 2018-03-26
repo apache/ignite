@@ -25,13 +25,10 @@ import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.functions.IgniteSupplier;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.Activators;
-import org.apache.ignite.ml.trainers.local.LocalBatchTrainerInput;
-import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
-import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
-import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
+import org.apache.ignite.ml.trainers.local.LocalBatchTrainerInput;
 import org.apache.ignite.ml.util.Utils;
 
 /**
@@ -66,26 +63,26 @@ public class MLPLocalTrainerExample {
 
         System.out.println("\n>>> Perform training.");
 
-        MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
-            RPropUpdateCalculator::new,
-            0.0001,
-            16000).train(trainerInput);
-
-        System.out.println("\n>>> Apply model.");
-
-        Matrix predict = mlp.apply(xorInputs);
-
-        System.out.println("\n>>> Predicted data:");
-
-        Tracer.showAscii(predict);
-
-        System.out.println("\n>>> Reference expected data:");
-
-        Tracer.showAscii(xorOutputs);
-
-        System.out.println("\n>>> Difference estimate: " + xorOutputs.getRow(0).minus(predict.getRow(0)).kNorm(2));
-
-        System.out.println("\n>>> Local multilayer perceptron example completed.");
+//        MultilayerPerceptron mlp = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
+//            RPropUpdateCalculator::new,
+//            0.0001,
+//            16000).train(trainerInput);
+//
+//        System.out.println("\n>>> Apply model.");
+//
+//        Matrix predict = mlp.apply(xorInputs);
+//
+//        System.out.println("\n>>> Predicted data:");
+//
+//        Tracer.showAscii(predict);
+//
+//        System.out.println("\n>>> Reference expected data:");
+//
+//        Tracer.showAscii(xorOutputs);
+//
+//        System.out.println("\n>>> Difference estimate: " + xorOutputs.getRow(0).minus(predict.getRow(0)).kNorm(2));
+//
+//        System.out.println("\n>>> Local multilayer perceptron example completed.");
     }
 
     /**

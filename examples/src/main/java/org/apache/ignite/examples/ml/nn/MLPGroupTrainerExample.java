@@ -17,26 +17,16 @@
 
 package org.apache.ignite.examples.ml.nn;
 
-import java.util.Random;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.StorageConstants;
-import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.Activators;
-import org.apache.ignite.ml.nn.LabeledVectorsCache;
-import org.apache.ignite.ml.nn.MLPGroupUpdateTrainerCacheInput;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
-import org.apache.ignite.ml.nn.initializers.RandomInitializer;
-import org.apache.ignite.ml.nn.trainers.distributed.MLPGroupUpdateTrainer;
-import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
-import org.apache.ignite.ml.structures.LabeledVector;
 import org.apache.ignite.thread.IgniteThread;
 
 /**
@@ -81,50 +71,50 @@ public class MLPGroupTrainerExample {
                     withAddedLayer(10, true, Activators.RELU).
                     withAddedLayer(1, false, Activators.SIGMOID);
 
-                IgniteCache<Integer, LabeledVector<Vector, Vector>> cache = LabeledVectorsCache.createNew(ignite);
-                String cacheName = cache.getName();
-                Random rnd = new Random(12345L);
-
-                try (IgniteDataStreamer<Integer, LabeledVector<Vector, Vector>> streamer =
-                         ignite.dataStreamer(cacheName)) {
-                    streamer.perNodeBufferSize(100);
-
-                    for (int i = 0; i < samplesCnt; i++) {
-                        int col = Math.abs(rnd.nextInt()) % 4;
-                        streamer.addData(i, new LabeledVector<>(xorInputs.getCol(col), xorOutputs.getCol(col)));
-                    }
-                }
-
-                int totalCnt = 100;
-                int failCnt = 0;
-                MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).
-                    withSyncPeriod(3).
-                    withTolerance(0.001).
-                    withMaxGlobalSteps(20);
-
-                for (int i = 0; i < totalCnt; i++) {
-
-                    MLPGroupUpdateTrainerCacheInput trainerInput = new MLPGroupUpdateTrainerCacheInput(conf,
-                        new RandomInitializer(rnd), 6, cache, 10);
-
-                    MultilayerPerceptron mlp = trainer.train(trainerInput);
-
-                    Matrix predict = mlp.apply(xorInputs);
-
-                    System.out.println(">>> Prediction data at step " + i + " of total " + totalCnt + ":");
-
-                    Tracer.showAscii(predict);
-
-                    System.out.println("Difference estimate: " + xorOutputs.getRow(0).minus(predict.getRow(0)).kNorm(2));
-
-                    failCnt += closeEnough(xorOutputs.getRow(0), predict.getRow(0)) ? 0 : 1;
-                }
-
-                double failRatio = (double)failCnt / totalCnt;
-
-                System.out.println("\n>>> Fail percentage: " + (failRatio * 100) + "%.");
-
-                System.out.println("\n>>> Distributed multilayer perceptron example completed.");
+//                IgniteCache<Integer, LabeledVector<Vector, Vector>> cache = LabeledVectorsCache.createNew(ignite);
+//                String cacheName = cache.getName();
+//                Random rnd = new Random(12345L);
+//
+//                try (IgniteDataStreamer<Integer, LabeledVector<Vector, Vector>> streamer =
+//                         ignite.dataStreamer(cacheName)) {
+//                    streamer.perNodeBufferSize(100);
+//
+//                    for (int i = 0; i < samplesCnt; i++) {
+//                        int col = Math.abs(rnd.nextInt()) % 4;
+//                        streamer.addData(i, new LabeledVector<>(xorInputs.getCol(col), xorOutputs.getCol(col)));
+//                    }
+//                }
+//
+//                int totalCnt = 100;
+//                int failCnt = 0;
+//                MLPGroupUpdateTrainer<RPropParameterUpdate> trainer = MLPGroupUpdateTrainer.getDefault(ignite).
+//                    withSyncPeriod(3).
+//                    withTolerance(0.001).
+//                    withMaxGlobalSteps(20);
+//
+//                for (int i = 0; i < totalCnt; i++) {
+//
+//                    MLPGroupUpdateTrainerCacheInput trainerInput = new MLPGroupUpdateTrainerCacheInput(conf,
+//                        new RandomInitializer(rnd), 6, cache, 10);
+//
+//                    MultilayerPerceptron mlp = trainer.train(trainerInput);
+//
+//                    Matrix predict = mlp.apply(xorInputs);
+//
+//                    System.out.println(">>> Prediction data at step " + i + " of total " + totalCnt + ":");
+//
+//                    Tracer.showAscii(predict);
+//
+//                    System.out.println("Difference estimate: " + xorOutputs.getRow(0).minus(predict.getRow(0)).kNorm(2));
+//
+//                    failCnt += closeEnough(xorOutputs.getRow(0), predict.getRow(0)) ? 0 : 1;
+//                }
+//
+//                double failRatio = (double)failCnt / totalCnt;
+//
+//                System.out.println("\n>>> Fail percentage: " + (failRatio * 100) + "%.");
+//
+//                System.out.println("\n>>> Distributed multilayer perceptron example completed.");
             });
 
             igniteThread.start();

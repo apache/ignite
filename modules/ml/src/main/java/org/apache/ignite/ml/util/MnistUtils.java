@@ -20,6 +20,7 @@ package org.apache.ignite.ml.util;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -77,6 +78,39 @@ public class MnistUtils {
         return lst.subList(0, cnt).stream().map(DenseLocalOnHeapVector::new);
     }
 
+    public static List<MnistLabeledImage> mnist2(String imagesPath, String labelsPath, Random rnd, int cnt) throws IOException {
+
+        List<MnistLabeledImage> res = new ArrayList<>();
+
+        try (
+            FileInputStream isImages = new FileInputStream(imagesPath);
+            FileInputStream isLabels = new FileInputStream(labelsPath)
+        ) {
+            read4Bytes(isImages); // Skip magic number.
+            int numOfImages = read4Bytes(isImages);
+            int imgHeight = read4Bytes(isImages);
+            int imgWidth = read4Bytes(isImages);
+
+            read4Bytes(isLabels); // Skip magic number.
+            read4Bytes(isLabels); // Skip number of labels.
+
+            int numOfPixels = imgHeight * imgWidth;
+
+            for (int imgNum = 0; imgNum < numOfImages; imgNum++) {
+                double[] pixels = new double[numOfPixels];
+                for (int p = 0; p < numOfPixels; p++) {
+                    int c = 128 - isImages.read();
+                    pixels[p] = ((double)c) / 128;
+                }
+                res.add(new MnistLabeledImage(pixels, isLabels.read()));
+            }
+        }
+
+        Collections.shuffle(res, rnd);
+
+        return res.subList(0, cnt);
+    }
+
     /**
      * Convert random {@code count} samples from MNIST dataset from two files (images and labels) into libsvm format.
      *
@@ -120,5 +154,32 @@ public class MnistUtils {
      */
     private static int read4Bytes(FileInputStream is) throws IOException {
         return (is.read() << 24) | (is.read() << 16) | (is.read() << 8) | (is.read());
+    }
+
+    public static class MnistImage {
+
+        private final double[] pixels;
+
+        public MnistImage(double[] pixels) {
+            this.pixels = pixels;
+        }
+
+        public double[] getPixels() {
+            return pixels;
+        }
+    }
+
+    public static class MnistLabeledImage extends MnistImage {
+
+        private final int label;
+
+        public MnistLabeledImage(double[] pixels, int label) {
+            super(pixels);
+            this.label = label;
+        }
+
+        public int getLabel() {
+            return label;
+        }
     }
 }

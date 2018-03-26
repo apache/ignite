@@ -106,7 +106,7 @@ public class RPropParameterUpdate implements Serializable {
      * @param updates New parameters updates value.
      * @return This object.
      */
-    private RPropParameterUpdate setPrevIterationUpdates(Vector updates) {
+    public RPropParameterUpdate setPrevIterationUpdates(Vector updates) {
         prevIterationUpdates = updates;
 
         return this;
@@ -126,7 +126,7 @@ public class RPropParameterUpdate implements Serializable {
      *
      * @return This object.
      */
-    private RPropParameterUpdate setPrevIterationGradient(Vector gradient) {
+    public RPropParameterUpdate setPrevIterationGradient(Vector gradient) {
         prevIterationGradient = gradient;
         return this;
     }

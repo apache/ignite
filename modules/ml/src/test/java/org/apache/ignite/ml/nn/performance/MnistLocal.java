@@ -20,20 +20,12 @@ package org.apache.ignite.ml.nn.performance;
 import java.io.IOException;
 import java.util.Random;
 import java.util.stream.Stream;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Tracer;
-import org.apache.ignite.ml.math.Vector;
-import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.Activators;
-import org.apache.ignite.ml.optimization.LossFunctions;
-import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.SimpleMLPLocalBatchTrainerInput;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
-import org.apache.ignite.ml.nn.trainers.local.MLPLocalBatchTrainer;
-import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.junit.Test;
 
 import static org.apache.ignite.ml.nn.performance.MnistMLPTestUtil.createDataset;
@@ -73,23 +65,23 @@ public class MnistLocal {
             ds.get2(),
             2000);
 
-        MultilayerPerceptron mdl = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
-            () -> new RPropUpdateCalculator(0.1, 1.2, 0.5),
-            1E-7,
-            200).
-            train(input);
-
-        X.println("Training started");
-        long before = System.currentTimeMillis();
-
-        X.println("Training finished in " + (System.currentTimeMillis() - before));
-
-        Vector predicted = mdl.apply(testDs.get1()).foldColumns(VectorUtils::vec2Num);
-        Vector truth = testDs.get2().foldColumns(VectorUtils::vec2Num);
-
-        Tracer.showAscii(truth);
-        Tracer.showAscii(predicted);
-
-        X.println("Accuracy: " + VectorUtils.zipWith(predicted, truth, (x, y) -> x.equals(y) ? 1.0 : 0.0).sum() / truth.size() * 100 + "%.");
+//        MultilayerPerceptron mdl = new MLPLocalBatchTrainer<>(LossFunctions.MSE,
+//            () -> new RPropUpdateCalculator(0.1, 1.2, 0.5),
+//            1E-7,
+//            200).
+//            train(input);
+//
+//        X.println("Training started");
+//        long before = System.currentTimeMillis();
+//
+//        X.println("Training finished in " + (System.currentTimeMillis() - before));
+//
+//        Vector predicted = mdl.apply(testDs.get1()).foldColumns(VectorUtils::vec2Num);
+//        Vector truth = testDs.get2().foldColumns(VectorUtils::vec2Num);
+//
+//        Tracer.showAscii(truth);
+//        Tracer.showAscii(predicted);
+//
+//        X.println("Accuracy: " + VectorUtils.zipWith(predicted, truth, (x, y) -> x.equals(y) ? 1.0 : 0.0).sum() / truth.size() * 100 + "%.");
     }
 }

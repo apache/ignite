@@ -1,8 +1,8 @@
 package org.apache.ignite.ml.nn;
 
 import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.ignite.ml.MultiLabelDatasetTrainer;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -37,9 +37,6 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
     /** Update strategy that defines how to update model parameters during the training. */
     private final UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy;
 
-    /** Error threshold used to stop the training. */
-    private final double errorThreshold;
-
     /** Maximal number of iterations before the training will be stopped. */
     private final int maxIterations;
 
@@ -58,19 +55,17 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
      * @param arch Multilayer perceptron architecture that defines layers and activators.
      * @param loss Loss function to be minimized during the training.
      * @param updatesStgy Update strategy that defines how to update model parameters during the training.
-     * @param errorThreshold Error threshold used to stop the training.
      * @param maxIterations Maximal number of iterations before the training will be stopped.
      * @param batchSize Batch size (per every partition).
      * @param locIterations Maximal number of local iterations before synchronization.
      * @param initializer Multilayer perceptron model initializer.
      */
     public MLPTrainer(MLPArchitecture arch, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
-        UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy,
-        double errorThreshold, int maxIterations, int batchSize, int locIterations, MLPInitializer initializer) {
+        UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy, int maxIterations, int batchSize,
+        int locIterations, MLPInitializer initializer) {
         this.arch = arch;
         this.loss = loss;
         this.updatesStgy = updatesStgy;
-        this.errorThreshold = errorThreshold;
         this.maxIterations = maxIterations;
         this.batchSize = batchSize;
         this.locIterations = locIterations;
@@ -84,31 +79,57 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
         MultilayerPerceptron mdl = new MultilayerPerceptron(arch, initializer);
         ParameterUpdateCalculator<? super MultilayerPerceptron, P> updater = updatesStgy.getUpdatesCalculator();
 
-
         try (Dataset<EmptyContext, SimpleLabeledDatasetData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
             new SimpleLabeledDatasetDataBuilder<>(featureExtractor, lbExtractor)
         )) {
 
-            P updaterParams = updater.init(mdl, loss);
+            P update = updater.init(mdl, loss);
 
             for (int i = 0; i < maxIterations; i+=locIterations) {
-                updater.update(
-                    mdl,
-                    dataset.compute(
+                int finalI = i;
+                P finalUpdate = update;
+
+                MultilayerPerceptron finalMdl = mdl;
+                List<P> totUp = dataset.compute(
                         data -> {
-                            P update = null;
-                            for (int j = 0; j < locIterations; j++) {
-                                int[] rows = Utils.selectKDistinct(0, Math.min(batchSize, data.getRows()), new Random());
-                                Matrix inputs = new DenseLocalOnHeapMatrix(batch(data.getFeatures(), rows, data.getRows()), data.getFeatures().length / data.getRows(), 0);
-                                Matrix groundTruth = new DenseLocalOnHeapMatrix(batch(data.getLabels(), rows, data.getRows()), data.getLabels().length / data.getRows(), 0);
-                                update = updatesStgy.locStepUpdatesReducer().apply(Arrays.asList(update, updater.calculateNewUpdate(mdl, updaterParams, 0, inputs, groundTruth)));
+                            P locUpdate = finalUpdate;
+
+                            MultilayerPerceptron mlp = Utils.copy(finalMdl);
+                            if (data.getFeatures() != null) {
+                                List<P> updates = new ArrayList<>();
+                                for (int j = 0; j < locIterations; j++) {
+
+                                    int[] rows = Utils.selectKDistinct(data.getRows(), Math.min(batchSize, data.getRows()));
+
+                                    Matrix inputs = new DenseLocalOnHeapMatrix(batch(data.getFeatures(), rows, data.getRows()), rows.length, 0);
+                                    Matrix groundTruth = new DenseLocalOnHeapMatrix(batch(data.getLabels(), rows, data.getRows()), rows.length, 0);
+
+                                    locUpdate = updater.calculateNewUpdate(mlp, locUpdate, finalI + j, inputs.transpose(), groundTruth.transpose());
+                                    mlp = updater.update(mlp, locUpdate);
+                                    updates.add(locUpdate);
+                                }
+
+                                List<P> res = new ArrayList<>();
+                                res.add(updatesStgy.locStepUpdatesReducer().apply(updates));
+                                return res;
                             }
-                            return update;
+
+                            return null;
                         },
-                        (a, b) -> a == null ? b : updatesStgy.allUpdatesReducer().apply(Arrays.asList(a, b))
-                    )
-                );
+                        (a, b) -> {
+                            if (a == null)
+                                return b;
+                            else if (b == null)
+                                return a;
+                            else {
+                                a.addAll(b);
+                                return a;
+                            }
+                        }
+                    );
+                update = updatesStgy.allUpdatesReducer().apply(totUp);
+                mdl = updater.update(mdl, update);
             }
         }
         catch (Exception e) {
@@ -118,11 +139,12 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
         return mdl;
     }
 
-    private double[] batch(double[] data, int[] rows, int totalRows) {
+    static double[] batch(double[] data, int[] rows, int totalRows) {
         int cols = data.length / totalRows;
         double[] res = new double[cols * rows.length];
         for (int i = 0; i < rows.length; i++)
-            System.arraycopy(data, rows[i] * cols, res, i * cols, cols);
+            for (int j = 0; j < cols; j++)
+                res[j * rows.length + i] = data[j * totalRows + rows[i]];
         return res;
     }
 }

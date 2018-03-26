@@ -1,68 +1,194 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.ml.nn;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Random;
+import org.apache.ignite.ml.TestUtils;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
-import org.apache.ignite.ml.nn.Activators;
-import org.apache.ignite.ml.nn.MLPTrainer;
-import org.apache.ignite.ml.nn.MultilayerPerceptron;
+import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
 import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.optimization.LossFunctions;
+import org.apache.ignite.ml.optimization.updatecalculators.NesterovParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.NesterovUpdateCalculator;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
+import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.runners.Enclosed;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+/**
+ * Tests for {@link MLPTrainer} that don't require to start the whole Ignite infrastructure.
+ */
+@RunWith(Enclosed.class)
 public class MLPTrainerTest {
 
-    @Test
-    public void testTest() {
-        Map<Integer, double[]> data = new HashMap<>();
+    @RunWith(Parameterized.class)
+    public static class ComponentParamTests {
+        /** Number of parts to be tested. */
+        private static final int[] partsToBeTested = new int[] {1, 2, 3, 4, 5, 7};
 
-        Random rnd = new Random(10);
-        for (int i = 0; i < 10000; i++) {
-            double q = rnd.nextDouble() * 10 - 5;
-            data.put(i, new double[]{ q, q > 0 ? 1.0 : 0.0 });
+        /** Batch sizes to be tested. */
+        private static final int[] batchSizesToBeTested = new int[] {1, 2, 3, 4};
+
+        /** Parameters. */
+        @Parameterized.Parameters(name = "Data divided on {0} partitions, training with batch size {1}")
+        public static Iterable<Integer[]> data() {
+            List<Integer[]> res = new ArrayList<>();
+            for (int part : partsToBeTested)
+                for (int batchSize1 : batchSizesToBeTested)
+                    res.add(new Integer[] {part, batchSize1});
+
+            return res;
         }
 
-        MLPArchitecture arch = new MLPArchitecture(1)
-            .withAddedLayer(5, false, Activators.RELU)
-            .withAddedLayer(1, false, Activators.SIGMOID);
+        /** Number of partitions. */
+        @Parameterized.Parameter
+        public int parts;
 
-        MLPTrainer<SimpleGDParameterUpdate> trainer = new MLPTrainer<>(
-            arch,
-            LossFunctions.MSE,
-            new UpdatesStrategy<>(
-                new SimpleGDUpdateCalculator().withLearningRate(0.001),
+        /** Batch size. */
+        @Parameterized.Parameter(1)
+        public int batchSize;
+
+        /**
+         * Test 'XOR' operation training with {@link SimpleGDUpdateCalculator} updater.
+         */
+        @Test
+        public void testXORSimpleGD() {
+            xorTest(new UpdatesStrategy<>(
+                new SimpleGDUpdateCalculator(0.2),
                 SimpleGDParameterUpdate::sumLocal,
                 SimpleGDParameterUpdate::avg
-            ),
-            0,
-            10000,
-            10,
-            5,
-            new RandomInitializer(10)
-        );
+            ));
+        }
 
-        MultilayerPerceptron mlp = trainer.fit(
-            new LocalDatasetBuilder<>(data, 1),
-            (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
-            (k, v) -> Arrays.copyOfRange(v, v.length - 1, v.length)
-        );
+        /**
+         * Test 'XOR' operation training with {@link RPropUpdateCalculator}.
+         */
+        @Test
+        public void testXORRProp() {
+            xorTest(new UpdatesStrategy<>(
+                new RPropUpdateCalculator(),
+                RPropParameterUpdate::sumLocal,
+                RPropParameterUpdate::avg
+            ));
+        }
 
-        Matrix res = mlp.apply(new DenseLocalOnHeapMatrix(new double[][]{
-            {10.0, -10.0}
-        }));
+        /**
+         * Test 'XOR' operation training with {@link NesterovUpdateCalculator}.
+         */
+        @Test
+        @Ignore
+        public void testXORNesterov() {
+            xorTest(new UpdatesStrategy<>(
+                new NesterovUpdateCalculator<MultilayerPerceptron>(0.1, 0.7),
+                NesterovParameterUpdate::sum,
+                NesterovParameterUpdate::avg
+            ));
+        }
 
-        for (int i = 0; i < res.rowSize(); i++) {
-            for (int j = 0; j < res.columnSize(); j++)
-                System.out.print(res.get(i, j) + " ");
-            System.out.println();
+        /**
+         * Common method for testing 'XOR' with various updaters.
+         * @param updatesStgy Update strategy.
+         * @param <P> Updater parameters type.
+         */
+        private <P extends Serializable> void xorTest(UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy) {
+            Map<Integer, double[][]> xorData = new HashMap<>();
+            xorData.put(0, new double[][]{{0.0, 0.0}, {0.0}});
+            xorData.put(1, new double[][]{{0.0, 1.0}, {1.0}});
+            xorData.put(2, new double[][]{{1.0, 0.0}, {1.0}});
+            xorData.put(3, new double[][]{{1.0, 1.0}, {0.0}});
+
+            MLPArchitecture arch = new MLPArchitecture(2).
+                withAddedLayer(10, true, Activators.RELU).
+                withAddedLayer(1, false, Activators.SIGMOID);
+
+            MLPTrainer<P> trainer = new MLPTrainer<>(
+                arch,
+                LossFunctions.MSE,
+                updatesStgy,
+                2500,
+                batchSize,
+                50,
+                new RandomInitializer(123L)
+            );
+
+            MultilayerPerceptron mlp = trainer.fit(
+                new LocalDatasetBuilder<>(xorData, parts),
+                (k, v) -> v[0],
+                (k, v) -> v[1]
+            );
+
+            Matrix predict = mlp.apply(new DenseLocalOnHeapMatrix(new double[][]{
+                {0.0, 0.0},
+                {0.0, 1.0},
+                {1.0, 0.0},
+                {1.0, 1.0}
+            }));
+
+            System.err.println(Arrays.toString(predict.getRow(0).getStorage().data()));
+            TestUtils.checkIsInEpsilonNeighbourhood(new DenseLocalOnHeapVector(new double[]{0.0}), predict.getRow(0), 1E-1);
+        }
+    }
+
+    public static class ComponentSingleTests {
+
+        private double[] data;
+
+        @Before
+        public void init() {
+            data = new double[10];
+            for (int i = 0; i < 10; i++)
+                data[i] = i;
+        }
+
+        @Test
+        public void testBatchWithSingleColumnAndSingleRow() {
+            double[] res = MLPTrainer.batch(data, new int[]{1}, 10);
+
+            TestUtils.assertEquals(new double[]{1.0}, res, 1e-12);
+        }
+
+        @Test
+        public void testBatchWithMultiColumnAndSingleRow() {
+            double[] res = MLPTrainer.batch(data, new int[]{1}, 5);
+
+            TestUtils.assertEquals(new double[]{1.0, 6.0}, res, 1e-12);
+        }
+
+        @Test
+        public void testBatchWithMultiColumnAndMultiRow() {
+            double[] res = MLPTrainer.batch(data, new int[]{1, 3}, 5);
+
+            TestUtils.assertEquals(new double[]{1.0, 3.0, 6.0, 8.0}, res, 1e-12);
         }
     }
 }

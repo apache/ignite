@@ -177,8 +177,8 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
      */
     @Override public Matrix apply(Matrix val) {
         MLPState state = new MLPState(null);
-        forwardPass(val, state, false);
-        return state.activatorsOutput.get(state.activatorsOutput.size() - 1);
+        forwardPass(val.transpose(), state, false);
+        return state.activatorsOutput.get(state.activatorsOutput.size() - 1).transpose();
     }
 
     /**
