@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -46,6 +47,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                         .setMaxSize(200 * 1024 * 1024)
                         .setInitialSize(200 * 1024 * 1024)
                 )
+                .setCheckpointFrequency(999_999_999_999L)
         );
 
         cfg.setCacheConfiguration(
@@ -91,21 +93,47 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         IgniteEx newIgnite = startGrid(3);
 
+        long newIgniteStartedTimestamp = System.currentTimeMillis();
+
         ignite.cluster().setBaselineTopology(4);
 
         CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
 
         assertTrue("WAL should be disabled until rebalancing is finished", !grpCtx.walEnabled());
 
+        long rebalanceStartedTimestamp = System.currentTimeMillis();
+
         for (int i = 0; i < 4; i++)
-            grid(i).cache(DEFAULT_CACHE_NAME).rebalance().get();
+            grid(i).cache(DEFAULT_CACHE_NAME).rebalance();
 
         awaitPartitionMapExchange();
 
         assertTrue("WAL should be enabled after rebalancing is finished", grpCtx.walEnabled());
 
+        long rebalanceFinishedTimestamp = System.currentTimeMillis();
+
         for (Integer k = 0; k < 1000; k++)
             assertEquals("k=" + k, k, cache.get(k));
+
+        GridCacheDatabaseSharedManager.CheckpointHistory cpHistory =
+            ((GridCacheDatabaseSharedManager)newIgnite.context().cache().context().database()).checkpointHistory();
+
+        int checkpointsBeforeNodeStarted = 0;
+        int checkpointsBeforeRebalance = 0;
+        int checkpointsAfterRebalance = 0;
+
+        for (Long timestamp : cpHistory.checkpoints()) {
+            if (timestamp < newIgniteStartedTimestamp)
+                checkpointsBeforeNodeStarted++;
+            else if (timestamp >= newIgniteStartedTimestamp && timestamp < rebalanceStartedTimestamp)
+                checkpointsBeforeRebalance++;
+            else if (timestamp >= rebalanceStartedTimestamp && timestamp <= rebalanceFinishedTimestamp)
+                checkpointsAfterRebalance++;
+        }
+
+        assertEquals(1, checkpointsBeforeNodeStarted); // checkpoint on start
+        assertEquals(0, checkpointsBeforeRebalance); // no checkpoints before rebalance
+        assertEquals(1, checkpointsAfterRebalance); // checkpoint on WAL activation
     }
 
     /**
@@ -125,20 +153,46 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         IgniteEx newIgnite = startGrid(3);
 
+        long newIgniteStartedTimestamp = System.currentTimeMillis();
+
         ignite.cluster().setBaselineTopology(4);
 
         CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
 
         assertTrue("WAL should be enabled until rebalancing is finished", grpCtx.walEnabled());
 
+        long rebalanceStartedTimestamp = System.currentTimeMillis();
+
         for (int i = 0; i < 4; i++)
-            grid(i).cache(DEFAULT_CACHE_NAME).rebalance().get();
+            grid(i).cache(DEFAULT_CACHE_NAME).rebalance();
 
         awaitPartitionMapExchange();
 
         assertTrue("WAL should be enabled after rebalancing is finished", grpCtx.walEnabled());
 
+        long rebalanceFinishedTimestamp = System.currentTimeMillis();
+
         for (Integer k = 0; k < 1000; k++)
             assertEquals("k=" + k, k, cache.get(k));
+
+        GridCacheDatabaseSharedManager.CheckpointHistory cpHistory =
+            ((GridCacheDatabaseSharedManager)newIgnite.context().cache().context().database()).checkpointHistory();
+
+        int checkpointsBeforeNodeStarted = 0;
+        int checkpointsBeforeRebalance = 0;
+        int checkpointsAfterRebalance = 0;
+
+        for (Long timestamp : cpHistory.checkpoints()) {
+            if (timestamp < newIgniteStartedTimestamp)
+                checkpointsBeforeNodeStarted++;
+            else if (timestamp >= newIgniteStartedTimestamp && timestamp < rebalanceStartedTimestamp)
+                checkpointsBeforeRebalance++;
+            else if (timestamp >= rebalanceStartedTimestamp && timestamp <= rebalanceFinishedTimestamp)
+                checkpointsAfterRebalance++;
+        }
+
+        assertEquals(1, checkpointsBeforeNodeStarted); // checkpoint on start
+        assertEquals(0, checkpointsBeforeRebalance); // no checkpoints before rebalance
+        assertEquals(0, checkpointsAfterRebalance); // no checkpoint because no WAL re-activation
     }
 }
