@@ -2209,9 +2209,9 @@
                     <xs:documentation>Whether grid should be active on start.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
-            <xs:attribute name="isActiveOnStart" type="xs:boolean">
+            <xs:attribute name="authenticationEnabled" type="xs:boolean">
                 <xs:annotation>
-                    <xs:documentation>Whether grid should be active on start.</xs:documentation>
+                    <xs:documentation>Whether user authentication is enabled for the cluster.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="clientConnectorConfigurationEnabled" type="xs:boolean">
