@@ -826,7 +826,8 @@ namespace Apache.Ignite.Core.Tests
                             SwapPath = TestUtils.GetTempDirectoryName()
                         }
                     }
-                }
+                },
+                AuthenticationEnabled = true
             };
         }
 
