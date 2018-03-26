@@ -1425,5 +1425,10 @@ namespace Apache.Ignite.Core
         /// </summary>
         [DefaultValue(DefaultRedirectJavaConsoleOutput)]
         public bool RedirectJavaConsoleOutput { get; set; }
+        
+        /// <summary>
+        /// Gets or sets whether user authentication is enabled for the cluster. Default is <c>false</c>. 
+        /// </summary>
+        public bool IsAuthenticationEnabled { get; set; }
     }
 }
