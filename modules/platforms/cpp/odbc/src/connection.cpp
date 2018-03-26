@@ -373,6 +373,11 @@ namespace ignite
             return config;
         }
 
+        bool Connection::IsAutoCommit()
+        {
+            return autoCommit;
+        }
+
         diagnostic::DiagnosticRecord Connection::CreateStatusRecord(SqlState::Type sqlState,
             const std::string& message, int32_t rowNum, int32_t columnNum)
         {
@@ -390,7 +395,7 @@ namespace ignite
 
             app::ParameterSet empty;
 
-            QueryExecuteRequest req(schema, "COMMIT", empty, timeout);
+            QueryExecuteRequest req(schema, "COMMIT", empty, timeout, autoCommit);
             QueryExecuteResponse rsp;
 
             try
@@ -431,7 +436,7 @@ namespace ignite
 
             app::ParameterSet empty;
 
-            QueryExecuteRequest req(schema, "ROLLBACK", empty, timeout);
+            QueryExecuteRequest req(schema, "ROLLBACK", empty, timeout, autoCommit);
             QueryExecuteResponse rsp;
 
             try

@@ -146,6 +146,13 @@ namespace ignite
             const config::Configuration& GetConfiguration() const;
 
             /**
+             * Is auto commit.
+             *
+             * @return @c true if the auto commit is enabled.
+             */
+            bool IsAutoCommit();
+
+            /**
              * Create diagnostic record associated with the Connection instance.
              *
              * @param sqlState SQL state.
