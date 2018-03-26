@@ -17,26 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
-import org.jetbrains.annotations.NotNull;
+import org.apache.ignite.lang.IgniteReducer;
+import org.jetbrains.annotations.Nullable;
 
 /**
- * MVCC version. This is unique version allowing to order all reads and writes within a cluster. Consists of two parts:
- * - coordinator version - number which increases on every coordinator change;
- * - counter - local coordinator counter which is increased on every update.
+ * Vacuum metrics reducer.
  */
-public interface MvccVersion extends Comparable<MvccVersion> {
-    /**
-     * @return Coordinator version.
-     */
-    public long coordinatorVersion();
-
-    /**
-     * @return Local counter.
-     */
-    public long counter();
+public class VacuumMetricsReducer implements IgniteReducer<VacuumMetrics, VacuumMetrics> {
+    /** */
+    private final VacuumMetrics m = new VacuumMetrics();
 
     /** {@inheritDoc} */
-    @Override default int compareTo(@NotNull MvccVersion another) {
-        return  MvccUtils.compare(coordinatorVersion(), counter(), another.coordinatorVersion(), another.counter());
+    @Override public boolean collect(@Nullable VacuumMetrics metrics) {
+        assert metrics != null;
+
+        m.addCleanupRowsCnt(metrics.cleanupRowsCount());
+        m.addScannedRowsCount(metrics.scannedRowsCount());
+        m.addSearchNanoTime(metrics.searchNanoTime());
+        m.addCleanupNanoTime(metrics.cleanupNanoTime());
+
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public VacuumMetrics reduce() {
+        return m;
     }
 }

@@ -30,6 +30,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
@@ -960,12 +961,27 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         /** {@inheritDoc} */
         @Override public boolean hasNext() {
-            return it.hasNext();
+            boolean hasNext = it.hasNext();
+
+            if (!hasNext)
+                try {
+                    close();
+                }
+                catch (IgniteCheckedException e) {
+                    throw new IgniteException(e);
+                }
+
+            return hasNext;
         }
 
         /** {@inheritDoc} */
         @Override public boolean hasNextX() throws IgniteCheckedException {
-            return it.hasNextX();
+            boolean hasNext = it.hasNext();
+
+            if (!hasNext)
+                close();
+
+            return hasNext;
         }
 
         /** {@inheritDoc} */

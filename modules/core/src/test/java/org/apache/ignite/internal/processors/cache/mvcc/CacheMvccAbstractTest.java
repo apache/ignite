@@ -37,6 +37,7 @@ import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -55,15 +56,21 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.TestRecordingCommunicationSpi;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -194,6 +201,8 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         try {
             verifyCoordinatorInternalState();
+
+            verifyOldVersionsCleaned();
         }
         finally {
             stopAllGrids();
@@ -1010,8 +1019,55 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
             assertTrue(ackFuts.isEmpty());
 
+            Throwable vacuumError = crd.getVacuumError();
+
+            assertNull(X.getFullStackTrace(vacuumError), vacuumError);
+
             // TODO IGNITE-6739
             // checkActiveQueriesCleanup(node);
+        }
+    }
+
+    /**
+     * Checks if less than 2 versions remain after the vacuum cleanup.
+     *
+     * @throws Exception If failed.
+     */
+    private void verifyOldVersionsCleaned() throws Exception {
+        GridCompoundFuture fut = new GridCompoundFuture();
+
+        // Run vacuum manually.
+        for (Ignite node : G.allGrids()) {
+            if (!node.configuration().isClientMode()) {
+                final MvccProcessor crd = ((IgniteKernal)node).context().cache().context().coordinators();
+
+                fut.add(crd.runVacuum());
+            }
+        }
+
+        fut.markInitialized();
+
+        // Wait vacuum finished.
+        fut.get();
+
+        // Check versions.
+        for (Ignite node : G.allGrids()) {
+            for (IgniteCacheProxy cache : ((IgniteKernal)node).caches()) {
+                GridCacheContext cctx = cache.context();
+
+                if (!cctx.userCache() || !cctx.group().mvccEnabled())
+                    continue;
+
+                for (Object e : cache) {
+                    IgniteBiTuple entry = (IgniteBiTuple)e;
+
+                    KeyCacheObject key = cctx.toCacheKeyObject(entry.getKey());
+
+                    List<T2<Object, MvccVersion>> vers = cctx.offheap().mvccAllVersions(cctx, key);
+
+                    assertTrue("[entry="  + entry + "; vers=" + vers + ']', vers.size() <= 1);
+                }
+            }
         }
     }
 

@@ -423,6 +423,13 @@ public class CacheGroupContext {
     }
 
     /**
+     * @return {@code True} if cache created by user.
+     */
+    public boolean userCache() {
+        return cacheType.userCache();
+    }
+
+    /**
      * Adds rebalancing event.
      *
      * @param part Partition.

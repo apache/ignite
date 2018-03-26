@@ -22,6 +22,8 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPagePayload;
@@ -91,9 +93,20 @@ public class MvccUtils {
      */
     public static boolean isVisible(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr, long newMvccCrd,
                                     long newMvccCntr) throws IgniteCheckedException {
-
         return isVisible(cctx, snapshot, mvccCrd, mvccCntr)
                 && (newMvccCrd == 0 || !isVisible(cctx, snapshot, newMvccCrd, newMvccCntr));
+    }
+
+    /**
+     * Checks if a row has not empty new version (xid_max).
+     *
+     * @param row Row.
+     * @return {@code True} if row has a new version.
+     */
+    public static boolean hasNewMvccVersionFast(CacheDataRow row) {
+        assert row.newMvccCoordinatorVersion() > 0 == row.newMvccCounter() > MVCC_COUNTER_NA;
+
+        return row.newMvccCoordinatorVersion() > 0;
     }
 
     /**
@@ -122,6 +135,66 @@ public class MvccUtils {
         throws IgniteCheckedException {
         return invoke(cctx, link, getNewVer, null);
     }
+
+    /**
+     * Compares to pairs of coordinator/counter versions. See {@link Comparable}.
+     *
+     * @param mvccCrdLeft First coordinator version.
+     * @param mvccCntrLeft First counter version.
+     * @param mvccCrdRight First coordinator version.
+     * @param mvccCntrRight First counter version.
+     * @return Comparison result, see {@link Comparable}.
+     */
+    public static int compare(long mvccCrdLeft, long mvccCntrLeft, long mvccCrdRight, long mvccCntrRight) {
+        int cmp = Long.compare(mvccCrdLeft, mvccCrdRight);
+
+        return cmp != 0 ? cmp : Long.compare(mvccCntrLeft, mvccCntrRight);
+    }
+
+
+    /**
+     * Compares row version (xid_min) with the given counter and coordinator versions.
+     *
+     * @param row Row.
+     * @param mvccCrd Mvcc coordinator.
+     * @param mvccCntr Mvcc counter.
+     */
+    public static int compareRowVersion(CacheSearchRow row, long mvccCrd, long mvccCntr) {
+        return compare(row.mvccCoordinatorVersion(), row.mvccCounter(), mvccCrd, mvccCntr);
+    }
+
+    /**
+     * Compares row version (xid_min) with the given version.
+     *
+     * @param row Row.
+     * @param ver Version.
+     */
+    public static int compareRowVersion(CacheSearchRow row, MvccVersion ver) {
+        return compare(row.mvccCoordinatorVersion(), row.mvccCounter(), ver.coordinatorVersion(), ver.counter());
+    }
+
+    /**
+     * Compares new row version (xid_max) with the given counter and coordinator versions.
+     *
+     * @param row Row.
+     * @param mvccCrd Mvcc coordinator.
+     * @param mvccCntr Mvcc counter.
+     */
+    public static int compareNewRowVersion(CacheDataRow row, long mvccCrd, long mvccCntr) {
+        return compare(row.newMvccCoordinatorVersion(), row.newMvccCounter(), mvccCrd, mvccCntr);
+    }
+
+    /**
+     * Compares new row version (xid_max) with the given version.
+     *
+     * @param row Row.
+     * @param ver Version.
+     */
+    public static int compareNewRowVersion(CacheDataRow row, MvccVersion ver) {
+        return compare(row.newMvccCoordinatorVersion(), row.newMvccCounter(), ver.coordinatorVersion(), ver.counter());
+    }
+
+
 
     /**
      * @param crdVer Mvcc coordinator version.
