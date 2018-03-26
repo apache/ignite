@@ -20,7 +20,12 @@ package org.apache.ignite.testsuites;
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccClusterRestartTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccConfigurationValidationTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccIteratorWithConcurrentTransactionTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccLocalEntriesWithConcurrentTransactionTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccOperationChecksTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccProcessorTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccScanQueryWithConcurrentTransactionTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSizeWithConcurrentTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTransactionsTest;
 
 /**
@@ -29,15 +34,19 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTransactionsTes
 public class IgniteCacheMvccTestSuite extends TestSuite {
     /**
      * @return Test suite.
-     * @throws Exception Thrown in case of the failure.
      */
-    public static TestSuite suite() throws Exception {
+    public static TestSuite suite() {
         TestSuite suite = new TestSuite("IgniteCache MVCC Test Suite");
 
         suite.addTestSuite(CacheMvccTransactionsTest.class);
         suite.addTestSuite(CacheMvccProcessorTest.class);
         suite.addTestSuite(CacheMvccClusterRestartTest.class);
         suite.addTestSuite(CacheMvccConfigurationValidationTest.class);
+        suite.addTestSuite(CacheMvccOperationChecksTest.class);
+        suite.addTestSuite(CacheMvccIteratorWithConcurrentTransactionTest.class);
+        suite.addTestSuite(CacheMvccLocalEntriesWithConcurrentTransactionTest.class);
+        suite.addTestSuite(CacheMvccScanQueryWithConcurrentTransactionTest.class);
+        suite.addTestSuite(CacheMvccSizeWithConcurrentTransactionTest.class);
 
         return suite;
     }

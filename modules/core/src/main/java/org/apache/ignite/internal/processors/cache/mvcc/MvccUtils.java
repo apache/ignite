@@ -208,6 +208,17 @@ public class MvccUtils {
     }
 
     /**
+     * Throw an {@link UnsupportedOperationException} if this cache is transactional and MVCC is enabled with
+     * appropriate message about corresponding operation type.
+     * @param opType operation type to mention in error message.
+     */
+    public static void verifyMvccOperationSupport(GridCacheContext<?, ?> cctx, String opType) {
+        if (!cctx.atomic() && cctx.gridConfig().isMvccEnabled())
+            throw new UnsupportedOperationException(opType + " operations are not supported on transactional " +
+                "caches when MVCC is enabled.");
+    }
+
+    /**
      * Mvcc closure interface.
      * @param <R> Return type.
      */

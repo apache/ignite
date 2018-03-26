@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetR
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -588,6 +589,9 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
             return;
         }
+
+        //TODO IGNITE-7954
+        MvccUtils.verifyMvccOperationSupport(ctx, "Load");
 
         final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 

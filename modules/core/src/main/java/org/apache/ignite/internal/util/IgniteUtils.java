@@ -8150,7 +8150,7 @@ public abstract class IgniteUtils {
         assert mtdName != null;
 
         try {
-            for (Class<?> c = cls != null ? cls : obj.getClass(); cls != Object.class; cls = cls.getSuperclass()) {
+            for (Class<?> c = cls != null ? cls : obj.getClass(); c != Object.class; c = c.getSuperclass()) {
                 Method mtd = null;
 
                 for (Method declaredMtd : c.getDeclaredMethods()) {

@@ -20,7 +20,6 @@ package org.apache.ignite.jdbc.thin;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.concurrent.Callable;
@@ -420,7 +419,7 @@ public class JdbcThinTransactionsSelfTest extends JdbcThinAbstractSelfTest {
 
     /**
      * Test that exception in one of the statements does not kill connection worker altogether.
-     * @throws SQLException
+     * @throws SQLException if failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testExceptionHandling() throws SQLException {

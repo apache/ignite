@@ -108,6 +108,9 @@ public final class IgniteQueryErrorCode {
     /** MVCC disabled. */
     public final static int MVCC_DISABLED = 5002;
 
+    /** Transaction type mismatch (SQL/non SQL). */
+    public final static int TRANSACTION_TYPE_MISMATCH = 5003;
+
     /** */
     private IgniteQueryErrorCode() {
         // No-op.

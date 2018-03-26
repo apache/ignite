@@ -50,6 +50,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
@@ -73,6 +74,8 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -165,6 +168,10 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(storageCfg);
 
         cfg.setConsistentId(gridName);
+
+        cfg.setTransactionConfiguration(new TransactionConfiguration()
+            .setDefaultTxConcurrency(TransactionConcurrency.PESSIMISTIC)
+            .setDefaultTxIsolation(TransactionIsolation.REPEATABLE_READ));
 
         return cfg;
     }
