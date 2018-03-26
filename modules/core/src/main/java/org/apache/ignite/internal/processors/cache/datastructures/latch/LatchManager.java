@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -599,9 +600,11 @@ public class LatchManager {
      */
     private abstract class CompletableLatch implements Latch {
         /** Latch id. */
+        @GridToStringInclude
         protected final String id;
 
         /** Latch topology version. */
+        @GridToStringInclude
         protected final AffinityTopologyVersion topVer;
 
         /** Latch node participants. Only participant nodes are able to change state of latch. */

@@ -545,7 +545,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param topVer Topology version.
      * @return Future that will be completed when all ongoing transactions are finished.
      */
-    public IgniteInternalFuture<Boolean> finishTxs(AffinityTopologyVersion topVer) {
+    public IgniteInternalFuture<Boolean> finishLocalTxs(AffinityTopologyVersion topVer) {
         GridCompoundFuture<IgniteInternalTx, Boolean> res =
             new CacheObjectsReleaseFuture<>(
                 "Tx",
@@ -1834,12 +1834,12 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Finish future for related remote transactions.
      */
     @SuppressWarnings("unchecked")
-    public IgniteInternalFuture<?> remoteTxFinishFuture(GridCacheVersion nearVer) {
-        GridCompoundFuture<Void, Void> fut = new GridCompoundFuture<>();
+    public IgniteInternalFuture<IgniteInternalTx> remoteTxFinishFuture(GridCacheVersion nearVer) {
+        GridCompoundFuture<IgniteInternalTx, IgniteInternalTx> fut = new GridCompoundFuture<>();
 
         for (final IgniteInternalTx tx : txs()) {
             if (!tx.local() && nearVer.equals(tx.nearXidVersion()))
-                fut.add((IgniteInternalFuture) tx.finishFuture());
+                fut.add(tx.finishFuture());
         }
 
         fut.markInitialized();

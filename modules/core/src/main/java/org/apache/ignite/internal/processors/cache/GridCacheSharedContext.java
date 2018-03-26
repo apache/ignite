@@ -26,7 +26,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
-import java.util.function.BiFunction;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -864,13 +863,21 @@ public class GridCacheSharedContext<K, V> {
         GridCompoundFuture f = new CacheObjectsReleaseFuture("Partition", topVer);
 
         f.add(mvcc().finishExplicitLocks(topVer));
-        f.add(tm().finishTxs(topVer));
+        f.add(tm().finishLocalTxs(topVer));
         f.add(mvcc().finishAtomicUpdates(topVer));
         f.add(mvcc().finishDataStreamerUpdates(topVer));
 
         f.markInitialized();
 
-        return f;
+        // After finishing all local updates, wait for finishing all tx updates to backups.
+        GridCompoundFuture finalF = new GridCompoundFuture();
+
+        f.listen(future -> {
+            finalF.add(mvcc().finishRemoteTxs(topVer));
+            finalF.markInitialized();
+        });
+
+        return finalF;
     }
 
     /**

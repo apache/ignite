@@ -41,6 +41,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -1212,7 +1213,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteCheckedException If failed.
      */
     private void waitPartitionRelease() throws IgniteCheckedException {
-        Latch releaseLatch = cctx.latch().getOrCreate("exchange", exchId.topologyVersion());
+        Latch releaseLatch = cctx.latch().getOrCreate("exchange", initialVersion());
 
         IgniteInternalFuture<?> partReleaseFut = cctx.partitionReleaseFuture(initialVersion());
 
@@ -1307,6 +1308,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 while (true) {
                     try {
                         releaseLatch.await(futTimeout, TimeUnit.MILLISECONDS);
+
+                        if (log.isInfoEnabled())
+                            log.info("Finished waiting for distributed partitions release latch: " + releaseLatch);
 
                         break;
                     }
@@ -2727,8 +2731,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     grpCtx.topology() :
                     cctx.exchange().clientTopology(grpId, events().discoveryCache());
 
-            // Do not validate read or write through caches.
-            if (grpCtx == null || grpCtx.config().isReadThrough() || grpCtx.config().isWriteThrough())
+            // Do not validate read or write through caches or caches with disabled rebalance.
+            if (grpCtx == null
+                    || grpCtx.config().isReadThrough()
+                    || grpCtx.config().isWriteThrough()
+                    || grpCtx.config().getCacheStoreFactory() != null
+                    || grpCtx.config().getRebalanceMode() == CacheRebalanceMode.NONE)
                 continue;
 
             try {
