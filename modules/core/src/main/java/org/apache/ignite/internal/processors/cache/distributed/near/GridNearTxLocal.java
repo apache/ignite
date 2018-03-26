@@ -1759,7 +1759,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     public IgniteInternalFuture<Long> updateAsync(GridCacheContext cacheCtx, MvccSnapshot mvccSnapshot,
         GridCacheOperation op, UpdateSourceIterator<IgniteBiTuple> it, int pageSize, long timeout) {
         try {
-            beforePut(cacheCtx, false);
+            beforePut(cacheCtx, false, true);
 
             final GridNearTxQueryResultsEnlistFuture fut = new GridNearTxQueryResultsEnlistFuture(cacheCtx, this,
                 mvccSnapshot, timeout, op, it, pageSize);
