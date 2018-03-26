@@ -18,19 +18,22 @@
 package org.apache.ignite.internal.processors.query;
 
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.jetbrains.annotations.Nullable;
 
 /**
- * Test for IGNITE-6807
+ * Test for IGNITE-6807.
+ *
+ * If we are executing local query on client node, we will get reasonable exception message.
  */
 public class ClientLocalQueryTest extends GridCommonAbstractTest {
     /** Client node. Shared across test methods. */
@@ -38,11 +41,6 @@ public class ClientLocalQueryTest extends GridCommonAbstractTest {
 
     /** Name of created cache */
     private static final String CACHE_NAME = "TestCache";
-
-    /** Starts node with specified config. */
-    Ignite startGridWithCfg(String name, IgniteConfiguration cfg) throws Exception {
-        return startGrid(name, optimize(cfg), null);
-    }
 
     /** Sets up grids */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -53,7 +51,7 @@ public class ClientLocalQueryTest extends GridCommonAbstractTest {
         IgniteConfiguration clCfg = getConfiguration();
         clCfg.setClientMode(true);
 
-        client = startGridWithCfg("client", clCfg);
+        client = startGrid("client", optimize(clCfg), null);
     }
 
     /** Creates cache and test table for the test */
@@ -82,66 +80,36 @@ public class ClientLocalQueryTest extends GridCommonAbstractTest {
         super.afterTestsStopped();
     }
 
-    /**
-     * If we are executing local query on client node, we will get reasonable exception message.
-     *
-     * @throws Exception on error.
-     */
-    public void testLocalQueryIsUnsupportedOnClient() throws Exception {
-        IgniteCache<Object, UUID> cache = client.cache(CACHE_NAME);
+    /** Check for SqlFieldsQuery. */
+    public void testLocalSqlFieldsQuery() throws Exception {
 
         //SqlFieldsQuery qry = new SqlFieldsQuery("SELECT count(id) FROM public.test_table;").setLocal(true);
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT count(_key) FROM UUID;").setLocal(true);
 
-        assertExceptionThrown(() -> cache.query(qry).getAll(),
-            ".*Local queries are NOT supported on client nodes.*",
-            CacheException.class);
+        assertCorrectExceptionThrown(qry.setLocal(true));
     }
 
-    public void testOtherQuery() throws Exception {
+    /** Check for SqlQuery. */
+    public void testLocalSqlQuery() throws Exception {
         SqlQuery<Object, UUID> qry = new SqlQuery<>(UUID.class, "1 = 1");
 
-        Runnable throwing = () -> client.cache(CACHE_NAME).query(qry.setLocal(true)).getAll();
-
-        assertExceptionThrown(throwing, ".*Local queries are NOT supported on client nodes.*", CacheException.class);
+        assertCorrectExceptionThrown(qry.setLocal(true));
     }
 
-    public void testTextQuery() throws Exception {
+    /** Check for TextQuery. */
+    public void testLocalTextQuery() throws Exception {
         TextQuery<Object, UUID> qry = new TextQuery<>(UUID.class, "doesn't matter");
 
-        Runnable throwing = () -> client.cache(CACHE_NAME).query(qry.setLocal(true)).getAll();
-
-        assertExceptionThrown(throwing, ".*Local queries are NOT supported on client nodes.*", CacheException.class);
+        assertCorrectExceptionThrown(qry.setLocal(true));
     }
 
-    private void assertExceptionThrown(Runnable action, String msgPattern,
-        @Nullable Class<? extends Throwable> expType) throws Exception {
-        if (expType == null)
-            expType = Throwable.class;
+    /** Assert that Exception is thrown. */
+    private void assertCorrectExceptionThrown(Query<?> qry) {
+        Callable<Void> call = () -> {
+            client.cache(CACHE_NAME).query(qry).getAll();
+            return null;
+        };
 
-        boolean throwMissed = false;
-
-        try {
-            action.run();
-
-            throwMissed = true;
-        }
-        catch (Throwable th) {
-            String msg = th.getMessage();
-
-            if (!expType.isInstance(th))
-                throw new AssertionError("Throwable of unexpected type have been thrown. [actual="
-                    + th.getClass().getCanonicalName() + ", expected=" + expType.getSimpleName()
-                    + "]. See full exception in the cause.", th);
-
-            if (!msg.matches(msgPattern))
-                throw new AssertionError("Message of thrown exception doesn't match the pattern: [pattern="
-                    + msgPattern + ", message=" + msg + "]. See full exception in the cause.", th);
-        }
-
-        if (throwMissed)
-            throw new AssertionError("Expected Throwable of type " + expType.getCanonicalName() +
-                " have not been thrown.");
-
+        GridTestUtils.assertThrows(log, call, CacheException.class, "Local queries are NOT supported on client nodes");
     }
 }
