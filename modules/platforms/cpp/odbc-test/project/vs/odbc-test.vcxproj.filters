@@ -160,6 +160,9 @@
     <ClCompile Include="..\..\..\odbc\src\common_types.cpp">
       <Filter>Externals</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\authentication_test.cpp">
+      <Filter>Code</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\test_type.h">
@@ -195,6 +198,12 @@
       <Filter>Configs</Filter>
     </None>
     <None Include="..\..\config\queries-ssl-32.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-auth.xml">
+      <Filter>Configs</Filter>
+    </None>
+    <None Include="..\..\config\queries-auth-32.xml">
       <Filter>Configs</Filter>
     </None>
   </ItemGroup>
