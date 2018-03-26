@@ -168,11 +168,12 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
 
     /**
      * Asserts cache contained all expected values as it was saved before.
-     * @param cache cache should be filled using {@link #saveCacheData(Cache)}.
+     *
+     * @param cache Cache  should be filled using {@link #saveCacheData(Cache)}.
      */
     public static void validateResultingCacheData(Cache<Object, Object> cache) {
         for (int i = 0; i < 10; i++)
-            assertEquals(cache.get(i), "data" + i);
+            assertEquals("data" + i, cache.get(i));
 
         assertEquals("2", cache.get("1"));
         assertEquals(2, cache.get(12));
@@ -207,8 +208,12 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
 
     /** */
     public static class ConfigurationClosure implements IgniteInClosure<IgniteConfiguration> {
+        /** Compact footer. */
         private boolean compactFooter;
 
+        /**
+         * @param compactFooter Compact footer.
+         */
         public ConfigurationClosure(boolean compactFooter) {
             this.compactFooter = compactFooter;
         }
