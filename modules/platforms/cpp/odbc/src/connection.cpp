@@ -549,13 +549,6 @@ namespace ignite
 
         SqlResult::Type Connection::InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen)
         {
-            if (!value)
-            {
-                AddStatusRecord(SqlState::SHY009_INVALID_USE_OF_NULL_POINTER, "Value pointer is null.");
-
-                return SqlResult::AI_ERROR;
-            }
-
             switch (attr)
             {
                 case SQL_ATTR_CONNECTION_DEAD:
