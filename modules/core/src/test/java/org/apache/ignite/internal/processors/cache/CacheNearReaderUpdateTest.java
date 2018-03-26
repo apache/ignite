@@ -118,34 +118,34 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testNoBackups() throws Exception {
-        testGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, false, false));
+        runTestGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 0, false, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOneBackup() throws Exception {
-        testGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false));
+        runTestGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOneBackupNearEnabled() throws Exception {
-        testGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, true));
+        runTestGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, false, true));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testOneBackupStoreEnabled() throws Exception {
-        testGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, true, false));
+        runTestGetUpdateMultithreaded(cacheConfiguration(PARTITIONED, FULL_SYNC, 1, true, false));
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testGetUpdateMultithreaded(CacheConfiguration<Integer, Integer> ccfg) throws Exception {
+    public void runTestGetUpdateMultithreaded(CacheConfiguration<Integer, Integer> ccfg) throws Exception {
         final List<Ignite> putNodes = new ArrayList<>();
 
         for (int i = 0; i < SRVS + CLIENTS - 1; i++)
@@ -183,7 +183,7 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
         final TransactionConcurrency concurrency,
         final TransactionIsolation isolation) throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-627");
-        
+
         log.info("Execute updates [concurrency=" + concurrency + ", isolation=" + isolation + ']');
 
         final Ignite ignite0 = ignite(0);
