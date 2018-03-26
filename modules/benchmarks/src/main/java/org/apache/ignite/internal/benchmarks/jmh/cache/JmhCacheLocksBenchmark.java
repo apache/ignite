@@ -51,14 +51,11 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     /** Fixed lock key for Ignite.reentrantLock() and IgniteCache.lock(). */
     private static final String lockKey = "key0";
 
-    /** Parameter for Ignite.reentrantLock(). */
-    private static final boolean failoverSafe = true;
-
     /** Number of nodes. */
     static final int MAX_NODES = 10;
 
     /** Number threads per node. */
-    static final int THREADS_PER_NODE = 2;
+    static final int THREADS_PER_NODE = 5;
 
     /** */
     static final Ignite[] nodes = new Ignite[MAX_NODES];
@@ -92,15 +89,27 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     @State(Scope.Thread)
     public static class IgniteLockState {
         /** */
-        public final IgniteLock igniteLock;
+        public IgniteLock igniteLock;
 
-        /** Parameter for Ignite.reentrantLock(). */
+        /** */
         @Param({"false", "true"})
-        public boolean fair = true;
+        public boolean fair = false;
+
+        /** */
+        @Param({"false", "true"})
+        public boolean failoverSafe = false;
+
+        /** */
+        final int k;
 
         /** */
         public IgniteLockState() {
-            igniteLock = nodes[countForThread.getAndIncrement() % MAX_NODES]
+            k = countForThread.getAndIncrement() % MAX_NODES;
+        }
+
+        @Setup(Level.Trial)
+        public void setup() {
+            igniteLock = nodes[k]
                 .reentrantLock(lockKey, failoverSafe, fair, true);
         }
     }
@@ -120,16 +129,22 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
     @State(Scope.Thread)
     public static class IgniteLockState2 {
         /** */
-        public final IgniteLock igniteLock;
+        public IgniteLock igniteLock;
 
-        /** Parameter for Ignite.reentrantLock(). */
+        /** */
         @Param({"false", "true"})
-        public boolean fair = true;
+        public boolean fair = false;
+
+        /** */
+        final int k;
 
         /** */
         public IgniteLockState2() {
-            final int k = countForThread.getAndIncrement() % MAX_NODES;
+            k = countForThread.getAndIncrement() % MAX_NODES;
+        }
 
+        @Setup(Level.Trial)
+        public void setup() {
             igniteLock = nodes[k]
                 .reentrantLock(lockKey + "2", fair, true);
         }
@@ -179,13 +194,15 @@ public class JmhCacheLocksBenchmark extends JmhCacheAbstractBenchmark {
         final Options opt = new OptionsBuilder()
             .threads(threads)
             .include(simpleClsName)
-            //.output(output + ".jmh.log")
+            .output(output + ".jmh.log")
             .timeUnit(TimeUnit.MICROSECONDS)
             .mode(Mode.AverageTime)
             .jvmArgs(
                 "-Xms1g",
                 "-Xmx1g",
-                //"-XX:+UnlockCommercialFeatures",
+                "-server",
+                "-XX:+AggressiveOpts",
+                "-XX:MaxMetaspaceSize=256m",
                 JmhIdeBenchmarkRunner.createProperty(PROP_ATOMICITY_MODE, atomicityMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_WRITE_SYNC_MODE, writeSyncMode),
                 JmhIdeBenchmarkRunner.createProperty(PROP_DATA_NODES, 4),
