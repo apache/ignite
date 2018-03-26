@@ -827,7 +827,7 @@ namespace Apache.Ignite.Core.Tests
                         }
                     }
                 },
-                AuthenticationEnabled = true
+                AuthenticationEnabled = false
             };
         }
 
