@@ -82,8 +82,6 @@ public class ClientLocalQueryTest extends GridCommonAbstractTest {
 
     /** Check for SqlFieldsQuery. */
     public void testLocalSqlFieldsQuery() throws Exception {
-
-        //SqlFieldsQuery qry = new SqlFieldsQuery("SELECT count(id) FROM public.test_table;").setLocal(true);
         SqlFieldsQuery qry = new SqlFieldsQuery("SELECT count(_key) FROM UUID;").setLocal(true);
 
         assertCorrectExceptionThrown(qry.setLocal(true));
