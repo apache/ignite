@@ -85,6 +85,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             IsKeyField = reader.ReadBoolean();
             NotNull = reader.ReadBoolean();
             DefaultValue = reader.ReadObject<object>();
+            Scale = reader.ReadObject<object>();
+            Precision = reader.ReadObject<object>();
         }
 
         /// <summary>
@@ -99,6 +101,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteBoolean(IsKeyField);
             writer.WriteBoolean(NotNull);
             writer.WriteObject(DefaultValue);
+            writer.WriteObject(Scale);
+            writer.WriteObject(Precision);
         }
 
         /// <summary>
@@ -152,6 +156,18 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets the default value for the field.
         /// </summary>
         public object DefaultValue { get; set; }
+
+        /// <summary>
+        /// Gets or sets the scale for the field.
+        /// </summary>
+        public object Scale { get; set; }
+
+        /// <summary>
+        /// Gets or sets the precision for the field.
+        /// </summary>
+        public object Precision { get; set; }
+
+
 
         /// <summary>
         /// Validates this instance and outputs information to the log, if necessary.

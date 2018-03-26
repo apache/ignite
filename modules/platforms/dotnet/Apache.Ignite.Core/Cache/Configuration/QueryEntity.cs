@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Log;
 
     /// <summary>
-    /// Query entity is a description of cache entry (composed of key and value) 
+    /// Query entity is a description of cache entry (composed of key and value)
     /// in a way of how it must be indexed and can be queried.
     /// </summary>
     public sealed class QueryEntity : IQueryEntityInternal, IBinaryRawWriteAware
@@ -174,14 +174,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public string TableName { get; set; }
 
         /// <summary>
-        /// Gets or sets query fields, a map from field name to Java type name. 
+        /// Gets or sets query fields, a map from field name to Java type name.
         /// The order of fields defines the order of columns returned by the 'select *' queries.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<QueryField> Fields { get; set; }
 
         /// <summary>
-        /// Gets or sets field name aliases: mapping from full name in dot notation to an alias 
+        /// Gets or sets field name aliases: mapping from full name in dot notation to an alias
         /// that will be used as SQL column name.
         /// Example: {"parent.name" -> "parentName"}.
         /// </summary>
@@ -419,7 +419,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <param name="visitedTypes">The visited types.</param>
         /// <param name="isKey">Whether this is a key type.</param>
         /// <exception cref="System.InvalidOperationException">Recursive Query Field definition detected:  + type</exception>
-        private static void ScanAttributes(Type type, List<QueryField> fields, List<QueryIndexEx> indexes, 
+        private static void ScanAttributes(Type type, List<QueryField> fields, List<QueryIndexEx> indexes,
             string parentPropName, ISet<Type> visitedTypes, bool isKey)
         {
             Debug.Assert(type != null);
@@ -458,7 +458,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
                     {
                         IsKeyField = isKey,
                         NotNull = attr.NotNull,
-                        DefaultValue = attr.DefaultValue
+                        DefaultValue = attr.DefaultValue,
+                        Scale = attr.Scale,
+                        Precision = attr.Precision
                     });
 
                     ScanAttributes(memberInfo.Value, fields, indexes, columnName, visitedTypes, isKey);
@@ -496,8 +498,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             /// <param name="isDescending">if set to <c>true</c> [is descending].</param>
             /// <param name="indexType">Type of the index.</param>
             /// <param name="groups">The groups.</param>
-            public QueryIndexEx(string fieldName, bool isDescending, QueryIndexType indexType, 
-                ICollection<string> groups) 
+            public QueryIndexEx(string fieldName, bool isDescending, QueryIndexType indexType,
+                ICollection<string> groups)
                 : base(isDescending, indexType, fieldName)
             {
                 IndexGroups = groups;

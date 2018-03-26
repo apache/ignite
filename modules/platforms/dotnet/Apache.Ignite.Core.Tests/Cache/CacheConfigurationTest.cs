@@ -131,10 +131,10 @@ namespace Apache.Ignite.Core.Tests.Cache
             var springConfig = _ignite.GetCache<int, int>(SpringCacheName).GetConfiguration();
 
             var ignoredProps = new[] {"AffinityFunction"};
-            
+
             AssertExtensions.ReflectionEqual(springConfig, new CacheConfiguration(SpringCacheName),
                 ignoredProperties: new HashSet<string>(ignoredProps));
-            
+
             AssertConfigIsDefault(springConfig);
         }
 
@@ -171,7 +171,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             // Can't create existing cache
             Assert.Throws<IgniteException>(() => _ignite.CreateCache<int, int>(cfg));
-            
+
             // Check put-get
             cache[1] = new Entity { Foo = 1 };
             Assert.AreEqual(1, cache[1].Foo);
@@ -284,7 +284,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(CacheConfiguration.DefaultReadThrough, cfg.ReadThrough);
             Assert.AreEqual(CacheConfiguration.DefaultCopyOnRead, cfg.CopyOnRead);
             Assert.AreEqual(CacheConfiguration.DefaultKeepBinaryInStore, cfg.KeepBinaryInStore);
-            Assert.AreEqual(CacheConfiguration.DefaultStoreConcurrentLoadAllThreshold, 
+            Assert.AreEqual(CacheConfiguration.DefaultStoreConcurrentLoadAllThreshold,
                 cfg.StoreConcurrentLoadAllThreshold);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceOrder, cfg.RebalanceOrder);
             Assert.AreEqual(CacheConfiguration.DefaultRebalanceBatchesPrefetchCount, cfg.RebalanceBatchesPrefetchCount);
@@ -551,6 +551,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.IsKeyField, y.IsKeyField);
             Assert.AreEqual(x.NotNull, y.NotNull);
             Assert.AreEqual(x.DefaultValue, y.DefaultValue);
+            Assert.AreEqual(x.Scale, y.Scale);
+            Assert.AreEqual(x.Precision, y.Precision);
         }
 
         /// <summary>
@@ -625,7 +627,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                         TableName = "Table1",
                         Fields = new[]
                         {
-                            new QueryField("length", typeof(int)), 
+                            new QueryField("length", typeof(int)),
                             new QueryField("name", typeof(string)) {IsKeyField = true, DefaultValue = "defName"},
                             new QueryField("location", typeof(string)) {NotNull = true},
                         },
@@ -735,8 +737,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                         TableName = "MyTable",
                         Fields = new[]
                         {
-                            new QueryField("length", typeof(int)) {DefaultValue = -1}, 
-                            new QueryField("name", typeof(string)), 
+                            new QueryField("length", typeof(int)) {DefaultValue = -1},
+                            new QueryField("name", typeof(string)),
                             new QueryField("location", typeof(string)) {IsKeyField = true}
                         },
                         Aliases = new [] {new QueryAlias("length", "len") },
@@ -766,7 +768,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                     MaxSize = 26,
                     MaxMemorySize = 2501,
                     BatchSize = 33
-                }, 
+                },
                 OnheapCacheEnabled = true,  // Required with eviction policy
                 AffinityFunction = new RendezvousAffinityFunction
                 {

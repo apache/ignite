@@ -136,18 +136,6 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
         personCache.put(new AffinityKey<>("p2", "o1"), new Person("Joe Black", 35, 1));
         personCache.put(new AffinityKey<>("p3", "o2"), new Person("Mike Green", 40, 2));
 
-
-        IgniteCache<Integer, Salary> salaryCache = jcache(grid(0), cacheConfiguration(
-            new QueryEntityEx(
-                new QueryEntity(Integer.class.getName(), Salary.class.getName())
-                    .addQueryField("id", Integer.class.getName(), null)
-                    .addQueryField("amount", BigDecimal.class.getName(), null)
-                    .setIndexes(Arrays.asList(
-                        new QueryIndex("id"),
-                        new QueryIndex("amount"))))
-                .setNotNullFields(new HashSet<>(Arrays.asList("id", "amount")))
-        ), "pers");
-
         try (Connection conn = DriverManager.getConnection(URL)) {
             Statement stmt = conn.createStatement();
 
@@ -156,7 +144,7 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
             stmt.execute("CREATE TABLE \"Quoted\" (\"Id\" INT primary key, \"Name\" VARCHAR(50)) WITH WRAP_KEY");
             stmt.execute("CREATE INDEX \"MyTestIndex quoted\" on \"Quoted\" (\"Id\" DESC)");
             stmt.execute("CREATE INDEX IDX ON TEST (ID ASC)");
-            stmt.execute("CREATE TABLE TEST_DECIMAL_COLUMN (ID INT primary key, DEC_COL DECIMAL(8, 9))");
+            stmt.execute("CREATE TABLE TEST_DECIMAL_COLUMN (ID INT primary key, DEC_COL DECIMAL(8, 3))");
         }
     }
 
@@ -404,15 +392,28 @@ public class JdbcThinMetadataSelfTest extends JdbcThinAbstractSelfTest {
                 "PUBLIC.TEST.VAL.null",
                 "PUBLIC.TEST.AGE.21",
                 "PUBLIC.Quoted.Id.null",
-                "PUBLIC.Quoted.Name.null"));
+                "PUBLIC.Quoted.Name.null",
+                "PUBLIC.TEST_DECIMAL_COLUMN.ID.null",
+                "PUBLIC.TEST_DECIMAL_COLUMN.DEC_COL.null.8.3"
+            ));
 
             Set<String> actualCols = new HashSet<>(expectedCols.size());
 
             while(rs.next()) {
+                int precision = rs.getInt("DECIMAL_DIGITS");
+                int scale = rs.getInt("COLUMN_SIZE");
+
                 actualCols.add(rs.getString("TABLE_SCHEM") + '.'
                     + rs.getString("TABLE_NAME") + "."
                     + rs.getString("COLUMN_NAME") + "."
-                    + rs.getString("COLUMN_DEF"));
+                    + rs.getString("COLUMN_DEF")
+                    + (precision == 0 ? "" : ("." + precision))
+                    + (scale == 0 ? "" : ("." + scale))
+                );
+            }
+
+            for (String col : actualCols) {
+                System.out.println(col);
             }
 
             assert expectedCols.equals(actualCols) : "expectedCols=" + expectedCols +

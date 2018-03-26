@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary>
         /// Gets or sets a value indicating whether corresponding field should be indexed.
-        /// Just like with databases, field indexing may require additional overhead during updates, 
+        /// Just like with databases, field indexing may require additional overhead during updates,
         /// but makes select operations faster.
         /// </summary>
         public bool IsIndexed { get; set; }
@@ -57,12 +57,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public bool IsDescending { get; set; }
 
         /// <summary>
-        /// Gets or sets the collection of index groups this field belongs to. 
-        /// Groups are used for compound indexes, 
+        /// Gets or sets the collection of index groups this field belongs to.
+        /// Groups are used for compound indexes,
         /// whenever index should be created on more than one field.
         /// All fields within the same group will belong to the same index.
         /// </summary>
-        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays", 
+        [SuppressMessage("Microsoft.Performance", "CA1819:PropertiesShouldNotReturnArrays",
             Justification = "Attribute initializers do not allow collections")]
         public string[] IndexGroups { get; set; }
 
@@ -81,5 +81,15 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets the default value for the field (has effect when inserting with DML).
         /// </summary>
         public object DefaultValue { get; set; }
+
+        /// <summary>
+        /// Gets or sets the scale for the field.
+        /// </summary>
+        public object Scale { get; set; }
+
+        /// <summary>
+        /// Gets or sets the precision for the field.
+        /// </summary>
+        public object Precision { get; set; }
     }
 }

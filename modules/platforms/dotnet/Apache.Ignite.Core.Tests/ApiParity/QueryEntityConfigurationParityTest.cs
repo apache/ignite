@@ -32,7 +32,8 @@ namespace Apache.Ignite.Core.Tests.ApiParity
             "findValueType",
             "KeyFields",
             "NotNullFields",
-            "DefaultFieldValues"
+            "DefaultFieldValues",
+            "DecimalInfo"
         };
 
         /// <summary>
@@ -42,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         public void TestQueryEntityConfiguration()
         {
             ParityTest.CheckConfigurationParity(
-                @"modules\core\src\main\java\org\apache\ignite\cache\QueryEntity.java", 
+                @"modules\core\src\main\java\org\apache\ignite\cache\QueryEntity.java",
                 typeof(QueryEntity),
                 UnneededProperties);
         }
