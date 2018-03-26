@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -47,11 +49,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
  * Write-ahead log state manager. Manages WAL enable and disable.
@@ -324,6 +329,51 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
             return fut;
         }
+    }
+
+    public void changeLocalStatesOnExchangeDone() {
+        if (!cctx.gridConfig().isDisableWalDuringRebalancing())
+            return;
+
+        Set<Integer> grpsToEnableWal = new HashSet<>();
+        Set<Integer> grpsToDisableWal = new HashSet<>();
+
+        for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
+            if (grp.isLocal() || !grp.affinityNode())
+                continue;
+
+            boolean hasOwning = false;
+
+            for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
+                if (locPart.state() == OWNING) {
+                    hasOwning = true;
+
+                    break;
+                }
+            }
+
+            if (hasOwning && !grp.walEnabled())
+                grpsToEnableWal.add(grp.groupId());
+            else if (!hasOwning && grp.walEnabled())
+                grpsToDisableWal.add(grp.groupId());
+        }
+
+        if (grpsToEnableWal.isEmpty() && grpsToDisableWal.isEmpty())
+            return;
+
+        try {
+            if (!grpsToEnableWal.isEmpty())
+                triggerCheckpoint(0).beginFuture().get();
+        }
+        catch (IgniteCheckedException ex) {
+            throw new IgniteException(ex);
+        }
+
+        for (Integer grpId : grpsToEnableWal)
+            cctx.cache().cacheGroup(grpId).walEnabled(true);
+
+        for (Integer grpId : grpsToDisableWal)
+            cctx.cache().cacheGroup(grpId).walEnabled(false);
     }
 
     /**
