@@ -19,13 +19,34 @@
 
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans
-        http://www.springframework.org/schema/beans/spring-beans.xsd">
+       xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/util
+        http://www.springframework.org/schema/util/spring-util.xsd">
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="localHost" value="127.0.0.1"/>
-        <property name="connectorConfiguration"><null/></property>
 
-        <property name="igniteInstanceName" value="grid2"/>
+        <property name="clientConnectorConfiguration">
+            <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
+                <property name="host" value="127.0.0.1"/>
+                <property name="port" value="11110"/>
+                <property name="portRange" value="10"/>
+                <property name="sslEnabled" value="true"/>
+                <property name="useIgniteSslContextFactory" value="false"/>
+                <property name="sslClientAuth" value="true"/>
+
+                <property name="sslContextFactory">
+                    <bean class="org.apache.ignite.ssl.SslContextFactory">
+                        <property name="keyStoreFilePath" value="Config/Client/server.jks"/>
+                        <property name="keyStorePassword" value="123456"/>
+                        <property name="trustStoreFilePath" value="Config/Client/trust.jks"/>
+                        <property name="trustStorePassword" value="123456"/>
+                    </bean>
+                </property>
+            </bean>
+        </property>
 
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
