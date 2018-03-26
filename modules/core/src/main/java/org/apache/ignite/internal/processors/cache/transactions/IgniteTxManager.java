@@ -561,13 +561,21 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                 });
 
         for (IgniteInternalTx tx : txs()) {
-            if (needWaitTransaction(tx, topVer))
+            if (needWaitTransaction(tx, topVer)) {
                 res.add(tx.finishFuture());
+            }
         }
 
         res.markInitialized();
 
         return res;
+    }
+
+    public void validate(AffinityTopologyVersion topVer) {
+        for (IgniteInternalTx tx : txs()) {
+            if (needWaitTransaction(tx, topVer))
+                assert tx.finishFuture().isDone() : tx;
+        }
     }
 
     /**

@@ -346,6 +346,24 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         return res;
     }
 
+    public void validate(AffinityTopologyVersion topVer) {
+        for (GridCacheFuture<?> fut : futs.values()) {
+            if (fut instanceof GridDhtTxFinishFuture) {
+                GridDhtTxFinishFuture finishTxFuture = (GridDhtTxFinishFuture) fut;
+                AffinityTopologyVersion txTopVer = finishTxFuture.tx().topologyVersionSnapshot();
+                if (txTopVer != null && txTopVer.compareTo(topVer) < 0)
+                    assert finishTxFuture.isDone() : finishTxFuture;
+            }
+
+            if (fut instanceof GridNearTxFinishFuture) {
+                GridNearTxFinishFuture finishTxFuture = (GridNearTxFinishFuture) fut;
+                AffinityTopologyVersion txTopVer = finishTxFuture.tx().topologyVersionSnapshot();
+                if (txTopVer != null && txTopVer.compareTo(topVer) < 0)
+                    assert finishTxFuture.isDone() : finishTxFuture;
+            }
+        }
+    }
+
     /**
      * Future wrapper which ignores any underlying future errors.
      *

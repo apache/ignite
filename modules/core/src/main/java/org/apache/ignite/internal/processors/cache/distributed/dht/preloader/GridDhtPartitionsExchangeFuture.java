@@ -1107,7 +1107,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         // To correctly rebalance when persistence is enabled, it is necessary to reserve history within exchange.
         partHistReserved = cctx.database().reserveHistoryForExchange();
 
-        waitPartitionRelease();
+        waitPartitionRelease(0);
+        waitPartitionRelease(1);
 
         boolean topChanged = firstDiscoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT || affChangeMsg != null;
 
@@ -1212,8 +1213,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      *
      * @throws IgniteCheckedException If failed.
      */
-    private void waitPartitionRelease() throws IgniteCheckedException {
-        Latch releaseLatch = cctx.latch().getOrCreate("exchange", initialVersion());
+    private void waitPartitionRelease(int phase) throws IgniteCheckedException {
+        Latch releaseLatch = cctx.latch().getOrCreate("exchange" + phase, initialVersion());
 
         IgniteInternalFuture<?> partReleaseFut = cctx.partitionReleaseFuture(initialVersion());
 
@@ -1311,6 +1312,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         if (log.isInfoEnabled())
                             log.info("Finished waiting for distributed partitions release latch: " + releaseLatch);
+
+                        cctx.exchange().setReleasedTopVer(initialVersion());
+
+                        if (phase == 1)
+                            cctx.mvcc().validate(initialVersion());
 
                         break;
                     }

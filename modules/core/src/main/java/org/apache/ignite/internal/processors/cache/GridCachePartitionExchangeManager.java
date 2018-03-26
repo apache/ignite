@@ -166,6 +166,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** */
     @Nullable private volatile GridDhtPartitionsExchangeFuture lastInitializedFut;
 
+    @Nullable private volatile AffinityTopologyVersion releasedTopVer;
+
     /** */
     private final AtomicReference<GridDhtTopologyFuture> lastFinishedFut = new AtomicReference<>();
 
@@ -542,6 +544,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public IgniteInternalFuture<?> reconnectExchangeFuture() {
         return reconnectExchangeFut;
+    }
+
+    public void setReleasedTopVer(AffinityTopologyVersion topVer) {
+        this.releasedTopVer = topVer;
+    }
+
+    public AffinityTopologyVersion releasedTopVer() {
+        return releasedTopVer;
     }
 
     /**
@@ -2036,7 +2046,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         if (fut.mergeJoinExchange(curFut))
                             awaited++;
 
-                        cctx.latch().release("exchange", fut.initialVersion(), evt.eventNode());
+                        cctx.latch().release("exchange" + 0, fut.initialVersion(), evt.eventNode());
+                        cctx.latch().release("exchange" + 1, fut.initialVersion(), evt.eventNode());
                     }
                 }
                 else {
