@@ -175,7 +175,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
                 for (URL url : CompatibilityTestsUtils.classLoaderUrls(ldr)) {
                     String path = url.getPath();
 
-                    if (!excluded.contains(path))
+                    if (excluded.stream().noneMatch(path::contains))
                         pathBuilder.append(path).append(File.pathSeparator);
                 }
 
