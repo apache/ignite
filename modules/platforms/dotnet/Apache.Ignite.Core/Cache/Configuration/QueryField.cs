@@ -85,8 +85,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             IsKeyField = reader.ReadBoolean();
             NotNull = reader.ReadBoolean();
             DefaultValue = reader.ReadObject<object>();
-            Scale = reader.ReadObject<object>();
-            Precision = reader.ReadObject<object>();
+            Scale = reader.ReadInt();
+            Precision = reader.ReadInt();
         }
 
         /// <summary>
@@ -101,8 +101,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteBoolean(IsKeyField);
             writer.WriteBoolean(NotNull);
             writer.WriteObject(DefaultValue);
-            writer.WriteObject(Scale);
-            writer.WriteObject(Precision);
+            writer.WriteInt(Scale);
+            writer.WriteInt(Precision);
         }
 
         /// <summary>
@@ -160,12 +160,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets the scale for the field.
         /// </summary>
-        public object Scale { get; set; }
+        public int Scale { get; set; }
 
         /// <summary>
         /// Gets or sets the precision for the field.
         /// </summary>
-        public object Precision { get; set; }
+        public int Precision { get; set; }
 
 
 

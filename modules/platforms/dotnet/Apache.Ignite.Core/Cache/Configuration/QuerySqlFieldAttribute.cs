@@ -85,11 +85,11 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets the scale for the field.
         /// </summary>
-        public object Scale { get; set; }
+        public int Scale { get; set; }
 
         /// <summary>
         /// Gets or sets the precision for the field.
         /// </summary>
-        public object Precision { get; set; }
+        public int Precision { get; set; }
     }
 }
