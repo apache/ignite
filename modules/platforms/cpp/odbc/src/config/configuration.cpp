@@ -53,6 +53,9 @@ namespace ignite
             const std::string Configuration::DefaultValue::sslCertFile = "";
             const std::string Configuration::DefaultValue::sslCaFile = "";
 
+            const std::string Configuration::DefaultValue::user = "";
+            const std::string Configuration::DefaultValue::password = "";
+
             Configuration::Configuration() :
                 dsn(DefaultValue::dsn),
                 driver(DefaultValue::driver),
@@ -71,7 +74,9 @@ namespace ignite
                 sslMode(DefaultValue::sslMode),
                 sslKeyFile(DefaultValue::sslKeyFile),
                 sslCertFile(DefaultValue::sslCertFile),
-                sslCaFile(DefaultValue::sslCaFile)
+                sslCaFile(DefaultValue::sslCaFile),
+                user(DefaultValue::user),
+                password(DefaultValue::password)
             {
                 // No-op.
             }
@@ -369,6 +374,36 @@ namespace ignite
                 return pageSize.IsSet();
             }
 
+            const std::string& Configuration::GetUser() const
+            {
+                return user.GetValue();
+            }
+
+            void Configuration::SetUser(const std::string& user)
+            {
+                this->user.SetValue(user);
+            }
+
+            bool Configuration::IsUserSet() const
+            {
+                return user.IsSet();
+            }
+
+            const std::string& Configuration::GetPassword() const
+            {
+                return password.GetValue();
+            }
+
+            void Configuration::SetPassword(const std::string& pass)
+            {
+                this->password.SetValue(pass);
+            }
+
+            bool Configuration::IsPasswordSet() const
+            {
+                return password.IsSet();
+            }
+
             int32_t Configuration::GetPageSize() const
             {
                 return pageSize.GetValue();
@@ -394,6 +429,8 @@ namespace ignite
                 AddToMap(res, ConnectionStringParser::Key::sslKeyFile, sslKeyFile);
                 AddToMap(res, ConnectionStringParser::Key::sslCertFile, sslCertFile);
                 AddToMap(res, ConnectionStringParser::Key::sslCaFile, sslCaFile);
+                AddToMap(res, ConnectionStringParser::Key::user, user);
+                AddToMap(res, ConnectionStringParser::Key::password, password);
             }
 
             template<>
