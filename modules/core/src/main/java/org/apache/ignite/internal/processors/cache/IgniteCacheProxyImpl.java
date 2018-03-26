@@ -52,6 +52,7 @@ import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cache.CacheManager;
 import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.AbstractContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQuery;
@@ -755,6 +756,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
             (qry instanceof SqlQuery || qry instanceof SqlFieldsQuery || qry instanceof TextQuery))
             throw new CacheException("Failed to execute query. Add module 'ignite-indexing' to the classpath " +
                     "of all Ignite nodes.");
+
+        if (qry.isLocal() && ctx.localNode().isClient() && ctx.config().getCacheMode() != CacheMode.LOCAL)
+            throw new CacheException("Failed to execute query. Local queries are NOT supported on client nodes.");
     }
 
     /** {@inheritDoc} */
