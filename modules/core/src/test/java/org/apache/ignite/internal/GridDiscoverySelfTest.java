@@ -69,6 +69,11 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
     /** Maximum timeout when remote nodes join/left the topology */
     private static final int MAX_TIMEOUT_IN_MINS = 5;
 
+    /** */
+    public GridDiscoverySelfTest() {
+        super(/*start grid*/true);
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -91,9 +96,7 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        ignite = startGrid();
+        ignite = G.ignite(getTestIgniteInstanceName());
     }
 
     /**

@@ -543,8 +543,6 @@ public abstract class GridAbstractTest extends TestCase {
         // Will clean and re-create marshaller directory from scratch.
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
-
-        assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution";
     }
 
     /**
@@ -590,6 +588,14 @@ public abstract class GridAbstractTest extends TestCase {
         if (isFirstTest()) {
             info(">>> Starting test class: " + testClassDescription() + " <<<");
 
+            assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution";
+
+            if (startGrid) {
+                IgniteConfiguration cfg = optimize(getConfiguration());
+
+                G.start(cfg);
+            }
+
             try {
                 List<Integer> jvmIds = IgniteNodeRunner.killAll();
 
@@ -612,12 +618,6 @@ public abstract class GridAbstractTest extends TestCase {
                 }
 
                 throw t;
-            }
-
-            if (startGrid) {
-                IgniteConfiguration cfg = optimize(getConfiguration());
-
-                G.start(cfg);
             }
         }
 
@@ -1089,9 +1089,9 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Stop all Ignite instances and throw {@link IgniteException} if some of them failed to stop.
+     * Stop all Ignite instances and throw {@link IgniteCheckedException} if some of them failed to stop.
      */
-    private void stopAllGridsSilently() throws Exception {
+    private void stopAllGridsSilently() throws IgniteCheckedException {
         final Map<String, Throwable> errors = new HashMap<>();
 
         for (Ignite g : G.allGrids()) {
@@ -1108,7 +1108,7 @@ public abstract class GridAbstractTest extends TestCase {
             String msg = errors.entrySet().stream().map(Map.Entry::toString)
                 .collect(Collectors.joining(", ", "[", "]"));
 
-            throw new IgniteException("Failed to stop nodes: [" + msg + "].");
+            throw new IgniteCheckedException("Failed to stop nodes: [" + msg + "].");
         }
     }
 

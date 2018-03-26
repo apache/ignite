@@ -34,11 +34,14 @@ public class GridFailedInputParametersSelfTest extends GridCommonAbstractTest {
     /** */
     private static Ignite ignite;
 
+    /** */
+    public GridFailedInputParametersSelfTest() {
+        super(/*start grid*/true);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        ignite = startGrid();
+        ignite = G.ignite(getTestIgniteInstanceName());
     }
 
     /**

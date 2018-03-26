@@ -222,6 +222,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
+        initStoreStrategy();
+
         if (cacheStartType() == CacheStartMode.STATIC)
             super.beforeTestsStarted();
         else {
@@ -240,8 +242,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 awaitPartitionMapExchange();
             }
             else {
-                initStoreStrategy();
-
                 int cnt = gridCount();
 
                 assert cnt >= 1 : "At least one grid must be started";

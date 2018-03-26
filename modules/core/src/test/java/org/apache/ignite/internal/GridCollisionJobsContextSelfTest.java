@@ -20,6 +20,7 @@ package org.apache.ignite.internal;
 import java.util.Collection;
 import org.apache.ignite.GridTestJob;
 import org.apache.ignite.GridTestTask;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.G;
@@ -42,6 +43,13 @@ public class GridCollisionJobsContextSelfTest extends GridCommonAbstractTest {
     /** */
     public GridCollisionJobsContextSelfTest() {
         super(/*start grid*/true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        Ignite ignite = G.ignite(getTestIgniteInstanceName());
+
+        assert ignite != null;
     }
 
     /** {@inheritDoc} */

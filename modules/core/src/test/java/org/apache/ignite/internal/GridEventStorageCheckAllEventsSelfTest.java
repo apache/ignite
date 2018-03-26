@@ -79,6 +79,13 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
     /** */
     private static Ignite ignite;
 
+    /**
+     *
+     */
+    public GridEventStorageCheckAllEventsSelfTest() {
+        super(/*start grid*/true);
+    }
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration() throws Exception {
         IgniteConfiguration cfg = super.getConfiguration();
@@ -91,9 +98,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        ignite = startGrid();
+        ignite = G.ignite(getTestIgniteInstanceName());
 
         long tstamp = startTimestamp();
 

@@ -36,11 +36,14 @@ public class GridCommunicationSelfTest extends GridCommonAbstractTest {
     /** */
     private static Ignite ignite;
 
+    /** */
+    public GridCommunicationSelfTest() {
+        super(/*start grid*/true);
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        ignite = startGrid();
+        ignite = G.ignite(getTestIgniteInstanceName());
     }
 
     /**
