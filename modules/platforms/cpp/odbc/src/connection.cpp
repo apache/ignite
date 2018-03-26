@@ -525,15 +525,15 @@ namespace ignite
                 return SqlResult::AI_ERROR;
             }
 
-            bool distributedJoins = config.IsDistributedJoins();
-            bool enforceJoinOrder = config.IsEnforceJoinOrder();
-            bool replicatedOnly = config.IsReplicatedOnly();
-            bool collocated = config.IsCollocated();
-            bool lazy = config.IsLazy();
-            bool skipReducerOnUpdate = config.IsSkipReducerOnUpdate();
+            if (protocolVersion < ProtocolVersion::VERSION_2_5_0 && !config.GetUser().empty())
+            {
+                AddStatusRecord(SqlState::S01S00_INVALID_CONNECTION_STRING_ATTRIBUTE,
+                    "Authentication is not allowed for protocol version below 2.5.0");
 
-            HandshakeRequest req(protocolVersion, distributedJoins, enforceJoinOrder, replicatedOnly, collocated, lazy,
-                skipReducerOnUpdate);
+                return SqlResult::AI_ERROR;
+            }
+
+            HandshakeRequest req(config);
             HandshakeResponse rsp;
 
             try
@@ -575,8 +575,7 @@ namespace ignite
                     constructor << "Additional info: " << rsp.GetError() << " ";
 
                 constructor << "Current node Apache Ignite version: " << rsp.GetCurrentVer().ToString() << ", "
-                            << "driver protocol version introduced in version: "
-                            << config.GetProtocolVersion().ToString() << ".";
+                            << "driver protocol version introduced in version: " << protocolVersion.ToString() << ".";
 
                 AddStatusRecord(SqlState::S08004_CONNECTION_REJECTED, constructor.str());
 
