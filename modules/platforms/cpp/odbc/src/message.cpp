@@ -83,6 +83,7 @@ namespace ignite
                 utility::WriteString(writer, config.GetUser());
                 utility::WriteString(writer, config.GetPassword());
 
+                // Currently always sending "ERROR" as a Nested Transaction Mode.
                 writer.WriteString("ERROR", sizeof("ERROR") - 1);
             }
         }
