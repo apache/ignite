@@ -615,6 +615,7 @@ public class IgniteConfiguration {
         waitForSegOnStart = cfg.isWaitForSegmentOnStart();
         warmupClos = cfg.getWarmupClosure();
         authEnabled = cfg.isAuthenticationEnabled();
+        disableWalDuringRebalancing = cfg.isDisableWalDuringRebalancing();
     }
 
     /**

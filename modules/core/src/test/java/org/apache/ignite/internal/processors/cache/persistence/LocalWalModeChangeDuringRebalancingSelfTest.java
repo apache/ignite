@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.Ignite;
@@ -10,7 +27,12 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ *
+ */
 public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstractTest {
+    /** */
+    private static boolean disableWalDuringRebalancing = true;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -31,6 +53,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                 .setRebalanceDelay(-1)
         );
 
+        cfg.setDisableWalDuringRebalancing(disableWalDuringRebalancing);
+
         return cfg;
     }
 
@@ -48,6 +72,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         stopAllGrids();
 
         cleanPersistenceDir();
+
+        disableWalDuringRebalancing = true;
     }
 
     /**
@@ -70,6 +96,40 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
 
         assertTrue("WAL should be disabled until rebalancing is finished", !grpCtx.walEnabled());
+
+        for (int i = 0; i < 4; i++)
+            grid(i).cache(DEFAULT_CACHE_NAME).rebalance().get();
+
+        awaitPartitionMapExchange();
+
+        assertTrue("WAL should be enabled after rebalancing is finished", grpCtx.walEnabled());
+
+        for (Integer k = 0; k < 1000; k++)
+            assertEquals("k=" + k, k, cache.get(k));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWalNotDisabledIfParameterSetToFalse() throws Exception {
+        disableWalDuringRebalancing = false;
+
+        Ignite ignite = startGrids(3);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int k = 0; k < 1000; k++)
+            cache.put(k, k);
+
+        IgniteEx newIgnite = startGrid(3);
+
+        ignite.cluster().setBaselineTopology(4);
+
+        CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
+
+        assertTrue("WAL should be enabled until rebalancing is finished", grpCtx.walEnabled());
 
         for (int i = 0; i < 4; i++)
             grid(i).cache(DEFAULT_CACHE_NAME).rebalance().get();
