@@ -247,6 +247,7 @@ class IgniteAckGenerator {
 
         if (log.isInfoEnabled())
             log.info("Logger: " + log.getLoggerInfo() );
+        System.out.println("!!~" + log.getLoggerInfo().length());
     }
 
     /**

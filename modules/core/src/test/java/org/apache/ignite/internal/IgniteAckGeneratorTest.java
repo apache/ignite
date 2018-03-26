@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal;
 
+import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -29,23 +31,22 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridStringLogger;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.mockito.Mockito;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_REST_START_ON_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LANG_RUNTIME;
 import static org.apache.ignite.internal.IgniteVersionUtils.ACK_VER_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.BUILD_TSTAMP_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.REV_HASH_STR;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
-import static org.mockito.Mockito.when;
 
 /**
  *
  */
 public class IgniteAckGeneratorTest extends GridCommonAbstractTest {
     /** Logger. */
-    private IgniteLogger log = Mockito.spy(new GridStringLogger());
+    private IgniteLogger log = new GridStringLogger();
 
     /** Config. */
     private static IgniteConfiguration cfg;
@@ -59,6 +60,12 @@ public class IgniteAckGeneratorTest extends GridCommonAbstractTest {
     /** Config config. */
     private String cfgStr;
 
+    /** Language info. */
+    String language;
+
+    String logInfo = logProxy.getLoggerInfo();
+
+
     /**
      * {@inheritDoc}
      */
@@ -66,10 +73,6 @@ public class IgniteAckGeneratorTest extends GridCommonAbstractTest {
         cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setCacheConfiguration(defaultCacheConfiguration());
-
-        when(log.isInfoEnabled()).thenReturn(true);
-
-//        when(log.isDebugEnabled()).thenReturn(true);
 
         userAttr.put("Name", "John Gold");
 
@@ -89,6 +92,8 @@ public class IgniteAckGeneratorTest extends GridCommonAbstractTest {
         super.beforeTestsStarted();
 
         startGrid(0);
+
+        language = String.valueOf(grid(0).context().nodeAttribute(ATTR_LANG_RUNTIME));
 
         cfgStr = cfg.toString();
 
@@ -143,6 +148,8 @@ public class IgniteAckGeneratorTest extends GridCommonAbstractTest {
         assertTrue(logStr.contains(System.getProperty("user.name")));
 
         assertTrue(logStr.contains(String.valueOf(U.jvmPid())));
+
+        assertTrue(logStr.contains(language));
     }
 
     /**
@@ -154,6 +161,8 @@ public class IgniteAckGeneratorTest extends GridCommonAbstractTest {
         assertTrue(logStr.contains(String.valueOf(U.heapSize(2))));
 
         assertTrue(logStr.contains(String.valueOf(U.jdkName())));
+
+        assertTrue(logStr.contains(language));
     }
 
     /**
@@ -166,23 +175,38 @@ public class IgniteAckGeneratorTest extends GridCommonAbstractTest {
 
         boolean isRestartEnabled = System.getProperty(IGNITE_SUCCESS_FILE) != null;
 
-        boolean isRestEnabled = cfg.getConnectorConfiguration() != null && (!isClientNode || IgniteSystemProperties.getBoolean(IGNITE_REST_START_ON_CLIENT));
+        boolean isRestEnabled = cfg.getConnectorConfiguration() != null && (!isClientNode || IgniteSystemProperties.
+            getBoolean(IGNITE_REST_START_ON_CLIENT));
 
         assertTrue(logStr.contains("restart: " + onOff(isRestartEnabled)));
 
         assertTrue(logStr.contains("REST: " + onOff(isRestEnabled)));
 
         assertTrue(logStr.contains("remote: " + onOff(isJmxRemoteEnabled)));
+
+        if(isJmxRemoteEnabled){
+            assertTrue(logStr.contains("port: " + System.getProperty("com.sun.management.jmxremote.port",
+                "<n/a>")));
+
+            assertTrue(logStr.contains("auth: " + onOff(Boolean.
+                getBoolean("com.sun.management.jmxremote.authenticate"))));
+
+            assertTrue(logStr.contains("ssl: " + onOff(Boolean.getBoolean("com.sun.management.jmxremote.ssl")
+                || System.getProperty("com.sun.management.jmxremote.ssl") == null)));
+        }
     }
 
-    /**
-     * Gets "on" or "off" string for given boolean value.
-     *
-     * @param b Boolean value to convert.
-     * @return Result string.
-     */
-    private String onOff(boolean b) {
-        return b ? "on" : "off";
+    public void testAckLogger() {
+        GridLoggerProxy logProxy = (GridLoggerProxy) grid(0).configuration().getGridLogger().getLogger(
+            getClass().getName() + (grid(0).name() != null ? '%' + grid(0).name() : ""));
+
+        String logInfo = logProxy.getLoggerInfo();
+
+        System.out.println("~~!" + logInfo.length());
+
+        System.out.println(logStr);
+
+        assertTrue(logStr.contains("Logger: " + logInfo));
     }
 
     /**
@@ -194,13 +218,6 @@ public class IgniteAckGeneratorTest extends GridCommonAbstractTest {
         assertTrue(logStr.contains(cfg.getIgniteHome()));
 
         assertTrue(logStr.contains(String.valueOf(rtBean.getInputArguments())));
-    }
-
-    /**
-     *
-     */
-    public void testAckLogger() throws Exception{
-//        assertTrue(logStr.contains(log.info));
     }
 
     /**
@@ -270,5 +287,15 @@ public class IgniteAckGeneratorTest extends GridCommonAbstractTest {
         assertTrue(logStr.contains(BUILD_TSTAMP_STR));
 
         assertTrue(logStr.contains(REV_HASH_STR));
+    }
+
+    /**
+     * Gets "on" or "off" string for given boolean value.
+     *
+     * @param b Boolean value to convert.
+     * @return Result string.
+     */
+    private String onOff(boolean b) {
+        return b ? "on" : "off";
     }
 }
