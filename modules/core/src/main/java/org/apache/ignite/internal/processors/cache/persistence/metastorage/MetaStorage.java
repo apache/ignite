@@ -234,7 +234,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         if (!readOnly) {
             WALPointer ptr = wal.log(new MetastoreDataRecord(key, data));
 
-            wal.fsync(ptr);
+            wal.flush(ptr, false);
 
             synchronized (this) {
                 MetastorageDataRow oldRow = tree.findOne(new MetastorageDataRow(key, null));
@@ -278,7 +278,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         if (!readOnly) {
             WALPointer ptr = wal.log(new MetastoreDataRecord(key, null));
 
-            wal.fsync(ptr);
+            wal.flush(ptr, false);
 
             synchronized (this) {
                 MetastorageDataRow row = new MetastorageDataRow(key, null);

@@ -126,9 +126,6 @@ import static org.apache.ignite.internal.util.IgniteUtils.findNonPublicMethod;
  */
 @SuppressWarnings("IfMayBeConditional")
 public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter implements IgniteWriteAheadLogManager {
-    /** Fsync fake ptr. */
-    public static WALPointer FSYNC_FAKE_PTR = new FileWALPointer(0, 0, 0);
-
     /** {@link MappedByteBuffer#force0(java.io.FileDescriptor, long, long)}. */
     private static final Method force0 = findNonPublicMethod(
         MappedByteBuffer.class, "force0",
@@ -740,7 +737,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
     }
 
     /** {@inheritDoc} */
-    @Override public void fsync(WALPointer ptr) throws IgniteCheckedException, StorageException {
+    @Override public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
         if (serializer == null || mode == WALMode.NONE)
             return;
 
@@ -752,18 +749,14 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         FileWALPointer filePtr = (FileWALPointer)(ptr == null ? lastWALPtr.get() : ptr);
 
-        if (mode == WALMode.BACKGROUND)
-            return;
-
-        if (mode == LOG_ONLY) {
+        if (mode == LOG_ONLY)
             cur.flushOrWait(filePtr);
 
-            if (ptr != FSYNC_FAKE_PTR)
-                return;
-        }
+        if (!explicitFsync && mode != WALMode.FSYNC)
+            return; // No need to sync in LOG_ONLY or BACKGROUND unless explicit fsync is required.
 
         // No need to sync if was rolled over.
-        if (filePtr != null && filePtr != FSYNC_FAKE_PTR && !cur.needFsync(filePtr))
+        if (filePtr != null && !cur.needFsync(filePtr))
             return;
 
         cur.fsync(filePtr);
@@ -1706,7 +1699,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                 Files.move(dstTmpFile.toPath(), dstFile.toPath());
 
-                if (mode == WALMode.FSYNC || mode == LOG_ONLY) {
+                if (mode != WALMode.NONE) {
                     try (FileIO f0 = ioFactory.create(dstFile, CREATE, READ, WRITE)) {
                         f0.force();
                     }
@@ -1880,7 +1873,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
                     Files.move(tmpZip.toPath(), zip.toPath());
 
-                    if (mode == WALMode.FSYNC || mode == WALMode.LOG_ONLY) {
+                    if (mode != WALMode.NONE) {
                         try (FileIO f0 = ioFactory.create(zip, CREATE, READ, WRITE)) {
                             f0.force();
                         }
@@ -2770,7 +2763,7 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
                         }
 
                         // Do the final fsync.
-                        if (mode == WALMode.FSYNC || mode == LOG_ONLY) {
+                        if (mode != WALMode.NONE) {
                             if (mmap)
                                 ((MappedByteBuffer)buf.buf).force();
                             else

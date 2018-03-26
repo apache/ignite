@@ -738,7 +738,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             WALPointer ptr = cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
 
             if (ptr != null) {
-                cctx.wal().fsync(ptr);
+                cctx.wal().flush(ptr, true);
 
                 nodeStart(ptr);
             }
@@ -3115,7 +3115,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 assert cpPtr != null;
 
                 // Sync log outside the checkpoint write lock.
-                cctx.wal().fsync(FileWriteAheadLogManager.FSYNC_FAKE_PTR);
+                cctx.wal().flush(cpPtr, true);
 
                 long cpTs = System.currentTimeMillis();
 
@@ -3154,7 +3154,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
             else {
                 if (curr.nextSnapshot)
-                    cctx.wal().fsync(FileWriteAheadLogManager.FSYNC_FAKE_PTR);
+                    cctx.wal().flush(null, true);
 
                 if (printCheckpointStats) {
                     if (log.isInfoEnabled())

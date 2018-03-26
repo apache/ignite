@@ -57,7 +57,7 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void fsync(WALPointer ptr) throws IgniteCheckedException, StorageException {
+    @Override public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
 
     }
 
