@@ -41,7 +41,6 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpda
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.junit.Test;
 
 /**
  * Tests for {@link MLPTrainer} that require to start the whole Ignite infrastructure.
@@ -74,7 +73,9 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
     }
 
-    @Test
+    /**
+     * Test 'XOR' operation training with {@link SimpleGDUpdateCalculator}.
+     */
     public void testXORSimpleGD() {
         xorTest(new UpdatesStrategy<>(
             new SimpleGDUpdateCalculator(0.3),
@@ -86,7 +87,6 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
     /**
      * Test 'XOR' operation training with {@link RPropUpdateCalculator}.
      */
-    @Test
     public void testXORRProp() {
         xorTest(new UpdatesStrategy<>(
             new RPropUpdateCalculator(),
@@ -98,7 +98,6 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
     /**
      * Test 'XOR' operation training with {@link NesterovUpdateCalculator}.
      */
-    @Test
     public void testXORNesterov() {
         xorTest(new UpdatesStrategy<>(
             new NesterovUpdateCalculator<MultilayerPerceptron>(0.1, 0.7),
@@ -132,9 +131,9 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
                 arch,
                 LossFunctions.MSE,
                 updatesStgy,
-                5000,
+                2500,
                 4,
-                1,
+                50,
                 new RandomInitializer(123L)
             );
 

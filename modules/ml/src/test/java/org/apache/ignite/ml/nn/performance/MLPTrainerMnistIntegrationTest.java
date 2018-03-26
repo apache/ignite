@@ -18,9 +18,12 @@
 package org.apache.ignite.ml.nn.performance;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
+import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.VectorUtils;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
@@ -34,23 +37,44 @@ import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
 import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
 import org.apache.ignite.ml.util.MnistUtils;
-import org.junit.Test;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.junit.Assert.assertTrue;
+public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
+    /** Number of nodes in grid */
+    private static final int NODE_COUNT = 3;
 
-public class MLPTrainerMnistTest {
+    /** Ignite instance. */
+    private Ignite ignite;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        for (int i = 1; i <= NODE_COUNT; i++)
+            startGrid(i);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() {
+        stopAllGrids();
+    }
+
     /**
-     * Run nn classifier on MNIST using bi-indexed cache as a storage for dataset.
-     * To run this test rename this method so it starts from 'test'.
-     *
-     * @throws IOException In case of loading MNIST dataset errors.
+     * {@inheritDoc}
      */
-    @Test
+    @Override protected void beforeTest() throws Exception {
+        /* Grid instance. */
+        ignite = grid(NODE_COUNT);
+        ignite.configuration().setPeerClassLoadingEnabled(true);
+        IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
+    }
+
     public void testMNISTLocal() throws IOException {
         int featCnt = 28 * 28;
         int hiddenNeuronsCnt = 100;
 
-        Map<Integer, MnistUtils.MnistLabeledImage> trainingSet = new HashMap<>();
+        CacheConfiguration<Integer, MnistUtils.MnistLabeledImage> trainingSetCacheConfig = new CacheConfiguration<>();
+        trainingSetCacheConfig.setAffinity(new RendezvousAffinityFunction(false, 10));
+        trainingSetCacheConfig.setName("MNIST_TRAINING_SET");
+        IgniteCache<Integer, MnistUtils.MnistLabeledImage> trainingSet = ignite.createCache(trainingSetCacheConfig);
 
         int i = 0;
         for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTrainingSet())
@@ -77,7 +101,7 @@ public class MLPTrainerMnistTest {
         System.out.println("Start training...");
         long start = System.currentTimeMillis();
         MultilayerPerceptron mdl = trainer.fit(
-            new LocalDatasetBuilder<>(trainingSet, 1),
+            new CacheBasedDatasetBuilder<>(ignite, trainingSet),
             (k, v) -> v.getPixels(),
             (k, v) -> VectorUtils.num2Vec(v.getLabel(), 10).getStorage().data()
         );
