@@ -237,16 +237,16 @@ namespace Apache.Ignite.Core.Tests.Client
             // Async.
             var task = cache.PutAllAsync(data);
             Assert.IsFalse(task.IsCompleted);
-            var aex = Assert.Throws<AggregateException>(() => task.Wait());
-            Assert.AreEqual(SocketError.TimedOut, ((SocketException) aex.GetBaseException()).SocketErrorCode);
+            var ex = Assert.Catch(() => task.Wait());
+            Assert.AreEqual(SocketError.TimedOut, GetSocketException(ex).SocketErrorCode);
 
             // Sync (reconnect for clean state).
             Ignition.StopAll(true);
             Ignition.Start(TestUtils.GetTestConfiguration());
             client = Ignition.StartClient(cfg);
             cache = client.CreateCache<int, string>("s");
-            var ex = Assert.Throws<SocketException>(() => cache.PutAll(data));
-            Assert.AreEqual(SocketError.TimedOut, ex.SocketErrorCode);
+            ex = Assert.Catch(() => cache.PutAll(data));
+            Assert.AreEqual(SocketError.TimedOut, GetSocketException(ex).SocketErrorCode);
         }
 
         /// <summary>
@@ -315,8 +315,8 @@ namespace Apache.Ignite.Core.Tests.Client
                 
                 // Idle check frequency is 2 seconds.
                 Thread.Sleep(4000);
-                var ex = Assert.Throws<SocketException>(() => cache.Get(1));
-                Assert.AreEqual(SocketError.ConnectionAborted, ex.SocketErrorCode);
+                var ex = Assert.Catch(() => cache.Get(1));
+                Assert.AreEqual(SocketError.ConnectionAborted, GetSocketException(ex).SocketErrorCode);
             }
         }
 
@@ -349,6 +349,29 @@ namespace Apache.Ignite.Core.Tests.Client
         private static IgniteClientConfiguration GetClientConfiguration()
         {
             return new IgniteClientConfiguration { Host = IPAddress.Loopback.ToString() };
+        }
+
+        /// <summary>
+        /// Finds SocketException in the hierarchy.
+        /// </summary>
+        private static SocketException GetSocketException(Exception ex)
+        {
+            Assert.IsNotNull(ex);
+            var origEx = ex;
+
+            while (ex != null)
+            {
+                var socketEx = ex as SocketException;
+
+                if (socketEx != null)
+                {
+                    return socketEx;
+                }
+
+                ex = ex.InnerException;
+            }
+            
+            throw new Exception("SocketException not found.", origEx);
         }
     }
 }
