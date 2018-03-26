@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.file;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -52,7 +53,6 @@ import org.apache.ignite.internal.processors.cache.StoredCacheData;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -280,6 +280,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             ", locNodeId=" + cctx.localNodeId() + ", gridName=" + cctx.igniteInstanceName() + ']';
 
         IgniteCheckedException ex = shutdown(old, /*clean files if destroy*/destroy, null);
+
+        if (destroy)
+            deleteCacheGroupConfigurationData(grp);
 
         if (ex != null)
             throw ex;
@@ -743,6 +746,42 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         }
 
         return aggr;
+    }
+
+    /**
+     * @param ctx Cache group context.
+     */
+    private void deleteCacheGroupConfigurationData(CacheGroupContext ctx) {
+        File cacheGrpDir = cacheWorkDir(ctx.sharedGroup(), ctx.cacheOrGroupName());
+
+        if( cacheGrpDir != null && cacheGrpDir.exists()) {
+            File[] cacheDatFiles = cacheGrpDir.listFiles(new FileFilter() {
+                @Override public boolean accept(File file) {
+                    return file.isFile() && file.getName().endsWith(CACHE_DATA_FILENAME);
+                }
+            });
+
+            if (cacheDatFiles != null)
+                for (File file : cacheDatFiles)
+                    if (file.exists())
+                        file.delete();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void deleteCacheConfigurationData(CacheConfiguration cacheCfg) throws IgniteCheckedException {
+        File cacheWorkDir = cacheWorkDir(cacheCfg);
+        File file;
+
+        if (cacheCfg.getGroupName() != null)
+            file = new File(cacheWorkDir, cacheCfg.getName() + CACHE_DATA_FILENAME);
+        else
+            file = new File(cacheWorkDir, CACHE_DATA_FILENAME);
+
+        if(file.exists())
+            if(!file.delete())
+                throw new IgniteCheckedException("Failed to delete cache configuration:" + cacheCfg.getName());
+
     }
 
     /**
