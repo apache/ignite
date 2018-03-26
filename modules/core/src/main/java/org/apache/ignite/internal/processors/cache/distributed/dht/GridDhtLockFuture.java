@@ -46,8 +46,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
@@ -109,7 +109,16 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     /** Thread. */
     private long threadId;
 
-    /** Keys locked so far. */
+    /**
+     * Keys locked so far.
+     *
+     * Thread created this object iterates over entries and tries to lock each of them.
+     * If it finds some entry already locked by another thread it registers callback which will be executed
+     * by the thread owning the lock.
+     *
+     * Thus access to this collection must be synchronized except cases
+     * when this object is yet local to the thread created it.
+     */
     @SuppressWarnings({"FieldAccessedSynchronizedAndUnsynchronized"})
     @GridToStringExclude
     private List<GridDhtCacheEntry> entries;
@@ -298,9 +307,11 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
     }
 
     /**
-     * @return Entries.
+     * Need of synchronization here is explained in the field's {@link GridDhtLockFuture#entries} comment.
+     *
+     * @return Copy of entries collection.
      */
-    public synchronized Collection<GridDhtCacheEntry> entriesCopy() {
+    private synchronized Collection<GridDhtCacheEntry> entriesCopy() {
         return new ArrayList<>(entries());
     }
 

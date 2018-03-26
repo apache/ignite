@@ -172,6 +172,8 @@
     <ClCompile Include="..\..\src\column.cpp" />
     <ClCompile Include="..\..\src\common_types.cpp" />
     <ClCompile Include="..\..\src\config\configuration.cpp" />
+    <ClCompile Include="..\..\src\config\config_tools.cpp" />
+    <ClCompile Include="..\..\src\config\connection_string_parser.cpp" />
     <ClCompile Include="..\..\src\config\connection_info.cpp" />
     <ClCompile Include="..\..\src\connection.cpp" />
     <ClCompile Include="..\..\src\cursor.cpp" />
@@ -215,7 +217,10 @@
     <ClInclude Include="..\..\include\ignite\odbc\column.h" />
     <ClInclude Include="..\..\include\ignite\odbc\common_types.h" />
     <ClInclude Include="..\..\include\ignite\odbc\config\configuration.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\config\connection_string_parser.h" />
     <ClInclude Include="..\..\include\ignite\odbc\config\connection_info.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\config\config_tools.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\config\settable_value.h" />
     <ClInclude Include="..\..\include\ignite\odbc\connection.h" />
     <ClInclude Include="..\..\include\ignite\odbc\cursor.h" />
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnosable.h" />
@@ -223,6 +228,7 @@
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnostic_record.h" />
     <ClInclude Include="..\..\include\ignite\odbc\diagnostic\diagnostic_record_storage.h" />
     <ClInclude Include="..\..\include\ignite\odbc\dsn_config.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\end_point.h" />
     <ClInclude Include="..\..\include\ignite\odbc\environment.h" />
     <ClInclude Include="..\..\include\ignite\odbc\message.h" />
     <ClInclude Include="..\..\include\ignite\odbc\meta\column_meta.h" />

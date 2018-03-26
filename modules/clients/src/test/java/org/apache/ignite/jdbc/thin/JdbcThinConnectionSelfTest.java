@@ -38,12 +38,14 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.jdbc.thin.ConnectionProperties;
 import org.apache.ignite.internal.jdbc.thin.ConnectionPropertiesImpl;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinConnection;
 import org.apache.ignite.internal.jdbc.thin.JdbcThinTcpIo;
+import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -63,6 +65,7 @@ import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
 import static java.sql.Statement.NO_GENERATED_KEYS;
 import static java.sql.Statement.RETURN_GENERATED_KEYS;
+import static org.apache.ignite.configuration.ClientConnectorConfiguration.DFLT_PORT;
 
 /**
  * Connection test.
@@ -144,18 +147,16 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
 
     /**
      * Test invalid endpoint.
-     *
-     * @throws Exception If failed.
      */
-    public void testInvalidEndpoint() throws Exception {
+    public void testInvalidEndpoint() {
         assertInvalid("jdbc:ignite:thin://", "Host name is empty");
         assertInvalid("jdbc:ignite:thin://:10000", "Host name is empty");
         assertInvalid("jdbc:ignite:thin://     :10000", "Host name is empty");
 
-        assertInvalid("jdbc:ignite:thin://127.0.0.1:-1", "Property cannot be lower than 1 [name=port, value=-1]");
-        assertInvalid("jdbc:ignite:thin://127.0.0.1:0", "Property cannot be lower than 1 [name=port, value=0]");
+        assertInvalid("jdbc:ignite:thin://127.0.0.1:-1", "port range contains invalid port -1");
+        assertInvalid("jdbc:ignite:thin://127.0.0.1:0", "port range contains invalid port 0");
         assertInvalid("jdbc:ignite:thin://127.0.0.1:100000",
-            "Property cannot be upper than 65535 [name=port, value=100000]");
+            "port range contains invalid port 100000");
     }
 
     /**
@@ -1799,7 +1800,7 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         IllegalAccessException, InvocationTargetException, InstantiationException, IOException {
         ConnectionPropertiesImpl connProps = new ConnectionPropertiesImpl();
 
-        connProps.setHost("127.0.0.1");
+        connProps.setAddresses(new HostAndPortRange[]{new HostAndPortRange("127.0.0.1", DFLT_PORT, DFLT_PORT)});
 
         connProps.nestedTxMode("invalid");
 
@@ -1841,6 +1842,18 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 return null;
             }
         }, SQLException.class, "Failed to SSL connect to server");
+    }
+
+    /**
+     */
+    public void testAuthenticateDisableOnServerClientTryAuthenticate()  {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/?user=test&password=test");
+
+                return null;
+            }
+        }, SQLException.class, "Can not perform the operation because the authentication is not enabled for the cluster");
     }
 
     /**

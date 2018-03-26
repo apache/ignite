@@ -47,6 +47,7 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
@@ -152,7 +153,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    private GridSecurityProcessor authProc;
+    private GridSecurityProcessor securityProc;
 
     /** */
     @GridToStringExclude
@@ -290,6 +291,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** Cache mvcc coordinators. */
     @GridToStringExclude
     private MvccProcessor coordProc;
+
+    /** */
+    @GridToStringExclude
+    private IgniteAuthenticationProcessor authProc;
 
     /** */
     @GridToStringExclude
@@ -531,7 +536,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         else if (comp instanceof GridCollisionManager)
             colMgr = (GridCollisionManager)comp;
         else if (comp instanceof GridSecurityProcessor)
-            authProc = (GridSecurityProcessor)comp;
+            securityProc = (GridSecurityProcessor)comp;
         else if (comp instanceof GridLoadBalancerManager)
             loadMgr = (GridLoadBalancerManager)comp;
         else if (comp instanceof GridIndexingManager)
@@ -604,6 +609,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             pdsFolderRslvr = (PdsFoldersResolver)comp;
         else if (comp instanceof GridInternalSubscriptionProcessor)
             internalSubscriptionProc = (GridInternalSubscriptionProcessor)comp;
+        else if (comp instanceof IgniteAuthenticationProcessor)
+            authProc = (IgniteAuthenticationProcessor)comp;
         else if (!(comp instanceof DiscoveryNodeValidationProcessor
             || comp instanceof PlatformPluginProcessor))
             assert (comp instanceof GridPluginComponent) : "Unknown manager class: " + comp.getClass();
@@ -763,7 +770,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** {@inheritDoc} */
     @Override public GridSecurityProcessor security() {
-        return authProc;
+        return securityProc;
     }
 
     /** {@inheritDoc} */
@@ -865,6 +872,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public MvccProcessor coordinators() {
         return coordProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteAuthenticationProcessor authentication() {
+        return authProc;
     }
 
     /** {@inheritDoc} */

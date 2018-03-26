@@ -75,6 +75,7 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
@@ -756,8 +757,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     discoWrk.discoCache = discoCache;
 
-                    if (!isLocDaemon && !ctx.clientDisconnected())
+                    if (!isLocDaemon && !ctx.clientDisconnected()) {
                         ctx.cache().context().exchange().onLocalJoin(discoEvt, discoCache);
+
+                        ctx.authentication().onLocalJoin();
+                    }
 
                     IgniteInternalFuture<Boolean> transitionWaitFut = ctx.state().onLocalJoin(discoCache);
 

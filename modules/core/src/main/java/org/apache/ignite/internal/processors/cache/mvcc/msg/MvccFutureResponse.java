@@ -110,7 +110,7 @@ public class MvccFutureResponse implements MvccMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 132;
+        return 135;
     }
 
     /** {@inheritDoc} */

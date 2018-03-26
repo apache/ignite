@@ -1183,7 +1183,9 @@ button.form-control {
 }
 
 .theme-line .popover.validation-error {
-    max-width: 400px;
+    white-space: pre-wrap;
+    width: auto !important;
+    max-width: 400px !important;
     color: $brand-primary;
     background: white;
     border: 1px solid $brand-primary;

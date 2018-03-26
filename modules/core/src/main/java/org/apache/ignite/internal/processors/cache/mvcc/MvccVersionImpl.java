@@ -149,7 +149,7 @@ public class MvccVersionImpl implements MvccVersion, Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 143;
+        return 145;
     }
 
     /** {@inheritDoc} */

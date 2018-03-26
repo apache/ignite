@@ -17,10 +17,13 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -102,7 +105,8 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader) {
+    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+        throws IgniteCheckedException {
         assert SUPPORTED_VERS.contains(ver): "Unsupported JDBC protocol version.";
 
         boolean distributedJoins = reader.readBoolean();
@@ -112,33 +116,53 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
         boolean autoCloseCursors = reader.readBoolean();
 
         boolean lazyExec = false;
+        boolean skipReducerOnUpdate = false;
+
+        NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
+        AuthorizationContext actx = null;
 
         if (ver.compareTo(VER_2_1_5) >= 0)
             lazyExec = reader.readBoolean();
 
-        boolean skipReducerOnUpdate = false;
-
-        NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
-
-        if (ver.compareTo(VER_2_3_0) >= 0) {
+        if (ver.compareTo(VER_2_3_0) >= 0)
             skipReducerOnUpdate = reader.readBoolean();
 
-            if (ver.compareTo(VER_2_4_0) >= 0) {
-                String nestedTxModeName = reader.readString();
+        if (ver.compareTo(VER_2_5_0) >= 0) {
+            String nestedTxModeName = reader.readString();
 
-                if (!F.isEmpty(nestedTxModeName)) {
-                    try {
-                        nestedTxMode = NestedTxMode.valueOf(nestedTxModeName);
-                    }
-                    catch (IllegalArgumentException e) {
-                        throw new IgniteSQLException("Invalid nested transactions handling mode: " + nestedTxModeName);
-                    }
+            if (!F.isEmpty(nestedTxModeName)) {
+                try {
+                    nestedTxMode = NestedTxMode.valueOf(nestedTxModeName);
                 }
+                catch (IllegalArgumentException e) {
+                    throw new IgniteSQLException("Invalid nested transactions handling mode: " + nestedTxModeName);
+                }
+            }
+
+            try {
+                if (reader.available() > 0) {
+                    String user = reader.readString();
+                    String passwd = reader.readString();
+
+                    if (F.isEmpty(user) && ctx.authentication().enabled())
+                        throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+
+                    actx = ctx.authentication().authenticate(user, passwd);
+
+                    if (actx == null)
+                        throw new IgniteCheckedException("Unknown authentication error");
+                }
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
             }
         }
 
+        if (ctx.authentication().enabled() && actx == null)
+            throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+
         handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder,
-            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode, ver);
+            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode, actx, ver);
 
         parser = new JdbcMessageParser(ctx);
 

@@ -489,6 +489,9 @@ public class IgniteConfiguration {
     /** */
     private boolean mvccEnabled;
 
+    /** User authentication enabled. */
+    private boolean authEnabled;
+
     /**
      * Creates valid grid configuration with all default values.
      */
@@ -523,6 +526,7 @@ public class IgniteConfiguration {
         addrRslvr = cfg.getAddressResolver();
         allResolversPassReq = cfg.isAllSegmentationResolversPassRequired();
         atomicCfg = cfg.getAtomicConfiguration();
+        authEnabled = cfg.isAuthenticationEnabled();
         autoActivation = cfg.isAutoActivationEnabled();
         binaryCfg = cfg.getBinaryConfiguration();
         dsCfg = cfg.getDataStorageConfiguration();
@@ -2948,6 +2952,28 @@ public class IgniteConfiguration {
      */
     public IgniteConfiguration setMvccEnabled(boolean mvccEnabled) {
         this.mvccEnabled = mvccEnabled;
+
+        return this;
+    }
+
+    /**
+     * Returns {@code true} if user authentication is enabled for cluster. Otherwise returns {@code false}.
+     * Default value is false; authentication is disabled.
+     *
+     * @return {@code true} if user authentication is enabled for cluster. Otherwise returns {@code false}.
+     */
+    public boolean isAuthenticationEnabled() {
+        return authEnabled;
+    }
+
+    /**
+     * Sets flag indicating whether the user authentication is enabled for cluster.
+     *
+     * @param authEnabled User authentication enabled flag. {@code true} enab
+     * @return {@code this} for chaining.
+     */
+    public IgniteConfiguration setAuthenticationEnabled(boolean authEnabled) {
+        this.authEnabled = authEnabled;
 
         return this;
     }

@@ -178,7 +178,7 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 138;
+        return 140;
     }
 
     /** {@inheritDoc} */

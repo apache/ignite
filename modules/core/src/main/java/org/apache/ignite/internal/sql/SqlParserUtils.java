@@ -159,6 +159,34 @@ public class SqlParserUtils {
     }
 
     /**
+     * Process name.
+     *
+     * @param lex Lexer.
+     * @param additionalExpTokens Additional expected tokens in case of error.
+     * @return Name.
+     */
+    public static String parseUsername(SqlLexer lex, String... additionalExpTokens) {
+        if (lex.shift() && isValidIdentifier(lex))
+            return lex.token();
+
+        throw errorUnexpectedToken(lex, "[username identifier]", additionalExpTokens);
+    }
+
+    /**
+     * Process name.
+     *
+     * @param lex Lexer.
+     * @param additionalExpTokens Additional expected tokens in case of error.
+     * @return Name.
+     */
+    public static String parseString(SqlLexer lex, String... additionalExpTokens) {
+        if (lex.shift() && lex.tokenType() == SqlLexerTokenType.STRING)
+            return lex.token();
+
+        throw errorUnexpectedToken(lex, "[string]", additionalExpTokens);
+    }
+
+    /**
      * Process qualified name.
      *
      * @param lex Lexer.

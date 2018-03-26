@@ -25,6 +25,7 @@ import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.cache.CacheEntryProcessor;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
@@ -65,7 +66,7 @@ public final class IgniteSystemProperties {
     /** Defines Ignite installation folder. */
     public static final String IGNITE_HOME = "IGNITE_HOME";
 
-    /** If this system property is set to {@code false} - no shutdown hook will be set. */
+    /** If this system property is set to {@code true} - no shutdown hook will be set. */
     public static final String IGNITE_NO_SHUTDOWN_HOOK = "IGNITE_NO_SHUTDOWN_HOOK";
 
     /**
@@ -195,11 +196,12 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_SUCCESS_FILE = "IGNITE_SUCCESS_FILE";
 
     /**
-     * Name of system property to set system-wide local IP address or host. If provided it will
-     * override all default local bind settings within Ignite or any of its SPIs.
+     * The system property sets a system-wide local IP address or hostname to be used by Ignite networking components.
+     * Once provided, the property overrides all the default local binding settings for Ignite nodes.
      * <p>
-     * Note that system-wide local bind address can also be set via {@link org.apache.ignite.configuration.IgniteConfiguration#getLocalHost()}
-     * method. However, system properties have priority over configuration properties specified in
+     * Note, that the address can also be changed via
+     * {@link org.apache.ignite.configuration.IgniteConfiguration#setLocalHost(String)} method.
+     * However, this system property has bigger priority and overrides the settings set via
      * {@link org.apache.ignite.configuration.IgniteConfiguration}.
      */
     public static final String IGNITE_LOCAL_HOST = "IGNITE_LOCAL_HOST";
@@ -829,6 +831,16 @@ public final class IgniteSystemProperties {
      */
     public static final String IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP = "IGNITE_LOADED_PAGES_BACKWARD_SHIFT_MAP";
 
+    /**
+     * Whenever read load balancing is enabled, that means 'get' requests will be distributed between primary and backup
+     * nodes if it is possible and {@link CacheConfiguration#readFromBackup} is {@code true}.
+     *
+     * Default is {@code true}.
+     *
+     * @see CacheConfiguration#readFromBackup
+     */
+    public static final String IGNITE_READ_LOAD_BALANCING = "IGNITE_READ_LOAD_BALANCING";
+  
     /**
      * Enforces singleton.
      */

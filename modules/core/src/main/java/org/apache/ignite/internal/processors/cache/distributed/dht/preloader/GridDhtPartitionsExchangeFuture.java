@@ -1689,6 +1689,8 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         cctx.exchange().onExchangeDone(res, initialVersion(), err);
 
+        cctx.kernalContext().authentication().onActivate();
+
         if (exchActions != null && err == null)
             exchActions.completeRequestFutures(cctx);
 

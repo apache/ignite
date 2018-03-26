@@ -110,7 +110,7 @@ public class MvccQuerySnapshotRequest implements MvccMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 133;
+        return 136;
     }
 
     /** {@inheritDoc} */

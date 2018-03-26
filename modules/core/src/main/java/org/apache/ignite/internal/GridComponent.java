@@ -64,7 +64,10 @@ public interface GridComponent {
         QUERY_PROC,
 
         /** */
-        CACHE_CRD_PROC
+        CACHE_CRD_PROC,
+
+        /** Authentication processor. */
+        AUTH_PROC
     }
 
     /**

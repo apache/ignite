@@ -139,7 +139,7 @@ public class MvccTxSnapshotRequest implements MvccMessage {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 129;
+        return 133;
     }
 
     /** {@inheritDoc} */

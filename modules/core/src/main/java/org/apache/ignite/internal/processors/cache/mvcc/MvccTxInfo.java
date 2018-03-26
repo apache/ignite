@@ -142,7 +142,7 @@ public class MvccTxInfo implements Message {
 
     /** {@inheritDoc} */
     @Override public short directType() {
-        return 139;
+        return 141;
     }
 
     /** {@inheritDoc} */

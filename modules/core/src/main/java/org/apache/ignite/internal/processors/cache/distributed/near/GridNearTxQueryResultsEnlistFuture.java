@@ -665,6 +665,16 @@ public class GridNearTxQueryResultsEnlistFuture extends GridCacheCompoundIdentit
     }
 
     /** {@inheritDoc} */
+    @Override protected void logError(IgniteLogger log, String msg, Throwable e) {
+        // no-op
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void logDebug(IgniteLogger log, String msg) {
+        // no-op
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridNearTxQueryResultsEnlistFuture.class, this, super.toString());
     }
