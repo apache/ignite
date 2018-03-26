@@ -135,7 +135,7 @@ public class MLPTrainerTest {
                 arch,
                 LossFunctions.MSE,
                 updatesStgy,
-                2500,
+                3000,
                 batchSize,
                 50,
                 new RandomInitializer(123L)

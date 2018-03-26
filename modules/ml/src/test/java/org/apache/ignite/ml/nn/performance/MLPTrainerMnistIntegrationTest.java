@@ -77,7 +77,7 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
         IgniteCache<Integer, MnistUtils.MnistLabeledImage> trainingSet = ignite.createCache(trainingSetCacheConfig);
 
         int i = 0;
-        for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTrainingSet())
+        for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTrainingSet(6_000))
             trainingSet.put(i++, e);
 
         MLPArchitecture arch = new MLPArchitecture(featCnt).
@@ -110,7 +110,7 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
         int correctAnswers = 0;
         int incorrectAnswers = 0;
 
-        for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTestSet()) {
+        for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTestSet(1_000)) {
             Matrix input = new DenseLocalOnHeapMatrix(new double[][]{e.getPixels()});
             Matrix outputMatrix = mdl.apply(input);
 

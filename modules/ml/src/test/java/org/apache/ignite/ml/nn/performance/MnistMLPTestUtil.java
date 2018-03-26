@@ -60,14 +60,14 @@ class MnistMLPTestUtil {
         return new IgniteBiTuple<>(trainingMnistStream, testMnistStream);
     }
 
-    static List<MnistUtils.MnistLabeledImage> loadTrainingSet() throws IOException {
+    static List<MnistUtils.MnistLabeledImage> loadTrainingSet(int cnt) throws IOException {
         Properties props = loadMNISTProperties();
-        return MnistUtils.mnist2(props.getProperty(PROP_TRAINING_IMAGES), props.getProperty(PROP_TRAINING_LABELS), new Random(123L),60_000);
+        return MnistUtils.mnist2(props.getProperty(PROP_TRAINING_IMAGES), props.getProperty(PROP_TRAINING_LABELS), new Random(123L), cnt);
     }
 
-    static List<MnistUtils.MnistLabeledImage> loadTestSet() throws IOException {
+    static List<MnistUtils.MnistLabeledImage> loadTestSet(int cnt) throws IOException {
         Properties props = loadMNISTProperties();
-        return MnistUtils.mnist2(props.getProperty(PROP_TEST_IMAGES), props.getProperty(PROP_TEST_LABELS), new Random(123L), 10_000);
+        return MnistUtils.mnist2(props.getProperty(PROP_TEST_IMAGES), props.getProperty(PROP_TEST_LABELS), new Random(123L), cnt);
     }
 
     /** Load properties for MNIST tests. */
