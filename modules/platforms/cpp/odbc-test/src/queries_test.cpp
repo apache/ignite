@@ -1868,6 +1868,27 @@ BOOST_AUTO_TEST_CASE(TestCloseAfterEmptyUpdate)
         BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 }
 
+BOOST_AUTO_TEST_CASE(TestLoginTimeout)
+{
+    Prepare();
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_LOGIN_TIMEOUT, reinterpret_cast<SQLPOINTER>(1), 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    SQLCHAR connectStr[] = "DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache";
+
+    SQLCHAR outstr[ODBC_BUFFER_SIZE];
+    SQLSMALLINT outstrlen;
+
+    // Connecting to ODBC server.
+    ret = SQLDriverConnect(dbc, NULL, &connectStr[0], static_cast<SQLSMALLINT>(sizeof(connectStr)),
+        outstr, sizeof(outstr), &outstrlen, SQL_DRIVER_COMPLETE);
+
+    if (!SQL_SUCCEEDED(ret))
+        BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_DBC, dbc));
+}
+
 BOOST_AUTO_TEST_CASE(TestConnectionTimeoutQuery)
 {
     Connect("DRIVER={Apache Ignite};ADDRESS=127.0.0.1:11110;SCHEMA=cache");
