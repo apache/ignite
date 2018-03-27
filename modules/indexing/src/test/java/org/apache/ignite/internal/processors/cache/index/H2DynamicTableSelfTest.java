@@ -683,6 +683,23 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test that attempting to use a non-existing column name for the primary key when {@code CREATE TABLE}
+     * yields an error.
+     * @throws Exception if failed.
+     */
+    public void testCreateTableWithWrongColumnNameAsKey() throws Exception {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                execute("CREATE TABLE \"Person\" (\"id\" int, \"city\" varchar" +
+                    ", \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"c_ity\")) WITH " +
+                    "\"template=cache\"");
+
+                return null;
+            }
+        }, IgniteSQLException.class, "Column [colName=c_ity] for PRIMARY KEY not found");
+    }
+
+    /**
      * Test that {@code DROP TABLE} actually removes specified cache and type descriptor on all nodes.
      * @throws Exception if failed.
      */
