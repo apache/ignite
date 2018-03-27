@@ -21,54 +21,91 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Test for IGNITE-6807.
- *
- * If we are executing local query on client node, we will get reasonable exception message.
+ * Verifies that if local query is executed on client node and non local cache,
+ * exception with reasonable message will be thrown.
+ * In case of local cache no exceptions should be thrown.
  */
 public class ClientLocalQueryTest extends GridCommonAbstractTest {
     /** Client node. Shared across test methods. */
     private static Ignite client;
 
-    /** Name of created cache */
+    /** Name of created cache. */
     private static final String CACHE_NAME = "TestCache";
+
+    /** Name of local cache. */
+    private static final String LOCAL_CAHE_NAME = "TestLocalCache";
+
+    /** Name of region for the local cache. */
+    private static final String LOCAL_CACHE_REGION_NAME = "LocalRegion";
+
+    /** Creates new common configuration with the region for the local cache. */
+    private IgniteConfiguration newConfiguration(String name) throws Exception {
+        IgniteConfiguration cfg = getConfiguration(name);
+
+        // Local caches are created on each cluster node.
+        // We need to add configuration for local cache region both for server and client.
+        DataStorageConfiguration dsc = new DataStorageConfiguration();
+        dsc.setDataRegionConfigurations(
+            new DataRegionConfiguration()
+                .setName(LOCAL_CACHE_REGION_NAME)
+                .setInitialSize(11L *1024 * 1024)
+                .setMaxSize(20L * 1024 * 1024));
+
+        cfg.setDataStorageConfiguration(dsc);
+
+        return optimize(cfg);
+    }
 
     /** Sets up grids */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        startGrid("server");
+        startGrid("server", newConfiguration("server"), null);
 
-        IgniteConfiguration clCfg = getConfiguration();
+        IgniteConfiguration clCfg = newConfiguration("client");
         clCfg.setClientMode(true);
 
-        client = startGrid("client", optimize(clCfg), null);
+        client = startGrid("client", clCfg, null);
     }
 
     /** Creates cache and test table for the test */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        CacheConfiguration<Object, UUID> ccfg = new CacheConfiguration<>(CACHE_NAME);
-        ccfg.setIndexedTypes(Object.class, UUID.class);
+        CacheConfiguration<Object, UUID> partCfg = new CacheConfiguration<>(CACHE_NAME);
+        partCfg.setIndexedTypes(Object.class, UUID.class);
+        partCfg.setCacheMode(CacheMode.PARTITIONED);
 
-        client.createCache(ccfg);
+        client.createCache(partCfg);
 
-        log.info("Created cache with cfg: " + ccfg);
+        CacheConfiguration<Object, UUID> locCfg = new CacheConfiguration<>(LOCAL_CAHE_NAME);
+        locCfg.setCacheMode(CacheMode.LOCAL);
+        locCfg.setDataRegionName(LOCAL_CACHE_REGION_NAME);
+        locCfg.setIndexedTypes(Object.class, UUID.class);
+
+        client.createCache(locCfg);
+
+        log.info("Created cache with cfg: " + partCfg);
     }
 
     /** Destroy the cache. */
     @Override protected void afterTest() throws Exception {
         client.destroyCache(CACHE_NAME);
+
+        client.destroyCache(LOCAL_CAHE_NAME);
 
         super.afterTest();
     }
@@ -82,7 +119,7 @@ public class ClientLocalQueryTest extends GridCommonAbstractTest {
 
     /** Check for SqlFieldsQuery. */
     public void testLocalSqlFieldsQuery() throws Exception {
-        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT count(_key) FROM UUID;").setLocal(true);
+        SqlFieldsQuery qry = new SqlFieldsQuery("SELECT count(_key) FROM UUID;");
 
         assertCorrectExceptionThrown(qry.setLocal(true));
     }
@@ -99,6 +136,13 @@ public class ClientLocalQueryTest extends GridCommonAbstractTest {
         TextQuery<Object, UUID> qry = new TextQuery<>(UUID.class, "doesn't matter");
 
         assertCorrectExceptionThrown(qry.setLocal(true));
+    }
+
+    /** Check that it is still possible to perform local queries on local caches. */
+    public void testPositiveLocalCache(){
+        SqlFieldsQuery locQry = new SqlFieldsQuery("SELECT count(_key) FROM UUID;").setLocal(true);
+
+        client.cache(LOCAL_CAHE_NAME).query(locQry).getAll();
     }
 
     /** Assert that Exception is thrown. */
