@@ -18,9 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.distributed.CacheGetInsideLockChangingTopologyTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryAtomicSelfTest;
-import org.apache.ignite.internal.processors.cache.distributed.dht.IgniteCachePutRetryTransactionalSelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridCacheAtomicInvalidPartitionHandlingSelfTest;
 
 /**
  * Test suite.
@@ -33,9 +31,8 @@ public class IgniteCacheFailoverTestSuite3 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Failover Test Suite3");
 
-        suite.addTestSuite(IgniteCachePutRetryAtomicSelfTest.class);
-        suite.addTestSuite(IgniteCachePutRetryTransactionalSelfTest.class);
-        suite.addTestSuite(CacheGetInsideLockChangingTopologyTest.class);
+        for (int i = 0; i < 100; i++)
+            suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
 
         return suite;
     }
