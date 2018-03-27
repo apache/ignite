@@ -428,9 +428,9 @@ public class GridAffinityAssignmentCache {
     }
 
     /**
-     * Calculates and logs partitions distribution if threshold {@link #partDistribution} is exceeded.
+     * Calculates and logs partitions distribution if threshold of uneven distribution {@link #partDistribution} is exceeded.
      *
-     * @param assignments Assignment to calculate partitions distribution.
+     * @param assignments Assignments to calculate partitions distribution.
      * @param nodes Affinity nodes number.
      * @see IgniteSystemProperties#IGNITE_AFFINITY_HISTORY_SIZE
      */

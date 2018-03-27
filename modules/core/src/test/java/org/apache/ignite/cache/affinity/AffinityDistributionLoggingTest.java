@@ -50,6 +50,24 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     /** Backups number. */
     private int backups = 0;
 
+    /** For storing original value of system property. */
+    private String tempProp;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        tempProp = System.getProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        if (tempProp != null)
+            System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, tempProp);
+    }
+
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
@@ -235,9 +253,6 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
          * @return Mapped node.
          */
         private ClusterNode mapPartitionToNode(int part, List<ClusterNode> sortedNodes) {
-            if (part < sortedNodes.size())
-                return sortedNodes.get(part);
-
             return sortedNodes.get(part % sortedNodes.size());
         }
 
