@@ -18,11 +18,15 @@
 package org.apache.ignite.compatibility.persistence;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.jar.JarFile;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.compatibility.testframework.junits.IgniteCompatibilityAbstractTest;
+import org.apache.ignite.internal.processors.cache.persistence.wal.reader.StandaloneGridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
@@ -38,7 +42,16 @@ public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteC
         if (!isDefaultDBWorkDirectoryEmpty())
             deleteDefaultDBWorkDirectory();
 
-        assert isDefaultDBWorkDirectoryEmpty() : "DB work directory is not empty.";
+        boolean isEmpty = isDefaultDBWorkDirectoryEmpty();
+
+        assert isEmpty : "DB work directory is not empty: " + getDefaultDbWorkPath();
+
+        if (!isDefaultBinaryMetaDirectoryEmpty())
+            deleteDefaultBinaryMetaDirectory();
+
+        isEmpty = deleteDefaultBinaryMetaDirectory();
+
+        assert isEmpty : "Binary meta directory is not empty: " + getDefaultBinaryMetaPath();
     }
 
     /** {@inheritDoc} */
@@ -48,7 +61,13 @@ public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteC
         //protection if test failed to finish, e.g. by error
         stopAllGrids();
 
-        assert deleteDefaultDBWorkDirectory() : "Couldn't delete DB work directory.";
+        boolean deleted = deleteDefaultDBWorkDirectory();
+
+        assert deleted : "Couldn't delete DB work directory.";
+
+        deleted = deleteDefaultBinaryMetaDirectory();
+
+        assert deleted : "Couldn't delete binary meta directory.";
     }
 
     /**
@@ -57,7 +76,6 @@ public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteC
      * @return Path to the default DB working directory.
      * @throws IgniteCheckedException In case of an error.
      * @see #deleteDefaultDBWorkDirectory()
-     * @see #isDefaultDBWorkDirectoryEmpty()
      */
     protected Path getDefaultDbWorkPath() throws IgniteCheckedException {
         return Paths.get(U.defaultWorkDirectory() + File.separator + DFLT_STORE_DIR);
@@ -72,9 +90,7 @@ public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteC
      * @see #deleteDefaultDBWorkDirectory()
      */
     protected boolean deleteDefaultDBWorkDirectory() throws IgniteCheckedException {
-        Path dir = getDefaultDbWorkPath();
-
-        return Files.notExists(dir) || U.delete(dir.toFile());
+        return deleteDirectory(getDefaultDbWorkPath());
     }
 
     /**
@@ -82,13 +98,113 @@ public abstract class IgnitePersistenceCompatibilityAbstractTest extends IgniteC
      *
      * @return {@code true} if the default DB working directory is empty or doesn't exist, otherwise {@code false}.
      * @throws IgniteCheckedException In case of an error.
-     * @see #getDefaultDbWorkPath()
+     * @see #getDefaultBinaryMetaPath()
      * @see #deleteDefaultDBWorkDirectory()
      */
     @SuppressWarnings("ConstantConditions")
     protected boolean isDefaultDBWorkDirectoryEmpty() throws IgniteCheckedException {
-        File dir = getDefaultDbWorkPath().toFile();
+        return isDirectoryEmpty(getDefaultDbWorkPath().toFile());
+    }
 
+    /**
+     * Gets a path to the default binary meta directory.
+     *
+     * @return Path to the default binary meta directory.
+     * @throws IgniteCheckedException In case of an error.
+     */
+    protected Path getDefaultBinaryMetaPath() throws IgniteCheckedException {
+        return Paths.get(U.defaultWorkDirectory() + File.separator + StandaloneGridKernalContext.BINARY_META_FOLDER);
+    }
+
+    /**
+     * Deletes the default binary meta directory with all sub-directories and files.
+     *
+     * @return {@code true} if and only if the file or directory is successfully deleted, otherwise {@code false}.
+     * @throws IgniteCheckedException In case of an error.
+     * @see #getDefaultBinaryMetaPath()
+     * @see #isDefaultBinaryMetaDirectoryEmpty()
+     */
+    protected boolean deleteDefaultBinaryMetaDirectory() throws IgniteCheckedException {
+        return deleteDirectory(getDefaultBinaryMetaPath());
+    }
+
+    /**
+     * Checks if the default binary meta directory is empty.
+     *
+     * @return {@code true} if the default binary meta directory is empty or doesn't exist, otherwise {@code false}.
+     * @throws IgniteCheckedException In case of an error.
+     * @see #getDefaultBinaryMetaPath()
+     * @see #deleteDefaultBinaryMetaDirectory()
+     */
+    @SuppressWarnings("ConstantConditions")
+    protected boolean isDefaultBinaryMetaDirectoryEmpty() throws IgniteCheckedException {
+        return isDirectoryEmpty(getDefaultBinaryMetaPath().toFile());
+    }
+
+    /**
+     * Deletes given directory if exists.
+     *
+     * @param dir Directory to delete.
+     * @return {@code true} if and only if the file or directory is successfully deleted, otherwise {@code false}.
+     * @throws IgniteCheckedException In case of an error.
+     */
+    protected boolean deleteDirectory(Path dir) {
+        return Files.notExists(dir) || delete(dir);
+    }
+
+    /**
+     * Checks if the given directory is empty.
+     *
+     * @param dir Directory to check.
+     * @return {@code true} if the given directory is empty or doesn't exist, otherwise {@code false}.
+     */
+    @SuppressWarnings("ConstantConditions")
+    protected boolean isDirectoryEmpty(File dir) {
         return !dir.exists() || (dir.isDirectory() && dir.list().length == 0);
     }
+
+    /**
+     * Deletes file or directory with all sub-directories and files.
+     *
+     * @param path File or directory to delete.
+     * @return {@code true} if and only if the file or directory is successfully deleted,
+     * {@code false} otherwise
+     */
+    public static boolean delete(Path path) {
+        if (Files.isDirectory(path)) {
+            try {
+                try (DirectoryStream<Path> stream = Files.newDirectoryStream(path)) {
+                    for (Path innerPath : stream) {
+                        boolean res = delete(innerPath);
+
+                        if (!res)
+                            return false;
+                    }
+                }
+            }
+            catch (IOException e) {
+                return false;
+            }
+        }
+
+        if (path.endsWith("jar")) {
+            try {
+                // Why do we do this?
+                new JarFile(path.toString(), false).close();
+            }
+            catch (IOException ignore) {
+                // Ignore it here...
+            }
+        }
+
+        try {
+            Files.delete(path);
+
+            return true;
+        }
+        catch (IOException e) {
+            return false;
+        }
+    }
+
 }

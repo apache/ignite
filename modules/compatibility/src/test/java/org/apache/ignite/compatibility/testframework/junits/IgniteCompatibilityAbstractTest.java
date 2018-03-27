@@ -192,7 +192,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
                 filteredJvmArgs.add("-cp");
                 filteredJvmArgs.add(pathBuilder.toString());
 
-                final Collection<String> jvmParms = getJvmParms();
+                final Collection<String> jvmParms = getJvmParams();
 
                 if (jvmParms != null)
                     filteredJvmArgs.addAll(jvmParms);
@@ -251,7 +251,7 @@ public abstract class IgniteCompatibilityAbstractTest extends GridCommonAbstract
      *
      * @return additional JVM arguments
      */
-    protected Collection<String> getJvmParms() {
+    protected Collection<String> getJvmParams() {
         return new ArrayList<>();
     }
 

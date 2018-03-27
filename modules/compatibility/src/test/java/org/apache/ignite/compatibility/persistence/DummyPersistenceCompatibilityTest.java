@@ -35,7 +35,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAbstractFullApiSelfTest;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 
@@ -50,18 +49,13 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
     protected volatile boolean compactFooter;
 
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        U.delete(U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", false));
-    }
-
-    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
+        cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
+ /*
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(
@@ -73,7 +67,7 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
             new BinaryConfiguration()
                 .setCompactFooter(compactFooter)
         );
-
+*/
         return cfg;
     }
 
@@ -172,6 +166,8 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
      * @param cache Cache  should be filled using {@link #saveCacheData(Cache)}.
      */
     public static void validateResultingCacheData(Cache<Object, Object> cache) {
+        assertNotNull(cache);
+
         for (int i = 0; i < 10; i++)
             assertEquals("data" + i, cache.get(i));
 
@@ -231,8 +227,7 @@ public class DummyPersistenceCompatibilityTest extends IgnitePersistenceCompatib
 
             cfg.setPersistentStoreConfiguration(new PersistentStoreConfiguration());
 
-            if (!compactFooter)
-                cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(compactFooter));
+            cfg.setBinaryConfiguration(new BinaryConfiguration().setCompactFooter(compactFooter));
         }
     }
 
