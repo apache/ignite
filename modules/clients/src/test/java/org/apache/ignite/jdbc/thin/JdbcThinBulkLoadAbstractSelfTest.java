@@ -389,17 +389,17 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Imports two-entry CSV file with UTF-8 characters into a table using batch size of one byte
-     * (thus splitting each two-byte UTF-8 character into two batches)
+     * Imports two-entry CSV file with UTF-8 characters into a table using packet size of one byte
+     * (thus splitting each two-byte UTF-8 character into two packets)
      * and checks the created entries using SELECT statement.
      *
      * @throws SQLException If failed.
      */
-    public void testDefaultCharsetBatchSize1() throws SQLException {
+    public void testDefaultCharsetPacketSize1() throws SQLException {
         int updatesCnt = stmt.executeUpdate(
             "copy from \"" + BULKLOAD_UTF8_CSV_FILE + "\" into " + TBL_NAME +
                 " (_key, age, firstName, lastName)" +
-                " format csv batch_size 1");
+                " format csv packet_size 1");
 
         assertEquals(2, updatesCnt);
 
@@ -564,7 +564,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
     /**
      * Checks that bulk load works when we use packet size of 1 byte and thus
-     * create multiple packetes per COPY.
+     * create multiple packets per COPY.
      *
      * @throws SQLException If failed.
      */
@@ -577,7 +577,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Verifies exception thrown if COPY is added into a batch.
+     * Verifies exception thrown if COPY is added into a packet.
      *
      * @throws SQLException If failed.
      */
