@@ -31,7 +31,6 @@ import org.apache.ignite.ml.math.Tracer;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
-import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.NesterovParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.NesterovUpdateCalculator;
@@ -134,13 +133,13 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
                 2500,
                 4,
                 50,
-                new RandomInitializer(123L)
+                123L
             );
 
             MultilayerPerceptron mlp = trainer.fit(
                 new CacheBasedDatasetBuilder<>(ignite, xorCache),
                 (k, v) -> new double[]{ v.x, v.y },
-                (k, v) -> new double[]{ v.label }
+                (k, v) -> new double[]{ v.lb}
             );
 
             Matrix predict = mlp.apply(new DenseLocalOnHeapMatrix(new double[][]{
@@ -161,18 +160,28 @@ public class MLPTrainerIntegrationTest extends GridCommonAbstractTest {
         }
     }
 
+    /** Labeled point data class. */
     private static class LabeledPoint {
-
+        /** X coordinate. */
         private final double x;
 
+        /** Y coordinate. */
         private final double y;
 
-        private final double label;
+        /** Point label. */
+        private final double lb;
 
-        public LabeledPoint(double x, double y, double label) {
+        /**
+         * Constructs a new instance of labeled point data.
+         *
+         * @param x X coordinate.
+         * @param y Y coordinate.
+         * @param lb Point label.
+         */
+        public LabeledPoint(double x, double y, double lb) {
             this.x = x;
             this.y = y;
-            this.label = label;
+            this.lb = lb;
         }
     }
 }

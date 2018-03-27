@@ -25,13 +25,11 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.MLPTrainer;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
-import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
@@ -66,21 +64,25 @@ public class MLPTrainerExample {
             IgniteThread igniteThread = new IgniteThread(ignite.configuration().getIgniteInstanceName(),
                 MLPTrainerExample.class.getSimpleName(), () -> {
 
+                // Create cache with training data.
                 CacheConfiguration<Integer, LabeledPoint> trainingSetCfg = new CacheConfiguration<>();
                 trainingSetCfg.setName("TRAINING_SET");
                 trainingSetCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
 
                 IgniteCache<Integer, LabeledPoint> trainingSet = ignite.createCache(trainingSetCfg);
 
+                // Fill cache with training data.
                 trainingSet.put(0, new LabeledPoint(0, 0, 0));
                 trainingSet.put(1, new LabeledPoint(0, 1, 1));
                 trainingSet.put(2, new LabeledPoint(1, 0, 1));
                 trainingSet.put(3, new LabeledPoint(1, 1, 0));
 
+                // Define a layered architecture.
                 MLPArchitecture arch = new MLPArchitecture(2).
                     withAddedLayer(10, true, Activators.RELU).
                     withAddedLayer(1, false, Activators.SIGMOID);
 
+                // Define a neural network trainer.
                 MLPTrainer<SimpleGDParameterUpdate> trainer = new MLPTrainer<>(
                     arch,
                     LossFunctions.MSE,
@@ -92,9 +94,10 @@ public class MLPTrainerExample {
                     3000,
                     4,
                     50,
-                    new RandomInitializer(123L)
+                    123L
                 );
 
+                // Train neural network and get multilayer perceptron model.
                 MultilayerPerceptron mlp = trainer.fit(
                     new CacheBasedDatasetBuilder<>(ignite, trainingSet),
                     (k, v) -> new double[] {v.x, v.y},
@@ -104,10 +107,11 @@ public class MLPTrainerExample {
                 int totalCnt = 4;
                 int failCnt = 0;
 
+                // Calculate score.
                 for (int i = 0; i < 4; i++) {
-                    LabeledPoint point = trainingSet.get(i);
-                    Matrix predicted = mlp.apply(new DenseLocalOnHeapMatrix(new double[][] {{point.x, point.y}}));
-                    failCnt += Math.abs(predicted.get(0, 0) - point.lb) < 0.5 ? 0 : 1;
+                    LabeledPoint pnt = trainingSet.get(i);
+                    Matrix predicted = mlp.apply(new DenseLocalOnHeapMatrix(new double[][] {{pnt.x, pnt.y}}));
+                    failCnt += Math.abs(predicted.get(0, 0) - pnt.lb) < 0.5 ? 0 : 1;
                 }
 
                 double failRatio = (double)failCnt / totalCnt;
@@ -123,28 +127,39 @@ public class MLPTrainerExample {
         }
     }
 
-    /** */
-    private static boolean closeEnough(Vector v1, Vector v2) {
-        return v1.minus(v2).kNorm(2) < 5E-1;
-    }
-
+    /** Point data class. */
     private static class Point {
-
+        /** X coordinate. */
         final double x;
 
+        /** Y coordinate. */
         final double y;
 
-        public Point(double x, double y) {
+        /**
+         * Constructs a new instance of point.
+         *
+         * @param x X coordinate.
+         * @param y Y coordinate.
+         */
+        Point(double x, double y) {
             this.x = x;
             this.y = y;
         }
     }
 
+    /** Labeled point data class. */
     private static class LabeledPoint extends Point {
-
+        /** Point label. */
         final double lb;
 
-        public LabeledPoint(double x, double y, double lb) {
+        /**
+         * Constructs a new instance of labeled point data.
+         *
+         * @param x X coordinate.
+         * @param y Y coordinate.
+         * @param lb Point label.
+         */
+        LabeledPoint(double x, double y, double lb) {
             super(x, y);
             this.lb = lb;
         }

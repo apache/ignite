@@ -3,6 +3,7 @@ package org.apache.ignite.ml.nn;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import org.apache.ignite.ml.MultiLabelDatasetTrainer;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
@@ -17,7 +18,7 @@ import org.apache.ignite.ml.math.functions.IgniteDifferentiableVectorToDoubleFun
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
-import org.apache.ignite.ml.nn.initializers.MLPInitializer;
+import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
 import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
 import org.apache.ignite.ml.util.Utils;
@@ -47,7 +48,7 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
     private final int locIterations;
 
     /** Multilayer perceptron model initializer. */
-    private final MLPInitializer initializer;
+    private final long seed;
 
     /**
      * Constructs a new instance of multilayer perceptron trainer.
@@ -58,25 +59,25 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
      * @param maxIterations Maximal number of iterations before the training will be stopped.
      * @param batchSize Batch size (per every partition).
      * @param locIterations Maximal number of local iterations before synchronization.
-     * @param initializer Multilayer perceptron model initializer.
+     * @param seed Random initializer seed.
      */
     public MLPTrainer(MLPArchitecture arch, IgniteFunction<Vector, IgniteDifferentiableVectorToDoubleFunction> loss,
         UpdatesStrategy<? super MultilayerPerceptron, P> updatesStgy, int maxIterations, int batchSize,
-        int locIterations, MLPInitializer initializer) {
+        int locIterations, long seed) {
         this.arch = arch;
         this.loss = loss;
         this.updatesStgy = updatesStgy;
         this.maxIterations = maxIterations;
         this.batchSize = batchSize;
         this.locIterations = locIterations;
-        this.initializer = initializer;
+        this.seed = seed;
     }
 
     /** {@inheritDoc} */
     public <K, V> MultilayerPerceptron fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, double[]> lbExtractor) {
 
-        MultilayerPerceptron mdl = new MultilayerPerceptron(arch, initializer);
+        MultilayerPerceptron mdl = new MultilayerPerceptron(arch, new RandomInitializer(seed));
         ParameterUpdateCalculator<? super MultilayerPerceptron, P> updater = updatesStgy.getUpdatesCalculator();
 
         try (Dataset<EmptyContext, SimpleLabeledDatasetData> dataset = datasetBuilder.build(
@@ -84,30 +85,26 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
             new SimpleLabeledDatasetDataBuilder<>(featureExtractor, lbExtractor)
         )) {
 
-            P update = updater.init(mdl, loss);
-
             for (int i = 0; i < maxIterations; i+=locIterations) {
-                int finalI = i;
-                P finalUpdate = update;
-
                 MultilayerPerceptron finalMdl = mdl;
+                int finalI = i;
                 List<P> totUp = dataset.compute(
                         data -> {
-                            P locUpdate = finalUpdate;
+                            P update = updater.init(finalMdl, loss);
 
                             MultilayerPerceptron mlp = Utils.copy(finalMdl);
                             if (data.getFeatures() != null) {
                                 List<P> updates = new ArrayList<>();
                                 for (int j = 0; j < locIterations; j++) {
 
-                                    int[] rows = Utils.selectKDistinct(data.getRows(), Math.min(batchSize, data.getRows()));
+                                    int[] rows = Utils.selectKDistinct(data.getRows(), Math.min(batchSize, data.getRows()), new Random(seed ^ (finalI * j)));
 
                                     Matrix inputs = new DenseLocalOnHeapMatrix(batch(data.getFeatures(), rows, data.getRows()), rows.length, 0);
                                     Matrix groundTruth = new DenseLocalOnHeapMatrix(batch(data.getLabels(), rows, data.getRows()), rows.length, 0);
 
-                                    locUpdate = updater.calculateNewUpdate(mlp, locUpdate, finalI + j, inputs.transpose(), groundTruth.transpose());
-                                    mlp = updater.update(mlp, locUpdate);
-                                    updates.add(locUpdate);
+                                    update = updater.calculateNewUpdate(mlp, update, j, inputs.transpose(), groundTruth.transpose());
+                                    mlp = updater.update(mlp, update);
+                                    updates.add(update);
                                 }
 
                                 List<P> res = new ArrayList<>();
@@ -128,7 +125,8 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
                             }
                         }
                     );
-                update = updatesStgy.allUpdatesReducer().apply(totUp);
+
+                P update = updatesStgy.allUpdatesReducer().apply(totUp);
                 mdl = updater.update(mdl, update);
             }
         }
@@ -139,6 +137,14 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
         return mdl;
     }
 
+    /**
+     * Builds a batch of the data by fetching specified rows.
+     *
+     * @param data All data.
+     * @param rows Rows to be fetched from the data.
+     * @param totalRows Total number of rows in all data.
+     * @return Batch data.
+     */
     static double[] batch(double[] data, int[] rows, int totalRows) {
         int cols = data.length / totalRows;
         double[] res = new double[cols * rows.length];

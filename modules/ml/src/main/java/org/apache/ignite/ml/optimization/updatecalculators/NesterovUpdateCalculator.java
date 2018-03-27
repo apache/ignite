@@ -63,14 +63,12 @@ public class NesterovUpdateCalculator<M extends SmoothParametrized<M>>
 
         M newMdl = mdl;
 
-        if (iteration > 0) {
-            Vector curParams = mdl.parameters();
-            newMdl = mdl.withParameters(curParams.minus(prevUpdates.times(momentum)));
-        }
+        if (iteration > 0)
+            newMdl = mdl.withParameters(mdl.parameters().minus(prevUpdates.times(momentum)));
 
         Vector gradient = newMdl.differentiateByParameters(loss, inputs, groundTruth);
 
-        return new NesterovParameterUpdate(prevUpdates.plus(gradient.times(learningRate)));
+        return new NesterovParameterUpdate(prevUpdates.times(momentum).plus(gradient.times(learningRate)));
     }
 
     /** {@inheritDoc} */

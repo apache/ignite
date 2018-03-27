@@ -31,7 +31,6 @@ import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.MLPTrainer;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
-import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
@@ -39,6 +38,9 @@ import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ * Tests {@link MLPTrainer} on the MNIST dataset that require to start the whole Ignite infrastructure.
+ */
 public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
@@ -67,14 +69,15 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
     }
 
-    public void testMNISTLocal() throws IOException {
+    /** Tests on the MNIST dataset. */
+    public void testMNIST() throws IOException {
         int featCnt = 28 * 28;
         int hiddenNeuronsCnt = 100;
 
-        CacheConfiguration<Integer, MnistUtils.MnistLabeledImage> trainingSetCacheConfig = new CacheConfiguration<>();
-        trainingSetCacheConfig.setAffinity(new RendezvousAffinityFunction(false, 10));
-        trainingSetCacheConfig.setName("MNIST_TRAINING_SET");
-        IgniteCache<Integer, MnistUtils.MnistLabeledImage> trainingSet = ignite.createCache(trainingSetCacheConfig);
+        CacheConfiguration<Integer, MnistUtils.MnistLabeledImage> trainingSetCacheCfg = new CacheConfiguration<>();
+        trainingSetCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
+        trainingSetCacheCfg.setName("MNIST_TRAINING_SET");
+        IgniteCache<Integer, MnistUtils.MnistLabeledImage> trainingSet = ignite.createCache(trainingSetCacheCfg);
 
         int i = 0;
         for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTrainingSet(6_000))
@@ -94,8 +97,8 @@ public class MLPTrainerMnistIntegrationTest extends GridCommonAbstractTest {
             ),
             200,
             2000,
-            200,
-            new RandomInitializer(123L)
+            10,
+            123L
         );
 
         System.out.println("Start training...");

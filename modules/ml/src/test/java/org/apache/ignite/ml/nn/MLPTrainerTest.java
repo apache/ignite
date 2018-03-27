@@ -29,7 +29,6 @@ import org.apache.ignite.ml.math.Matrix;
 import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
-import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.NesterovParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.NesterovUpdateCalculator;
@@ -39,7 +38,6 @@ import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDParameterUpda
 import org.apache.ignite.ml.optimization.updatecalculators.SimpleGDUpdateCalculator;
 import org.apache.ignite.ml.trainers.group.UpdatesStrategy;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
@@ -50,7 +48,9 @@ import org.junit.runners.Parameterized;
  */
 @RunWith(Enclosed.class)
 public class MLPTrainerTest {
-
+    /**
+     * Parameterized tests.
+     */
     @RunWith(Parameterized.class)
     public static class ComponentParamTests {
         /** Number of parts to be tested. */
@@ -106,7 +106,6 @@ public class MLPTrainerTest {
          * Test 'XOR' operation training with {@link NesterovUpdateCalculator}.
          */
         @Test
-        @Ignore
         public void testXORNesterov() {
             xorTest(new UpdatesStrategy<>(
                 new NesterovUpdateCalculator<MultilayerPerceptron>(0.1, 0.7),
@@ -138,7 +137,7 @@ public class MLPTrainerTest {
                 3000,
                 batchSize,
                 50,
-                new RandomInitializer(123L)
+                123L
             );
 
             MultilayerPerceptron mlp = trainer.fit(
@@ -159,10 +158,14 @@ public class MLPTrainerTest {
         }
     }
 
+    /**
+     * Non-parameterized tests.
+     */
     public static class ComponentSingleTests {
-
+        /** Data. */
         private double[] data;
 
+        /** Initialization. */
         @Before
         public void init() {
             data = new double[10];
@@ -170,6 +173,7 @@ public class MLPTrainerTest {
                 data[i] = i;
         }
 
+        /** */
         @Test
         public void testBatchWithSingleColumnAndSingleRow() {
             double[] res = MLPTrainer.batch(data, new int[]{1}, 10);
@@ -177,6 +181,7 @@ public class MLPTrainerTest {
             TestUtils.assertEquals(new double[]{1.0}, res, 1e-12);
         }
 
+        /** */
         @Test
         public void testBatchWithMultiColumnAndSingleRow() {
             double[] res = MLPTrainer.batch(data, new int[]{1}, 5);
@@ -184,6 +189,7 @@ public class MLPTrainerTest {
             TestUtils.assertEquals(new double[]{1.0, 6.0}, res, 1e-12);
         }
 
+        /** */
         @Test
         public void testBatchWithMultiColumnAndMultiRow() {
             double[] res = MLPTrainer.batch(data, new int[]{1, 3}, 5);

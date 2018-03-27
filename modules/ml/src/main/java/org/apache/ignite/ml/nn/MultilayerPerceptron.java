@@ -169,11 +169,10 @@ public class MultilayerPerceptron implements Model<Matrix, Matrix>, SmoothParame
     }
 
     /**
-     * Predict values on inputs given as columns in a given matrix.
+     * Makes a prediction for the given objects.
      *
-     * @param val Matrix containing inputs as columns.
-     * @return Matrix with predicted vectors stored in columns with column indexes corresponding to column indexes in
-     * the input matrix.
+     * @param val Matrix containing objects.
+     * @return Matrix with predicted vectors.
      */
     @Override public Matrix apply(Matrix val) {
         MLPState state = new MLPState(null);

@@ -28,7 +28,6 @@ import org.apache.ignite.ml.nn.Activators;
 import org.apache.ignite.ml.nn.MLPTrainer;
 import org.apache.ignite.ml.nn.MultilayerPerceptron;
 import org.apache.ignite.ml.nn.architecture.MLPArchitecture;
-import org.apache.ignite.ml.nn.initializers.RandomInitializer;
 import org.apache.ignite.ml.optimization.LossFunctions;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropParameterUpdate;
 import org.apache.ignite.ml.optimization.updatecalculators.RPropUpdateCalculator;
@@ -38,15 +37,13 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertTrue;
 
+/**
+ * Tests {@link MLPTrainer} on the MNIST dataset using locally stored data.
+ */
 public class MLPTrainerMnistTest {
-    /**
-     * Run nn classifier on MNIST using bi-indexed cache as a storage for dataset.
-     * To run this test rename this method so it starts from 'test'.
-     *
-     * @throws IOException In case of loading MNIST dataset errors.
-     */
+    /** Tests on the MNIST dataset. */
     @Test
-    public void testMNISTLocal() throws IOException {
+    public void testMNIST() throws IOException {
         int featCnt = 28 * 28;
         int hiddenNeuronsCnt = 100;
 
@@ -60,7 +57,7 @@ public class MLPTrainerMnistTest {
             withAddedLayer(hiddenNeuronsCnt, true, Activators.SIGMOID).
             withAddedLayer(10, false, Activators.SIGMOID);
 
-        MLPTrainer<RPropParameterUpdate> trainer = new MLPTrainer<>(
+        MLPTrainer<?> trainer = new MLPTrainer<>(
             arch,
             LossFunctions.MSE,
             new UpdatesStrategy<>(
@@ -70,8 +67,8 @@ public class MLPTrainerMnistTest {
             ),
             200,
             2000,
-            200,
-            new RandomInitializer(123L)
+            10,
+            123L
         );
 
         System.out.println("Start training...");
@@ -99,6 +96,6 @@ public class MLPTrainerMnistTest {
         }
 
         double accuracy = 1.0 * correctAnswers / (correctAnswers + incorrectAnswers);
-        assertTrue("Accuracy should be >= 80%", accuracy >= 0.8);
+        assertTrue("Accuracy should be >= 80% (not " + accuracy * 100 + "%)", accuracy >= 0.8);
     }
 }

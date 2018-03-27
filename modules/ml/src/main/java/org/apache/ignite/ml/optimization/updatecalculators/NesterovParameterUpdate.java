@@ -20,7 +20,6 @@ package org.apache.ignite.ml.optimization.updatecalculators;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 
@@ -81,8 +80,13 @@ public class NesterovParameterUpdate implements Serializable {
      * @return Sum of parameters updates.
      */
     public static NesterovParameterUpdate sum(List<NesterovParameterUpdate> parameters) {
-        return parameters.stream().filter(Objects::nonNull).map(NesterovParameterUpdate::prevIterationUpdates)
-            .reduce(Vector::plus).map(NesterovParameterUpdate::new).orElse(null);
+        return parameters
+            .stream()
+            .filter(Objects::nonNull)
+            .map(NesterovParameterUpdate::prevIterationUpdates)
+            .reduce(Vector::plus)
+            .map(NesterovParameterUpdate::new)
+            .orElse(null);
     }
 
     /**
@@ -93,6 +97,6 @@ public class NesterovParameterUpdate implements Serializable {
      */
     public static NesterovParameterUpdate avg(List<NesterovParameterUpdate> parameters) {
         NesterovParameterUpdate sum = sum(parameters);
-        return sum != null ? sum.setPreviousUpdates(sum.prevIterationUpdates().divide(parameters.stream().filter(Objects::nonNull).collect(Collectors.toList()).size())) : null;
+        return sum != null ? sum.setPreviousUpdates(sum.prevIterationUpdates().divide(parameters.stream().filter(Objects::nonNull).count())) : null;
     }
 }

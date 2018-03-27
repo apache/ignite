@@ -22,16 +22,11 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Properties;
 import java.util.Random;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.impls.matrix.DenseLocalOnHeapMatrix;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.trees.performance.ColumnDecisionTreeTrainerBenchmark;
 import org.apache.ignite.ml.util.MnistUtils;
-
-import static org.apache.ignite.ml.math.VectorUtils.num2Vec;
 
 /** */
 class MnistMLPTestUtil {
@@ -79,20 +74,5 @@ class MnistMLPTestUtil {
         res.load(is);
 
         return res;
-    }
-
-    /** */
-    static IgniteBiTuple<Matrix, Matrix> createDataset(Stream<DenseLocalOnHeapVector> s, int samplesCnt, int featCnt) {
-        Matrix vectors = new DenseLocalOnHeapMatrix(featCnt, samplesCnt);
-        Matrix labels = new DenseLocalOnHeapMatrix(10, samplesCnt);
-        List<DenseLocalOnHeapVector> sc = s.collect(Collectors.toList());
-
-        for (int i = 0; i < samplesCnt; i++) {
-            DenseLocalOnHeapVector v = sc.get(i);
-            vectors.assignColumn(i, v.viewPart(0, featCnt));
-            labels.assignColumn(i, num2Vec((int)v.getX(featCnt), 10));
-        }
-
-        return new IgniteBiTuple<>(vectors, labels);
     }
 }
