@@ -45,6 +45,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -107,38 +108,6 @@ public class LatchManager {
 
                 processNodeLeft(e.eventNode());
             }, EVT_NODE_LEFT, EVT_NODE_FAILED);
-        }
-    }
-
-    /**
-     * Explicitly completes latch with given {@code id} and {@code topVer} on remote node.
-     *
-     * @param id Latch id.
-     * @param topVer Latch topology version.
-     * @param node Node.
-     */
-    public void release(String id, AffinityTopologyVersion topVer, ClusterNode node) {
-        lock.lock();
-
-        final T2<String, AffinityTopologyVersion> latchId = new T2<>(id, topVer);
-
-        try {
-            assert !serverLatches.containsKey(latchId);
-
-            pendingAcks.remove(latchId);
-
-            // Send final ack.
-            io.sendToGridTopic(node, GridTopic.TOPIC_LATCH, new LatchAckMessage(id, topVer, true), GridIoPolicy.SYSTEM_POOL);
-
-            if (log.isDebugEnabled())
-                log.debug("Release final ack is ackSent [latch=" + latchId + ", to=" + node.id() + "]");
-        }
-        catch (IgniteCheckedException e) {
-            if (log.isDebugEnabled())
-                log.debug("Unable to send release final ack [latch=" + latchId + ", to=" + node.id() + "]: " + e.getMessage());
-        }
-        finally {
-            lock.unlock();
         }
     }
 
@@ -228,10 +197,7 @@ public class LatchManager {
         lock.lock();
 
         try {
-            ClusterNode coordinator = discovery.discoCache(topVer).oldestAliveServerNode();
-
-            if (this.coordinator == null)
-                this.coordinator = coordinator;
+            ClusterNode coordinator = getLatchCoordinator(topVer);
 
             if (coordinator == null) {
                 ClientLatch latch = new ClientLatch(id, AffinityTopologyVersion.NONE, null, Collections.emptyList());
@@ -239,6 +205,9 @@ public class LatchManager {
 
                 return latch;
             }
+
+            if (this.coordinator == null)
+                this.coordinator = coordinator;
 
             Collection<ClusterNode> participants = getLatchParticipants(topVer);
 
@@ -254,13 +223,33 @@ public class LatchManager {
 
     /**
      * @param topVer Latch topology version.
-     * @return Collection of cluster nodes which are able to participate in latch.
+     * @return Collection of alive server nodes with latch functionality.
      */
     private Collection<ClusterNode> getLatchParticipants(AffinityTopologyVersion topVer) {
-        return discovery.discoCache(topVer).aliveServerNodes()
+        Collection<ClusterNode> aliveNodes = topVer == AffinityTopologyVersion.NONE
+                ? discovery.aliveServerNodes()
+                : discovery.discoCache(topVer).aliveServerNodes();
+
+        return aliveNodes
                 .stream()
                 .filter(node -> node.version().compareTo(VERSION_SINCE) >= 0)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * @param topVer Latch topology version.
+     * @return Oldest alive server node with latch functionality.
+     */
+    @Nullable private ClusterNode getLatchCoordinator(AffinityTopologyVersion topVer) {
+        Collection<ClusterNode> aliveNodes = topVer == AffinityTopologyVersion.NONE
+                ? discovery.aliveServerNodes()
+                : discovery.discoCache(topVer).aliveServerNodes();
+
+        return aliveNodes
+                .stream()
+                .filter(node -> node.version().compareTo(VERSION_SINCE) >= 0)
+                .findFirst()
+                .orElse(null);
     }
 
     /**
@@ -277,7 +266,7 @@ public class LatchManager {
         lock.lock();
 
         try {
-            ClusterNode coordinator = discovery.oldestAliveServerNode(AffinityTopologyVersion.NONE);
+            ClusterNode coordinator = getLatchCoordinator(AffinityTopologyVersion.NONE);
 
             if (coordinator == null)
                 return;
@@ -361,9 +350,10 @@ public class LatchManager {
             if (log.isDebugEnabled())
                 log.debug("Process node left " + left.id());
 
-            ClusterNode coordinator = discovery.oldestAliveServerNode(AffinityTopologyVersion.NONE);
+            ClusterNode coordinator = getLatchCoordinator(AffinityTopologyVersion.NONE);
 
-            assert coordinator != null;
+            if (coordinator == null)
+                return;
 
             // Clear pending acks.
             for (Map.Entry<T2<String, AffinityTopologyVersion>, Set<UUID>> ackEntry : pendingAcks.entrySet())

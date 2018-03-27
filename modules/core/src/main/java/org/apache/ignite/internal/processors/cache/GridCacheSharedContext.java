@@ -126,9 +126,6 @@ public class GridCacheSharedContext<K, V> {
     /** Ttl cleanup manager. */
     private GridCacheSharedTtlCleanupManager ttlMgr;
 
-    /** Distributed latch manager. */
-    private LatchManager latchMgr;
-
     /** Cache contexts map. */
     private ConcurrentHashMap<Integer, GridCacheContext<K, V>> ctxMap;
 
@@ -243,8 +240,6 @@ public class GridCacheSharedContext<K, V> {
         for (PluginProvider prv : kernalCtx.plugins().allProviders())
             if (prv instanceof IgniteChangeGlobalStateSupport)
                 stateAwareMgrs.add(((IgniteChangeGlobalStateSupport)prv));
-
-        latchMgr = new LatchManager(kernalCtx);
     }
 
     /**
@@ -719,13 +714,6 @@ public class GridCacheSharedContext<K, V> {
      */
     public GridCacheSharedTtlCleanupManager ttl() {
         return ttlMgr;
-    }
-
-    /**
-     * @return Latch manager.
-     */
-    public LatchManager latch() {
-        return latchMgr;
     }
 
     /**

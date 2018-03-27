@@ -62,6 +62,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
+import org.apache.ignite.internal.processors.cache.datastructures.latch.LatchManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -213,6 +214,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** For tests only. */
     private volatile AffinityTopologyVersion exchMergeTestWaitVer;
 
+    /** Distributed latch manager. */
+    private LatchManager latchMgr;
+
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
         @Override public void onEvent(DiscoveryEvent evt, DiscoCache cache) {
@@ -305,6 +309,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         super.start0();
 
         exchWorker = new ExchangeWorker();
+
+        latchMgr = new LatchManager(cctx.kernalContext());
 
         cctx.gridEvents().addDiscoveryEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED,
             EVT_DISCOVERY_CUSTOM_EVT);
@@ -1569,6 +1575,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
+     * @return Latch manager instance.
+     */
+    public LatchManager latch() {
+        return latchMgr;
+    }
+
+    /**
      * @param exchFut Optional current exchange future.
      * @throws Exception If failed.
      */
@@ -2035,9 +2048,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     if (evt.type() == EVT_NODE_JOINED) {
                         if (fut.mergeJoinExchange(curFut))
                             awaited++;
-
-                        cctx.latch().release("exchange" + 0, fut.initialVersion(), evt.eventNode());
-                        cctx.latch().release("exchange" + 1, fut.initialVersion(), evt.eventNode());
                     }
                 }
                 else {
