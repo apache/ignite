@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -37,6 +38,9 @@ import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends GridCacheAbstractMetricsSelfTest {
     /** */
     private static final int TX_CNT = 3;
+
+    /** */
+    private static final long DELAY_MILLIS = 30L;
 
     /**
      * @throws Exception If failed.
@@ -224,7 +228,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
                     cache.put(j, j);
 
             // Waiting 30 ms for metrics. U.currentTimeMillis() method has 10 ms discretization.
-            U.sleep(30);
+            U.sleep(DELAY_MILLIS);
 
             tx.commit();
         }
@@ -238,7 +242,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
                 if (put) {
                     assertEquals(TX_CNT, cacheMetrics.getCacheTxCommits());
-                    assert cacheMetrics.getAverageTxCommitTime() > 0;
+                    assert cacheMetrics.getAverageTxCommitTime() >= TimeUnit.MILLISECONDS.toMicros(DELAY_MILLIS);
                 }
             }
             else {
@@ -269,7 +273,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
                     cache.put(j, j);
 
             // Waiting 30 ms for metrics. U.currentTimeMillis() method has 10 ms discretization.
-            U.sleep(30);
+            U.sleep(DELAY_MILLIS);
 
             tx.rollback();
         }
@@ -286,7 +290,7 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
                 if (put) {
                     assertEquals(TX_CNT, cacheMetrics.getCacheTxRollbacks());
-                    assert cacheMetrics.getAverageTxRollbackTime() > 0;
+                    assert cacheMetrics.getAverageTxRollbackTime() >= TimeUnit.MILLISECONDS.toMicros(DELAY_MILLIS);
                 }
             }
             else {
