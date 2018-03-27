@@ -400,7 +400,7 @@ namespace ignite
 
             try
             {
-                bool sent = SyncMessage(req, rsp, SocketClient::CONNECT_TIMEOUT);
+                bool sent = SyncMessage(req, rsp, timeout);
 
                 if (!sent)
                 {
@@ -441,7 +441,7 @@ namespace ignite
 
             try
             {
-                bool sent = SyncMessage(req, rsp, SocketClient::CONNECT_TIMEOUT);
+                bool sent = SyncMessage(req, rsp, timeout);
 
                 if (!sent)
                 {
