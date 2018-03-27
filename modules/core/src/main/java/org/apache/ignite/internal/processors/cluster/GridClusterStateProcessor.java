@@ -356,7 +356,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (msg.requestId().equals(state.transitionRequestId())) {
             log.info("Received state change finish message: " + msg.clusterActive());
 
-            globalState = globalState.finish(msg.success());
+            globalState = state.finish(msg.success());
 
             afterStateChangeFinished(msg.id(), msg.success());
 
@@ -853,8 +853,10 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         if (node.isClient() || node.isDaemon())
             return null;
 
+        DiscoveryDataClusterState state = globalState;
+
         if (discoData.joiningNodeData() == null) {
-            if (globalState.baselineTopology() != null) {
+            if (state.baselineTopology() != null) {
                 String msg = "Node not supporting BaselineTopology" +
                     " is not allowed to join the cluster with BaselineTopology";
 
@@ -878,8 +880,6 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
 
         if (joiningNodeState == null || joiningNodeState.baselineTopology() == null)
             return null;
-
-        DiscoveryDataClusterState state = globalState;
 
         if (state == null || state.baselineTopology() == null) {
             if (joiningNodeState != null && joiningNodeState.baselineTopology() != null) {
