@@ -53,15 +53,6 @@ public class GridSpinBusyLock {
     }
 
     /**
-     *
-     */
-    public void enterBusyWait() {
-        if (!lock.writeLockedByCurrentThread())
-            lock.readLock();
-    }
-
-
-    /**
      * Checks if busy lock was blocked by current thread.
      *
      * @return {@code True} if busy lock was blocked by current thread.

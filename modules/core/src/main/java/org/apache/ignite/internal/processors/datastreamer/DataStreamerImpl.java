@@ -42,9 +42,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
@@ -429,9 +426,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * Enters busy lock.
      */
     private void enterBusy() {
-        busyLock.enterBusyWait();
+        if (!busyLock.enterBusy()) {
+            if (disconnectErr != null)
+                throw disconnectErr;
 
-        if (cancelled) {
+            closedException();
+        }
+        else if (cancelled) {
             busyLock.leaveBusy();
 
             closedException();
@@ -697,9 +698,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         enterBusy();
 
         try {
-            if (closed.get())
-                closedException();
-
             List<DataStreamerEntry> entriesPerThread;
 
             long threadId = Thread.currentThread().getId();
@@ -737,7 +735,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             if (futPerThread == null)
                 throw e;
 
-            GridFutureAdapter internalFut = (GridFutureAdapter) futPerThread.internalFuture();
+            GridFutureAdapter internalFut = (GridFutureAdapter)futPerThread.internalFuture();
 
             internalFut.onDone(e);
 
@@ -752,7 +750,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     }
 
     /**
-     * Load batch of DataStreamerEntry.
+     * Load thread batch of DataStreamerEntry.
      */
     private void loadData(Collection<? extends DataStreamerEntry> entries, IgniteCacheFutureImpl future) {
         Collection<KeyCacheObjectWrapper> keys = null;
@@ -764,7 +762,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 keys.add(new KeyCacheObjectWrapper(e.getKey()));
         }
 
-        load0(entries, (GridFutureAdapter) future.internalFuture(), keys, 0);
+        load0(entries, (GridFutureAdapter)future.internalFuture(), keys, 0);
     }
 
     /** {@inheritDoc} */
@@ -1133,6 +1131,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
         int doneCnt = 0;
 
+        flushAllThreadsBufs();
+
         for (IgniteInternalFuture<?> f : activeFuts) {
             if (!f.isDone()) {
                 if (activeFuts0 == null)
@@ -1238,32 +1238,16 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** {@inheritDoc} */
     @SuppressWarnings("ForLoopReplaceableByForEach")
     @Override public void flush() throws CacheException {
-        enterWriteBusy();
+        enterBusy();
 
         try {
-
-            flushAllThreadsBufs();
-
             doFlush();
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
         }
         finally {
-            busyLock.unblock();
-        }
-    }
-
-    /**
-     *
-     */
-    private void enterWriteBusy() {
-        busyLock.block();
-
-        if (cancelled) {
-            busyLock.unblock();
-
-            closedException();
+            leaveBusy();
         }
     }
 
@@ -1275,12 +1259,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * should be called periodically.
      */
     @Override public void tryFlush() throws IgniteInterruptedException {
-        try {
-            busyLock.tryBlock(1000);
-        }
-        catch (InterruptedException e) {
+        if (!busyLock.enterBusy())
             return;
-        }
 
         try {
             flushAllThreadsBufs();
@@ -1294,7 +1274,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             throw GridCacheUtils.convertToCacheException(e);
         }
         finally {
-            busyLock.unblock();
+            leaveBusy();
         }
     }
 
@@ -1302,16 +1282,17 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * Load data from buffer for each thread and clean buffers for all threads.
      */
     private void flushAllThreadsBufs() {
-        for (Long threadId : threadBufMap.keySet()){
-            ArrayList<DataStreamerEntry> entries;
-            synchronized ( threadBufMap.get(threadId).get2()) {
-                loadData(threadBufMap.get(threadId).get2(), threadBufMap.get(threadId).get1());
-            }
+        for (long threadID : threadBufMap.keySet()) {
+            T2<IgniteCacheFutureImpl, List<DataStreamerEntry>> val = threadBufMap.get(threadID);
 
+            while (val != null && !threadBufMap.remove(threadID, val))
+                val = threadBufMap.get(threadID);
+
+            if (val == null || val.get2().size() == 0)
+                continue;
+
+            loadData(val.get2(), val.get1());
         }
-
-
-        threadBufMap.clear();
     }
 
     /**
@@ -1347,48 +1328,39 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         if (!closed.compareAndSet(false, true))
             return null;
 
-        enterWriteBusy();
+        busyLock.block();
 
         if (log.isDebugEnabled())
             log.debug("Closing data streamer [ldr=" + this + ", cancel=" + cancel + ']');
 
         try {
-            try {
-                // Assuming that no methods are called on this loader after this method is called.
-                if (cancel) {
-                    cancelled = true;
+            // Assuming that no methods are called on this loader after this method is called.
+            if (cancel) {
+                cancelled = true;
 
-                    for (Buffer buf : bufMappings.values())
-                        buf.cancelAll(err);
-                }
-                else {
-                    flushAllThreadsBufs();
-
-                    doFlush();
-                }
-
-                ctx.event().removeLocalEventListener(discoLsnr);
-
-                ctx.io().removeMessageListener(topic);
+                for (Buffer buf : bufMappings.values())
+                    buf.cancelAll(err);
             }
-            catch (IgniteCheckedException | IgniteDataStreamerTimeoutException e) {
-                fut.onDone(e);
+            else
+                doFlush();
 
-                throw e;
-            }
+            ctx.event().removeLocalEventListener(discoLsnr);
 
-            long failed = failCntr.longValue();
-
-            if (failed > 0 && err == null)
-                err = new IgniteCheckedException("Some of DataStreamer operations failed [failedCount=" + failed + "]");
-
-            fut.onDone(err);
-
-            return err;
+            ctx.io().removeMessageListener(topic);
         }
-        finally {
-            busyLock.unblock();
+        catch (IgniteCheckedException | IgniteDataStreamerTimeoutException e) {
+            fut.onDone(e);
+            throw e;
         }
+
+        long failed = failCntr.longValue();
+
+        if (failed > 0 && err == null)
+            err = new IgniteCheckedException("Some of DataStreamer operations failed [failedCount=" + failed + "]");
+
+        fut.onDone(err);
+
+        return err;
     }
 
     /**

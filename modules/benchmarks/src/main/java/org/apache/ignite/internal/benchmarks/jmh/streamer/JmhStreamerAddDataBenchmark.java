@@ -210,8 +210,8 @@ public class JmhStreamerAddDataBenchmark {
         final Options options = new OptionsBuilder()
             .threads(3)
             .include(JmhStreamerAddDataBenchmark.class.getSimpleName())
-            .measurementIterations(7)
-            .warmupIterations(15)
+            .measurementIterations(11)
+            .warmupIterations(21)
             .forks(1)
             .jvmArgs(
                 "-Xms1g",

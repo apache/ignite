@@ -574,6 +574,8 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         final IgniteDataStreamer ldr = ignite.dataStreamer(DEFAULT_CACHE_NAME);
 
+        ldr.perThreadBufferSize(1);
+
         final IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
             @Override public void run() {
                 try {
