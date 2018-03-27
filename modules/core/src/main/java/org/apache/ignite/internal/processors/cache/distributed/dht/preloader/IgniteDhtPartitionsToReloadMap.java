@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Partition reload map.
@@ -91,5 +92,10 @@ public class IgniteDhtPartitionsToReloadMap implements Serializable {
      */
     public boolean isEmpty() {
         return map == null || map.isEmpty();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteDhtPartitionsToReloadMap.class, this);
     }
 }

@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -84,7 +85,6 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag.GridDiscoveryData;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -102,25 +102,25 @@ import static org.apache.ignite.internal.processors.continuous.GridContinuousMes
  */
 public class GridContinuousProcessor extends GridProcessorAdapter {
     /** Local infos. */
-    private final ConcurrentMap<UUID, LocalRoutineInfo> locInfos = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, LocalRoutineInfo> locInfos = new ConcurrentHashMap<>();
 
     /** Local infos. */
-    private final ConcurrentMap<UUID, Map<UUID, LocalRoutineInfo>> clientInfos = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, Map<UUID, LocalRoutineInfo>> clientInfos = new ConcurrentHashMap<>();
 
     /** Remote infos. */
-    private final ConcurrentMap<UUID, RemoteRoutineInfo> rmtInfos = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, RemoteRoutineInfo> rmtInfos = new ConcurrentHashMap<>();
 
     /** Start futures. */
-    private final ConcurrentMap<UUID, StartFuture> startFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, StartFuture> startFuts = new ConcurrentHashMap<>();
 
     /** Stop futures. */
-    private final ConcurrentMap<UUID, StopFuture> stopFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, StopFuture> stopFuts = new ConcurrentHashMap<>();
 
     /** Threads started by this processor. */
-    private final Map<UUID, IgniteThread> bufCheckThreads = new ConcurrentHashMap8<>();
+    private final Map<UUID, IgniteThread> bufCheckThreads = new ConcurrentHashMap<>();
 
     /** */
-    private final ConcurrentMap<IgniteUuid, SyncMessageAckFuture> syncMsgFuts = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<IgniteUuid, SyncMessageAckFuture> syncMsgFuts = new ConcurrentHashMap<>();
 
     /** Stopped IDs. */
     private final Collection<UUID> stopped = new HashSet<>();

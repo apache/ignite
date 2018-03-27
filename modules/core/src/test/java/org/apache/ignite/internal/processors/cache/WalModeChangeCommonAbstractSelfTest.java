@@ -43,7 +43,6 @@ import java.util.Collections;
 import java.util.concurrent.Callable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager.DFLT_STORE_DIR;
 
 /**
  * Test dynamic WAL mode change.
@@ -106,6 +105,19 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
             for (String cacheName : cacheNames)
                 destroyCache(node0, cacheName);
         }
+
+        awaitPartitionMapExchange();
+
+        assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                for (Ignite node0 : Ignition.allGrids()) {
+                    if (!node0.cacheNames().isEmpty())
+                        return false;
+                }
+
+                return true;
+            }
+        }, 2000));
     }
 
     /**
@@ -116,7 +128,7 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
      */
     @SuppressWarnings("unchecked")
     protected void createCache(Ignite node, CacheConfiguration ccfg) {
-        node.createCache(ccfg);
+        node.getOrCreateCache(ccfg);
     }
 
     /**
@@ -314,13 +326,6 @@ public abstract class WalModeChangeCommonAbstractSelfTest extends GridCommonAbst
         ccfg.setNodeFilter(FILTER);
 
         return ccfg;
-    }
-
-    /**
-     * @throws IgniteCheckedException If failed.
-     */
-    protected void deleteWorkFiles() throws IgniteCheckedException {
-        deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
     }
 
     /**

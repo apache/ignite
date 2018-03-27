@@ -33,11 +33,31 @@ public class SqlParserBulkLoadSelfTest extends SqlParserAbstractSelfTest {
 
         assertParseError(null,
             "copy from into Person (_key, age, firstName, lastName) format csv",
-            "Unexpected token: \"INTO\" (expected: \"[identifier]\"");
+            "Unexpected token: \"INTO\" (expected: \"[quoted file name]\"");
 
         assertParseError(null,
-            "copy from any.file into Person (_key, age, firstName, lastName) format csv",
-            "Unexpected token: \".\" (expected: \"INTO\"");
+            "copy from unquoted into Person (_key, age, firstName, lastName) format csv",
+            "Unexpected token: \"UNQUOTED\" (expected: \"[quoted file name]\"");
+
+        assertParseError(null,
+            "copy from unquoted.file into Person (_key, age, firstName, lastName) format csv",
+            "Unexpected token: \"UNQUOTED\" (expected: \"[quoted file name]\"");
+
+        new SqlParser(null,
+            "copy from \"\" into Person (_key, age, firstName, lastName) format csv")
+            .nextCommand();
+
+        new SqlParser(null,
+            "copy from \"d:/copy/from/into/format.csv\" into Person (_key, age, firstName, lastName) format csv")
+            .nextCommand();
+
+        new SqlParser(null,
+            "copy from \"/into\" into Person (_key, age, firstName, lastName) format csv")
+            .nextCommand();
+
+        new SqlParser(null,
+            "copy from \"into\" into Person (_key, age, firstName, lastName) format csv")
+            .nextCommand();
 
         assertParseError(null,
             "copy from \"any.file\" to Person (_key, age, firstName, lastName) format csv",

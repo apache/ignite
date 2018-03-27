@@ -426,10 +426,13 @@ module.exports.factory = function(mongoose) {
             },
             S3: {
                 bucketName: String,
+                bucketEndpoint: String,
+                SSEAlgorithm: String,
                 clientConfiguration: {
                     protocol: {type: String, enum: ['HTTP', 'HTTPS']},
                     maxConnections: Number,
-                    userAgent: String,
+                    userAgentPrefix: String,
+                    userAgentSuffix: String,
                     localAddress: String,
                     proxyHost: String,
                     proxyPort: Number,
@@ -470,7 +473,14 @@ module.exports.factory = function(mongoose) {
                     useTcpKeepAlive: Boolean,
                     dnsResolver: String,
                     responseMetadataCacheSize: Number,
-                    secureRandom: String
+                    secureRandom: String,
+                    cacheResponseMetadata: {type: Boolean, default: true},
+                    clientExecutionTimeout: Number,
+                    nonProxyHosts: String,
+                    socketSendBufferSizeHint: Number,
+                    socketReceiveBufferSizeHint: Number,
+                    useExpectContinue: {type: Boolean, default: true},
+                    useThrottleRetries: {type: Boolean, default: true}
                 }
             },
             Cloud: {
@@ -784,10 +794,13 @@ module.exports.factory = function(mongoose) {
                     }
                 },
                 bucketNameSuffix: String,
+                bucketEndpoint: String,
+                SSEAlgorithm: String,
                 clientConfiguration: {
                     protocol: {type: String, enum: ['HTTP', 'HTTPS']},
                     maxConnections: Number,
-                    userAgent: String,
+                    userAgentPrefix: String,
+                    userAgentSuffix: String,
                     localAddress: String,
                     proxyHost: String,
                     proxyPort: Number,
@@ -825,7 +838,14 @@ module.exports.factory = function(mongoose) {
                     useTcpKeepAlive: Boolean,
                     dnsResolver: String,
                     responseMetadataCacheSize: Number,
-                    secureRandom: String
+                    secureRandom: String,
+                    cacheResponseMetadata: {type: Boolean, default: true},
+                    clientExecutionTimeout: Number,
+                    nonProxyHosts: String,
+                    socketSendBufferSizeHint: Number,
+                    socketReceiveBufferSizeHint: Number,
+                    useExpectContinue: {type: Boolean, default: true},
+                    useThrottleRetries: {type: Boolean, default: true}
                 },
                 checkpointListener: String
             },
@@ -859,7 +879,15 @@ module.exports.factory = function(mongoose) {
             socketReceiveBufferSize: Number,
             tcpNoDelay: {type: Boolean, default: true},
             maxOpenCursorsPerConnection: Number,
-            threadPoolSize: Number
+            threadPoolSize: Number,
+            idleTimeout: Number,
+            jdbcEnabled: {type: Boolean, default: true},
+            odbcEnabled: {type: Boolean, default: true},
+            thinClientEnabled: {type: Boolean, default: true},
+            sslEnabled: Boolean,
+            useIgniteSslContextFactory: {type: Boolean, default: true},
+            sslClientAuth: Boolean,
+            sslContextFactory: String
         },
         loadBalancingSpi: [{
             kind: {type: String, enum: ['RoundRobin', 'Adaptive', 'WeightedRandom', 'Custom']},

@@ -1865,6 +1865,58 @@
                         </xs:attribute>
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="sslContextFactory" minOccurs="0">
+                    <xs:annotation>
+                        <xs:documentation>Factory for SSL Context.</xs:documentation>
+                    </xs:annotation>
+                    <xs:complexType>
+                        <xs:attribute name="keyAlgorithm" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Key manager algorithm that will be used to create a key manager.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="keyStoreType" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Key store type used for context creation.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="keyStoreFilePath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path to key store file.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="keyStorePassword" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Key store password.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="protocol" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Protocol for secure transport.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="trustStoreType" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Trust store type used for context creation.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="trustStoreFilePath" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Path to trust store file.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="trustStorePassword" type="xs:string">
+                            <xs:annotation>
+                                <xs:documentation>Trust store password.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                        <xs:attribute name="type" type="xs:string" use="required">
+                            <xs:annotation>
+                              <xs:documentation>Assembly-qualified type name.</xs:documentation>
+                            </xs:annotation>
+                        </xs:attribute>
+                    </xs:complexType>
+                </xs:element>
                 <xs:element name="pluginConfigurations" minOccurs="0">
                     <xs:annotation>
                         <xs:documentation>Plugin configurations.</xs:documentation>
@@ -2155,6 +2207,11 @@
             <xs:attribute name="isActiveOnStart" type="xs:boolean">
                 <xs:annotation>
                     <xs:documentation>Whether grid should be active on start.</xs:documentation>
+                </xs:annotation>
+            </xs:attribute>
+            <xs:attribute name="authenticationEnabled" type="xs:boolean">
+                <xs:annotation>
+                    <xs:documentation>Whether user authentication is enabled for the cluster.</xs:documentation>
                 </xs:annotation>
             </xs:attribute>
             <xs:attribute name="clientConnectorConfigurationEnabled" type="xs:boolean">

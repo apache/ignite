@@ -563,13 +563,13 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
     }
 
     /**
-     * Checks that bulk load works when we use batch size of 1 byte and thus
-     * create multiple batches per COPY.
+     * Checks that bulk load works when we use packet size of 1 byte and thus
+     * create multiple packetes per COPY.
      *
      * @throws SQLException If failed.
      */
-    public void testBatchSize_1() throws SQLException {
-        int updatesCnt = stmt.executeUpdate(BASIC_SQL_COPY_STMT + " batch_size 1");
+    public void testPacketSize_1() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(BASIC_SQL_COPY_STMT + " packet_size 1");
 
         assertEquals(2, updatesCnt);
 

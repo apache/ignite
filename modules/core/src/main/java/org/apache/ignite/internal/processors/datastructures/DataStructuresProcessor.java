@@ -22,6 +22,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.event.CacheEntryEvent;
@@ -78,7 +79,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -130,7 +130,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     private final AtomicConfiguration dfltAtomicCfg;
 
     /** Map of continuous query IDs. */
-    private final ConcurrentHashMap8<Integer, UUID> qryIdMap = new ConcurrentHashMap8<>();
+    private final ConcurrentHashMap<Integer, UUID> qryIdMap = new ConcurrentHashMap<>();
 
     /** Listener. */
     private final GridLocalEventListener lsnr = new GridLocalEventListener() {
@@ -164,7 +164,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public DataStructuresProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        dsMap = new ConcurrentHashMap8<>(INITIAL_CAPACITY);
+        dsMap = new ConcurrentHashMap<>(INITIAL_CAPACITY);
 
         dfltAtomicCfg = ctx.config().getAtomicConfiguration();
     }
@@ -623,11 +623,13 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      * @param afterRmv Optional closure to run after data structure removed.
      * @throws IgniteCheckedException If failed.
      */
-    private <T> void removeDataStructure(@Nullable final IgnitePredicateX<AtomicDataStructureValue> pred,
+    private <T> void removeDataStructure(
+        @Nullable final IgnitePredicateX<AtomicDataStructureValue> pred,
         final String name,
         String grpName,
         final DataStructureType type,
-        @Nullable final IgniteInClosureX<T> afterRmv) throws IgniteCheckedException {
+        @Nullable final IgniteInClosureX<T> afterRmv
+    ) throws IgniteCheckedException {
         assert name != null;
         assert grpName != null;
         assert type != null;
@@ -643,29 +645,48 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 IgniteInternalCache<GridCacheInternalKey, AtomicDataStructureValue> cache = ctx.cache().cache(cacheName);
 
                 if (cache != null && cache.context().gate().enterIfNotStopped()) {
-                    try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                        AtomicDataStructureValue val = cache.get(key);
+                    boolean isInterrupted = Thread.interrupted();
 
-                        if (val == null)
-                            return null;
+                    try {
+                        while(true) {
+                            try {
+                                try (GridNearTxLocal tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                                    AtomicDataStructureValue val = cache.get(key);
 
-                        if (val.type() != type)
-                            throw new IgniteCheckedException("Data structure has different type " +
-                                "[name=" + name +
-                                ", expectedType=" + type +
-                                ", actualType=" + val.type() + ']');
+                                    if (val == null)
+                                        return null;
 
-                        if (pred == null || pred.applyx(val)) {
-                            cache.remove(key);
+                                    if (val.type() != type)
+                                        throw new IgniteCheckedException("Data structure has different type " +
+                                            "[name=" + name +
+                                            ", expectedType=" + type +
+                                            ", actualType=" + val.type() + ']');
 
-                            tx.commit();
+                                    if (pred == null || pred.applyx(val)) {
+                                        cache.remove(key);
 
-                            if (afterRmv != null)
-                                afterRmv.applyx(null);
+                                        tx.commit();
+
+                                        if (afterRmv != null)
+                                            afterRmv.applyx(null);
+                                    }
+                                }
+
+                                break;
+                            }
+                            catch (IgniteCheckedException e) {
+                                if (X.hasCause(e, InterruptedException.class))
+                                    isInterrupted = Thread.interrupted();
+                                else
+                                    throw e;
+                            }
                         }
                     }
                     finally {
                         cache.context().gate().leave();
+
+                        if (isInterrupted)
+                            Thread.currentThread().interrupt();
                     }
                 }
 
