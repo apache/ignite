@@ -509,33 +509,33 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
     public void testParseCreateIndex() throws Exception {
         assertCreateIndexEquals(
             buildCreateIndex(null, "Person", "sch1", false, QueryIndexType.SORTED,
-            QueryIndex.DFLT_INLINE_SIZE,"name", true),
+                QueryIndex.DFLT_INLINE_SIZE, "name", true),
             "create index on Person (name)");
 
         assertCreateIndexEquals(
             buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.SORTED,
-            QueryIndex.DFLT_INLINE_SIZE, "name", true),
+                QueryIndex.DFLT_INLINE_SIZE, "name", true),
             "create index idx on Person (name ASC)");
 
         assertCreateIndexEquals(
             buildCreateIndex("idx", "Person", "sch1", false, QueryIndexType.GEOSPATIAL,
-            QueryIndex.DFLT_INLINE_SIZE, "name", true),
+                QueryIndex.DFLT_INLINE_SIZE, "name", true),
             "create spatial index sch1.idx on sch1.Person (name ASC)");
 
         assertCreateIndexEquals(
             buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED,
-            QueryIndex.DFLT_INLINE_SIZE, "name", true),
+                QueryIndex.DFLT_INLINE_SIZE, "name", true),
             "create index if not exists sch1.idx on sch1.Person (name)");
 
         // When we specify schema for the table and don't specify it for the index, resulting schema is table's
         assertCreateIndexEquals(
             buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.SORTED,
-            QueryIndex.DFLT_INLINE_SIZE,"name", false),
+                QueryIndex.DFLT_INLINE_SIZE, "name", false),
             "create index if not exists idx on sch1.Person (name dEsC)");
 
         assertCreateIndexEquals(
             buildCreateIndex("idx", "Person", "sch1", true, QueryIndexType.GEOSPATIAL,
-            QueryIndex.DFLT_INLINE_SIZE, "old", true, "name", false),
+                QueryIndex.DFLT_INLINE_SIZE, "old", true, "name", false),
             "create spatial index if not exists idx on Person (old, name desc)");
 
         // Schemas for index and table must match
@@ -593,6 +593,19 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         assertParseThrows("drop table", DbException.class, null);
         assertParseThrows("drop table if exists", DbException.class, null);
         assertParseThrows("drop table if exists schema2.", DbException.class, null);
+    }
+
+    /**
+     *
+     */
+    public void testParseTruncateTable() throws Exception {
+        // Schema that is not set defaults to default schema of connection which is sch1
+        assertTruncateTableEquals(buildTruncateTable("sch1", "Person"), "truncate table Person");
+        assertTruncateTableEquals(buildTruncateTable("sch1", "Person"), "truncate table sch1.Person");
+
+        assertParseThrows("truncate table", DbException.class, null);
+        assertParseThrows("truncate table uknown.Person", DbException.class, null);
+        assertParseThrows("truncate table missing", DbException.class, null);
     }
 
     /** */
@@ -722,7 +735,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         assertTrue(stmt instanceof GridSqlCreateIndex);
 
-        assertCreateIndexEquals(exp, (GridSqlCreateIndex) stmt);
+        assertCreateIndexEquals(exp, (GridSqlCreateIndex)stmt);
     }
 
     /**
@@ -735,7 +748,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         assertTrue(stmt instanceof GridSqlDropIndex);
 
-        assertDropIndexEquals(exp, (GridSqlDropIndex) stmt);
+        assertDropIndexEquals(exp, (GridSqlDropIndex)stmt);
     }
 
     /**
@@ -770,7 +783,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         assertTrue(stmt instanceof GridSqlCreateTable);
 
-        assertCreateTableEquals(exp, (GridSqlCreateTable) stmt);
+        assertCreateTableEquals(exp, (GridSqlCreateTable)stmt);
     }
 
     /**
@@ -908,7 +921,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         assertTrue(stmt instanceof GridSqlDropTable);
 
-        assertDropTableEquals(exp, (GridSqlDropTable) stmt);
+        assertDropTableEquals(exp, (GridSqlDropTable)stmt);
     }
 
     /**
@@ -929,6 +942,39 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         res.schemaName(schema);
         res.tableName(tbl);
         res.ifExists(ifExists);
+
+        return res;
+    }
+
+    /**
+     * Parse SQL and compare it to expected instance of TRUNCATE TABLE.
+     */
+    private void assertTruncateTableEquals(GridSqlTruncateTable exp, String sql) throws Exception {
+        Prepared prepared = parse(sql);
+
+        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+
+        assertTrue(stmt instanceof GridSqlTruncateTable);
+
+        assertTruncateTableEquals(exp, (GridSqlTruncateTable)stmt);
+    }
+
+    /**
+     * Test two instances of {@link GridSqlTruncateTable} for equality.
+     */
+    private static void assertTruncateTableEquals(GridSqlTruncateTable exp, GridSqlTruncateTable actual) {
+        assertEqualsIgnoreCase(exp.schemaName(), actual.schemaName());
+        assertEqualsIgnoreCase(exp.tableName(), actual.tableName());
+    }
+
+    /**
+     *
+     */
+    private static GridSqlTruncateTable buildTruncateTable(String schema, String tbl) {
+        GridSqlTruncateTable res = new GridSqlTruncateTable();
+
+        res.schemaName(schema);
+        res.tableName(tbl);
 
         return res;
     }
@@ -1072,7 +1118,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
     @QuerySqlFunction
     public static ResultSet table0(Connection c, String a, int b) throws SQLException {
-        return c.createStatement().executeQuery("select '" + a + "' as a, " +  b + " as b");
+        return c.createStatement().executeQuery("select '" + a + "' as a, " + b + " as b");
     }
 
     /**

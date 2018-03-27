@@ -70,7 +70,7 @@ import org.h2.jdbc.JdbcSQLException;
 import org.h2.value.DataType;
 
 /**
- * Tests for CREATE/DROP TABLE.
+ * Tests for CREATE/TRUNCATE/DROP TABLE.
  */
 public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /** Client node index. */
@@ -126,6 +126,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test that {@code CREATE TABLE} actually creates new cache, H2 table and type descriptor on all nodes.
+     *
      * @throws Exception if failed.
      */
     public void testCreateTable() throws Exception {
@@ -134,6 +135,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test that {@code CREATE TABLE} actually creates new cache, H2 table and type descriptor on all nodes.
+     *
      * @throws Exception if failed.
      */
     public void testCreateTableWithCacheGroup() throws Exception {
@@ -142,6 +144,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test that {@code CREATE TABLE} actually creates new cache, H2 table and type descriptor on all nodes.
+     *
      * @throws Exception if failed.
      */
     public void testCreateTableWithCacheGroupAndLegacyParamName() throws Exception {
@@ -151,6 +154,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that {@code CREATE TABLE} actually creates new cache from template,
      * H2 table and type descriptor on all nodes.
+     *
      * @throws Exception if failed.
      */
     public void testCreateTableWithWriteSyncMode() throws Exception {
@@ -160,6 +164,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that {@code CREATE TABLE} with reserved template cache name actually creates new {@code REPLICATED} cache,
      * H2 table and type descriptor on all nodes.
+     *
      * @throws Exception if failed.
      */
     public void testCreateTableReplicated() throws Exception {
@@ -169,6 +174,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that {@code CREATE TABLE} with reserved template cache name actually creates new {@code PARTITIONED} cache,
      * H2 table and type descriptor on all nodes.
+     *
      * @throws Exception if failed.
      */
     public void testCreateTablePartitioned() throws Exception {
@@ -178,6 +184,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that {@code CREATE TABLE} with reserved template cache name actually creates new {@code REPLICATED} cache,
      * H2 table and type descriptor on all nodes.
+     *
      * @throws Exception if failed.
      */
     public void testCreateTableReplicatedCaseInsensitive() throws Exception {
@@ -187,6 +194,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that {@code CREATE TABLE} with reserved template cache name actually creates new {@code PARTITIONED} cache,
      * H2 table and type descriptor on all nodes.
+     *
      * @throws Exception if failed.
      */
     public void testCreateTablePartitionedCaseInsensitive() throws Exception {
@@ -196,6 +204,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that {@code CREATE TABLE} with reserved template cache name actually creates new {@code PARTITIONED} cache,
      * H2 table and type descriptor on all nodes, when no cache template name is given.
+     *
      * @throws Exception if failed.
      */
     public void testCreateTableNoTemplate() throws Exception {
@@ -213,6 +222,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test that {@code CREATE TABLE} with given write sync mode actually creates new cache as needed.
+     *
      * @throws Exception if failed.
      */
     public void testFullSyncWriteMode() throws Exception {
@@ -222,6 +232,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test that {@code CREATE TABLE} with given write sync mode actually creates new cache as needed.
+     *
      * @throws Exception if failed.
      */
     public void testPrimarySyncWriteMode() throws Exception {
@@ -231,6 +242,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test that {@code CREATE TABLE} with given write sync mode actually creates new cache as needed.
+     *
      * @throws Exception if failed.
      */
     public void testFullAsyncWriteMode() throws Exception {
@@ -289,6 +301,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test that attempting to create a cache with a pre-existing name yields an error.
+     *
      * @throws Exception if failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
@@ -298,7 +311,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         try {
             GridTestUtils.assertThrows(null, new Callable<Object>() {
                 @Override public Object call() throws Exception {
-                    doTestCustomNames("new", null, null);return null;
+                    doTestCustomNames("new", null, null);
+                    return null;
                 }
             }, IgniteSQLException.class, "Table already exists: NameTest");
         }
@@ -309,6 +323,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test that {@code CREATE TABLE} with given write sync mode actually creates new cache as needed.
+     *
      * @throws Exception if failed.
      */
     public void testPlainKey() throws Exception {
@@ -318,6 +333,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that appending supplied arguments to {@code CREATE TABLE} results in creating new cache that has settings
      * as expected
+     *
      * @param cacheName Cache name, or {@code null} if the name generated by default should be used.
      * @param keyTypeName Key type name, or {@code null} if the name generated by default should be used.
      * @param valTypeName Value type name, or {@code null} if the name generated by default should be used.
@@ -383,6 +399,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Perform a check on given table name considering case sensitivity.
+     *
      * @param tblName Table name to check.
      * @param sensitive Whether table should be created w/case sensitive name or not.
      */
@@ -408,6 +425,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Check that given variant of table name works for DML and DDL contexts, as well as selects.
+     *
      * @param tblNameToCreate Name of the table to use in {@code CREATE TABLE}.
      * @param checkedTblName Table name to use in actual checks.
      */
@@ -425,6 +443,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Check that given variant of table name does not work for DML and DDL contexts, as well as selects.
+     *
      * @param tblNameToCreate Name of the table to use in {@code CREATE TABLE}.
      * @param checkedTblName Table name to use in actual checks.
      */
@@ -443,6 +462,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Check that given (non DDL) command throws an exception as expected.
+     *
      * @param checkedTblName Table name to expect in error message.
      * @param cmd Command to execute.
      */
@@ -466,6 +486,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Check that given DDL command throws an exception as expected.
+     *
      * @param checkedTblName Table name to expect in error message.
      * @param cmd Command to execute.
      */
@@ -484,6 +505,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that {@code CREATE TABLE} with given template cache name actually creates new cache,
      * H2 table and type descriptor on all nodes, optionally with cache type check.
+     *
      * @param tplCacheName Template cache name.
      * @param cacheGrp Cache group name, or {@code null} if no group is set.
      * @param cacheMode Expected cache mode, or {@code null} if no check is needed.
@@ -498,6 +520,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     /**
      * Test that {@code CREATE TABLE} with given template cache name actually creates new cache,
      * H2 table and type descriptor on all nodes, optionally with cache type check.
+     *
      * @param tplCacheName Template cache name.
      * @param cacheGrp Cache group name, or {@code null} if no group is set.
      * @param cacheMode Expected cache mode, or {@code null} if no check is needed.
@@ -648,7 +671,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test that attempting to {@code CREATE TABLE} that already exists does not yield an error if the statement
-     *     contains {@code IF NOT EXISTS} clause.
+     * contains {@code IF NOT EXISTS} clause.
+     *
      * @throws Exception if failed.
      */
     public void testCreateTableIfNotExists() throws Exception {
@@ -663,6 +687,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test that attempting to {@code CREATE TABLE} that already exists yields an error.
+     *
      * @throws Exception if failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
@@ -683,7 +708,27 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
     }
 
     /**
+     * Test that {@code TRUNCATE TABLE} clears cache.
+     *
+     * @throws Exception if failed.
+     */
+    public void testTruncateTable() throws Exception {
+        execute("CREATE TABLE IF NOT EXISTS A (a int primary key, b varchar)");
+
+        execute("INSERT INTO A values (1, 'B')");
+
+        assertEquals(1, client().cache(QueryUtils.createTableCacheName(QueryUtils.DFLT_SCHEMA, "A"))
+            .query(new SqlFieldsQuery("SELECT * FROM A")).getAll().size());
+
+        execute("TRUNCATE TABLE A");
+
+        assertEquals(0, client().cache(QueryUtils.createTableCacheName(QueryUtils.DFLT_SCHEMA, "A"))
+            .query(new SqlFieldsQuery("SELECT * FROM A")).getAll().size());
+    }
+
+    /**
      * Test that {@code DROP TABLE} actually removes specified cache and type descriptor on all nodes.
+     *
      * @throws Exception if failed.
      */
     public void testDropTable() throws Exception {
@@ -691,14 +736,24 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             " \"name\" varchar, \"surname\" varchar, \"age\" int, PRIMARY KEY (\"id\", \"city\")) WITH " +
             "\"template=cache\"");
 
+        for (int i = 0; i < 4; i++) {
+            IgniteEx node = grid(i);
+
+            assertNotNull(node.cache(QueryUtils.createTableCacheName(QueryUtils.DFLT_SCHEMA, "Person")));
+
+            QueryTypeDescriptorImpl desc = type(node, QueryUtils.createTableCacheName(QueryUtils.DFLT_SCHEMA, "Person"), "Person");
+
+            assertNotNull(desc);
+        }
+
         execute("DROP TABLE \"Person\"");
 
         for (int i = 0; i < 4; i++) {
             IgniteEx node = grid(i);
 
-            assertNull(node.cache("Person"));
+            assertNull(node.cache(QueryUtils.createTableCacheName(QueryUtils.DFLT_SCHEMA, "Person")));
 
-            QueryTypeDescriptorImpl desc = type(node, "Person", "Person");
+            QueryTypeDescriptorImpl desc = type(node, QueryUtils.createTableCacheName(QueryUtils.DFLT_SCHEMA, "Person"), "Person");
 
             assertNull(desc);
         }
@@ -706,6 +761,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test that attempting to execute {@code DROP TABLE} via API of cache being dropped yields an error.
+     *
      * @throws Exception if failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
@@ -729,7 +785,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test that attempting to {@code DROP TABLE} that does not exist does not yield an error if the statement contains
-     *     {@code IF EXISTS} clause.
+     * {@code IF EXISTS} clause.
      *
      * @throws Exception if failed.
      */
@@ -739,6 +795,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test that attempting to {@code DROP TABLE} that does not exist yields an error.
+     *
      * @throws Exception if failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
@@ -754,22 +811,24 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Check that {@code DROP TABLE} for caches not created with {@code CREATE TABLE} yields an error.
+     *
      * @throws Exception if failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testDropNonDynamicTable() throws Exception {
         GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                execute("DROP TABLE PUBLIC.\"Integer\"");
+                @Override public Object call() throws Exception {
+                    execute("DROP TABLE PUBLIC.\"Integer\"");
 
-                return null;
-            }
-        }, IgniteSQLException.class,
-        "Only cache created with CREATE TABLE may be removed with DROP TABLE [cacheName=cache_idx_2]");
+                    return null;
+                }
+            }, IgniteSQLException.class,
+            "Only cache created with CREATE TABLE may be removed with DROP TABLE [cacheName=cache_idx_2]");
     }
 
     /**
      * Test that attempting to destroy via cache API a cache created via SQL yields an error.
+     *
      * @throws Exception if failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
@@ -779,18 +838,19 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
             "\"template=cache\"");
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                client().destroyCache(cacheName("Person"));
+                @Override public Object call() throws Exception {
+                    client().destroyCache(cacheName("Person"));
 
-                return null;
-            }
-        }, CacheException.class,
-        "Only cache created with cache API may be removed with direct call to destroyCache");
+                    return null;
+                }
+            }, CacheException.class,
+            "Only cache created with cache API may be removed with direct call to destroyCache");
     }
 
     /**
      * Test that attempting to start a node that has a cache with the name already present in the grid and whose
      * SQL flag does not match that of cache with the same name that is already started, yields an error.
+     *
      * @throws Exception if failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
@@ -812,6 +872,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Tests index name conflict check in discovery thread.
+     *
      * @throws Exception if failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
@@ -841,6 +902,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Tests table name conflict check in {@link DdlStatementsProcessor}.
+     *
      * @throws Exception if failed.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
@@ -848,7 +910,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
         execute(grid(0), "CREATE TABLE \"Person\" (id int primary key, name varchar)");
 
         GridTestUtils.assertThrows(null, new Callable<Object>() {
-            @Override  public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 execute(client(), "CREATE TABLE \"Person\" (id int primary key, name varchar)");
 
                 return null;
@@ -939,7 +1001,6 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
         assertEquals(DATA_REGION_NAME, ccfg.getDataRegionName());
     }
-
 
     /**
      * Test various cases of affinity key column specification.
@@ -1208,6 +1269,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test behavior when neither key nor value should be wrapped.
+     *
      * @throws SQLException if failed.
      */
     public void testNoWrap() throws SQLException {
@@ -1216,6 +1278,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test behavior when only key is wrapped.
+     *
      * @throws SQLException if failed.
      */
     public void testKeyWrap() throws SQLException {
@@ -1224,6 +1287,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test behavior when only value is wrapped.
+     *
      * @throws SQLException if failed.
      */
     public void testValueWrap() throws SQLException {
@@ -1232,6 +1296,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test behavior when both key and value is wrapped.
+     *
      * @throws SQLException if failed.
      */
     public void testKeyAndValueWrap() throws SQLException {
@@ -1240,6 +1305,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test behavior for given combination of wrap flags.
+     *
      * @param wrapKey Whether key wrap should be enforced.
      * @param wrapVal Whether value wrap should be enforced.
      * @throws SQLException if failed.
@@ -1339,6 +1405,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Check that dynamic cache created with {@code CREATE TABLE} is correctly configured affinity wise.
+     *
      * @param cacheName Cache name to check.
      * @param affKeyFieldName Expected affinity key field name.
      */
@@ -1366,6 +1433,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Execute {@code CREATE TABLE} w/given params.
+     *
      * @param params Engine parameters.
      */
     private void createTableWithParams(final String params) {
@@ -1394,6 +1462,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Execute {@code CREATE TABLE} w/given params expecting a particular error.
+     *
      * @param params Engine parameters.
      * @param expErrMsg Expected error message.
      */
@@ -1410,6 +1479,7 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Test that arbitrary command yields specific error.
+     *
      * @param cmd Command.
      * @param expErrMsg Expected error message.
      */
@@ -1431,8 +1501,8 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testDropTableNotPublicSchema() throws Exception {
-       assertDdlCommandThrows("DROP TABLE \"cache_idx\".\"Person\"",
-           "DROP TABLE can only be executed on PUBLIC schema.");
+        assertDdlCommandThrows("DROP TABLE \"cache_idx\".\"Person\"",
+            "DROP TABLE can only be executed on PUBLIC schema.");
     }
 
     /**
@@ -1477,11 +1547,12 @@ public class H2DynamicTableSelfTest extends AbstractSchemaSelfTest {
 
     /**
      * Check that a property in given descriptor is present and has parameters as expected.
+     *
      * @param desc Descriptor.
      * @param name Property name.
      * @param type Expected property type.
      * @param isKey {@code true} if the property is expected to belong to key, {@code false} is it's expected to belong
-     *     to value.
+     * to value.
      */
     private void assertProperty(QueryTypeDescriptorImpl desc, String name, Class<?> type, boolean isKey) {
         GridQueryProperty p = desc.property(name);

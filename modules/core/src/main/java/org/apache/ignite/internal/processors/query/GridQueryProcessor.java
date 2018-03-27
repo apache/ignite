@@ -670,6 +670,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /**
      * Create type descriptors from schema and initialize indexing for given cache.<p>
      * Use with {@link #busyLock} where appropriate.
+     *
      * @param cctx Cache context.
      * @param schema Initial schema.
      * @throws IgniteCheckedException If failed.
@@ -747,7 +748,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                     SchemaAbstractOperation op0 = op.proposeMessage().operation();
 
                                     if (op0 instanceof SchemaIndexCreateOperation) {
-                                        SchemaIndexCreateOperation opCreate = (SchemaIndexCreateOperation) op0;
+                                        SchemaIndexCreateOperation opCreate = (SchemaIndexCreateOperation)op0;
 
                                         QueryTypeDescriptorImpl typeDesc = tblTypMap.get(opCreate.tableName());
 
@@ -757,7 +758,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                                             typeDesc);
                                     }
                                     else if (op0 instanceof SchemaIndexDropOperation) {
-                                        SchemaIndexDropOperation opDrop = (SchemaIndexDropOperation) op0;
+                                        SchemaIndexDropOperation opDrop = (SchemaIndexDropOperation)op0;
 
                                         QueryTypeDescriptorImpl typeDesc = idxTypMap.get(opDrop.indexName());
 
@@ -907,7 +908,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (!dscoMsgIdHist.add(id)) {
             U.warn(log, "Received duplicate schema custom discovery message (will ignore) [opId=" +
-                msg.operation().id() + ", msg=" + msg  +']');
+                msg.operation().id() + ", msg=" + msg + ']');
 
             return;
         }
@@ -926,7 +927,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
         else
             U.warn(log, "Received unsupported schema custom discovery message (will ignore) [opId=" +
-                msg.operation().id() + ", msg=" + msg  +']');
+                msg.operation().id() + ", msg=" + msg + ']');
     }
 
     /**
@@ -944,7 +945,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         String cacheName = op.cacheName();
 
         if (op instanceof SchemaIndexCreateOperation) {
-            SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation) op;
+            SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
 
             QueryIndex idx = op0.index();
 
@@ -982,7 +983,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             }
         }
         else if (op instanceof SchemaIndexDropOperation) {
-            SchemaIndexDropOperation op0 = (SchemaIndexDropOperation) op;
+            SchemaIndexDropOperation op0 = (SchemaIndexDropOperation)op;
 
             String idxName = op0.indexName();
 
@@ -1344,7 +1345,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     idxs.put(idxKey, idxDesc);
                 }
                 else if (op instanceof SchemaIndexDropOperation) {
-                    SchemaIndexDropOperation op0 = (SchemaIndexDropOperation) op;
+                    SchemaIndexDropOperation op0 = (SchemaIndexDropOperation)op;
 
                     QueryUtils.processDynamicIndexChange(op0.indexName(), null, type);
 
@@ -1547,7 +1548,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
 
         if (!res && !ifNotExists)
-            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS,  entity.getTableName());
+            throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_EXISTS, entity.getTableName());
     }
 
     /**
@@ -1571,6 +1572,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         if (!res && !ifExists)
             throw new SchemaOperationException(SchemaOperationException.CODE_TABLE_NOT_FOUND, tblName);
+    }
+
+    /**
+     * Truncate table's cache.
+     *
+     * @param cacheName Cache name.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void dynamicTableTruncate(String cacheName) throws IgniteCheckedException {
+        GridCacheAdapter cache = ctx.cache().internalCache(cacheName);
+
+        if (cache == null)
+            throw new SchemaOperationException(SchemaOperationException.CODE_CACHE_NOT_FOUND, cacheName);
+
+        cache.clear();
     }
 
     /**
@@ -1700,7 +1716,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param key Key.
      * @param val Value.
      * @return {@code True} if this key-value pair belongs to expected cache/table, {@code false} otherwise or
-     *     if cache or table doesn't exist.
+     * if cache or table doesn't exist.
      * @throws IgniteCheckedException If failed.
      */
     @SuppressWarnings("ConstantConditions")
@@ -1997,7 +2013,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param cliCtx Client context.
      * @param keepBinary Keep binary flag.
      * @param failOnMultipleStmts If {@code true} the method must throws exception when query contains
-     *      more then one SQL statement.
+     * more then one SQL statement.
      * @return Cursor.
      */
     @SuppressWarnings("unchecked")
@@ -2027,18 +2043,18 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         try {
             IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo =
                 new IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>>() {
-                @Override public List<FieldsQueryCursor<List<?>>> applyx() throws IgniteCheckedException {
-                    GridQueryCancel cancel = new GridQueryCancel();
+                    @Override public List<FieldsQueryCursor<List<?>>> applyx() throws IgniteCheckedException {
+                        GridQueryCancel cancel = new GridQueryCancel();
 
-                    List<FieldsQueryCursor<List<?>>> res =
-                        idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, cancel);
+                        List<FieldsQueryCursor<List<?>>> res =
+                            idx.querySqlFields(schemaName, qry, cliCtx, keepBinary, failOnMultipleStmts, cancel);
 
-                    if (cctx != null)
-                        sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx);
+                        if (cctx != null)
+                            sendQueryExecutedEvent(qry.getSql(), qry.getArgs(), cctx);
 
-                    return res;
-                }
-            };
+                        return res;
+                    }
+                };
 
             return executeQuery(GridCacheQueryType.SQL_FIELDS, qry.getSql(), cctx, clo, true);
         }
@@ -2131,7 +2147,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param keepBinary Keep binary flag.
      * @return Cursor.
      */
-    public <K, V> QueryCursor<Cache.Entry<K,V>> querySql(final GridCacheContext<?,?> cctx, final SqlQuery qry,
+    public <K, V> QueryCursor<Cache.Entry<K, V>> querySql(final GridCacheContext<?, ?> cctx, final SqlQuery qry,
         boolean keepBinary) {
         if (qry.isReplicatedOnly() && qry.getPartitions() != null)
             throw new CacheException("Partitions are not supported in replicated only mode.");
@@ -2152,7 +2168,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param keepBinary Keep binary flag.
      * @return Cursor.
      */
-    private <K,V> QueryCursor<Cache.Entry<K,V>> queryDistributedSql(final GridCacheContext<?,?> cctx,
+    private <K, V> QueryCursor<Cache.Entry<K, V>> queryDistributedSql(final GridCacheContext<?, ?> cctx,
         final SqlQuery qry, final boolean keepBinary) {
         checkxEnabled();
 
@@ -2285,6 +2301,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * Entry point for add column procedure.
+     *
      * @param schemaName Schema name.
      * @param tblName Target table name.
      * @param cols Columns to add.
@@ -2445,7 +2462,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         assert val != null;
 
         if (log.isDebugEnabled())
-            log.debug("Remove [cacheName=" + cctx.name() + ", key=" + val.key()+ ", val=" + val.value() + "]");
+            log.debug("Remove [cacheName=" + cctx.name() + ", key=" + val.key() + ", val=" + val.value() + "]");
 
         if (idx == null)
             return;
@@ -2527,6 +2544,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
     /**
      * Get type descriptor for the given cache and table name.
+     *
      * @param cacheName Cache name.
      * @param tblName Table name.
      * @return Type (if any).
@@ -2755,7 +2773,6 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
     }
 
-
     /**
      * @return Value object context.
      */
@@ -2914,10 +2931,10 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                             // thread under load. Hence, moving short-lived operation to separate worker.
                             new IgniteThread(ctx.igniteInstanceName(), "schema-circuit-breaker-" + op.id(),
                                 new Runnable() {
-                                @Override public void run() {
-                                    onSchemaPropose(nextOp.proposeMessage());
-                                }
-                            }).start();
+                                    @Override public void run() {
+                                        onSchemaPropose(nextOp.proposeMessage());
+                                    }
+                                }).start();
                         }
                     }
                 }
