@@ -21,10 +21,10 @@ import com.beust.jcommander.Parameter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Nullable;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.yardstick.IgniteBenchmarkArguments;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Represents command line arguments that are specific to upload benchmarks.
