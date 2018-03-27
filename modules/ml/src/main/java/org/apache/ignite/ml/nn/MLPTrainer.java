@@ -85,11 +85,14 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
             new SimpleLabeledDatasetDataBuilder<>(featureExtractor, lbExtractor)
         )) {
             for (int i = 0; i < maxIterations; i += locIterations) {
+
                 MultilayerPerceptron finalMdl = mdl;
                 int finalI = i;
+
                 List<P> totUp = dataset.compute(
                     data -> {
                         P update = updater.init(finalMdl, loss);
+
                         MultilayerPerceptron mlp = Utils.copy(finalMdl);
 
                         if (data.getFeatures() != null) {
@@ -161,10 +164,13 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
      */
     static double[] batch(double[] data, int[] rows, int totalRows) {
         int cols = data.length / totalRows;
+
         double[] res = new double[cols * rows.length];
+
         for (int i = 0; i < rows.length; i++)
             for (int j = 0; j < cols; j++)
                 res[j * rows.length + i] = data[j * totalRows + rows[i]];
+
         return res;
     }
 }
