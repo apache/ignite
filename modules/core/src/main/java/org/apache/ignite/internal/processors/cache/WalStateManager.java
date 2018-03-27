@@ -50,7 +50,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -353,9 +352,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 }
             }
 
-            if (hasOwning && !grp.walEnabled())
+            if (hasOwning && !grp.localWalEnabled())
                 grpsToEnableWal.add(grp.groupId());
-            else if (!hasOwning && grp.walEnabled())
+            else if (!hasOwning && grp.localWalEnabled())
                 grpsToDisableWal.add(grp.groupId());
         }
 
@@ -371,10 +370,10 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         }
 
         for (Integer grpId : grpsToEnableWal)
-            cctx.cache().cacheGroup(grpId).walEnabled(true);
+            cctx.cache().cacheGroup(grpId).localWalEnabled(true);
 
         for (Integer grpId : grpsToDisableWal)
-            cctx.cache().cacheGroup(grpId).walEnabled(false);
+            cctx.cache().cacheGroup(grpId).localWalEnabled(false);
     }
 
     /**
@@ -505,7 +504,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                         "no longer exist: " + msg.caches().keySet());
                 }
                 else {
-                    if (F.eq(msg.enable(), grpCtx.walEnabled()))
+                    if (F.eq(msg.enable(), grpCtx.globalWalEnabled()))
                         // Nothing changed -> no-op.
                         res = new WalStateResult(msg, false);
                     else {
@@ -518,7 +517,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                                 cpFut.beginFuture().get();
 
                                 if (msg.enable()) {
-                                    grpCtx.walEnabled(true);
+                                    grpCtx.globalWalEnabled(true);
 
                                     // Enable: it is enough to release cache operations once mark is finished because
                                     // not-yet-flushed dirty pages have been logged.
@@ -539,7 +538,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
                                     // WAL state is persisted after checkpoint if finished. Otherwise in case of crash
                                     // and restart we will think that WAL is enabled, but data might be corrupted.
-                                    grpCtx.walEnabled(false);
+                                    grpCtx.globalWalEnabled(false);
                                 }
                             }
                             catch (Exception e) {
