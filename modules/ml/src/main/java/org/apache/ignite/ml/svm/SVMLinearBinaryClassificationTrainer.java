@@ -77,7 +77,6 @@ public class SVMLinearBinaryClassificationTrainer<K, V>
             for (int i = 0; i < this.getAmountOfIterations(); i++) {
                 Vector deltaWeights = calculateUpdates(weights, dataset);
                 weights = weights.plus(deltaWeights); // creates new vector
-
             }
         } catch (Exception e) {
             throw new RuntimeException(e);

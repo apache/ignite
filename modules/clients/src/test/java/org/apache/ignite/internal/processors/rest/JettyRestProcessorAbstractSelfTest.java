@@ -281,13 +281,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param content Content to check.
      * @param err Error message.
      */
-    private void assertResponseContainsError(String content, String err) throws IOException {
+    protected void assertResponseContainsError(String content, String err) throws IOException {
         assertFalse(F.isEmpty(content));
         assertNotNull(err);
 
         JsonNode node = JSON_MAPPER.readTree(content);
 
-        assertEquals(STATUS_FAILED, node.get("successStatus").asInt());
+        assertTrue(node.get("successStatus").asInt() != STATUS_SUCCESS);
         assertTrue(node.get("response").isNull());
         assertTrue(node.get("error").asText().contains(err));
     }
