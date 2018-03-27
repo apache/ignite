@@ -84,47 +84,61 @@ public class MLPTrainer<P extends Serializable> implements MultiLabelDatasetTrai
             new EmptyContextBuilder<>(),
             new SimpleLabeledDatasetDataBuilder<>(featureExtractor, lbExtractor)
         )) {
-
-            for (int i = 0; i < maxIterations; i+=locIterations) {
+            for (int i = 0; i < maxIterations; i += locIterations) {
                 MultilayerPerceptron finalMdl = mdl;
                 int finalI = i;
                 List<P> totUp = dataset.compute(
-                        data -> {
-                            P update = updater.init(finalMdl, loss);
+                    data -> {
+                        P update = updater.init(finalMdl, loss);
+                        MultilayerPerceptron mlp = Utils.copy(finalMdl);
 
-                            MultilayerPerceptron mlp = Utils.copy(finalMdl);
-                            if (data.getFeatures() != null) {
-                                List<P> updates = new ArrayList<>();
-                                for (int j = 0; j < locIterations; j++) {
+                        if (data.getFeatures() != null) {
+                            List<P> updates = new ArrayList<>();
 
-                                    int[] rows = Utils.selectKDistinct(data.getRows(), Math.min(batchSize, data.getRows()), new Random(seed ^ (finalI * j)));
+                            for (int locStep = 0; locStep < locIterations; locStep++) {
+                                int[] rows = Utils.selectKDistinct(
+                                    data.getRows(),
+                                    Math.min(batchSize, data.getRows()),
+                                    new Random(seed ^ (finalI * locStep))
+                                );
 
-                                    Matrix inputs = new DenseLocalOnHeapMatrix(batch(data.getFeatures(), rows, data.getRows()), rows.length, 0);
-                                    Matrix groundTruth = new DenseLocalOnHeapMatrix(batch(data.getLabels(), rows, data.getRows()), rows.length, 0);
+                                double[] inputsBatch = batch(data.getFeatures(), rows, data.getRows());
+                                double[] groundTruthBatch = batch(data.getLabels(), rows, data.getRows());
 
-                                    update = updater.calculateNewUpdate(mlp, update, j, inputs.transpose(), groundTruth.transpose());
-                                    mlp = updater.update(mlp, update);
-                                    updates.add(update);
-                                }
+                                Matrix inputs = new DenseLocalOnHeapMatrix(inputsBatch, rows.length, 0);
+                                Matrix groundTruth = new DenseLocalOnHeapMatrix(groundTruthBatch, rows.length, 0);
 
-                                List<P> res = new ArrayList<>();
-                                res.add(updatesStgy.locStepUpdatesReducer().apply(updates));
-                                return res;
+                                update = updater.calculateNewUpdate(
+                                    mlp,
+                                    update,
+                                    locStep,
+                                    inputs.transpose(),
+                                    groundTruth.transpose()
+                                );
+
+                                mlp = updater.update(mlp, update);
+                                updates.add(update);
                             }
 
-                            return null;
-                        },
-                        (a, b) -> {
-                            if (a == null)
-                                return b;
-                            else if (b == null)
-                                return a;
-                            else {
-                                a.addAll(b);
-                                return a;
-                            }
+                            List<P> res = new ArrayList<>();
+                            res.add(updatesStgy.locStepUpdatesReducer().apply(updates));
+
+                            return res;
                         }
-                    );
+
+                        return null;
+                    },
+                    (a, b) -> {
+                        if (a == null)
+                            return b;
+                        else if (b == null)
+                            return a;
+                        else {
+                            a.addAll(b);
+                            return a;
+                        }
+                    }
+                );
 
                 P update = updatesStgy.allUpdatesReducer().apply(totUp);
                 mdl = updater.update(mdl, update);
