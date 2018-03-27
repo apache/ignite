@@ -15,7 +15,27 @@
  * limitations under the License.
  */
 
-page-queries {
+queries-notebook {
+    // TODO: Delete this breadcrumbs styles after template refactoring to new design.
+    .notebooks-top {
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+
+        breadcrumbs {
+            padding-left: 0;
+
+            .breadcrumbs__home {
+                margin-left: 0 !important;
+            }
+        }
+
+        cluster-selector {
+            margin-left: 30px;
+            display: inline-flex;
+        }
+    }
+
     .docs-content > header {
         margin: 0;
         margin-bottom: 30px;
@@ -25,8 +45,8 @@ page-queries {
         align-items: center;
 
         h1 {
-        	margin: 0;
-        	margin-right: 8px;
+            margin: 0;
+            margin-right: 8px;
         }
     }
 
