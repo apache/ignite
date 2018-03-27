@@ -44,7 +44,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -2150,7 +2149,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                 try {
                     if (!cctx.isNear() && cctx.shared().wal() != null)
-                        cctx.shared().wal().fsync(null);
+                        cctx.shared().wal().flush(null, false);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to write preloaded entries into write-ahead log: " + e, e);
