@@ -51,9 +51,22 @@ namespace ignite
             void Connect(const std::string& connectStr);
 
             /**
+             * Expect connection to be rejected by the node.
+             *
+             * @param connectStr Connection string.
+             * @return SQL State.
+             */
+            std::string ExpectConnectionReject(const std::string& connectStr);
+
+            /**
              * Disconnect.
              */
             void Disconnect();
+
+            /**
+             * Clean up.
+             */
+            void CleanUp();
 
             /**
              * Start additional with the specified name and config.
@@ -138,6 +151,22 @@ namespace ignite
              * @param expectSqlState Expected state.
              */
             void CheckSQLConnectionDiagnosticError(const std::string& expectSqlState);
+
+            /**
+             * Convert string to vector of SQLCHARs.
+             *
+             * @param qry Query.
+             * @return Corresponding vector.
+             */
+            static std::vector<SQLCHAR> MakeQuery(const std::string& qry);
+
+            /**
+             * Performs SQL query.
+             *
+             * @param qry Query.
+             * @return Result.
+             */
+            SQLRETURN ExecQuery(const std::string& qry);
 
             /** ODBC Environment. */
             SQLHENV env;

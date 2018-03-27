@@ -77,8 +77,6 @@ struct AttributesTestSuiteFixture : odbc::OdbcTestSuite
      */
     ~AttributesTestSuiteFixture()
     {
-        Disconnect();
-
         Ignition::StopAll(true);
     }
 
