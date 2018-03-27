@@ -15,7 +15,8 @@
  * limitations under the License.
  */
 
-#include <time.h>
+#include <cstdio>
+#include <ctime>
 
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -95,8 +96,6 @@ namespace ignite
 
         static int rmFiles(const char *pathname, const struct stat *sbuf, int type, struct FTW *ftwb)
         {
-            std::cout << "Removing " << pathname << std::endl;
-
             remove(pathname);
 
             return 0;

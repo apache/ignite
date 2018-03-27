@@ -33,6 +33,7 @@ namespace ignite
 {
     namespace odbc
     {
+        class Environment;
         class Statement;
 
         /**
