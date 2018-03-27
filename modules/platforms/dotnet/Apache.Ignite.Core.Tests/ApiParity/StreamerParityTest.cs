@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Tests.ApiParity
         private static readonly string[] UnneededMembers =
         {
             "deployClass",
-            "perBatchBufferSize"
+            "perThreadBufferSize"
         };
 
         /** Known name mappings. */

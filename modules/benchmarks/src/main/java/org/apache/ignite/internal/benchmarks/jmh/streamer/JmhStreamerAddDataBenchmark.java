@@ -34,13 +34,17 @@ import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.NotNull;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.Threads;
+import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
@@ -52,9 +56,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 /**
  * DataStreamerImpl.addData(Collection) vs DataStreamerImpl.addData(Key, Value).
  */
-@State(Scope.Benchmark)
 @BenchmarkMode(Mode.AverageTime)
+@Fork(value = 1, jvmArgsAppend = {"-Xms1g", "-Xmx1g", "-server", "-XX:+AggressiveOpts", "-XX:MaxMetaspaceSize=256m"})
+@Measurement(iterations = 11)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
+@State(Scope.Benchmark)
+@Threads(3)
+@Warmup(iterations = 21)
 public class JmhStreamerAddDataBenchmark {
     /** Data amount. */
     private static final int DATA_AMOUNT = 7000;
@@ -125,7 +133,7 @@ public class JmhStreamerAddDataBenchmark {
     }
 
     /**
-     * Prepare collection with streaming data.
+     * Prepare and clean collection with streaming data.
      */
     @State(Scope.Thread)
     public static class StreamingData {
@@ -135,17 +143,17 @@ public class JmhStreamerAddDataBenchmark {
         Collection<AbstractMap.SimpleEntry<Integer, Integer>> streamingCol = new ArrayList<>(DATA_AMOUNT);
 
         /**
-         *
+         * Prepare collection.
          */
         @Setup(Level.Iteration)
         public void prepareCollection() {
             for (int i = 0; i < DATA_AMOUNT; i++)
-                streamingCol.add(new HashMap.SimpleEntry<>(ThreadLocalRandom.current().nextInt(DATA_AMOUNT),
-                    ThreadLocalRandom.current().nextInt(DATA_AMOUNT)));
+                streamingCol.add(new HashMap.SimpleEntry<>(ThreadLocalRandom.current().nextInt(),
+                    ThreadLocalRandom.current().nextInt()));
         }
 
         /**
-         *
+         * Clean collection after each test.
          */
         @TearDown(Level.Iteration)
         public void cleanCollection() {
@@ -165,6 +173,9 @@ public class JmhStreamerAddDataBenchmark {
 
     /**
      * Test addData(Collection).
+     *
+     * @param data Data that will be streamed.
+     * @param streamer Data loader.
      */
     @Benchmark
     public void addDataCollection(StreamingData data, DataStreamer streamer) {
@@ -173,6 +184,9 @@ public class JmhStreamerAddDataBenchmark {
 
     /**
      * Test addData(Key, Value).
+     *
+     * @param data Data that will be streamed.
+     * @param streamer Data loader.
      */
     @Benchmark
     public void addDataKeyValue(StreamingData data, DataStreamer streamer) {
@@ -181,21 +195,21 @@ public class JmhStreamerAddDataBenchmark {
     }
 
     /**
-     *
+     * @return Synchronization mode.
      */
     @NotNull protected CacheWriteSynchronizationMode writeSynchronizationMode() {
         return FULL_SYNC;
     }
 
     /**
-     *
+     * @return Atomicity mode.
      */
     @NotNull protected CacheAtomicityMode atomicityMode() {
         return TRANSACTIONAL;
     }
 
     /**
-     *
+     * @return Node amount.
      */
     protected int gridCnt() {
         return 3;
@@ -208,17 +222,7 @@ public class JmhStreamerAddDataBenchmark {
      */
     public static void main(String[] args) throws RunnerException {
         final Options options = new OptionsBuilder()
-            .threads(3)
             .include(JmhStreamerAddDataBenchmark.class.getSimpleName())
-            .measurementIterations(11)
-            .warmupIterations(21)
-            .forks(1)
-            .jvmArgs(
-                "-Xms1g",
-                "-Xmx1g",
-                "-server",
-                "-XX:+AggressiveOpts",
-                "-XX:MaxMetaspaceSize=256m")
             .build();
 
         new Runner(options).run();

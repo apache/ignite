@@ -71,7 +71,6 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -698,36 +697,28 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         enterBusy();
 
         try {
-            List<DataStreamerEntry> entriesPerThread;
-
             long threadId = Thread.currentThread().getId();
 
-            if (!threadBufMap.containsKey(threadId)) {
+            T2<IgniteCacheFutureImpl, List<DataStreamerEntry>> futEntriesPair;
+
+            if ((futEntriesPair = threadBufMap.remove(threadId)) == null) {
                 futPerThread = new IgniteCacheFutureImpl(new GridFutureAdapter());
 
-                entriesPerThread = new ArrayList<>(bufLdrSizePerThread);
+                futEntriesPair = new T2(futPerThread, new ArrayList<>(bufLdrSizePerThread));
 
                 futPerThread.internalFuture().listen(rmvActiveFut);
 
                 activeFuts.add(futPerThread.internalFuture());
-
-                threadBufMap.put(threadId, new T2(futPerThread, entriesPerThread));
             }
-            else {
-                T2<IgniteCacheFutureImpl, List<DataStreamerEntry>> futEntriesPair = threadBufMap.get(threadId);
-
+            else
                 futPerThread = futEntriesPair.get1();
 
-                entriesPerThread = futEntriesPair.get2();
-            }
+            futEntriesPair.get2().add(new DataStreamerEntry(key0, val0));
 
-            entriesPerThread.add(new DataStreamerEntry(key0, val0));
-
-            if (entriesPerThread.size() == bufLdrSizePerThread) {
-                loadData(entriesPerThread, futPerThread);
-
-                threadBufMap.remove(threadId);
-            }
+            if (futEntriesPair.get2().size() == bufLdrSizePerThread)
+                loadData(futEntriesPair.get2(), futEntriesPair.get1());
+            else
+                threadBufMap.put(threadId, futEntriesPair);
 
             return futPerThread;
         }
@@ -1283,15 +1274,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      */
     private void flushAllThreadsBufs() {
         for (long threadID : threadBufMap.keySet()) {
-            T2<IgniteCacheFutureImpl, List<DataStreamerEntry>> val = threadBufMap.get(threadID);
+            T2<IgniteCacheFutureImpl, List<DataStreamerEntry>> val = threadBufMap.remove(threadID);
 
-            while (val != null && !threadBufMap.remove(threadID, val))
-                val = threadBufMap.get(threadID);
-
-            if (val == null || val.get2().size() == 0)
-                continue;
-
-            loadData(val.get2(), val.get1());
+            if (val != null)
+                loadData(val.get2(), val.get1());
         }
     }
 

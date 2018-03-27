@@ -70,7 +70,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /** Test timeout. */
-    private long testTimeout = 3_000L;
+    private static final long TEST_TIMEOUT = 30_000L;
 
     /** Data amount. */
     private final static int DATA_AMOUNT = 4096;
@@ -150,11 +150,13 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     public void testFuturesAmountMultiThread() throws Exception {
         cnt = 0;
 
+        int threadsNum = 3;
+
         startGrids(2);
 
         IgniteDataStreamer<Integer, Integer> dataLdr = grid(0).dataStreamer(DEFAULT_CACHE_NAME);
 
-        int threadsNum = 3;
+        dataLdr.perThreadBufferSize(DATA_AMOUNT);
 
         final CountDownLatch l1 = new CountDownLatch(threadsNum);
 
@@ -162,7 +164,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                for (int i = 1; i <= DATA_AMOUNT; i++)
+                for (int i = 0; i < 2 * DATA_AMOUNT; i++)
                     uniFut.add(dataLdr.addData(i, i));
 
                 l1.countDown();
@@ -171,9 +173,9 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             }
         }, threadsNum);
 
-        l1.await(testTimeout, TimeUnit.MILLISECONDS);
+        l1.await(TEST_TIMEOUT, TimeUnit.MILLISECONDS);
 
-        final int futAmount = (DATA_AMOUNT / IgniteDataStreamer.DFLT_PER_THREAD_BUFFER_SIZE) * threadsNum;
+        final int futAmount = 2 * threadsNum;
 
         assertTrue(uniFut.size() == futAmount);
     }
@@ -198,12 +200,12 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                for (int i = 1; i < DATA_AMOUNT; i++)
+                for (int i = 0; i < DATA_AMOUNT - 1; i++)
                     dataLdr.addData(i, i);
 
                 l1.countDown();
 
-                l2.await(testTimeout, TimeUnit.MILLISECONDS);
+                l2.await(TEST_TIMEOUT, TimeUnit.MILLISECONDS);
 
                 dataLdr.addData(DATA_AMOUNT, DATA_AMOUNT);
 
@@ -211,7 +213,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             }
         }, threadsNum);
 
-        l1.await(testTimeout, TimeUnit.MILLISECONDS);
+        l1.await(TEST_TIMEOUT, TimeUnit.MILLISECONDS);
 
         final IgniteCache<Integer, Integer> cache = grid(1).cache(DEFAULT_CACHE_NAME);
 
@@ -223,7 +225,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             @Override public boolean apply() {
                 return cache.get(1) != null;
             }
-        }, 3_000L);
+        }, TEST_TIMEOUT);
 
         assertTrue(dataInCache);
     }
@@ -246,7 +248,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
 
         multithreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                for (int i = 1; i < bufSize; i++)
+                for (int i = 0; i < bufSize - 1; i++)
                     dataLdr.addData(i, i);
 
                 l1.countDown();
@@ -255,23 +257,23 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             }
         }, threadsNum);
 
-        l1.await(testTimeout, TimeUnit.MILLISECONDS);
+        l1.await(TEST_TIMEOUT, TimeUnit.MILLISECONDS);
 
         final IgniteCache<Integer, Integer> cache = grid(1).cache(DEFAULT_CACHE_NAME);
 
-        for (int i = 1; i < bufSize; i++)
+        for (int i = 0; i < bufSize - 1; i++)
             assertNull(cache.get(i));
 
         dataLdr.flush();
 
-        for (int i = 1; i < bufSize; i++)
+        for (int i = 0; i < bufSize - 1; i++)
             assertTrue(cache.get(i) == i);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testCloseFromAnotherThread() throws Exception{
+    public void testLoadingOnClose() throws Exception {
         cnt = 0;
 
         startGrids(2);
@@ -290,25 +292,13 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             }
         }, 1);
 
-        l1.await(testTimeout, TimeUnit.MILLISECONDS);
+        l1.await(TEST_TIMEOUT, TimeUnit.MILLISECONDS);
 
         final IgniteCache<Integer, Integer> cache = grid(1).cache(DEFAULT_CACHE_NAME);
 
         assertNull(cache.get(1));
 
-        final CountDownLatch l2 = new CountDownLatch(1);
-
-        multithreadedAsync(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                dataLdr.close();
-
-                l2.countDown();
-
-                return null;
-            }
-        }, 1);
-
-        l2.await(testTimeout, TimeUnit.MILLISECONDS);
+        dataLdr.close();
 
         assertNotNull(cache.get(1));
     }
@@ -316,7 +306,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testAddDataUponDataStreamerClosing() throws Exception {
+    public void testAddDataOnClosedStreamer() throws Exception {
         cnt = 0;
 
         startGrids(2);
@@ -337,7 +327,7 @@ public class DataStreamerImplSelfTest extends GridCommonAbstractTest {
             }
         }, 1);
 
-        l1.await(testTimeout, TimeUnit.MILLISECONDS);
+        l1.await(TEST_TIMEOUT, TimeUnit.MILLISECONDS);
 
         GridTestUtils.assertThrowsWithCause(new Callable<Object>() {
             @Override public Object call() throws Exception {
