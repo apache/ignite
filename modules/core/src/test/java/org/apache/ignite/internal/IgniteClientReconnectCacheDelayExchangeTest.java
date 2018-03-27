@@ -193,14 +193,15 @@ public class IgniteClientReconnectCacheDelayExchangeTest extends IgniteClientRec
             if (msg0 instanceof GridDhtPartitionsSingleMessage &&
                 ((GridDhtPartitionsAbstractMessage)msg0).exchangeId() == null) {
 
-                log.info("GridDhtPartitionsSingleMessage message [thread=" + Thread.currentThread().getName() +
+                log.info("DelayedSpi GridDhtPartitionsSingleMessage message [thread=" +
+                    Thread.currentThread().getName() +
                     ", msg=" + msg0 +
                     ", node.id=" + node.id() +
                     ']');
 
                 recordedMessages.putIfAbsent(node.id(), new Runnable() {
                     @Override public void run() {
-                        log.info("GridDhtPartitionsSingleMessage replayed: " + msg);
+                        log.info("DelayedSpi GridDhtPartitionsSingleMessage replayed: " + msg0);
 
                         TestCommunicationDelayedSpi.super.sendMessage(node, msg, ackClosure);
                     }

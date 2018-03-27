@@ -77,9 +77,12 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
 /**
  *
@@ -165,16 +168,51 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             lastAffVer = null;
 
         if ((state.transition() || !state.active()) &&
-            !DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg))
+            !DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg)) {
+            log.info("onDiscoveryEvent requiresCentralizedAffinityAssignment customMsg=" + customMsg);
             return;
+        }
 
-        if ((type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT) ||
+        String typeStr;
+        switch (type) {
+            case EVT_NODE_FAILED:
+                typeStr = "EVT_NODE_FAILED";
+                break;
+            case EVT_NODE_JOINED:
+                typeStr = "EVT_NODE_JOINED";
+                break;
+            case EVT_NODE_LEFT:
+                typeStr = "EVT_NODE_LEFT";
+                break;
+            case EVT_CLIENT_NODE_RECONNECTED:
+                typeStr = "EVT_CLIENT_NODE_RECONNECTED";
+                break;
+            case EVT_DISCOVERY_CUSTOM_EVT:
+                typeStr = "EVT_DISCOVERY_CUSTOM_EVT";
+                break;
+            default:
+                typeStr = String.valueOf(type);
+        }
+
+        if (type != EVT_NODE_METRICS_UPDATED)
+            log.info("onDiscoveryEvent lastAffVer=" + lastAffVer +
+                ", node=" + node +
+                ", topVer=" + topVer +
+                ", customMsg=" + customMsg +
+                ", clientNode=" + CU.clientNode(node) +
+                ", type=" + typeStr
+            );
+
+        if ((!CU.clientNode(node) && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT )) ||
             DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg)) {
+            log.info("onDiscoveryEvent before mux");
             synchronized (mux) {
                 assert lastAffVer == null || topVer.compareTo(lastAffVer) > 0 :
                     "lastAffVer=" + lastAffVer + ", topVer=" + topVer + ", customMsg=" + customMsg;
 
                 lastAffVer = topVer;
+                log.info("onDiscoveryEvent updated lastAffVer=" + lastAffVer);
+
             }
         }
     }
@@ -212,6 +250,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         // Skip message if affinity was already recalculated.
         boolean exchangeNeeded = lastAffVer == null || lastAffVer.equals(msg.topologyVersion());
 
+        log.info("onCustomEvent lastAffVer=" + lastAffVer + ", topologyVersion=" + msg.topologyVersion());
         msg.exchangeNeeded(exchangeNeeded);
 
         if (exchangeNeeded) {
@@ -307,8 +346,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
 
             try {
-                if (msg != null)
+                if (msg != null) {
+                    log.info("checkRebalanceState affinityChangeMessage=" + msg +
+                        ", top.lastTopologyChangeVersion=" + top.lastTopologyChangeVersion() +
+                        ", top.readyTopologyVersion=" + top.readyTopologyVersion() );
                     cctx.discovery().sendCustomEvent(msg);
+                }
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send affinity change message.", e);
@@ -967,10 +1010,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         final AffinityTopologyVersion topVer = exchFut.initialVersion();
 
-        if (log.isDebugEnabled()) {
-            log.debug("Process affinity change message [exchVer=" + topVer +
-                ", msgVer=" + msg.topologyVersion() + ']');
-        }
+        log.info("Process affinity change message [exchVer=" + topVer +
+            ", msgVer=" + msg.topologyVersion() + ']');
 
         final Map<Integer, Map<Integer, List<UUID>>> affChange = msg.assignmentChange();
 

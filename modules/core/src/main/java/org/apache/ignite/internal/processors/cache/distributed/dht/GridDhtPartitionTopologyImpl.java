@@ -1532,10 +1532,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 consistencyCheck();
 
-                if (log.isDebugEnabled()) {
-                    log.debug("Partition map after full update [grp=" + grp.cacheOrGroupName() +
-                        ", map=" + fullMapString() + ']');
-                }
+                log.info("Partition map after full update [grp=" + grp.cacheOrGroupName() +
+                    ", map=" + fullMapString() + ']');
+
 
                 if (changed)
                     ctx.exchange().scheduleResendPartitions();
@@ -1784,8 +1783,7 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                 consistencyCheck();
 
-                if (log.isDebugEnabled())
-                    log.debug("Partition map after single update [grp=" + grp.cacheOrGroupName() + ", map=" + fullMapString() + ']');
+                log.info("Partition map after single update [grp=" + grp.cacheOrGroupName() + ", map=" + fullMapString() + ']');
 
                 if (changed && exchId == null)
                     ctx.exchange().scheduleResendPartitions();
