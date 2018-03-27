@@ -543,6 +543,16 @@ public abstract class GridAbstractTest extends TestCase {
         // Will clean and re-create marshaller directory from scratch.
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
+
+        // If Ignite instance started using constructor flag we should check that no other different instances alive
+        if (startGrid) {
+            final String igniteInstanceName = getConfiguration().getIgniteInstanceName();
+
+            assert G.allGrids().stream().map(Ignite::name).allMatch(n -> n.equals(igniteInstanceName)) :
+                    "Not all Ignite instances stopped before tests execution";
+        }
+        else
+            assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution";
     }
 
     /**
@@ -587,8 +597,6 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (isFirstTest()) {
             info(">>> Starting test class: " + testClassDescription() + " <<<");
-
-            assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution";
 
             if (startGrid) {
                 IgniteConfiguration cfg = optimize(getConfiguration());
