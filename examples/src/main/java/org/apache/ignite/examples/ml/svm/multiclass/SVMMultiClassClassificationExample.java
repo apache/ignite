@@ -31,7 +31,6 @@ import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationPreprocessor;
 import org.apache.ignite.ml.preprocessing.normalization.NormalizationTrainer;
-import org.apache.ignite.ml.svm.SVMLinearBinaryClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationModel;
 import org.apache.ignite.ml.svm.SVMLinearMultiClassClassificationTrainer;
 import org.apache.ignite.thread.IgniteThread;
@@ -55,13 +54,13 @@ public class SVMMultiClassClassificationExample {
                 SVMMultiClassClassificationExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-                SVMLinearMultiClassClassificationTrainer<Integer, double[]> trainer = new SVMLinearMultiClassClassificationTrainer<>();
+                SVMLinearMultiClassClassificationTrainer trainer = new SVMLinearMultiClassClassificationTrainer();
 
                 SVMLinearMultiClassClassificationModel mdl = trainer.fit(
                     new CacheBasedDatasetBuilder<>(ignite, dataCache),
                     (k, v) -> Arrays.copyOfRange(v, 1, v.length),
-                    (k, v) -> v[0],
-                    5);
+                    (k, v) -> v[0]
+                );
 
                 System.out.println(">>> SVM Multi-class model");
                 System.out.println(mdl.toString());
@@ -77,8 +76,8 @@ public class SVMMultiClassClassificationExample {
                 SVMLinearMultiClassClassificationModel mdlWithNormalization = trainer.fit(
                     new CacheBasedDatasetBuilder<>(ignite, dataCache),
                     preprocessor,
-                    (k, v) -> v[0],
-                    5);
+                    (k, v) -> v[0]
+                );
 
                 System.out.println(">>> SVM Multi-class model with normalization");
                 System.out.println(mdlWithNormalization.toString());
