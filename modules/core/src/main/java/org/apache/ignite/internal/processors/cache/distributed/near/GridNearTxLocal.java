@@ -3894,9 +3894,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                         throw new GridClosureException(e);
                     }
 
-                    if (isRollbackOnly())
-                        throw new GridClosureException(new IgniteTxRollbackCheckedException(
-                            "Transaction has been rolled back: " + GridNearTxLocal.this));
+                    if (isRollbackOnly()) {
+                        if (timedOut())
+                            throw new GridClosureException(new IgniteTxTimeoutCheckedException(
+                                "Transaction has been timed out: " + GridNearTxLocal.this));
+                        else
+                            throw new GridClosureException(new IgniteTxRollbackCheckedException(
+                                "Transaction has been rolled back: " + GridNearTxLocal.this));
+                    }
 
                     return map;
                 }

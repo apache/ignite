@@ -454,9 +454,7 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
                         cntr2.add(1);
                     }
                     catch (CacheException e) {
-                        Class<?> cls = X.getCause(e).getClass();
-
-                        assertTrue(cls == TransactionTimeoutException.class || cls == TransactionRollbackException.class);
+                        assertEquals(TransactionTimeoutException.class, X.getCause(e).getClass());
 
                         cntr2.add(1);
                     }
