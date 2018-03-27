@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.datastructures;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
@@ -1236,7 +1237,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 GridCacheSemaphoreEx sem0 = new GridCacheSemaphoreImpl(name, key, cache);
 
                 //check Cluster state against semaphore state
-                if (val != null) {
+                if (val != null && failoverSafe) {
                     GridCacheSemaphoreState semState = (GridCacheSemaphoreState) val;
 
                     boolean updated = false;
@@ -1245,11 +1246,12 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
 
                     Integer permit = ((GridCacheSemaphoreState) val).getCount();
 
-                    for (UUID nodeId : waiters.keySet()) {
+                    for (UUID nodeId : new HashSet<>(waiters.keySet())) {
 
                         ClusterNode node = ctx.cluster().get().node(nodeId);
 
                         if (node == null) {
+
                             permit += waiters.get(nodeId);
 
                             waiters.remove(nodeId);
