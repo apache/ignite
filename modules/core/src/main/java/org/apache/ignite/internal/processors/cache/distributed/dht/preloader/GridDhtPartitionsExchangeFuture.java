@@ -1316,12 +1316,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                         releaseLatch.await(futTimeout, TimeUnit.MILLISECONDS);
 
                         if (log.isInfoEnabled())
-                            log.info("Finished waiting for distributed partitions release latch: " + releaseLatch);
+                            log.info("Finished waiting for partitions release latch: " + releaseLatch);
 
                         break;
                     }
                     catch (IgniteFutureTimeoutCheckedException e) {
-                        U.warn(log, "Unable to await release latch within timeout: " + releaseLatch);
+                        U.warn(log, "Unable to await partitions release latch within timeout: " + releaseLatch);
 
                         // Try to resend ack.
                         releaseLatch.countDown();
@@ -1329,7 +1329,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
             catch (IgniteCheckedException e) {
-                U.warn(log, "Stop waiting for release latch: " + e.getMessage());
+                U.warn(log, "Stop waiting for partitions release latch: " + e.getMessage());
             }
         }
     }
