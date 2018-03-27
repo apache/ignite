@@ -15,35 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.dht;
+package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
 
 /**
- * Tests explicit lock.
+ * Tests optimistic prepare on unstable topology.
  */
-public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
+public class TxOptimisticPrepareOnUnstableTopologyTest extends GridCommonAbstractTest {
     /** */
     public static final String CACHE_NAME = "part_cache";
 
@@ -81,12 +83,6 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
         ccfg.setBackups(2);
         ccfg.setCacheMode(PARTITIONED);
 
-        LruEvictionPolicy plc = new LruEvictionPolicy();
-        plc.setMaxSize(100000);
-
-        ccfg.setEvictionPolicy(plc);
-        ccfg.setOnheapCacheEnabled(true);
-
         c.setCacheConfiguration(ccfg);
 
         c.setClientMode(client);
@@ -94,87 +90,75 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
         return c;
     }
 
-    /** {@inheritDoc} */
-    @Override protected long getTestTimeout() {
-        return 60_000;
+    /**
+     *
+     */
+    public void testPrepareOnUnstableTopology() throws Exception {
+        for (TransactionIsolation isolation : TransactionIsolation.values()) {
+            doPrepareOnUnstableTopology(4, false, isolation, 0);
+            doPrepareOnUnstableTopology(4, true, isolation, 0);
+            doPrepareOnUnstableTopology(4, false, isolation, TimeUnit.DAYS.toMillis(1));
+            doPrepareOnUnstableTopology(4, true, isolation, TimeUnit.DAYS.toMillis(1));
+        }
     }
 
     /**
-     * @throws Exception If failed.
+     * @param keys Keys.
+     * @param testClient Test client.
+     * @param isolation Isolation.
+     * @param timeout Timeout.
      */
-    public void testExplicitLockOneKey() throws Exception {
-        checkExplicitLock(1, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testExplicitLockManyKeys() throws Exception {
-        checkExplicitLock(4, false);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testExplicitLockManyKeysWithClient() throws Exception {
-        checkExplicitLock(4, true);
-    }
-
-    /**
-     * @param keys Number of keys.
-     * @param testClient If {@code true} uses one client node.
-     * @throws Exception If failed.
-     */
-    public void checkExplicitLock(int keys, boolean testClient) throws Exception {
+    private void doPrepareOnUnstableTopology(int keys, boolean testClient, TransactionIsolation isolation,
+        long timeout) throws Exception {
         Collection<Thread> threads = new ArrayList<>();
 
         try {
             // Start grid 1.
-            IgniteEx grid1 = startGrid(1);
+            IgniteEx grid1 = startGrid(0);
 
             assertFalse(grid1.configuration().isClientMode());
 
-            threads.add(runCacheOperations(grid1.cachex(CACHE_NAME), keys));
+            threads.add(runCacheOperations(grid1, isolation, timeout, keys));
 
             TimeUnit.SECONDS.sleep(3L);
 
             client = testClient; // If test client start on node in client mode.
 
             // Start grid 2.
-            IgniteEx grid2 = startGrid(2);
+            IgniteEx grid2 = startGrid(1);
 
             assertEquals((Object)testClient, grid2.configuration().isClientMode());
 
             client = false;
 
-            threads.add(runCacheOperations(grid2.cachex(CACHE_NAME), keys));
+            threads.add(runCacheOperations(grid2, isolation, timeout, keys));
 
             TimeUnit.SECONDS.sleep(3L);
 
             // Start grid 3.
-            IgniteEx grid3 = startGrid(3);
+            IgniteEx grid3 = startGrid(2);
 
             assertFalse(grid3.configuration().isClientMode());
 
             if (testClient)
                 log.info("Started client node: " + grid3.name());
 
-            threads.add(runCacheOperations(grid3.cachex(CACHE_NAME), keys));
+            threads.add(runCacheOperations(grid3, isolation, timeout, keys));
 
             TimeUnit.SECONDS.sleep(3L);
 
             // Start grid 4.
-            IgniteEx grid4 = startGrid(4);
+            IgniteEx grid4 = startGrid(3);
 
             assertFalse(grid4.configuration().isClientMode());
 
-            threads.add(runCacheOperations(grid4.cachex(CACHE_NAME), keys));
+            threads.add(runCacheOperations(grid4, isolation, timeout, keys));
 
             TimeUnit.SECONDS.sleep(3L);
 
             stopThreads(threads);
 
-            for (int i = 1; i <= 4; i++) {
+            for (int i = 0; i < 4; i++) {
                 IgniteTxManager tm = ((IgniteKernal)grid(i)).internalCache(CACHE_NAME).context().tm();
 
                 assertEquals("txMap is not empty:" + i, 0, tm.idMapSize());
@@ -201,34 +185,36 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param cache Cache.
+     * @param node Node.
+     * @param isolation Isolation.
+     * @param timeout Timeout.
      * @param keys Number of keys.
      * @return Running thread.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    private Thread runCacheOperations(final IgniteInternalCache<Object,Object> cache, final int keys) {
+    private Thread runCacheOperations(Ignite node, TransactionIsolation isolation, long timeout, final int keys) {
         Thread t = new Thread() {
             @Override public void run() {
                 while (run) {
                     TreeMap<Integer, String> vals = generateValues(keys);
 
                     try {
-                        // Explicit lock.
-                        //cache.lock(vals.firstKey(), 0);
+                        try (Transaction tx = node.transactions().txStart(TransactionConcurrency.OPTIMISTIC, isolation,
+                            timeout, keys)){
 
-                        try {
+                            IgniteCache<Object, Object> cache = node.cache(CACHE_NAME);
+
                             // Put or remove.
-                            //if (ThreadLocalRandom.current().nextDouble(1) < 0.65)
+                            if (ThreadLocalRandom.current().nextDouble(1) < 0.65)
                                 cache.putAll(vals);
-//                            else
-//                                cache.removeAll(vals.keySet());
+                            else
+                                cache.removeAll(vals.keySet());
+
+                            tx.commit();
                         }
                         catch (Exception e) {
                             U.error(log(), "Failed cache operation.", e);
                         }
-//                        finally {
-//                            cache.unlock(vals.firstKey());
-//                        }
 
                         U.sleep(100);
                     }

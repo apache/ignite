@@ -30,6 +30,7 @@ import org.apache.ignite.internal.processors.cache.distributed.IgniteOptimisticT
 import org.apache.ignite.internal.processors.cache.distributed.IgnitePessimisticTxSuspendResumeTest;
 import org.apache.ignite.internal.processors.cache.persistence.IgnitePdsCacheAssignmentNodeRestartsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxLabelTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticPrepareOnUnstableTopologyTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackAsyncWithPersistenceTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNearCacheTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxRollbackOnTimeoutNoDeadlockDetectionTest;
@@ -67,6 +68,9 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(TxRollbackAsyncNearCacheTest.class);
         suite.addTestSuite(TxRollbackAsyncWithPersistenceTest.class);
         suite.addTestSuite(TxRollbackOnTopologyChangeTest.class);
+
+        // Prepare on unstable topology.
+        suite.addTestSuite(TxOptimisticPrepareOnUnstableTopologyTest.class);
 
         // TX label.
         suite.addTestSuite(TxLabelTest.class);

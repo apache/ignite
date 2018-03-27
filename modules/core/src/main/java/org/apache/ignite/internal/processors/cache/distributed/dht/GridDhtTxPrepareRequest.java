@@ -103,6 +103,9 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
     @GridDirectTransient
     private List<IgniteTxKey> nearWritesCacheMissed;
 
+    /** {@code True} if remote tx should skip adding itself to completed versions map on finish. */
+    private boolean skipCompletedVers;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -169,6 +172,8 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
         invalidateNearEntries = new BitSet(dhtWrites == null ? 0 : dhtWrites.size());
 
         nearNodeId = tx.nearNodeId();
+
+        skipCompletedVers = tx.xidVersion() == tx.nearXidVersion();
     }
 
     /**
@@ -290,6 +295,13 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
      */
     public Map<IgniteTxKey, GridCacheVersion> owned() {
         return owned;
+    }
+
+    /**
+     * @return {@code True} if remote tx should skip adding itself to completed versions map on finish.
+     */
+    public boolean skipCompletedVersion() {
+        return skipCompletedVers;
     }
 
     /**
@@ -460,6 +472,12 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 writer.incrementState();
 
+            case 32:
+                if (!writer.writeBoolean("skipCompletedVers", skipCompletedVers))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -572,6 +590,13 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
                 reader.incrementState();
 
+            case 32:
+                skipCompletedVers = reader.readBoolean("skipCompletedVers");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
         }
 
         return reader.afterMessageRead(GridDhtTxPrepareRequest.class);
@@ -584,6 +609,6 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 32;
+        return 33;
     }
 }
