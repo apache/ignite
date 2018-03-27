@@ -412,8 +412,6 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
      *
      */
     public void testInsertFromExpression() throws SQLException {
-        fail("https://issues.apache.org/jira/browse/IGNITE-7300");
-
         executeInTransaction(new TransactionClosure() {
             @Override public void apply(Connection conn) {
                 execute(conn, "insert into city (id, name, population) values (? + 1, ?, ?)",
