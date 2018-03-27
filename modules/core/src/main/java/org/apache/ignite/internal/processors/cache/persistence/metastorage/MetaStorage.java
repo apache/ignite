@@ -160,7 +160,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     }
 
     /** {@inheritDoc} */
-    @Override public Map<String, Serializable> readForPredicate(IgnitePredicate<String> keyPred)
+    @Override public Map<String, ? extends Serializable> readForPredicate(IgnitePredicate<String> keyPred)
         throws IgniteCheckedException {
         Map<String, Serializable> res = null;
 

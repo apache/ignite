@@ -55,6 +55,7 @@ import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTaskRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestTopologyRequest;
 import org.apache.ignite.internal.processors.rest.request.RestQueryRequest;
+import org.apache.ignite.internal.processors.rest.request.RestUserActionRequest;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -98,6 +99,12 @@ public class GridJettyRestHandler extends AbstractHandler {
 
     /** */
     private static final String WRITE_SYNCHRONIZATION_MODE_PARAM = "writeSynchronizationMode";
+
+    /** */
+    private static final String IGNITE_LOGIN = "ignite.login";
+
+    /** */
+    private static final String IGNITE_PASSWORD = "ignite.password";
 
     /** */
     private static final String  TEMPLATE_NAME_PARAM = "templateName";
@@ -724,6 +731,19 @@ public class GridJettyRestHandler extends AbstractHandler {
                 break;
             }
 
+            case ADD_USER:
+            case REMOVE_USER:
+            case UPDATE_USER: {
+                RestUserActionRequest restReq0 = new RestUserActionRequest();
+
+                restReq0.user((String)params.get("user"));
+                restReq0.password((String)params.get("password"));
+
+                restReq = restReq0;
+
+                break;
+            }
+
             case EXECUTE_SQL_QUERY:
             case EXECUTE_SQL_FIELDS_QUERY: {
                 RestQueryRequest restReq0 = new RestQueryRequest();
@@ -820,9 +840,9 @@ public class GridJettyRestHandler extends AbstractHandler {
 
         restReq.command(cmd);
 
-        if (params.containsKey("ignite.login") || params.containsKey("ignite.password")) {
+        if (params.containsKey(IGNITE_LOGIN) || params.containsKey(IGNITE_PASSWORD)) {
             SecurityCredentials cred = new SecurityCredentials(
-                (String)params.get("ignite.login"), (String)params.get("ignite.password"));
+                (String)params.get(IGNITE_LOGIN), (String)params.get(IGNITE_PASSWORD));
 
             restReq.credentials(cred);
         }

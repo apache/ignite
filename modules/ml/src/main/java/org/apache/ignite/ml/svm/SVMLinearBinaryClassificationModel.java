@@ -162,7 +162,7 @@ public class SVMLinearBinaryClassificationModel implements Model<Vector, Double>
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        if (weights.size() < 10) {
+        if (weights.size() < 20) {
             StringBuilder builder = new StringBuilder();
 
             for (int i = 0; i < weights.size(); i++) {
