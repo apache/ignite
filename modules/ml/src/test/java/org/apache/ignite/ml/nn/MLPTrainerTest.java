@@ -19,7 +19,6 @@ package org.apache.ignite.ml.nn;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -153,7 +152,6 @@ public class MLPTrainerTest {
                 {1.0, 1.0}
             }));
 
-            System.err.println(Arrays.toString(predict.getRow(0).getStorage().data()));
             TestUtils.checkIsInEpsilonNeighbourhood(new DenseLocalOnHeapVector(new double[]{0.0}), predict.getRow(0), 1E-1);
         }
     }
