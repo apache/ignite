@@ -15,24 +15,34 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.testsuites;
+package org.apache.ignite.internal.processors.authentication;
 
-import junit.framework.TestSuite;
-import org.apache.ignite.internal.processors.cache.distributed.IgniteCache150ClientsTest;
+import org.apache.ignite.IgniteCheckedException;
+import org.jetbrains.annotations.Nullable;
 
 /**
- *
+ * Exception that represents failures of user management operations.
  */
-public class IgniteClientTestSuite extends TestSuite {
+public class UserManagementException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
-     * @return Test suite.
-     * @throws Exception If failed.
+     * Creates authentication exception with given error message.
+     *
+     * @param msg Error message.
      */
-    public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Ignite Client Test Suite");
+    public UserManagementException(String msg) {
+        super(msg);
+    }
 
-        suite.addTestSuite(IgniteCache150ClientsTest.class);
-
-        return suite;
+    /**
+     * Creates authentication exception with given error message.
+     *
+     * @param msg Error message.
+     * @param cause Optional nested exception (can be {@code null}).
+     */
+    public UserManagementException(String msg, @Nullable Throwable cause) {
+        super(msg, cause);
     }
 }
