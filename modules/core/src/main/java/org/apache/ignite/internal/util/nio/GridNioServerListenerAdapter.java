@@ -30,4 +30,9 @@ public abstract class GridNioServerListenerAdapter<T> implements GridNioServerLi
     @Override public void onSessionIdleTimeout(GridNioSession ses) {
         // No-op.
     }
+
+    /** {@inheritDoc} */
+    @Override public void onMessageSent(GridNioSession ses, T msg) {
+        // No-op.
+    }
 }

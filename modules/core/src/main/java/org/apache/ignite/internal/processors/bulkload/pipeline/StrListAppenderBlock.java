@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.bulkload.pipeline;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**

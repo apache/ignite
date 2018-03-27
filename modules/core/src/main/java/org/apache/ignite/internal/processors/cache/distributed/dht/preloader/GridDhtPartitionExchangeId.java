@@ -212,6 +212,9 @@ public class GridDhtPartitionExchangeId implements Message, Comparable<GridDhtPa
 
     /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
+        if (o == null)
+            return false;
+
         if (o == this)
             return true;
 

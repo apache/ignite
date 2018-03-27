@@ -98,7 +98,7 @@ export default ['IgniteVersion', 'JavaTransformer', function(Version, java) {
                         return acc;
                     }, []);
 
-                    return java.clusterCheckpoint(cluster, clusterCaches);
+                    return java.clusterCheckpoint(cluster, available, clusterCaches);
                 };
 
                 break;

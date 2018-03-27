@@ -25,9 +25,7 @@ import './modules/agent/agent.module';
 import './modules/nodes/nodes.module';
 import './modules/demo/Demo.module';
 
-import './modules/states/signin.state';
 import './modules/states/logout.state';
-import './modules/states/password.state';
 import './modules/states/configuration.state';
 import './modules/states/admin.state';
 import './modules/states/errors.state';
@@ -118,6 +116,7 @@ import webConsoleFooter from './components/web-console-footer';
 import igniteIcon from './components/ignite-icon';
 import versionPicker from './components/version-picker';
 import userNotifications from './components/user-notifications';
+import pageAdmin from './components/page-admin';
 import pageConfigure from './components/page-configure';
 import pageConfigureBasic from './components/page-configure-basic';
 import pageConfigureAdvanced from './components/page-configure-advanced';
@@ -131,10 +130,15 @@ import protectFromBsSelectRender from './components/protect-from-bs-select-rende
 import uiGridHovering from './components/ui-grid-hovering';
 import uiGridFilters from './components/ui-grid-filters';
 import listEditable from './components/list-editable';
+import breadcrumbs from './components/breadcrumbs';
 import clusterSelector from './components/cluster-selector';
 import connectedClusters from './components/connected-clusters';
+import pageSignIn from './components/page-signin';
+import pageLanding from './components/page-landing';
 
 import pageProfile from './components/page-profile';
+import pagePasswordChanged from './components/page-password-changed';
+import pagePasswordReset from './components/page-password-reset';
 
 import igniteServices from './services';
 
@@ -148,6 +152,7 @@ angular.module('ignite-console', [
     // Optional AngularJS modules.
     'ngAnimate',
     'ngSanitize',
+    'ngMessages',
     // Third party libs.
     'btford.socket-io',
     'dndLists',
@@ -166,6 +171,7 @@ angular.module('ignite-console', [
     'ui.grid.selection',
     'ui.router',
     'ui.router.state.events',
+    'ui.carousel',
     // Base modules.
     'ignite-console.core',
     'ignite-console.ace',
@@ -178,9 +184,7 @@ angular.module('ignite-console', [
     'ignite-console.nodes',
     'ignite-console.demo',
     // States.
-    'ignite-console.states.login',
     'ignite-console.states.logout',
-    'ignite-console.states.password',
     'ignite-console.states.configuration',
     'ignite-console.states.admin',
     'ignite-console.states.errors',
@@ -199,6 +203,7 @@ angular.module('ignite-console', [
     igniteServices.name,
     versionPicker.name,
     userNotifications.name,
+    pageAdmin.name,
     pageConfigure.name,
     pageConfigureBasic.name,
     pageConfigureAdvanced.name,
@@ -218,6 +223,11 @@ angular.module('ignite-console', [
     connectedClusters.name,
     igniteListOfRegisteredUsers.name,
     pageProfile.name,
+    pageSignIn.name,
+    pageLanding.name,
+    pagePasswordChanged.name,
+    pagePasswordReset.name,
+    breadcrumbs.name,
     // Ignite modules.
     IgniteModules.name
 ])

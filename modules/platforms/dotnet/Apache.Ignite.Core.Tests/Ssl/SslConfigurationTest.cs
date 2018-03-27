@@ -18,12 +18,12 @@
 namespace Apache.Ignite.Core.Tests.Ssl 
 {
     using System.Linq;
-    using Apache.Ignite.Core.Cluster.Ssl;
+    using Apache.Ignite.Core.Ssl;
     using Apache.Ignite.Core.Common;
     using NUnit.Framework;
 
     /// <summary>
-    /// Ignite start/stop tests.
+    /// SSL configuration tests.
     /// </summary>
     [Category(TestUtils.CategoryIntensive)]
     public class SslConfigurationTest
@@ -43,14 +43,13 @@ namespace Apache.Ignite.Core.Tests.Ssl
         [TearDown]
         public void TearDown()
         {
-            TestUtils.KillProcesses();
             Ignition.StopAll(true);
         }
 
         /// <summary>
         /// Returns SSL Context factory for tests.
         /// </summary>
-        private SslContextFactory GetSslContextFactory()
+        private static SslContextFactory GetSslContextFactory()
         {
             return new SslContextFactory(KeyStoreFilePath, Password, TrustStoreFilePath, Password);
         }
@@ -130,10 +129,9 @@ namespace Apache.Ignite.Core.Tests.Ssl
         [Test]
         public void TestStartWithConfigPath()
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = @"config/start-test-grid1-ssl.xml",
-                JvmClasspath = TestUtils.CreateTestClasspath()
+                SpringConfigUrl = @"Config/ssl.xml",
             };
 
             var grid = Ignition.Start(cfg);
@@ -159,18 +157,13 @@ namespace Apache.Ignite.Core.Tests.Ssl
         [Test]
         public void TestTwoServers()
         {
-            var cfg1 = new IgniteConfiguration
+            var cfg1 = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                SpringConfigUrl = @"config/start-test-grid1-ssl.xml",
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath(),
+                SpringConfigUrl = @"Config/ssl.xml"
             };
 
-            var cfg2 = new IgniteConfiguration
+            var cfg2 = new IgniteConfiguration(TestUtils.GetTestConfiguration(name: "grid2"))
             {
-                SpringConfigUrl = @"config/start-test-grid2.xml",
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath(),
                 SslContextFactory = GetSslContextFactory()
             };
 
@@ -195,8 +188,6 @@ namespace Apache.Ignite.Core.Tests.Ssl
 
             Assert.AreEqual(2, grid1.GetCluster().GetNodes().Count);
             Assert.AreEqual(2, grid2.GetCluster().GetNodes().Count);
-
-            Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -205,18 +196,10 @@ namespace Apache.Ignite.Core.Tests.Ssl
         [Test]
         public void TestSslConfigurationMismatch()
         {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = @"config/start-test-grid1.xml",
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-            };
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration(name: "grid1"));
 
-            var sslCfg = new IgniteConfiguration
+            var sslCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration(name: "grid2"))
             {
-                SpringConfigUrl = @"config/start-test-grid2.xml",
-                JvmOptions = TestUtils.TestJavaOptions(),
-                JvmClasspath = TestUtils.CreateTestClasspath(),
                 SslContextFactory = GetSslContextFactory()
             };
 
@@ -235,51 +218,39 @@ namespace Apache.Ignite.Core.Tests.Ssl
                                               @"Was remote cluster configured with SSL?"));
         }
 
-
         /// <summary>
         /// Tests the client-server mode.
         /// </summary>
         [Test]
-        public void TestClientServer([Values(null, TrustStoreFilePath)] string trustStoreFilePath)
+        public void TestClientServer()
         {
             var factory = GetSslContextFactory();
-            factory.TrustStoreFilePath = trustStoreFilePath;
 
-            var servCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            var servCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration(name: "grid1"))
             {
-                SpringConfigUrl = @"config/start-test-grid1.xml",
                 SslContextFactory = factory
             };
 
-            var clientCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            var clientCfg = new IgniteConfiguration(TestUtils.GetTestConfiguration(name: "grid2"))
             {
-                SpringConfigUrl = @"config/start-test-grid2.xml",
-                SslContextFactory = factory
+                SslContextFactory = factory,
+                ClientMode = true
             };
 
-            try
+            using (var serv = Ignition.Start(servCfg)) // start server-mode ignite first
             {
-                using (var serv = Ignition.Start(servCfg))  // start server-mode ignite first
+                Assert.IsFalse(serv.GetCluster().GetLocalNode().IsClient);
+
+                using (var grid = Ignition.Start(clientCfg))
                 {
-                    Assert.IsFalse(serv.GetCluster().GetLocalNode().IsClient);
+                    Assert.IsTrue(grid.GetCluster().GetLocalNode().IsClient);
 
-                    Ignition.ClientMode = true;
+                    Assert.AreEqual(2, grid.GetCluster().GetNodes().Count);
+                    Assert.AreEqual(2, serv.GetCluster().GetNodes().Count);
 
-                    using (var grid = Ignition.Start(clientCfg))
-                    {
-                        Assert.IsTrue(grid.GetCluster().GetLocalNode().IsClient);
-
-                        Assert.AreEqual(2, grid.GetCluster().GetNodes().Count);
-                        Assert.AreEqual(2, serv.GetCluster().GetNodes().Count);
-
-                        Assert.AreEqual(1, grid.GetCluster().ForServers().GetNodes().Count);
-                        Assert.AreEqual(1, serv.GetCluster().ForServers().GetNodes().Count);
-                    }
+                    Assert.AreEqual(1, grid.GetCluster().ForServers().GetNodes().Count);
+                    Assert.AreEqual(1, serv.GetCluster().ForServers().GetNodes().Count);
                 }
-            }
-            finally 
-            {
-                Ignition.ClientMode = false;
             }
         }
     }
