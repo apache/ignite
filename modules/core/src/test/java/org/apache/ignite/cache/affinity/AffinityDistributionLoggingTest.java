@@ -120,8 +120,8 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     public void testNotIdealPartitionDistributionLogging1() throws Exception {
         String testsLog = runAndGetExchangeLog(4, 4, 4);
 
-        String exp = LOG_MESSAGE_PREFIX + "[cache=default, expectedPrimary=1,00(25,00%), expectedBackups=4,00(100,00%), " +
-            "primary=1(25,00%), backups=3(75,00%)]";
+        String exp = String.format("%s[cache=default, expectedPrimary=%.2f(%.2f%%), expectedBackups=%.2f(%.2f%%), " +
+            "primary=%d(%.2f%%), backups=%d(%.2f%%)]", LOG_MESSAGE_PREFIX, 1F, 25F, 4F, 100F, 1, 25F, 3, 75F);
 
         assertTrue(testsLog.contains(exp));
     }
@@ -145,8 +145,8 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
 
         String testsLog = runAndGetExchangeLog(39, 6, 3);
 
-        String exp = LOG_MESSAGE_PREFIX + "[cache=default, expectedPrimary=13,00(33,33%), expectedBackups=78,00(200,00%), " +
-            "primary=13(33,33%), backups=26(66,67%)]";
+        String exp = String.format("%s[cache=default, expectedPrimary=%.2f(%.2f%%), expectedBackups=%.2f(%.2f%%), " +
+            "primary=%d(%.2f%%), backups=%d(%.2f%%)]", LOG_MESSAGE_PREFIX, 13F, 33.33F, 78F, 200F, 13, 33.33F, 26, 66.67F);
 
         assertTrue(testsLog.contains(exp));
     }
