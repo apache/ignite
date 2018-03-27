@@ -22,9 +22,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.regex.Pattern;
 
-/** A placeholder for bulk load CSV format parser options. */
+/**
+ * A placeholder for bulk load CSV format parser options.
+ */
 public class BulkLoadCsvFormat extends BulkLoadFormat {
-
     /** Line separator pattern. */
     @NotNull public static final Pattern DEFAULT_LINE_SEPARATOR = Pattern.compile("[\r\n]+");
 

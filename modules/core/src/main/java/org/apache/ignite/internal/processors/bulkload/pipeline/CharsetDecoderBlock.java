@@ -104,8 +104,9 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
                     leftover = Arrays.copyOfRange(dataBuf.array(),
                         dataBuf.arrayOffset() + dataBuf.position(), dataBuf.limit());
 
+                // See {@link CharsetDecoder} class javadoc for the protocol.
                 if (isEndOfInput)
-                    charsetDecoder.flush(outBuf); // See {@link CharsetDecoder} class javadoc for the protocol.
+                    charsetDecoder.flush(outBuf);
 
                 if (outBuf.position() > 0)
                     nextBlock.accept(Arrays.copyOfRange(outBuf.array(), outBuf.arrayOffset(), outBuf.position()),
@@ -114,7 +115,8 @@ public class CharsetDecoderBlock extends PipelineBlock<byte[], char[]> {
                 break;
             }
 
-            if (res.isOverflow()) { // Not enough space in the output buffer, flush it and retry.
+            // Not enough space in the output buffer, flush it and retry.
+            if (res.isOverflow()) {
                 assert outBuf.position() > 0;
 
                 nextBlock.accept(Arrays.copyOfRange(outBuf.array(), outBuf.arrayOffset(), outBuf.position()),
