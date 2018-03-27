@@ -33,6 +33,7 @@ import static org.apache.ignite.internal.sql.SqlParserUtils.errorUnexpectedToken
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseIdentifier;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseInt;
 import static org.apache.ignite.internal.sql.SqlParserUtils.parseQualifiedIdentifier;
+import static org.apache.ignite.internal.sql.SqlParserUtils.parseString;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipCommaOrRightParenthesis;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatches;
 import static org.apache.ignite.internal.sql.SqlParserUtils.skipIfMatchesKeyword;
@@ -84,8 +85,8 @@ public class SqlBulkLoadCommand implements SqlCommand {
      * @param lex The lexer.
      */
     private void parseFileName(SqlLexer lex) {
-        if (lex.lookAhead().tokenType() != SqlLexerTokenType.QUOTED)
-            throw errorUnexpectedToken(lex.lookAhead(), "[quoted file name]");
+        if (lex.lookAhead().tokenType() != SqlLexerTokenType.STRING)
+            throw errorUnexpectedToken(lex.lookAhead(), "[file name: string]");
 
         lex.shift();
 
@@ -174,7 +175,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
                 case SqlKeyword.CHARSET: {
                     lex.shift();
 
-                    String charsetName = parseIdentifier(lex);
+                    String charsetName = parseString(lex);
 
                     format.inputCharsetName(charsetName);
 

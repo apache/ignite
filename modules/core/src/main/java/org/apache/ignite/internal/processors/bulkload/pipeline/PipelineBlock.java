@@ -61,6 +61,7 @@ public abstract class PipelineBlock<I, O> {
      *
      * @param inputPortion Portion of input.
      * @param isLastPortion Is this the last portion.
+     * @throws IgniteCheckedException On error.
      */
     public abstract void accept(I inputPortion, boolean isLastPortion) throws IgniteCheckedException;
 }

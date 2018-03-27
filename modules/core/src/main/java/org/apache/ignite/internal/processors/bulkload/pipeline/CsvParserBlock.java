@@ -24,29 +24,44 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Speed-optimized CSV file parser, which processes both lines and fields. Unifinished fields and lines
+ * Speed-optimized CSV file parser, which processes both lines and fields. Unfinished fields and lines
  * are kept between invocations of {@link #accept(char[], boolean)}.
  * <p>
  * Please note that speed of parsing was of higher priority than using "proper" OOP design patterns.
  * Regular expressions aren't used here for the same reason.
  */
 public class CsvParserBlock extends PipelineBlock<char[], List<Object>> {
+    /** Class none. */
+    private static final byte CLS_NONE = 0;
+
+    /** Class line separator. */
+    private static final byte CLS_LINESEP = 1;
+
+    /** Class field separator. */
+    private static final byte CLS_FIELDSEP = 2;
+
+    /** Class quote. */
+    private static final byte CLS_QUOTE = 3;
+
+    /** Class escape. */
+    private static final byte CLS_ESCAPE = 4;
+
+    /** Class comment. */
+    private static final byte CLS_COMMENT = 5;
+
     /** Leftover characters from the previous invocation of {@link #accept(char[], boolean)}. */
     private final StringBuilder leftover;
 
+    /** Leftover quotes count. */
     private int leftoverQuotesCnt;
+
+    /** Leftover escapes count. */
     private int leftoverEscapesCnt;
 
     /** Current parsed fields from the beginning of the line. */
     private final List<Object> fields;
 
-    private final static byte CLS_NONE = 0;
-    private final static byte CLS_LINESEP = 1;
-    private final static byte CLS_FIELDSEP = 2;
-    private final static byte CLS_QUOTE = 3;
-    private final static byte CLS_ESCAPE = 4;
-    private final static byte CLS_COMMENT = 5;
-
+    /** Char class. */
     private final byte[] charClass;
 
     /**
@@ -66,6 +81,10 @@ public class CsvParserBlock extends PipelineBlock<char[], List<Object>> {
         leftoverEscapesCnt = 0;
     }
 
+    /**
+     * @param chars Char set.
+     * @param newCls Char class.
+     */
     private void defineCharClass(String chars, byte newCls) {
         for (int i = 0; i < chars.length(); i++) {
             char c = chars.charAt(i);
@@ -138,6 +157,10 @@ public class CsvParserBlock extends PipelineBlock<char[], List<Object>> {
         }
     }
 
+    /**
+     * @param lastPos Last position.
+     * @param i Current position.
+     */
     private void addLeftoverSubstrToFields(int lastPos, int i) {
         leftoverQuotesCnt = 0;
         leftoverEscapesCnt = 0;
@@ -145,6 +168,10 @@ public class CsvParserBlock extends PipelineBlock<char[], List<Object>> {
         fields.add(unquotedSubstring(leftover, lastPos, i));
     }
 
+    /**
+     * @param isLastBlock Last block.
+     * @throws IgniteCheckedException On error.
+     */
     private void pushFieldsToNextBlock(boolean isLastBlock) throws IgniteCheckedException {
         nextBlock.accept(new ArrayList<>(fields), isLastBlock);
 
