@@ -15,16 +15,18 @@
  * limitations under the License.
  */
 
-#include <set>
+#include <ignite/common/fixed_size_array.h>
 
 #include "ignite/odbc/utility.h"
+#include "ignite/odbc/config/connection_string_parser.h"
 #include "ignite/odbc/system/odbc_constants.h"
-
 #include "ignite/odbc/dsn_config.h"
+#include "ignite/odbc/config/config_tools.h"
 
-using ignite::odbc::config::Configuration;
 
-#define BUFFER_SIZE 1024
+using namespace ignite::odbc::config;
+
+#define BUFFER_SIZE (1024 * 1024)
 #define CONFIG_FILE "ODBC.INI"
 
 namespace ignite
@@ -34,13 +36,13 @@ namespace ignite
         void ThrowLastSetupError()
         {
             DWORD code;
-            char msg[BUFFER_SIZE];
+            common::FixedSizeArray<char> msg(BUFFER_SIZE);
 
-            SQLInstallerError(1, &code, msg, sizeof(msg), NULL);
+            SQLInstallerError(1, &code, msg.GetData(), msg.GetSize(), NULL);
 
             std::stringstream buf;
 
-            buf << "Message: \"" << msg << "\", Code: " << code;
+            buf << "Message: \"" << msg.GetData() << "\", Code: " << code;
 
             throw IgniteError(IgniteError::IGNITE_ERR_GENERIC, buf.str().c_str());
         }
@@ -51,98 +53,165 @@ namespace ignite
                 ThrowLastSetupError();
         }
 
-        std::string ReadDsnString(const char* dsn, const std::string& key, const std::string& dflt)
+        SettableValue<std::string> ReadDsnString(const char* dsn, const std::string& key, const std::string& dflt = "")
         {
-            char buf[BUFFER_SIZE];
+            static const char* unique = "35a920dd-8837-43d2-a846-e01a2e7b5f84";
 
-            memset(buf, 0, sizeof(buf));
+            SettableValue<std::string> val(dflt);
 
-            SQLGetPrivateProfileString(dsn, key.c_str(), dflt.c_str(), buf, sizeof(buf), CONFIG_FILE);
+            common::FixedSizeArray<char> buf(BUFFER_SIZE);
 
-            return std::string(buf);
+            int ret = SQLGetPrivateProfileString(dsn, key.c_str(), unique, buf.GetData(), buf.GetSize(), CONFIG_FILE);
+
+            if (ret > BUFFER_SIZE)
+            {
+                buf.Reset(ret + 1);
+
+                ret = SQLGetPrivateProfileString(dsn, key.c_str(), unique, buf.GetData(), buf.GetSize(), CONFIG_FILE);
+            }
+
+            std::string res(buf.GetData());
+
+            if (res == unique)
+                return val;
+
+            val.SetValue(res);
+
+            return val;
         }
 
-        int ReadDsnInt(const char* dsn, const std::string& key, int dflt)
+        SettableValue<int32_t> ReadDsnInt(const char* dsn, const std::string& key, int32_t dflt = 0)
         {
-            char buf[BUFFER_SIZE];
+            SettableValue<std::string> str = ReadDsnString(dsn, key, "");
 
-            memset(buf, 0, sizeof(buf));
+            SettableValue<int32_t> res(dflt);
 
-            std::string dflt0 = common::LexicalCast<std::string>(dflt);
+            if (str.IsSet())
+                res.SetValue(common::LexicalCast<int, std::string>(str.GetValue()));
 
-            SQLGetPrivateProfileString(dsn, key.c_str(), dflt0.c_str(), buf, sizeof(buf), CONFIG_FILE);
-
-            return common::LexicalCast<int, std::string>(buf);
+            return res;
         }
 
-        bool ReadDsnBool(const char* dsn, const std::string& key, bool dflt)
+        SettableValue<bool> ReadDsnBool(const char* dsn, const std::string& key, bool dflt = false)
         {
-            char buf[BUFFER_SIZE];
+            SettableValue<std::string> str = ReadDsnString(dsn, key, "");
 
-            memset(buf, 0, sizeof(buf));
+            SettableValue<bool> res(dflt);
 
-            std::string dflt0 = dflt ? "true" : "false";
+            if (str.IsSet())
+                res.SetValue(str.GetValue() == "true");
 
-            SQLGetPrivateProfileString(dsn, key.c_str(), dflt0.c_str(), buf, sizeof(buf), CONFIG_FILE);
-
-            return std::string(buf) == "true";
+            return res;
         }
 
         void ReadDsnConfiguration(const char* dsn, Configuration& config)
         {
-            std::string address = ReadDsnString(dsn, Configuration::Key::address, config.GetAddress());
+            SettableValue<std::string> address = ReadDsnString(dsn, ConnectionStringParser::Key::address);
 
-            std::string server = ReadDsnString(dsn, Configuration::Key::server, config.GetHost());
+            if (address.IsSet() && !config.IsAddressesSet())
+            {
+                std::vector<EndPoint> endPoints;
 
-            uint16_t port = ReadDsnInt(dsn, Configuration::Key::port, config.GetTcpPort());
+                ParseAddress(address.GetValue(), endPoints, 0);
 
-            std::string schema = ReadDsnString(dsn, Configuration::Key::schema, config.GetSchema());
+                config.SetAddresses(endPoints);
+            }
 
-            bool distributedJoins = ReadDsnBool(dsn, Configuration::Key::distributedJoins, config.IsDistributedJoins());
+            SettableValue<std::string> server = ReadDsnString(dsn, ConnectionStringParser::Key::server);
 
-            bool enforceJoinOrder = ReadDsnBool(dsn, Configuration::Key::enforceJoinOrder, config.IsEnforceJoinOrder());
+            if (server.IsSet() && !config.IsHostSet())
+                config.SetHost(server.GetValue());
 
-            bool replicatedOnly = ReadDsnBool(dsn, Configuration::Key::replicatedOnly, config.IsReplicatedOnly());
+            SettableValue<int32_t> port = ReadDsnInt(dsn, ConnectionStringParser::Key::port);
 
-            bool collocated = ReadDsnBool(dsn, Configuration::Key::collocated, config.IsCollocated());
+            if (port.IsSet() && !config.IsTcpPortSet())
+                config.SetTcpPort(static_cast<uint16_t>(port.GetValue()));
 
-            bool lazy = ReadDsnBool(dsn, Configuration::Key::lazy, config.IsLazy());
+            SettableValue<std::string> schema = ReadDsnString(dsn, ConnectionStringParser::Key::schema);
 
-            bool skipReducerOnUpdate =
-                ReadDsnBool(dsn, Configuration::Key::skipReducerOnUpdate, config.IsSkipReducerOnUpdate());
+            if (schema.IsSet() && !config.IsSchemaSet())
+                config.SetSchema(schema.GetValue());
 
-            std::string version = ReadDsnString(dsn, Configuration::Key::protocolVersion,
-                config.GetProtocolVersion().ToString());
+            SettableValue<bool> distributedJoins = ReadDsnBool(dsn, ConnectionStringParser::Key::distributedJoins);
 
-            int32_t pageSize = ReadDsnInt(dsn, Configuration::Key::pageSize, config.GetPageSize());
+            if (distributedJoins.IsSet() && !config.IsDistributedJoinsSet())
+                config.SetDistributedJoins(distributedJoins.GetValue());
 
-            if (pageSize <= 0)
-                pageSize = config.GetPageSize();
+            SettableValue<bool> enforceJoinOrder = ReadDsnBool(dsn, ConnectionStringParser::Key::enforceJoinOrder);
 
-            std::string sslMode = ReadDsnString(dsn, Configuration::Key::sslMode, config.GetSslMode());
+            if (enforceJoinOrder.IsSet() && !config.IsEnforceJoinOrderSet())
+                config.SetEnforceJoinOrder(enforceJoinOrder.GetValue());
 
-            std::string sslKeyFile = ReadDsnString(dsn, Configuration::Key::sslKeyFile, config.GetSslKeyFile());
+            SettableValue<bool> replicatedOnly = ReadDsnBool(dsn, ConnectionStringParser::Key::replicatedOnly);
 
-            std::string sslCertFile = ReadDsnString(dsn, Configuration::Key::sslCertFile, config.GetSslCertFile());
+            if (replicatedOnly.IsSet() && !config.IsReplicatedOnlySet())
+                config.SetReplicatedOnly(replicatedOnly.GetValue());
 
-            std::string sslCaFile = ReadDsnString(dsn, Configuration::Key::sslCaFile, config.GetSslCaFile());
+            SettableValue<bool> collocated = ReadDsnBool(dsn, ConnectionStringParser::Key::collocated);
 
-            config.SetAddress(address);
-            config.SetHost(server);
-            config.SetTcpPort(port);
-            config.SetSchema(schema);
-            config.SetDistributedJoins(distributedJoins);
-            config.SetEnforceJoinOrder(enforceJoinOrder);
-            config.SetReplicatedOnly(replicatedOnly);
-            config.SetCollocated(collocated);
-            config.SetLazy(lazy);
-            config.SetSkipReducerOnUpdate(skipReducerOnUpdate);
-            config.SetProtocolVersion(version);
-            config.SetPageSize(pageSize);
-            config.SetSslMode(sslMode);
-            config.SetSslKeyFile(sslKeyFile);
-            config.SetSslCertFile(sslCertFile);
-            config.SetSslCaFile(sslCaFile);
+            if (collocated.IsSet() && !config.IsCollocatedSet())
+                config.SetCollocated(collocated.GetValue());
+
+            SettableValue<bool> lazy = ReadDsnBool(dsn, ConnectionStringParser::Key::lazy);
+
+            if (lazy.IsSet() && !config.IsLazySet())
+                config.SetLazy(lazy.GetValue());
+
+            SettableValue<bool> skipReducerOnUpdate = ReadDsnBool(dsn, ConnectionStringParser::Key::skipReducerOnUpdate);
+
+            if (skipReducerOnUpdate.IsSet() && !config.IsSkipReducerOnUpdateSet())
+                config.SetSkipReducerOnUpdate(skipReducerOnUpdate.GetValue());
+
+            SettableValue<std::string> versionStr = ReadDsnString(dsn, ConnectionStringParser::Key::protocolVersion);
+
+            if (versionStr.IsSet() && !config.IsProtocolVersionSet())
+            {
+                ProtocolVersion version = ProtocolVersion::FromString(versionStr.GetValue());
+
+                if (!version.IsSupported())
+                    version = Configuration::DefaultValue::protocolVersion;
+
+                config.SetProtocolVersion(version);
+            }
+
+            SettableValue<int32_t> pageSize = ReadDsnInt(dsn, ConnectionStringParser::Key::pageSize);
+
+            if (pageSize.IsSet() && !config.IsPageSizeSet() && pageSize.GetValue() > 0)
+                config.SetPageSize(pageSize.GetValue());
+
+            SettableValue<std::string> sslModeStr = ReadDsnString(dsn, ConnectionStringParser::Key::sslMode);
+
+            if (sslModeStr.IsSet() && !config.IsSslModeSet())
+            {
+                ssl::SslMode::Type sslMode = ssl::SslMode::FromString(sslModeStr.GetValue(), ssl::SslMode::DISABLE);
+
+                config.SetSslMode(sslMode);
+            }
+
+            SettableValue<std::string> sslKeyFile = ReadDsnString(dsn, ConnectionStringParser::Key::sslKeyFile);
+
+            if (sslKeyFile.IsSet() && !config.IsSslKeyFileSet())
+                config.SetSslKeyFile(sslKeyFile.GetValue());
+
+            SettableValue<std::string> sslCertFile = ReadDsnString(dsn, ConnectionStringParser::Key::sslCertFile);
+
+            if (sslCertFile.IsSet() && !config.IsSslCertFileSet())
+                config.SetSslCertFile(sslCertFile.GetValue());
+
+            SettableValue<std::string> sslCaFile = ReadDsnString(dsn, ConnectionStringParser::Key::sslCaFile);
+
+            if (sslCaFile.IsSet() && !config.IsSslCaFileSet())
+                config.SetSslCaFile(sslCaFile.GetValue());
+
+            SettableValue<std::string> user = ReadDsnString(dsn, ConnectionStringParser::Key::user);
+
+            if (user.IsSet() && !config.IsUserSet())
+                config.SetUser(user.GetValue());
+
+            SettableValue<std::string> password = ReadDsnString(dsn, ConnectionStringParser::Key::password);
+
+            if (password.IsSet() && !config.IsPasswordSet())
+                config.SetPassword(password.GetValue());
         }
     }
 }
