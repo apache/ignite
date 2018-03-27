@@ -59,14 +59,14 @@ public class SqlJdbcCopyExample {
             // Populate City via COPY command with records from cityBulkLoad.csv
             try (Statement stmt = conn.createStatement()) {
                 stmt.executeUpdate("COPY FROM \"" +
-                    IgniteUtils.resolveIgnitePath("examples/src/main/resources/cityBulkLoad.csv") + "\" " +
+                    IgniteUtils.resolveIgnitePath("examples/src/main/resources/sql/cityBulkLoad.csv") + "\" " +
                     "INTO City (id, name) FORMAT CSV");
             }
 
             // Populate Person via COPY command with records from personBulkLoad.csv
             try (Statement stmt = conn.createStatement()) {
                 stmt.executeUpdate("COPY FROM \"" +
-                    IgniteUtils.resolveIgnitePath("examples/src/main/resources/personBulkLoad.csv") + "\" " +
+                    IgniteUtils.resolveIgnitePath("examples/src/main/resources/sql/personBulkLoad.csv") + "\" " +
                     "INTO Person (id, name, city_id) FORMAT CSV");
             }
 
