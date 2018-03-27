@@ -716,11 +716,14 @@ public class GridCacheSharedContext<K, V> {
 
     /**
      * @return Ttl cleanup manager.
-     * */
+     */
     public GridCacheSharedTtlCleanupManager ttl() {
         return ttlMgr;
     }
 
+    /**
+     * @return Latch manager.
+     */
     public LatchManager latch() {
         return latchMgr;
     }
