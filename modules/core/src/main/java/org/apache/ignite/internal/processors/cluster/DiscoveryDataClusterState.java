@@ -72,12 +72,12 @@ public final class DiscoveryDataClusterState implements Serializable {
      * Local future for state transition active state result (global state is updated asynchronously by custom message),
      * {@code null} means state is not transition.
      */
-    @Nullable private transient final GridFutureAdapter<Boolean> transitionFut;
+    @Nullable private final transient GridFutureAdapter<Boolean> transitionFut;
 
     /**
      * Previous cluster state if this state is a transition state and it was not received by a joining node.
      */
-    private transient final DiscoveryDataClusterState prevState;
+    private final transient DiscoveryDataClusterState prevState;
 
     /**
      * @param active Current status.
@@ -108,7 +108,7 @@ public final class DiscoveryDataClusterState implements Serializable {
         assert !F.isEmpty(transitionNodes) : transitionNodes;
         assert prevState != null;
 
-        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<Boolean>();
+        GridFutureAdapter<Boolean> fut = new GridFutureAdapter<>();
 
         return new DiscoveryDataClusterState(
             prevState,
