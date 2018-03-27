@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteProductVersion;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -52,6 +53,9 @@ import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
  * Class is responsible to create and manage instances of distributed latches {@link Latch}.
  */
 public class LatchManager {
+    /** Version since latch management is available. */
+    private static final IgniteProductVersion VERSION_SINCE = IgniteProductVersion.fromString("2.5.0");
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -236,7 +240,7 @@ public class LatchManager {
                 return latch;
             }
 
-            Collection<ClusterNode> participants = discovery.discoCache(topVer).aliveServerNodes();
+            Collection<ClusterNode> participants = getLatchParticipants(topVer);
 
             if (coordinator.isLocal())
                 return createServerLatch(id, topVer, participants);
@@ -246,6 +250,17 @@ public class LatchManager {
         finally {
             lock.unlock();
         }
+    }
+
+    /**
+     * @param topVer Latch topology version.
+     * @return Collection of cluster nodes which are able to participate in latch.
+     */
+    private Collection<ClusterNode> getLatchParticipants(AffinityTopologyVersion topVer) {
+        return discovery.discoCache(topVer).aliveServerNodes()
+                .stream()
+                .filter(node -> node.version().compareTo(VERSION_SINCE) >= 0)
+                .collect(Collectors.toList());
     }
 
     /**
