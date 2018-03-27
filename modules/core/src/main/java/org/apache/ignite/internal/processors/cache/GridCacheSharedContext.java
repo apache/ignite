@@ -869,7 +869,7 @@ public class GridCacheSharedContext<K, V> {
         IgniteInternalFuture<?> finishLocalTxsFuture = tm().finishLocalTxs(topVer);
         f.add(finishLocalTxsFuture);
 
-        final GridCompoundFuture finishAllTxsFuture = new GridCompoundFuture();
+        final GridCompoundFuture finishAllTxsFuture = new CacheObjectsReleaseFuture("AllTx", topVer);
 
         // After finishing all local updates, wait for finishing all tx updates on backups.
         finishLocalTxsFuture.listen(future -> {
