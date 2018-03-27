@@ -23,6 +23,7 @@
 #include <dlfcn.h>
 #include <glob.h>
 #include <unistd.h>
+#include <ftw.h>
 
 #include <ignite/common/utils.h>
 
@@ -90,6 +91,20 @@ namespace ignite
             struct stat pathStat;
 
             return stat(path.c_str(), &pathStat) != -1 && S_ISDIR(pathStat.st_mode);
+        }
+
+        static int rmFiles(const char *pathname, const struct stat *sbuf, int type, struct FTW *ftwb)
+        {
+            std::cout << "Removing " << pathname << std::endl;
+
+            remove(pathname);
+
+            return 0;
+        }
+
+        bool DeletePath(const std::string& path)
+        {
+            return nftw(path.c_str(), rmFiles, 10, FTW_DEPTH | FTW_MOUNT | FTW_PHYS) == 0;
         }
 
         StdCharOutStream& Fs(StdCharOutStream& ostr)
