@@ -121,10 +121,10 @@ public enum GridTopic {
     TOPIC_WAL,
 
     /** */
-    TOPIC_LATCH,
+    TOPIC_AUTH,
 
     /** */
-    TOPIC_AUTH;
+    TOPIC_LATCH;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();
