@@ -3114,8 +3114,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (hasPages) {
                 assert cpPtr != null;
 
+                tracker.onWalCpRecordFsyncStart();
+
                 // Sync log outside the checkpoint write lock.
                 cctx.wal().flush(cpPtr, true);
+
+                tracker.onWalCpRecordFsyncEnd();
 
                 long cpTs = System.currentTimeMillis();
 
@@ -3141,11 +3145,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (printCheckpointStats)
                     if (log.isInfoEnabled())
                         log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, checkpointLockWait=%dms, " +
-                                "checkpointLockHoldTime=%dms, pages=%d, reason='%s']",
+                                "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, pages=%d, reason='%s']",
                             cpRec.checkpointId(),
                             cpPtr,
                             tracker.lockWaitDuration(),
                             tracker.lockHoldDuration(),
+                            tracker.walCpRecordFsyncDuration(),
                             cpPages.size(),
                             curr.reason)
                         );
