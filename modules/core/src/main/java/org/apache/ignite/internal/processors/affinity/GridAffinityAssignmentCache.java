@@ -375,7 +375,7 @@ public class GridAffinityAssignmentCache {
         idealAssignment = assignment;
 
         if (ctx.cache().cacheMode(cacheOrGrpName) == PARTITIONED)
-            printDistribution(assignment, sorted.size());
+            printDistributionIfThresholdExceeded(assignment, sorted.size());
 
         if (hasBaseline) {
             baselineTopology = discoCache.state().baselineTopology();
@@ -432,9 +432,9 @@ public class GridAffinityAssignmentCache {
      *
      * @param assignments Assignments to calculate partitions distribution.
      * @param nodes Affinity nodes number.
-     * @see IgniteSystemProperties#IGNITE_AFFINITY_HISTORY_SIZE
+     * @see IgniteSystemProperties#IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD
      */
-    private void printDistribution(List<List<ClusterNode>> assignments, int nodes) {
+    private void printDistributionIfThresholdExceeded(List<List<ClusterNode>> assignments, int nodes) {
         int locPrimaryCnt = 0;
         int locBackupCnt = 0;
 
