@@ -25,6 +25,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -46,11 +47,13 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                         .setMaxSize(200 * 1024 * 1024)
                         .setInitialSize(200 * 1024 * 1024)
                 )
+                // Test verifies checkpoint count, so it is essencial that no checkpoint is triggered by timeout
                 .setCheckpointFrequency(999_999_999_999L)
         );
 
         cfg.setCacheConfiguration(
             new CacheConfiguration(DEFAULT_CACHE_NAME)
+                // Test checks internal state before and after rebalance, so it is configured to be triggered manually
                 .setRebalanceDelay(-1)
         );
 
@@ -118,8 +121,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         long rebalanceStartedTimestamp = System.currentTimeMillis();
 
-        for (int i = 0; i < 4; i++)
-            grid(i).cache(DEFAULT_CACHE_NAME).rebalance();
+        for (Ignite g : G.allGrids())
+            g.cache(DEFAULT_CACHE_NAME).rebalance();
 
         awaitPartitionMapExchange();
 
@@ -149,5 +152,40 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         assertEquals(1, checkpointsBeforeNodeStarted); // checkpoint on start
         assertEquals(0, checkpointsBeforeRebalance);
         assertEquals(disableWalDuringRebalancing ? 1 : 0, checkpointsAfterRebalance); // checkpoint if WAL was re-activated
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testLocalAndGlobalWalStateInterdependence() throws Exception {
+        Ignite ignite = startGrids(3);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int k = 0; k < 1000; k++)
+            cache.put(k, k);
+
+        IgniteEx newIgnite = startGrid(3);
+
+        ignite.cluster().setBaselineTopology(ignite.cluster().nodes());
+
+        CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
+
+        assertFalse(grpCtx.walEnabled());
+
+        ignite.cluster().disableWal(DEFAULT_CACHE_NAME);
+
+        for (Ignite g : G.allGrids())
+            g.cache(DEFAULT_CACHE_NAME).rebalance();
+
+        awaitPartitionMapExchange();
+
+        assertFalse(grpCtx.walEnabled()); // WAL is globally disabled
+
+        ignite.cluster().enableWal(DEFAULT_CACHE_NAME);
+
+        assertTrue(grpCtx.walEnabled());
     }
 }
