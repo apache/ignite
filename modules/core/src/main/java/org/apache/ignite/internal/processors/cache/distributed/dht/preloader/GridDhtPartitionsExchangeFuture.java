@@ -1249,6 +1249,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                     nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, futTimeout);
                 }
             }
+            catch (IgniteCheckedException e) {
+                U.warn(log,"Unable to await partitions release future", e);
+
+                throw e;
+            }
         }
 
         long waitEnd = U.currentTimeMillis();
@@ -1312,11 +1317,6 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         if (log.isInfoEnabled())
                             log.info("Finished waiting for distributed partitions release latch: " + releaseLatch);
-
-                        cctx.exchange().setReleasedTopVer(initialVersion());
-
-                        if (phase == 1)
-                            cctx.mvcc().validate(initialVersion());
 
                         break;
                     }

@@ -320,7 +320,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
      * with topology version less or equal to {@code topVer}.
      *
      * @param topVer Topology version.
-     * @return Compound future of all {@link GridDhtTxFinishFuture} and {@link GridNearTxFinishFuture} futures.
+     * @return Compound future of all {@link GridDhtTxFinishFuture} futures.
      */
     public IgniteInternalFuture<?> finishRemoteTxs(AffinityTopologyVersion topVer) {
         GridCompoundFuture<?, ?> res = new GridCompoundFuture<>();
@@ -328,15 +328,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         for (GridCacheFuture<?> fut : futs.values()) {
             if (fut instanceof GridDhtTxFinishFuture) {
                 GridDhtTxFinishFuture finishTxFuture = (GridDhtTxFinishFuture) fut;
-                AffinityTopologyVersion txTopVer = finishTxFuture.tx().topologyVersionSnapshot();
-                if (txTopVer != null && txTopVer.compareTo(topVer) < 0)
-                    res.add(ignoreErrors(finishTxFuture));
-            }
 
-            if (fut instanceof GridNearTxFinishFuture) {
-                GridNearTxFinishFuture finishTxFuture = (GridNearTxFinishFuture) fut;
-                AffinityTopologyVersion txTopVer = finishTxFuture.tx().topologyVersionSnapshot();
-                if (txTopVer != null && txTopVer.compareTo(topVer) < 0)
+                if (cctx.tm().needWaitTransaction(finishTxFuture.tx(), topVer))
                     res.add(ignoreErrors(finishTxFuture));
             }
         }
@@ -344,24 +337,6 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
         res.markInitialized();
 
         return res;
-    }
-
-    public void validate(AffinityTopologyVersion topVer) {
-        for (GridCacheFuture<?> fut : futs.values()) {
-            if (fut instanceof GridDhtTxFinishFuture) {
-                GridDhtTxFinishFuture finishTxFuture = (GridDhtTxFinishFuture) fut;
-                AffinityTopologyVersion txTopVer = finishTxFuture.tx().topologyVersionSnapshot();
-                if (txTopVer != null && txTopVer.compareTo(topVer) < 0)
-                    assert finishTxFuture.isDone() : finishTxFuture;
-            }
-
-            if (fut instanceof GridNearTxFinishFuture) {
-                GridNearTxFinishFuture finishTxFuture = (GridNearTxFinishFuture) fut;
-                AffinityTopologyVersion txTopVer = finishTxFuture.tx().topologyVersionSnapshot();
-                if (txTopVer != null && txTopVer.compareTo(topVer) < 0)
-                    assert finishTxFuture.isDone() : finishTxFuture;
-            }
-        }
     }
 
     /**

@@ -166,8 +166,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /** */
     @Nullable private volatile GridDhtPartitionsExchangeFuture lastInitializedFut;
 
-    @Nullable private volatile AffinityTopologyVersion releasedTopVer;
-
     /** */
     private final AtomicReference<GridDhtTopologyFuture> lastFinishedFut = new AtomicReference<>();
 
@@ -544,14 +542,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
      */
     public IgniteInternalFuture<?> reconnectExchangeFuture() {
         return reconnectExchangeFut;
-    }
-
-    public void setReleasedTopVer(AffinityTopologyVersion topVer) {
-        this.releasedTopVer = topVer;
-    }
-
-    public AffinityTopologyVersion releasedTopVer() {
-        return releasedTopVer;
     }
 
     /**

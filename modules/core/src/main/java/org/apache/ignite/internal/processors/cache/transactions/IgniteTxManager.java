@@ -571,13 +571,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         return res;
     }
 
-    public void validate(AffinityTopologyVersion topVer) {
-        for (IgniteInternalTx tx : txs()) {
-            if (needWaitTransaction(tx, topVer))
-                assert tx.finishFuture().isDone() : tx;
-        }
-    }
-
     /**
      * @param tx Transaction.
      * @param topVer Exchange version.

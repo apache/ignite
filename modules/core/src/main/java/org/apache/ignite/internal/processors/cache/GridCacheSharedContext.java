@@ -863,21 +863,25 @@ public class GridCacheSharedContext<K, V> {
         GridCompoundFuture f = new CacheObjectsReleaseFuture("Partition", topVer);
 
         f.add(mvcc().finishExplicitLocks(topVer));
-        f.add(tm().finishLocalTxs(topVer));
         f.add(mvcc().finishAtomicUpdates(topVer));
         f.add(mvcc().finishDataStreamerUpdates(topVer));
 
-        f.markInitialized();
+        IgniteInternalFuture<?> finishLocalTxsFuture = tm().finishLocalTxs(topVer);
+        f.add(finishLocalTxsFuture);
 
-        // After finishing all local updates, wait for finishing all tx updates to backups.
-        GridCompoundFuture finalF = new GridCompoundFuture();
+        final GridCompoundFuture finishAllTxsFuture = new GridCompoundFuture();
 
-        f.listen(future -> {
-            finalF.add(mvcc().finishRemoteTxs(topVer));
-            finalF.markInitialized();
+        // After finishing all local updates, wait for finishing all tx updates on backups.
+        finishLocalTxsFuture.listen(future -> {
+            finishAllTxsFuture.add(mvcc().finishRemoteTxs(topVer));
+            finishAllTxsFuture.markInitialized();
         });
 
-        return finalF;
+        f.add(finishAllTxsFuture);
+
+        f.markInitialized();
+
+        return f;
     }
 
     /**
