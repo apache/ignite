@@ -128,6 +128,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -737,7 +738,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             WALPointer ptr = cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
 
             if (ptr != null) {
-                cctx.wal().fsync(ptr);
+                cctx.wal().flush(ptr, true);
 
                 nodeStart(ptr);
             }
@@ -3113,8 +3114,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (hasPages) {
                 assert cpPtr != null;
 
+                tracker.onWalCpRecordFsyncStart();
+
                 // Sync log outside the checkpoint write lock.
-                cctx.wal().fsync(cpPtr);
+                cctx.wal().flush(cpPtr, true);
+
+                tracker.onWalCpRecordFsyncEnd();
 
                 long cpTs = System.currentTimeMillis();
 
@@ -3140,11 +3145,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (printCheckpointStats)
                     if (log.isInfoEnabled())
                         log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, checkpointLockWait=%dms, " +
-                                "checkpointLockHoldTime=%dms, pages=%d, reason='%s']",
+                                "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, pages=%d, reason='%s']",
                             cpRec.checkpointId(),
                             cpPtr,
                             tracker.lockWaitDuration(),
                             tracker.lockHoldDuration(),
+                            tracker.walCpRecordFsyncDuration(),
                             cpPages.size(),
                             curr.reason)
                         );
@@ -3153,7 +3159,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
             else {
                 if (curr.nextSnapshot)
-                    cctx.wal().fsync(null);
+                    cctx.wal().flush(null, true);
 
                 if (printCheckpointStats) {
                     if (log.isInfoEnabled())
