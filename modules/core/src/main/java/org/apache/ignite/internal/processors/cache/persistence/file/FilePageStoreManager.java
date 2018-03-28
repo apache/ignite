@@ -754,17 +754,19 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     private void deleteCacheGroupConfigurationData(CacheGroupContext ctx) {
         File cacheGrpDir = cacheWorkDir(ctx.sharedGroup(), ctx.cacheOrGroupName());
 
-        if( cacheGrpDir != null && cacheGrpDir.exists()) {
+        if (cacheGrpDir != null && cacheGrpDir.exists()) {
             File[] cacheDatFiles = cacheGrpDir.listFiles(new FileFilter() {
                 @Override public boolean accept(File file) {
                     return file.isFile() && file.getName().endsWith(CACHE_DATA_FILENAME);
                 }
             });
 
-            if (cacheDatFiles != null)
-                for (File file : cacheDatFiles)
+            if (cacheDatFiles != null) {
+                for (File file : cacheDatFiles) {
                     if (file.exists())
                         file.delete();
+                }
+            }
         }
     }
 
@@ -778,9 +780,10 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         else
             file = new File(cacheWorkDir, CACHE_DATA_FILENAME);
 
-        if(file.exists())
-            if(!file.delete())
+        if (file.exists()) {
+            if (!file.delete())
                 throw new IgniteCheckedException("Failed to delete cache configuration:" + cacheCfg.getName());
+        }
 
     }
 

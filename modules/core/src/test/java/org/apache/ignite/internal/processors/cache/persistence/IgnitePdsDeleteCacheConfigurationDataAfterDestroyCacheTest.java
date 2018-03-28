@@ -53,12 +53,11 @@ public class IgnitePdsDeleteCacheConfigurationDataAfterDestroyCacheTest extends 
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
-        return cfg
-                .setDiscoverySpi(new TcpDiscoverySpi()
+        return cfg.setDiscoverySpi(new TcpDiscoverySpi()
                         .setIpFinder(ipFinder))
-                .setDataStorageConfiguration(new DataStorageConfiguration()
-                        .setCheckpointFrequency(1_000)
-                        .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+                        .setDataStorageConfiguration(new DataStorageConfiguration()
+                            .setCheckpointFrequency(1_000)
+                            .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                                 .setMaxSize(200 * 1024 * 1024)
                                 .setPersistenceEnabled(true)));
     }
@@ -122,14 +121,11 @@ public class IgnitePdsDeleteCacheConfigurationDataAfterDestroyCacheTest extends 
 
         stopAllGrids();
 
-        info("WHOLE GRID STOPPED");
+        info("grid stopped");
 
         ignite = (IgniteEx)startGrids(NODES);
 
-        for (String cacheName: ignite.cacheNames())
-            info("!!! " + cacheName);
-
-        assertEquals(ignite.cacheNames().size(), CACHES - 2);
+        assertEquals("Check that caches don't be restored", ignite.cacheNames().size(), CACHES - 2);
     }
 
 
