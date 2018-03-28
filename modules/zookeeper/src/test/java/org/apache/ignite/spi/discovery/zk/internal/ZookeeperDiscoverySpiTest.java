@@ -613,7 +613,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLocalAuthenticationFails() throws Exception {
+    public void _testLocalAuthenticationFails() throws Exception {
         auth = ZkTestNodeAuthenticator.factory(getTestIgniteInstanceName(0));
 
         Throwable err = GridTestUtils.assertThrows(log, new Callable<Void>() {
