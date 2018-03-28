@@ -25,6 +25,9 @@ import org.jetbrains.annotations.Nullable;
  */
 public class VacuumMetricsReducer implements IgniteReducer<VacuumMetrics, VacuumMetrics> {
     /** */
+    private static final long serialVersionUID = 7063457745963917386L;
+
+    /** */
     private final VacuumMetrics m = new VacuumMetrics();
 
     /** {@inheritDoc} */
