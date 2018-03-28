@@ -97,6 +97,8 @@ public class NesterovParameterUpdate implements Serializable {
      */
     public static NesterovParameterUpdate avg(List<NesterovParameterUpdate> parameters) {
         NesterovParameterUpdate sum = sum(parameters);
-        return sum != null ? sum.setPreviousUpdates(sum.prevIterationUpdates().divide(parameters.stream().filter(Objects::nonNull).count())) : null;
+        return sum != null ? sum.setPreviousUpdates(sum.prevIterationUpdates()
+            .divide(parameters.stream()
+                .filter(Objects::nonNull).count())) : null;
     }
 }

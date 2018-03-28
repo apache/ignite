@@ -56,10 +56,11 @@ public class SVMPartitionDataBuilderOnHeap<K, V, C extends Serializable>
     }
 
     /** {@inheritDoc} */
-    @Override public LabeledDataset<Double, LabeledVector> build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
-                                                                 C ctx) {
+    @Override public LabeledDataset<Double, LabeledVector> build(Iterator<UpstreamEntry<K, V>> upstreamData,
+        long upstreamDataSize, C ctx) {
 
-int xCols = -1;        double[][] x = null;//new double[Math.toIntExact(upstreamDataSize)][cols];
+        int xCols = -1;
+        double[][] x = null;
         double[] y = new double[Math.toIntExact(upstreamDataSize)];
 
         int ptr = 0;

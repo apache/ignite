@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.regressions.linear;
 
 import java.util.Arrays;
-import org.apache.ignite.ml.SingleLabelDatasetTrainer;
+import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;

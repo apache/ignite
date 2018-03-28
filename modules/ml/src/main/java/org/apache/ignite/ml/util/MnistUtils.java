@@ -44,7 +44,7 @@ public class MnistUtils {
      * @return Stream of MNIST samples.
      * @throws IgniteException In case of exception.
      */
-    public static Stream<DenseLocalOnHeapVector> mnist(String imagesPath, String labelsPath, Random rnd, int cnt)
+    public static Stream<DenseLocalOnHeapVector> mnistAsStream(String imagesPath, String labelsPath, Random rnd, int cnt)
         throws IOException {
         FileInputStream isImages = new FileInputStream(imagesPath);
         FileInputStream isLabels = new FileInputStream(labelsPath);
@@ -78,7 +78,18 @@ public class MnistUtils {
         return lst.subList(0, cnt).stream().map(DenseLocalOnHeapVector::new);
     }
 
-    public static List<MnistLabeledImage> mnist2(String imagesPath, String labelsPath, Random rnd, int cnt) throws IOException {
+    /**
+     * Read random {@code count} samples from MNIST dataset from two files (images and labels) into a stream of labeled
+     * vectors.
+     *
+     * @param imagesPath Path to the file with images.
+     * @param labelsPath Path to the file with labels.
+     * @param rnd Random numbers generator.
+     * @param cnt Count of samples to read.
+     * @return List of MNIST samples.
+     * @throws IOException In case of exception.
+     */
+    public static List<MnistLabeledImage> mnistAsList(String imagesPath, String labelsPath, Random rnd, int cnt) throws IOException {
 
         List<MnistLabeledImage> res = new ArrayList<>();
 
@@ -125,7 +136,7 @@ public class MnistUtils {
         throws IOException {
 
         try (FileWriter fos = new FileWriter(outPath)) {
-            mnist(imagesPath, labelsPath, rnd, cnt).forEach(vec -> {
+            mnistAsStream(imagesPath, labelsPath, rnd, cnt).forEach(vec -> {
                 try {
                     fos.write((int)vec.get(vec.size() - 1) + " ");
 
@@ -156,30 +167,49 @@ public class MnistUtils {
         return (is.read() << 24) | (is.read() << 16) | (is.read() << 8) | (is.read());
     }
 
+    /**
+     * MNIST image.
+     */
     public static class MnistImage {
-
+        /** Pixels. */
         private final double[] pixels;
 
+        /**
+         * Construct a new instance of MNIST image.
+         *
+         * @param pixels Pixels.
+         */
         public MnistImage(double[] pixels) {
             this.pixels = pixels;
         }
 
+        /** */
         public double[] getPixels() {
             return pixels;
         }
     }
 
+    /**
+     * MNIST labeled image.
+     */
     public static class MnistLabeledImage extends MnistImage {
+        /** Label. */
+        private final int lb;
 
-        private final int label;
-
-        public MnistLabeledImage(double[] pixels, int label) {
+        /**
+         * Constructs a new instance of MNIST labeled image.
+         *
+         * @param pixels Pixels.
+         * @param lb Label.
+         */
+        public MnistLabeledImage(double[] pixels, int lb) {
             super(pixels);
-            this.label = label;
+            this.lb = lb;
         }
 
+        /** */
         public int getLabel() {
-            return label;
+            return lb;
         }
     }
 }

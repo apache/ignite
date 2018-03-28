@@ -46,10 +46,10 @@ class MnistMLPTestUtil {
     static IgniteBiTuple<Stream<DenseLocalOnHeapVector>, Stream<DenseLocalOnHeapVector>> loadMnist(int samplesCnt) throws IOException {
         Properties props = loadMNISTProperties();
 
-        Stream<DenseLocalOnHeapVector> trainingMnistStream = MnistUtils.mnist(props.getProperty(PROP_TRAINING_IMAGES),
+        Stream<DenseLocalOnHeapVector> trainingMnistStream = MnistUtils.mnistAsStream(props.getProperty(PROP_TRAINING_IMAGES),
             props.getProperty(PROP_TRAINING_LABELS), new Random(123L), samplesCnt);
 
-        Stream<DenseLocalOnHeapVector> testMnistStream = MnistUtils.mnist(props.getProperty(PROP_TEST_IMAGES),
+        Stream<DenseLocalOnHeapVector> testMnistStream = MnistUtils.mnistAsStream(props.getProperty(PROP_TEST_IMAGES),
             props.getProperty(PROP_TEST_LABELS), new Random(123L), 10_000);
 
         return new IgniteBiTuple<>(trainingMnistStream, testMnistStream);
@@ -57,12 +57,12 @@ class MnistMLPTestUtil {
 
     static List<MnistUtils.MnistLabeledImage> loadTrainingSet(int cnt) throws IOException {
         Properties props = loadMNISTProperties();
-        return MnistUtils.mnist2(props.getProperty(PROP_TRAINING_IMAGES), props.getProperty(PROP_TRAINING_LABELS), new Random(123L), cnt);
+        return MnistUtils.mnistAsList(props.getProperty(PROP_TRAINING_IMAGES), props.getProperty(PROP_TRAINING_LABELS), new Random(123L), cnt);
     }
 
     static List<MnistUtils.MnistLabeledImage> loadTestSet(int cnt) throws IOException {
         Properties props = loadMNISTProperties();
-        return MnistUtils.mnist2(props.getProperty(PROP_TEST_IMAGES), props.getProperty(PROP_TEST_LABELS), new Random(123L), cnt);
+        return MnistUtils.mnistAsList(props.getProperty(PROP_TEST_IMAGES), props.getProperty(PROP_TEST_LABELS), new Random(123L), cnt);
     }
 
     /** Load properties for MNIST tests. */

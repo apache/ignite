@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml;
+package org.apache.ignite.ml.trainers;
+
+import org.apache.ignite.ml.Model;
 
 /**
  * Interface for trainers that trains on dataset with singe label per object.
