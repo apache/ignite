@@ -83,7 +83,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
 
         final ErrorService svc = ignite.services().serviceProxy(name, ErrorService.class, false);
 
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 svc.go();
 

@@ -581,7 +581,12 @@ public class PlatformServices extends PlatformAbstractTarget {
 
                 Method mtd = getMethod(serviceClass, mthdName, args);
 
-                return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
+                try {
+                    return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
+                }
+                catch (Throwable t) {
+                    throw new IgniteCheckedException(t);
+                }
             }
         }
 

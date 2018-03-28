@@ -426,13 +426,13 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
     public void testMoveRenameSourceDoesNotExist() throws Exception {
         create(igfs, paths(DIR, DIR_NEW), null);
 
-        GridTestUtils.assertThrowsAnyCause(log, new Callable<Object>() {
+        GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 igfs.rename(SUBDIR, SUBDIR_NEW);
 
                 return null;
             }
-        }, IgfsPathNotFoundException.class, null);
+        }, IgfsException.class, null);
 
         checkNotExist(igfs, igfsSecondary, SUBDIR, SUBDIR_NEW);
     }
@@ -468,19 +468,33 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         checkExist(igfs, igfsSecondary, new IgfsPath("/d/f"));
         assertTrue(igfs.info(new IgfsPath("/d/f")).isFile());
 
-        assertThrowsParentNotDirectoryException(new Callable<Void>() {
-            @Override public Void call() {
-                igfs.mkdirs(new IgfsPath("/d/f"), null);
-                return null;
-            }
-        });
+        try {
+            igfs.mkdirs(new IgfsPath("/d/f"), null);
 
-        assertThrowsParentNotDirectoryException(new Callable<Void>() {
-            @Override public Void call() {
-                igfs.mkdirs(new IgfsPath("/d/f/something/else"), null);
-                return null;
-            }
-        });
+            fail("IgfsParentNotDirectoryException expected.");
+        }
+        catch (IgfsParentNotDirectoryException ignore) {
+            // No-op.
+        }
+        catch (IgfsException e) {
+            // Currently Ok for Hadoop fs:
+            if (!getClass().getSimpleName().startsWith("Hadoop"))
+                throw e;
+        }
+
+        try {
+            igfs.mkdirs(new IgfsPath("/d/f/something/else"), null);
+
+            fail("IgfsParentNotDirectoryException expected.");
+        }
+        catch (IgfsParentNotDirectoryException ignore) {
+            // No-op.
+        }
+        catch (IgfsException e) {
+            // Currently Ok for Hadoop fs:
+            if (!getClass().getSimpleName().startsWith("Hadoop"))
+                throw e;
+        }
 
         create(igfs, paths(DIR, SUBDIR), null);
 
@@ -498,34 +512,6 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
             assertEquals(props.get(IgfsUtils.PROP_PERMISSION),
                 igfs.info(SUBSUBDIR).properties().get(IgfsUtils.PROP_PERMISSION));
         }
-    }
-
-    /**
-     * Check that call throws a IgfsParentNotDirectoryException, or IgfsException for Hadoop.
-     *
-     * @param call Callable to expect exception from.
-     */
-    private void assertThrowsParentNotDirectoryException(Callable<Void> call) throws Exception {
-        try {
-            call.call();
-        }
-        catch (Throwable e) {
-            Throwable t = e;
-
-            while (t != null) {
-                if (t.getClass() == IgfsParentNotDirectoryException.class ||
-                    t.getClass() == IgfsException.class && !getClass().getSimpleName().startsWith("Hadoop")) {
-                    log.info("Caught expected exception: " + t);
-                    return;
-                }
-
-                t = t.getCause();
-            }
-
-            throw e;
-        }
-
-        fail("IgfsParentNotDirectoryException expected.");
     }
 
     /**
@@ -590,13 +576,14 @@ public abstract class IgfsAbstractSelfTest extends IgfsAbstractBaseSelfTest {
         create(igfs, paths(DIR, SUBDIR, SUBSUBDIR), paths(FILE));
         checkExist(igfs, igfsSecondary, SUBDIR, SUBSUBDIR, FILE);
 
-        GridTestUtils.assertThrowsAnyCause(log(), new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                igfs.delete(SUBDIR, false);
+        try {
+            boolean ok = igfs.delete(SUBDIR, false);
 
-                return null;
-            }
-        }, IgfsDirectoryNotEmptyException.class, null);
+            assertFalse(ok);
+        }
+        catch (IgfsDirectoryNotEmptyException ignore) {
+            // No-op, expected.
+        }
 
         checkExist(igfs, igfsSecondary, SUBDIR, SUBSUBDIR, FILE);
     }
