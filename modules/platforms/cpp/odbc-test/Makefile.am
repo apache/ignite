@@ -101,7 +101,8 @@ ignite_odbc_tests_SOURCES = \
     ../odbc/src/column.cpp \
     ../odbc/src/common_types.cpp \
     ../odbc/src/utility.cpp \
-    ../odbc/src/result_page.cpp
+    ../odbc/src/result_page.cpp \
+    ../odbc/src/nested_tx_mode.cpp
 
 run-check: check
 	./ignite-odbc-tests -p

@@ -133,16 +133,9 @@ public class OdbcConnectionContext implements ClientListenerConnectionContext {
             user = reader.readString();
             passwd = reader.readString();
 
-            String nestedTxModeName = reader.readString();
+            byte nestedTxModeVal = reader.readByte();
 
-            if (!F.isEmpty(nestedTxModeName)) {
-                try {
-                    nestedTxMode = NestedTxMode.valueOf(nestedTxModeName);
-                }
-                catch (IllegalArgumentException e) {
-                    throw new IgniteSQLException("Invalid nested transactions handling mode: " + nestedTxModeName);
-                }
-            }
+            nestedTxMode = NestedTxMode.fromByte(nestedTxModeVal);
         }
 
         AuthorizationContext actx = null;
