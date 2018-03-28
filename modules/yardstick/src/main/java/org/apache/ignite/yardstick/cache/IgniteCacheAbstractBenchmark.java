@@ -206,7 +206,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
             }
         }
 
-        if(args.preloadDataRegionMult() > 0) {
+        if(args.enablePreload()) {
             startPreloadLogging(args.preloadLogsInterval());
 
             preload();
@@ -326,8 +326,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
         BenchmarkUtils.println("Objects loaded = " + cnt);
         BenchmarkUtils.println("Total allocated pages = " + impl.getTotalAllocatedPages());
 
-        if (args.resetRangeForPreload())
-            args.setRange(cnt);
+        args.setRange(cnt);
     }
 
     /**

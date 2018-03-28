@@ -106,8 +106,8 @@ public class IgniteBenchmarkArguments {
     private int preloadDataRegionMult = 0;
 
     /** */
-    @Parameter(names = {"-rrfp", "--resetRangeForPreload"}, description = "Reset range for preload flag.")
-    private boolean resetRangeForPreload;
+    @Parameter(names = {"-ep", "--enablePreload"}, description = "Enable preload flag.")
+    private boolean enablePreload = true;
 
     /** */
     @Parameter(names = {"-plfreq", "--preloadLogFrequency"}, description = "Interval between printing logs")
@@ -438,8 +438,8 @@ public class IgniteBenchmarkArguments {
     /**
      * @return Reset range for preload flag.
      */
-    public boolean resetRangeForPreload() {
-        return resetRangeForPreload;
+    public boolean enablePreload() {
+        return enablePreload;
     }
 
     /**
