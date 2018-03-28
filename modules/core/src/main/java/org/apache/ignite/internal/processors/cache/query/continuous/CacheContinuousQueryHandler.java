@@ -365,7 +365,9 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
 
         CacheContinuousQueryListener<K, V> lsnr = new CacheContinuousQueryListener<K, V>() {
             @Override public void onExecution() {
-                if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
+                GridCacheContext<K, V> cctx = cacheContext(ctx);
+
+                if (cctx != null && cctx.events().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     ctx.event().record(new CacheQueryExecutedEvent<>(
                         ctx.discovery().localNode(),
                         "Continuous query executed.",

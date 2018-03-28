@@ -60,12 +60,12 @@ public class IgniteChangingBaselineDownCachePutAllFailoverTest extends CachePutA
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         startGrids(GRIDS_COUNT);
 
@@ -78,14 +78,14 @@ public class IgniteChangingBaselineDownCachePutAllFailoverTest extends CachePutA
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 
     /** {@inheritDoc} */

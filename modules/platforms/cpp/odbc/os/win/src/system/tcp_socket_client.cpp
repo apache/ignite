@@ -107,10 +107,11 @@ namespace ignite
 
             TcpSocketClient::~TcpSocketClient()
             {
-                Close();
+                InternalClose();
             }
 
-            bool TcpSocketClient::Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag)
+            bool TcpSocketClient::Connect(const char* hostname, uint16_t port, int32_t timeout,
+                diagnostic::Diagnosable& diag)
             {
                 static common::concurrent::CriticalSection initCs;
                 static bool networkInited = false;
@@ -200,7 +201,7 @@ namespace ignite
                             continue;
                         }
 
-                        res = WaitOnSocket(CONNECT_TIMEOUT, false);
+                        res = WaitOnSocket(timeout, false);
 
                         if (res < 0 || res == WaitResult::TIMEOUT)
                         {
@@ -220,6 +221,11 @@ namespace ignite
             }
 
             void TcpSocketClient::Close()
+            {
+                InternalClose();
+            }
+
+            void TcpSocketClient::InternalClose()
             {
                 if (socketHandle != INVALID_SOCKET)
                 {

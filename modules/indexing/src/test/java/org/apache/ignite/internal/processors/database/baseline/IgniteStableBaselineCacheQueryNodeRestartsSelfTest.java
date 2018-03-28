@@ -44,7 +44,7 @@ public class IgniteStableBaselineCacheQueryNodeRestartsSelfTest extends IgniteCa
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
 
         startGrids(gridCount() + 1);
 
@@ -63,6 +63,6 @@ public class IgniteStableBaselineCacheQueryNodeRestartsSelfTest extends IgniteCa
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        GridTestUtils.deleteDbFiles();
+        cleanPersistenceDir();
     }
 }

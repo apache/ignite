@@ -45,7 +45,7 @@ public class JdbcThinWalModeChangeSelfTest extends WalModeChangeAbstractSelfTest
         String template = ccfg.getCacheMode() == CacheMode.PARTITIONED ?
             QueryUtils.TEMPLATE_PARTITIONED : QueryUtils.TEMPLATE_REPLICATED;
 
-        String cmd = "CREATE TABLE " + ccfg.getName() + " (k BIGINT PRIMARY KEY, v BIGINT) WITH \"" +
+        String cmd = "CREATE TABLE IF NOT EXISTS " + ccfg.getName() + " (k BIGINT PRIMARY KEY, v BIGINT) WITH \"" +
             "TEMPLATE=" + template + ", " +
             "CACHE_NAME=" + ccfg.getName() + ", " +
             "ATOMICITY=" + ccfg.getAtomicityMode() +

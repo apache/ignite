@@ -29,8 +29,14 @@ public class SqlKeyword {
     /** Keyword: ALTER. */
     public static final String ALTER = "ALTER";
 
+    /** Keyword: ALLOW_OVERWRITE */
+    public static final String ALLOW_OVERWRITE = "ALLOW_OVERWRITE";
+
     /** Keyword: ASC. */
     public static final String ASC = "ASC";
+
+    /** Keyword: BATCH_SIZE */
+    public static final String BATCH_SIZE = "BATCH_SIZE";
 
     /** Keyword: BIGINT */
     public static final String BIGINT = "BIGINT";
@@ -41,8 +47,8 @@ public class SqlKeyword {
     /** Keyword: BOOL. */
     public static final String BOOL = "BOOL";
 
-    /** Keyword: BATCH_SIZE. */
-    public static final String BATCH_SIZE = "BATCH_SIZE";
+    /** Keyword: PACKET_SIZE. */
+    public static final String PACKET_SIZE = "PACKET_SIZE";
 
     /** Keyword: BOOLEAN. */
     public static final String BOOLEAN = "BOOLEAN";
@@ -94,6 +100,9 @@ public class SqlKeyword {
 
     /** Keyword: FLOAT8. */
     public static final String FLOAT8 = "FLOAT8";
+
+    /** Keyword: FLUSH_FREQUENCY. */
+    public static final String FLUSH_FREQUENCY = "FLUSH_FREQUENCY";
 
     /** Keyword: FORMAT. */
     public static final String FORMAT = "FORMAT";
@@ -167,8 +176,17 @@ public class SqlKeyword {
     /** Keyword: NVARCHAR2. */
     public static final String NVARCHAR2 = "NVARCHAR2";
 
+    /** Keyword: OFF. */
+    public static final String OFF = "OFF";
+
     /** Keyword: ON. */
     public static final String ON = "ON";
+
+    /** Keyword: PER_NODE_PARALLEL_OPERATIONS. */
+    public static final String PER_NODE_PARALLEL_OPERATIONS = "PER_NODE_PARALLEL_OPERATIONS";
+
+    /** Keyword: PER_NODE_BUFFER_SIZE. */
+    public static final String PER_NODE_BUFFER_SIZE = "PER_NODE_BUFFER_SIZE";
 
     /** Keyword: PRECISION. */
     public static final String PRECISION = "PRECISION";
@@ -182,6 +200,9 @@ public class SqlKeyword {
     /** Keyword: RESTRICT. */
     public static final String RESTRICT = "RESTRICT";
 
+    /** Keyword: SET. */
+    public static final String SET = "SET";
+
     /** Keyword: SIGNED. */
     public static final String SIGNED = "SIGNED";
 
@@ -193,6 +214,9 @@ public class SqlKeyword {
 
     /** Keyword: SPATIAL. */
     public static final String SPATIAL = "SPATIAL";
+
+    /** Keyword: STREAMING. */
+    public static final String STREAMING = "STREAMING";
 
     /** Keyword: TABLE. */
     public static final String TABLE = "TABLE";
@@ -226,6 +250,15 @@ public class SqlKeyword {
 
     /** Keyword: PARALLEL. */
     public static final String PARALLEL = "PARALLEL";
+
+    /** Keyword: USER. */
+    public static final String USER = "USER";
+
+    /** Keyword: WITH. */
+    public static final String WITH = "WITH";
+
+    /** Keyword: PASSWORD. */
+    public static final String PASSWORD = "PASSWORD";
 
     /** All keywords. */
     private static final HashSet<String> KEYWORDS;

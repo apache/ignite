@@ -18,10 +18,13 @@
 package org.apache.ignite.ml.svm;
 
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.ml.Trainer;
+import org.apache.ignite.ml.DatasetTrainer;
+import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.math.Vector;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.math.impls.vector.SparseDistributedVector;
 import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 import org.jetbrains.annotations.NotNull;
@@ -32,69 +35,83 @@ import org.jetbrains.annotations.NotNull;
  * and +1 labels for two classes and makes binary classification. </p> The paper about this algorithm could be found
  * here https://arxiv.org/abs/1409.1458.
  */
-public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearClassificationModel, LabeledDataset> {
+public class SVMLinearBinaryClassificationTrainer<K, V>
+    implements DatasetTrainer<K, V, SVMLinearBinaryClassificationModel> {
     /** Amount of outer SDCA algorithm iterations. */
-    private int amountOfIterations = 20;
+    private int amountOfIterations = 200;
 
     /** Amount of local SDCA algorithm iterations. */
-    private int amountOfLocIterations = 50;
+    private int amountOfLocIterations = 100;
 
     /** Regularization parameter. */
-    private double lambda = 0.2;
-
-    /** This flag enables distributed mode for this algorithm. */
-    private boolean isDistributed;
+    private double lambda = 0.4;
 
     /**
-     * Returns model based on data
+     * Trains model based on the specified data.
      *
-     * @param data data to build model
-     * @return model
+     * @param datasetBuilder   Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor      Label extractor.
+     * @param cols             Number of columns.
+     * @return Model.
      */
-    @Override public SVMLinearClassificationModel train(LabeledDataset data) {
-        isDistributed = data.isDistributed();
+    @Override public SVMLinearBinaryClassificationModel fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor, int cols) {
 
-        final int weightVectorSizeWithIntercept = data.colSize() + 1;
-        Vector weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
+        assert datasetBuilder != null;
 
-        for (int i = 0; i < this.getAmountOfIterations(); i++) {
-            Vector deltaWeights = calculateUpdates(data, weights);
-            weights = weights.plus(deltaWeights); // creates new vector
+        PartitionDataBuilder<K, V, SVMPartitionContext, LabeledDataset<Double, LabeledVector>> partDataBuilder = new SVMPartitionDataBuilderOnHeap<>(
+            featureExtractor,
+            lbExtractor,
+            cols
+        );
+
+        Vector weights;
+
+        try(Dataset<SVMPartitionContext, LabeledDataset<Double, LabeledVector>> dataset = datasetBuilder.build(
+            (upstream, upstreamSize) -> new SVMPartitionContext(),
+            partDataBuilder
+        )) {
+            final int weightVectorSizeWithIntercept = cols + 1;
+            weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
+
+            for (int i = 0; i < this.getAmountOfIterations(); i++) {
+                Vector deltaWeights = calculateUpdates(weights, dataset);
+                weights = weights.plus(deltaWeights); // creates new vector
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-
-        return new SVMLinearClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
+        return new SVMLinearBinaryClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
     }
 
     /** */
     @NotNull private Vector initializeWeightsWithZeros(int vectorSize) {
-        if (isDistributed)
-            return new SparseDistributedVector(vectorSize);
-        else
             return new DenseLocalOnHeapVector(vectorSize);
     }
 
     /** */
-    private Vector calculateUpdates(LabeledDataset data, Vector weights) {
-        Vector copiedWeights = weights.copy();
-        Vector deltaWeights = initializeWeightsWithZeros(weights.size());
+    private Vector calculateUpdates(Vector weights, Dataset<SVMPartitionContext, LabeledDataset<Double, LabeledVector>> dataset) {
+        return dataset.compute(data -> {
+            Vector copiedWeights = weights.copy();
+            Vector deltaWeights = initializeWeightsWithZeros(weights.size());
+            final int amountOfObservation = data.rowSize();
 
-        final int amountOfObservation = data.rowSize();
+            Vector tmpAlphas = initializeWeightsWithZeros(amountOfObservation);
+            Vector deltaAlphas = initializeWeightsWithZeros(amountOfObservation);
 
-        Vector tmpAlphas = initializeWeightsWithZeros(amountOfObservation);
-        Vector deltaAlphas = initializeWeightsWithZeros(amountOfObservation);
+            for (int i = 0; i < this.getAmountOfLocIterations(); i++) {
+                int randomIdx = ThreadLocalRandom.current().nextInt(amountOfObservation);
 
-        for (int i = 0; i < this.getAmountOfLocIterations(); i++) {
-            int randomIdx = ThreadLocalRandom.current().nextInt(amountOfObservation);
+                Deltas deltas = getDeltas(data, copiedWeights, amountOfObservation, tmpAlphas, randomIdx);
 
-            Deltas deltas = getDeltas(data, copiedWeights, amountOfObservation, tmpAlphas, randomIdx);
+                copiedWeights = copiedWeights.plus(deltas.deltaWeights); // creates new vector
+                deltaWeights = deltaWeights.plus(deltas.deltaWeights);  // creates new vector
 
-            copiedWeights = copiedWeights.plus(deltas.deltaWeights); // creates new vector
-            deltaWeights = deltaWeights.plus(deltas.deltaWeights);  // creates new vector
-
-            tmpAlphas.set(randomIdx, tmpAlphas.get(randomIdx) + deltas.deltaAlpha);
-            deltaAlphas.set(randomIdx, deltaAlphas.get(randomIdx) + deltas.deltaAlpha);
-        }
-        return deltaWeights;
+                tmpAlphas.set(randomIdx, tmpAlphas.get(randomIdx) + deltas.deltaAlpha);
+                deltaAlphas.set(randomIdx, deltaAlphas.get(randomIdx) + deltas.deltaAlpha);
+            }
+            return deltaWeights;
+        }, (a, b) -> a == null ? b : a.plus(b));
     }
 
     /** */
@@ -225,6 +242,7 @@ public class SVMLinearBinaryClassificationTrainer implements Trainer<SVMLinearCl
         this.amountOfLocIterations = amountOfLocIterations;
         return this;
     }
+
 }
 
 /** This is a helper class to handle pair results which are returned from the calculation method. */
