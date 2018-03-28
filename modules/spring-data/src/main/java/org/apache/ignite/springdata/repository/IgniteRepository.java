@@ -40,7 +40,7 @@ public interface IgniteRepository<T, ID extends Serializable> extends CrudReposi
     /**
      * Saves all given keys and entities combinations.
      * </p>
-     * It's suggested to use this method instead of default {@link CrudRepository#save(Iterable)} that generates
+     * It's suggested to use this method instead of default {@link CrudRepository#save(Object)} that generates
      * IDs (keys) that are not unique cluster wide.
      *
      * @param entities Map of key-entities pairs to save.
