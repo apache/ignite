@@ -448,7 +448,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             err = e;
         }
         catch (Throwable t) {
-            fut.rollbackOnError(t);
+            fut.onDone(t);
 
             throw t;
         }
