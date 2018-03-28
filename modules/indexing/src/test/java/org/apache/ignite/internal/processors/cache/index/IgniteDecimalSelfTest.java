@@ -43,24 +43,34 @@ import static java.util.Arrays.asList;
  * Test to check decimal columns.
  */
 public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
+    /** */
     private static final int SCALE = 8;
 
+    /** */
     private static final int PRECISION = 9;
 
+    /** */
     private static final String DEC_TAB_NAME = "DECIMAL_TABLE";
 
+    /** */
     private static final String VALUE = "VALUE";
 
+    /** */
     private static final String SALARY_CACHE = "SALARY_CACHE";
 
+    /** */
     private static final String SALARY_TAB_NAME = "SALARY";
 
+    /** */
     private static final MathContext MATH_CTX = new MathContext(PRECISION);
 
+    /** */
     private static final BigDecimal VAL_1 = new BigDecimal("123456789", MATH_CTX).setScale(SCALE, HALF_UP);
 
+    /** */
     private static final BigDecimal VAL_2 = new BigDecimal("12345678.12345678", MATH_CTX).setScale(SCALE, HALF_UP);
 
+    /** */
     private static final BigDecimal VAL_3 = new BigDecimal(".123456789", MATH_CTX).setScale(SCALE, HALF_UP);
 
     /** {@inheritDoc} */
