@@ -36,7 +36,9 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
-import org.apache.ignite.internal.util.typedef.F;
+import org.junit.Assert;
+
+import static org.hamcrest.core.StringContains.containsString;
 
 /**
  * Test that checks indexes handling on H2 side.
@@ -82,6 +84,11 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
         super.afterTest();
     }
 
+    /** Is specified Ignite instance is client */
+    private boolean isServerNode(Ignite ign) {
+        return !ign.cluster().localNode().isClient();
+    }
+
     /**
      * Test that after index creation index is used by queries.
      */
@@ -93,18 +100,19 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
         cache.query(new SqlFieldsQuery("CREATE INDEX \"" + IDX_NAME_1_ESCAPED + "\" ON \"" + TBL_NAME_ESCAPED + "\"(\""
             + FIELD_NAME_1_ESCAPED + "\" ASC)")).getAll();
 
-        // Test that local queries on all nodes use new index.
+        // Test that queries (local on server nodes) on all nodes use new index.
         for (int i = 0 ; i < 4; i++) {
-            List<List<?>> locRes = ignite(i).cache("cache").query(new SqlFieldsQuery("explain select \"id\" from " +
-                "\"cache\".\"ValueClass\" where \"field1\" = 'A'").setLocal(true)).getAll();
+            boolean useLoc = isServerNode(ignite(i));
 
-            assertEquals(F.asList(
-                Collections.singletonList("SELECT\n" +
-                    "    \"id\"\n" +
-                    "FROM \"cache\".\"ValueClass\"\n" +
-                    "    /* \"cache\".\"idx_1\": \"field1\" = 'A' */\n" +
-                    "WHERE \"field1\" = 'A'")
-            ), locRes);
+            SqlFieldsQuery qry = new SqlFieldsQuery("explain select \"id\" from " +
+                "\"cache\".\"ValueClass\" where \"field1\" = 'A'").setLocal(useLoc);
+
+            List<List<?>> locRes = ignite(i).cache("cache").query(qry).getAll();
+
+            String explanation = (String) locRes.get(0).get(0);
+
+            Assert.assertThat("Index is NOT used", explanation,
+                containsString("/* \"cache\".\"idx_1\": \"field1\" = 'A' */"));
         }
 
         assertSize(3);
@@ -163,18 +171,19 @@ public abstract class H2DynamicIndexAbstractSelfTest extends AbstractSchemaSelfT
 
         cache.query(new SqlFieldsQuery("DROP INDEX \"" + IDX_NAME_1_ESCAPED + "\""));
 
-        // Test that no local queries on all nodes use new index.
+        // Test that no queries (local on server nodes) on all nodes use new index.
         for (int i = 0 ; i < 4; i++) {
-            List<List<?>> locRes = ignite(i).cache("cache").query(new SqlFieldsQuery("explain select \"id\" from " +
-                "\"cache\".\"ValueClass\" where \"field1\" = 'A'").setLocal(true)).getAll();
+            boolean useLoc = isServerNode(ignite(i));
 
-            assertEquals(F.asList(
-                Collections.singletonList("SELECT\n" +
-                    "    \"id\"\n" +
-                    "FROM \"cache\".\"ValueClass\"\n" +
-                    "    /* \"cache\".\"ValueClass\".__SCAN_ */\n" +
-                    "WHERE \"field1\" = 'A'")
-            ), locRes);
+            SqlFieldsQuery qry = new SqlFieldsQuery("explain select \"id\" from " +
+                "\"cache\".\"ValueClass\" where \"field1\" = 'A'").setLocal(useLoc);
+
+            List<List<?>> locRes = ignite(i).cache("cache").query(qry).getAll();
+
+            String explanation = (String) locRes.get(0).get(0);
+
+            Assert.assertThat("Index is used, but should NOT.", explanation,
+                containsString("/* \"cache\".\"ValueClass\".__SCAN_ */"));
         }
 
         assertSize(3);
