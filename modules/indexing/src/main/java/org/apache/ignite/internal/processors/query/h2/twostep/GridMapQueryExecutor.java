@@ -194,7 +194,7 @@ public class GridMapQueryExecutor {
         lazyWorkerBusyLock.block();
 
         for (MapQueryLazyWorker worker : lazyWorkers.values())
-            worker.stop();
+            worker.stop(false);
 
         lazyWorkers.clear();
     }
@@ -567,10 +567,12 @@ public class GridMapQueryExecutor {
         final Object[] params,
         boolean lazy
     ) {
-        if (lazy && MapQueryLazyWorker.currentWorker() == null) {
+        MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
+
+        if (lazy && worker == null) {
             // Lazy queries must be re-submitted to dedicated workers.
             MapQueryLazyWorkerKey key = new MapQueryLazyWorkerKey(node.id(), reqId, segmentId);
-            MapQueryLazyWorker worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this);
+            worker = new MapQueryLazyWorker(ctx.igniteInstanceName(), key, log, this);
 
             worker.submit(new Runnable() {
                 @Override public void run() {
@@ -584,7 +586,7 @@ public class GridMapQueryExecutor {
                     MapQueryLazyWorker oldWorker = lazyWorkers.put(key, worker);
 
                     if (oldWorker != null)
-                        oldWorker.stop();
+                        oldWorker.stop(false);
 
                     IgniteThread thread = new IgniteThread(worker);
 
@@ -640,7 +642,8 @@ public class GridMapQueryExecutor {
                 .distributedJoinMode(distributedJoinMode)
                 .pageSize(pageSize)
                 .topologyVersion(topVer)
-                .reservations(reserved);
+                .reservations(reserved)
+                .lazyWorker(worker);
 
             Connection conn = h2.connectionForSchema(schemaName);
 
@@ -1054,7 +1057,7 @@ public class GridMapQueryExecutor {
         MapQueryLazyWorker worker = MapQueryLazyWorker.currentWorker();
 
         if (worker != null) {
-            worker.stop();
+            worker.stop(false);
 
             // Just stop is not enough as worker may be registered, but not started due to exception.
             unregisterLazyWorker(worker);
