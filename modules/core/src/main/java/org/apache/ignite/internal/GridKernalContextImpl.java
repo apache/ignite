@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
@@ -392,8 +393,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     private GridInternalSubscriptionProcessor internalSubscriptionProc;
 
-    /** Node invalidation flag. */
-    private volatile boolean invalidated;
+    /** Failure processor. */
+    private FailureProcessor failureProc;
 
     /**
      * No-arg constructor is required by externalization.
@@ -542,6 +543,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
          * ==========
          */
 
+        else if (comp instanceof FailureProcessor)
+            failureProc = (FailureProcessor)comp;
         else if (comp instanceof GridTaskProcessor)
             taskProc = (GridTaskProcessor)comp;
         else if (comp instanceof GridJobProcessor)
@@ -878,16 +881,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public void markSegmented() {
-        segFlag = true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean segmented() {
-        return segFlag;
-    }
-
-    /** {@inheritDoc} */
     @Override public GridPerformanceSuggestions performance() {
         return perf;
     }
@@ -1116,13 +1109,15 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
-    @Override public boolean invalidated() {
-        return invalidated;
+    @Override public boolean invalid() {
+        FailureProcessor failureProc = failure();
+
+        return failureProc != null && failureProc.failureContext() != null;
     }
 
     /** {@inheritDoc} */
-    @Override public void invalidate() {
-        invalidated = true;
+    @Override public FailureProcessor failure() {
+        return failureProc;
     }
 
     /** {@inheritDoc} */
