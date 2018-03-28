@@ -57,7 +57,7 @@ public class JdbcBulkLoadBatchRequest extends JdbcRequest {
     private int cmd;
 
     /** Data in this batch. */
-    @NotNull private byte[] data;
+    private byte[] data;
 
     /**
      * Creates the request with uninitialized parameters.
