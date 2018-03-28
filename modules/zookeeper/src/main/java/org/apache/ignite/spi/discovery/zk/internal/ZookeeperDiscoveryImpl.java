@@ -2145,6 +2145,8 @@ public class ZookeeperDiscoveryImpl {
 
         DiscoveryDataBag collectBag = new DiscoveryDataBag(nodeId, new HashSet<Integer>());
 
+        collectBag.joiningNodeData(joiningNodeBag.joiningNodeData());
+
         exchange.collect(collectBag);
 
         Map<Integer, Serializable> commonData = collectBag.commonData();
