@@ -56,6 +56,8 @@ namespace ignite
             const std::string Configuration::DefaultValue::user = "";
             const std::string Configuration::DefaultValue::password = "";
 
+            const NestedTxMode::Type Configuration::DefaultValue::nestedTxMode = NestedTxMode::AI_ERROR;
+
             Configuration::Configuration() :
                 dsn(DefaultValue::dsn),
                 driver(DefaultValue::driver),
@@ -76,7 +78,8 @@ namespace ignite
                 sslCertFile(DefaultValue::sslCertFile),
                 sslCaFile(DefaultValue::sslCaFile),
                 user(DefaultValue::user),
-                password(DefaultValue::password)
+                password(DefaultValue::password),
+                nestedTxMode(DefaultValue::nestedTxMode)
             {
                 // No-op.
             }
@@ -402,6 +405,21 @@ namespace ignite
             bool Configuration::IsPasswordSet() const
             {
                 return password.IsSet();
+            }
+
+            NestedTxMode::Type Configuration::GetNestedTxMode() const
+            {
+                return nestedTxMode.GetValue();
+            }
+
+            void Configuration::SetNestedTxMode(NestedTxMode::Type mode)
+            {
+                this->nestedTxMode.SetValue(mode);
+            }
+
+            bool Configuration::IsNestedTxModeSet() const
+            {
+                return nestedTxMode.IsSet();
             }
 
             int32_t Configuration::GetPageSize() const
