@@ -28,6 +28,8 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContex
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.processors.query.NestedTxMode;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 
@@ -114,43 +116,57 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
         boolean autoCloseCursors = reader.readBoolean();
 
         boolean lazyExec = false;
+        boolean skipReducerOnUpdate = false;
+
+        NestedTxMode nestedTxMode = NestedTxMode.DEFAULT;
+        AuthorizationContext actx = null;
 
         if (ver.compareTo(VER_2_1_5) >= 0)
             lazyExec = reader.readBoolean();
 
-        boolean skipReducerOnUpdate = false;
-
         if (ver.compareTo(VER_2_3_0) >= 0)
             skipReducerOnUpdate = reader.readBoolean();
 
-        AuthorizationContext actx = null;
+        if (ver.compareTo(VER_2_5_0) >= 0) {
+            String nestedTxModeName = reader.readString();
 
-        try {
-            if (reader.available() > 0) {
-                String user = reader.readString();
-                String passwd = reader.readString();
-
-                if (F.isEmpty(user) && ctx.authentication().enabled())
-                    throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
-
-                actx = ctx.authentication().authenticate(user, passwd);
-
-                if (actx == null)
-                    throw new IgniteCheckedException("Unknown authentication error");
+            if (!F.isEmpty(nestedTxModeName)) {
+                try {
+                    nestedTxMode = NestedTxMode.valueOf(nestedTxModeName);
+                }
+                catch (IllegalArgumentException e) {
+                    throw new IgniteSQLException("Invalid nested transactions handling mode: " + nestedTxModeName);
+                }
             }
-            else {
-                if (ctx.authentication().enabled())
-                    throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+
+            try {
+                if (reader.available() > 0) {
+                    String user = reader.readString();
+                    String passwd = reader.readString();
+
+                    if (F.isEmpty(user) && ctx.authentication().enabled())
+                        throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+
+                    actx = ctx.authentication().authenticate(user, passwd);
+
+                    if (actx == null)
+                        throw new IgniteCheckedException("Unknown authentication error");
+                }
+            }
+            catch (Exception e) {
+                throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
             }
         }
-        catch (Exception e) {
-            throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
-        }
+
+        if (ctx.authentication().enabled() && actx == null)
+            throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
 
         handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder,
-            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, actx, ver);
+            collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, nestedTxMode, actx, ver);
 
         parser = new JdbcMessageParser(ctx);
+
+        handler.start();
     }
 
     /** {@inheritDoc} */

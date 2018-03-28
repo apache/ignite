@@ -1189,6 +1189,15 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /**
+     * Returns group context.
+     *
+     * @return Group context.
+     */
+    public CacheGroupContext group() {
+        return grp;
+    }
+
+    /**
      * @param cacheId Cache ID.
      */
     void onCacheStopped(int cacheId) {

@@ -192,7 +192,7 @@ public class JdbcThinConnection implements Connection {
             // Actual ON, if needed.
             if (newVal) {
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
-                    schema, 1, 1, sql, null));
+                    schema, 1, 1, autoCommit, sql, null));
 
                 streamBatchSize = ((SqlSetStreamingCommand)cmd).batchSize();
 
@@ -234,7 +234,7 @@ public class JdbcThinConnection implements Connection {
      * @throws SQLException if failed.
      */
     private void executeBatch(boolean lastBatch) throws SQLException {
-        JdbcBatchExecuteResult res = sendRequest(new JdbcBatchExecuteRequest(schema, streamBatch, lastBatch));
+        JdbcBatchExecuteResult res = sendRequest(new JdbcBatchExecuteRequest(schema, streamBatch, autoCommit, lastBatch));
 
         streamBatch = null;
 
@@ -351,18 +351,17 @@ public class JdbcThinConnection implements Connection {
     @Override public void setAutoCommit(boolean autoCommit) throws SQLException {
         ensureNotClosed();
 
-        this.autoCommit = autoCommit;
+        // Do nothing if resulting value doesn't actually change.
+        if (autoCommit != this.autoCommit) {
+            doCommit();
 
-        if (!autoCommit)
-            LOG.warning("Transactions are not supported.");
+            this.autoCommit = autoCommit;
+        }
     }
 
     /** {@inheritDoc} */
     @Override public boolean getAutoCommit() throws SQLException {
         ensureNotClosed();
-
-        if (!autoCommit)
-            LOG.warning("Transactions are not supported.");
 
         return autoCommit;
     }
@@ -374,7 +373,7 @@ public class JdbcThinConnection implements Connection {
         if (autoCommit)
             throw new SQLException("Transaction cannot be committed explicitly in auto-commit mode.");
 
-        LOG.warning("Transactions are not supported.");
+        doCommit();
     }
 
     /** {@inheritDoc} */
@@ -382,9 +381,21 @@ public class JdbcThinConnection implements Connection {
         ensureNotClosed();
 
         if (autoCommit)
-            throw new SQLException("Transaction cannot rollback in auto-commit mode.");
+            throw new SQLException("Transaction cannot be rolled back explicitly in auto-commit mode.");
 
-        LOG.warning("Transactions are not supported.");
+        try (Statement s = createStatement()) {
+            s.execute("ROLLBACK");
+        }
+    }
+
+    /**
+     * Send to the server {@code COMMIT} command.
+     * @throws SQLException if failed.
+     */
+    private void doCommit() throws SQLException {
+        try (Statement s = createStatement()) {
+            s.execute("COMMIT");
+        }
     }
 
     /** {@inheritDoc} */

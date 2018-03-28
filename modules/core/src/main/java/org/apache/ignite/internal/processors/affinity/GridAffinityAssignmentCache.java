@@ -42,6 +42,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.discovery.DiscoCache;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -196,10 +197,24 @@ public class GridAffinityAssignmentCache {
      * @param affAssignment Affinity assignment for topology version.
      */
     public void initialize(AffinityTopologyVersion topVer, List<List<ClusterNode>> affAssignment) {
+        MvccCoordinator mvccCrd = ctx.cache().context().coordinators().currentCoordinatorForCacheAffinity(topVer);
+
+        initialize(topVer, affAssignment, mvccCrd);
+    }
+
+    /**
+     * Initializes affinity with given topology version and assignment.
+     *
+     * @param topVer Topology version.
+     * @param affAssignment Affinity assignment for topology version.
+     * @param mvccCrd Mvcc coordinator.
+     */
+    public void initialize(AffinityTopologyVersion topVer, List<List<ClusterNode>> affAssignment, MvccCoordinator mvccCrd) {
         assert topVer.compareTo(lastVersion()) >= 0 : "[topVer = " + topVer + ", last=" + lastVersion() + ']';
         assert idealAssignment != null;
+        assert mvccCrd == null || topVer.compareTo(mvccCrd.topologyVersion()) >= 0 : "[mvccCrd=" + mvccCrd + ", topVer=" + topVer + ']';
 
-        GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment, idealAssignment);
+        GridAffinityAssignment assignment = new GridAffinityAssignment(topVer, affAssignment, idealAssignment, mvccCrd);
 
         affCache.put(topVer, new HistoryAffinityAssignment(assignment));
         head.set(assignment);
@@ -660,7 +675,9 @@ public class GridAffinityAssignmentCache {
 
         idealAssignment(aff.idealAssignment());
 
-        initialize(aff.lastVersion(), aff.assignments(aff.lastVersion()));
+        AffinityAssignment assign = aff.cachedAffinity(aff.lastVersion());
+
+        initialize(aff.lastVersion(), assign.assignment(), assign.mvccCoordinator());
     }
 
     /**

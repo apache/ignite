@@ -31,6 +31,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
+import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
@@ -340,13 +341,21 @@ class GridDhtPartitionSupplier {
                 if (!remainingParts.contains(part))
                     continue;
 
-                GridCacheEntryInfo info = new GridCacheEntryInfo();
+                GridCacheEntryInfo info = grp.mvccEnabled() ?
+                    new GridCacheMvccEntryInfo() : new GridCacheEntryInfo();
 
                 info.key(row.key());
-                info.expireTime(row.expireTime());
-                info.version(row.version());
-                info.value(row.value());
                 info.cacheId(row.cacheId());
+
+                if (grp.mvccEnabled()) {
+                    info.mvccVersion(row.mvccCoordinatorVersion(), row.mvccCounter());
+                    info.newMvccVersion(row.newMvccCoordinatorVersion(),
+                        row.newMvccCounter());
+                }
+
+                info.value(row.value());
+                info.version(row.version());
+                info.expireTime(row.expireTime());
 
                 if (preloadPred == null || preloadPred.apply(info))
                     s.addEntry0(part, info, grp.shared(), grp.cacheObjectContext());

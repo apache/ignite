@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.affinity;
 
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -44,14 +45,23 @@ public class HistoryAffinityAssignment implements AffinityAssignment {
     /** */
     private final boolean clientEvtChange;
 
+    /** */
+    private final MvccCoordinator mvccCrd;
+
     /**
      * @param assign Assignment.
      */
-    public HistoryAffinityAssignment(GridAffinityAssignment assign) {
+    HistoryAffinityAssignment(GridAffinityAssignment assign) {
         this.topVer = assign.topologyVersion();
         this.assignment = assign.assignment();
         this.idealAssignment = assign.idealAssignment();
+        this.mvccCrd = assign.mvccCoordinator();
         this.clientEvtChange = assign.clientEventChange();
+    }
+
+    /** {@inheritDoc} */
+    @Override public MvccCoordinator mvccCoordinator() {
+        return mvccCrd;
     }
 
     /** {@inheritDoc} */

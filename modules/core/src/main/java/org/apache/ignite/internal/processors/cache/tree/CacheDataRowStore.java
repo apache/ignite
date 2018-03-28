@@ -17,12 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.tree;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.RowStore;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.tree.mvcc.data.MvccDataRow;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
@@ -56,10 +58,43 @@ public class CacheDataRowStore extends RowStore {
     CacheSearchRow keySearchRow(int cacheId, int hash, long link) {
         DataRow dataRow = new DataRow(grp, hash, link, partId, CacheDataRowAdapter.RowData.KEY_ONLY);
 
-        if (dataRow.cacheId() == CU.UNDEFINED_CACHE_ID && grp.sharedGroup())
-            dataRow.cacheId(cacheId);
+        initDataRow(dataRow, cacheId);
 
         return dataRow;
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @param hash Hash code.
+     * @param link Link.
+     * @param rowData Required row data.
+     * @param crdVer Mvcc coordinator version.
+     * @param mvccCntr Mvcc counter.
+     * @return Search row.
+     * @throws IgniteCheckedException If failed.
+     */
+    MvccDataRow mvccRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData, long crdVer, long mvccCntr)
+        throws IgniteCheckedException {
+        MvccDataRow dataRow = new MvccDataRow(grp,
+            hash,
+            link,
+            partId,
+            rowData,
+            crdVer,
+            mvccCntr);
+
+        initDataRow(dataRow, cacheId);
+
+        return dataRow;
+    }
+
+    /**
+     * @param dataRow Data row.
+     * @param cacheId Cache ID.
+     */
+    private void initDataRow(DataRow dataRow, int cacheId) {
+        if (dataRow.cacheId() == CU.UNDEFINED_CACHE_ID && grp.sharedGroup())
+            dataRow.cacheId(cacheId);
     }
 
     /**

@@ -54,4 +54,20 @@ public interface CacheDataRow extends CacheSearchRow, Storable {
      * @param key Key.
      */
     public void key(KeyCacheObject key);
+
+    /**
+     * @param crdVer Mvcc coordinator version.
+     * @param mvccCntr Mvcc counter.
+     */
+    public void mvccVersion(long crdVer, long mvccCntr);
+
+    /**
+     * @return New mvcc coordinator version.
+     */
+    public long newMvccCoordinatorVersion();
+
+    /**
+     * @return New mvcc counter.
+     */
+    public long newMvccCounter();
 }

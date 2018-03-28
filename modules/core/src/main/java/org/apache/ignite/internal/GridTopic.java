@@ -118,6 +118,9 @@ public enum GridTopic {
     TOPIC_INTERNAL_DIAGNOSTIC,
 
     /** */
+    TOPIC_CACHE_COORDINATOR,
+
+    /** */
     TOPIC_WAL,
 
     /** */

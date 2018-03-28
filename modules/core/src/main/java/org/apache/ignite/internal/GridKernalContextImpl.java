@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.authentication.IgniteAuthentication
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFoldersResolver;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
@@ -287,6 +288,10 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     @GridToStringExclude
     private DataStructuresProcessor dataStructuresProc;
 
+    /** Cache mvcc coordinators. */
+    @GridToStringExclude
+    private MvccProcessor coordProc;
+
     /** */
     @GridToStringExclude
     private IgniteAuthenticationProcessor authProc;
@@ -353,7 +358,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
 
     /** */
     @GridToStringExclude
-    Map<String, ? extends ExecutorService> customExecSvcs;
+    private Map<String, ? extends ExecutorService> customExecSvcs;
 
     /** */
     @GridToStringExclude
@@ -598,6 +603,8 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             poolProc = (PoolProcessor)comp;
         else if (comp instanceof GridMarshallerMappingProcessor)
             mappingProc = (GridMarshallerMappingProcessor)comp;
+        else if (comp instanceof MvccProcessor)
+            coordProc = (MvccProcessor)comp;
         else if (comp instanceof PdsFoldersResolver)
             pdsFolderRslvr = (PdsFoldersResolver)comp;
         else if (comp instanceof GridInternalSubscriptionProcessor)
@@ -860,6 +867,11 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public DataStructuresProcessor dataStructures() {
         return dataStructuresProc;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MvccProcessor coordinators() {
+        return coordProc;
     }
 
     /** {@inheritDoc} */

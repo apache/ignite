@@ -49,9 +49,8 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
-import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
-import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
+import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -209,6 +208,23 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     }
 
     /** {@inheritDoc} */
+    @Override public void initialize(int cacheId, int partitions, String workingDir, AllocatedPageTracker tracker)
+        throws IgniteCheckedException {
+        if (!idxCacheStores.containsKey(cacheId)) {
+            CacheStoreHolder holder = initDir(
+                new File(storeWorkDir, workingDir),
+                cacheId,
+                partitions,
+                tracker
+            );
+
+            CacheStoreHolder old = idxCacheStores.put(cacheId, holder);
+
+            assert old == null : "Non-null old store holder for cacheId: " + cacheId;
+        }
+    }
+
+    /** {@inheritDoc} */
     @Override public void initializeForCache(CacheGroupDescriptor grpDesc, StoredCacheData cacheData)
         throws IgniteCheckedException {
         int grpId = grpDesc.groupId();
@@ -233,7 +249,8 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
                     "metastorage"),
                 grpId,
                 1,
-                delta -> {/* No-op */} );
+                delta -> {/* No-op */}
+            );
 
             CacheStoreHolder old = idxCacheStores.put(grpId, holder);
 
@@ -411,14 +428,15 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         return initDir(cacheWorkDir,
             grpDesc.groupId(),
             grpDesc.config().getAffinity().partitions(),
-            allocatedTracker);
+            allocatedTracker
+        );
     }
 
     /**
      * @param cacheWorkDir Work directory.
      * @param grpId Group ID.
      * @param partitions Number of partitions.
-     * @param allocatedTracker Metrics updater
+     * @param allocatedTracker Metrics updater.
      * @return Cache store holder.
      * @throws IgniteCheckedException If failed.
      */
@@ -849,10 +867,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         /**
          *
          */
-        public CacheStoreHolder(FilePageStore idxStore, FilePageStore[] partStores) {
+        CacheStoreHolder(FilePageStore idxStore, FilePageStore[] partStores) {
             this.idxStore = idxStore;
             this.partStores = partStores;
         }
     }
-
 }

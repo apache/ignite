@@ -481,6 +481,8 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     cctx.database().checkpointReadLock();
 
                     try {
+                        assert !txState.mvccEnabled(cctx) || mvccInfo != null : "Mvcc is not initialized: " + this;
+
                         Collection<IgniteTxEntry> entries = near() || cctx.snapshot().needTxReadLogging() ? allEntries() : writeEntries();
 
                         List<DataEntry> dataEntries = null;
@@ -586,47 +588,57 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                             if (op == CREATE || op == UPDATE) {
                                                 // Invalidate only for near nodes (backups cannot be invalidated).
                                                 if (isSystemInvalidate() || (isInvalidate() && cacheCtx.isNear()))
-                                                    cached.innerRemove(this,
-                                                        eventNodeId(),
-                                                        nodeId,
-                                                        false,
-                                                        true,
-                                                        true,
-                                                        txEntry.keepBinary(),
-                                                        txEntry.hasOldValue(),
-                                                        txEntry.oldValue(),
-                                                        topVer,
-                                                        null,
-                                                        replicate ? DR_BACKUP : DR_NONE,
-                                                        near() ? null : explicitVer,
-                                                        CU.subjectId(this, cctx),
-                                                        resolveTaskName(),
-                                                        dhtVer,
-                                                        txEntry.updateCounter());
+                                                    if (cacheCtx.mvccEnabled())
+                                                        cached.mvccRemove(this, nodeId, topVer, txEntry.updateCounter(), mvccSnapshotForUpdate());
+                                                    else
+                                                        cached.innerRemove(this,
+                                                            eventNodeId(),
+                                                            nodeId,
+                                                            false,
+                                                            true,
+                                                            true,
+                                                            txEntry.keepBinary(),
+                                                            txEntry.hasOldValue(),
+                                                            txEntry.oldValue(),
+                                                            topVer,
+                                                            null,
+                                                            replicate ? DR_BACKUP : DR_NONE,
+                                                            near() ? null : explicitVer,
+                                                            CU.subjectId(this, cctx),
+                                                            resolveTaskName(),
+                                                            dhtVer,
+                                                            txEntry.updateCounter(),
+                                                            mvccSnapshotForUpdate());
                                                 else {
                                                     assert val != null : txEntry;
 
-                                                    GridCacheUpdateTxResult updRes = cached.innerSet(this,
-                                                        eventNodeId(),
-                                                        nodeId,
-                                                        val,
-                                                        false,
-                                                        false,
-                                                        txEntry.ttl(),
-                                                        true,
-                                                        true,
-                                                        txEntry.keepBinary(),
-                                                        txEntry.hasOldValue(),
-                                                        txEntry.oldValue(),
-                                                        topVer,
-                                                        null,
-                                                        replicate ? DR_BACKUP : DR_NONE,
-                                                        txEntry.conflictExpireTime(),
-                                                        near() ? null : explicitVer,
-                                                        CU.subjectId(this, cctx),
-                                                        resolveTaskName(),
-                                                        dhtVer,
-                                                        txEntry.updateCounter());
+                                                    GridCacheUpdateTxResult updRes;
+
+                                                    if (cacheCtx.mvccEnabled())
+                                                        updRes = cached.mvccSet(this, nodeId, val, txEntry.ttl(), topVer, txEntry.updateCounter(), mvccSnapshotForUpdate(), null);
+                                                    else
+                                                        updRes = cached.innerSet(this,
+                                                            eventNodeId(),
+                                                            nodeId,
+                                                            val,
+                                                            false,
+                                                            false,
+                                                            txEntry.ttl(),
+                                                            true,
+                                                            true,
+                                                            txEntry.keepBinary(),
+                                                            txEntry.hasOldValue(),
+                                                            txEntry.oldValue(),
+                                                            topVer,
+                                                            null,
+                                                            replicate ? DR_BACKUP : DR_NONE,
+                                                            txEntry.conflictExpireTime(),
+                                                            near() ? null : explicitVer,
+                                                            CU.subjectId(this, cctx),
+                                                            resolveTaskName(),
+                                                            dhtVer,
+                                                            txEntry.updateCounter(),
+                                                            mvccSnapshotForUpdate());
 
                                                     if (updRes.loggedPointer() != null)
                                                         ptr = updRes.loggedPointer();
@@ -645,23 +657,28 @@ public abstract class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                                 }
                                             }
                                             else if (op == DELETE) {
-                                                GridCacheUpdateTxResult updRes = cached.innerRemove(this,
-                                                    eventNodeId(),
-                                                    nodeId,
-                                                    false,
-                                                    true,
-                                                    true,
-                                                    txEntry.keepBinary(),
-                                                    txEntry.hasOldValue(),
-                                                    txEntry.oldValue(),
-                                                    topVer,
-                                                    null,
-                                                    replicate ? DR_BACKUP : DR_NONE,
-                                                    near() ? null : explicitVer,
-                                                    CU.subjectId(this, cctx),
-                                                    resolveTaskName(),
-                                                    dhtVer,
-                                                    txEntry.updateCounter());
+                                                GridCacheUpdateTxResult updRes;
+                                                if (cacheCtx.mvccEnabled())
+                                                    updRes = cached.mvccRemove(this, nodeId, topVer, txEntry.updateCounter(), mvccSnapshotForUpdate());
+                                                else
+                                                    updRes = cached.innerRemove(this,
+                                                        eventNodeId(),
+                                                        nodeId,
+                                                        false,
+                                                        true,
+                                                        true,
+                                                        txEntry.keepBinary(),
+                                                        txEntry.hasOldValue(),
+                                                        txEntry.oldValue(),
+                                                        topVer,
+                                                        null,
+                                                        replicate ? DR_BACKUP : DR_NONE,
+                                                        near() ? null : explicitVer,
+                                                        CU.subjectId(this, cctx),
+                                                        resolveTaskName(),
+                                                        dhtVer,
+                                                        txEntry.updateCounter(),
+                                                        mvccSnapshotForUpdate());
 
                                                 if (updRes.loggedPointer() != null)
                                                     ptr = updRes.loggedPointer();

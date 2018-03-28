@@ -51,16 +51,20 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
-import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.GridCacheVersionedFuture;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -85,6 +89,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -103,7 +108,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
  */
 @SuppressWarnings("unchecked")
 public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<IgniteInternalTx, GridNearTxPrepareResponse>
-    implements GridCacheVersionedFuture<GridNearTxPrepareResponse>, IgniteDiagnosticAware {
+    implements GridCacheVersionedFuture<GridNearTxPrepareResponse>, IgniteDiagnosticAware, MvccSnapshotResponseListener {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -255,6 +260,11 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public IgniteLogger logger() {
+        return log;
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteUuid futureId() {
         return futId;
     }
@@ -336,7 +346,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
     private void onEntriesLocked() {
         ret = new GridCacheReturn(null, tx.localResult(), true, null, true);
 
-        for (IgniteTxEntry writeEntry : req.writes()) {
+        for (IgniteTxEntry writeEntry : writes()) {
             IgniteTxEntry txEntry = tx.entry(writeEntry.txKey());
 
             assert txEntry != null : writeEntry;
@@ -393,7 +403,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         entryProc,
                         tx.resolveTaskName(),
                         null,
-                        keepBinary);
+                        keepBinary,
+                        null);  // TODO IGNITE-7371
 
                     if (retVal || txEntry.op() == TRANSFORM) {
                         if (!F.isEmpty(txEntry.entryProcessors())) {
@@ -496,7 +507,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                             /*transformClo*/null,
                             /*taskName*/null,
                             /*expiryPlc*/null,
-                            /*keepBinary*/true);
+                            /*keepBinary*/true,
+                            null); // TODO IGNITE-7371
                     }
 
                     if (oldVal != null)
@@ -600,7 +612,7 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
         if (log.isDebugEnabled())
             log.debug("Marking all local candidates as ready: " + this);
 
-        readyLocks(req.writes());
+        readyLocks(writes());
 
         if (tx.serializable() && tx.optimistic())
             readyLocks(req.reads());
@@ -875,6 +887,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             tx.onePhaseCommit(),
             tx.activeCachesDeploymentEnabled());
 
+        res.mvccInfo(tx.mvccInfo());
+
         if (prepErr == null) {
             if (tx.needReturnValue() || tx.nearOnOriginatingNode() || tx.hasInterceptor())
                 addDhtValues(res);
@@ -902,8 +916,10 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      */
     private void addDhtValues(GridNearTxPrepareResponse res) {
         // Interceptor on near node needs old values to execute callbacks.
-        if (!F.isEmpty(req.writes())) {
-            for (IgniteTxEntry e : req.writes()) {
+        Collection<IgniteTxEntry> writes = writes();
+
+        if (!F.isEmpty(writes)) {
+            for (IgniteTxEntry e : writes) {
                 IgniteTxEntry txEntry = tx.entry(e.txKey());
 
                 assert txEntry != null : "Missing tx entry for key [tx=" + tx + ", key=" + e.txKey() + ']';
@@ -1194,12 +1210,16 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
      *
      */
     private void prepare0() {
+        boolean skipInit = false;
+
         try {
+            Collection<IgniteTxEntry> writes = writes();
+
             if (tx.serializable() && tx.optimistic()) {
                 IgniteCheckedException err0;
 
                 try {
-                    err0 = checkReadConflict(req.writes());
+                    err0 = checkReadConflict(writes);
 
                     if (err0 == null)
                         err0 = checkReadConflict(req.reads());
@@ -1228,14 +1248,37 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 }
             }
 
+            IgniteInternalFuture<MvccSnapshot> waitCrdCntrFut = null;
+
+            if (req.requestMvccCounter()) {
+                assert last;
+
+                assert tx.txState().mvccEnabled(cctx);
+
+                MvccCoordinator crd = cctx.coordinators().currentCoordinator();
+
+                assert crd != null : tx.topologyVersion();
+
+                if (crd.nodeId().equals(cctx.localNodeId()))
+                    onResponse(cctx.localNodeId(), cctx.coordinators().requestTxSnapshotOnCoordinator(tx));
+                else {
+                    IgniteInternalFuture<MvccSnapshot> crdCntrFut = cctx.coordinators().requestTxSnapshot(crd,
+                        this,
+                        tx.nearXidVersion());
+
+                    if (tx.onePhaseCommit())
+                        waitCrdCntrFut = crdCntrFut;
+                }
+            }
+
             onEntriesLocked();
 
             // We are holding transaction-level locks for entries here, so we can get next write version.
             tx.writeVersion(cctx.versions().next(tx.topologyVersion()));
 
             // Assign keys to primary nodes.
-            if (!F.isEmpty(req.writes())) {
-                for (IgniteTxEntry write : req.writes())
+            if (!F.isEmpty(writes)) {
+                for (IgniteTxEntry write : writes)
                     map(tx.entry(write.txKey()));
             }
 
@@ -1247,12 +1290,55 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             if (isDone())
                 return;
 
-            if (last)
-                sendPrepareRequests();
+            if (last) {
+                if (waitCrdCntrFut != null) {
+                    skipInit = true;
+
+                    waitCrdCntrFut.listen(new IgniteInClosure<IgniteInternalFuture<MvccSnapshot>>() {
+                        @Override public void apply(IgniteInternalFuture<MvccSnapshot> fut) {
+                            try {
+                                fut.get();
+
+                                sendPrepareRequests();
+
+                                markInitialized();
+                            }
+                            catch (Throwable e) {
+                                U.error(log, "Failed to get mvcc version for tx [txId=" + tx.nearXidVersion() +
+                                    ", err=" + e + ']', e);
+
+                                GridNearTxPrepareResponse res = createPrepareResponse(e);
+
+                                onDone(res, res.error());
+                            }
+                        }
+                    });
+                }
+                else
+                    sendPrepareRequests();
+            }
         }
         finally {
-            markInitialized();
+            if (!skipInit)
+                markInitialized();
         }
+    }
+
+    /**
+     * @return Write entries.
+     */
+    private Collection<IgniteTxEntry> writes() {
+        return F.<IgniteTxEntry>concat(false, req.writes(), F.view(tx.writeEntries(), CU.FILTER_ENLISTED_ENTRY));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onResponse(UUID crdId, MvccSnapshot res) {
+        tx.mvccInfo(new MvccTxInfo(crdId, res));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onError(IgniteCheckedException e) {
+        // No-op
     }
 
     /**
@@ -1269,11 +1355,19 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
             }
         }
 
+        assert !tx.txState().mvccEnabled(cctx) || !tx.onePhaseCommit() || tx.mvccInfo() != null;
+
         int miniId = 0;
 
         assert tx.transactionNodes() != null;
 
         final long timeout = timeoutObj != null ? timeoutObj.timeout : 0;
+
+        // Do not need process active transactions on backups.
+        MvccTxInfo mvccInfo = tx.mvccInfo();
+
+        if (mvccInfo != null)
+            mvccInfo = mvccInfo.withoutActiveTransactions();
 
         // Create mini futures.
         for (GridDistributedTxMapping dhtMapping : tx.dhtMap().values()) {
@@ -1317,7 +1411,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                 tx.taskNameHash(),
                 tx.activeCachesDeploymentEnabled(),
                 tx.storeWriteThrough(),
-                retVal);
+                retVal,
+                mvccInfo);
 
             int idx = 0;
 
@@ -1430,7 +1525,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                     tx.taskNameHash(),
                     tx.activeCachesDeploymentEnabled(),
                     tx.storeWriteThrough(),
-                    retVal);
+                    retVal,
+                    mvccInfo);
 
                 for (IgniteTxEntry entry : nearMapping.entries()) {
                     if (CU.writes().apply(entry)) {
@@ -1832,6 +1928,8 @@ public final class GridDhtTxPrepareFuture extends GridCacheCompoundFuture<Ignite
                         try {
                             if (entry.initialValue(info.value(),
                                 info.version(),
+                                info,
+                                info.newMvccVersion(),
                                 info.ttl(),
                                 info.expireTime(),
                                 true,

@@ -100,6 +100,17 @@ public final class IgniteQueryErrorCode {
     /** Cache not found. */
     public final static int CACHE_NOT_FOUND = 4006;
 
+    /* 5xxx - transactions related runtime errors. */
+
+    /** Transaction is already open. */
+    public final static int TRANSACTION_EXISTS = 5001;
+
+    /** MVCC disabled. */
+    public final static int MVCC_DISABLED = 5002;
+
+    /** Transaction type mismatch (SQL/non SQL). */
+    public final static int TRANSACTION_TYPE_MISMATCH = 5003;
+
     /** */
     private IgniteQueryErrorCode() {
         // No-op.
@@ -150,6 +161,10 @@ public final class IgniteQueryErrorCode {
             case UNEXPECTED_ELEMENT_TYPE:
             case KEY_UPDATE:
                 return SqlStateCode.PARSING_EXCEPTION;
+
+            case TRANSACTION_EXISTS:
+            case MVCC_DISABLED:
+                return SqlStateCode.TRANSACTION_STATE_EXCEPTION;
 
             default:
                 return SqlStateCode.INTERNAL_ERROR;

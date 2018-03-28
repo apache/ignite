@@ -87,6 +87,9 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvali
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotWithoutTxs;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.dr.GridDrType;
@@ -127,6 +130,14 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** Amount of permissions should be available to continue new data processing. */
     private static final int REMAP_SEMAPHORE_PERMISSIONS_COUNT = Integer.MAX_VALUE;
+
+    /** Version which is less then any version generated on coordinator. */
+    private static final MvccSnapshot ISOLATED_STREAMER_MVCC_SNAPSHOT =
+        new MvccSnapshotWithoutTxs(1L, MvccProcessor.MVCC_START_CNTR, 0L);
+
+    /** Version which is less then any version generated on coordinator (for remove). */
+    private static final MvccSnapshot ISOLATED_STREAMER_MVCC_SNAPSHOT_RMV =
+        new MvccSnapshotWithoutTxs(0, MvccProcessor.MVCC_START_CNTR, 0L);
 
     /** Cache receiver. */
     private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;
@@ -2109,8 +2120,13 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
                     boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
 
+                    MvccSnapshot mvccSnapshot = e.getValue() == null ?
+                        ISOLATED_STREAMER_MVCC_SNAPSHOT_RMV : ISOLATED_STREAMER_MVCC_SNAPSHOT;
+
                     entry.initialValue(e.getValue(),
                         ver,
+                        mvccSnapshot,
+                        null,
                         ttl,
                         expiryTime,
                         false,

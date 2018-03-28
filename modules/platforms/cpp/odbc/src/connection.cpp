@@ -25,6 +25,7 @@
 
 #include "ignite/odbc/log.h"
 #include "ignite/odbc/utility.h"
+#include "ignite/odbc/environment.h"
 #include "ignite/odbc/statement.h"
 #include "ignite/odbc/connection.h"
 #include "ignite/odbc/message.h"
@@ -54,10 +55,12 @@ namespace ignite
 {
     namespace odbc
     {
-        Connection::Connection() :
+        Connection::Connection(Environment* env) :
+            env(env),
             socket(),
             timeout(0),
             loginTimeout(SocketClient::DEFALT_CONNECT_TIMEOUT),
+            autoCommit(true),
             parser(),
             config(),
             info(config)
@@ -182,6 +185,11 @@ namespace ignite
         void Connection::Release()
         {
             IGNITE_ODBC_API_CALL(InternalRelease());
+        }
+
+        void Connection::Deregister()
+        {
+            env->DeregisterConnection(this);
         }
 
         SqlResult::Type Connection::InternalRelease()
@@ -365,6 +373,11 @@ namespace ignite
             return config;
         }
 
+        bool Connection::IsAutoCommit()
+        {
+            return autoCommit;
+        }
+
         diagnostic::DiagnosticRecord Connection::CreateStatusRecord(SqlState::Type sqlState,
             const std::string& message, int32_t rowNum, int32_t columnNum)
         {
@@ -378,6 +391,37 @@ namespace ignite
 
         SqlResult::Type Connection::InternalTransactionCommit()
         {
+            std::string schema = config.GetSchema();
+
+            app::ParameterSet empty;
+
+            QueryExecuteRequest req(schema, "COMMIT", empty, timeout, autoCommit);
+            QueryExecuteResponse rsp;
+
+            try
+            {
+                bool sent = SyncMessage(req, rsp, timeout);
+
+                if (!sent)
+                {
+                    AddStatusRecord(SqlState::S08S01_LINK_FAILURE, "Failed to send commit request.");
+
+                    return SqlResult::AI_ERROR;
+                }
+            }
+            catch (const OdbcError& err)
+            {
+                AddStatusRecord(err);
+
+                return SqlResult::AI_ERROR;
+            }
+            catch (const IgniteError& err)
+            {
+                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
+
+                return SqlResult::AI_ERROR;
+            }
+
             return SqlResult::AI_SUCCESS;
         }
 
@@ -388,10 +432,38 @@ namespace ignite
 
         SqlResult::Type Connection::InternalTransactionRollback()
         {
-            AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
-                "Rollback operation is not supported.");
+            std::string schema = config.GetSchema();
 
-            return SqlResult::AI_ERROR;
+            app::ParameterSet empty;
+
+            QueryExecuteRequest req(schema, "ROLLBACK", empty, timeout, autoCommit);
+            QueryExecuteResponse rsp;
+
+            try
+            {
+                bool sent = SyncMessage(req, rsp, timeout);
+
+                if (!sent)
+                {
+                    AddStatusRecord(SqlState::S08S01_LINK_FAILURE, "Failed to send rollback request.");
+
+                    return SqlResult::AI_ERROR;
+                }
+            }
+            catch (const OdbcError& err)
+            {
+                AddStatusRecord(err);
+
+                return SqlResult::AI_ERROR;
+            }
+            catch (const IgniteError& err)
+            {
+                AddStatusRecord(SqlState::SHY000_GENERAL_ERROR, err.GetText());
+
+                return SqlResult::AI_ERROR;
+            }
+
+            return SqlResult::AI_SUCCESS;
         }
 
         void Connection::GetAttribute(int attr, void* buf, SQLINTEGER bufLen, SQLINTEGER* valueLen)
@@ -446,6 +518,18 @@ namespace ignite
                     break;
                 }
 
+                case SQL_ATTR_AUTOCOMMIT:
+                {
+                    SQLUINTEGER *val = reinterpret_cast<SQLUINTEGER*>(buf);
+
+                    *val = autoCommit ? SQL_AUTOCOMMIT_ON : SQL_AUTOCOMMIT_OFF;
+
+                    if (valueLen)
+                        *valueLen = SQL_IS_INTEGER;
+
+                    break;
+                }
+
                 default:
                 {
                     AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
@@ -465,13 +549,6 @@ namespace ignite
 
         SqlResult::Type Connection::InternalSetAttribute(int attr, void* value, SQLINTEGER valueLen)
         {
-            if (!value)
-            {
-                AddStatusRecord(SqlState::SHY009_INVALID_USE_OF_NULL_POINTER, "Value pointer is null.");
-
-                return SqlResult::AI_ERROR;
-            }
-
             switch (attr)
             {
                 case SQL_ATTR_CONNECTION_DEAD:
@@ -497,6 +574,23 @@ namespace ignite
 
                     if (GetDiagnosticRecords().GetStatusRecordsNumber() != 0)
                         return SqlResult::AI_SUCCESS_WITH_INFO;
+
+                    break;
+                }
+
+                case SQL_ATTR_AUTOCOMMIT:
+                {
+                    SQLUINTEGER mode = static_cast<SQLUINTEGER>(reinterpret_cast<ptrdiff_t>(value));
+
+                    if (mode != SQL_AUTOCOMMIT_ON && mode != SQL_AUTOCOMMIT_OFF)
+                    {
+                        AddStatusRecord(SqlState::SHYC00_OPTIONAL_FEATURE_NOT_IMPLEMENTED,
+                            "Specified attribute is not supported.");
+
+                        return SqlResult::AI_ERROR;
+                    }
+
+                    autoCommit = mode == SQL_AUTOCOMMIT_ON;
 
                     break;
                 }

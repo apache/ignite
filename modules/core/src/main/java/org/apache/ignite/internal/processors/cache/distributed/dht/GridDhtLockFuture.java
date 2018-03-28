@@ -1090,6 +1090,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
                                 entry0.initialValue(val0,
                                     ver,
+                                    null,
+                                    null,
                                     ttl,
                                     expireTime,
                                     false,
@@ -1269,9 +1271,12 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                         try {
                             if (entry.initialValue(info.value(),
                                 info.version(),
+                                info,
+                                info.newMvccVersion(),
                                 info.ttl(),
                                 info.expireTime(),
-                                true, topVer,
+                                true,
+                                topVer,
                                 replicate ? DR_PRELOAD : DR_NONE,
                                 false)) {
                                 if (rec && !entry.isInternal())

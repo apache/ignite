@@ -61,6 +61,7 @@ import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuc
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateLastSuccessfulSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSnapshotId;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdatePartitionDataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.delta.DataPageMvccMarkUpdatedRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.NewRootInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PageListMetaResetCountRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.PagesListAddPageRecord;
@@ -192,6 +193,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
 
             case DATA_PAGE_SET_FREE_LIST_PAGE:
                 return 4 + 8 + 8;
+
+            case MVCC_DATA_PAGE_MARK_UPDATED_RECORD:
+                return 4 + 8 + 4 + 8 + 8;
 
             case INIT_NEW_PAGE_RECORD:
                 return 4 + 8 + 2 + 2 + 8;
@@ -497,6 +501,18 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 long freeListPage = in.readLong();
 
                 res = new DataPageSetFreeListPageRecord(cacheId, pageId, freeListPage);
+
+                break;
+
+            case MVCC_DATA_PAGE_MARK_UPDATED_RECORD:
+                cacheId = in.readInt();
+                pageId = in.readLong();
+
+                itemId = in.readInt();
+                long newMvccCrd = in.readLong();
+                long newMvccCntr = in.readLong();
+
+                res = new DataPageMvccMarkUpdatedRecord(cacheId, pageId, itemId, newMvccCrd, newMvccCntr);
 
                 break;
 
@@ -1020,6 +1036,19 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putLong(freeListRec.freeListPage());
 
                 break;
+
+            case MVCC_DATA_PAGE_MARK_UPDATED_RECORD:
+                DataPageMvccMarkUpdatedRecord rmvRec = (DataPageMvccMarkUpdatedRecord)rec;
+
+                buf.putInt(rmvRec.groupId());
+                buf.putLong(rmvRec.pageId());
+
+                buf.putInt(rmvRec.itemId());
+                buf.putLong(rmvRec.newMvccCrd());
+                buf.putLong(rmvRec.newMvccCntr());
+
+                break;
+
 
             case INIT_NEW_PAGE_RECORD:
                 InitNewPageRecord inpRec = (InitNewPageRecord)rec;

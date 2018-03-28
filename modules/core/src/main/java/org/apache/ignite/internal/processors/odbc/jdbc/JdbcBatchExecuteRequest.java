@@ -39,6 +39,9 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     @GridToStringInclude(sensitive = true)
     private List<JdbcQuery> queries;
 
+    /** Client auto commit flag state. */
+    private boolean autoCommit;
+
     /**
      * Last stream batch flag - whether open streamers on current connection
      * must be flushed and closed after this batch.
@@ -55,14 +58,16 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
     /**
      * @param schemaName Schema name.
      * @param queries Queries.
+     * @param autoCommit Client auto commit flag state.
      */
-    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries, boolean lastStreamBatch) {
+    public JdbcBatchExecuteRequest(String schemaName, List<JdbcQuery> queries, boolean autoCommit, boolean lastStreamBatch) {
         super(BATCH_EXEC);
 
         assert lastStreamBatch || !F.isEmpty(queries);
 
         this.schemaName = schemaName;
         this.queries = queries;
+        this.autoCommit = autoCommit;
         this.lastStreamBatch = lastStreamBatch;
     }
 
@@ -78,6 +83,13 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
      */
     public List<JdbcQuery> queries() {
         return queries;
+    }
+
+    /**
+     * @return Auto commit flag.
+     */
+    boolean autoCommit() {
+        return autoCommit;
     }
 
     /**
@@ -98,14 +110,17 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
 
             for (JdbcQuery q : queries)
                 q.writeBinary(writer);
+
         }
         else
             writer.writeInt(0);
 
+        writer.writeBoolean(autoCommit);
         writer.writeBoolean(lastStreamBatch);
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("SimplifiableIfStatement")
     @Override public void readBinary(BinaryReaderExImpl reader) throws BinaryObjectException {
         super.readBinary(reader);
 
@@ -124,8 +139,12 @@ public class JdbcBatchExecuteRequest extends JdbcRequest {
         }
 
         try {
-            if (reader.available() > 0)
+            if (reader.available() > 0) {
+                autoCommit = reader.readBoolean();
                 lastStreamBatch = reader.readBoolean();
+            }
+            else
+                autoCommit = true;
         }
         catch (IOException e) {
             throw new BinaryObjectException(e);

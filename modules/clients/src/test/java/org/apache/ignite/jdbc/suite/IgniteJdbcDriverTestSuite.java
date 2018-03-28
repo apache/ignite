@@ -72,6 +72,11 @@ import org.apache.ignite.jdbc.thin.JdbcThinSelectAfterAlterTable;
 import org.apache.ignite.jdbc.thin.JdbcThinStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinStreamingSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinTcpIoTest;
+import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientAutoCommitComplexSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinTransactionsClientNoAutoCommitComplexSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinTransactionsSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerAutoCommitComplexSelfTest;
+import org.apache.ignite.jdbc.thin.JdbcThinTransactionsServerNoAutoCommitComplexSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinUpdateStatementSkipReducerOnUpdateSelfTest;
 import org.apache.ignite.jdbc.thin.JdbcThinWalModeChangeSelfTest;
@@ -188,6 +193,13 @@ public class IgniteJdbcDriverTestSuite extends TestSuite {
         suite.addTest(new TestSuite(JdbcThinUpdateStatementSkipReducerOnUpdateSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinMergeStatementSkipReducerOnUpdateSelfTest.class));
         suite.addTest(new TestSuite(JdbcThinComplexDmlDdlSkipReducerOnUpdateSelfTest.class));
+
+        // Transactions
+        suite.addTest(new TestSuite(JdbcThinTransactionsSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinTransactionsClientAutoCommitComplexSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinTransactionsServerAutoCommitComplexSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinTransactionsClientNoAutoCommitComplexSelfTest.class));
+        suite.addTest(new TestSuite(JdbcThinTransactionsServerNoAutoCommitComplexSelfTest.class));
 
         suite.addTest(new TestSuite(JdbcThinLocalQueriesSelfTest.class));
 

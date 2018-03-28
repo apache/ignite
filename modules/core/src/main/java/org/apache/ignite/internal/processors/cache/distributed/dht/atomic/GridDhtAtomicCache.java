@@ -62,7 +62,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheUpdateAtomicResult;
 import org.apache.ignite.internal.processors.cache.IgniteCacheExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtFuture;
@@ -80,6 +79,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSing
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetResponse;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrExpirationInfo;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -1386,7 +1386,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             skipVals,
             needVer,
             false,
-            recovery);
+            recovery,
+            null);
 
         fut.init();
 
@@ -1495,6 +1496,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                             taskName,
                                             expiry,
                                             true,
+                                            null,
                                             null);
 
                                         if (getRes != null) {
@@ -1513,7 +1515,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                             null,
                                             taskName,
                                             expiry,
-                                            !deserializeBinary);
+                                            !deserializeBinary,
+                                            null);
                                     }
 
                                     // Entry was not in memory or in swap, so we remove it from cache.
@@ -1590,7 +1593,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             expiry,
             skipVals,
             needVer,
-            false);
+            false,
+            null);
 
         fut.init(topVer);
 
@@ -2036,7 +2040,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         entryProcessor,
                         taskName,
                         null,
-                        req.keepBinary());
+                        req.keepBinary(),
+                        null);
 
                     Object oldVal = null;
                     Object updatedVal = null;
@@ -2207,7 +2212,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             taskName,
                             null,
-                            req.keepBinary());
+                            req.keepBinary(),
+                            null);
 
                         Object val = ctx.config().getInterceptor().onBeforePut(
                             new CacheLazyEntry(
@@ -2252,7 +2258,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             taskName,
                             null,
-                            req.keepBinary());
+                            req.keepBinary(),
+                            null);
 
                         IgniteBiTuple<Boolean, ?> interceptorRes = ctx.config().getInterceptor()
                             .onBeforeRemove(new CacheLazyEntry(ctx, entry.key(), old, req.keepBinary()));

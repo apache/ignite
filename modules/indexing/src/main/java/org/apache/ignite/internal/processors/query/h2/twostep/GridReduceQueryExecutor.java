@@ -59,10 +59,12 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxAdapter;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridRunningQueryInfo;
@@ -513,6 +515,7 @@ public class GridReduceQueryExecutor {
      * @param params Query parameters.
      * @param parts Partitions.
      * @param lazy Lazy execution flag.
+     * @param mvccTracker Query tracker.
      * @return Rows iterator.
      */
     public Iterator<List<?>> query(
@@ -524,8 +527,10 @@ public class GridReduceQueryExecutor {
         GridQueryCancel cancel,
         Object[] params,
         final int[] parts,
-        boolean lazy
-    ) {
+        boolean lazy,
+        MvccQueryTracker mvccTracker) {
+        assert !qry.mvccEnabled() || mvccTracker != null;
+
         if (F.isEmpty(params))
             params = EMPTY_PARAMS;
 
@@ -728,6 +733,13 @@ public class GridReduceQueryExecutor {
                     .timeout(timeoutMillis)
                     .schemaName(schemaName);
 
+                IgniteTxAdapter curTx = h2.activeTx();
+
+                if (curTx != null && curTx.mvccInfo() != null)
+                    req.mvccSnapshot(curTx.mvccInfo().snapshot());
+                else if (mvccTracker != null)
+                    req.mvccSnapshot(mvccTracker.snapshot());
+
                 if (send(nodes, req, parts == null ? null : new ExplicitPartitionsSpecializer(qryMap), false)) {
                     awaitAllReplies(r, nodes, cancel);
 
@@ -761,7 +773,12 @@ public class GridReduceQueryExecutor {
 
                 if (!retry) {
                     if (skipMergeTbl) {
-                        resIter = new GridMergeIndexIterator(this, finalNodes, r, qryReqId, qry.distributedJoins());
+                        resIter = new GridMergeIndexIterator(this,
+                            finalNodes,
+                            r,
+                            qryReqId,
+                            qry.distributedJoins(),
+                            mvccTracker);
 
                         release = false;
                     }
@@ -788,7 +805,9 @@ public class GridReduceQueryExecutor {
                                 timeoutMillis,
                                 cancel);
 
-                            resIter = new H2FieldsIterator(res);
+                            resIter = new H2FieldsIterator(res, mvccTracker);
+
+                            mvccTracker = null; // To prevent callback inside finally block;
                         }
                         finally {
                             GridH2QueryContext.clearThreadLocal();
@@ -831,7 +850,7 @@ public class GridReduceQueryExecutor {
             }
             finally {
                 if (release) {
-                    releaseRemoteResources(finalNodes, r, qryReqId, qry.distributedJoins());
+                    releaseRemoteResources(finalNodes, r, qryReqId, qry.distributedJoins(), mvccTracker);
 
                     if (!skipMergeTbl) {
                         for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++)
@@ -1026,7 +1045,10 @@ public class GridReduceQueryExecutor {
      * @param distributedJoins Distributed join flag.
      */
     public void releaseRemoteResources(Collection<ClusterNode> nodes, ReduceQueryRun r, long qryReqId,
-        boolean distributedJoins) {
+        boolean distributedJoins, MvccQueryTracker mvccTracker) {
+        if (mvccTracker != null)
+            mvccTracker.onQueryDone();
+
         // For distributedJoins need always send cancel request to cleanup resources.
         if (distributedJoins)
             send(nodes, new GridQueryCancelRequest(qryReqId), null, false);

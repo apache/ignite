@@ -60,6 +60,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheReturn;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheEntry;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -254,6 +257,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /** UUID to consistent id mapper. */
     protected ConsistentIdMapper consistentIdMapper;
 
+    /** */
+    protected MvccTxInfo mvccInfo;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */
@@ -370,6 +376,27 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             log = U.logger(cctx.kernalContext(), logRef, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
+    }
+
+    /**
+     * @return Mvcc info.
+     */
+    @Nullable public MvccTxInfo mvccInfo() {
+        return mvccInfo;
+    }
+
+    /**
+     * @return Mvcc version for update operation, should be always initialized if mvcc is enabled.
+     */
+    @Nullable protected final MvccSnapshot mvccSnapshotForUpdate() {
+        assert !txState().mvccEnabled(cctx) || mvccInfo != null : "Mvcc is not initialized: " + this;
+
+        return mvccInfo != null ? mvccInfo.snapshot() : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void mvccInfo(MvccTxInfo mvccInfo) {
+        this.mvccInfo = mvccInfo;
     }
 
     /**
@@ -1099,9 +1126,39 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 if (state != ACTIVE && state != SUSPENDED)
                     seal();
 
-                if (cctx.wal() != null && cctx.tm().logTxRecords()) {
+                if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
+                    MvccSnapshot snapshot = mvccInfo() != null ? mvccInfo().snapshot() : null;
+
+                    if (snapshot != null) {
+                        byte txState;
+
+                        switch (state) {
+                            case PREPARED:
+                                txState = TxState.PREPARED;
+                                break;
+                            case ROLLED_BACK:
+                                txState = TxState.ABORTED;
+                                break;
+                            case COMMITTED:
+                                txState = TxState.COMMITTED;
+                                break;
+                            default:
+                                throw new IllegalStateException("Illegal state: " + state);
+                        }
+
+                        try {
+                            if (!cctx.localNode().isClient())
+                                cctx.coordinators().updateState(snapshot, txState);
+                        }
+                        catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to log TxState: " + txState, e);
+
+                            throw new IgniteException("Failed to log TxState: " + txState, e);
+                        }
+                    }
+
                     // Log tx state change to WAL.
-                    if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
+                    if (cctx.wal() != null && cctx.tm().logTxRecords()) {
                         assert txNodes != null || state == ROLLED_BACK : "txNodes=" + txNodes + " state=" + state;
 
                         BaselineTopology baselineTop = cctx.kernalContext().state().clusterState().baselineTopology();
@@ -1513,7 +1570,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     /*closure name */recordEvt ? F.first(txEntry.entryProcessors()).get1() : null,
                     resolveTaskName(),
                     null,
-                    keepBinary);
+                    keepBinary,
+                    null); // TODO IGNITE-7371
             }
 
             boolean modified = false;
@@ -1894,6 +1952,11 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             this.timeout = timeout;
             this.state = state;
             this.rollbackOnly = rollbackOnly;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void mvccInfo(MvccTxInfo mvccInfo) {
+            // No-op.
         }
 
         /** {@inheritDoc} */

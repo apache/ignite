@@ -50,10 +50,10 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionsReservation;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryMarshallable;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -75,6 +75,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -414,26 +415,6 @@ public class GridMapQueryExecutor {
     }
 
     /**
-     * @param caches Cache IDs.
-     * @return The first found partitioned cache.
-     */
-    private GridCacheContext<?,?> findFirstPartitioned(List<Integer> caches) {
-        GridCacheSharedContext<?,?> sctx = ctx.cache().context();
-
-        for (int i = 0; i < caches.size(); i++) {
-            GridCacheContext<?,?> mainCctx = sctx.cacheContext(caches.get(i));
-
-            if (mainCctx == null)
-                throw new CacheException("Failed to find cache.");
-
-            if (!mainCctx.isLocal() && !mainCctx.isReplicated())
-                return mainCctx;
-        }
-
-        throw new IllegalStateException("Failed to find a partitioned cache.");
-    }
-
-    /**
      * @param node Node.
      * @param req Query request.
      */
@@ -456,7 +437,7 @@ public class GridMapQueryExecutor {
         final List<Integer> cacheIds = req.caches();
 
         int segments = explain || replicated || F.isEmpty(cacheIds) ? 1 :
-            findFirstPartitioned(cacheIds).config().getQueryParallelism();
+            CU.firstPartitioned(ctx.cache().context(), cacheIds).config().getQueryParallelism();
 
         final Object[] params = req.parameters();
 
@@ -481,7 +462,8 @@ public class GridMapQueryExecutor {
                     false, // Replicated is always false here (see condition above).
                     req.timeout(),
                     params,
-                    true); // Lazy = true.
+                    true,
+                    req.mvccSnapshot()); // Lazy = true.
             }
             else {
                 ctx.closure().callLocal(
@@ -503,7 +485,8 @@ public class GridMapQueryExecutor {
                                 false,
                                 req.timeout(),
                                 params,
-                                false); // Lazy = false.
+                                false,
+                                req.mvccSnapshot()); // Lazy = false.
 
                             return null;
                         }
@@ -527,7 +510,8 @@ public class GridMapQueryExecutor {
             replicated,
             req.timeout(),
             params,
-            lazy);
+            lazy,
+            req.mvccSnapshot());
     }
 
     /**
@@ -543,6 +527,7 @@ public class GridMapQueryExecutor {
      * @param pageSize Page size.
      * @param distributedJoinMode Query distributed join mode.
      * @param lazy Streaming flag.
+     * @param mvccSnapshot MVCC snapshot.
      */
     private void onQueryRequest0(
         final ClusterNode node,
@@ -560,7 +545,8 @@ public class GridMapQueryExecutor {
         final boolean replicated,
         final int timeout,
         final Object[] params,
-        boolean lazy
+        boolean lazy,
+        @Nullable final MvccSnapshot mvccSnapshot
     ) {
         if (lazy && MapQueryLazyWorker.currentWorker() == null) {
             // Lazy queries must be re-submitted to dedicated workers.
@@ -569,8 +555,24 @@ public class GridMapQueryExecutor {
 
             worker.submit(new Runnable() {
                 @Override public void run() {
-                    onQueryRequest0(node, reqId, segmentId, schemaName, qrys, cacheIds, topVer, partsMap, parts,
-                        pageSize, distributedJoinMode, enforceJoinOrder, replicated, timeout, params, true);
+                    onQueryRequest0(
+                        node,
+                        reqId,
+                        segmentId,
+                        schemaName,
+                        qrys,
+                        cacheIds,
+                        topVer,
+                        partsMap,
+                        parts,
+                        pageSize,
+                        distributedJoinMode,
+                        enforceJoinOrder,
+                        replicated,
+                        timeout,
+                        params,
+                        true,
+                        mvccSnapshot);
                 }
             });
 
@@ -635,7 +637,8 @@ public class GridMapQueryExecutor {
                 .distributedJoinMode(distributedJoinMode)
                 .pageSize(pageSize)
                 .topologyVersion(topVer)
-                .reservations(reserved);
+                .reservations(reserved)
+                .mvccSnapshot(mvccSnapshot);
 
             Connection conn = h2.connectionForSchema(schemaName);
 
@@ -806,7 +809,7 @@ public class GridMapQueryExecutor {
             final boolean replicated = req.isFlagSet(GridH2QueryRequest.FLAG_REPLICATED);
 
             if (!replicated && !F.isEmpty(cacheIds) &&
-                findFirstPartitioned(cacheIds).config().getQueryParallelism() > 1) {
+                CU.firstPartitioned(ctx.cache().context(), cacheIds).config().getQueryParallelism() > 1) {
                 fldsQry.setDistributedJoins(true);
 
                 local = false;

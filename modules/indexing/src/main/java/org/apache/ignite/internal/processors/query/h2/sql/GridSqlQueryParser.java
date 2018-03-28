@@ -99,6 +99,7 @@ import org.h2.table.TableBase;
 import org.h2.table.TableFilter;
 import org.h2.table.TableView;
 import org.h2.value.DataType;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.query.h2.sql.GridSqlOperationType.AND;
@@ -611,7 +612,7 @@ public class GridSqlQueryParser {
             // We can't cache simple tables because otherwise it will be the same instance for all
             // table filters. Thus we will not be able to distinguish one table filter from another.
             // Table here is semantically equivalent to a table filter.
-            if (tbl instanceof TableBase)
+            if (tbl instanceof TableBase || tbl instanceof MetaTable)
                 return new GridSqlTable(tbl);
 
             // Other stuff can be cached because we will have separate instances in
@@ -1556,6 +1557,29 @@ public class GridSqlQueryParser {
     }
 
     /**
+     * @param stmt Prepared.
+     * @return Target table.
+     */
+    @NotNull public static GridH2Table dmlTable(@NotNull Prepared stmt) {
+        Table table;
+
+        if (stmt.getClass() == Insert.class)
+            table = INSERT_TABLE.get((Insert)stmt);
+        else if (stmt.getClass() == Merge.class)
+            table = MERGE_TABLE.get((Merge)stmt);
+        else if (stmt.getClass() == Delete.class)
+            table = DELETE_FROM.get((Delete)stmt).getTable();
+        else if (stmt.getClass() == Update.class)
+            table = UPDATE_TARGET.get((Update)stmt).getTable();
+        else
+            throw new IgniteException("Unsupported statement: " + stmt);
+
+        assert table instanceof GridH2Table : table;
+
+        return (GridH2Table) table;
+    }
+
+    /**
      * Check if query may be run locally on all caches mentioned in the query.
      * @param replicatedOnlyQry replicated-only query flag from original {@link SqlFieldsQuery}.
      * @return {@code true} if query may be run locally on all caches mentioned in the query, i.e. there's no need
@@ -1653,6 +1677,13 @@ public class GridSqlQueryParser {
             return parseAlterColumn((AlterTableAlterColumn)stmt);
 
         throw new CacheException("Unsupported SQL statement: " + stmt);
+    }
+
+    /**
+     * @return H2 to Grid objects map.
+     */
+    public Map objectsMap() {
+        return h2ObjToGridObj;
     }
 
     /**

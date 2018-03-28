@@ -428,14 +428,16 @@ public class GridH2Table extends TableBase {
      * @param row Row to be updated.
      * @param prevRow Previous row.
      * @param prevRowAvailable Whether previous row is available.
+     * @param idxRebuild If index rebuild is in progress.
      * @throws IgniteCheckedException If failed.
      */
-    public void update(CacheDataRow row, @Nullable CacheDataRow prevRow, boolean prevRowAvailable)
-        throws IgniteCheckedException {
+    public void update(CacheDataRow row, @Nullable CacheDataRow prevRow,  boolean prevRowAvailable,
+        boolean idxRebuild) throws IgniteCheckedException {
         assert desc != null;
 
         GridH2KeyValueRowOnheap row0 = (GridH2KeyValueRowOnheap)desc.createRow(row);
-        GridH2KeyValueRowOnheap prevRow0 = prevRow != null ? (GridH2KeyValueRowOnheap)desc.createRow(prevRow) : null;
+        GridH2KeyValueRowOnheap prevRow0 = prevRow != null ? (GridH2KeyValueRowOnheap)desc.createRow(prevRow) :
+            null;
 
         row0.prepareValuesCache();
 
@@ -458,6 +460,10 @@ public class GridH2Table extends TableBase {
                     replaced = prevRow0 != null;
                 }
 
+                assert (cctx.mvccEnabled() && idxRebuild && replaced)
+                    || replaced && prevRow0 != null
+                    || !replaced && prevRow0 == null : "Replaced: " + replaced;
+
                 if (!replaced)
                     size.increment();
 
@@ -465,12 +471,12 @@ public class GridH2Table extends TableBase {
                     Index idx = idxs.get(i);
 
                     if (idx instanceof GridH2IndexBase)
-                        addToIndex((GridH2IndexBase)idx, row0, prevRow0);
+                        addToIndex((GridH2IndexBase)idx, row0, prevRow0, idxRebuild);
                 }
 
                 if (!tmpIdxs.isEmpty()) {
                     for (GridH2IndexBase idx : tmpIdxs.values())
-                        addToIndex(idx, row0, prevRow0);
+                        addToIndex(idx, row0, prevRow0, idxRebuild);
                 }
             }
             finally {
@@ -531,9 +537,12 @@ public class GridH2Table extends TableBase {
      * @param idx Index to add row to.
      * @param row Row to add to index.
      * @param prevRow Previous row state, if any.
+     * @param idxRebuild If index rebuild is in progress.
      */
-    private void addToIndex(GridH2IndexBase idx, GridH2Row row, GridH2Row prevRow) {
+    private void addToIndex(GridH2IndexBase idx, GridH2Row row, GridH2Row prevRow, boolean idxRebuild) {
         boolean replaced = idx.putx(row);
+
+        assert  !replaced || !idx.ctx.mvccEnabled() || idxRebuild;
 
         // Row was not replaced, need to remove manually.
         if (!replaced && prevRow != null)

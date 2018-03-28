@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.tree;
 
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -25,6 +27,9 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteInClosure;
+
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_COUNTER_NA;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.assertMvccVersionValid;
 
 /**
  *
@@ -35,7 +40,7 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
      * @param ver Page format version.
      * @param itemSize Single item size on page.
      */
-    AbstractDataLeafIO(int type, int ver, int itemSize) {
+    public AbstractDataLeafIO(int type, int ver, int itemSize) {
         super(type, ver, itemSize);
     }
 
@@ -44,52 +49,119 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
         assert row.link() != 0;
 
         PageUtils.putLong(pageAddr, off, row.link());
-        PageUtils.putInt(pageAddr, off + 8, row.hash());
+        off += 8;
+
+        PageUtils.putInt(pageAddr, off, row.hash());
+        off += 4;
 
         if (storeCacheId()) {
             assert row.cacheId() != CU.UNDEFINED_CACHE_ID;
 
-            PageUtils.putInt(pageAddr, off + 12, row.cacheId());
+            PageUtils.putInt(pageAddr, off, row.cacheId());
+            off += 4;
+        }
+
+        if (storeMvccVersion()) {
+            long mvccCrdVer = row.mvccCoordinatorVersion();
+            long mvccCntr = row.mvccCounter();
+
+            assert assertMvccVersionValid(mvccCrdVer, mvccCntr);
+
+            PageUtils.putLong(pageAddr, off, mvccCrdVer);
+            off += 8;
+
+            PageUtils.putLong(pageAddr, off, mvccCntr);
+            off += 8;
+
+            PageUtils.putLong(pageAddr, off, mvccCrdVer);
+            off += 8;
+
+            PageUtils.putLong(pageAddr, off, mvccCntr);
         }
     }
 
     /** {@inheritDoc} */
     @Override public void store(long dstPageAddr, int dstIdx, BPlusIO<CacheSearchRow> srcIo, long srcPageAddr,
-                                int srcIdx) {
-        int hash = ((RowLinkIO)srcIo).getHash(srcPageAddr, srcIdx);
-        long link = ((RowLinkIO)srcIo).getLink(srcPageAddr, srcIdx);
+        int srcIdx) {
+        RowLinkIO rowIo = (RowLinkIO) srcIo;
+
+        long link = rowIo.getLink(srcPageAddr, srcIdx);
+        int hash = rowIo.getHash(srcPageAddr, srcIdx);
+
         int off = offset(dstIdx);
 
         PageUtils.putLong(dstPageAddr, off, link);
-        PageUtils.putInt(dstPageAddr, off + 8, hash);
+        off += 8;
+
+        PageUtils.putInt(dstPageAddr, off, hash);
+        off += 4;
 
         if (storeCacheId()) {
-            int cacheId = ((RowLinkIO)srcIo).getCacheId(srcPageAddr, srcIdx);
+            int cacheId = rowIo.getCacheId(srcPageAddr, srcIdx);
 
             assert cacheId != CU.UNDEFINED_CACHE_ID;
 
-            PageUtils.putInt(dstPageAddr, off + 12, cacheId);
+            PageUtils.putInt(dstPageAddr, off, cacheId);
+            off += 4;
+        }
+
+        if (storeMvccVersion()) {
+            long mvccUpdateTopVer = rowIo.getMvccCoordinatorVersion(srcPageAddr, srcIdx);
+            long mvccUpdateCntr = rowIo.getMvccCounter(srcPageAddr, srcIdx);
+
+            assert mvccUpdateTopVer > 0 : mvccUpdateCntr;
+            assert mvccUpdateCntr != MVCC_COUNTER_NA;
+
+            long lockCrdVer = rowIo.getMvccLockCoordinatorVersion(srcPageAddr, srcIdx);
+            long lockCntr = rowIo.getMvccLockCounter(srcPageAddr, srcIdx);
+
+            assert lockCrdVer >= 0;
+            assert lockCntr >= 0;
+
+            PageUtils.putLong(dstPageAddr, off, mvccUpdateTopVer);
+            off += 8;
+
+            PageUtils.putLong(dstPageAddr, off, mvccUpdateCntr);
+            off += 8;
+
+            PageUtils.putLong(dstPageAddr, off, lockCrdVer);
+            off += 8;
+
+            PageUtils.putLong(dstPageAddr, off, lockCntr);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public CacheSearchRow getLookupRow(BPlusTree<CacheSearchRow, ?> tree, long buf, int idx) {
-        int cacheId = getCacheId(buf, idx);
-        int hash = getHash(buf, idx);
-        long link = getLink(buf, idx);
+    @Override public final CacheSearchRow getLookupRow(BPlusTree<CacheSearchRow, ?> tree, long pageAddr, int idx)
+        throws IgniteCheckedException {
+        long link = getLink(pageAddr, idx);
+        int hash = getHash(pageAddr, idx);
+        int cacheId = getCacheId(pageAddr, idx);
+
+        if (storeMvccVersion()) {
+            long mvccTopVer = getMvccCoordinatorVersion(pageAddr, idx);
+            long mvccCntr = getMvccCounter(pageAddr, idx);
+
+            return ((CacheDataTree)tree).rowStore().mvccRow(cacheId,
+                hash,
+                link,
+                CacheDataRowAdapter.RowData.KEY_ONLY,
+                mvccTopVer,
+                mvccCntr);
+        }
 
         return ((CacheDataTree)tree).rowStore().keySearchRow(cacheId, hash, link);
     }
 
     /** {@inheritDoc} */
-    @Override public long getLink(long pageAddr, int idx) {
+    @Override public final long getLink(long pageAddr, int idx) {
         assert idx < getCount(pageAddr) : idx;
 
         return PageUtils.getLong(pageAddr, offset(idx));
     }
 
     /** {@inheritDoc} */
-    @Override public int getHash(long pageAddr, int idx) {
+    @Override public final int getHash(long pageAddr, int idx) {
         return PageUtils.getInt(pageAddr, offset(idx) + 8);
     }
 
@@ -101,8 +173,33 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
             c.apply(new CacheDataRowAdapter(getLink(pageAddr, i)));
     }
 
+    /** {@inheritDoc} */
+    @Override public long getMvccLockCoordinatorVersion(long pageAddr, int idx) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getMvccLockCounter(long pageAddr, int idx) {
+        return MvccProcessor.MVCC_COUNTER_NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMvccLockCoordinatorVersion(long pageAddr, int idx, long lockCrd) {
+        throw new UnsupportedOperationException();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void setMvccLockCounter(long pageAddr, int idx, long lockCntr) {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * @return {@code True} if cache ID has to be stored.
      */
     protected abstract boolean storeCacheId();
+
+    /**
+     * @return {@code True} if mvcc version has to be stored.
+     */
+    protected abstract boolean storeMvccVersion();
 }

@@ -628,6 +628,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     updateClientNodes(node.id());
                 }
 
+                ctx.coordinators().onDiscoveryEvent(type, topSnapshot, topVer);
+
                 boolean locJoinEvt = type == EVT_NODE_JOINED && node.id().equals(locNode.id());
 
                 ChangeGlobalStateFinishMessage stateFinishMsg = null;
@@ -2342,6 +2344,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             topVer,
             state,
             loc,
+            ctx.coordinators().discoveryData().coordinator(),
             Collections.unmodifiableList(rmtNodes),
             Collections.unmodifiableList(allNodes),
             Collections.unmodifiableList(srvNodes),
@@ -3176,6 +3179,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             topVer,
             discoCache.state(),
             discoCache.localNode(),
+            discoCache.mvccCoordinator(),
             discoCache.remoteNodes(),
             allNodes,
             discoCache.serverNodes(),

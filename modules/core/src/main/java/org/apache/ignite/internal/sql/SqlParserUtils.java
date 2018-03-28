@@ -261,6 +261,20 @@ public class SqlParserUtils {
     }
 
     /**
+     * Skip token if it matches expected keyword by using lookahead.
+     * If next token is not what we expect, no shift is done.
+     *
+     * @param lex Lexer.
+     * @param expKeyword Expected keyword.
+     */
+    static void skipIfMatchesOptionalKeyword(SqlLexer lex, String expKeyword) {
+        SqlLexerToken nextTok = lex.lookAhead();
+
+        if (matchesKeyword(nextTok, expKeyword))
+            lex.shift();
+    }
+
+    /**
      * Skip next token if it matches expected type.
      *
      * @param lex Lexer.

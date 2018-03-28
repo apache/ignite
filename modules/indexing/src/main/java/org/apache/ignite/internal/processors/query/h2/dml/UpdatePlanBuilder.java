@@ -41,20 +41,12 @@ import org.apache.ignite.internal.processors.query.h2.DmlStatementsProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlColumn;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlDelete;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlElement;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlInsert;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlMerge;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuery;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlSelect;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlTable;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUnion;
-import org.apache.ignite.internal.processors.query.h2.sql.GridSqlUpdate;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlias;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAst;
+import org.apache.ignite.internal.processors.query.h2.sql.*;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlConst;
 import org.apache.ignite.internal.sql.command.SqlBulkLoadCommand;
+import org.apache.ignite.internal.processors.query.h2.sql.GridSqlParameter;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -91,7 +83,35 @@ public final class UpdatePlanBuilder {
     public static UpdatePlan planForStatement(Prepared prepared, boolean loc, IgniteH2Indexing idx,
         @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQry, @Nullable Integer errKeysPos)
         throws IgniteCheckedException {
-        GridSqlStatement stmt = new GridSqlQueryParser(false).parse(prepared);
+        assert !prepared.isQuery();
+
+        GridSqlQueryParser parser = new GridSqlQueryParser(false);
+
+        GridSqlStatement stmt = parser.parse(prepared);
+
+        boolean mvccEnabled = false;
+
+        GridCacheContext cctx = null;
+
+        // check all involved caches
+        for (Object o : parser.objectsMap().values()) {
+            if (o instanceof GridSqlInsert)
+                o = ((GridSqlInsert)o).into();
+            else if (o instanceof GridSqlMerge)
+                o = ((GridSqlMerge)o).into();
+            else if (o instanceof GridSqlDelete)
+                o = ((GridSqlDelete)o).from();
+
+            if (o instanceof GridSqlAlias)
+                o = GridSqlAlias.unwrap((GridSqlAst)o);
+
+            if (o instanceof GridSqlTable) {
+                if (cctx == null)
+                    mvccEnabled = (cctx = (((GridSqlTable)o).dataTable()).cache()).mvccEnabled();
+                else if (((GridSqlTable)o).dataTable().cache().mvccEnabled() != mvccEnabled)
+                    throw new IllegalStateException("Using caches with different mvcc settings in same query is forbidden.");
+            }
+        }
 
         if (stmt instanceof GridSqlMerge || stmt instanceof GridSqlInsert)
             return planForInsert(stmt, loc, idx, conn, fieldsQry);
@@ -99,7 +119,7 @@ public final class UpdatePlanBuilder {
             return planForUpdate(stmt, loc, idx, conn, fieldsQry, errKeysPos);
         else
             throw new IgniteSQLException("Unsupported operation: " + prepared.getSQL(),
-                IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+                    IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
     }
 
     /**
@@ -116,7 +136,7 @@ public final class UpdatePlanBuilder {
     @SuppressWarnings("ConstantConditions")
     private static UpdatePlan planForInsert(GridSqlStatement stmt, boolean loc, IgniteH2Indexing idx,
         @Nullable Connection conn, @Nullable SqlFieldsQuery fieldsQuery) throws IgniteCheckedException {
-        GridSqlQuery sel;
+        GridSqlQuery sel = null;
 
         GridSqlElement target;
 
@@ -140,10 +160,11 @@ public final class UpdatePlanBuilder {
             desc = tbl.dataTable().rowDescriptor();
 
             cols = ins.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query());
 
-            if (sel == null)
+            if (noQuery(ins.rows()))
                 elRows = ins.rows();
+            else
+                sel = DmlAstUtils.selectForInsertOrMerge(cols, ins.rows(), ins.query());
 
             isTwoStepSubqry = (ins.query() != null);
             rowsNum = isTwoStepSubqry ? 0 : ins.rows().size();
@@ -157,10 +178,11 @@ public final class UpdatePlanBuilder {
             desc = tbl.dataTable().rowDescriptor();
 
             cols = merge.columns();
-            sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query());
 
-            if (sel == null)
+            if (noQuery(merge.rows()))
                 elRows = merge.rows();
+            else
+                sel = DmlAstUtils.selectForInsertOrMerge(cols, merge.rows(), merge.query());
 
             isTwoStepSubqry = (merge.query() != null);
             rowsNum = isTwoStepSubqry ? 0 : merge.rows().size();
@@ -266,6 +288,31 @@ public final class UpdatePlanBuilder {
             null,
             distributed
         );
+    }
+
+    /**
+     * @param rows Insert rows.
+     * @return {@code True} if no query optimisation may be used.
+     */
+    private static boolean noQuery(List<GridSqlElement[]> rows) {
+        if (F.isEmpty(rows))
+            return false;
+
+        boolean noQry = true;
+
+        for (int i = 0; i < rows.size(); i++) {
+            GridSqlElement[] row = rows.get(i);
+
+            for (int i1 = 0; i1 < row.length; i1++) {
+                GridSqlElement el = row[i1];
+
+                if(!(noQry &=  (el instanceof GridSqlConst || el instanceof GridSqlParameter)))
+                    return noQry;
+
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -705,7 +752,6 @@ public final class UpdatePlanBuilder {
     private static DmlDistributedPlanInfo checkPlanCanBeDistributed(IgniteH2Indexing idx,
         Connection conn, SqlFieldsQuery fieldsQry, boolean loc, String selectQry, String cacheName)
         throws IgniteCheckedException {
-
         if (loc || !isSkipReducerOnUpdateQuery(fieldsQry) || DmlUtils.isBatched(fieldsQry))
             return null;
 

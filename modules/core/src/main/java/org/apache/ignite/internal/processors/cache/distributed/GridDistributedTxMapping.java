@@ -46,6 +46,9 @@ public class GridDistributedTxMapping {
     /** Explicit lock flag. */
     private boolean explicitLock;
 
+    /** Query update flag. */
+    private boolean queryUpdate;
+
     /** DHT version. */
     private GridCacheVersion dhtVer;
 
@@ -130,6 +133,20 @@ public class GridDistributedTxMapping {
         assert nearEntries > 0;
 
         return F.view(entries, CU.FILTER_NEAR_CACHE_ENTRY);
+    }
+
+    /**
+     * @return {@code True} if mapping was created for a query update.
+     */
+    public boolean queryUpdate() {
+        return queryUpdate;
+    }
+
+    /**
+     * Sets query update flag to {@code true}.
+     */
+    public void markQueryUpdate() {
+        queryUpdate = true;
     }
 
     /**
