@@ -72,6 +72,14 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
+    @Override
+    protected boolean isSafeTopology() {
+        assert testsCfg != null;
+
+        return testsCfg.isStopNodes();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         assert testsCfg != null;
 

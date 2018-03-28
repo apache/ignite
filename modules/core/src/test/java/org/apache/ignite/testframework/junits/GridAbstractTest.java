@@ -103,6 +103,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.ignite.testframework.junits.multijvm.IgniteCacheProcessProxy;
 import org.apache.ignite.testframework.junits.multijvm.IgniteNodeRunner;
@@ -543,16 +544,6 @@ public abstract class GridAbstractTest extends TestCase {
         // Will clean and re-create marshaller directory from scratch.
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "marshaller", true);
         U.resolveWorkDirectory(U.defaultWorkDirectory(), "binary_meta", true);
-
-        // If Ignite instance started using constructor flag we should check that no other different instances alive
-        if (startGrid) {
-            final String igniteInstanceName = getConfiguration().getIgniteInstanceName();
-
-            assert G.allGrids().stream().map(Ignite::name).allMatch(n -> n.equals(igniteInstanceName)) :
-                    "Not all Ignite instances stopped before tests execution";
-        }
-        else
-            assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution";
     }
 
     /**
@@ -597,6 +588,9 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (isFirstTest()) {
             info(">>> Starting test class: " + testClassDescription() + " <<<");
+
+            if(isSafeTopology())
+                assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution";
 
             if (startGrid) {
                 IgniteConfiguration cfg = optimize(getConfiguration());
@@ -1733,6 +1727,16 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected boolean isMultiJvm() {
         return false;
+    }
+
+    /**
+     * Gets flag of checking existence running Ignite instances before {@link #beforeTestsStarted()} mehtod execution.
+     *
+     * @return <code>True</code> turn on assertion check.
+     * @see VariationsTestsConfig#isStopNodes() Example of why instances should not be stopped.
+     */
+    protected boolean isSafeTopology() {
+        return true;
     }
 
     /**
