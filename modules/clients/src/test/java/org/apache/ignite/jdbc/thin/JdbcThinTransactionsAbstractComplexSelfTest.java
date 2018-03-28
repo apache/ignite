@@ -19,10 +19,7 @@ package org.apache.ignite.jdbc.thin;
 
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,8 +38,6 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
-import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -218,7 +213,7 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        personCache().clear();
+        execute("DELETE FROM \"Person\".Person");
 
         execute("DROP TABLE City");
 
@@ -286,11 +281,12 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
                 return null;
             }
-        }, IgniteException.class, "Duplicate key during INSERT [key=6]");
+        }, IgniteException.class, "Failed to INSERT some keys because they are already in cache [keys=[6]]");
 
         assertTrue(e.getCause() instanceof BatchUpdateException);
 
-        assertTrue(e.getCause().getMessage().contains("Duplicate key during INSERT [key=6]"));
+        assertTrue(e.getCause().getMessage().contains("Failed to INSERT some keys " +
+            "because they are already in cache [keys=[6]]"));
 
         // First we insert id 7, then 6. Still, 7 is not in the cache as long as the whole batch has failed inside tx.
         assertEquals(Collections.emptyList(), execute("SELECT * FROM \"Person\".Person where id > 6 order by id"));

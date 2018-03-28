@@ -229,21 +229,16 @@ public class DmlStatementsProcessor {
 
         UpdatePlan plan = getPlanForStatement(schemaName, conn, prepared, fieldsQry, loc, null);
 
-        if (plan.cacheContext().mvccEnabled())
-            throw new IgniteSQLException("Failed to execute batch update with MVCC enabled. " +
-                "Operation is unsupported at the moment.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
+        GridCacheContext<?, ?> cctx = plan.cacheContext();
 
-        if (plan.hasRows() && plan.mode() == UpdateMode.INSERT) {
-            GridCacheContext<?, ?> cctx = plan.cacheContext();
-
+        // For MVCC case, let's enlist batch elements one by one.
+        if (plan.hasRows() && plan.mode() == UpdateMode.INSERT && !cctx.mvccEnabled()) {
             CacheOperationContext opCtx = setKeepBinaryContext(cctx);
 
             try {
                 List<List<List<?>>> cur = plan.createRows(argss);
 
-                List<UpdateResult> res = processDmlSelectResultBatched(plan, cur, fieldsQry.getPageSize());
-
-                return res;
+                return processDmlSelectResultBatched(plan, cur, fieldsQry.getPageSize());
             }
             finally {
                 cctx.operationContextPerCall(opCtx);
