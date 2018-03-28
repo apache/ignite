@@ -86,7 +86,7 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
         startGrids(2);
 
         try {
-                doTestDeadlock();
+            doTestDeadlock();
         }
         finally {
             stopAllGrids();
