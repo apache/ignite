@@ -97,6 +97,7 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
         return cfg;
     }
 
+    /** */
     @NotNull private CacheConfiguration<Integer, Salary> cacheCfg(String tabName, String cacheName) {
         CacheConfiguration<Integer, Salary> ccfg = new CacheConfiguration<>(cacheName);
 
@@ -162,11 +163,7 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
         checkDecimalInfo(SalaryWithAnnotations.class.getSimpleName().toUpperCase(), "amount", SCALE, PRECISION);
     }
 
-    //Добавить  такие же тесты с учёто старта\стопа грида
-    //Например - стартуем ноду с persist'ом. создаём таблицу. рестартуем ноду.
-    //Проверяем что инфа о scale+precision доступна
-    //Добавить пример на схему через аннотации.
-
+    /** */
     public void testSelectDecimal() throws Exception {
         IgniteEx grid = grid(0);
 
@@ -179,6 +176,7 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
         assertEquals(asList(3L, VAL_3), rows.get(2));
     }
 
+    /** */
     private void checkDecimalInfo(String tabName, String colName, Integer scale, Integer precision) {
         QueryEntity queryEntity = findTableInfo(tabName);
 
@@ -232,26 +230,34 @@ public class IgniteDecimalSelfTest extends AbstractSchemaSelfTest {
         return queryProcessor(node).querySqlFields(qry, true).getAll();
     }
 
+    /** */
     private static class Salary {
+        /** */
         private BigDecimal amount;
 
+        /** */
         public BigDecimal getAmount() {
             return amount;
         }
 
+        /** */
         public void setAmount(BigDecimal amount) {
             this.amount = amount;
         }
     }
 
+    /** */
     private static class SalaryWithAnnotations {
+        /** */
         @QuerySqlField(index = true, scale = SCALE, precision = PRECISION)
         private BigDecimal amount;
 
+        /** */
         public BigDecimal getAmount() {
             return amount;
         }
 
+        /** */
         public void setAmount(BigDecimal amount) {
             this.amount = amount;
         }
