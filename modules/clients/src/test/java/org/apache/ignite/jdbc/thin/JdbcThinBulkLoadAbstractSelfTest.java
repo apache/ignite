@@ -61,7 +61,7 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
 
     /** A CSV file in UTF-8. */
     private static final String BULKLOAD_UTF_CSV_FILE =
-        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload2_utf8.csv")).getAbsolutePath();
+        Objects.requireNonNull(resolveIgnitePath(CSV_FILE_SUBDIR + "bulkload2_utf.csv")).getAbsolutePath();
 
     /** Default table name. */
     private static final String TBL_NAME = "Person";
@@ -251,8 +251,8 @@ public abstract class JdbcThinBulkLoadAbstractSelfTest extends JdbcThinAbstractD
      *
      * @throws SQLException If failed.
      */
-    public void testBatchSize_1() throws SQLException {
-        int updatesCnt = stmt.executeUpdate(BASIC_SQL_COPY_STMT + " batch_size 1");
+    public void testPacketSize_1() throws SQLException {
+        int updatesCnt = stmt.executeUpdate(BASIC_SQL_COPY_STMT + " packet_size 1");
 
         assertEquals(2, updatesCnt);
 
