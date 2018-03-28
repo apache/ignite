@@ -454,6 +454,9 @@ public class GridServiceProxy<T> implements Serializable {
      * Exception class that wraps an exception thrown by the service implementation.
      */
     private static class ServiceProxyException extends RuntimeException {
+        /** */
+        private static final long serialVersionUID = 0L;
+
         /** {@inheritDoc} */
         ServiceProxyException(Throwable cause) {
             super(cause);
