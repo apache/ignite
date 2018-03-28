@@ -75,10 +75,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.NodeInvalidator;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -2876,7 +2877,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             chp.progress.cpFinishFut.onDone(e);
 
                             // In case of writing error node should be invalidated and stopped.
-                            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+                            cctx.kernalContext().failure().process(
+                                new FailureContext(FailureType.CRITICAL_ERROR, e));
 
                             return;
                         }
