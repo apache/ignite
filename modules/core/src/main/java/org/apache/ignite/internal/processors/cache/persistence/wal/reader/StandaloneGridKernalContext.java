@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
@@ -458,12 +459,13 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void markSegmented() {
+    @Override public boolean invalid() {
+        return false;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean segmented() {
-        return false;
+    @Override public FailureProcessor failure() {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -628,16 +630,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
                 return new PdsFolderSettings(new File("."), U.maskForFileName(""));
             }
         };
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean invalidated() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void invalidate() {
-
     }
 
     /** {@inheritDoc} */
