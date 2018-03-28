@@ -39,8 +39,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.NodeInvalidator;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -50,9 +51,9 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.processors.cache.StoredCacheData;
+import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
 import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage;
-import org.apache.ignite.internal.processors.cache.persistence.AllocatedPageTracker;
 import org.apache.ignite.internal.processors.cache.persistence.snapshot.IgniteCacheSnapshotManager;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -202,7 +203,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             }
         }
         catch (PersistentStorageIOException e) {
-            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
         }
@@ -325,7 +326,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             store.read(pageId, pageBuf, keepCrc);
         }
         catch (PersistentStorageIOException e) {
-            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
         }
@@ -346,7 +347,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             store.readHeader(buf);
         }
         catch (PersistentStorageIOException e) {
-            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
         }
@@ -382,7 +383,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             store.write(pageId, pageBuf, tag, calculateCrc);
         }
         catch (PersistentStorageIOException e) {
-            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
         }
@@ -461,7 +462,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             return new CacheStoreHolder(idxStore, partStores);
         }
         catch (PersistentStorageIOException e) {
-            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
         }
@@ -553,7 +554,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             getStore(grpId, partId).sync();
         }
         catch (PersistentStorageIOException e) {
-            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
         }
@@ -565,7 +566,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             getStore(grpId, partId).ensure();
         }
         catch (PersistentStorageIOException e) {
-            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
         }
@@ -583,7 +584,7 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             return PageIdUtils.pageId(partId, flags, (int)pageIdx);
         }
         catch (PersistentStorageIOException e) {
-            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
             throw e;
         }
