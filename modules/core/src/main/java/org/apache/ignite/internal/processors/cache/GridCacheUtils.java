@@ -1731,7 +1731,7 @@ public class GridCacheUtils {
                             ver,
                             expiryPlc == null ? 0 : expiryPlc.forCreate(),
                             expiryPlc == null ? 0 : toExpireTime(expiryPlc.forCreate()),
-                            true,
+                            false,
                             topVer,
                             GridDrType.DR_BACKUP,
                             true);
