@@ -141,9 +141,7 @@ public interface FileIO extends AutoCloseable {
      *
      * @throws IOException If some I/O error occurs.
      */
-    public default void force() throws IOException {
-        force(false);
-    };
+    public void force() throws IOException;
 
     /**
      * Forces any updates of this file to be written to the storage

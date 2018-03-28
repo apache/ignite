@@ -107,4 +107,9 @@ public class RandomAccessFileIO implements FileIO {
     @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
         return ch.map(FileChannel.MapMode.READ_WRITE, 0, sizeBytes);
     }
+
+    /** {@inheritDoc} */
+    @Override public void force() throws IOException {
+        force(false);
+    }
 }

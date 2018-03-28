@@ -27,6 +27,7 @@ import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -500,6 +501,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (!U.mkdirs(cpDir))
                 throw new IgniteCheckedException("Could not create directory for checkpoint metadata: " + cpDir);
 
+            cleanupCheckpointDirectory();
+
             final FileLockHolder preLocked = kernalCtx.pdsFolderResolver()
                 .resolveFolders()
                 .getLockedFileLockHolder();
@@ -510,6 +513,28 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             // Here we can get data from metastorage
             readMetastore();
+        }
+    }
+
+    /**
+     * Cleanup checkpoint directory from all temporary files {@link #CP_FILE_TMP_SUFFIX}.
+     */
+    private void cleanupCheckpointDirectory() throws IgniteCheckedException {
+        try {
+            DirectoryStream<Path> tmpFiles = Files.newDirectoryStream(cpDir.toPath(), new DirectoryStream.Filter<Path>() {
+                @Override
+                public boolean accept(Path path) throws IOException {
+                    return path.endsWith(CP_FILE_TMP_SUFFIX);
+                }
+            });
+
+            for (Path path : tmpFiles)
+                Files.delete(path);
+
+            tmpFiles.close();
+        }
+        catch (IOException e) {
+            throw new IgniteCheckedException("Unable to cleanup checkpoint directory: " + cpDir, e);
         }
     }
 

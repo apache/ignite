@@ -82,6 +82,11 @@ public class FileIODecorator implements FileIO {
     }
 
     /** {@inheritDoc} */
+    @Override public void force() throws IOException {
+        delegate.force();
+    }
+
+    /** {@inheritDoc} */
     @Override public void force(boolean withMetadata) throws IOException {
         delegate.force(withMetadata);
     }

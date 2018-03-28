@@ -115,6 +115,11 @@ public class UnzipFileIO implements FileIO {
     }
 
     /** {@inheritDoc} */
+    @Override public void force() throws IOException {
+        force(false);
+    }
+
+    /** {@inheritDoc} */
     @Override public void force(boolean withMetadata) throws IOException {
         throw new UnsupportedOperationException();
     }
