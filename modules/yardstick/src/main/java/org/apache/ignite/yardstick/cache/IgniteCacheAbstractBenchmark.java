@@ -23,21 +23,34 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.DataRegionMetrics;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.DataRegionConfiguration;
+import org.apache.ignite.configuration.DataStorageConfiguration;
+import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.cache.model.SampleValue;
+import org.jetbrains.annotations.NotNull;
 import org.yardstickframework.BenchmarkConfiguration;
 import org.yardstickframework.BenchmarkUtils;
 
@@ -64,6 +77,9 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
 
     /** */
     private final AtomicInteger opCacheIdx = new AtomicInteger();
+
+    /** */
+    private AtomicBoolean loaded;
 
     /** */
     private final ThreadLocal<IgniteCache<K, V>> opCache = new ThreadLocal<>();
@@ -105,6 +121,10 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
+        ignite().cluster().active(true);
+
+        Thread.sleep(1000L);
+
         cache = cache();
 
         CacheConfiguration<?, ?> ccfg = cache.getConfiguration(CacheConfiguration.class);
@@ -112,8 +132,8 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
         String grpName = ccfg.getGroupName();
 
         BenchmarkUtils.println(cfg, "Benchmark setUp [name=" + getClass().getSimpleName() +
-            ", cacheName="+ cache.getName() +
-            ", cacheGroup="+ grpName +
+            ", cacheName=" + cache.getName() +
+            ", cacheGroup=" + grpName +
             ", cacheCfg=" + cache.getConfiguration(CacheConfiguration.class) + ']');
 
         caches = args.cachesCount();
@@ -168,7 +188,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
                 }
             }
 
-            BenchmarkUtils.println(cfg, "Partition stats. [cacheName: "+ cache.getName() +", topVer: "
+            BenchmarkUtils.println(cfg, "Partition stats. [cacheName: " + cache.getName() + ", topVer: "
                 + ignite().cluster().topologyVersion() + "]");
             BenchmarkUtils.println(cfg, "(Node id,  Number of Primary, Percent, Number of Backup, Percent, Total, Percent)");
 
@@ -177,7 +197,7 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
                 List<Integer> backup = e.getValue().get2();
 
                 BenchmarkUtils.println(cfg, e.getKey().id() + "  "
-                    + primary.size() + "  " + primary.size() * 1. /aff.partitions() + "  "
+                    + primary.size() + "  " + primary.size() * 1. / aff.partitions() + "  "
                     + backup.size() + "  "
                     + backup.size() * 1. / (aff.partitions() * (args.backups() == 0 ? 1 : args.backups())) + "  "
                     + (primary.size() + backup.size()) + "  "
@@ -185,6 +205,129 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
                 );
             }
         }
+
+        if(args.preloadDataRegionMult() > 0) {
+            startPreloadLogging(args.preloadLogsInterval());
+
+            preload();
+
+            stopPreloadLogging();
+        }
+    }
+
+    protected void preload() throws IgniteCheckedException {
+        loaded = new AtomicBoolean();
+
+        IgniteCache<Integer, SampleValue> cache = (IgniteCache<Integer, SampleValue>)cacheForOperation();
+
+        CacheConfiguration<K, V> cc = cache.getConfiguration(CacheConfiguration.class);
+
+        String dataRegName = cc.getDataRegionName();
+
+        BenchmarkUtils.println("Data region name = " + dataRegName);
+
+        DataStorageConfiguration dataStorCfg = ignite().configuration().getDataStorageConfiguration();
+
+        int pageSize = dataStorCfg.getPageSize();
+
+        BenchmarkUtils.println("Page size = " + pageSize);
+
+        DataRegionConfiguration dataRegCfg = null;
+
+        DataRegionConfiguration[] arr = ignite().configuration().getDataStorageConfiguration()
+            .getDataRegionConfigurations();
+
+        for (DataRegionConfiguration cfg : arr) {
+            if (cfg.getName().equals(dataRegName))
+                dataRegCfg = cfg;
+        }
+
+        if (dataRegCfg == null) {
+            BenchmarkUtils.println(String.format("Failed to get data region configuration for cache %s",
+                cache.getName()));
+
+            return;
+        }
+
+        long maxSize = dataRegCfg.getMaxSize();
+
+        long initSize = dataRegCfg.getInitialSize();
+
+        if (maxSize != initSize)
+            throw new IgniteCheckedException("Initial data region size must be equal to max size!");
+
+        int pageNum = (int)maxSize / pageSize;
+
+        BenchmarkUtils.println("Pages in data region: " + pageNum);
+
+        int cnt = 0;
+
+        final int pagesToLoad = pageNum * args.preloadDataRegionMult();
+
+        IgniteEx ignite = (IgniteEx)ignite();
+
+        final DataRegionMetricsImpl impl = ignite.context().cache().context().database().dataRegion(dataRegName)
+            .memoryMetrics();
+
+        impl.enableMetrics();
+
+        BenchmarkUtils.println("Initial allocated pages = " + impl.getTotalAllocatedPages());
+
+        ExecutorService serv = Executors.newSingleThreadExecutor(new ThreadFactory() {
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+                return new Thread(r, "Preload checker");
+            }
+        });
+
+        Future<?> fut = serv.submit(new Runnable() {
+            @Override public void run()  {
+                while (!loaded.get()) {
+
+                    if (impl.getTotalAllocatedPages() >= pagesToLoad)
+                        loaded.getAndSet(true);
+
+                    try {
+                        Thread.sleep(500L);
+                    }
+                    catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+
+        try (IgniteDataStreamer<Object, Object> streamer = ignite().dataStreamer(cache.getName())) {
+            while (!loaded.get()) {
+                streamer.addData(cnt++, new SampleValue());
+
+                if (cnt % 1000_000 == 0) {
+                    long allocPages = impl.getTotalAllocatedPages();
+
+                    BenchmarkUtils.println("Load count = " + cnt);
+
+                    BenchmarkUtils.println("Allocated pages = " + allocPages);
+                }
+            }
+        }
+        catch (Exception e){
+            e.printStackTrace();
+        }
+
+        try {
+            fut.get();
+        }
+        catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
+        }
+
+        serv.shutdown();
+
+        BenchmarkUtils.println("Objects loaded = " + cnt);
+        BenchmarkUtils.println("Total allocated pages = " + impl.getTotalAllocatedPages());
+
+        if (args.resetRangeForPreload())
+            args.setRange(cnt);
     }
 
     /**
