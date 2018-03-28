@@ -18,31 +18,20 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
-import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.managers.communication.GridIoMessage;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.util.GridConcurrentHashSet;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteInClosure;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.IgniteSpiException;
-import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -58,9 +47,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  *
  */
 public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstractTest {
-    /** Nodes count. */
-    private static final int NODES_CNT = 3;
-
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -73,10 +59,6 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
 
             cfg.setDiscoverySpi(discoSpi);
         }
-
-        TcpCommunicationSpi commSpi = new TestCommunicationSpi();
-
-        cfg.setCommunicationSpi(commSpi);
 
         CacheConfiguration ccfg0 = defaultCacheConfiguration();
 
@@ -97,38 +79,31 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
         return cfg;
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        startGrids(NODES_CNT);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
-
-        stopAllGrids();
-    }
-
     /**
      * @throws Exception If failed.
      */
     public void testDeadlock() throws Exception {
-        doTestDeadlock();
+        startGrids(2);
+
+        try {
+                doTestDeadlock();
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 
     /**
      * @throws Exception If failed.
      */
     private boolean doTestDeadlock() throws Exception {
-        TestCommunicationSpi.init(log, 2);
-
         final AtomicInteger threadCnt = new AtomicInteger();
 
         final AtomicBoolean deadlock = new AtomicBoolean();
 
         final AtomicInteger commitCnt = new AtomicInteger();
+
+        grid(0).events().localListen(new CacheLocksListener(), EventType.EVT_CACHE_OBJECT_LOCKED);
 
         awaitPartitionMapExchange();
 
@@ -138,20 +113,21 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
 
                 Ignite ignite = ignite(0);
 
-                IgniteCache<Integer, Integer> cache1 = cacheForThread(ignite, threadNum, 0);
-                IgniteCache<Integer, Integer> cache2 = cacheForThread(ignite, threadNum, 1);
+                IgniteCache<Integer, Integer> cache1 = ignite.cache("cache" + (threadNum == 0 ? 0 : 1));
+
+                IgniteCache<Integer, Integer> cache2 = ignite.cache("cache" + (threadNum == 0 ? 1 : 0));
 
                 try (Transaction tx =
-                         ignite.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, 5000, 0)
+                         ignite.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, 500, 0)
                 ) {
-                    int key1 = remoteKeyForThread(threadNum, 0);
+                    int key1 = primaryKey(cache1);
 
                     log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode() +
                         ", tx=" + tx + ", key=" + key1 + ", cache=" + cache1.getName() + ']');
 
                     cache1.put(key1, 0);
 
-                    int key2 = remoteKeyForThread(threadNum, 1);
+                    int key2 = primaryKey(cache2);
 
                     log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode() +
                         ", tx=" + tx + ", key=" + key2 + ", cache=" + cache2.getName() + ']');
@@ -163,8 +139,6 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
                     commitCnt.incrementAndGet();
                 }
                 catch (Throwable e) {
-                    log.error("Got exception", e);
-
                     // At least one stack trace should contain TransactionDeadlockException.
                     if (hasCause(e, TransactionTimeoutException.class) &&
                         hasCause(e, TransactionDeadlockException.class)
@@ -172,10 +146,10 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
                         if (deadlock.compareAndSet(false, true))
                             log.info("Successfully set deadlock flag");
                         else
-                            log.info("Deadlock flag already set");
+                            log.info("Deadlock flag was already set");
                     }
                     else
-                        log.info("Unexpected exception");
+                        log.warning("Got not deadlock exception", e);
                 }
             }
         }, 2, "tx-thread");
@@ -186,9 +160,7 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
 
         assertTrue(deadlock.get());
 
-        for (int i = 0; i < NODES_CNT ; i++) {
-            Ignite ignite = ignite(i);
-
+        for (Ignite ignite : G.allGrids()) {
             IgniteTxManager txMgr = ((IgniteKernal)ignite).context().cache().context().tm();
 
             Collection<IgniteInternalFuture<?>> futs = txMgr.deadlockDetectionFutures();
@@ -200,89 +172,26 @@ public class TxOptimisticDeadlockDetectionCrossCacheTest extends GridCommonAbstr
     }
 
     /**
-     * @param ignite Ignite.
-     * @param threadNum Thread number.
-     * @param cacheNum Cache number.
-     */
-    private IgniteCache<Integer, Integer> cacheForThread(Ignite ignite, int threadNum, int cacheNum) {
-        return ignite.cache("cache" + (threadNum == cacheNum ? 0 : 1));
-    }
-
-    /**
-     * @param threadNum Thread number.
-     * @param keyNum Key number.
-     */
-    private int remoteKeyForThread(int threadNum, int keyNum) throws IgniteCheckedException {
-        Ignite ignite = threadNum == keyNum ? grid(1) : grid(2);
-
-        return primaryKey(cacheForThread(ignite, threadNum, keyNum));
-    }
-
-    /**
+     * Listener for cache lock events.
      *
+     * To ensure deadlock this listener blocks transaction thread until both threads acquire first lock.
      */
-    private static class TestCommunicationSpi extends TcpCommunicationSpi {
-        /** Tx count. */
-        private static volatile int TX_CNT;
-
-        /** Tx ids. */
-        private static final Set<GridCacheVersion> TX_IDS = new GridConcurrentHashSet<>();
-
-        /** Logger. */
-        private static volatile IgniteLogger log;
-
-        /**
-         * @param txCnt Tx count.
-         */
-        private static void init(IgniteLogger log, int txCnt) {
-            TX_CNT = txCnt;
-            TX_IDS.clear();
-            TestCommunicationSpi.log = log;
-        }
+    private static class CacheLocksListener implements IgnitePredicate<Event> {
+        /** Latch. */
+        private final CountDownLatch latch = new CountDownLatch(2);
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(
-            final ClusterNode node,
-            final Message msg,
-            final IgniteInClosure<IgniteException> ackC
-        ) throws IgniteSpiException {
-            if (msg instanceof GridIoMessage) {
-                Message msg0 = ((GridIoMessage)msg).message();
+        @Override public boolean apply(Event evt) {
+            latch.countDown();
 
-                if (msg0 instanceof GridNearTxPrepareRequest) {
-                    final GridNearTxPrepareRequest req = (GridNearTxPrepareRequest)msg0;
-
-                    GridCacheVersion txId = req.version();
-
-                    log.info("Request for tx: " + txId);
-
-                    if (TX_IDS.contains(txId)) {
-                        log.info("Start waiting for tx: " + txId);
-
-                        while (TX_IDS.size() < TX_CNT) {
-                            try {
-                                U.sleep(50);
-                            }
-                            catch (IgniteInterruptedCheckedException e) {
-                                e.printStackTrace();
-                            }
-                        }
-
-                        log.info("Finish waiting for tx: " + txId);
-                    }
-                }
-                else if (msg0 instanceof GridNearTxPrepareResponse) {
-                    GridNearTxPrepareResponse res = (GridNearTxPrepareResponse)msg0;
-
-                    GridCacheVersion txId = res.version();
-
-                    log.info("Response for tx: " + txId);
-
-                    TX_IDS.add(txId);
-                }
+            try {
+                latch.await();
+            }
+            catch (InterruptedException e) {
+                e.printStackTrace();
             }
 
-            super.sendMessage(node, msg, ackC);
+            return true;
         }
     }
 }
