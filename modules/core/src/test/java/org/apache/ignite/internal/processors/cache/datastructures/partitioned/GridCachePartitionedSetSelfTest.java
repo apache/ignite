@@ -37,4 +37,11 @@ public class GridCachePartitionedSetSelfTest extends GridCacheSetAbstractSelfTes
     @Override protected CacheAtomicityMode collectionCacheAtomicityMode() {
         return TRANSACTIONAL;
     }
+
+    /** {@inheritDoc} */
+    @Override public void testCleanup() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8092");
+
+        super.testCleanup();
+    }
 }
