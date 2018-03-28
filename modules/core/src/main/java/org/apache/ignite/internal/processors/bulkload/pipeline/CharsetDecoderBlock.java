@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.processors.bulkload.pipeline;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteIllegalStateException;
+
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -24,8 +27,6 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.util.Arrays;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteIllegalStateException;
 
 /**
  * A {@link PipelineBlock}, which converts stream of bytes supplied as byte[] arrays to an array of char[] using
