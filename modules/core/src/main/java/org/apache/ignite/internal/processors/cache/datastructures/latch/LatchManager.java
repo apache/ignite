@@ -325,7 +325,7 @@ public class LatchManager {
         for (T2<String, AffinityTopologyVersion> latchId : latchesToRestore) {
             String id = latchId.get1();
             AffinityTopologyVersion topVer = latchId.get2();
-            Collection<ClusterNode> participants = discovery.discoCache(topVer).aliveServerNodes();
+            Collection<ClusterNode> participants = getLatchParticipants(topVer);
 
             if (!participants.isEmpty())
                 createServerLatch(id, topVer, participants);
@@ -373,7 +373,7 @@ public class LatchManager {
                            and there is no reason to track such latch. */
                         AffinityTopologyVersion topVer = latchEntry.getKey().get2();
 
-                        assert discovery.discoCache(topVer).aliveServerNodes().isEmpty();
+                        assert getLatchParticipants(topVer).isEmpty();
 
                         latch.complete(new IgniteCheckedException("All latch participants are left from topology."));
                         clientLatches.remove(latchEntry.getKey());
