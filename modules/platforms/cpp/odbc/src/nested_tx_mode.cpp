@@ -18,6 +18,19 @@
 #include "ignite/odbc/nested_tx_mode.h"
 #include "ignite/common/utils.h"
 
+namespace
+{
+    using ignite::odbc::NestedTxMode;
+    NestedTxMode::Type validValues0[] = {
+        NestedTxMode::AI_COMMIT,
+        NestedTxMode::AI_IGNORE,
+        NestedTxMode::AI_ERROR
+    };
+
+    NestedTxMode::ModeSet validValues(validValues0, validValues0 + (sizeof(validValues0) / sizeof(validValues0[0])));
+}
+
+
 namespace ignite
 {
     namespace odbc
@@ -36,6 +49,31 @@ namespace ignite
                 return AI_ERROR;
 
             return dflt;
+        }
+
+        std::string NestedTxMode::ToString(Type value)
+        {
+            switch (value)
+            {
+                case AI_COMMIT:
+                    return "commit";
+
+                case AI_IGNORE:
+                    return "ignore";
+
+                case AI_ERROR:
+                    return "error";
+
+                default:
+                    break;
+            }
+
+            return "default";
+        }
+
+        const NestedTxMode::ModeSet& NestedTxMode::GetValidValues()
+        {
+            return validValues;
         }
     }
 }

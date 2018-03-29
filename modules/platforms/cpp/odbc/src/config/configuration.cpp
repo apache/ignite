@@ -449,6 +449,7 @@ namespace ignite
                 AddToMap(res, ConnectionStringParser::Key::sslCaFile, sslCaFile);
                 AddToMap(res, ConnectionStringParser::Key::user, user);
                 AddToMap(res, ConnectionStringParser::Key::password, password);
+                AddToMap(res, ConnectionStringParser::Key::nestedTxMode, nestedTxMode);
             }
 
             template<>
@@ -503,6 +504,14 @@ namespace ignite
             {
                 if (value.IsSet())
                     map[key] = ssl::SslMode::ToString(value.GetValue());
+            }
+
+            template<>
+            void Configuration::AddToMap(ArgumentMap& map, const std::string& key,
+                const SettableValue<NestedTxMode::Type>& value)
+            {
+                if (value.IsSet())
+                    map[key] = NestedTxMode::ToString(value.GetValue());
             }
         }
     }

@@ -670,6 +670,10 @@ namespace ignite
             template<>
             void Configuration::AddToMap<ssl::SslMode::Type>(ArgumentMap& map, const std::string& key,
                 const SettableValue<ssl::SslMode::Type>& value);
+
+            template<>
+            void Configuration::AddToMap<NestedTxMode::Type>(ArgumentMap& map, const std::string& key,
+                const SettableValue<NestedTxMode::Type>& value);
         }
     }
 }
