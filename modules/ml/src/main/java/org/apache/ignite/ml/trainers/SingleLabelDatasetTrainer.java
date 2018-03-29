@@ -15,8 +15,14 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.ml.trainers;
+
+import org.apache.ignite.ml.Model;
+
 /**
- * <!-- Package description. -->
- * Contains local trainers.
+ * Interface for trainers that trains on dataset with singe label per object.
+ *
+ * @param <M> Type of a produced model.
  */
-package org.apache.ignite.ml.trainers.local;
+public interface SingleLabelDatasetTrainer<M extends Model> extends DatasetTrainer<M, Double> {
+}

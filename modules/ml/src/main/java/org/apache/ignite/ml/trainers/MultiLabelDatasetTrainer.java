@@ -15,8 +15,14 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.ml.trainers;
+
+import org.apache.ignite.ml.Model;
+
 /**
- * <!-- Package description. -->
- * Contains multilayer perceptron distributed trainers.
+ * Interface for trainers that trains on dataset with multiple label per object.
+ *
+ * @param <M> Type of a produced model.
  */
-package org.apache.ignite.ml.nn.trainers.distributed;
+public interface MultiLabelDatasetTrainer<M extends Model> extends DatasetTrainer<M, double[]> {
+}

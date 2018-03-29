@@ -15,28 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.trainers.local;
+package org.apache.ignite.ml.trainers;
 
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.math.Matrix;
-import org.apache.ignite.ml.math.functions.IgniteSupplier;
+import org.apache.ignite.ml.dataset.DatasetBuilder;
+import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 
 /**
- * Interface for classes containing input parameters for LocalBatchTrainer.
+ * Interface for trainers. Trainer is just a function which produces model from the data.
+ *
+ * @param <M> Type of a produced model.
+ * @param <L> Type of a label.
  */
-public interface LocalBatchTrainerInput<M extends Model<Matrix, Matrix>> {
+public interface DatasetTrainer<M extends Model, L> {
     /**
-     * Get supplier of next batch in form of matrix of inputs and matrix of outputs.
+     * Trains model based on the specified data.
      *
-     * @return Supplier of next batch.
+     * @param datasetBuilder Dataset builder.
+     * @param featureExtractor Feature extractor.
+     * @param lbExtractor Label extractor.
+     * @param <K> Type of a key in {@code upstream} data.
+     * @param <V> Type of a value in {@code upstream} data.
+     * @return Model.
      */
-    IgniteSupplier<IgniteBiTuple<Matrix, Matrix>> batchSupplier();
-
-    /**
-     * Model to train.
-     *
-     * @return Model to train.
-     */
-    M mdl();
+    public <K, V> M fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, double[]> featureExtractor,
+        IgniteBiFunction<K, V, L> lbExtractor);
 }
