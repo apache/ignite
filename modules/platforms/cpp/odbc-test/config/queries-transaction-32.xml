@@ -29,27 +29,6 @@
     <bean parent="queries.cfg">
         <property name="mvccEnabled" value="true"/>
 
-        <property name="clientConnectorConfiguration">
-            <bean class="org.apache.ignite.configuration.ClientConnectorConfiguration">
-                <property name="host" value="127.0.0.1"/>
-                <property name="port" value="11110"/>
-                <property name="portRange" value="10"/>
-                <property name="sslEnabled" value="true"/>
-                <property name="useIgniteSslContextFactory" value="false"/>
-                <property name="sslClientAuth" value="true"/>
-
-                <!-- Provide Ssl context. -->
-                <property name="sslContextFactory">
-                    <bean class="org.apache.ignite.ssl.SslContextFactory">
-                        <property name="keyStoreFilePath" value="${IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH}/ssl/server.jks"/>
-                        <property name="keyStorePassword" value="123456"/>
-                        <property name="trustStoreFilePath" value="${IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH}/ssl/trust.jks"/>
-                        <property name="trustStorePassword" value="123456"/>
-                    </bean>
-                </property>
-            </bean>
-        </property>
-
         <property name="memoryConfiguration">
             <bean class="org.apache.ignite.configuration.MemoryConfiguration">
                 <property name="systemCacheInitialSize" value="#{10 * 1024 * 1024}"/>
