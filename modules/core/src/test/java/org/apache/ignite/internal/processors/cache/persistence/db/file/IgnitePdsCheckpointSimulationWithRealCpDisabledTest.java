@@ -251,7 +251,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
                 }
             }
 
-            wal.fsync(null);
+            wal.flush(null, false);
         }
         finally {
             ig.context().cache().context().database().checkpointReadUnlock();
@@ -336,7 +336,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         WALPointer start = wal.log(new CheckpointRecord(cpId, null));
 
-        wal.fsync(start);
+        wal.flush(start, false);
 
         for (DataEntry entry : entries)
             wal.log(new DataRecord(entry));
@@ -439,7 +439,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         WALPointer start = wal.log(new CheckpointRecord(cpId, null));
 
-        wal.fsync(start);
+        wal.flush(start, false);
 
         ig.context().cache().context().database().checkpointReadLock();
 
@@ -782,7 +782,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         WALPointer start = wal.log(cpRec);
 
-        wal.fsync(start);
+        wal.flush(start, false);
 
         IgniteInternalFuture<Long> updFut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
             @Override public Object call() throws Exception {

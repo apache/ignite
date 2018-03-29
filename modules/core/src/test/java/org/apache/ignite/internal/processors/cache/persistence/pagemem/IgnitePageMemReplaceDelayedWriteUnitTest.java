@@ -223,9 +223,8 @@ public class IgnitePageMemReplaceDelayedWriteUnitTest {
 
         DirectMemoryProvider provider = new UnsafeMemoryProvider(log);
 
-        PageMemoryImpl memory
-            = new PageMemoryImpl(provider, sizes, sctx, pageSize,
-            pageWriter, null, () -> true, memMetrics, null, null);
+        PageMemoryImpl memory = new PageMemoryImpl(provider, sizes, sctx, pageSize,
+            pageWriter, null, () -> true, memMetrics, PageMemoryImpl.ThrottlingPolicy.DISABLED, null);
 
         memory.start();
         return memory;

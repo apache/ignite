@@ -18,7 +18,7 @@
 package org.apache.ignite.ml.svm;
 
 import java.util.concurrent.ThreadLocalRandom;
-import org.apache.ignite.ml.DatasetTrainer;
+import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
@@ -35,8 +35,7 @@ import org.jetbrains.annotations.NotNull;
  * and +1 labels for two classes and makes binary classification. </p> The paper about this algorithm could be found
  * here https://arxiv.org/abs/1409.1458.
  */
-public class SVMLinearBinaryClassificationTrainer<K, V>
-    implements DatasetTrainer<K, V, SVMLinearBinaryClassificationModel> {
+public class SVMLinearBinaryClassificationTrainer implements SingleLabelDatasetTrainer<SVMLinearBinaryClassificationModel> {
     /** Amount of outer SDCA algorithm iterations. */
     private int amountOfIterations = 200;
 
@@ -46,42 +45,41 @@ public class SVMLinearBinaryClassificationTrainer<K, V>
     /** Regularization parameter. */
     private double lambda = 0.4;
 
-    /** Dataset. */
-    private Dataset<SVMPartitionContext, LabeledDataset<Double, LabeledVector>> dataset;
-
     /**
      * Trains model based on the specified data.
      *
      * @param datasetBuilder   Dataset builder.
      * @param featureExtractor Feature extractor.
      * @param lbExtractor      Label extractor.
-     * @param cols             Number of columns.
      * @return Model.
      */
-    @Override public SVMLinearBinaryClassificationModel fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor, int cols) {
+    @Override public <K, V> SVMLinearBinaryClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         assert datasetBuilder != null;
 
         PartitionDataBuilder<K, V, SVMPartitionContext, LabeledDataset<Double, LabeledVector>> partDataBuilder = new SVMPartitionDataBuilderOnHeap<>(
             featureExtractor,
-            lbExtractor,
-            cols
+            lbExtractor
         );
 
-        this.dataset = datasetBuilder.build(
+        Vector weights;
+
+        try(Dataset<SVMPartitionContext, LabeledDataset<Double, LabeledVector>> dataset = datasetBuilder.build(
             (upstream, upstreamSize) -> new SVMPartitionContext(),
             partDataBuilder
-        );
+        )) {
+            final int cols = dataset.compute(data -> data.colSize(), (a, b) -> a == null ? b : a);
+            final int weightVectorSizeWithIntercept = cols + 1;
+            weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
 
-
-        final int weightVectorSizeWithIntercept = cols + 1;
-        Vector weights = initializeWeightsWithZeros(weightVectorSizeWithIntercept);
-
-        for (int i = 0; i < this.getAmountOfIterations(); i++) {
-            Vector deltaWeights = calculateUpdates(weights);
-            weights = weights.plus(deltaWeights); // creates new vector
+            for (int i = 0; i < this.getAmountOfIterations(); i++) {
+                Vector deltaWeights = calculateUpdates(weights, dataset);
+                weights = weights.plus(deltaWeights); // creates new vector
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-
         return new SVMLinearBinaryClassificationModel(weights.viewPart(1, weights.size() - 1), weights.get(0));
     }
 
@@ -91,7 +89,7 @@ public class SVMLinearBinaryClassificationTrainer<K, V>
     }
 
     /** */
-    private Vector calculateUpdates(Vector weights) {
+    private Vector calculateUpdates(Vector weights, Dataset<SVMPartitionContext, LabeledDataset<Double, LabeledVector>> dataset) {
         return dataset.compute(data -> {
             Vector copiedWeights = weights.copy();
             Vector deltaWeights = initializeWeightsWithZeros(weights.size());

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
 
 /**
  * Tracks various checkpoint phases and stats.
@@ -72,6 +73,12 @@ public class CheckpointMetricsTracker {
 
     /** Page write started. */
     private AtomicLong firstPageUpdatedTs = new AtomicLong();
+
+    /** */
+    private long walCpRecordFsyncStart;
+
+    /** */
+    private long walCpRecordFsyncEnd;
 
     /**
      * Increments counter if copy on write page was written.
@@ -152,6 +159,20 @@ public class CheckpointMetricsTracker {
     }
 
     /**
+     *
+     */
+    public void onWalCpRecordFsyncStart() {
+        walCpRecordFsyncStart = System.currentTimeMillis();
+    }
+
+    /**
+     *
+     */
+    public void onWalCpRecordFsyncEnd() {
+        walCpRecordFsyncEnd = System.currentTimeMillis();
+    }
+
+    /**
      * @return Total checkpoint duration.
      */
     public long totalDuration() {
@@ -191,6 +212,13 @@ public class CheckpointMetricsTracker {
      */
     public long fsyncDuration() {
         return cpEnd - cpFsyncStart;
+    }
+
+    /**
+     * @return Duration of WAL fsync after logging {@link CheckpointRecord} on checkpoint begin.
+     */
+    public long walCpRecordFsyncDuration() {
+        return walCpRecordFsyncEnd - walCpRecordFsyncStart;
     }
 
     /**
