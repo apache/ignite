@@ -517,6 +517,18 @@ public class BinaryClassDescriptor {
     }
 
     /**
+     * Register current stable schema if applicable.
+     */
+    public void registerStableSchema() {
+        if (schemaReg != null && stableSchema != null) {
+            int schemaId = stableSchema.schemaId();
+
+            if (schemaReg.schema(schemaId) == null)
+                schemaReg.addSchema(stableSchema.schemaId(), stableSchema);
+        }
+    }
+
+    /**
      * @return binaryReadResolve() method
      */
     @SuppressWarnings("UnusedDeclaration")
