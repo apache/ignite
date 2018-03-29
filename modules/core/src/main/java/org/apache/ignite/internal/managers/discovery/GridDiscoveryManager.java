@@ -59,6 +59,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.failure.RestartProcessFailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
@@ -2570,6 +2571,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 }
                 catch (Throwable t) {
                     U.error(log, "Unexpected exception in discovery worker thread (ignored).", t);
+
+                    FailureHandler failureHnd = ctx.config().getFailureHandler();
+
+                    if (failureHnd != null)
+                        failureHnd.onFailure(ctx.grid(), new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, t));
 
                     if (t instanceof Error)
                         throw (Error)t;
