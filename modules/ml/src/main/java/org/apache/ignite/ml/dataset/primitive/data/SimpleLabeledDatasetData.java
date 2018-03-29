@@ -27,29 +27,24 @@ public class SimpleLabeledDatasetData implements AutoCloseable {
     /** Matrix with features in a dense flat column-major format. */
     private final double[] features;
 
-    /** Number of rows. */
-    private final int rows;
-
-    /** Number of columns. */
-    private final int cols;
-
     /** Vector with labels. */
     private final double[] labels;
+
+    /** Number of rows. */
+    private final int rows;
 
     /**
      * Constructs a new instance of partition {@code data} of the {@link SimpleLabeledDataset} containing matrix of
      * features in flat column-major format stored in heap and vector of labels stored in heap as well.
      *
      * @param features Matrix with features in a dense flat column-major format.
-     * @param rows Number of rows.
-     * @param cols Number of columns.
      * @param labels Vector with labels.
+     * @param rows Number of rows.
      */
-    public SimpleLabeledDatasetData(double[] features, int rows, int cols, double[] labels) {
+    public SimpleLabeledDatasetData(double[] features, double[] labels, int rows) {
         this.features = features;
-        this.rows = rows;
-        this.cols = cols;
         this.labels = labels;
+        this.rows = rows;
     }
 
     /** */
@@ -60,11 +55,6 @@ public class SimpleLabeledDatasetData implements AutoCloseable {
     /** */
     public int getRows() {
         return rows;
-    }
-
-    /** */
-    public int getCols() {
-        return cols;
     }
 
     /** */

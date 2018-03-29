@@ -51,13 +51,13 @@ public class SVMBinaryClassificationExample {
                 SVMBinaryClassificationExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-                SVMLinearBinaryClassificationTrainer<Integer, double[]> trainer = new SVMLinearBinaryClassificationTrainer<>();
+                SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer();
 
                 SVMLinearBinaryClassificationModel mdl = trainer.fit(
                     new CacheBasedDatasetBuilder<>(ignite, dataCache),
                     (k, v) -> Arrays.copyOfRange(v, 1, v.length),
-                    (k, v) -> v[0],
-                    4);
+                    (k, v) -> v[0]
+                );
 
                 System.out.println(">>> SVM model " + mdl);
 

@@ -36,8 +36,11 @@ namespace ignite
                 DsnConfigurationWindow::DsnConfigurationWindow(Window* parent, config::Configuration& config):
                     CustomWindow(parent, "IgniteConfigureDsn", "Configure Apache Ignite DSN"),
                     width(360),
-                    height(480),
+                    height(580),
                     connectionSettingsGroupBox(),
+                    sslSettingsGroupBox(),
+                    authSettingsGroupBox(),
+                    additionalSettingsGroupBox(),
                     nameLabel(),
                     nameEdit(),
                     addressLabel(),
@@ -52,6 +55,10 @@ namespace ignite
                     collocatedCheckBox(),
                     protocolVersionLabel(),
                     protocolVersionComboBox(),
+                    userLabel(),
+                    userEdit(),
+                    passwordLabel(),
+                    passwordEdit(),
                     okButton(),
                     cancelButton(),
                     config(config),
@@ -97,6 +104,7 @@ namespace ignite
                     int groupSizeY = width - 2 * MARGIN;
 
                     groupPosY += INTERVAL + CreateConnectionSettingsGroup(MARGIN, groupPosY, groupSizeY);
+                    groupPosY += INTERVAL + CreateAuthSettingsGroup(MARGIN, groupPosY, groupSizeY);
                     groupPosY += INTERVAL + CreateSslSettingsGroup(MARGIN, groupPosY, groupSizeY);
                     groupPosY += INTERVAL + CreateAdditionalSettingsGroup(MARGIN, groupPosY, groupSizeY);
 
@@ -174,6 +182,38 @@ namespace ignite
                     return rowPos - posY;
                 }
 
+                int DsnConfigurationWindow::CreateAuthSettingsGroup(int posX, int posY, int sizeX)
+                {
+                    enum { LABEL_WIDTH = 120 };
+
+                    int labelPosX = posX + INTERVAL;
+
+                    int editSizeX = sizeX - LABEL_WIDTH - 3 * INTERVAL;
+                    int editPosX = labelPosX + LABEL_WIDTH + INTERVAL;
+
+                    int rowPos = posY + 2 * INTERVAL;
+
+                    const char* val = config.GetUser().c_str();
+
+                    userLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT, "User :", ChildId::USER_LABEL);
+                    userEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT, val, ChildId::USER_EDIT);
+
+                    rowPos += INTERVAL + ROW_HEIGHT;
+
+                    val = config.GetPassword().c_str();
+                    passwordLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "Password:", ChildId::PASSWORD_LABEL);
+                    passwordEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                        val, ChildId::USER_EDIT, ES_PASSWORD);
+
+                    rowPos += INTERVAL + ROW_HEIGHT;
+
+                    authSettingsGroupBox = CreateGroupBox(posX, posY, sizeX, rowPos - posY,
+                        "Authentication settings", ChildId::AUTH_SETTINGS_GROUP_BOX);
+
+                    return rowPos - posY;
+                }
+
                 int DsnConfigurationWindow::CreateSslSettingsGroup(int posX, int posY, int sizeX)
                 {
                     using ssl::SslMode;
@@ -192,8 +232,10 @@ namespace ignite
 
                     const char* val = sslModeStr.c_str();
 
-                    sslModeLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT, "SSL Mode:", ChildId::SSL_MODE_LABEL);
-                    sslModeComboBox = CreateComboBox(editPosX, rowPos, editSizeX, ROW_HEIGHT, "", ChildId::SSL_MODE_COMBO_BOX);
+                    sslModeLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "SSL Mode:", ChildId::SSL_MODE_LABEL);
+                    sslModeComboBox = CreateComboBox(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                        "", ChildId::SSL_MODE_COMBO_BOX);
 
                     sslModeComboBox->AddString("disable");
                     sslModeComboBox->AddString("require");
@@ -203,24 +245,30 @@ namespace ignite
                     rowPos += INTERVAL + ROW_HEIGHT;
 
                     val = config.GetSslKeyFile().c_str();
-                    sslKeyFileLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT, "SSL Private Key:", ChildId::SSL_KEY_FILE_LABEL);
-                    sslKeyFileEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT, val, ChildId::SSL_KEY_FILE_EDIT);
+                    sslKeyFileLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "SSL Private Key:", ChildId::SSL_KEY_FILE_LABEL);
+                    sslKeyFileEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                        val, ChildId::SSL_KEY_FILE_EDIT);
 
                     SHAutoComplete(sslKeyFileEdit->GetHandle(), SHACF_DEFAULT);
 
                     rowPos += INTERVAL + ROW_HEIGHT;
 
                     val = config.GetSslCertFile().c_str();
-                    sslCertFileLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT, "SSL Certificate:", ChildId::SSL_CERT_FILE_LABEL);
-                    sslCertFileEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT, val, ChildId::SSL_CERT_FILE_EDIT);
+                    sslCertFileLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "SSL Certificate:", ChildId::SSL_CERT_FILE_LABEL);
+                    sslCertFileEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                        val, ChildId::SSL_CERT_FILE_EDIT);
 
                     SHAutoComplete(sslCertFileEdit->GetHandle(), SHACF_DEFAULT);
 
                     rowPos += INTERVAL + ROW_HEIGHT;
 
                     val = config.GetSslCaFile().c_str();
-                    sslCaFileLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT, "SSL Certificate Authority:", ChildId::SSL_CA_FILE_LABEL);
-                    sslCaFileEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT, val, ChildId::SSL_CA_FILE_EDIT);
+                    sslCaFileLabel = CreateLabel(labelPosX, rowPos, LABEL_WIDTH, ROW_HEIGHT,
+                        "SSL Certificate Authority:", ChildId::SSL_CA_FILE_LABEL);
+                    sslCaFileEdit = CreateEdit(editPosX, rowPos, editSizeX, ROW_HEIGHT,
+                        val, ChildId::SSL_CA_FILE_EDIT);
 
                     SHAutoComplete(sslCaFileEdit->GetHandle(), SHACF_DEFAULT);
 
@@ -264,8 +312,9 @@ namespace ignite
                     distributedJoinsCheckBox = CreateCheckBox(labelPosX, rowPos, checkBoxSize, ROW_HEIGHT,
                         "Distributed Joins", ChildId::DISTRIBUTED_JOINS_CHECK_BOX, config.IsDistributedJoins());
 
-                    enforceJoinOrderCheckBox = CreateCheckBox(labelPosX + checkBoxSize + INTERVAL, rowPos, checkBoxSize,
-                        ROW_HEIGHT, "Enforce Join Order", ChildId::ENFORCE_JOIN_ORDER_CHECK_BOX, config.IsEnforceJoinOrder());
+                    enforceJoinOrderCheckBox = CreateCheckBox(labelPosX + checkBoxSize + INTERVAL,
+                        rowPos, checkBoxSize, ROW_HEIGHT, "Enforce Join Order",
+                        ChildId::ENFORCE_JOIN_ORDER_CHECK_BOX, config.IsEnforceJoinOrder());
 
                     rowPos += ROW_HEIGHT;
 
@@ -424,6 +473,7 @@ namespace ignite
                 void DsnConfigurationWindow::RetrieveParameters(config::Configuration& cfg) const
                 {
                     RetrieveConnectionParameters(cfg);
+                    RetrieveAuthParameters(cfg);
                     RetrieveSslParameters(cfg);
                     RetrieveAdditionalParameters(cfg);
                 }
@@ -474,6 +524,18 @@ namespace ignite
                     cfg.SetAddresses(addresses);
                     cfg.SetSchema(schemaStr);
                     cfg.SetProtocolVersion(version);
+                }
+
+                void DsnConfigurationWindow::RetrieveAuthParameters(config::Configuration& cfg) const
+                {
+                    std::string user;
+                    std::string password;
+
+                    userEdit->GetText(user);
+                    passwordEdit->GetText(password);
+
+                    cfg.SetUser(user);
+                    cfg.SetPassword(password);
                 }
 
                 void DsnConfigurationWindow::RetrieveSslParameters(config::Configuration& cfg) const

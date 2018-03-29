@@ -49,6 +49,7 @@ import org.apache.ignite.internal.client.util.ClientByteUtilsTest;
 import org.apache.ignite.internal.client.util.ClientConsistentHashSelfTest;
 import org.apache.ignite.internal.client.util.ClientJavaHasherSelfTest;
 import org.apache.ignite.internal.processors.rest.ClientMemcachedProtocolSelfTest;
+import org.apache.ignite.internal.processors.rest.JettyRestProcessorAuthenticationSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorSignedSelfTest;
 import org.apache.ignite.internal.processors.rest.JettyRestProcessorUnsignedSelfTest;
 import org.apache.ignite.internal.processors.rest.RestBinaryProtocolSelfTest;
@@ -86,6 +87,7 @@ public class IgniteClientTestSuite extends TestSuite {
         // Test jetty rest processor
         suite.addTestSuite(JettyRestProcessorSignedSelfTest.class);
         suite.addTestSuite(JettyRestProcessorUnsignedSelfTest.class);
+        suite.addTestSuite(JettyRestProcessorAuthenticationSelfTest.class);
 
         // Test TCP rest processor with original memcache client.
         suite.addTestSuite(ClientMemcachedProtocolSelfTest.class);
