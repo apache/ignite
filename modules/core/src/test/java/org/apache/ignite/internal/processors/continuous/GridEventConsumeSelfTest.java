@@ -447,7 +447,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(5, SECONDS) : latch;
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
@@ -488,7 +488,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(5, SECONDS) : latch;
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
@@ -532,7 +532,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(5, SECONDS);
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
@@ -578,7 +578,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
             grid(0).compute().broadcast(F.noop());
             grid(0).compute().withName("exclude").run(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(5, SECONDS);
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
@@ -619,7 +619,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(5, SECONDS);
 
             assertEquals(GRID_CNT - 1, nodeIds.size());
             assertEquals(GRID_CNT - 1, cnt.get());
@@ -660,7 +660,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(5, SECONDS);
 
             assertEquals(GRID_CNT - 1, nodeIds.size());
             assertEquals(GRID_CNT - 1, cnt.get());
@@ -701,7 +701,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(5, SECONDS);
 
             assertEquals(1, nodeIds.size());
             assertEquals(1, cnt.get());
@@ -744,7 +744,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(5, SECONDS);
 
             assertEquals(1, nodeIds.size());
             assertEquals(1, cnt.get());
@@ -785,7 +785,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().run(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(5, SECONDS);
 
             assertEquals(1, nodeIds.size());
             assertEquals(1, cnt.get());
@@ -828,7 +828,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
         compute(grid(0).cluster().forLocal()).run(F.noop());
 
-        assert latch.await(2, SECONDS);
+        assert latch.await(5, SECONDS);
 
         assertEquals(1, cnt.get());
 
@@ -878,7 +878,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(5, SECONDS);
 
             assertEquals(GRID_CNT + 1, nodeIds.size());
             assertEquals(GRID_CNT + 1, cnt.get());
@@ -929,7 +929,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(5, SECONDS);
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
@@ -980,7 +980,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(5, SECONDS);
 
             assertEquals(GRID_CNT + 1, nodeIds.size());
             assertEquals(GRID_CNT + 1, cnt.get());
@@ -1036,7 +1036,7 @@ public class GridEventConsumeSelfTest extends GridCommonAbstractTest {
 
             grid(0).compute().broadcast(F.noop());
 
-            assert latch.await(2, SECONDS);
+            assert latch.await(5, SECONDS);
 
             assertEquals(GRID_CNT, nodeIds.size());
             assertEquals(GRID_CNT, cnt.get());
