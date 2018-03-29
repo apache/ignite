@@ -667,9 +667,7 @@ public class GridClusterStateProcessor extends GridProcessorAdapter implements I
         BaselineStateAndHistoryData stateDiscoData = (BaselineStateAndHistoryData)data.commonData();
 
         if (stateDiscoData != null) {
-            DiscoveryDataClusterState state = stateDiscoData.globalState;
-
-            globalState = state;
+            globalState = stateDiscoData.globalState;
 
             if (stateDiscoData.recentHistory != null) {
                 for (BaselineTopologyHistoryItem item : stateDiscoData.recentHistory.history())
