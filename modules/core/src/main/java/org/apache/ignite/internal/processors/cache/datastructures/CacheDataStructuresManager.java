@@ -33,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryUpdatedListener;
@@ -92,18 +91,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** Cache peek mode primary and backup. */
     private static final CachePeekMode[] PRIMARY_BACKUP = {CachePeekMode.PRIMARY, CachePeekMode.BACKUP};
 
-    /** State of Set data recovery process. */
-    private enum State {
-        /** No recovery. */
-        NONE,
-
-        /** Local set data recovery in progress. */
-        IN_PROGRESS,
-
-        /** Local set data recovery completed. */
-        COMPLETE
-    }
-
     /**
      *
      */
@@ -152,11 +139,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** Init flag. */
     private boolean initFlag;
 
-    /** Init set data map latch. */
-    private final CountDownLatch initSetLatch = new CountDownLatch(1);
-
-    /** Indicates state of Set data recovery process. */
-    private AtomicReference<State> recoveryState = new AtomicReference<>(State.NONE);
+    /** Set data map init flag. */
+    private volatile boolean activated;
 
     /**
      *
@@ -237,11 +221,19 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * Called when cluster performs activation.
+     * Called before data structures processor starts activation.
      */
-    public void onActivate() {
-        if (recoveryState.compareAndSet(State.NONE, State.IN_PROGRESS))
-            restoreSetDataMap(cctx);
+    public void onBeforeActivate() {
+        if (!activated) {
+            activated = true;
+
+            try {
+                restoreSetDataMap(cctx);
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+        }
     }
 
 
@@ -250,30 +242,21 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      *
      * @param cctx cache context.
      */
-    private void restoreSetDataMap(GridCacheContext cctx) {
-        try {
-            if (log.isDebugEnabled())
-                log.debug("Restoring local set items from internal cache " + cctx.name());
+    private void restoreSetDataMap(GridCacheContext cctx) throws IgniteCheckedException {
+        if (log.isDebugEnabled())
+            log.debug("Restoring local set items from internal cache " + cctx.name());
 
-            Iterable entries = cctx.cache().localEntries(cctx.isReplicatedAffinityNode() ? PRIMARY_BACKUP : PRIMARY);
+        Iterable entries = cctx.cache().localEntries(cctx.isReplicatedAffinityNode() ? PRIMARY_BACKUP : PRIMARY);
 
-            for (Object entry : entries) {
-                Object key = ((Cache.Entry)entry).getKey();
+        for (Object entry : entries) {
+            Object key = ((Cache.Entry)entry).getKey();
 
-                if (key instanceof SetItemKey)
-                    onSetItemUpdated((SetItemKey)key, false);
-            }
-
-            if (log.isDebugEnabled())
-                log.debug("Finished restoring local set items from internal cache " + cctx.name());
+            if (key instanceof SetItemKey)
+                onSetItemUpdated((SetItemKey)key, false);
         }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        } finally {
-            initSetLatch.countDown();
 
-            recoveryState.set(State.COMPLETE);
-        }
+        if (log.isDebugEnabled())
+            log.debug("Finished restoring local set items from internal cache " + cctx.name());
     }
 
     /**
@@ -534,15 +517,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @return Data for given set.
      */
     @Nullable public GridConcurrentHashSet<SetItemKey> setData(IgniteUuid id) {
-        try {
-            if (recoveryState.get() == State.IN_PROGRESS)
-                U.await(initSetLatch);
-
-            return setDataMap.get(id);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
+        return setDataMap.get(id);
     }
 
     /**

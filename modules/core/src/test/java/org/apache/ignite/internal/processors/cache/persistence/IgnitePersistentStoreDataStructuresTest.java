@@ -17,8 +17,10 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
@@ -167,18 +169,34 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
     public void testSet() throws Exception {
         Ignite ignite = startGrids(4);
 
-        int max = 100;
+        int total = 200_000;
+        int updCnt = 10_000;
+
+        int max = total + updCnt;
+
+        List<Integer> data = new ArrayList<>(max);
+
+        for (int i = 0; i < max; i++)
+            data.add(i);
+
+        List<Integer> initData = data.subList(0, total);
 
         ignite.cluster().active(true);
 
         IgniteSet<Integer> set = ignite.set("testSet", new CollectionConfiguration());
 
-        for (int i = 0; i < max; i++)
-            set.add(i);
+        set.addAll(initData);
 
-        assertEquals(max, set.size());
+        assertEquals(total, set.size());
 
         stopAllGrids();
+
+        // Prepare new data for update after initialization.
+        List<Integer> rmvData = data.subList(0, updCnt);
+
+        List<Integer> addData = data.subList(total, max);
+
+        Set<Integer> exp = new HashSet<>(data.subList(updCnt, max));
 
         ignite = startGrids(4);
 
@@ -186,19 +204,18 @@ public class IgnitePersistentStoreDataStructuresTest extends GridCommonAbstractT
 
         set = ignite.set("testSet", null);
 
+        // Check consistency after restore.
+        assertEquals(total, set.size());
+
+        set.removeAll(rmvData);
+
+        set.addAll(addData);
+
+        assertEquals(total, set.size());
+
         assertFalse(set.add(max - 1));
 
-        assertEquals(max, set.size());
-
-        for (int i = 0; i < max; i++)
-            assertTrue(set.contains(i));
-
         // Check iterator.
-        Set<Integer> exp = new HashSet<>();
-
-        for (int i = 0; i < max; i++)
-            exp.add(i);
-
         Set<Integer> actual = new HashSet<>();
 
         for (Integer num : set)

@@ -194,6 +194,11 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
      */
     public void onBeforeActivate() {
         initLatch = new CountDownLatch(1);
+
+        for (GridCacheContext cctx : ctx.cache().context().cacheContexts()) {
+            if (cctx.dataStructuresCache())
+                cctx.dataStructures().onBeforeActivate();
+        }
     }
 
     /**
@@ -273,11 +278,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         ctx.event().addLocalEventListener(lsnr, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         restoreStructuresState(ctx);
-
-        for (GridCacheContext cctx : ctx.cache().context().cacheContexts()) {
-            if (cctx.dataStructuresCache())
-                cctx.dataStructures().onActivate();
-        }
 
         onKernalStart0();
     }
