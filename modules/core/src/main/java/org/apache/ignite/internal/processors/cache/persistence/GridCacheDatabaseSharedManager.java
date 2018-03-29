@@ -76,10 +76,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.NodeInvalidator;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -131,6 +132,7 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -142,7 +144,6 @@ import org.apache.ignite.internal.util.lang.GridInClosure3X;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.P3;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -196,6 +197,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /** */
     private final int walRebalanceThreshold = IgniteSystemProperties.getInteger(
         IGNITE_PDS_WAL_REBALANCE_THRESHOLD, 500_000);
+
+    /** Value of property for throttling policy override. */
+    private final String throttlingPolicyOverride = IgniteSystemProperties.getString(
+        IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED);
 
     /** Checkpoint lock hold count. */
     private static final ThreadLocal<Integer> CHECKPOINT_LOCK_HOLD_COUNT = new ThreadLocal<Integer>() {
@@ -585,7 +590,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             try {
                 restoreMemory(status, true, storePageMem);
 
-                metaStorage = new MetaStorage(cctx.wal(), regCfg, memMetrics, true);
+                metaStorage = new MetaStorage(cctx, regCfg, memMetrics, true);
 
                 metaStorage.init(this);
 
@@ -756,7 +761,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
             cctx.pageStore().initializeForMetastorage();
 
-            metaStorage = new MetaStorage(cctx.wal(), dataRegionMap.get(METASTORE_DATA_REGION_NAME),
+            metaStorage = new MetaStorage(cctx, dataRegionMap.get(METASTORE_DATA_REGION_NAME),
                 (DataRegionMetricsImpl)memMetricsMap.get(METASTORE_DATA_REGION_NAME));
 
             WALPointer restore = restoreMemory(status);
@@ -769,7 +774,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             WALPointer ptr = cctx.wal().log(new MemoryRecoveryRecord(U.currentTimeMillis()));
 
             if (ptr != null) {
-                cctx.wal().fsync(ptr);
+                cctx.wal().flush(ptr, true);
 
                 nodeStart(ptr);
             }
@@ -976,19 +981,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             chpBufSize = cacheSize;
         }
 
-        PageMemoryImpl.ThrottlingPolicy plc = persistenceCfg.isWriteThrottlingEnabled()
-            ? PageMemoryImpl.ThrottlingPolicy.SPEED_BASED
-            : PageMemoryImpl.ThrottlingPolicy.NONE;
-
-        String val = IgniteSystemProperties.getString(IgniteSystemProperties.IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED);
-
-        if (val != null) {
-            if ("ratio".equalsIgnoreCase(val))
-                plc = PageMemoryImpl.ThrottlingPolicy.TARGET_RATIO_BASED;
-            else if ("speed".equalsIgnoreCase(val) || Boolean.valueOf(val))
-                plc = PageMemoryImpl.ThrottlingPolicy.SPEED_BASED;
-        }
-
         GridInClosure3X<Long, FullPageId, PageMemoryEx> changeTracker;
 
         if (trackable)
@@ -1029,13 +1021,33 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             changeTracker,
             this,
             memMetrics,
-            plc,
+            resolveThrottlingPolicy(),
             this
         );
 
         memMetrics.pageMemory(pageMem);
 
         return pageMem;
+    }
+
+    /**
+     * Resolves throttling policy according to the settings.
+     */
+    @NotNull private PageMemoryImpl.ThrottlingPolicy resolveThrottlingPolicy() {
+        PageMemoryImpl.ThrottlingPolicy plc = persistenceCfg.isWriteThrottlingEnabled()
+            ? PageMemoryImpl.ThrottlingPolicy.SPEED_BASED
+            : PageMemoryImpl.ThrottlingPolicy.CHECKPOINT_BUFFER_ONLY;
+
+        if (throttlingPolicyOverride != null) {
+            try {
+                plc = PageMemoryImpl.ThrottlingPolicy.valueOf(throttlingPolicyOverride.toUpperCase());
+            }
+            catch (IllegalArgumentException e) {
+                log.error("Incorrect value of IGNITE_OVERRIDE_WRITE_THROTTLING_ENABLED property: " +
+                    throttlingPolicyOverride + ". Default throttling policy " + plc + " will be used.");
+            }
+        }
+        return plc;
     }
 
     /** {@inheritDoc} */
@@ -1292,11 +1304,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         for (Map.Entry<PageMemoryEx, Collection<Integer>> entry : destroyed.entrySet()) {
             final Collection<Integer> grpIds = entry.getValue();
 
-            clearFuts.add(entry.getKey().clearAsync(new P3<Integer, Long, Integer>() {
-                @Override public boolean apply(Integer grpId, Long pageId, Integer tag) {
-                    return grpIds.contains(grpId);
-                }
-            }, false));
+            clearFuts.add(entry.getKey().clearAsync((grpId, pageIdg) -> grpIds.contains(grpId), false));
         }
 
         for (IgniteInternalFuture<Void> clearFut : clearFuts) {
@@ -2026,12 +2034,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
                             PageMemoryEx pageMem = gId == METASTORAGE_CACHE_ID ? storePageMem : getPageMemoryForCacheGroup(gId);
 
-                            pageMem.clearAsync(new P3<Integer, Long, Integer>() {
-                                @Override public boolean apply(Integer cacheId, Long pageId, Integer tag) {
-                                    return cacheId == gId && PageIdUtils.partId(pageId) == pId;
-                                }
-                            }, true).get();
-
+                            pageMem.clearAsync(
+                                (grpId, pageId) -> grpId == gId && PageIdUtils.partId(pageId) == pId,
+                                true).get();
                         }
 
                         break;
@@ -2937,7 +2942,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             chp.progress.cpFinishFut.onDone(e);
 
                             // In case of checkpoint writing error node should be invalidated and stopped.
-                            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+                            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
                             return;
                         }
@@ -3175,8 +3180,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             if (hasPages) {
                 assert cpPtr != null;
 
+                tracker.onWalCpRecordFsyncStart();
+
                 // Sync log outside the checkpoint write lock.
-                cctx.wal().fsync(cpPtr);
+                cctx.wal().flush(cpPtr, true);
+
+                tracker.onWalCpRecordFsyncEnd();
 
                 long cpTs = System.currentTimeMillis();
 
@@ -3202,11 +3211,12 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 if (printCheckpointStats)
                     if (log.isInfoEnabled())
                         log.info(String.format("Checkpoint started [checkpointId=%s, startPtr=%s, checkpointLockWait=%dms, " +
-                                "checkpointLockHoldTime=%dms, pages=%d, reason='%s']",
+                                "checkpointLockHoldTime=%dms, walCpRecordFsyncDuration=%dms, pages=%d, reason='%s']",
                             cpRec.checkpointId(),
                             cpPtr,
                             tracker.lockWaitDuration(),
                             tracker.lockHoldDuration(),
+                            tracker.walCpRecordFsyncDuration(),
                             cpPages.size(),
                             curr.reason)
                         );
@@ -3215,7 +3225,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             }
             else {
                 if (curr.nextSnapshot)
-                    cctx.wal().fsync(null);
+                    cctx.wal().flush(null, true);
 
                 if (printCheckpointStats) {
                     if (log.isInfoEnabled())

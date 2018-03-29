@@ -36,13 +36,15 @@ public class SVMBinaryTrainerTest {
     /** Fixed size of columns in Dataset. */
     private static final int AMOUNT_OF_FEATURES = 2;
 
+    /** Precision in test checks. */
+    private static final double PRECISION = 1e-2;
+
     /**
      * Test trainer on classification model y = x.
      */
     @Test
     public void testTrainWithTheLinearlySeparableCase() {
         Map<Integer, double[]> data = new HashMap<>();
-
 
         ThreadLocalRandom rndX = ThreadLocalRandom.current();
         ThreadLocalRandom rndY = ThreadLocalRandom.current();
@@ -57,7 +59,6 @@ public class SVMBinaryTrainerTest {
             data.put(i, vec);
         }
 
-
         SVMLinearBinaryClassificationTrainer<Integer, double[]> trainer = new SVMLinearBinaryClassificationTrainer<>();
 
         SVMLinearBinaryClassificationModel mdl = trainer.fit(
@@ -66,9 +67,7 @@ public class SVMBinaryTrainerTest {
             (k, v) -> v[0],
             AMOUNT_OF_FEATURES);
 
-        double precision = 1e-2;
-
-        TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[]{100, 10})), precision);
-        TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[]{10, 100})), precision);
+        TestUtils.assertEquals(-1, mdl.apply(new DenseLocalOnHeapVector(new double[]{100, 10})), PRECISION);
+        TestUtils.assertEquals(1, mdl.apply(new DenseLocalOnHeapVector(new double[]{10, 100})), PRECISION);
     }
 }

@@ -53,7 +53,6 @@ import static org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi.DFLT_PORT;
  * activator node'll enter a topology, enabling grid operations.
  */
 public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopologySplitAbstractTest {
-
     /** */
     private static final String DC_NODE_ATTR = "dc";
 
@@ -454,8 +453,8 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
                 putCnt++;
             }
             catch (Throwable t) {
-                IgniteException e = new IgniteException("Failed to put entry [cache=" + cacheName + ", key=" +
-                    key + ']', t);
+                IgniteException e = new IgniteException("Failed to put entry [gridIdx=" + idx + ", cache=" +
+                    cacheName + ", key=" + key + ']', t);
 
                 log.error(e.getMessage(), e.getCause());
 
@@ -498,6 +497,11 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
                         ex = new IgniteException("Failed to put entry");
 
                     ex.addSuppressed(e);
+
+                    if (putCnt != 0) {
+                        throw new AssertionError("Failure after successful tryPut [gridIdx=" + idx +
+                            ", successful puts = " + putCnt + ']', ex);
+                    }
                 }
             }
         }
