@@ -24,7 +24,7 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xsi:schemaLocation="
         http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
-    <import resource="ignite-dr-base-config.xml"/>
+    <import resource="ignite-pr-base-config.xml"/>
 
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" parent="base-ignite.cfg">
         <property name="localHost" value="127.0.0.1"/>
@@ -34,14 +34,6 @@
                 <property name="checkpointFrequency" value="60000"/>
                 <property name="walHistorySize" value="40"/>
                 <property name="writeThrottlingEnabled" value="true"/>
-
-                <property name="defaultDataRegionConfiguration">
-                    <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
-                        <property name="maxSize" value="#{60L * 1024 * 1024 * 1024}"/>
-                        <property name="metricsEnabled" value="true"/>
-                        <property name="persistenceEnabled" value="true"/>
-                    </bean>
-                </property>
 
                 <!-- Defining several data regions for different memory regions -->
                 <property name="dataRegionConfigurations">
