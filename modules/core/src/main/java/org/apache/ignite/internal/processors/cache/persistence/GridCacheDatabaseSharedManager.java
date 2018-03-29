@@ -784,9 +784,11 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             notifyMetastorageReadyForReadWrite();
         }
         catch (StorageException | PersistentStorageIOException e) {
-            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+            IgniteCheckedException err = new IgniteCheckedException("Unable to restore memory", e);
 
-            throw new IgniteCheckedException("Unable to restore memory", e);
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, err));
+
+            throw err;
         }
         finally {
             checkpointReadUnlock();
@@ -2880,7 +2882,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         curCpProgress.cpFinishFut.onDone(e);
 
                     // In case of checkpoint initialization error node should be invalidated and stopped.
-                    NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+                    cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
                     return;
                 }
