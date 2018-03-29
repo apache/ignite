@@ -31,7 +31,7 @@ public class IgniteCacheFailoverTestSuite3 extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Cache Failover Test Suite3");
 
-        for (int i = 0; i < 50; i++)
+        for (int i = 0; i < 20; i++)
             suite.addTestSuite(GridCacheAtomicInvalidPartitionHandlingSelfTest.class);
 
         return suite;
