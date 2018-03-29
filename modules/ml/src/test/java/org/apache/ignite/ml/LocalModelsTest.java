@@ -95,7 +95,6 @@ public class LocalModelsTest {
         });
     }
 
-
     /** */
     @Test
     public void importExportSVMMulticlassClassificationModelTest() throws IOException {
@@ -155,7 +154,6 @@ public class LocalModelsTest {
     @Test
     public void importExportKNNModelTest() throws IOException {
         executeModelTest(mdlFilePath -> {
-
             KNNClassificationModel mdl = new KNNClassificationModel(null)
                 .withK(3)
                 .withDistanceMeasure(new EuclideanDistance())
@@ -174,7 +172,7 @@ public class LocalModelsTest {
                 .withStrategy(load.getStgy());
 
             Assert.assertTrue("", mdl.equals(importedMdl));
-
+            
             return null;
         });
     }

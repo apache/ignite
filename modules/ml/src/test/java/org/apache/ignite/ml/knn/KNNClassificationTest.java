@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.knn.classification.KNNClassificationModel;
 import org.apache.ignite.ml.knn.classification.KNNClassificationTrainer;
@@ -112,7 +111,6 @@ public class KNNClassificationTest extends BaseKNNTest {
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(KNNStrategy.SIMPLE);
-
 
         Vector vector = new DenseLocalOnHeapVector(new double[] {-1.01, -1.01});
         assertEquals(knnMdl.apply(vector), 2.0);

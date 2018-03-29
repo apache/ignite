@@ -81,7 +81,6 @@ public class KNNClassificationModel<K, V> implements Model<Vector, Double>, Expo
     /** */
     @Override public <P> void saveModel(Exporter<KNNModelFormat, P> exporter, P path) {
         KNNModelFormat mdlData = new KNNModelFormat(k, distanceMeasure, stgy);
-
         exporter.save(mdlData, path);
     }
 

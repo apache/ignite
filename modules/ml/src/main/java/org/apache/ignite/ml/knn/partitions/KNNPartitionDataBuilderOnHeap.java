@@ -64,7 +64,6 @@ public class KNNPartitionDataBuilderOnHeap<K, V, C extends Serializable>
     /** {@inheritDoc} */
     @Override public LabeledDataset<Double, LabeledVector> build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
         C ctx) {
-
         double[][] x = new double[Math.toIntExact(upstreamDataSize)][cols];
         double[] y = new double[Math.toIntExact(upstreamDataSize)];
 
@@ -81,7 +80,6 @@ public class KNNPartitionDataBuilderOnHeap<K, V, C extends Serializable>
 
             ptr++;
         }
-
         return new LabeledDataset<>(x, y);
     }
 }

@@ -48,9 +48,7 @@ public class KNNClassificationTrainer<K, V> implements DatasetTrainer<K, V, KNNC
      * @return Model.
      */
     @Override public KNNClassificationModel fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor, int cols) {
-
         assert datasetBuilder != null;
-
 
         PartitionDataBuilder<K, V, KNNPartitionContext, LabeledDataset<Double, LabeledVector>> partDataBuilder = new KNNPartitionDataBuilderOnHeap<>(
             featureExtractor,
@@ -66,10 +64,8 @@ public class KNNClassificationTrainer<K, V> implements DatasetTrainer<K, V, KNNC
                 partDataBuilder
             );
         }
-
         return new KNNClassificationModel<>(dataset);
     }
-
 }
 
 
