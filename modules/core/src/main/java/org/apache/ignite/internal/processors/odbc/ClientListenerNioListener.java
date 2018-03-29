@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.odbc;
 
+import org.apache.ignite.IgniteAuthenticationException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
@@ -26,6 +27,7 @@ import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcConnectionContext;
 import org.apache.ignite.internal.processors.odbc.odbc.OdbcConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
@@ -212,6 +214,23 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         ClientListenerConnectionContext connCtx = null;
 
         try {
+            if (msg.length > 8) {
+                String user = reader.readString();
+                String pwd = reader.readString();
+
+                if (ctx.authentication().enabled()) {
+                    if (user == null || user.length() == 0)
+                        throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+
+                    AuthorizationContext actx = ctx.authentication().authenticate(user, pwd);
+
+                    if (actx == null)
+                        throw new IgniteCheckedException("Unknown authentication error");
+                }
+            }
+            else if (ctx.authentication().enabled())
+                throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+
             connCtx = prepareContext(clientType);
 
             ensureClientPermissions(clientType);
