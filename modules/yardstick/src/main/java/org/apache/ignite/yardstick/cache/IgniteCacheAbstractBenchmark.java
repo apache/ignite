@@ -36,6 +36,7 @@ import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -47,6 +48,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegionMetricsImpl;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.cache.model.SampleValue;
@@ -215,118 +217,15 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
         }
     }
 
-    protected void preload() throws IgniteCheckedException {
-        loaded = new AtomicBoolean();
+    protected void preload() {
+        IgniteCompute compute = ignite().compute(ignite().cluster().forServers().forOldest());
 
         IgniteCache<Integer, SampleValue> cache = (IgniteCache<Integer, SampleValue>)cacheForOperation();
 
-        CacheConfiguration<K, V> cc = cache.getConfiguration(CacheConfiguration.class);
+        Integer res = compute.apply(new Loader(cache, args, ignite()), 0);
 
-        String dataRegName = cc.getDataRegionName();
-
-        BenchmarkUtils.println("Data region name = " + dataRegName);
-
-        DataStorageConfiguration dataStorCfg = ignite().configuration().getDataStorageConfiguration();
-
-        int pageSize = dataStorCfg.getPageSize();
-
-        BenchmarkUtils.println("Page size = " + pageSize);
-
-        DataRegionConfiguration dataRegCfg = null;
-
-        DataRegionConfiguration[] arr = ignite().configuration().getDataStorageConfiguration()
-            .getDataRegionConfigurations();
-
-        for (DataRegionConfiguration cfg : arr) {
-            if (cfg.getName().equals(dataRegName))
-                dataRegCfg = cfg;
-        }
-
-        if (dataRegCfg == null) {
-            BenchmarkUtils.println(String.format("Failed to get data region configuration for cache %s",
-                cache.getName()));
-
-            return;
-        }
-
-        long maxSize = dataRegCfg.getMaxSize();
-
-        long initSize = dataRegCfg.getInitialSize();
-
-        if (maxSize != initSize)
-            throw new IgniteCheckedException("Initial data region size must be equal to max size!");
-
-        int pageNum = (int)maxSize / pageSize;
-
-        BenchmarkUtils.println("Pages in data region: " + pageNum);
-
-        int cnt = 0;
-
-        final int pagesToLoad = pageNum * args.preloadDataRegionMult();
-
-        IgniteEx ignite = (IgniteEx)ignite();
-
-        final DataRegionMetricsImpl impl = ignite.context().cache().context().database().dataRegion(dataRegName)
-            .memoryMetrics();
-
-        impl.enableMetrics();
-
-        BenchmarkUtils.println("Initial allocated pages = " + impl.getTotalAllocatedPages());
-
-        ExecutorService serv = Executors.newSingleThreadExecutor(new ThreadFactory() {
-            @Override
-            public Thread newThread(@NotNull Runnable r) {
-                return new Thread(r, "Preload checker");
-            }
-        });
-
-        Future<?> fut = serv.submit(new Runnable() {
-            @Override public void run()  {
-                while (!loaded.get()) {
-
-                    if (impl.getTotalAllocatedPages() >= pagesToLoad)
-                        loaded.getAndSet(true);
-
-                    try {
-                        Thread.sleep(500L);
-                    }
-                    catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        });
-
-        try (IgniteDataStreamer<Object, Object> streamer = ignite().dataStreamer(cache.getName())) {
-            while (!loaded.get()) {
-                streamer.addData(cnt++, new SampleValue());
-
-                if (cnt % 1000_000 == 0) {
-                    long allocPages = impl.getTotalAllocatedPages();
-
-                    BenchmarkUtils.println("Load count = " + cnt);
-
-                    BenchmarkUtils.println("Allocated pages = " + allocPages);
-                }
-            }
-        }
-        catch (Exception e){
-            e.printStackTrace();
-        }
-
-        try {
-            fut.get();
-        }
-        catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
-
-        serv.shutdown();
-
-        BenchmarkUtils.println("Objects loaded = " + cnt);
-        BenchmarkUtils.println("Total allocated pages = " + impl.getTotalAllocatedPages());
-
-        args.setRange(cnt);
+        if(res != null)
+            args.setRange(res);
     }
 
     /**
@@ -468,4 +367,161 @@ public abstract class IgniteCacheAbstractBenchmark<K, V> extends IgniteAbstractB
             return rnd.nextInt(min, max);
         }
     }
+
+//    private class Loader implements IgniteClosure<Integer, Integer>{
+//        private static AtomicBoolean invoked;
+//
+//        @Override public Integer apply(Integer integer) {
+//            AtomicBoolean loaded = new AtomicBoolean();
+//
+//            IgniteCache<Integer, SampleValue> cache = (IgniteCache<Integer, SampleValue>)cacheForOperation();
+//
+//            if(check(cache)) {
+//                BenchmarkUtils.println("Check method returned true");
+//
+//                return null;
+//            }
+//            else
+//                BenchmarkUtils.println("Check method returned false");
+//
+//
+//            CacheConfiguration<K, V> cc = cache.getConfiguration(CacheConfiguration.class);
+//
+//            String dataRegName = cc.getDataRegionName();
+//
+//            BenchmarkUtils.println("Data region name = " + dataRegName);
+//
+//            DataStorageConfiguration dataStorCfg = ignite().configuration().getDataStorageConfiguration();
+//
+//            int pageSize = dataStorCfg.getPageSize();
+//
+//            BenchmarkUtils.println("Page size = " + pageSize);
+//
+//            DataRegionConfiguration dataRegCfg = null;
+//
+//            DataRegionConfiguration[] arr = ignite().configuration().getDataStorageConfiguration()
+//                .getDataRegionConfigurations();
+//
+//            for (DataRegionConfiguration cfg : arr) {
+//                if (cfg.getName().equals(dataRegName))
+//                    dataRegCfg = cfg;
+//            }
+//
+//            if (dataRegCfg == null) {
+//                BenchmarkUtils.println(String.format("Failed to get data region configuration for cache %s",
+//                    cache.getName()));
+//
+//                return null;
+//            }
+//
+//            long maxSize = dataRegCfg.getMaxSize();
+//
+//            long initSize = dataRegCfg.getInitialSize();
+//
+//            if (maxSize != initSize)
+//                BenchmarkUtils.println("Initial data region size must be equal to max size!");
+//
+//            int pageNum = (int)maxSize / pageSize;
+//
+//            BenchmarkUtils.println("Pages in data region: " + pageNum);
+//
+//            int cnt = 0;
+//
+//            final int pagesToLoad = pageNum * args.preloadDataRegionMult();
+//
+//            IgniteEx ignite = (IgniteEx)ignite();
+//
+//            try {
+//                final DataRegionMetricsImpl impl = ignite.context().cache().context().database().dataRegion(dataRegName)
+//                    .memoryMetrics();
+//
+//                impl.enableMetrics();
+//
+//                BenchmarkUtils.println("Initial allocated pages = " + impl.getTotalAllocatedPages());
+//
+//                ExecutorService serv = Executors.newSingleThreadExecutor(new ThreadFactory() {
+//                    @Override
+//                    public Thread newThread(@NotNull Runnable r) {
+//                        return new Thread(r, "Preload checker");
+//                    }
+//                });
+//
+//                Future<?> fut = serv.submit(new Runnable() {
+//                    @Override public void run()  {
+//                        while (!loaded.get()) {
+//
+//                            if (impl.getTotalAllocatedPages() >= pagesToLoad)
+//                                loaded.getAndSet(true);
+//
+//                            try {
+//                                Thread.sleep(500L);
+//                            }
+//                            catch (InterruptedException e) {
+//                                e.printStackTrace();
+//                            }
+//                        }
+//                    }
+//                });
+//
+//                try (IgniteDataStreamer<Object, Object> streamer = ignite().dataStreamer(cache.getName())) {
+//                    while (!loaded.get()) {
+//                        streamer.addData(cnt++, new SampleValue());
+//
+//                        if (cnt % 1000_000 == 0) {
+//                            long allocPages = impl.getTotalAllocatedPages();
+//
+//                            BenchmarkUtils.println("Load count = " + cnt);
+//
+//                            BenchmarkUtils.println("Allocated pages = " + allocPages);
+//                        }
+//                    }
+//                }
+//                catch (Exception e){
+//                    e.printStackTrace();
+//                }
+//
+//                try {
+//                    fut.get();
+//                }
+//                catch (InterruptedException | ExecutionException e) {
+//                    e.printStackTrace();
+//                }
+//
+//                serv.shutdown();
+//
+//                BenchmarkUtils.println("Objects loaded = " + cnt);
+//                BenchmarkUtils.println("Total allocated pages = " + impl.getTotalAllocatedPages());
+//
+//            }
+//            catch (IgniteCheckedException e) {
+//                e.printStackTrace();
+//            }
+//
+//
+//            return cnt;
+//        }
+//
+//        private synchronized boolean check(IgniteCache<Integer, SampleValue> cache){
+//            if(cache.get(Integer.MAX_VALUE) == null){
+//                BenchmarkUtils.println("Key MAX_VALUE is not found");
+//
+//                while(cache.get(Integer.MAX_VALUE) == null) {
+//                    cache.put(Integer.MAX_VALUE, new SampleValue());
+//
+//                    try {
+//                        Thread.sleep(1000L);
+//                    }
+//                    catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//                return false;
+//            }
+//            else {
+//                BenchmarkUtils.println("Key MAX_VALUE is found");
+//
+//                return true;
+//            }
+//        }
+//    }
 }
