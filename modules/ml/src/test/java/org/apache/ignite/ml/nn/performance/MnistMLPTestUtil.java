@@ -55,11 +55,25 @@ class MnistMLPTestUtil {
         return new IgniteBiTuple<>(trainingMnistStream, testMnistStream);
     }
 
+    /**
+     * Loads training set.
+     *
+     * @param cnt Count of objects.
+     * @return List of MNIST images.
+     * @throws IOException In case of exception.
+     */
     static List<MnistUtils.MnistLabeledImage> loadTrainingSet(int cnt) throws IOException {
         Properties props = loadMNISTProperties();
         return MnistUtils.mnistAsList(props.getProperty(PROP_TRAINING_IMAGES), props.getProperty(PROP_TRAINING_LABELS), new Random(123L), cnt);
     }
 
+    /**
+     * Loads test set.
+     *
+     * @param cnt Count of objects.
+     * @return List of MNIST images.
+     * @throws IOException In case of exception.
+     */
     static List<MnistUtils.MnistLabeledImage> loadTestSet(int cnt) throws IOException {
         Properties props = loadMNISTProperties();
         return MnistUtils.mnistAsList(props.getProperty(PROP_TEST_IMAGES), props.getProperty(PROP_TEST_LABELS), new Random(123L), cnt);
