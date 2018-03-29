@@ -15,37 +15,46 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client;
+package org.apache.ignite.internal.client.thin;
+
+import org.apache.ignite.client.ClientException;
 
 /**
- * Client status codes.
+ * Result of a function throwing an exception.
  */
-public final class ClientStatus {
+final class Result<T> {
+    /** Value. */
+    private final T val;
+
+    /** Exception. */
+    private final ClientException ex;
+
     /**
-     * No-op constructor to prevent instantiation.
+     * Initializes a successful result.
      */
-    private ClientStatus (){
-        // No-op.
+    Result(T val) {
+        this.val = val;
+        ex = null;
     }
 
-    /** Command succeeded. */
-    public static final int SUCCESS = 0;
+    /**
+     * Initializes a failed result.
+     */
+    Result(ClientException ex) {
+        if (ex == null)
+            throw new NullPointerException("ex");
 
-    /** Command failed. */
-    public static final int FAILED = 1;
+        this.ex = ex;
+        val = null;
+    }
 
-    /** Invalid op code. */
-    public static final int INVALID_OP_CODE = 2;
+    /**
+     * @return Value;
+     */
+    public T get() throws ClientException {
+        if (ex != null)
+            throw ex;
 
-    /** Cache does not exist. */
-    public static final int CACHE_DOES_NOT_EXIST = 1000;
-
-    /** Cache already exists. */
-    public static final int CACHE_EXISTS = 1001;
-
-    /** Too many cursors. */
-    public static final int TOO_MANY_CURSORS = 1010;
-
-    /** Resource does not exist. */
-    public static final int RESOURCE_DOES_NOT_EXIST = 1011;
+        return val;
+    }
 }
