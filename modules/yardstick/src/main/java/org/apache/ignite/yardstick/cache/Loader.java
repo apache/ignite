@@ -24,6 +24,9 @@ import org.yardstickframework.BenchmarkUtils;
 public class Loader implements IgniteClosure<Integer, Integer> {
     private static AtomicBoolean invoked = new AtomicBoolean();
 
+    private static AtomicBoolean loaded = new AtomicBoolean();
+
+
     private IgniteCache<Integer, SampleValue> cache;
 
     private IgniteBenchmarkArguments args;
@@ -38,8 +41,6 @@ public class Loader implements IgniteClosure<Integer, Integer> {
     }
 
     @Override public Integer apply(Integer integer) {
-        AtomicBoolean loaded = new AtomicBoolean();
-
 //        IgniteCache<Integer, SampleValue> cache = (IgniteCache<Integer, SampleValue>)cacheForOperation();
 
 //        if(check(cache)) {
@@ -52,6 +53,17 @@ public class Loader implements IgniteClosure<Integer, Integer> {
 
         if(invoked()){
             BenchmarkUtils.println("Preload has already been invoked");
+
+            while(!loaded.get()){
+                BenchmarkUtils.println("Waiting for preload to complete.");
+
+                try {
+                    Thread.sleep(1000L);
+                }
+                catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
 
             return null;
         }
@@ -91,18 +103,20 @@ public class Loader implements IgniteClosure<Integer, Integer> {
 
         long maxSize = dataRegCfg.getMaxSize();
 
+        BenchmarkUtils.println("Max size = " + maxSize);
+
         long initSize = dataRegCfg.getInitialSize();
 
         if (maxSize != initSize)
             BenchmarkUtils.println("Initial data region size must be equal to max size!");
 
-        int pageNum = (int)maxSize / pageSize;
+        long pageNum = maxSize / pageSize;
 
         BenchmarkUtils.println("Pages in data region: " + pageNum);
 
         int cnt = 0;
 
-        final int pagesToLoad = pageNum * args.preloadDataRegionMult();
+        final long pagesToLoad = pageNum * args.preloadDataRegionMult();
 
         IgniteEx igniteEx = (IgniteEx)ignite;
 
