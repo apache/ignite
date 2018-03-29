@@ -15,37 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client;
+package org.apache.ignite.internal.client.thin;
+
+import java.util.List;
 
 /**
- * Client status codes.
+ * Extracts paged data
  */
-public final class ClientStatus {
+interface FieldsQueryPager<T> extends QueryPager<T> {
     /**
-     * No-op constructor to prevent instantiation.
+     * @return Field names.
      */
-    private ClientStatus (){
-        // No-op.
-    }
-
-    /** Command succeeded. */
-    public static final int SUCCESS = 0;
-
-    /** Command failed. */
-    public static final int FAILED = 1;
-
-    /** Invalid op code. */
-    public static final int INVALID_OP_CODE = 2;
-
-    /** Cache does not exist. */
-    public static final int CACHE_DOES_NOT_EXIST = 1000;
-
-    /** Cache already exists. */
-    public static final int CACHE_EXISTS = 1001;
-
-    /** Too many cursors. */
-    public static final int TOO_MANY_CURSORS = 1010;
-
-    /** Resource does not exist. */
-    public static final int RESOURCE_DOES_NOT_EXIST = 1011;
+    public List<String> getFieldNames();
 }
