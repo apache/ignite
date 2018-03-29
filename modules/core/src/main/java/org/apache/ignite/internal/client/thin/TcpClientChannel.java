@@ -49,7 +49,11 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.client.ClientAuthenticationException;
+import org.apache.ignite.client.ClientConnectionException;
+import org.apache.ignite.client.SslMode;
+import org.apache.ignite.client.SslProtocol;
+import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
@@ -58,12 +62,6 @@ import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapOutputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.client.ClientAuthenticationException;
-import org.apache.ignite.configuration.ClientConfiguration;
-import org.apache.ignite.client.ClientConnectionException;
-import org.apache.ignite.client.SslMode;
-import org.apache.ignite.client.SslProtocol;
-import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 
 /**
  * Implements {@link ClientChannel} over TCP.
