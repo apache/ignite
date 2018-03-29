@@ -17,12 +17,19 @@
 
 package org.apache.ignite.internal;
 
+import java.lang.management.ManagementFactory;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.ExecutorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import javax.management.ObjectName;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MBEAN_APPEND_CLASS_LOADER_ID;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_MBEAN_APPEND_JVM_ID;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.internal.util.IgniteUtils.JMX_DOMAIN;
 
 /**
  * Tests for the standard JMX beans registered by the kernal.
@@ -56,7 +63,7 @@ public class GridMBeansTest extends GridCommonAbstractTest {
     /** Check that kernal bean is available */
     public void testKernalBeans() throws Exception {
         checkBean("Kernal", "IgniteKernal", "InstanceName", grid().name());
-        checkBean("Kernal", "ClusterMetricsMXBeanImpl", "TotalServerNodes", 1);
+        checkBean("Kernal", "ClusterLocalNodeMetricsMXBeanImpl", "TotalServerNodes", 1);
         checkBean("Kernal", "ClusterMetricsMXBeanImpl", "TotalServerNodes", 1);
     }
 
@@ -76,11 +83,83 @@ public class GridMBeansTest extends GridCommonAbstractTest {
         checkBean("Thread Pools", CUSTOM_EXECUTOR_1, "Terminated", false);
     }
 
+    /** Check that kernal beans have expected names */
+    public void testIgniteKernalBeansNames() throws Exception {
+        // standard executors
+        checkBeanName("Thread Pools", "GridExecutionExecutor");
+        checkBeanName("Thread Pools", "GridSystemExecutor");
+        checkBeanName("Thread Pools", "GridManagementExecutor");
+        checkBeanName("Thread Pools", "GridClassLoadingExecutor");
+        checkBeanName("Thread Pools", "GridQueryExecutor");
+        checkBeanName("Thread Pools", "GridSchemaExecutor");
+        checkBeanName("Thread Pools", "StripedExecutor");
+
+        // kernal beans
+        checkBeanName("Kernal", "IgniteKernal");
+        checkBeanName("Kernal", "ClusterLocalNodeMetricsMXBeanImpl");
+        checkBeanName("Kernal", "ClusterMetricsMXBeanImpl");
+    }
+
+    /** Check that kernal beans were successfully registered by their expected names */
+    public void testIgniteKernalBeansRegistration() throws Exception {
+        // standard executors
+        checkBeanRegistrationByName("Thread Pools", "GridExecutionExecutor");
+        checkBeanRegistrationByName("Thread Pools", "GridSystemExecutor");
+        checkBeanRegistrationByName("Thread Pools", "GridManagementExecutor");
+        checkBeanRegistrationByName("Thread Pools", "GridClassLoadingExecutor");
+        checkBeanRegistrationByName("Thread Pools", "GridQueryExecutor");
+        checkBeanRegistrationByName("Thread Pools", "GridSchemaExecutor");
+        checkBeanRegistrationByName("Thread Pools", "StripedExecutor");
+
+        // kernal beans
+        checkBeanRegistrationByName("Kernal", "IgniteKernal");
+        checkBeanRegistrationByName("Kernal", "ClusterLocalNodeMetricsMXBeanImpl");
+        checkBeanRegistrationByName("Kernal", "ClusterMetricsMXBeanImpl");
+    }
+
     /** Checks that a bean with the specified group and name is available and has the expected attribute */
     private void checkBean(String grp, String name, String attributeName, Object expAttributeVal) throws Exception {
         ObjectName mBeanName = IgniteUtils.makeMBeanName(grid().name(), grp, name);
         Object attributeVal = grid().configuration().getMBeanServer().getAttribute(mBeanName, attributeName);
 
         assertEquals(expAttributeVal, attributeVal);
+    }
+
+    /** Checks that a bean name generation returns the expected value */
+    private void checkBeanName(String grp, String name) throws Exception {
+        final String EXPECTED_BEAN_NAME = getExpectedBeanName(JMX_DOMAIN, grid().name(), grp, name);
+
+        ObjectName mBeanName = IgniteUtils.makeMBeanName(grid().name(), grp, name);
+
+        assertTrue(EXPECTED_BEAN_NAME.equals(mBeanName.getCanonicalName()));
+    }
+
+    /** Checks that a bean name generation returns the expected value */
+    private void checkBeanRegistrationByName(String grp, String name) throws Exception {
+        final String EXPECTED_BEAN_NAME = getExpectedBeanName(JMX_DOMAIN, grid().name(), grp, name);
+
+        assertTrue(grid().configuration().getMBeanServer().isRegistered(new ObjectName(EXPECTED_BEAN_NAME)));
+    }
+
+    private String getExpectedBeanName(String domain, String instanceName, String grp, String name) {
+        StringBuffer sb = new StringBuffer();
+
+        sb.append(domain + ":");
+
+        if (getBoolean(IGNITE_MBEAN_APPEND_CLASS_LOADER_ID, true)) {
+            String clsLdrHash = Integer.toHexString(Ignite.class.getClassLoader().hashCode());
+            sb.append("clsLdr=").append(clsLdrHash).append(',');
+        }
+
+        if (getBoolean(IGNITE_MBEAN_APPEND_JVM_ID)) {
+            String jvmId = ManagementFactory.getRuntimeMXBean().getName();
+            sb.append("jvmId=").append(jvmId).append(',');
+        }
+
+        sb.append("group=").append(grp).append(",");
+        sb.append("igniteInstanceName=").append(instanceName).append(",");
+        sb.append("name=").append(name);
+
+        return sb.toString();
     }
 }
