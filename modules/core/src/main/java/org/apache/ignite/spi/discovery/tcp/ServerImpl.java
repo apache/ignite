@@ -2651,7 +2651,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                if (!isInterrupted())
+                if (!(e instanceof InterruptedException))
                     criticalFailure = e;
 
                 // Must be processed by IgniteSpiThread as well.
@@ -5652,8 +5652,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (log.isDebugEnabled())
                     U.error(log, "Failed to accept TCP connection.", e);
 
-                criticalFailure = e;
-
                 onException("Failed to accept TCP connection.", e);
 
                 if (!isInterrupted()) {
@@ -5664,8 +5662,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
             catch (Throwable t) {
-                if (!isInterrupted())
-                    criticalFailure = t;
+                criticalFailure = t;
             }
             finally {
                 U.closeQuiet(srvrSock);
