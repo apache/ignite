@@ -259,6 +259,11 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
 
         BOOST_CHECK_EQUAL(ret, SQL_NO_DATA);
 
+        ret = SQLMoreResults(stmt);
+
+        if (ret != SQL_NO_DATA)
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
         ResetStatement();
     }
 
@@ -294,6 +299,11 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
 
         BOOST_CHECK_EQUAL(ret, SQL_NO_DATA);
 
+        ret = SQLMoreResults(stmt);
+
+        if (ret != SQL_NO_DATA)
+            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
+
         ResetStatement();
     }
 
@@ -302,18 +312,12 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
      */
     void ResetStatement()
     {
-        BOOST_CHECK_EQUAL(10, 10);
-
         SQLRETURN ret = SQLFreeStmt(stmt, SQL_RESET_PARAMS);
-
-        BOOST_CHECK_EQUAL(11, 11);
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLFreeStmt(stmt, SQL_UNBIND);
-
-        BOOST_CHECK_EQUAL(12, 12);
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -325,42 +329,26 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
 
 BOOST_FIXTURE_TEST_SUITE(TransactionTestSuite, TransactionTestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(TestTransactionConnectionCommit)
+BOOST_AUTO_TEST_CASE(TransactionConnectionCommit)
 {
     Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
-    BOOST_CHECK_EQUAL(1, 1);
-
     SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, 0);
 
-    BOOST_CHECK_EQUAL(2, 2);
-
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
-
-    BOOST_CHECK_EQUAL(3, 3);
 
     InsertTestValue(42, "Some");
 
-    BOOST_CHECK_EQUAL(4, 4);
-
     CheckTestValue(42, "Some");
-
-    BOOST_CHECK_EQUAL(5, 5);
 
     ret = SQLEndTran(SQL_HANDLE_DBC, dbc, SQL_COMMIT);
 
-    BOOST_CHECK_EQUAL(6, 6);
-
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
 
-    BOOST_CHECK_EQUAL(7, 7);
-
     CheckTestValue(42, "Some");
-
-    BOOST_CHECK_EQUAL(8, 8);
 }
 
-BOOST_AUTO_TEST_CASE(TestTransactionConnectionRollbackInsert)
+BOOST_AUTO_TEST_CASE(TransactionConnectionRollbackInsert)
 {
     Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
@@ -379,7 +367,7 @@ BOOST_AUTO_TEST_CASE(TestTransactionConnectionRollbackInsert)
     CheckNoTestValue(42);
 }
 
-BOOST_AUTO_TEST_CASE(TestTransactionConnectionRollbackUpdate1)
+BOOST_AUTO_TEST_CASE(TransactionConnectionRollbackUpdate1)
 {
     Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
@@ -402,7 +390,7 @@ BOOST_AUTO_TEST_CASE(TestTransactionConnectionRollbackUpdate1)
     CheckTestValue(42, "Some");
 }
 
-BOOST_AUTO_TEST_CASE(TestTransactionConnectionRollbackUpdate2)
+BOOST_AUTO_TEST_CASE(TransactionConnectionRollbackUpdate2)
 {
     Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
@@ -431,7 +419,7 @@ BOOST_AUTO_TEST_CASE(TestTransactionConnectionRollbackUpdate2)
     CheckTestValue(42, "Some");
 }
 
-BOOST_AUTO_TEST_CASE(TestTransactionConnectionRollbackDelete1)
+BOOST_AUTO_TEST_CASE(TransactionConnectionRollbackDelete1)
 {
     Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
@@ -454,7 +442,7 @@ BOOST_AUTO_TEST_CASE(TestTransactionConnectionRollbackDelete1)
     CheckTestValue(42, "Some");
 }
 
-BOOST_AUTO_TEST_CASE(TestTransactionConnectionRollbackDelete2)
+BOOST_AUTO_TEST_CASE(TransactionConnectionRollbackDelete2)
 {
     Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
@@ -479,6 +467,270 @@ BOOST_AUTO_TEST_CASE(TestTransactionConnectionRollbackDelete2)
     ret = SQLEndTran(SQL_HANDLE_DBC, dbc, SQL_ROLLBACK);
 
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    CheckTestValue(42, "Some");
+}
+
+BOOST_AUTO_TEST_CASE(TransactionConnectionTxModeError)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache;nested_tx_mode=error");
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    InsertTestValue(42, "Some");
+
+    ret = ExecQuery("BEGIN");
+
+    BOOST_CHECK_EQUAL(ret, SQL_ERROR);
+}
+
+BOOST_AUTO_TEST_CASE(TransactionConnectionTxModeIgnore)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache;nested_tx_mode=ignore");
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    InsertTestValue(42, "Some");
+
+    ret = ExecQuery("BEGIN");
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    ret = SQLEndTran(SQL_HANDLE_DBC, dbc, SQL_ROLLBACK);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    CheckNoTestValue(42);
+}
+
+BOOST_AUTO_TEST_CASE(TransactionConnectionTxModeCommit)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache;nested_tx_mode=commit");
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    InsertTestValue(42, "Some");
+
+    ret = ExecQuery("BEGIN");
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    UpdateTestValue(42, "Other");
+
+    CheckTestValue(42, "Other");
+
+    ret = SQLEndTran(SQL_HANDLE_DBC, dbc, SQL_ROLLBACK);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    CheckTestValue(42, "Some");
+}
+
+BOOST_AUTO_TEST_CASE(TransactionEnvironmentCommit)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    InsertTestValue(42, "Some");
+
+    CheckTestValue(42, "Some");
+
+    ret = SQLEndTran(SQL_HANDLE_DBC, dbc, SQL_COMMIT);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_ENV, env);
+
+    CheckTestValue(42, "Some");
+}
+
+BOOST_AUTO_TEST_CASE(TransactionEnvironmentRollbackInsert)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    InsertTestValue(42, "Some");
+
+    CheckTestValue(42, "Some");
+
+    ret = SQLEndTran(SQL_HANDLE_ENV, env, SQL_ROLLBACK);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_ENV, env);
+
+    CheckNoTestValue(42);
+}
+
+BOOST_AUTO_TEST_CASE(TransactionEnvironmentRollbackUpdate1)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    InsertTestValue(42, "Some");
+
+    CheckTestValue(42, "Some");
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    UpdateTestValue(42, "Other");
+
+    CheckTestValue(42, "Other");
+
+    ret = SQLEndTran(SQL_HANDLE_ENV, env, SQL_ROLLBACK);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_ENV, env);
+
+    CheckTestValue(42, "Some");
+}
+
+BOOST_AUTO_TEST_CASE(TransactionEnvironmentRollbackUpdate2)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    InsertTestValue(42, "Some");
+
+    CheckTestValue(42, "Some");
+
+    ret = SQLEndTran(SQL_HANDLE_DBC, dbc, SQL_COMMIT);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_ENV, env);
+
+    CheckTestValue(42, "Some");
+
+    UpdateTestValue(42, "Other");
+
+    CheckTestValue(42, "Other");
+
+    ret = SQLEndTran(SQL_HANDLE_ENV, env, SQL_ROLLBACK);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_ENV, env);
+
+    CheckTestValue(42, "Some");
+}
+
+BOOST_AUTO_TEST_CASE(TransactionEnvironmentRollbackDelete1)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    InsertTestValue(42, "Some");
+
+    CheckTestValue(42, "Some");
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    DeleteTestValue(42);
+
+    CheckNoTestValue(42);
+
+    ret = SQLEndTran(SQL_HANDLE_ENV, env, SQL_ROLLBACK);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_ENV, env);
+
+    CheckTestValue(42, "Some");
+}
+
+BOOST_AUTO_TEST_CASE(TransactionEnvironmentRollbackDelete2)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    InsertTestValue(42, "Some");
+
+    CheckTestValue(42, "Some");
+
+    ret = SQLEndTran(SQL_HANDLE_DBC, dbc, SQL_COMMIT);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_ENV, env);
+
+    CheckTestValue(42, "Some");
+
+    DeleteTestValue(42);
+
+    CheckNoTestValue(42);
+
+    ret = SQLEndTran(SQL_HANDLE_ENV, env, SQL_ROLLBACK);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_ENV, env);
+
+    CheckTestValue(42, "Some");
+}
+
+BOOST_AUTO_TEST_CASE(TransactionEnvironmentTxModeError)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache;nested_tx_mode=error");
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    InsertTestValue(42, "Some");
+
+    ret = ExecQuery("BEGIN");
+
+    BOOST_CHECK_EQUAL(ret, SQL_ERROR);
+}
+
+BOOST_AUTO_TEST_CASE(TransactionEnvironmentTxModeIgnore)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache;nested_tx_mode=ignore");
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    InsertTestValue(42, "Some");
+
+    ret = ExecQuery("BEGIN");
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    ret = SQLEndTran(SQL_HANDLE_ENV, env, SQL_ROLLBACK);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_ENV, env);
+
+    CheckNoTestValue(42);
+}
+
+BOOST_AUTO_TEST_CASE(TransactionEnvironmentTxModeCommit)
+{
+    Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache;nested_tx_mode=commit");
+
+    SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, 0);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    InsertTestValue(42, "Some");
+
+    ret = ExecQuery("BEGIN");
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    UpdateTestValue(42, "Other");
+
+    CheckTestValue(42, "Other");
+
+    ret = SQLEndTran(SQL_HANDLE_ENV, env, SQL_ROLLBACK);
+
+    ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_ENV, env);
 
     CheckTestValue(42, "Some");
 }
