@@ -722,9 +722,7 @@ public class GridDhtPartitionDemander {
                                 // If message was last for this partition,
                                 // then we take ownership.
                                 if (last) {
-                                    top.own(part);
-
-                                    fut.partitionDone(nodeId, p);
+                                    fut.partitionDone(nodeId, p, true);
 
                                     if (log.isDebugEnabled())
                                         log.debug("Finished rebalancing partition: " + part);
@@ -737,14 +735,14 @@ public class GridDhtPartitionDemander {
                         }
                         else {
                             if (last)
-                                fut.partitionDone(nodeId, p);
+                                fut.partitionDone(nodeId, p, false);
 
                             if (log.isDebugEnabled())
                                 log.debug("Skipping rebalancing partition (state is not MOVING): " + part);
                         }
                     }
                     else {
-                        fut.partitionDone(nodeId, p);
+                        fut.partitionDone(nodeId, p, false);
 
                         if (log.isDebugEnabled())
                             log.debug("Skipping rebalancing partition (it does not belong on current node): " + p);
@@ -762,7 +760,7 @@ public class GridDhtPartitionDemander {
             }
 
             for (Integer miss : supply.missed())
-                fut.partitionDone(nodeId, miss);
+                fut.partitionDone(nodeId, miss, false);
 
             GridDhtPartitionDemandMessage d = new GridDhtPartitionDemandMessage(
                 supply.rebalanceId(),
@@ -1064,8 +1062,11 @@ public class GridDhtPartitionDemander {
          * @param nodeId Node id.
          * @param p Partition number.
          */
-        private void partitionDone(UUID nodeId, int p) {
+        private void partitionDone(UUID nodeId, int p, boolean updateState) {
             synchronized (this) {
+                if (updateState) // TODO: do not own immediately if WAL is disabled
+                    grp.topology().own(grp.topology().localPartition(p));
+
                 if (isDone())
                     return;
 
