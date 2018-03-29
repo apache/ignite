@@ -61,6 +61,9 @@ import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -4089,13 +4092,34 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (log.isDebugEnabled())
                 log.debug("Tcp communication worker has been started.");
 
-            while (!isInterrupted()) {
-                DisconnectedSessionInfo disconnectData = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
+            Throwable criticalFailure = null;
 
-                if (disconnectData != null)
-                    processDisconnect(disconnectData);
-                else
-                    processIdle();
+            try {
+                while (!isInterrupted()) {
+                    DisconnectedSessionInfo disconnectData = q.poll(idleConnTimeout, TimeUnit.MILLISECONDS);
+
+                    if (disconnectData != null)
+                        processDisconnect(disconnectData);
+                    else
+                        processIdle();
+                }
+            }
+            catch (Throwable t) {
+                if (!(t instanceof InterruptedException))
+                    criticalFailure = t;
+            }
+            finally {
+                if (criticalFailure == null && !stopping)
+                    criticalFailure = new IllegalStateException(
+                        "TCP communication SPI worker thread is exiting unexpectedly");
+
+                if (criticalFailure != null) {
+                    FailureHandler failureHnd = ignite.configuration().getFailureHandler();
+
+                    if (failureHnd != null)
+                        failureHnd.onFailure(ignite, new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION,
+                            criticalFailure));
+                }
             }
         }
 
