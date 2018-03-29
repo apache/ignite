@@ -17,8 +17,13 @@
 
 package org.apache.ignite.internal.processors.platform.client;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -32,6 +37,12 @@ import java.util.concurrent.atomic.AtomicLong;
 public class ClientConnectionContext implements ClientListenerConnectionContext {
     /** Version 1.0.0. */
     private static final ClientListenerProtocolVersion VER_1_0_0 = ClientListenerProtocolVersion.create(1, 0, 0);
+
+    /** Version 1.1.0. */
+    private static final ClientListenerProtocolVersion VER_1_1_0 = ClientListenerProtocolVersion.create(1, 1, 0);
+
+    /** Supported versions. */
+    private static final Collection<ClientListenerProtocolVersion> supportedVers = Arrays.asList(VER_1_1_0, VER_1_0_0);
 
     /** Message parser. */
     private final ClientMessageParser parser;
@@ -87,17 +98,45 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
 
     /** {@inheritDoc} */
     @Override public boolean isVersionSupported(ClientListenerProtocolVersion ver) {
-        return VER_1_0_0.equals(ver);
+        return supportedVers.contains(ver);
     }
 
     /** {@inheritDoc} */
     @Override public ClientListenerProtocolVersion currentVersion() {
-        return VER_1_0_0;
+        return VER_1_1_0;
     }
 
     /** {@inheritDoc} */
-    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader) {
-        // No-op.
+    @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
+        throws IgniteCheckedException {
+
+        boolean hasMore;
+
+        if (ver.compareTo(VER_1_1_0) >= 0) {
+            try {
+                hasMore = reader.available() > 0;
+            }
+            catch (IOException e) {
+                throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
+            }
+
+            if (hasMore) {
+                String user = reader.readString();
+                String pwd = reader.readString();
+
+                if (kernalCtx.authentication().enabled()) {
+                    if (user == null || user.length() == 0)
+                        throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+
+                    AuthorizationContext actx = kernalCtx.authentication().authenticate(user, pwd);
+
+                    if (actx == null)
+                        throw new IgniteCheckedException("Unknown authentication error");
+                }
+            }
+            else if (kernalCtx.authentication().enabled())
+                throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+        }
     }
 
     /** {@inheritDoc} */

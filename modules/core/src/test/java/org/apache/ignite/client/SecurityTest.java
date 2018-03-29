@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.authentication.AuthorizationContext
 import org.apache.ignite.ssl.SslContextFactory;
 import org.junit.Test;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -130,11 +131,10 @@ public class SecurityTest {
                 return null;
             };
 
-            assertTrue(
-                "Authentication with invalid credentials succeeded",
-                authenticate.apply(new SimpleEntry<>("bad-user", "bad-password"))
-                    instanceof ClientAuthenticationException
-            );
+            Exception authError = authenticate.apply(new SimpleEntry<>("bad-user", "bad-password"));
+
+            assertNotNull("Authentication with invalid credentials succeeded", authError);
+            assertTrue("Invalid type of authentication error", authError instanceof ClientAuthenticationException);
 
             SimpleEntry<String, String> validCred = new SimpleEntry<>("user", "password");
 
