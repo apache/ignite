@@ -42,6 +42,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -310,7 +311,7 @@ public class QueryEntity implements Serializable {
      *
      * @return Collection of index entities.
      */
-    public Collection<QueryIndex> getIndexes() {
+    @NotNull public Collection<QueryIndex> getIndexes() {
         return idxs == null ? Collections.<QueryIndex>emptyList() : idxs;
     }
 

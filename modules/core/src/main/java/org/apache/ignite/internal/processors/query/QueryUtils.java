@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryField;
@@ -64,6 +66,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_INDEXING_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 
@@ -1249,6 +1252,43 @@ public class QueryUtils {
             res = new QueryEntity(entity);
 
         return res;
+    }
+
+    /**
+     * Merge query entities from two source to one collection.
+     * @param firstEntities
+     * @param secondEntities
+     * @return
+     */
+    public static Collection<QueryEntity> mergeQueryEntities(
+        Collection<QueryEntity> firstEntities, Collection<QueryEntity> secondEntities
+    ) {
+        if (firstEntities.isEmpty())
+            return secondEntities;
+
+        if (secondEntities.isEmpty())
+            return firstEntities;
+
+        Map<String, QueryEntity> entityMap = firstEntities.stream()
+            .collect(toMap(QueryEntity::getTableName, Function.identity()));
+
+        List<QueryEntity> result = secondEntities.stream()
+            .map(secondEntity -> {
+                QueryEntity firstEntity = entityMap.remove(secondEntity.getTableName());
+
+                if (firstEntity == null)
+                    return QueryUtils.copy(secondEntity);
+
+                HashSet<QueryIndex> indices = new HashSet<>(firstEntity.getIndexes());
+                indices.addAll(secondEntity.getIndexes());
+
+                return QueryUtils.copy(secondEntity).setIndexes(indices);
+            })
+            .collect(Collectors.toList());
+
+        result.addAll(entityMap.values());
+
+        return result;
     }
 
     /**

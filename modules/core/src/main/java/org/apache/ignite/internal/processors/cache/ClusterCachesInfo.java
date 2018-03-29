@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheExistsException;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -59,13 +60,14 @@ import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
 import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType.CACHE_PROC;
+import static org.apache.ignite.internal.processors.query.QueryUtils.mergeQueryEntities;
 
 /**
  * Logic related to cache discovery data processing.
@@ -1043,6 +1045,10 @@ class ClusterCachesInfo {
 
             CacheConfiguration<?, ?> cfg = cacheData.cacheConfiguration();
 
+            Collection<QueryEntity> mergedEntities = mergeQueryEntities(
+                getLocalQueryEntities(cfg.getName()), cacheData.schema().entities()
+            );
+
             DynamicCacheDescriptor desc = new DynamicCacheDescriptor(
                 ctx,
                 cacheData.cacheConfiguration(),
@@ -1053,7 +1059,8 @@ class ClusterCachesInfo {
                 cacheData.staticallyConfigured(),
                 cacheData.sql(),
                 cacheData.deploymentId(),
-                cacheData.schema());
+                new QuerySchema(mergedEntities)
+            );
 
             desc.receivedOnDiscovery(true);
 
@@ -1096,6 +1103,24 @@ class ClusterCachesInfo {
 
         if (cachesOnDisconnect == null || cachesOnDisconnect.clusterActive())
             initStartCachesForLocalJoin(false, disconnectedState());
+    }
+
+    /**
+     * Given started node query entities by cacheName.
+     *
+     * @param cacheName cache for which query entities will be returned
+     * @return local query entities.
+     */
+    private Collection<QueryEntity> getLocalQueryEntities(String cacheName) {
+        if (joinDiscoData == null)
+            return Collections.emptyList();
+
+        CacheJoinNodeDiscoveryData.CacheInfo cacheInfo = joinDiscoData.caches().get(cacheName);
+
+        if (cacheInfo == null)
+            return Collections.emptyList();
+
+        return cacheInfo.cacheData().queryEntities();
     }
 
     /**
@@ -1450,6 +1475,19 @@ class ClusterCachesInfo {
                 DynamicCacheDescriptor old = registeredCaches.put(cfg.getName(), desc);
 
                 assert old == null : old;
+            } else {
+                DynamicCacheDescriptor desc = registeredCaches.get(cfg.getName());
+
+                Collection<QueryEntity> joiningEntities = cacheInfo.cacheData().queryEntities();
+                Collection<QueryEntity> localEntities = desc.schema().entities();
+
+                if(needUpdateGridEntities(joiningEntities, localEntities) && !ctx.grid().active()){
+                    Collection<QueryEntity> mergedEntities = mergeQueryEntities(
+                        localEntities, joiningEntities
+                    );
+
+                    desc.schema(new QuerySchema(mergedEntities));
+                }
             }
 
             ctx.discovery().addClientNode(cfg.getName(), nodeId, cfg.getNearConfiguration() != null);
@@ -1464,6 +1502,11 @@ class ClusterCachesInfo {
         }
 
         return null;
+    }
+
+    public boolean needUpdateGridEntities(Collection<QueryEntity> joiningEntities,
+        Collection<QueryEntity> localEntities) {
+        return !joiningEntities.isEmpty() && !new HashSet<>(localEntities).containsAll(joiningEntities);
     }
 
     /**

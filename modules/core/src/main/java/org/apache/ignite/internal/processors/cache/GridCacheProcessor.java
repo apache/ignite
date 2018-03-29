@@ -34,6 +34,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
@@ -156,6 +157,7 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -727,6 +729,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheData.sql(sql);
 
+        addStoredCacheOnJoin(caches, templates, cacheData);
+    }
+
+    private void addStoredCacheOnJoin(Map<String, CacheInfo> caches, Map<String, CacheInfo> templates,
+        StoredCacheData cacheData) throws IgniteCheckedException {
+        CacheConfiguration<?, ?> cfg = cacheData.config();
+
+        String cacheName = cfg.getName();
+
         boolean template = cacheName.endsWith("*");
 
         if (!template) {
@@ -745,10 +756,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             else
                 stopSeq.addFirst(cacheName);
 
-            caches.put(cacheName, new CacheJoinNodeDiscoveryData.CacheInfo(cacheData, cacheType, cacheData.sql(), 0));
+            caches.put(cacheName, new CacheInfo(cacheData, cacheType, cacheData.sql(), 0));
         }
         else
-            templates.put(cacheName, new CacheJoinNodeDiscoveryData.CacheInfo(cacheData, CacheType.USER, false, 0));
+            templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0));
     }
 
     /**
@@ -772,6 +783,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             addCacheOnJoin(cfg, false, caches, templates);
         }
+
+        Map<String, StoredCacheData> storedCaches = ctx.cache().context().pageStore().readCacheConfigurations();
+
+        if (!F.isEmpty(storedCaches))
+            for (StoredCacheData storedCacheData : storedCaches.values()) {
+                if (!caches.containsKey(storedCacheData.config().getName()))
+                    addStoredCacheOnJoin(caches, templates, storedCacheData);
+            }
     }
 
     /**
@@ -2432,6 +2451,30 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         cachesInfo.onGridDataReceived(data);
 
         sharedCtx.walState().onCachesInfoCollected();
+    }
+
+    @Nullable @Override public IgniteNodeValidationResult validateNode(
+        ClusterNode node, JoiningNodeDiscoveryData discoData
+    ) {
+        if (discoData.hasJoiningNodeData() && discoData.joiningNodeData() instanceof CacheJoinNodeDiscoveryData){
+            CacheJoinNodeDiscoveryData nodeData = (CacheJoinNodeDiscoveryData)discoData.joiningNodeData();
+
+            for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
+                DynamicCacheDescriptor localDesc = cachesInfo.registeredCaches().get(cacheInfo.cacheData().config().getName());
+
+                boolean needUpdateGridEntities = cachesInfo.needUpdateGridEntities(
+                    cacheInfo.cacheData().queryEntities(), localDesc.schema().entities()
+                );
+
+                if(needUpdateGridEntities && ctx.grid().active()){
+                    String msg = "Join is fail because query entities";
+
+                    return new IgniteNodeValidationResult(node.id(), msg, msg);
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
