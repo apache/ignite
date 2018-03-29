@@ -250,4 +250,10 @@ export default {
     'app.components.page-profile.m30':'Confirm new password',
     'app.components.page-profile.m31':'Cancel',
     'app.components.page-profile.m32':'Save Changes',
+
+    // app/modules/navbar/userbar.directive.js
+    'app/modules/navbar/userbar.m1': 'Profile',
+    'app/modules/navbar/userbar.m2': 'Getting started',
+    'app/modules/navbar/userbar.m3': 'Admin panel',
+    'app/modules/navbar/userbar.m4': 'Log out'
 };
