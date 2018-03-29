@@ -302,17 +302,18 @@ struct TransactionTestSuiteFixture : public odbc::OdbcTestSuite
      */
     void ResetStatement()
     {
+        BOOST_CHECK_EQUAL(10, 10);
+
         SQLRETURN ret = SQLFreeStmt(stmt, SQL_RESET_PARAMS);
+
+        BOOST_CHECK_EQUAL(11, 11);
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
 
         ret = SQLFreeStmt(stmt, SQL_UNBIND);
 
-        if (!SQL_SUCCEEDED(ret))
-            BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
-
-        ret = SQLCloseCursor(stmt);
+        BOOST_CHECK_EQUAL(12, 12);
 
         if (!SQL_SUCCEEDED(ret))
             BOOST_FAIL(GetOdbcErrorMessage(SQL_HANDLE_STMT, stmt));
@@ -328,19 +329,35 @@ BOOST_AUTO_TEST_CASE(TestTransactionConnectionCommit)
 {
     Connect("DRIVER={Apache Ignite};address=127.0.0.1:11110;schema=cache");
 
+    BOOST_CHECK_EQUAL(1, 1);
+
     SQLRETURN ret = SQLSetConnectAttr(dbc, SQL_ATTR_AUTOCOMMIT, SQL_AUTOCOMMIT_OFF, 0);
 
+    BOOST_CHECK_EQUAL(2, 2);
+
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
+
+    BOOST_CHECK_EQUAL(3, 3);
 
     InsertTestValue(42, "Some");
 
+    BOOST_CHECK_EQUAL(4, 4);
+
     CheckTestValue(42, "Some");
+
+    BOOST_CHECK_EQUAL(5, 5);
 
     ret = SQLEndTran(SQL_HANDLE_DBC, dbc, SQL_COMMIT);
 
+    BOOST_CHECK_EQUAL(6, 6);
+
     ODBC_FAIL_ON_ERROR(ret, SQL_HANDLE_DBC, dbc);
 
+    BOOST_CHECK_EQUAL(7, 7);
+
     CheckTestValue(42, "Some");
+
+    BOOST_CHECK_EQUAL(8, 8);
 }
 
 BOOST_AUTO_TEST_CASE(TestTransactionConnectionRollbackInsert)
