@@ -20,6 +20,8 @@ package org.apache.ignite.testsuites;
 import java.util.Set;
 import junit.framework.TestSuite;
 import org.apache.ignite.GridSuppressedExceptionSelfTest;
+import org.apache.ignite.failure.FailureHandlerTriggeredTest;
+import org.apache.ignite.failure.StopNodeFailureHandlerTest;
 import org.apache.ignite.internal.ClassSetTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
@@ -190,6 +192,10 @@ public class IgniteBasicTestSuite extends TestSuite {
         suite.addTestSuite(GridCleanerTest.class);
 
         suite.addTestSuite(ClassSetTest.class);
+
+        // Basic failure handlers.
+        suite.addTestSuite(FailureHandlerTriggeredTest.class);
+        suite.addTestSuite(StopNodeFailureHandlerTest.class);
 
         return suite;
     }
