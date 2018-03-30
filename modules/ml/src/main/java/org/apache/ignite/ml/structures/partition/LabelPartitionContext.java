@@ -20,7 +20,7 @@ package org.apache.ignite.ml.structures.partition;
 import java.io.Serializable;
 
 /**
- * Partition context of the SVM classification algorithm.
+ * Base partition context.
  */
 public class LabelPartitionContext implements Serializable {
     /** */

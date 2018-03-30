@@ -25,7 +25,7 @@ import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.structures.LabeledDataset;
 
 /**
- * SVM partition data builder that builds {@link LabeledDataset}.
+ * Partition data builder that builds {@link LabelPartitionDataOnHeap}.
  *
  * @param <K> Type of a key in <tt>upstream</tt> data.
  * @param <V> Type of a value in <tt>upstream</tt> data.

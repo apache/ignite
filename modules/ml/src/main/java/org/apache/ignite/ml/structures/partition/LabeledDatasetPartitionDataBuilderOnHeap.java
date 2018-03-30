@@ -26,7 +26,7 @@ import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
- * SVM partition data builder that builds {@link LabeledDataset}.
+ * Partition data builder that builds {@link LabeledDataset}.
  *
  * @param <K> Type of a key in <tt>upstream</tt> data.
  * @param <V> Type of a value in <tt>upstream</tt> data.
