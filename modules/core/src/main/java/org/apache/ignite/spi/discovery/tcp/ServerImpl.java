@@ -179,7 +179,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private IgniteThreadPoolExecutor utilityPool;
 
-    /** False if there are more than one unavailable IP address in IP finder */
+    /** False if there are more than one unavailable IP address in IP finder. */
     private boolean firstUnavailableAddr = true;
 
     /** Nodes ring. */

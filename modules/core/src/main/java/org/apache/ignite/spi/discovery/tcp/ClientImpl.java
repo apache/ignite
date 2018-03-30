@@ -133,7 +133,7 @@ class ClientImpl extends TcpDiscoveryImpl {
     /** */
     private static final Object SPI_STOP = "SPI_STOP";
 
-    /** False if there are more than one unavailable IP address in IP finder */
+    /** False if there are more than one unavailable IP address in IP finder. */
     private boolean firstUnavailableAddr = true;
 
     /** */

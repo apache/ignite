@@ -100,7 +100,7 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     }
 
     /**
-     *
+     * @throws Exception If any error occurs.
      */
     public void testWrongAddressClientMode() throws Exception {
         logWarning = String.format(warningMsg, wrongAddr + wrongPort);
@@ -118,7 +118,7 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     }
 
     /**
-     *
+     * @throws Exception If any error occurs.
      */
     public void testRightAddressWrongPortClientMode() throws Exception {
         logWarning = String.format(warningMsg, rightAddr + wrongPort);
@@ -136,7 +136,7 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     }
 
     /**
-     *
+     * @throws Exception If any error occurs.
      */
     public void testRightAddressClientMode() throws Exception {
         logWarning = String.format(warningMsg, rightAddr + rightPort);
@@ -151,7 +151,7 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     }
 
     /**
-     *
+     * @throws Exception If any error occurs.
      */
     public void testWrongAddresses() throws Exception {
         logWarning = String.format(warningMsg, wrongAddr + wrongPort);
@@ -164,7 +164,7 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     }
 
     /**
-     *
+     * @throws Exception If any error occurs.
      */
     public void testRightAddressesWrongPort() throws Exception {
         logWarning = String.format(warningMsg, rightAddr + wrongPort);
@@ -177,7 +177,7 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     }
 
     /**
-     *
+     * @throws Exception If any error occurs.
      */
     public void testRightAddresses() throws Exception {
         logWarning = String.format(warningMsg, rightAddr + rightPort);
@@ -194,7 +194,7 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     }
 
     /**
-     *
+     * @throws Exception If any error occurs.
      */
     public void testSmallSocketTimeout() throws Exception {
         logWarning = String.format(warningMsg, wrongAddr + wrongPort);
@@ -207,7 +207,7 @@ public class TcpDiscoveryVmIpFinderSetAddressesWarningTest extends GridCommonAbs
     }
 
     /**
-     *
+     * @throws Exception If any error occurs.
      */
     public void testClientSmallSocketTimeout() throws Exception {
         logWarning = String.format(warningMsg, wrongAddr + wrongPort);
