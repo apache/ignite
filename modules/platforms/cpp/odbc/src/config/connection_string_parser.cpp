@@ -52,7 +52,7 @@ namespace ignite
             const std::string ConnectionStringParser::Key::sslCaFile              = "ssl_ca_file";
             const std::string ConnectionStringParser::Key::user                   = "user";
             const std::string ConnectionStringParser::Key::password               = "password";
-            const std::string ConnectionStringParser::Key::nestedTxMode           = "nestedTxMode";
+            const std::string ConnectionStringParser::Key::nestedTxMode           = "nested_tx_mode";
 
             ConnectionStringParser::ConnectionStringParser(Configuration& cfg):
                 cfg(cfg)
