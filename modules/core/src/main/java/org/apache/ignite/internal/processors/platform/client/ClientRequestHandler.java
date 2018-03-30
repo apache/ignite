@@ -50,7 +50,12 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
         if (authCtx != null)
             AuthorizationContext.context(authCtx);
 
-        return ((ClientRequest) req).process(ctx);
+        try {
+            return ((ClientRequest)req).process(ctx);
+        }
+        finally {
+            AuthorizationContext.clear();
+        }
     }
 
     /** {@inheritDoc} */
