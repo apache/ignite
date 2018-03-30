@@ -36,6 +36,7 @@ public class EuclideanDistance implements DistanceMeasure {
         return MatrixUtil.localCopyOf(a).minus(b).kNorm(2.0);
     }
 
+    /** {@inheritDoc} */
     @Override public double compute(Vector a, double[] b) throws CardinalityException {
         double res = 0.0;
 

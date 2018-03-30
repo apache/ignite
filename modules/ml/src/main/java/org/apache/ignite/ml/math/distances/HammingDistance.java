@@ -42,6 +42,7 @@ public class HammingDistance implements DistanceMeasure {
         return MatrixUtil.localCopyOf(a).minus(b).foldMap(Functions.PLUS, fun, 0d);
     }
 
+    /** {@inheritDoc} */
     @Override public double compute(Vector a, double[] b) throws CardinalityException {
         throw new UnsupportedOperationException("It's not supported yet");
     }

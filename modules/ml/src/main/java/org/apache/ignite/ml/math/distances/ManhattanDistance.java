@@ -36,6 +36,7 @@ public class ManhattanDistance implements DistanceMeasure {
         return MatrixUtil.localCopyOf(a).minus(b).kNorm(1.0);
     }
 
+    /** {@inheritDoc} */
     @Override public double compute(Vector a, double[] b) throws CardinalityException {
         throw new UnsupportedOperationException("It's not supported yet");
     }

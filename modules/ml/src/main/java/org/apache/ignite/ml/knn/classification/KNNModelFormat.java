@@ -35,22 +35,27 @@ public class KNNModelFormat implements Serializable {
     /** kNN strategy. */
     private KNNStrategy stgy;
 
-    /** */
+    /** Gets amount of nearest neighbors.*/
     public int getK() {
         return k;
     }
 
-    /** */
+    /** Gets distance measure. */
     public DistanceMeasure getDistanceMeasure() {
         return distanceMeasure;
     }
 
-    /** */
+    /** Gets kNN strategy.*/
     public KNNStrategy getStgy() {
         return stgy;
     }
 
-    /** */
+    /**
+     * Creates an instance.
+     * @param k Amount of nearest neighbors.
+     * @param measure Distance measure.
+     * @param stgy kNN strategy.
+     */
     public KNNModelFormat(int k, DistanceMeasure measure, KNNStrategy stgy) {
         this.k = k;
         this.distanceMeasure = measure;

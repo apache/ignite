@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.knn.partitions;
+package org.apache.ignite.ml.structures.partition;
 
 import java.io.Serializable;
 import java.util.Iterator;
@@ -26,13 +26,13 @@ import org.apache.ignite.ml.structures.LabeledDataset;
 import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
- * kNN partition data builder that builds {@link LabeledDataset}.
+ * SVM partition data builder that builds {@link LabeledDataset}.
  *
  * @param <K> Type of a key in <tt>upstream</tt> data.
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
  */
-public class KNNPartitionDataBuilderOnHeap<K, V, C extends Serializable>
+public class LabeledDatasetPartitionDataBuilderOnHeap<K, V, C extends Serializable>
     implements PartitionDataBuilder<K, V, C, LabeledDataset<Double, LabeledVector>> {
     /** */
     private static final long serialVersionUID = -7820760153954269227L;
@@ -44,22 +44,20 @@ public class KNNPartitionDataBuilderOnHeap<K, V, C extends Serializable>
     private final IgniteBiFunction<K, V, Double> yExtractor;
 
     /**
-     * Constructs a new instance of kNN partition data builder.
+     * Constructs a new instance of SVM partition data builder.
      *
      * @param xExtractor Extractor of X matrix row.
      * @param yExtractor Extractor of Y vector value.
-     * @param cols Number of columns.
      */
-    public KNNPartitionDataBuilderOnHeap(IgniteBiFunction<K, V, double[]> xExtractor,
-        IgniteBiFunction<K, V, Double> yExtractor)
-    {
+    public LabeledDatasetPartitionDataBuilderOnHeap(IgniteBiFunction<K, V, double[]> xExtractor,
+                                         IgniteBiFunction<K, V, Double> yExtractor) {
         this.xExtractor = xExtractor;
         this.yExtractor = yExtractor;
     }
 
     /** {@inheritDoc} */
-    @Override public LabeledDataset<Double, LabeledVector> build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
-        C ctx) {
+    @Override public LabeledDataset<Double, LabeledVector> build(Iterator<UpstreamEntry<K, V>> upstreamData,
+        long upstreamDataSize, C ctx) {
         int xCols = -1;
         double[][] x = null;
         double[] y = new double[Math.toIntExact(upstreamDataSize)];

@@ -15,8 +15,31 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.ml.structures.partition;
+
 /**
- * <!-- Package description. -->
- * Contains API for Multi-SVM(support vector machines) algorithms.
+ * On Heap partition data that keeps part of a labels.
  */
-package org.apache.ignite.ml.svm.multi;
+public class LabelPartitionDataOnHeap implements AutoCloseable {
+    /** Part of Y vector. */
+    private final double[] y;
+
+    /**
+     * Constructs a new instance of linear system partition data.
+     *
+     * @param y Part of Y vector.
+     */
+    public LabelPartitionDataOnHeap(double[] y) {
+        this.y = y;
+    }
+
+    /** */
+    public double[] getY() {
+        return y;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        // Do nothing, GC will clean up.
+    }
+}
