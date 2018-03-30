@@ -23,19 +23,18 @@ import java.util.function.Function;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.ClientConfiguration;
 import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -44,6 +43,14 @@ import static org.junit.Assert.assertTrue;
 public class SecurityTest {
     /** Ignite home. */
     private static final String IGNITE_HOME = U.getIgniteHome();
+
+    /**
+     * Setup before each test.
+     */
+    @Before
+    public void beforeEach() throws IgniteCheckedException {
+        U.resolveWorkDirectory(U.defaultWorkDirectory(), "db", true);
+    }
 
     /** Test SSL/TLS encryption. */
     @Test
@@ -118,54 +125,104 @@ public class SecurityTest {
         }
     }
 
-    /** Test authentication. */
+    /** Test valid user authentication. */
     @Test
-    public void testAuthentication() throws IgniteCheckedException {
-        try (Ignite ignite = Ignition.start(Config.getServerConfiguration()
+    public void testInvalidUserAuthentication() throws Exception {
+        try (Ignite ignored = igniteWithAuthentication();
+             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                 .setUserName("JOE")
+                 .setUserPassword("password")
+             )
+        ) {
+            Exception authError = null;
+
+            try {
+                client.getOrCreateCache("testAuthentication");
+            }
+            catch (Exception e) {
+                authError = e;
+            }
+
+            assertNotNull("Authentication with invalid credentials succeeded", authError);
+            assertTrue("Invalid type of authentication error", authError instanceof ClientAuthenticationException);
+        }
+    }
+
+    /** Test valid user authentication. */
+    @Test
+    public void testValidUserAuthentication() throws Exception {
+        final String USER = "joe";
+        final String PWD = "password";
+
+        try (Ignite ignored = igniteWithAuthentication(new SimpleEntry<>(USER, PWD));
+             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                 .setUserName(USER)
+                 .setUserPassword(PWD)
+             )
+        ) {
+            client.getOrCreateCache("testAuthentication");
+        }
+    }
+
+    /** Test user cannot create user. */
+    @Test
+    public void testUserCannotCreateUser() throws Exception {
+        final String USER = "joe";
+        final String PWD = "password";
+
+        try (Ignite ignored = igniteWithAuthentication(new SimpleEntry<>(USER, PWD));
+             IgniteClient client = Ignition.startClient(new ClientConfiguration().setAddresses(Config.SERVER)
+                 .setUserName(USER)
+                 .setUserPassword(PWD)
+             )
+        ) {
+            Exception authError = null;
+
+            try {
+                client.query(
+                    new SqlFieldsQuery(String.format("CREATE USER \"%s\" WITH PASSWORD '%s'", "joe2", "password"))
+                ).getAll();
+            }
+            catch (Exception e) {
+                authError = e;
+            }
+
+            assertNotNull("User created another user", authError);
+        }
+    }
+
+    /**
+     * @return Ignite configuration with authentication enabled
+     */
+    @SafeVarargs
+    private static Ignite igniteWithAuthentication(SimpleEntry<String, String>... users) throws Exception {
+        Ignite ignite = Ignition.start(Config.getServerConfiguration()
             .setAuthenticationEnabled(true)
             .setDataStorageConfiguration(new DataStorageConfiguration()
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration().setPersistenceEnabled(true))
             )
+        );
+
+        ignite.cluster().active(true);
+
+        for (SimpleEntry<String, String> u : users)
+            createUser(u.getKey(), u.getValue());
+
+        return ignite;
+    }
+
+    /**
+     * Create user.
+     */
+    private static void createUser(String user, String pwd) throws Exception {
+        try (IgniteClient client = Ignition.startClient(new ClientConfiguration()
+            .setAddresses(Config.SERVER)
+            .setUserName("ignite")
+            .setUserPassword("ignite")
         )) {
-            ignite.cluster().active(true);
-
-            Function<SimpleEntry<String, String>, Exception> authenticate = cred -> {
-                ClientConfiguration clientCfg = new ClientConfiguration().setAddresses(Config.SERVER)
-                    .setUserName(cred.getKey())
-                    .setUserPassword(cred.getValue());
-
-                try (IgniteClient client = Ignition.startClient(clientCfg)) {
-                    client.getOrCreateCache("testAuthentication");
-                }
-                catch (Exception e) {
-                    return e;
-                }
-
-                return null;
-            };
-
-            Exception authError = authenticate.apply(new SimpleEntry<>("bad-user", "bad-password"));
-
-            assertNotNull("Authentication with invalid credentials succeeded", authError);
-            assertTrue("Invalid type of authentication error", authError instanceof ClientAuthenticationException);
-
-            SimpleEntry<String, String> validCred = new SimpleEntry<>("user", "password");
-
-            IgniteEx igniteEx = (IgniteEx)ignite;
-
-            AuthorizationContext.context(igniteEx.context().authentication().authenticate("ignite", "ignite"));
-
-            try {
-                igniteEx.context().authentication().addUser(validCred.getKey(), validCred.getValue());
-            }
-            catch (IgniteCheckedException ignore) {
-                // Ignore "user already exists" exception
-            }
-
-            assertNull(
-                "Authentication with valid credentials failed",
-                authenticate.apply(validCred)
-            );
+            client.query(
+                new SqlFieldsQuery(String.format("CREATE USER \"%s\" WITH PASSWORD '%s'", user, pwd))
+            ).getAll();
         }
     }
 }
