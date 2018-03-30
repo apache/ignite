@@ -129,7 +129,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -377,7 +376,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private List<MetastorageLifecycleListener> metastorageLifecycleLsnrs;
 
     /** Initially disabled cache groups. */
-    public Collection<Integer> initiallyWalDisabledGrps;
+    private Collection<Integer> initiallyWalDisabledGrps;
 
     /**
      * @param ctx Kernal context.
@@ -3063,14 +3062,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (grp.isLocal() || !grp.walEnabled())
                         continue;
 
-                    int locPartsSize = 0;
+                    ArrayList<GridDhtLocalPartition> parts = new ArrayList<>();
 
-                    for (GridDhtLocalPartition ignored : grp.topology().currentLocalPartitions())
-                        locPartsSize++;
+                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
+                        parts.add(part);
 
-                    CacheState state = new CacheState(locPartsSize);
+                    CacheState state = new CacheState(parts.size());
 
-                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
+                    for (GridDhtLocalPartition part : parts) {
                         state.addPartitionState(
                             part.id(),
                             part.dataStore().fullSize(),
