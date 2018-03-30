@@ -172,7 +172,7 @@ public class LocalModelsTest {
                 .withStrategy(load.getStgy());
 
             Assert.assertTrue("", mdl.equals(importedMdl));
-            
+
             return null;
         });
     }
