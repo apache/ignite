@@ -48,7 +48,7 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
     private final ClientMessageParser parser;
 
     /** Request handler. */
-    private final ClientRequestHandler handler;
+    private ClientRequestHandler handler;
 
     /** Handle registry. */
     private final ClientResourceRegistry resReg = new ClientResourceRegistry();
@@ -74,7 +74,6 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
         kernalCtx = ctx;
 
         parser = new ClientMessageParser(ctx);
-        handler = new ClientRequestHandler(this);
         this.maxCursors = maxCursors;
     }
 
@@ -111,6 +110,9 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
         throws IgniteCheckedException {
 
         boolean hasMore;
+        String user = null;
+        String pwd = null;
+        AuthorizationContext authCtx = null;
 
         if (ver.compareTo(VER_1_1_0) >= 0) {
             try {
@@ -121,22 +123,24 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
             }
 
             if (hasMore) {
-                String user = reader.readString();
-                String pwd = reader.readString();
-
-                if (kernalCtx.authentication().enabled()) {
-                    if (user == null || user.length() == 0)
-                        throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
-
-                    AuthorizationContext actx = kernalCtx.authentication().authenticate(user, pwd);
-
-                    if (actx == null)
-                        throw new IgniteCheckedException("Unknown authentication error");
-                }
+                user = reader.readString();
+                pwd = reader.readString();
             }
-            else if (kernalCtx.authentication().enabled())
-                throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
         }
+        else if (kernalCtx.authentication().enabled())
+            throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+
+        if (kernalCtx.authentication().enabled()) {
+            if (user == null || user.length() == 0)
+                throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+
+            authCtx = kernalCtx.authentication().authenticate(user, pwd);
+
+            if (authCtx == null)
+                throw new IgniteCheckedException("Unknown authentication error");
+        }
+
+        handler = new ClientRequestHandler(this, authCtx);
     }
 
     /** {@inheritDoc} */
