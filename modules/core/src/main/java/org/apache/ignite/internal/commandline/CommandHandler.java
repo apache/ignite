@@ -559,7 +559,7 @@ public class CommandHandler {
      */
     private void usage(String desc, Command cmd, String... args) {
         log(desc);
-        log("    control.sh [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] " + cmd.text() + String.join("", args));
+        log("    control.sh [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] " + cmd.text() /* TODO + String.join("", args)*/);
         nl();
     }
 
