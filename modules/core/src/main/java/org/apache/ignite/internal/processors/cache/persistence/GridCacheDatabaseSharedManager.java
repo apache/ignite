@@ -367,7 +367,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private List<MetastorageLifecycleListener> metastorageLifecycleLsnrs;
 
     /** Initially disabled cache groups. */
-    public Collection<Integer> initiallyWalDisabledGrps;
+    private Collection<Integer> initiallyWalDisabledGrps;
 
     /**
      * @param ctx Kernal context.
@@ -3042,16 +3042,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (grp.isLocal() || !grp.walEnabled())
                         continue;
 
-                    List<GridDhtLocalPartition> locParts = new ArrayList<>();
+                    ArrayList<GridDhtLocalPartition> parts = new ArrayList<>();
 
                     for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
-                        locParts.add(part);
+                        parts.add(part);
 
-                    Collections.sort(locParts, ASC_PART_COMPARATOR);
+                    CacheState state = new CacheState(parts.size());
 
-                    CacheState state = new CacheState(locParts.size());
-
-                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
+                    for (GridDhtLocalPartition part : parts) {
                         state.addPartitionState(
                             part.id(),
                             part.dataStore().fullSize(),
