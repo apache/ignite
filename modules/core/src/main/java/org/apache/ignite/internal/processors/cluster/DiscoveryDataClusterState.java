@@ -136,13 +136,6 @@ public final class DiscoveryDataClusterState implements Serializable {
         @Nullable Set<UUID> transitionNodes,
         @Nullable GridFutureAdapter<Boolean> transitionFut
     ) {
-        assert (transitionReqId == null && transitionTopVer == null &&
-            transitionNodes == null && transitionFut == null)
-            ||
-            (transitionReqId != null && transitionTopVer != null &&
-                transitionNodes != null && transitionFut != null) :
-            "The main invariant has broken.";
-
         this.prevState = prevState;
         this.active = active;
         this.baselineTopology = baselineTopology;
@@ -156,7 +149,8 @@ public final class DiscoveryDataClusterState implements Serializable {
      * @return Local flag for state transition result (global state is updated asynchronously by custom message).
      */
     public boolean transitionResult(boolean waitForTransition) {
-        assert transitionFut != null;
+        if (transitionFut == null)
+            return false;
 
         if (transitionFut.isDone() || waitForTransition) {
             try {
@@ -177,18 +171,16 @@ public final class DiscoveryDataClusterState implements Serializable {
      * @param active New cluster state.
      */
     public void setTransitionResult(boolean active) {
-        assert transitionFut != null;
-
-        transitionFut.onDone(active);
+        if (transitionFut != null)
+            transitionFut.onDone(active);
     }
 
     /**
      * Registers listener closure to be asynchronously notified whenever transition result completes.
      */
     public void listen(IgniteInClosure<IgniteInternalFuture<Boolean>> c) {
-        assert transitionFut != null;
-
-        transitionFut.listen(c);
+        if (transitionFut != null)
+            transitionFut.listen(c);
     }
 
     /**
