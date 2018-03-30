@@ -17,6 +17,7 @@
 
 package org.apache.ignite.client;
 
+import java.nio.file.Paths;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.function.Function;
 import org.apache.ignite.Ignite;
@@ -29,6 +30,7 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.junit.Test;
 
@@ -40,6 +42,9 @@ import static org.junit.Assert.assertTrue;
  * Thin client security test.
  */
 public class SecurityTest {
+    /** Ignite home. */
+    private static final String IGNITE_HOME = U.getIgniteHome();
+
     /** Test SSL/TLS encryption. */
     @Test
     public void testEncryption() throws Exception {
@@ -48,7 +53,15 @@ public class SecurityTest {
 
         SslContextFactory sslCfg = new SslContextFactory();
 
-        Function<String, String> rsrcPath = rsrc -> SecurityTest.class.getResource(rsrc).getPath();
+        Function<String, String> rsrcPath = rsrc -> Paths.get(
+            IGNITE_HOME == null ? "." : IGNITE_HOME,
+            "modules",
+            "core",
+            "src",
+            "test",
+            "resources",
+            rsrc
+        ).toString();
 
         sslCfg.setKeyStoreFilePath(rsrcPath.apply("/server.jks"));
         sslCfg.setKeyStorePassword("123456".toCharArray());
