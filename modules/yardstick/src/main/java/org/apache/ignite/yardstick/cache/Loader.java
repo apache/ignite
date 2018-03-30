@@ -22,9 +22,9 @@ import org.jetbrains.annotations.NotNull;
 import org.yardstickframework.BenchmarkUtils;
 
 public class Loader implements IgniteClosure<Integer, Integer> {
-    private static AtomicBoolean invoked = new AtomicBoolean();
+//    private static AtomicBoolean invoked = new AtomicBoolean();
 
-    private static AtomicBoolean loaded = new AtomicBoolean();
+    private AtomicBoolean loaded = new AtomicBoolean();
 
 
     private IgniteCache<Integer, SampleValue> cache;
@@ -51,25 +51,25 @@ public class Loader implements IgniteClosure<Integer, Integer> {
 //        else
 //            BenchmarkUtils.println("Check method returned false");
 
-        if(invoked()){
-            BenchmarkUtils.println("Preload has already been invoked");
-
-            while(!loaded.get()){
-                BenchmarkUtils.println("Waiting for preload to complete.");
-
-                try {
-                    Thread.sleep(1000L);
-                }
-                catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            return null;
-        }
-        else{
-            BenchmarkUtils.println("Preload has not been invoked");
-        }
+//        if(invoked()){
+//            BenchmarkUtils.println("Preload has already been invoked");
+//
+//            while(!loaded.get()){
+//                BenchmarkUtils.println("Waiting for preload to complete.");
+//
+//                try {
+//                    Thread.sleep(1000L);
+//                }
+//                catch (InterruptedException e) {
+//                    e.printStackTrace();
+//                }
+//            }
+//
+//            return null;
+//        }
+//        else{
+//            BenchmarkUtils.println("Preload has not been invoked");
+//        }
 
 
         CacheConfiguration<Integer, SampleValue> cc = cache.getConfiguration(CacheConfiguration.class);
@@ -178,6 +178,8 @@ public class Loader implements IgniteClosure<Integer, Integer> {
 
             serv.shutdown();
 
+            impl.disableMetrics();
+
             BenchmarkUtils.println("Objects loaded = " + cnt);
             BenchmarkUtils.println("Total allocated pages = " + impl.getTotalAllocatedPages());
 
@@ -213,12 +215,12 @@ public class Loader implements IgniteClosure<Integer, Integer> {
         }
     }
 
-    private synchronized boolean invoked(){
-        if(!invoked.get()){
-            invoked.getAndSet(true);
-
-            return false;
-        }
-        return true;
-    }
+//    private synchronized boolean invoked(){
+//        if(!invoked.get()){
+//            invoked.getAndSet(true);
+//
+//            return false;
+//        }
+//        return true;
+//    }
 }
