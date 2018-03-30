@@ -3641,7 +3641,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
             clientMode(false);
 
-            startGridsMultiThreaded(4);
+            startGridsMultiThreaded(4, i == 0);
 
             clientMode(true);
 
