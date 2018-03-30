@@ -128,7 +128,7 @@ public interface FileIO extends AutoCloseable {
 
     /**
      * Forces any updates of this file to be written to the storage
-     * device that contains it.
+     * device that contains it. Does not enforce metadata update.
      *
      * @throws IOException If some I/O error occurs.
      */

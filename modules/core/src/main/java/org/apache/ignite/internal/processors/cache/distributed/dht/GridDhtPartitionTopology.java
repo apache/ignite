@@ -192,7 +192,7 @@ public interface GridDhtPartitionTopology {
 
     /**
      *
-     * @return All current active local partitions.
+     * @return All current active local partitions, ordered by partition ID.
      */
     public Iterable<GridDhtLocalPartition> currentLocalPartitions();
 

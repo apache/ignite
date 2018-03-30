@@ -840,7 +840,23 @@ public final class IgniteSystemProperties {
      * @see CacheConfiguration#readFromBackup
      */
     public static final String IGNITE_READ_LOAD_BALANCING = "IGNITE_READ_LOAD_BALANCING";
-  
+
+    /**
+     * Enables striped parallel processing of dirty pages during checkpoint. Using this mode may speed up checkpoint
+     * start. Settings this value to {@code false} will disable quick sort/sorted storage of dirty pages. Default value
+     * is {@code true}.
+     */
+    public static final String IGNITE_DIRTY_PAGES_PARALLEL = "IGNITE_DIRTY_PAGES_PARALLEL";
+
+    /**
+     * Save dirty pages in pre-sorted storage. {@code True} value enables always sorted striped storage of dirty pages.
+     * No sorting is performed during checkpoint start, only sorted collections are merged into one, and page write
+     * starts. Settings this to {@code false} switches to hashcode based non sorted storage, and parallel quick sort at
+     * checkpoint start. This options has no effect if {@link #IGNITE_DIRTY_PAGES_PARALLEL} set to {@code false}.
+     * Default value is {@code true}.
+     */
+    public static final String IGNITE_DIRTY_PAGES_SORTED_STORAGE = "IGNITE_DIRTY_PAGES_SORTED_STORAGE";
+
     /**
      * Enforces singleton.
      */

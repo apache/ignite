@@ -23,7 +23,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
 import org.apache.ignite.internal.util.lang.GridPredicate3;
 import org.jetbrains.annotations.Nullable;
 
@@ -86,7 +85,7 @@ public interface PageMemoryEx extends PageMemory {
     public long acquirePage(int grpId, long pageId, boolean restore) throws IgniteCheckedException;
 
     /**
-     * Heuristic method which allows a thread to check if it safe to start memory struture modifications
+     * Heuristic method which allows a thread to check if it safe to start memory structure modifications
      * in regard with checkpointing.
      *
      * @return {@code False} if there are too many dirty pages and a thread should wait for a
@@ -100,10 +99,10 @@ public interface PageMemoryEx extends PageMemory {
      * be flushed to the main memory after the checkpointing finished. This method must be called when no
      * concurrent operations on pages are performed.
      *
-     * @return Collection of dirty page IDs.
+     * @return Arrays of collections of dirty page IDs, number of elements is the same with segments count.
      * @throws IgniteException If checkpoint has been already started and was not finished.
      */
-    public GridMultiCollectionWrapper<FullPageId> beginCheckpoint() throws IgniteException;
+    public PageIdCollection[] beginCheckpoint() throws IgniteException;
 
     /**
      * Finishes checkpoint operation.

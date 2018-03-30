@@ -466,8 +466,8 @@ public class AlignedBuffersDirectFileIO implements FileIO {
 
     /** {@inheritDoc} */
     @Override public void force() throws IOException {
-        if (IgniteNativeIoLib.fsync(fdCheckOpened()) < 0)
-            throw new IOException(String.format("Error fsync()'ing %s, got %s", file, getLastError()));
+        if (IgniteNativeIoLib.fdatasync(fdCheckOpened()) < 0)
+            throw new IOException(String.format("Error fdatasync()'ing file %s, got %s", file, getLastError()));
     }
 
     /** {@inheritDoc} */

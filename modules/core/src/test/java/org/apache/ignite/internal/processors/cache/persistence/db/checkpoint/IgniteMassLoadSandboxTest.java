@@ -136,10 +136,10 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             dsCfg.setWalArchivePath(new File(wal, "archive").getAbsolutePath());
         }
 
-        dsCfg.setWalMode(customWalMode != null ? customWalMode : WALMode.LOG_ONLY)
-            .setWalHistorySize(1)
-            .setWalSegments(10);
 
+        dsCfg.setWalMode(customWalMode != null ? customWalMode : WALMode.LOG_ONLY)
+        .setWalHistorySize(1)
+        .setWalSegments(10);
         if (walSegmentSize != 0)
             dsCfg.setWalSegmentSize(walSegmentSize);
 
@@ -456,7 +456,6 @@ public class IgniteMassLoadSandboxTest extends GridCommonAbstractTest {
             stopAllGrids();
         }
     }
-
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
