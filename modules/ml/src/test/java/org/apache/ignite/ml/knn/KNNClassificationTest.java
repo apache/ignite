@@ -43,13 +43,12 @@ public class KNNClassificationTest extends BaseKNNTest {
         data.put(4, new double[] {-1.0, -2.0, 2.0});
         data.put(5, new double[] {-2.0, -1.0, 2.0});
 
-        KNNClassificationTrainer<Integer, double[]> trainer = new KNNClassificationTrainer<>();
+        KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
         KNNClassificationModel knnMdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
-            (k, v) -> v[2],
-            2
+            (k, v) -> v[2]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(KNNStrategy.SIMPLE);
@@ -72,13 +71,12 @@ public class KNNClassificationTest extends BaseKNNTest {
         data.put(4, new double[] {-1.0, -2.0, 2.0});
         data.put(5, new double[] {-2.0, -1.0, 2.0});
 
-        KNNClassificationTrainer<Integer, double[]> trainer = new KNNClassificationTrainer<>();
+        KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
         KNNClassificationModel knnMdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
-            (k, v) -> v[2],
-            2
+            (k, v) -> v[2]
         ).withK(1)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(KNNStrategy.SIMPLE);
@@ -101,13 +99,12 @@ public class KNNClassificationTest extends BaseKNNTest {
         data.put(4, new double[] {-1.0, -2.0, 2.0});
         data.put(5, new double[] {-2.0, -1.0, 2.0});
 
-        KNNClassificationTrainer<Integer, double[]> trainer = new KNNClassificationTrainer<>();
+        KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
         KNNClassificationModel knnMdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
-            (k, v) -> v[2],
-            2
+            (k, v) -> v[2]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(KNNStrategy.SIMPLE);
@@ -128,13 +125,12 @@ public class KNNClassificationTest extends BaseKNNTest {
         data.put(4, new double[] {-1.0, -2.0, 2.0});
         data.put(5, new double[] {-2.0, -1.0, 2.0});
 
-        KNNClassificationTrainer<Integer, double[]> trainer = new KNNClassificationTrainer<>();
+        KNNClassificationTrainer trainer = new KNNClassificationTrainer();
 
         KNNClassificationModel knnMdl = trainer.fit(
             new LocalDatasetBuilder<>(data, 2),
             (k, v) -> Arrays.copyOfRange(v, 0, v.length - 1),
-            (k, v) -> v[2],
-            2
+            (k, v) -> v[2]
         ).withK(3)
             .withDistanceMeasure(new EuclideanDistance())
             .withStrategy(KNNStrategy.WEIGHTED);
