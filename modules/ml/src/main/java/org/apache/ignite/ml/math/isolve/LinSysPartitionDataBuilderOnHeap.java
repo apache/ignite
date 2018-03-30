@@ -41,28 +41,24 @@ public class LinSysPartitionDataBuilderOnHeap<K, V, C extends Serializable>
     /** Extractor of Y vector value. */
     private final IgniteBiFunction<K, V, Double> yExtractor;
 
-    /** Number of columns. */
-    private final int cols;
-
     /**
      * Constructs a new instance of linear system partition data builder.
      *
      * @param xExtractor Extractor of X matrix row.
      * @param yExtractor Extractor of Y vector value.
-     * @param cols Number of columns.
      */
     public LinSysPartitionDataBuilderOnHeap(IgniteBiFunction<K, V, double[]> xExtractor,
-        IgniteBiFunction<K, V, Double> yExtractor, int cols) {
+        IgniteBiFunction<K, V, Double> yExtractor) {
         this.xExtractor = xExtractor;
         this.yExtractor = yExtractor;
-        this.cols = cols;
     }
 
     /** {@inheritDoc} */
     @Override public LinSysPartitionDataOnHeap build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
         C ctx) {
         // Prepares the matrix of features in flat column-major format.
-        double[] x = new double[Math.toIntExact(upstreamDataSize * cols)];
+        int xCols = -1;
+        double[] x = null;//new double[Math.toIntExact(upstreamDataSize * cols)];
         double[] y = new double[Math.toIntExact(upstreamDataSize)];
 
         int ptr = 0;
@@ -70,9 +66,14 @@ public class LinSysPartitionDataBuilderOnHeap<K, V, C extends Serializable>
             UpstreamEntry<K, V> entry = upstreamData.next();
             double[] row = xExtractor.apply(entry.getKey(), entry.getValue());
 
-            assert row.length == cols : "X extractor must return exactly " + cols + " columns";
+            if (xCols < 0) {
+                xCols = row.length;
+                x = new double[Math.toIntExact(upstreamDataSize * xCols)];
+            }
+            else
+                assert row.length == xCols : "X extractor must return exactly " + xCols + " columns";
 
-            for (int i = 0; i < cols; i++)
+            for (int i = 0; i < xCols; i++)
                 x[Math.toIntExact(i * upstreamDataSize) + ptr] = row[i];
 
             y[ptr] = yExtractor.apply(entry.getKey(), entry.getValue());
@@ -80,6 +81,6 @@ public class LinSysPartitionDataBuilderOnHeap<K, V, C extends Serializable>
             ptr++;
         }
 
-        return new LinSysPartitionDataOnHeap(x, Math.toIntExact(upstreamDataSize), cols, y);
+        return new LinSysPartitionDataOnHeap(x, y, Math.toIntExact(upstreamDataSize));
     }
 }
