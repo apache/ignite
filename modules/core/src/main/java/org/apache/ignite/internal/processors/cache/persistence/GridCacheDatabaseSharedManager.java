@@ -2947,11 +2947,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
                         locParts.add(part);
 
-                    Collections.sort(locParts, ASC_PART_COMPARATOR);
-
                     CacheState state = new CacheState(locParts.size());
 
-                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
+                    for (GridDhtLocalPartition part : locParts) {
                         state.addPartitionState(
                             part.id(),
                             part.dataStore().fullSize(),
