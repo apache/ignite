@@ -75,11 +75,11 @@ public class ZookeeperDiscoverySpiTestSuite2 extends ZookeeperDiscoverySpiAbstra
 
         suite.addTestSuite(ClusterNodeMetricsUpdateTest.class);
 
-        suite.addTestSuite(GridCachePartitionedMultiNodeFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedMultiNodeFullApiSelfTest.class);
-
-        suite.addTestSuite(GridCacheAtomicMultiNodeFullApiSelfTest.class);
-        suite.addTestSuite(GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class);
+//        suite.addTestSuite(GridCachePartitionedMultiNodeFullApiSelfTest.class);
+//        suite.addTestSuite(GridCacheReplicatedMultiNodeFullApiSelfTest.class);
+//
+//        suite.addTestSuite(GridCacheAtomicMultiNodeFullApiSelfTest.class);
+//        suite.addTestSuite(GridCacheReplicatedAtomicMultiNodeFullApiSelfTest.class);
 
         suite.addTestSuite(IgniteCacheLockPartitionOnAffinityRunTxCacheOpTest.class);
 
