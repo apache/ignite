@@ -23,9 +23,6 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Exchanger;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
@@ -33,17 +30,20 @@ import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-public class JdbcThinConnectionUserTest extends GridCommonAbstractTest {
+public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
 
     private IgniteEx connectNode;
+
     private IgniteEx otherNode;
+
+    private static final String OTHER_NODE_CACHE = "OtherNodeCache";
+
+    private static final String CONNECT_NODE_CACHE = "ConnectNodeCache";
 
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         startGridsMultiThreaded(2, true);
-//        startGrid("first");
-//        startGrid("second");
     }
 
     @Override protected void afterTestsStopped() throws Exception {
@@ -65,14 +65,14 @@ public class JdbcThinConnectionUserTest extends GridCommonAbstractTest {
         connectNode = grid(0);
         otherNode = grid(1);
 
-        otherNode.createCache(newCfg("OtherNodeCache"));
-        connectNode.createCache(newCfg("ConnectNodeCache"));
+        otherNode.createCache(newCfg(OTHER_NODE_CACHE));
+        connectNode.createCache(newCfg(CONNECT_NODE_CACHE));
     }
 
     @Override protected void afterTest() throws Exception {
-        otherNode.destroyCache("OtherNodeCache");
+        otherNode.destroyCache(OTHER_NODE_CACHE);
 
-        connectNode.destroyCache("ConnectNodeCache");
+        connectNode.destroyCache(OTHER_NODE_CACHE);
         super.afterTest();
     }
 
