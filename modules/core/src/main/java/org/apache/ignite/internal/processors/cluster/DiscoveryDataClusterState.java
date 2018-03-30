@@ -253,6 +253,19 @@ public final class DiscoveryDataClusterState implements Serializable {
             prevState;
     }
 
+    /**
+     * Add transition future which disappeared after deserialization.
+     *
+     * @return Cluster state with future.
+     */
+    public DiscoveryDataClusterState withFuture() {
+        if (transitionFut != null || !transition())
+            return this;
+
+        return new DiscoveryDataClusterState(prevState, active, baselineTopology, transitionReqId, transitionTopVer,
+            transitionNodes, new GridFutureAdapter<>());
+    }
+
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(DiscoveryDataClusterState.class, this);
