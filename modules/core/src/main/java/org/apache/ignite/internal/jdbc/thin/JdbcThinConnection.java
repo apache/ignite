@@ -142,10 +142,10 @@ public class JdbcThinConnection implements Connection {
         ensureConnected();
 
         if (!QueryUtils.DFLT_SCHEMA.equals(schema)) {
-            JdbcMetaSchemasResult result = sendRequest(new JdbcMetaSchemasRequest(schema));
-            int found = result.schemas().size();
+            JdbcMetaSchemasResult res = sendRequest(new JdbcMetaSchemasRequest(schema));
+            int found = res.schemas().size();
             if (found != 1)
-                throw new SQLException("Should found exactly one schemas but found " + found + ". See found schemas: " + result.schemas());
+                throw new SQLException("Should found exactly one schemas but found " + found + ". See found schemas: " + res.schemas());
         }
     }
 
