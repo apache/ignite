@@ -57,6 +57,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -1015,12 +1017,13 @@ public abstract class GridAbstractTest extends TestCase {
     @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop) {
         try {
-            Ignite ignite = grid(igniteInstanceName);
+            IgniteEx ignite = grid(igniteInstanceName);
 
             assert ignite != null : "Ignite returned null grid for name: " + igniteInstanceName;
 
-            info(">>> Stopping grid [name=" + ignite.name() + ", id=" +
-                ((IgniteKernal)ignite).context().localNodeId() + ']');
+            UUID id = ignite instanceof IgniteProcessProxy ? ignite.localNode().id() : ignite.context().localNodeId();
+
+            info(">>> Stopping grid [name=" + ignite.name() + ", id=" + id + ']');
 
             if (!isRemoteJvm(igniteInstanceName))
                 G.stop(igniteInstanceName, cancel);
@@ -1574,7 +1577,19 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
+        cfg.setFailureHandler(getFailureHandler(igniteInstanceName));
+
         return cfg;
+    }
+
+    /**
+     * This method should be overridden by subclasses to change failure handler implementation.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @return Failure handler implementation.
+     */
+    protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**

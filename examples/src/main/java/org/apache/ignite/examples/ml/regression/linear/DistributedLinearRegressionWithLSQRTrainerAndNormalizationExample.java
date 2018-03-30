@@ -126,14 +126,13 @@ public class DistributedLinearRegressionWithLSQRTrainerAndNormalizationExample {
                 );
 
                 System.out.println(">>> Create new linear regression trainer object.");
-                LinearRegressionLSQRTrainer<Integer, double[]> trainer = new LinearRegressionLSQRTrainer<>();
+                LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
                 System.out.println(">>> Perform the training to get the model.");
                 LinearRegressionModel mdl = trainer.fit(
                     new CacheBasedDatasetBuilder<>(ignite, dataCache),
                     preprocessor,
-                    (k, v) -> v[0],
-                    4
+                    (k, v) -> v[0]
                 );
 
                 System.out.println(">>> Linear regression model: " + mdl);
