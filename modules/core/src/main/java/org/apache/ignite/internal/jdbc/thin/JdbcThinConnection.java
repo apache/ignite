@@ -46,6 +46,8 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteResult;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaSchemasRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcMetaSchemasResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryExecuteRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcRequest;
@@ -138,6 +140,13 @@ public class JdbcThinConnection implements Connection {
         cliIo = new JdbcThinTcpIo(connProps);
 
         ensureConnected();
+
+        if (!QueryUtils.DFLT_SCHEMA.equals(schema)) {
+            JdbcMetaSchemasResult result = sendRequest(new JdbcMetaSchemasRequest(schema));
+            int found = result.schemas().size();
+            if (found != 1)
+                throw new SQLException("Should found exactly one schemas but found " + found + ". See found schemas: " + result.schemas());
+        }
     }
 
     /**
