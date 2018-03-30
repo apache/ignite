@@ -197,6 +197,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 @Override public BinaryType metadata(int typeId, int schemaId) throws BinaryObjectException {
                     return CacheObjectBinaryProcessorImpl.this.metadata(typeId, schemaId);
                 }
+
+                @Override public Collection<BinaryType> metadata() throws BinaryObjectException {
+                    return CacheObjectBinaryProcessorImpl.this.metadata();
+                }
             };
 
             BinaryMarshaller bMarsh0 = (BinaryMarshaller)marsh;

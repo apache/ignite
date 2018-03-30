@@ -15,37 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.platform.client;
+package org.apache.ignite.internal.client.thin;
+
+import org.apache.ignite.cache.query.FieldsQueryCursor;
 
 /**
- * Client status codes.
+ * Thin client query cursor.
  */
-public final class ClientStatus {
-    /**
-     * No-op constructor to prevent instantiation.
-     */
-    private ClientStatus (){
-        // No-op.
+class ClientFieldsQueryCursor<T> extends ClientQueryCursor<T> implements FieldsQueryCursor<T> {
+    /** Constructor. */
+    ClientFieldsQueryCursor(FieldsQueryPager<T> pager) {
+        super(pager);
     }
 
-    /** Command succeeded. */
-    public static final int SUCCESS = 0;
+    /** {@inheritDoc} */
+    @Override public String getFieldName(int idx) {
+        return ((FieldsQueryPager<T>)getPager()).getFieldNames().get(idx);
+    }
 
-    /** Command failed. */
-    public static final int FAILED = 1;
-
-    /** Invalid op code. */
-    public static final int INVALID_OP_CODE = 2;
-
-    /** Cache does not exist. */
-    public static final int CACHE_DOES_NOT_EXIST = 1000;
-
-    /** Cache already exists. */
-    public static final int CACHE_EXISTS = 1001;
-
-    /** Too many cursors. */
-    public static final int TOO_MANY_CURSORS = 1010;
-
-    /** Resource does not exist. */
-    public static final int RESOURCE_DOES_NOT_EXIST = 1011;
+    /** {@inheritDoc} */
+    @Override public int getColumnsCount() {
+        return ((FieldsQueryPager<T>)getPager()).getFieldNames().size();
+    }
 }
