@@ -163,4 +163,11 @@ public class ClusterNodeMetricsUpdateTest extends GridCommonAbstractTest {
             return data;
         }
     }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+
+        stopAllGrids();
+    }
 }
