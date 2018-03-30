@@ -676,7 +676,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** @inheritDoc */
     @Override public boolean lockedByThread()  {
-        return lockedByThread(Thread.currentThread().getId());
+        return lockedByThread(context().tm().getTxId());
     }
 
     /** @inheritDoc */

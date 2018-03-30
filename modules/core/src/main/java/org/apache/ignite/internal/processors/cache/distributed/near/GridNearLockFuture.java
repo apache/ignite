@@ -227,7 +227,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
 
         ignoreInterrupts();
 
-        threadId = tx == null ? Thread.currentThread().getId() : tx.threadId();
+        threadId = tx == null ? cctx.tm().getTxId() : tx.threadId();
 
         lockVer = tx != null ? tx.xidVersion() : cctx.versions().next();
 
@@ -814,7 +814,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         assert added : this;
 
         // Obtain the topology version to use.
-        long threadId = Thread.currentThread().getId();
+        long threadId = cctx.tm().getTxId();
 
         AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
 

@@ -1188,7 +1188,7 @@ public final class GridCacheMvcc {
      * @return Removed candidate.
      */
     @Nullable public GridCacheMvccCandidate releaseLocal() {
-        return releaseLocal(Thread.currentThread().getId());
+        return releaseLocal(cctx.tm().getTxId());
     }
 
     /**

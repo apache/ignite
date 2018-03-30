@@ -3008,7 +3008,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** {@inheritDoc} */
     @Override public boolean lockedByThread() throws GridCacheEntryRemovedException {
-        return lockedByThread(Thread.currentThread().getId());
+        return lockedByThread(cctx.tm().getTxId());
     }
 
     /** {@inheritDoc} */

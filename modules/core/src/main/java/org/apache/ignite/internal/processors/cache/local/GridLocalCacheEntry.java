@@ -270,7 +270,7 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
      * Releases local lock.
      */
     void releaseLocal() {
-        releaseLocal(Thread.currentThread().getId());
+        releaseLocal(cctx.tm().getTxId());
     }
 
     /**

@@ -59,7 +59,6 @@ import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
-import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.transactions.TransactionState.COMMITTED;
 import static org.apache.ignite.transactions.TransactionState.COMMITTING;
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
@@ -104,6 +103,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
     }
 
     /**
+     * @param threadId
      * @param xidVer Transaction version.
      * @param implicit Implicit flag.
      * @param implicitSingle Implicit-with-single-key flag.
@@ -130,7 +130,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         boolean onePhaseCommit,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        long threadId
     ) {
         super(
             cctx,
@@ -147,14 +148,13 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             onePhaseCommit,
             txSize,
             subjId,
-            taskNameHash
+            taskNameHash,
+            threadId
         );
 
         assert cctx != null;
 
         this.explicitLock = explicitLock;
-
-        threadId = Thread.currentThread().getId();
     }
 
     /**

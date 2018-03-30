@@ -49,7 +49,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
     /** {@inheritDoc} */
     @Override public final void prepare() {
         // Obtain the topology version to use.
-        long threadId = Thread.currentThread().getId();
+        long threadId = cctx.tm().getTxId();
 
         AffinityTopologyVersion topVer = cctx.mvcc().lastExplicitLockTopologyVersion(threadId);
 

@@ -262,6 +262,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /**
+     * @param threadId
      * @param cctx Cache registry.
      * @param xidVer Transaction ID.
      * @param implicit Implicit flag.
@@ -288,7 +289,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         boolean onePhaseCommit,
         int txSize,
         @Nullable UUID subjId,
-        int taskNameHash
+        int taskNameHash,
+        long threadId
     ) {
         assert xidVer != null;
         assert cctx != null;
@@ -313,12 +315,14 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         nodeId = cctx.discovery().localNode().id();
 
-        threadId = Thread.currentThread().getId();
+        this.threadId = threadId;
 
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
+
+        cctx.tm().txId(threadId);
     }
 
     /**
@@ -370,6 +374,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
             log = U.logger(cctx.kernalContext(), logRef, this);
 
         consistentIdMapper = new ConsistentIdMapper(cctx.discovery());
+
+        cctx.tm().txId(threadId);
     }
 
     /**
@@ -492,7 +498,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
         if (res.equals(AffinityTopologyVersion.NONE)) {
             if (system()) {
-                AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), this);
+                AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(cctx.tm().getTxId(), this);
 
                 if (topVer != null)
                     return topVer;

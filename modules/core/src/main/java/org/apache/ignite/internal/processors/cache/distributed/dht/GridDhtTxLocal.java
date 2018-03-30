@@ -155,7 +155,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             onePhaseCommit,
             txSize,
             subjId,
-            taskNameHash);
+            taskNameHash,
+            nearThreadId);
 
         assert nearNodeId != null;
         assert nearFutId != null;
@@ -167,8 +168,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
         this.nearFutId = nearFutId;
         this.nearMiniId = nearMiniId;
         this.txNodes = txNodes;
-
-        threadId = nearThreadId;
 
         assert !F.eq(xidVer, nearXidVer);
 

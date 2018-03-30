@@ -81,73 +81,75 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testJtaTxContextSwitch() throws Exception {
-        for (TransactionIsolation isolation : TransactionIsolation.values()) {
-            TransactionConfiguration cfg = grid().context().config().getTransactionConfiguration();
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                TransactionConfiguration cfg = grid().context().config().getTransactionConfiguration();
 
-            cfg.setDefaultTxConcurrency(TransactionConcurrency.OPTIMISTIC);
-            cfg.setDefaultTxIsolation(isolation);
+                cfg.setDefaultTxConcurrency(concurrency);
+                cfg.setDefaultTxIsolation(isolation);
 
-            TransactionManager jtaTm = jotm.getTransactionManager();
+                TransactionManager jtaTm = jotm.getTransactionManager();
 
-            IgniteCache<Integer, String> cache = jcache();
+                IgniteCache<Integer, String> cache = jcache();
 
-            assertNull(grid().transactions().tx());
+                assertNull(grid().transactions().tx());
 
-            jtaTm.begin();
+                jtaTm.begin();
 
-            Transaction tx1 = jtaTm.getTransaction();
+                Transaction tx1 = jtaTm.getTransaction();
 
-            cache.put(1, Integer.toString(1));
+                cache.put(1, Integer.toString(1));
 
-            assertNotNull(grid().transactions().tx());
+                assertNotNull(grid().transactions().tx());
 
-            assertEquals(ACTIVE, grid().transactions().tx().state());
+                assertEquals(ACTIVE, grid().transactions().tx().state());
 
-            assertEquals(Integer.toString(1), cache.get(1));
+                assertEquals(Integer.toString(1), cache.get(1));
 
-            jtaTm.suspend();
+                jtaTm.suspend();
 
-            assertNull(grid().transactions().tx());
+                assertNull(grid().transactions().tx());
 
-            assertNull(cache.get(1));
+                assertNull(cache.get(1));
 
-            jtaTm.begin();
+                jtaTm.begin();
 
-            Transaction tx2 = jtaTm.getTransaction();
+                Transaction tx2 = jtaTm.getTransaction();
 
-            assertNotSame(tx1, tx2);
+                assertNotSame(tx1, tx2);
 
-            cache.put(2, Integer.toString(2));
+                cache.put(2, Integer.toString(2));
 
-            assertNotNull(grid().transactions().tx());
+                assertNotNull(grid().transactions().tx());
 
-            assertEquals(ACTIVE, grid().transactions().tx().state());
+                assertEquals(ACTIVE, grid().transactions().tx().state());
 
-            assertEquals(Integer.toString(2), cache.get(2));
+                assertEquals(Integer.toString(2), cache.get(2));
 
-            jtaTm.commit();
+                jtaTm.commit();
 
-            assertNull(grid().transactions().tx());
+                assertNull(grid().transactions().tx());
 
-            assertEquals(Integer.toString(2), cache.get(2));
+                assertEquals(Integer.toString(2), cache.get(2));
 
-            jtaTm.resume(tx1);
+                jtaTm.resume(tx1);
 
-            assertNotNull(grid().transactions().tx());
+                assertNotNull(grid().transactions().tx());
 
-            assertEquals(ACTIVE, grid().transactions().tx().state());
+                assertEquals(ACTIVE, grid().transactions().tx().state());
 
-            cache.put(3, Integer.toString(3));
+                cache.put(3, Integer.toString(3));
 
-            jtaTm.commit();
+                jtaTm.commit();
 
-            assertEquals("1", cache.get(1));
-            assertEquals("2", cache.get(2));
-            assertEquals("3", cache.get(3));
+                assertEquals("1", cache.get(1));
+                assertEquals("2", cache.get(2));
+                assertEquals("3", cache.get(3));
 
-            assertNull(grid().transactions().tx());
+                assertNull(grid().transactions().tx());
 
-            cache.removeAll();
+                cache.removeAll();
+            }
         }
     }
 
@@ -155,54 +157,56 @@ public class GridJtaTransactionManagerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testJtaTxContextSwitchWithExistingTx() throws Exception {
-        for (TransactionIsolation isolation : TransactionIsolation.values()) {
-            TransactionConfiguration cfg = grid().context().config().getTransactionConfiguration();
+        for (TransactionConcurrency concurrency : TransactionConcurrency.values()) {
+            for (TransactionIsolation isolation : TransactionIsolation.values()) {
+                TransactionConfiguration cfg = grid().context().config().getTransactionConfiguration();
 
-            cfg.setDefaultTxConcurrency(TransactionConcurrency.OPTIMISTIC);
-            cfg.setDefaultTxIsolation(isolation);
+                cfg.setDefaultTxConcurrency(concurrency);
+                cfg.setDefaultTxIsolation(isolation);
 
-            TransactionManager jtaTm = jotm.getTransactionManager();
+                TransactionManager jtaTm = jotm.getTransactionManager();
 
-            IgniteCache<Integer, String> cache = jcache();
+                IgniteCache<Integer, String> cache = jcache();
 
-            jtaTm.begin();
+                jtaTm.begin();
 
-            Transaction tx1 = jtaTm.getTransaction();
+                Transaction tx1 = jtaTm.getTransaction();
 
-            cache.put(1, Integer.toString(1));
+                cache.put(1, Integer.toString(1));
 
-            assertNotNull(grid().transactions().tx());
+                assertNotNull(grid().transactions().tx());
 
-            assertEquals(ACTIVE, grid().transactions().tx().state());
+                assertEquals(ACTIVE, grid().transactions().tx().state());
 
-            assertEquals(Integer.toString(1), cache.get(1));
+                assertEquals(Integer.toString(1), cache.get(1));
 
-            jtaTm.suspend();
+                jtaTm.suspend();
 
-            jtaTm.begin();
+                jtaTm.begin();
 
-            Transaction tx2 = jtaTm.getTransaction();
+                Transaction tx2 = jtaTm.getTransaction();
 
-            assertNotSame(tx1, tx2);
+                assertNotSame(tx1, tx2);
 
-            cache.put(2, Integer.toString(2));
+                cache.put(2, Integer.toString(2));
 
-            try {
+                try {
+                    jtaTm.resume(tx1);
+
+                    fail("jtaTm.resume shouldn't success.");
+                }
+                catch (IllegalStateException ignored) {
+                    // No-op.
+                }
+                finally {
+                    jtaTm.rollback(); //rolling back tx2
+                }
+
                 jtaTm.resume(tx1);
+                jtaTm.rollback();
 
-                fail("jtaTm.resume shouldn't success.");
+                cache.removeAll();
             }
-            catch (IllegalStateException ignored) {
-                // No-op.
-            }
-            finally {
-                jtaTm.rollback(); //rolling back tx2
-            }
-
-            jtaTm.resume(tx1);
-            jtaTm.rollback();
-
-            cache.removeAll();
         }
     }
 }

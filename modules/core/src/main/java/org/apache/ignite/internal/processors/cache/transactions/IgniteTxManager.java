@@ -30,6 +30,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -145,6 +147,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /** Committing transactions. */
     private final ThreadLocal<IgniteInternalTx> threadCtx = new ThreadLocal<>();
+
+    private final static AtomicLong txCounter = new AtomicLong(1);
+
+    private static ThreadLocal<Long> txId = new ThreadLocal<>();
 
     /** Topology version should be used when mapping internal tx. */
     private final ThreadLocal<AffinityTopologyVersion> txTop = new ThreadLocal<>();
@@ -327,6 +333,18 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             fut.onDone(err);
     }
 
+    public long incrementAndGetTxId(){
+        return txCounter.incrementAndGet();
+    }
+
+    public long getTxId() {
+        return txCounter.get();
+    }
+
+    public void txId(long txId) {
+        this.txId.set(txId);
+    }
+
     /**
      * @return TX handler.
      */
@@ -461,7 +479,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             taskNameHash);
 
         if (tx.system()) {
-            AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(Thread.currentThread().getId(), tx);
+            AffinityTopologyVersion topVer = cctx.tm().lockedTopologyVersion(cctx.tm().getTxId(), tx);
 
             // If there is another system transaction in progress, use it's topology version to prevent deadlock.
             if (topVer != null)
@@ -647,8 +665,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return Transaction for current thread.
      */
     public GridNearTxLocal threadLocalTx(GridCacheContext cctx) {
-        IgniteInternalTx tx = tx(cctx, Thread.currentThread().getId());
+        IgniteInternalTx tx = tx(cctx, txId.get() == null ? getTxId() : txId.get());
 
+        // tx != null && tx.user() && tx.state() == ACTIVE
         if (tx != null && tx.local() && (!tx.dht() || tx.colocated()) && !tx.implicit()) {
             assert tx instanceof GridNearTxLocal : tx;
 
@@ -665,7 +684,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
     public <T> T tx() {
         IgniteInternalTx tx = txContext();
 
-        return tx != null ? (T)tx : (T)tx(null, Thread.currentThread().getId());
+        return tx != null ? (T)tx : (T)tx(null, getTxId());
     }
 
     /**
@@ -729,7 +748,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         if (activeUserTx(tx))
             return (GridNearTxLocal)tx;
 
-        tx = tx(null, Thread.currentThread().getId());
+        tx = tx(null, txId.get() == null ? getTxId() : txId.get());
 
         if (activeUserTx(tx))
             return (GridNearTxLocal)tx;
@@ -742,7 +761,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @return User transaction for current thread.
      */
     @Nullable GridNearTxLocal userTx(GridCacheContext cctx) {
-        IgniteInternalTx tx = tx(cctx, Thread.currentThread().getId());
+        IgniteInternalTx tx = tx(cctx, getTxId());
 
         if (activeUserTx(tx))
             return (GridNearTxLocal)tx;
@@ -2298,7 +2317,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
         clearThreadMap(tx);
 
-        transactionMap(tx).remove(tx.xidVersion(), tx);
+        resetContext();
+
+        incrementAndGetTxId();
     }
 
     /**
@@ -2321,18 +2342,14 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         }
 
         assert !threadMap.containsValue(tx) : tx;
-        assert !transactionMap(tx).containsValue(tx) : tx;
         assert !haveSystemTxForThread(Thread.currentThread().getId());
 
         long threadId = Thread.currentThread().getId();
 
-        if (threadMap.putIfAbsent(threadId, tx) != null)
+        if (threadMap.putIfAbsent(tx.threadId(), tx) != null)
             throw new IgniteCheckedException("Thread already has started a transaction.");
 
-        if (transactionMap(tx).putIfAbsent(tx.xidVersion(), tx) != null)
-            throw new IgniteCheckedException("Thread already has started a transaction.");
-
-        tx.threadId(threadId);
+        txId.set(tx.threadId());
     }
 
     /**
