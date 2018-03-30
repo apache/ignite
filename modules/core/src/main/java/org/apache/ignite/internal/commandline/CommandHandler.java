@@ -559,8 +559,30 @@ public class CommandHandler {
      */
     private void usage(String desc, Command cmd, String... args) {
         log(desc);
-        log("    control.sh [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] " + cmd.text() /* TODO + String.join("", args)*/);
+        log("    control.sh [--host HOST_OR_IP] [--port PORT] [--user USER] [--password PASSWORD] " + cmd.text() + stringJoin("", args));
         nl();
+    }
+
+    /**
+     * @param delim
+     * @param args
+     * @return string of args delimited by delim
+     */
+    private String stringJoin(CharSequence delim, CharSequence[] args) {
+        StringBuilder sb = new StringBuilder();
+
+        boolean first = true;
+
+        for (CharSequence arg : args) {
+            if (first)
+                first = false;
+            else
+                sb.append(delim);
+
+            sb.append(arg);
+        }
+
+        return sb.toString();
     }
 
     /**
