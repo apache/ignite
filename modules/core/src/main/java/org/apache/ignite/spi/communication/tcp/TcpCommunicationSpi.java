@@ -4113,13 +4113,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                     criticalFailure = new IllegalStateException(
                         "TCP communication SPI worker thread is exiting unexpectedly");
 
-                if (criticalFailure != null) {
-                    FailureHandler failureHnd = ignite.configuration().getFailureHandler();
-
-                    if (failureHnd != null)
-                        failureHnd.onFailure(ignite, new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION,
-                            criticalFailure));
-                }
+                if (criticalFailure != null)
+                    U.handleFailure(ignite, FailureType.SYSTEM_WORKER_TERMINATION, criticalFailure);
             }
         }
 

@@ -50,6 +50,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -66,8 +67,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -139,9 +138,7 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryRingLatencyCheck
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryServerOnlyCustomEventMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessage;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_CLIENT_RECONNECT_HISTORY_SIZE;
@@ -2092,14 +2089,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
     }
 
-    /** */
-    private void handleFailure(@NotNull Throwable failure) {
-        FailureHandler failureHnd = spi.ignite().configuration().getFailureHandler();
-
-        if (failureHnd != null)
-            failureHnd.onFailure(spi.ignite(), new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, failure));
-    }
-
     /**
      * Discovery messages history used for client reconnect.
      */
@@ -2658,10 +2647,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 throw e;
             } finally {
                 if (criticalFailure != null)
-                    handleFailure(criticalFailure);
+                    U.handleFailure(spi.ignite(), FailureType.SYSTEM_WORKER_TERMINATION,
+                        criticalFailure);
                 else if (!spi.isNodeStopping0())
-                    handleFailure(new IllegalStateException(
-                        "TcpDiscoverSpi message worker thread is exiting while the node is alive"));
+                    U.handleFailure(spi.ignite(), FailureType.SYSTEM_WORKER_TERMINATION,
+                        new IllegalStateException(
+                            "TcpDiscoverSpi message worker thread is exiting while the node is alive"));
             }
         }
 
@@ -5668,10 +5659,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 U.closeQuiet(srvrSock);
 
                 if (criticalFailure != null)
-                    handleFailure(criticalFailure);
+                    U.handleFailure(spi.ignite(), FailureType.SYSTEM_WORKER_TERMINATION,
+                        criticalFailure);
                 else if (!spi.isNodeStopping0())
-                    handleFailure(new IllegalStateException(
-                        "TCP discovery acceptor thread is exiting while the node is alive"));
+                    U.handleFailure(spi.ignite(), FailureType.SYSTEM_WORKER_TERMINATION,
+                        new IllegalStateException(
+                            "TCP discovery acceptor thread is exiting while the node is alive"));
             }
         }
 
