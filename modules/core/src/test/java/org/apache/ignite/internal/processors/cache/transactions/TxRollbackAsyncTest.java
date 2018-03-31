@@ -95,6 +95,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
     /** */
     public static final long MB = 1024 * 1024;
 
+    /** */
+    public static final String LABEL = "wLockTx";
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -378,13 +381,11 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                 while(!stop.get()) {
                     for (Transaction tx : tryLockNode.transactions().localActiveTransactions()) {
-                        TransactionProxyImpl tx0 = (TransactionProxyImpl)tx;
-
                         if (rolledBackVers.contains(tx.xid()))
                             fail("Rollback version is expected");
 
-                        // Roll back only read transactions to prevent rollback of writing tx which holds lock.
-                        if (!tx0.tx().writeMap().isEmpty())
+                        // Skip write transaction.
+                        if (LABEL.equals(tx.label()))
                             continue;
 
                         try {
@@ -753,7 +754,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         final CountDownLatch waitCommit, final int timeout) throws Exception {
         return multithreadedAsync(new Runnable() {
             @Override public void run() {
-                Transaction tx = node.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 1);
+                Transaction tx = node.transactions().withLabel(LABEL).txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 1);
 
                 node.cache(CACHE_NAME).put(0, 0);
 
