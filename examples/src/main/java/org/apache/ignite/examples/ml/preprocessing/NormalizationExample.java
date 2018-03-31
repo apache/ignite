@@ -62,8 +62,7 @@ public class NormalizationExample {
             // Creates a cache based simple dataset containing features and providing standard dataset API.
             try (SimpleDataset<?> dataset = DatasetFactory.createSimpleDataset(
                 builder,
-                preprocessor,
-                2
+                preprocessor
             )) {
                 // Calculation of the mean value. This calculation will be performed in map-reduce manner.
                 double[] mean = dataset.mean();
