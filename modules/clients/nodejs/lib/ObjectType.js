@@ -125,8 +125,7 @@ class ObjectType {
      *
      * @return {ObjectType} - new object type instance.
      *
-     * @throws {UnsupportedTypeError} if the provided type code is null or not supported.
-     * @throws {IgniteClientError} if other error.
+     * @throws {IgniteClientError} if error.
      */
     constructor(typeCode) {
         this._typeCode = typeCode;
@@ -155,9 +154,7 @@ class ObjectType {
      *
      * @return {ObjectType} - the same instance of the object type.
      *
-     * @throws {IllegalArgumentError} if this object type is not a map.
-     * @throws {UnsupportedTypeError} if the provided subtype is null or not supported.
-     * @throws {IgniteClientError} if other error.
+     * @throws {IgniteClientError} if error.
      */
     setMapSubType(mapSubType, mapKeyType = null, mapValueType = null) {
         if (this._typeCode === ObjectType.TYPE_CODE.MAP) {
@@ -174,7 +171,7 @@ class ObjectType {
             }
         }
         else {
-            throw new Errors.IllegalArgumentError('setMapSubType() is called not for a map');
+            throw Errors.IgniteClientError.illegalArgumentError('setMapSubType() is called not for a map');
         }
         return this;
     }

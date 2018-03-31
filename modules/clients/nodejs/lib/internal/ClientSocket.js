@@ -145,7 +145,7 @@ class ClientSocket {
             this._finalizeResponse(buffer, request, isSuccess, isHandshake);
         }
         else {
-            throw new Errors.InternalError('Invalid thin client response id: ' + requestId);
+            throw Errors.IgniteClientError.internalError('Invalid thin client response id: ' + requestId);
         }
     }
 
@@ -220,7 +220,7 @@ class ClientSocket {
                     this._host = this._host.substring(1, this._host.length - 1);
                 }
                 else {
-                    throw new Errors.IllegalArgumentError('Incorrect endpoint format: ' + endpoint);
+                    throw Errors.IgniteClientError.illegalArgumentError('Incorrect endpoint format: ' + endpoint);
                 }
             }
         }
@@ -239,7 +239,7 @@ class ClientSocket {
         else {
             this._port = parseInt(this._port);
             if (isNaN(this._port)) {
-                throw new Errors.IllegalArgumentError('Incorrect endpoint format: ' + endpoint);
+                throw Errors.IgniteClientError.illegalArgumentError('Incorrect endpoint format: ' + endpoint);
             }
         }
     }

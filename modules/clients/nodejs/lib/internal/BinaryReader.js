@@ -69,7 +69,7 @@ class BinaryReader {
             case ObjectType.TYPE_CODE.NULL:
                 return null;
             default:
-                throw new Errors.UnsupportedTypeError(objectTypeCode);
+                throw Errors.IgniteClientError.unsupportedTypeError(objectTypeCode);
         }
     }
 

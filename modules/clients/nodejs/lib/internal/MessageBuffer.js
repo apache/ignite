@@ -101,7 +101,7 @@ class MessageBuffer {
                 this._buffer.writeDoubleLE(value, this._position);
                 break;
             default:
-                throw new Errors.InternalError();
+                throw Errors.IgniteClientError.internalError();
         }
         this._position += size;
     }
@@ -173,7 +173,7 @@ class MessageBuffer {
                 value = this._buffer.readDoubleLE(this._position);
                 break;
             default:
-                throw new Errors.InternalError();
+                throw Errors.IgniteClientError.internalError();
         }
         this._position += BinaryUtils.getSize(type);
         return value;
@@ -206,7 +206,7 @@ class MessageBuffer {
 
     _ensureCapacity(valueSize) {
         if (valueSize <= 0) {
-            throw new Errors.InternalError();
+            throw Errors.IgniteClientError.internalError();
         }
         if (this._position + valueSize > this._capacity) {
             const newCapacity = this._capacity * 2;

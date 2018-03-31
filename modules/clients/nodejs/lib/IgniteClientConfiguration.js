@@ -37,8 +37,7 @@ class IgniteClientConfiguration {
      *
      * @return {IgniteClientConfiguration} - new client configuration instance.
      *
-     * @throws {IllegalArgumentError} if the provided endpoints are null or empty.
-     * @throws {IgniteClientError} if other error.
+     * @throws {IgniteClientError} if error.
      */
     constructor(...endpoints) {
         ArgumentChecker.notEmpty(endpoints, 'endpoints');

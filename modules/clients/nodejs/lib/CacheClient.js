@@ -64,8 +64,7 @@ class CacheClient {
      *
      * @return {CacheClient} - the same instance of the cache client.
      *
-     * @throws {UnsupportedTypeError} if the provided type is not supported.
-     * @throws {IgniteClientError} if other error.
+     * @throws {IgniteClientError} if error.
      */
     setKeyType(type) {
         this._keyType = BinaryUtils.getObjectType(type);
@@ -96,8 +95,7 @@ class CacheClient {
      *
      * @return {CacheClient} - the same instance of the cache client.
      *
-     * @throws {UnsupportedTypeError} if the provided type is not supported.
-     * @throws {IgniteClientError} if other error.
+     * @throws {IgniteClientError} if error.
      */
     setValueType(type) {
         this._valueType = BinaryUtils.getObjectType(type);
@@ -137,10 +135,7 @@ class CacheClient {
      *
      * @return {Promise<*>} - the value associated with the specified key, or null, if it does not exist.
      *
-     * @throws {IllegalArgumentError} if the key is null.
-     * @throws {TypeCastError} if the key type is different from the type specified for the keys of the cache client.
-     * @throws {UnsupportedTypeError} if the key type is not supported.
-     * @throws {IgniteClientError} if other error.
+     * @throws {IgniteClientError} if error.
      */
     async get(key) {
         ArgumentChecker.notNull(key, "key");
@@ -167,11 +162,7 @@ class CacheClient {
      * @param {*} key - the cache key.
      * @param {*} value - value to be associated with the specified key.
      *
-     * @throws {IllegalArgumentError} if the key/value is null.
-     * @throws {TypeCastError} if the key/value type is different from the type specified
-     *                         for the keys/values of the cache client.
-     * @throws {UnsupportedTypeError} if the key/value type is not supported.
-     * @throws {IgniteClientError} if other error.
+     * @throws {IgniteClientError} if error.
      */
     async put(key, value) {
         ArgumentChecker.notNull(key, "key");

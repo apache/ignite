@@ -26,6 +26,41 @@ class IgniteClientError extends Error {
     constructor(message) {
         super(message);
     }
+
+    /**
+     * Ignite client does not support one of the specified or received data types.
+     * @ignore
+     */
+    static unsupportedTypeError(type) {
+        const BinaryUtils = require('./internal/BinaryUtils');
+        return new IgniteClientError(Util.format('Type %s is not supported', BinaryUtils.getTypeName(type)));
+    }
+
+    /**
+     * The real type of data is not equal to the specified one.
+     * @ignore
+     */
+    static typeCastError(fromType, toType) {
+        const BinaryUtils = require('./internal/BinaryUtils');
+        return new IgniteClientError(Util.format('Type %s can not be cast to %s',
+            BinaryUtils.getTypeName(fromType), BinaryUtils.getTypeName(toType)));
+    }
+
+    /**
+     * An illegal or inappropriate argument has been passed to the API method.
+     * @ignore
+     */
+    static illegalArgumentError(message) {
+        return new IgniteClientError(message);
+    }
+
+    /**
+     * Ignite client internal error.
+     * @ignore
+     */
+    static internalError(message = null) {
+        return new IgniteClientError(message || 'Internal library error');
+    }
 }
 
 /**
@@ -49,39 +84,6 @@ class IllegalStateError extends IgniteClientError {
 }
 
 /**
- * Ignite client does not support one of the specified or received data types.
- * @extends IgniteClientError
- */
-class UnsupportedTypeError extends IgniteClientError {
-    constructor(type) {
-        const BinaryUtils = require('./internal/BinaryUtils');
-        super(Util.format('Type %s is not supported', BinaryUtils.getTypeName(type)));
-    }
-}
-
-/**
- * The real type of data is not equal to the specified one.
- * @extends IgniteClientError
- */
-class TypeCastError extends IgniteClientError {
-    constructor(fromType, toType) {
-        const BinaryUtils = require('./internal/BinaryUtils');
-        super(Util.format('Type %s can not be cast to %s',
-            BinaryUtils.getTypeName(fromType), BinaryUtils.getTypeName(toType)));
-    }
-}
-
-/**
- * An illegal or inappropriate argument has been passed to the API method.
- * @extends IgniteClientError
- */
-class IllegalArgumentError extends IgniteClientError {
-    constructor(message) {
-        super(message);
-    }
-}
-
-/**
  * The requested operation is not completed due to the connection lost.
  * @extends IgniteClientError
  */
@@ -91,21 +93,7 @@ class LostConnectionError extends IgniteClientError {
     }
 }
 
-/**
- * Ignite client internal error.
- * @extends IgniteClientError
- */
-class InternalError extends IgniteClientError {
-    constructor(message = null) {
-        super(message || 'Internal library error');
-    }
-}
-
 module.exports.IgniteClientError = IgniteClientError;
 module.exports.OperationError = OperationError;
 module.exports.IllegalStateError = IllegalStateError;
-module.exports.UnsupportedTypeError = UnsupportedTypeError;
-module.exports.TypeCastError = TypeCastError;
-module.exports.IllegalArgumentError = IllegalArgumentError;
 module.exports.LostConnectionError = LostConnectionError;
-module.exports.InternalError = InternalError;

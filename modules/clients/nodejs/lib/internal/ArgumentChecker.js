@@ -24,13 +24,13 @@ const Errors = require('../Errors');
 class ArgumentChecker {
     static notEmpty(arg, argName) {
         if (!arg || arg instanceof Array && arg.length === 0) {
-            throw new Errors.IllegalArgumentError(Util.format('"%s" argument should not be empty', argName));
+            throw Errors.IgniteClientError.illegalArgumentError(Util.format('"%s" argument should not be empty', argName));
         }
     }
 
     static notNull(arg, argName) {
         if (arg === null || arg === undefined) {
-            throw new Errors.IllegalArgumentError(Util.format('"%s" argument should not be null', argName));
+            throw Errors.IgniteClientError.illegalArgumentError(Util.format('"%s" argument should not be null', argName));
         }
     }
 
@@ -43,12 +43,12 @@ class ArgumentChecker {
                 return;
             }
         }
-        throw new Errors.IllegalArgumentError(Util.format('"%s" argument has incorrect type', argName));
+        throw Errors.IgniteClientError.illegalArgumentError(Util.format('"%s" argument has incorrect type', argName));
     }
 
     static hasValueFrom(arg, argName, values) {
         if (!Object.values(values).includes(arg)) {
-            throw new Errors.IllegalArgumentError(Util.format('"%s" argument has incorrect value', argName));
+            throw Errors.IgniteClientError.illegalArgumentError(Util.format('"%s" argument has incorrect value', argName));
         }
     }
 }

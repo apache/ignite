@@ -68,7 +68,7 @@ class TestingHelper {
     }
 
     static checkIllegalArgumentError(error, done) {
-        TestingHelper.checkError(error, Errors.IllegalArgumentError, done)
+        TestingHelper.checkError(error, Errors.IgniteClientError, done)
     }
 
     static checkError(error, errorType, done) {

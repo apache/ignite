@@ -205,10 +205,10 @@ class BinaryUtils {
             return;
         }
         if (value === null && !BinaryUtils.isNullable(type)) {
-            throw new Errors.TypeCastError(ObjectType.TYPE_CODE.NULL, type);
+            throw Errors.IgniteClientError.typeCastError(ObjectType.TYPE_CODE.NULL, type);
         }
         else if (value !== null && type.typeCode === ObjectType.TYPE_CODE.NULL) {
-            throw new Errors.TypeCastError('not null', ObjectType.TYPE_CODE.NULL);
+            throw Errors.IgniteClientError.typeCastError('not null', ObjectType.TYPE_CODE.NULL);
         }
     }
 
@@ -218,18 +218,18 @@ class BinaryUtils {
         }
         if (actualTypeCode === ObjectType.TYPE_CODE.NULL) {
             if (!BinaryUtils.isNullable(expectedType)) {
-                throw new Errors.TypeCastError(ObjectType.TYPE_CODE.NULL, expectedType);
+                throw Errors.IgniteClientError.typeCastError(ObjectType.TYPE_CODE.NULL, expectedType);
             }
         }
         else if (actualTypeCode !== expectedType.typeCode) {
-            throw new Errors.TypeCastError(actualTypeCode, expectedType);
+            throw Errors.IgniteClientError.typeCastError(actualTypeCode, expectedType);
         }
     }
 
     static getArrayElementType(arrayTypeCode) {
         const elementType = TYPE_INFO[arrayTypeCode].ELEMENT_TYPE;
         if (!elementType) {
-            throw new Errors.InternalError();
+            throw Errors.IgniteClientError.internalError();
         }
         return BinaryUtils.getObjectType(elementType);
     }
@@ -261,7 +261,7 @@ class BinaryUtils {
             case ObjectType.TYPE_CODE.BINARY_OBJECT:
                 return ObjectType.TYPE_CODE.BINARY_OBJECT_ARRAY;
             default:
-                throw new Errors.InternalError();
+                throw Errors.IgniteClientError.internalError();
         }
     }
 

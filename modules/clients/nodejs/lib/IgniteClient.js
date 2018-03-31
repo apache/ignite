@@ -49,7 +49,7 @@ class IgniteClient {
     /**
      * The default constructor.
      *
-     * @return {ObjectType} - new IgniteClient instance.
+     * @return {IgniteClient} - new IgniteClient instance.
      */
     constructor() {
         this._socket = new ClientFailoverSocket();
@@ -71,7 +71,6 @@ class IgniteClient {
      * @param {IgniteClient.onDisconnect} onDisconnect - the callback called when the client is disconnected.
      *
      * @throws {IllegalStateError} if the client already connected.
-     * @throws {IllegalArgumentError} if the provided configuration is null or invalid.
      * @throws {IgniteClientError} if other error.
      */
     async connect(config, onDisconnect) {
@@ -103,7 +102,6 @@ class IgniteClient {
      * @return {Promise<CacheClient>} - new cache client instance for the created cache.
      *
      * @throws {IllegalStateError} if the client is disconnected.
-     * @throws {IllegalArgumentError} if the provided name is null or empty.
      * @throws {OperationError} if cache with the provided name already exists.
      * @throws {IgniteClientError} if other error.
      */
@@ -132,7 +130,6 @@ class IgniteClient {
      * @return {Promise<CacheClient>} - new cache client instance for the existing or created cache.
      *
      * @throws {IllegalStateError} if the client is disconnected.
-     * @throws {IllegalArgumentError} if the provided name is null or empty.
      * @throws {IgniteClientError} if other error.
      */
     async getOrCreateCache(name, cacheConfig = null) {
@@ -155,8 +152,7 @@ class IgniteClient {
      *
      * @return {CacheClient} - new cache client instance.
      *
-     * @throws {IllegalArgumentError} if the provided name is null or empty.
-     * @throws {IgniteClientError} if other error.
+     * @throws {IgniteClientError} if error.
      */
     getCache(name) {
         ArgumentChecker.notEmpty(name, 'name');
@@ -171,7 +167,6 @@ class IgniteClient {
      * @param {string} name - cache name.
      *
      * @throws {IllegalStateError} if the client is disconnected.
-     * @throws {IllegalArgumentError} if the provided name is null or empty.
      * @throws {OperationError} if cache with the provided name does not exist.
      * @throws {IgniteClientError} if other error.
      */

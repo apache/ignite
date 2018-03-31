@@ -80,7 +80,7 @@ class BinaryWriter {
                 BinaryWriter._writeMap(buffer, object, objectType);
                 break;
             default:
-                throw new Errors.UnsupportedTypeError(objectType);
+                throw Errors.IgniteClientError.unsupportedTypeError(objectType);
         }
     }
 
@@ -113,7 +113,7 @@ class BinaryWriter {
         else if (object instanceof Map) {
             return ObjectType.TYPE_CODE.MAP;
         }
-        throw new Errors.UnsupportedTypeError(objectType);
+        throw Errors.IgniteClientError.unsupportedTypeError(objectType);
     }
 
     static _writeArray(buffer, array, arrayType) {
