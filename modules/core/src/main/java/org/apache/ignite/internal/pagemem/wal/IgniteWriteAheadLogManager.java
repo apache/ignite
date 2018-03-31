@@ -52,7 +52,7 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * Appends the given log entry to the write-ahead log.
      *
      * @param entry entry to log.
-     * @return WALPointer that may be passed to {@link #fsync(WALPointer)} method to make sure the record is
+     * @return WALPointer that may be passed to {@link #flush(WALPointer, boolean)} method to make sure the record is
      *      written to the log.
      * @throws IgniteCheckedException If failed to construct log entry.
      * @throws StorageException If IO error occurred while writing log entry.
@@ -60,15 +60,16 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     public WALPointer log(WALRecord entry) throws IgniteCheckedException, StorageException;
 
     /**
-     * Makes sure that all log entries written to the log up until the specified pointer are actually persisted to
-     * the underlying storage.
+     * Makes sure that all log entries written to the log up until the specified pointer are actually written
+     * to the underlying storage.
      *
-     * @param ptr Optional pointer to sync. If {@code null}, will sync up to the latest record.
-     * @throws IgniteCheckedException If failed to fsync.
+     * @param ptr Optional pointer to write. If {@code null}, will sync up to the latest record.
+     * @param explicitFsync If true, data will be synced to the storage device on hardware level.
+     * @throws IgniteCheckedException If failed to write.
      * @throws StorageException If IO exception occurred during the write. If an exception is thrown from this
      *      method, the WAL will be invalidated and the node will be stopped.
      */
-    public void fsync(WALPointer ptr) throws IgniteCheckedException, StorageException;
+    public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException;
 
     /**
      * Invoke this method to iterate over the written log entries.

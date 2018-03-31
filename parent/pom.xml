@@ -817,6 +817,7 @@
                                         <exclude>**/*.timestamp</exclude><!--tmp-files-->
                                         <exclude>**/*.iml</exclude><!--IDEA files-->
                                         <exclude>**/*.csv</exclude><!--CSV files-->
+                                        <exclude>**/*.jks</exclude><!--bin-files-->
                                         <exclude>**/pom-installed.xml</exclude><!--tmp-files-->
                                         <exclude>**/keystore/*.jks</exclude><!--bin-files-->
                                         <exclude>**/keystore/*.pem</exclude><!--auto generated files-->
