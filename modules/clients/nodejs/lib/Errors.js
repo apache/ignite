@@ -79,7 +79,7 @@ class OperationError extends IgniteClientError {
  */
 class IllegalStateError extends IgniteClientError {
     constructor(message = null) {
-        super(message || 'The client is disconnected');
+        super(message || 'Ignite client is not in an appropriate state for the requested operation');
     }
 }
 

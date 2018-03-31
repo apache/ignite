@@ -20,12 +20,28 @@
 const CacheClient = require('./CacheClient');
 const IgniteClientConfiguration = require('./IgniteClientConfiguration');
 const CacheConfiguration = require('./CacheConfiguration');
-const ClientFailoverSocket = require('./internal/ClientFailoverSocket');
 const BinaryUtils = require('./internal/BinaryUtils');
 const BinaryWriter = require('./internal/BinaryWriter');
 const BinaryReader = require('./internal/BinaryReader');
 const ArgumentChecker = require('./internal/ArgumentChecker');
 const Logger = require('./internal/Logger');
+
+/**
+ * ???
+ * @typedef IgniteClient.STATE
+ * @enum
+ * @readonly
+ * @property DISCONNECTED
+ * @property CONNECTING
+ * @property CONNECTED
+ * @property DISCONNECTING
+ */
+const STATE = Object.freeze({
+    DISCONNECTED : 0,
+    CONNECTING : 1,
+    CONNECTED : 2,
+    DISCONNECTING : 3
+});
 
 /**
  * Class representing Ignite client.
@@ -49,17 +65,24 @@ class IgniteClient {
     /**
      * The default constructor.
      *
+     * @param {IgniteClient.onStateChanged} [onStateChanged] - the callback called when ???.
+     *
      * @return {IgniteClient} - new IgniteClient instance.
      */
-    constructor() {
-        this._socket = new ClientFailoverSocket();
+    constructor(onStateChanged = null) {
+        const ClientFailoverSocket = require('./internal/ClientFailoverSocket');
+        this._socket = new ClientFailoverSocket(onStateChanged);
+    }
+
+    static get STATE() {
+        return STATE;
     }
 
     /**
-     * IgniteClient.connect() method callback.
-     * @callback IgniteClient.onDisconnect
-     * @param {IgniteClientError} error - the reason of disconnection,
-     * null when disconnected by disconnect() method.
+     * onStateChanged callback ???.
+     * @callback IgniteClient.onStateChanged
+     * @param {IgniteClient.STATE} state - ???.
+     * @param {string} reason - ???.
      */
 
     /**
@@ -68,15 +91,14 @@ class IgniteClient {
      * @async
      *
      * @param {IgniteClientConfiguration} config - the client configuration.
-     * @param {IgniteClient.onDisconnect} onDisconnect - the callback called when the client is disconnected.
      *
      * @throws {IllegalStateError} if the client already connected.
      * @throws {IgniteClientError} if other error.
      */
-    async connect(config, onDisconnect) {
+    async connect(config) {
         ArgumentChecker.notEmpty(config, 'config');
         ArgumentChecker.hasType(config, 'config', IgniteClientConfiguration);
-        await this._socket.connect(config, onDisconnect);
+        await this._socket.connect(config);
     }
 
     /**

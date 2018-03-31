@@ -19,48 +19,38 @@
 
 const Errors = require('../Errors');
 const ClientSocket = require('./ClientSocket');
-
-const STATE = Object.freeze({
-    DISCONNECTED : 0,
-    CONNECTING : 1,
-    CONNECTED : 2,
-    RECONNECTING : 3,
-    DISCONNECTING : 4
-});
+const IgniteClient = require('../IgniteClient');
 
 /** Socket wrapper with failover functionality: reconnects on failure. */
 class ClientFailoverSocket {
 
-    constructor() {
+    constructor(onStateChanged) {
         this._socket = null;
-        this._state = STATE.DISCONNECTED;
+        this._state = IgniteClient.STATE.DISCONNECTED;
+        this._onStateChanged = onStateChanged;
     }
 
-    async connect(config, onDisconnect = null) {
-        if (this._state !== STATE.DISCONNECTED) {
-            throw new Errors.IllegalStateError('The client is already connected');
+    async connect(config) {
+        if (this._state !== IgniteClient.STATE.DISCONNECTED) {
+            throw new Errors.IllegalStateError();
         }
-        this._state = STATE.CONNECTING;
-        this._onDisconnect = onDisconnect;
+        this._changeState(IgniteClient.STATE.CONNECTING);
         this._config = config;
         this._socket = new ClientSocket(this._config.endpoints[0], this._onSocketDisconnect.bind(this));
         await this._socket.connect();
-        this._state = STATE.CONNECTED;
+        this._changeState(IgniteClient.STATE.CONNECTED);
     }
 
     async send(opCode, payloadWriter, payloadReader = null) {
-        if (this._state === STATE.RECONNECTING) {
-            throw new Errors.LostConnectionError();
-        }
-        else if (this._state !== STATE.CONNECTED) {
+        if (this._state !== IgniteClient.STATE.CONNECTED) {
             throw new Errors.IllegalStateError();
         }
         await this._socket.sendRequest(opCode, payloadWriter, payloadReader);
     }
 
     disconnect() {
-        if (this._state !== STATE.DISCONNECTED && this._state !== STATE.DISCONNECTING) {
-            this._state = STATE.DISCONNECTING;
+        if (this._state !== IgniteClient.STATE.DISCONNECTED && this._state !== IgniteClient.STATE.DISCONNECTING) {
+            this._changeState(IgniteClient.STATE.DISCONNECTING);
             if (this._socket) {
                 this._socket.disconnect();
             }
@@ -71,10 +61,14 @@ class ClientFailoverSocket {
     }
 
     _onSocketDisconnect(error = null) {
-        this._state = STATE.DISCONNECTED;
+        this._changeState(IgniteClient.STATE.DISCONNECTED, error);
         this._socket = null;
-        if (this._onDisconnect) {
-            this._onDisconnect(error);
+    }
+
+    _changeState(state, reason = null) {
+        this._state = state;
+        if (this._onStateChanged) {
+            this._onStateChanged(state, reason);
         }
     }
 }

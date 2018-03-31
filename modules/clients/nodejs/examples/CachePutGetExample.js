@@ -36,6 +36,7 @@ const CACHE_NAME = 'test_cache';
 class CachePutGetExample {
     constructor() {
         this._cache = null;
+        this._connected = false;
     }
 
     async putGetValues() {
@@ -61,17 +62,15 @@ class CachePutGetExample {
     }
 
     async start() {
-        const igniteClient = new IgniteClient();
+        const igniteClient = new IgniteClient(this.onStateChanged.bind(this));
         try {
-            await igniteClient.connect(
-                new IgniteClientConfiguration(ENDPOINT), this.onDisconnect);
-            console.log('Client is started');
+            await igniteClient.connect(new IgniteClientConfiguration(ENDPOINT));
 
             this._cache = (await igniteClient.getOrCreateCache(CACHE_NAME)).
                 setKeyType(ObjectType.TYPE_CODE.INTEGER).
                 setValueType(ObjectType.TYPE_CODE.STRING);
 
-            while (true) {
+            while (this._connected) {
                 await this.putGetValues();
                 await this.pause();
             }
@@ -92,10 +91,17 @@ class CachePutGetExample {
         return new Promise(resolve => setTimeout(resolve, PAUSE_MS));
     }
 
-    async onDisconnect(error) {
-        console.log('Client is stopped');
-        if (error) {
-            console.log(error.message);
+    onStateChanged(state, reason) {
+        if (state === IgniteClient.STATE.CONNECTED) {
+            this._connected = true;
+            console.log('Client is started');
+        }
+        else if (state === IgniteClient.STATE.DISCONNECTED) {
+            this._connected = false;
+            console.log('Client is stopped');
+            if (reason) {
+                console.log(reason);
+            }
         }
     }
 }

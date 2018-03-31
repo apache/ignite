@@ -113,7 +113,7 @@ class ClientSocket {
         this._logMessage(request.id.toString(), true, message);
 
         if (!this._socket.write(message)) {
-            this._error = new Errors.LostConnectionError();
+            this._error = 'Request sending failed';
             this.disconnect();
         }
     }
@@ -145,7 +145,7 @@ class ClientSocket {
             this._finalizeResponse(buffer, request, isSuccess, isHandshake);
         }
         else {
-            throw Errors.IgniteClientError.internalError('Invalid thin client response id: ' + requestId);
+            throw Errors.IgniteClientError.internalError('Invalid response id: ' + requestId);
         }
     }
 
@@ -183,7 +183,7 @@ class ClientSocket {
 
     _disconnect() {
         this._requests.forEach((request, id) => {
-            request.reject(this._error ? this._error : new Errors.LostConnectionError());
+            request.reject(new Errors.LostConnectionError(this._error));
             this._requests.delete(id);
         });
         if (this._wasConnected) {
@@ -197,7 +197,7 @@ class ClientSocket {
             this._disconnect();
         });
         this._socket.on('error', (error) => {
-            this._error = new Errors.LostConnectionError(error);
+            this._error = error;
             this.disconnect();
         });
     }
