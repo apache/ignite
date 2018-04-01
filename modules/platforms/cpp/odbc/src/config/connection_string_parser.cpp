@@ -49,6 +49,8 @@ namespace ignite
             const std::string ConnectionStringParser::Key::sslKeyFile             = "ssl_key_file";
             const std::string ConnectionStringParser::Key::sslCertFile            = "ssl_cert_file";
             const std::string ConnectionStringParser::Key::sslCaFile              = "ssl_ca_file";
+            const std::string ConnectionStringParser::Key::user                   = "user";
+            const std::string ConnectionStringParser::Key::password               = "password";
 
             ConnectionStringParser::ConnectionStringParser(Configuration& cfg):
                 cfg(cfg)
@@ -413,6 +415,14 @@ namespace ignite
                 else if (lKey == Key::driver)
                 {
                     cfg.SetDriver(value);
+                }
+                else if (lKey == Key::user)
+                {
+                    cfg.SetUser(value);
+                }
+                else if (lKey == Key::password)
+                {
+                    cfg.SetPassword(value);
                 }
                 else if (diag)
                 {
