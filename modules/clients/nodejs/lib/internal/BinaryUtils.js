@@ -17,8 +17,9 @@
 
 'use strict';
 
-const ObjectType = require('../ObjectType');
+const ObjectType = require('../ObjectType').ObjectType;
 const Errors = require('../Errors');
+const ArgumentChecker = require('./ArgumentChecker');
 
 // Operation codes
 const OPERATION = Object.freeze({
@@ -52,105 +53,114 @@ const OPERATION = Object.freeze({
     CACHE_DESTROY : 1056
 });
 
+const TYPE_CODE = Object.assign({
+        MAP : 25,
+        BINARY_OBJECT : 27,
+        NULL : 101,
+        COMPLEX_OBJECT : 103
+    },
+    ObjectType.TYPE_CODE);
+
+
 const TYPE_INFO = Object.freeze({
-    [ObjectType.TYPE_CODE.BYTE] : {
+    [TYPE_CODE.BYTE] : {
         NAME : 'byte',
         SIZE : 1
     },
-    [ObjectType.TYPE_CODE.SHORT] : {
+    [TYPE_CODE.SHORT] : {
         NAME : 'short',
         SIZE : 2
     },
-    [ObjectType.TYPE_CODE.INTEGER] : {
+    [TYPE_CODE.INTEGER] : {
         NAME : 'integer',
         SIZE : 4
     },
-    [ObjectType.TYPE_CODE.LONG] : {
+    [TYPE_CODE.LONG] : {
         NAME : 'long',
         SIZE : 8
     },
-    [ObjectType.TYPE_CODE.FLOAT] : {
+    [TYPE_CODE.FLOAT] : {
         NAME : 'float',
         SIZE : 4
     },
-    [ObjectType.TYPE_CODE.DOUBLE] : {
+    [TYPE_CODE.DOUBLE] : {
         NAME : 'double',
         SIZE : 8
     },
-    [ObjectType.TYPE_CODE.CHAR] : {
+    [TYPE_CODE.CHAR] : {
         NAME : 'char',
         SIZE : 2
     },
-    [ObjectType.TYPE_CODE.BOOLEAN] : {
+    [TYPE_CODE.BOOLEAN] : {
         NAME : 'boolean',
         SIZE : 1
     },
-    [ObjectType.TYPE_CODE.STRING] : {
+    [TYPE_CODE.STRING] : {
         NAME : 'string',
         NULLABLE : true
     },
-    [ObjectType.TYPE_CODE.DATE] : {
+    [TYPE_CODE.DATE] : {
         NAME : 'date',
         SIZE : 8,
         NULLABLE : true
     },
-    [ObjectType.TYPE_CODE.BYTE_ARRAY] : {
+    [TYPE_CODE.BYTE_ARRAY] : {
         NAME : 'byte array',
-        ELEMENT_TYPE : ObjectType.TYPE_CODE.BYTE,
+        ELEMENT_TYPE : TYPE_CODE.BYTE,
         NULLABLE : true
     },
-    [ObjectType.TYPE_CODE.SHORT_ARRAY] : {
+    [TYPE_CODE.SHORT_ARRAY] : {
         NAME : 'short array',
-        ELEMENT_TYPE : ObjectType.TYPE_CODE.SHORT,
+        ELEMENT_TYPE : TYPE_CODE.SHORT,
         NULLABLE : true
     },
-    [ObjectType.TYPE_CODE.INTEGER_ARRAY] : {
+    [TYPE_CODE.INTEGER_ARRAY] : {
         NAME : 'integer array',
-        ELEMENT_TYPE : ObjectType.TYPE_CODE.INTEGER,
+        ELEMENT_TYPE : TYPE_CODE.INTEGER,
         NULLABLE : true
     },
-    [ObjectType.TYPE_CODE.LONG_ARRAY] : {
+    [TYPE_CODE.LONG_ARRAY] : {
         NAME : 'long array',
-        ELEMENT_TYPE : ObjectType.TYPE_CODE.LONG,
+        ELEMENT_TYPE : TYPE_CODE.LONG,
         NULLABLE : true
     },
-    [ObjectType.TYPE_CODE.FLOAT_ARRAY] : {
+    [TYPE_CODE.FLOAT_ARRAY] : {
         NAME : 'float array',
-        ELEMENT_TYPE : ObjectType.TYPE_CODE.FLOAT,
+        ELEMENT_TYPE : TYPE_CODE.FLOAT,
         NULLABLE : true
     },
-    [ObjectType.TYPE_CODE.DOUBLE_ARRAY] : {
+    [TYPE_CODE.DOUBLE_ARRAY] : {
         NAME : 'double array',
-        ELEMENT_TYPE : ObjectType.TYPE_CODE.DOUBLE,
+        ELEMENT_TYPE : TYPE_CODE.DOUBLE,
         NULLABLE : true
     },
-    [ObjectType.TYPE_CODE.CHAR_ARRAY] :  {
+    [TYPE_CODE.CHAR_ARRAY] :  {
         NAME : 'char array',
-        ELEMENT_TYPE : ObjectType.TYPE_CODE.CHAR,
+        ELEMENT_TYPE : TYPE_CODE.CHAR,
         NULLABLE : true
     },
-    [ObjectType.TYPE_CODE.BOOLEAN_ARRAY] :  {
+    [TYPE_CODE.BOOLEAN_ARRAY] :  {
         NAME : 'boolean array',
-        ELEMENT_TYPE : ObjectType.TYPE_CODE.BOOLEAN,
+        ELEMENT_TYPE : TYPE_CODE.BOOLEAN,
         NULLABLE : true
     },
-    [ObjectType.TYPE_CODE.STRING_ARRAY] :  {
+    [TYPE_CODE.STRING_ARRAY] :  {
         NAME : 'string array',
-        ELEMENT_TYPE : ObjectType.TYPE_CODE.STRING,
+        ELEMENT_TYPE : TYPE_CODE.STRING,
         KEEP_ELEMENT_TYPE : true,
         NULLABLE : true
     },
-    [ObjectType.TYPE_CODE.DATE_ARRAY] :  {
+    [TYPE_CODE.DATE_ARRAY] :  {
         NAME : 'date array',
-        ELEMENT_TYPE : ObjectType.TYPE_CODE.DATE,
+        ELEMENT_TYPE : TYPE_CODE.DATE,
         KEEP_ELEMENT_TYPE : true,
         NULLABLE : true
     },
-    [ObjectType.TYPE_CODE.MAP] : {
+    [TYPE_CODE.MAP] : {
         NAME : 'map',
         NULLABLE : true
     },
-    [ObjectType.TYPE_CODE.NULL] : {
+    [TYPE_CODE.NULL] : {
         NAME : 'null',
         NULLABLE : true
     }
@@ -161,6 +171,10 @@ const UTF8_ENCODING = 'utf8';
 class BinaryUtils {
     static get OPERATION() {
         return OPERATION;
+    }
+
+    static get TYPE_CODE() {
+        return TYPE_CODE;
     }
 
     static get TYPE_INFO() {
@@ -191,11 +205,12 @@ class BinaryUtils {
         return type instanceof ObjectType ? type.typeCode : type;
     }
 
-    static getObjectType(type) {
+    static getObjectType(type, argName = null) {
         if (type === null || type instanceof ObjectType) {
             return type;
         }
         else {
+            ArgumentChecker.hasValueFrom(type, argName, ObjectType.TYPE_CODE);
             return new ObjectType(type);
         }
     }
@@ -205,10 +220,10 @@ class BinaryUtils {
             return;
         }
         if (value === null && !BinaryUtils.isNullable(type)) {
-            throw Errors.IgniteClientError.typeCastError(ObjectType.TYPE_CODE.NULL, type);
+            throw Errors.IgniteClientError.typeCastError(BinaryUtils.TYPE_CODE.NULL, type);
         }
-        else if (value !== null && type.typeCode === ObjectType.TYPE_CODE.NULL) {
-            throw Errors.IgniteClientError.typeCastError('not null', ObjectType.TYPE_CODE.NULL);
+        else if (value !== null && type.typeCode === BinaryUtils.TYPE_CODE.NULL) {
+            throw Errors.IgniteClientError.typeCastError('not null', BinaryUtils.TYPE_CODE.NULL);
         }
     }
 
@@ -216,9 +231,9 @@ class BinaryUtils {
         if (expectedType === null) {
             return;
         }
-        if (actualTypeCode === ObjectType.TYPE_CODE.NULL) {
+        if (actualTypeCode === BinaryUtils.TYPE_CODE.NULL) {
             if (!BinaryUtils.isNullable(expectedType)) {
-                throw Errors.IgniteClientError.typeCastError(ObjectType.TYPE_CODE.NULL, expectedType);
+                throw Errors.IgniteClientError.typeCastError(BinaryUtils.TYPE_CODE.NULL, expectedType);
             }
         }
         else if (actualTypeCode !== expectedType.typeCode) {
@@ -236,30 +251,30 @@ class BinaryUtils {
 
     static getArrayTypeCode(elementTypeCode) {
         switch (elementTypeCode) {
-            case ObjectType.TYPE_CODE.BYTE:
-                return ObjectType.TYPE_CODE.BYTE_ARRAY;
-            case ObjectType.TYPE_CODE.SHORT:
-                return ObjectType.TYPE_CODE.SHORT_ARRAY;
-            case ObjectType.TYPE_CODE.INTEGER:
-                return ObjectType.TYPE_CODE.INTEGER_ARRAY;
-            case ObjectType.TYPE_CODE.LONG:
-                return ObjectType.TYPE_CODE.LONG_ARRAY;
-            case ObjectType.TYPE_CODE.FLOAT:
-                return ObjectType.TYPE_CODE.FLOAT_ARRAY;
-            case ObjectType.TYPE_CODE.DOUBLE:
-                return ObjectType.TYPE_CODE.DOUBLE_ARRAY;
-            case ObjectType.TYPE_CODE.CHAR:
-                return ObjectType.TYPE_CODE.CHAR_ARRAY;
-            case ObjectType.TYPE_CODE.BOOLEAN:
-                return ObjectType.TYPE_CODE.BOOLEAN_ARRAY;
-            case ObjectType.TYPE_CODE.STRING:
-                return ObjectType.TYPE_CODE.STRING_ARRAY;
-            case ObjectType.TYPE_CODE.UUID:
-                return ObjectType.TYPE_CODE.UUID_ARRAY;
-            case ObjectType.TYPE_CODE.DATE:
-                return ObjectType.TYPE_CODE.DATE_ARRAY;
-            case ObjectType.TYPE_CODE.BINARY_OBJECT:
-                return ObjectType.TYPE_CODE.BINARY_OBJECT_ARRAY;
+            case BinaryUtils.TYPE_CODE.BYTE:
+                return BinaryUtils.TYPE_CODE.BYTE_ARRAY;
+            case BinaryUtils.TYPE_CODE.SHORT:
+                return BinaryUtils.TYPE_CODE.SHORT_ARRAY;
+            case BinaryUtils.TYPE_CODE.INTEGER:
+                return BinaryUtils.TYPE_CODE.INTEGER_ARRAY;
+            case BinaryUtils.TYPE_CODE.LONG:
+                return BinaryUtils.TYPE_CODE.LONG_ARRAY;
+            case BinaryUtils.TYPE_CODE.FLOAT:
+                return BinaryUtils.TYPE_CODE.FLOAT_ARRAY;
+            case BinaryUtils.TYPE_CODE.DOUBLE:
+                return BinaryUtils.TYPE_CODE.DOUBLE_ARRAY;
+            case BinaryUtils.TYPE_CODE.CHAR:
+                return BinaryUtils.TYPE_CODE.CHAR_ARRAY;
+            case BinaryUtils.TYPE_CODE.BOOLEAN:
+                return BinaryUtils.TYPE_CODE.BOOLEAN_ARRAY;
+            case BinaryUtils.TYPE_CODE.STRING:
+                return BinaryUtils.TYPE_CODE.STRING_ARRAY;
+            case BinaryUtils.TYPE_CODE.UUID:
+                return BinaryUtils.TYPE_CODE.UUID_ARRAY;
+            case BinaryUtils.TYPE_CODE.DATE:
+                return BinaryUtils.TYPE_CODE.DATE_ARRAY;
+            case BinaryUtils.TYPE_CODE.BINARY_OBJECT:
+                return BinaryUtils.TYPE_CODE.BINARY_OBJECT_ARRAY;
             default:
                 throw Errors.IgniteClientError.internalError();
         }

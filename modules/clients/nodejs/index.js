@@ -18,7 +18,9 @@
 'use strict';
 
 module.exports = require('./lib/IgniteClient');
-module.exports.ObjectType = require('./lib/ObjectType');
+module.exports.ObjectType = require('./lib/ObjectType').ObjectType;
+module.exports.MapObjectType = require('./lib/ObjectType').MapObjectType;
+module.exports.ComplexObjectType = require('./lib/ObjectType').ComplexObjectType;
 module.exports.Errors = require('./lib/Errors');
 module.exports.IgniteClientConfiguration = require('./lib/IgniteClientConfiguration');
 module.exports.CacheConfiguration = require('./lib/CacheConfiguration');

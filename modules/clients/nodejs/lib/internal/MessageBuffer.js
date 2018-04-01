@@ -19,7 +19,6 @@
 
 const Long = require('long');
 const BinaryUtils = require('./BinaryUtils');
-const ObjectType = require('../ObjectType');
 const Errors = require('../Errors');
 
 const BUFFER_CAPACITY_DEFAULT = 256;
@@ -54,15 +53,15 @@ class MessageBuffer {
     }
 
     writeByte(value) {
-        this.writeNumber(value, ObjectType.TYPE_CODE.BYTE);
+        this.writeNumber(value, BinaryUtils.TYPE_CODE.BYTE);
     }
 
     writeShort(value) {
-        this.writeNumber(value, ObjectType.TYPE_CODE.SHORT);
+        this.writeNumber(value, BinaryUtils.TYPE_CODE.SHORT);
     }
 
     writeInteger(value) {
-        this.writeNumber(value, ObjectType.TYPE_CODE.INTEGER);
+        this.writeNumber(value, BinaryUtils.TYPE_CODE.INTEGER);
     }
 
     writeLong(value) {
@@ -74,30 +73,30 @@ class MessageBuffer {
     }
 
     writeFloat(value) {
-        this.writeNumber(value, ObjectType.TYPE_CODE.FLOAT);
+        this.writeNumber(value, BinaryUtils.TYPE_CODE.FLOAT);
     }
 
     writeDouble(value) {
-        this.writeNumber(value, ObjectType.TYPE_CODE.DOUBLE);
+        this.writeNumber(value, BinaryUtils.TYPE_CODE.DOUBLE);
     }
 
     writeNumber(value, type) {
         const size = BinaryUtils.getSize(type);
         this._ensureCapacity(size);
         switch (type) {
-            case ObjectType.TYPE_CODE.BYTE:
+            case BinaryUtils.TYPE_CODE.BYTE:
                 this._buffer.writeInt8(value, this._position);
                 break;
-            case ObjectType.TYPE_CODE.SHORT:
+            case BinaryUtils.TYPE_CODE.SHORT:
                 this._buffer.writeInt16LE(value, this._position);
                 break;
-            case ObjectType.TYPE_CODE.INTEGER:
+            case BinaryUtils.TYPE_CODE.INTEGER:
                 this._buffer.writeInt32LE(value, this._position);
                 break;
-            case ObjectType.TYPE_CODE.FLOAT:
+            case BinaryUtils.TYPE_CODE.FLOAT:
                 this._buffer.writeFloatLE(value, this._position);
                 break;
-            case ObjectType.TYPE_CODE.DOUBLE:
+            case BinaryUtils.TYPE_CODE.DOUBLE:
                 this._buffer.writeDoubleLE(value, this._position);
                 break;
             default:
@@ -128,48 +127,48 @@ class MessageBuffer {
     }
 
     readByte() {
-        return this.readNumber(ObjectType.TYPE_CODE.BYTE);
+        return this.readNumber(BinaryUtils.TYPE_CODE.BYTE);
     }
 
     readShort() {
-        return this.readNumber(ObjectType.TYPE_CODE.SHORT);
+        return this.readNumber(BinaryUtils.TYPE_CODE.SHORT);
     }
 
     readInteger() {
-        return this.readNumber(ObjectType.TYPE_CODE.INTEGER);
+        return this.readNumber(BinaryUtils.TYPE_CODE.INTEGER);
     }
 
     readLong() {
-        const size = BinaryUtils.getSize(ObjectType.TYPE_CODE.LONG)
+        const size = BinaryUtils.getSize(BinaryUtils.TYPE_CODE.LONG)
         const value = Long.fromBytesLE([...this._buffer.slice(this._position, this._position + size)]);
         this._position += size;
         return value;
     }
 
     readFloat() {
-        return this.readNumber(ObjectType.TYPE_CODE.FLOAT);
+        return this.readNumber(BinaryUtils.TYPE_CODE.FLOAT);
     }
 
     readDouble() {
-        return this.readNumber(ObjectType.TYPE_CODE.DOUBLE);
+        return this.readNumber(BinaryUtils.TYPE_CODE.DOUBLE);
     }
 
     readNumber(type) {
         let value;
         switch (type) {
-            case ObjectType.TYPE_CODE.BYTE:
+            case BinaryUtils.TYPE_CODE.BYTE:
                 value = this._buffer.readInt8(this._position);
                 break;
-            case ObjectType.TYPE_CODE.SHORT:
+            case BinaryUtils.TYPE_CODE.SHORT:
                 value = this._buffer.readInt16LE(this._position);
                 break;
-            case ObjectType.TYPE_CODE.INTEGER:
+            case BinaryUtils.TYPE_CODE.INTEGER:
                 value = this._buffer.readInt32LE(this._position);
                 break;
-            case ObjectType.TYPE_CODE.FLOAT:
+            case BinaryUtils.TYPE_CODE.FLOAT:
                 value = this._buffer.readFloatLE(this._position);
                 break;
-            case ObjectType.TYPE_CODE.DOUBLE:
+            case BinaryUtils.TYPE_CODE.DOUBLE:
                 value = this._buffer.readDoubleLE(this._position);
                 break;
             default:

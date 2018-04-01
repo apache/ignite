@@ -17,7 +17,6 @@
 
 'use strict';
 
-const ObjectType = require('./ObjectType');
 const BinaryUtils = require('./internal/BinaryUtils');
 const BinaryReader = require('./internal/BinaryReader');
 const BinaryWriter = require('./internal/BinaryWriter');
@@ -67,10 +66,7 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     setKeyType(type) {
-        this._keyType = BinaryUtils.getObjectType(type);
-        if (this._keyType) {
-            ArgumentChecker.hasValueFrom(this._keyType.typeCode, 'type', ObjectType.TYPE_CODE);
-        }
+        this._keyType = BinaryUtils.getObjectType(type, 'type');
         return this;
     }
 
@@ -98,10 +94,7 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     setValueType(type) {
-        this._valueType = BinaryUtils.getObjectType(type);
-        if (this._valueType) {
-            ArgumentChecker.hasValueFrom(this._valueType.typeCode, 'type', ObjectType.TYPE_CODE);
-        }
+        this._valueType = BinaryUtils.getObjectType(type, 'type');
         return this;
     }
 

@@ -22,6 +22,7 @@ require('jasmine-expect');
 const TestingHelper = require('../TestingHelper');
 const IgniteClient = require('apache-ignite-client');
 const ObjectType = IgniteClient.ObjectType;
+const MapObjectType = IgniteClient.MapObjectType;
 
 const CACHE_NAME = '__test_cache';
 
@@ -129,20 +130,18 @@ describe('cache put get test suite >', () => {
                             map.set(value1, value2);
                         }
                         await putGetMaps(
-                            new ObjectType(ObjectType.TYPE_CODE.MAP).setMapSubType(ObjectType.MAP_SUBTYPE.HASH_MAP, type1, type2),
+                            new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, type1, type2),
                             map, typeInfo2.comparator);
                         await putGetMaps(
-                            new ObjectType(ObjectType.TYPE_CODE.MAP).setMapSubType(
-                                ObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, new ObjectType(type1), new ObjectType(type2)), 
+                            new MapObjectType(
+                                MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, new ObjectType(type1), new ObjectType(type2)), 
                             map, typeInfo2.comparator);
                         if (typeInfo1.typeOptional) {
-                            await putGetMaps(new ObjectType(ObjectType.TYPE_CODE.MAP).setMapSubType(
-                                ObjectType.MAP_SUBTYPE.HASH_MAP, null, type2),
+                            await putGetMaps(new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, null, type2),
                             map, typeInfo2.comparator);
                         }
                         if (typeInfo2.typeOptional) {
-                            await putGetMaps(new ObjectType(ObjectType.TYPE_CODE.MAP).setMapSubType(
-                                ObjectType.MAP_SUBTYPE.HASH_MAP, type1, null),
+                            await putGetMaps(new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, type1, null),
                             map, typeInfo2.comparator);
                         }
                     }
@@ -178,20 +177,17 @@ describe('cache put get test suite >', () => {
                             }
                         }
                         await putGetMaps(
-                            new ObjectType(ObjectType.TYPE_CODE.MAP).setMapSubType(ObjectType.MAP_SUBTYPE.HASH_MAP, type1, type2),
+                            new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, type1, type2),
                             map, comparator);
                         await putGetMaps(
-                            new ObjectType(ObjectType.TYPE_CODE.MAP).setMapSubType(
-                                ObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, new ObjectType(type1), new ObjectType(type2)), 
+                            new MapObjectType(MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, new ObjectType(type1), new ObjectType(type2)), 
                             map, comparator);
                         if (typeInfo1.typeOptional) {
-                            await putGetMaps(new ObjectType(ObjectType.TYPE_CODE.MAP).setMapSubType(
-                                ObjectType.MAP_SUBTYPE.HASH_MAP, null, type2),
+                            await putGetMaps(new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, null, type2),
                             map, comparator);
                         }
                         if (typeInfo2.typeOptional) {
-                            await putGetMaps(new ObjectType(ObjectType.TYPE_CODE.MAP).setMapSubType(
-                                ObjectType.MAP_SUBTYPE.HASH_MAP, type1, null),
+                            await putGetMaps(new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, type1, null),
                             map, comparator);
                         }
                     }

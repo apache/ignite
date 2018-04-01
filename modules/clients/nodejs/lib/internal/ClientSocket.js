@@ -20,7 +20,6 @@
 const net = require('net');
 const URL = require('url');
 const Long = require('long');
-const ObjectType = require('../ObjectType');
 const Errors = require('../Errors');
 const MessageBuffer = require('./MessageBuffer');
 const BinaryUtils = require('./BinaryUtils');
@@ -281,7 +280,7 @@ class Request {
     get message() {
         const message = new MessageBuffer();
         // Skip message length
-        const messageStartPos = BinaryUtils.getSize(ObjectType.TYPE_CODE.INTEGER);
+        const messageStartPos = BinaryUtils.getSize(BinaryUtils.TYPE_CODE.INTEGER);
         message.position = messageStartPos;
         if (this._opCode !== null) {
             // Op code

@@ -17,20 +17,19 @@
 
 'use strict';
 
-const ObjectType = require('../ObjectType');
 const Errors = require('../Errors');
 const BinaryUtils = require('./BinaryUtils');
 
 class BinaryWriter {
 
     static writeString(buffer, value) {
-        BinaryWriter.writeObject(buffer, value, ObjectType.TYPE_CODE.STRING);
+        BinaryWriter.writeObject(buffer, value, BinaryUtils.TYPE_CODE.STRING);
     }
 
     static writeObject(buffer, object, objectType = null, writeObjectType = true) {
         BinaryUtils.checkCompatibility(object, objectType);
         if (object === null) {
-            buffer.writeByte(ObjectType.TYPE_CODE.NULL);
+            buffer.writeByte(BinaryUtils.TYPE_CODE.NULL);
             return;
         }
 
@@ -40,43 +39,43 @@ class BinaryWriter {
             buffer.writeByte(objectType.typeCode);
         }
         switch (objectType.typeCode) {
-            case ObjectType.TYPE_CODE.BYTE:
-            case ObjectType.TYPE_CODE.SHORT:
-            case ObjectType.TYPE_CODE.INTEGER:
-            case ObjectType.TYPE_CODE.FLOAT:
-            case ObjectType.TYPE_CODE.DOUBLE:
+            case BinaryUtils.TYPE_CODE.BYTE:
+            case BinaryUtils.TYPE_CODE.SHORT:
+            case BinaryUtils.TYPE_CODE.INTEGER:
+            case BinaryUtils.TYPE_CODE.FLOAT:
+            case BinaryUtils.TYPE_CODE.DOUBLE:
                 buffer.writeNumber(object, objectType.typeCode);
                 break;
-            case ObjectType.TYPE_CODE.LONG:
+            case BinaryUtils.TYPE_CODE.LONG:
                 buffer.writeLong(object);
                 break;
-            case ObjectType.TYPE_CODE.CHAR:
+            case BinaryUtils.TYPE_CODE.CHAR:
                 buffer.writeChar(object);
                 break;
-            case ObjectType.TYPE_CODE.BOOLEAN:
+            case BinaryUtils.TYPE_CODE.BOOLEAN:
                 buffer.writeBoolean(object);
                 break;
-            case ObjectType.TYPE_CODE.STRING:
+            case BinaryUtils.TYPE_CODE.STRING:
                 buffer.writeString(object);
                 break;
-            case ObjectType.TYPE_CODE.DATE:
+            case BinaryUtils.TYPE_CODE.DATE:
                 buffer.writeDate(object);
                 break;
-            case ObjectType.TYPE_CODE.BYTE_ARRAY:
-            case ObjectType.TYPE_CODE.SHORT_ARRAY:
-            case ObjectType.TYPE_CODE.INTEGER_ARRAY:
-            case ObjectType.TYPE_CODE.LONG_ARRAY:
-            case ObjectType.TYPE_CODE.FLOAT_ARRAY:
-            case ObjectType.TYPE_CODE.DOUBLE_ARRAY:
-            case ObjectType.TYPE_CODE.CHAR_ARRAY:
-            case ObjectType.TYPE_CODE.BOOLEAN_ARRAY:
-            case ObjectType.TYPE_CODE.STRING_ARRAY:
-            case ObjectType.TYPE_CODE.UUID_ARRAY:
-            case ObjectType.TYPE_CODE.DATE_ARRAY:
-            case ObjectType.TYPE_CODE.BINARY_OBJECT_ARRAY:
+            case BinaryUtils.TYPE_CODE.BYTE_ARRAY:
+            case BinaryUtils.TYPE_CODE.SHORT_ARRAY:
+            case BinaryUtils.TYPE_CODE.INTEGER_ARRAY:
+            case BinaryUtils.TYPE_CODE.LONG_ARRAY:
+            case BinaryUtils.TYPE_CODE.FLOAT_ARRAY:
+            case BinaryUtils.TYPE_CODE.DOUBLE_ARRAY:
+            case BinaryUtils.TYPE_CODE.CHAR_ARRAY:
+            case BinaryUtils.TYPE_CODE.BOOLEAN_ARRAY:
+            case BinaryUtils.TYPE_CODE.STRING_ARRAY:
+            case BinaryUtils.TYPE_CODE.UUID_ARRAY:
+            case BinaryUtils.TYPE_CODE.DATE_ARRAY:
+            case BinaryUtils.TYPE_CODE.BINARY_OBJECT_ARRAY:
                 BinaryWriter._writeArray(buffer, object, objectType);
                 break;
-            case ObjectType.TYPE_CODE.MAP:
+            case BinaryUtils.TYPE_CODE.MAP:
                 BinaryWriter._writeMap(buffer, object, objectType);
                 break;
             default:
@@ -94,16 +93,16 @@ class BinaryWriter {
     static _getObjectTypeCode(object) {
         const objectType = typeof object;
         if (objectType === 'number') {
-            return ObjectType.TYPE_CODE.DOUBLE;
+            return BinaryUtils.TYPE_CODE.DOUBLE;
         }
         else if (objectType === 'string') {
-            return ObjectType.TYPE_CODE.STRING;
+            return BinaryUtils.TYPE_CODE.STRING;
         }
         else if (objectType === 'boolean') {
-            return ObjectType.TYPE_CODE.BOOLEAN;
+            return BinaryUtils.TYPE_CODE.BOOLEAN;
         }
         else if (object instanceof Date) {
-            return ObjectType.TYPE_CODE.DATE;
+            return BinaryUtils.TYPE_CODE.DATE;
         }
         else if (object instanceof Array) {
             if (object.length > 0) {
@@ -111,7 +110,7 @@ class BinaryWriter {
             }
         }
         else if (object instanceof Map) {
-            return ObjectType.TYPE_CODE.MAP;
+            return BinaryUtils.TYPE_CODE.MAP;
         }
         throw Errors.IgniteClientError.unsupportedTypeError(objectType);
     }

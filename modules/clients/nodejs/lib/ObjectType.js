@@ -44,8 +44,6 @@ const ArgumentChecker = require('./internal/ArgumentChecker');
  * @property BOOLEAN_ARRAY 19
  * @property STRING_ARRAY 20
  * @property DATE_ARRAY 22
- * @property MAP 25
- * @property NULL 101
  */
 const TYPE_CODE = Object.freeze({
     BYTE : 1,
@@ -67,23 +65,7 @@ const TYPE_CODE = Object.freeze({
     CHAR_ARRAY : 18,
     BOOLEAN_ARRAY : 19,
     STRING_ARRAY : 20,
-    DATE_ARRAY : 22,
-    MAP : 25,
-    NULL : 101,
-    /* more types to be added... */
-});
-
-/**
- * Supported kinds of map.
- * @typedef ObjectType.MAP_SUBTYPE
- * @enum
- * @readonly
- * @property HASH_MAP 1
- * @property LINKED_HASH_MAP 2
- */
-const MAP_SUBTYPE = Object.freeze({
-    HASH_MAP : 1,
-    LINKED_HASH_MAP : 2
+    DATE_ARRAY : 22
 });
 
 /**
@@ -129,10 +111,40 @@ class ObjectType {
      */
     constructor(typeCode) {
         this._typeCode = typeCode;
-        this._init();
+    }
+
+    static get TYPE_CODE() {
+        return TYPE_CODE;
+    }
+
+    get typeCode() {
+        return this._typeCode;
+    }
+}
+
+/**
+ * Supported kinds of map.
+ * @typedef ObjectType.MAP_SUBTYPE
+ * @enum
+ * @readonly
+ * @property HASH_MAP 1
+ * @property LINKED_HASH_MAP 2
+ */
+const MAP_SUBTYPE = Object.freeze({
+    HASH_MAP : 1,
+    LINKED_HASH_MAP : 2
+});
+
+/**
+ * ???
+ */
+class MapObjectType extends ObjectType {
+    static get MAP_SUBTYPE() {
+        return MAP_SUBTYPE;
     }
 
     /**
+     * ???
      * Specifies a kind of map.
      * Optionally specifies types of keys and/or values in the map.
      *
@@ -140,73 +152,83 @@ class ObjectType {
      * will do automatic mapping between some of the JavaScript types and object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      * 
-     * By default: HASH_MAP
-     *
-     * @param {integer} mapSubType - map subtype, one of the {@link ObjectType.MAP_SUBTYPE} constants.
-     * @param {ObjectType | integer} [mapKeyType=null] - type of the keys in the map:
+     * @param {integer} [mapSubType=HASH_MAP] - map subtype, one of the {@link MapObjectType.MAP_SUBTYPE} constants.
+     * @param {ObjectType | integer} [keyType=null] - type of the keys in the map:
      *   - either an instance of object type
      *   - or a type code (means object type with this type code and with default subtype, if applicable)
      *   - or null or not specified (means the type is not specified)
-     * @param {ObjectType | integer} [mapValueType=null] - type of the values in the map:
+     * @param {ObjectType | integer} [valueType=null] - type of the values in the map:
      *   - either an instance of object type
      *   - or a type code (means object type with this type code and with default subtype, if applicable)
      *   - or null or not specified (means the type is not specified)
      *
-     * @return {ObjectType} - the same instance of the object type.
+     * @return {MapObjectType} - ???
      *
-     * @throws {IgniteClientError} if error.
+     * @throws {IllegalArgumentError} if this object type is not a map.
+     * @throws {UnsupportedTypeError} if the provided subtype is null or not supported.
+     * @throws {IgniteClientError} if other error.
      */
-    setMapSubType(mapSubType, mapKeyType = null, mapValueType = null) {
-        if (this._typeCode === ObjectType.TYPE_CODE.MAP) {
-            const BinaryUtils = require('./internal/BinaryUtils');
-            ArgumentChecker.hasValueFrom(mapSubType, 'mapSubType', ObjectType.MAP_SUBTYPE);
-            this._mapSubType = mapSubType;
-            this._mapKeyType = BinaryUtils.getObjectType(mapKeyType);
-            this._mapValueType = BinaryUtils.getObjectType(mapValueType);
-            if (this._mapKeyType) {
-                ArgumentChecker.hasValueFrom(this._mapKeyType.typeCode, 'mapKeyType', ObjectType.TYPE_CODE);
-            }
-            if (this._mapValueType) {
-                ArgumentChecker.hasValueFrom(this._mapValueType.typeCode, 'mapValueType', ObjectType.TYPE_CODE);
-            }
-        }
-        else {
-            throw Errors.IgniteClientError.illegalArgumentError('setMapSubType() is called not for a map');
-        }
-        return this;
-    }
-
-    static get TYPE_CODE() {
-        return TYPE_CODE;
-    }
-
-    static get MAP_SUBTYPE() {
-        return MAP_SUBTYPE;
-    }
-
-    get typeCode() {
-        return this._typeCode;
+    constructor(mapSubType = MapObjectType.MAP_SUBTYPE.HASH_MAP, keyType = null, valueType = null) {
+        const BinaryUtils = require('./internal/BinaryUtils');
+        super(BinaryUtils.TYPE_CODE.MAP);
+        ArgumentChecker.hasValueFrom(mapSubType, 'mapSubType', MapObjectType.MAP_SUBTYPE);
+        this._mapSubType = mapSubType;
+        this._keyType = BinaryUtils.getObjectType(keyType, 'keyType');
+        this._valueType = BinaryUtils.getObjectType(valueType, 'valueType');
     }
 
     get mapSubType() {
         return this._mapSubType;
     }
 
-    get mapKeyType() {
-        return this._mapKeyType;
+    get keyType() {
+        return this._keyType;
     }
 
-    get mapValueType() {
-        return this._mapValueType;
-    }
-
-    _init() {
-        switch (this._typeCode) {
-            case ObjectType.TYPE_CODE.MAP:
-                this._mapSubType = ObjectType.MAP_SUBTYPE.HASH_MAP;
-                break;
-        }
+    get valueType() {
+        return this._valueType;
     }
 }
 
-module.exports = ObjectType;
+/**
+ * ???
+ */
+class ComplexObjectType extends ObjectType {
+    constructor(objectTemplate = null, typeName = null) {
+        const BinaryUtils = require('./internal/BinaryUtils');
+        super(BinaryUtils.TYPE_CODE.COMPLEX_OBJECT);
+        this._objectTemplate = objectTemplate;
+        this._objectConstructor = objectTemplate && objectTemplate.constructor ?
+            objectTemplate.constructor : Object;
+        if (!typeName) {
+            typeName = this._objectConstructor.name;
+        }
+        this._typeName = typeName;
+        this._fields = new Map();
+    }
+
+    setField(fieldName, fieldType = null) {
+        const BinaryUtils = require('./internal/BinaryUtils');
+        const fieldObjectType = BinaryUtils.getObjectType(fieldType, 'fieldType');
+        this._fields.set(fieldName, fieldObjectType);
+        return this;
+    }
+
+    /** Private methods */
+
+    _getObjectConstructor() {
+        return this._objectConstructor;
+    }
+
+    _getFields() {
+        return this._fields ? this._fields.entries() : null;
+    }
+
+    _getFieldType(fieldName) {
+        return this._fields.get(fieldName);
+    }
+}
+
+module.exports.ObjectType = ObjectType;
+module.exports.MapObjectType = MapObjectType;
+module.exports.ComplexObjectType = ComplexObjectType;

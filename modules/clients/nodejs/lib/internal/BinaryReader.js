@@ -17,7 +17,6 @@
 
 'use strict';
 
-const ObjectType = require('../ObjectType');
 const Errors = require('../Errors');
 const BinaryUtils = require('./BinaryUtils');
 
@@ -30,43 +29,43 @@ class BinaryReader {
     }
 
     static readStringArray(buffer) {
-        return BinaryReader._readTypedObject(buffer, ObjectType.TYPE_CODE.STRING_ARRAY);
+        return BinaryReader._readTypedObject(buffer, BinaryUtils.TYPE_CODE.STRING_ARRAY);
     }
 
     static _readTypedObject(buffer, objectTypeCode, expectedType = null) {
         switch (objectTypeCode) {
-            case ObjectType.TYPE_CODE.BYTE:
-            case ObjectType.TYPE_CODE.SHORT:
-            case ObjectType.TYPE_CODE.INTEGER:
-            case ObjectType.TYPE_CODE.FLOAT:
-            case ObjectType.TYPE_CODE.DOUBLE:
+            case BinaryUtils.TYPE_CODE.BYTE:
+            case BinaryUtils.TYPE_CODE.SHORT:
+            case BinaryUtils.TYPE_CODE.INTEGER:
+            case BinaryUtils.TYPE_CODE.FLOAT:
+            case BinaryUtils.TYPE_CODE.DOUBLE:
                 return buffer.readNumber(objectTypeCode);
-            case ObjectType.TYPE_CODE.LONG:
+            case BinaryUtils.TYPE_CODE.LONG:
                 return buffer.readLong().toNumber();
-            case ObjectType.TYPE_CODE.CHAR:
+            case BinaryUtils.TYPE_CODE.CHAR:
                 return buffer.readChar();
-            case ObjectType.TYPE_CODE.BOOLEAN:
+            case BinaryUtils.TYPE_CODE.BOOLEAN:
                 return buffer.readBoolean();
-            case ObjectType.TYPE_CODE.STRING:
+            case BinaryUtils.TYPE_CODE.STRING:
                 return buffer.readString();
-            case ObjectType.TYPE_CODE.DATE:
+            case BinaryUtils.TYPE_CODE.DATE:
                 return buffer.readDate();
-            case ObjectType.TYPE_CODE.BYTE_ARRAY:
-            case ObjectType.TYPE_CODE.SHORT_ARRAY:
-            case ObjectType.TYPE_CODE.INTEGER_ARRAY:
-            case ObjectType.TYPE_CODE.LONG_ARRAY:
-            case ObjectType.TYPE_CODE.FLOAT_ARRAY:
-            case ObjectType.TYPE_CODE.DOUBLE_ARRAY:
-            case ObjectType.TYPE_CODE.CHAR_ARRAY:
-            case ObjectType.TYPE_CODE.BOOLEAN_ARRAY:
-            case ObjectType.TYPE_CODE.STRING_ARRAY:
-            case ObjectType.TYPE_CODE.UUID_ARRAY:
-            case ObjectType.TYPE_CODE.DATE_ARRAY:
-            case ObjectType.TYPE_CODE.BINARY_OBJECT_ARRAY:
+            case BinaryUtils.TYPE_CODE.BYTE_ARRAY:
+            case BinaryUtils.TYPE_CODE.SHORT_ARRAY:
+            case BinaryUtils.TYPE_CODE.INTEGER_ARRAY:
+            case BinaryUtils.TYPE_CODE.LONG_ARRAY:
+            case BinaryUtils.TYPE_CODE.FLOAT_ARRAY:
+            case BinaryUtils.TYPE_CODE.DOUBLE_ARRAY:
+            case BinaryUtils.TYPE_CODE.CHAR_ARRAY:
+            case BinaryUtils.TYPE_CODE.BOOLEAN_ARRAY:
+            case BinaryUtils.TYPE_CODE.STRING_ARRAY:
+            case BinaryUtils.TYPE_CODE.UUID_ARRAY:
+            case BinaryUtils.TYPE_CODE.DATE_ARRAY:
+            case BinaryUtils.TYPE_CODE.BINARY_OBJECT_ARRAY:
                 return BinaryReader._readArray(buffer, objectTypeCode);
-            case ObjectType.TYPE_CODE.MAP:
+            case BinaryUtils.TYPE_CODE.MAP:
                 return BinaryReader._readMap(buffer, expectedType);
-            case ObjectType.TYPE_CODE.NULL:
+            case BinaryUtils.TYPE_CODE.NULL:
                 return null;
             default:
                 throw Errors.IgniteClientError.unsupportedTypeError(objectTypeCode);
