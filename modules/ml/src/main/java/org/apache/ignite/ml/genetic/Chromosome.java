@@ -32,7 +32,6 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
  * </p>
  */
 public class Chromosome {
-
     /** primary key of Chromosome */
     private static final AtomicLong ID_GEN = new AtomicLong();
 
@@ -100,8 +99,8 @@ public class Chromosome {
         return id;
     }
 
-    @Override
-    public String toString() {
+    /** {@inheritDoc} */
+    @Override public String toString() {
         return "Chromosome [fitnessScore=" + fitnessScore + ", id=" + id + ", genes=" + Arrays.toString(genes) + "]";
     }
 

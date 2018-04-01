@@ -29,7 +29,6 @@ import java.util.List;
  * </p>
  */
 public interface IFitnessFunction {
-
     /**
      * @param genes Genes within an individual Chromosome
      * @return Fitness score

@@ -45,7 +45,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * Responsible for performing truncate selection.
  */
 public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolean> {
-
     /** Ignite resource */
     @IgniteInstanceResource
     private Ignite ignite = null;
@@ -103,13 +102,13 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
      * @return List of lists containing keys
      */
     private List<List<Long>> getEnhancedPopulation() {
-        List<List<Long>> list = new ArrayList();
+        List<List<Long>> list = new ArrayList<List<Long>>();
 
         for (Long key : fittestKeys) {
             Chromosome copy = getChromosome(key);
             for (int i = 0; i < numberOfCopies; i++) {
                 long[] thegenes = copy.getGenes();
-                List<Long> geneList = new ArrayList();
+                List<Long> geneList = new ArrayList<Long>();
                 for (int k = 0; k < copy.getGenes().length; k++) {
                     geneList.add(thegenes[k]);
                 }

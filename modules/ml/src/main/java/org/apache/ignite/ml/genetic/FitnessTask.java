@@ -40,7 +40,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * Responsible for fitness operation
  */
 public class FitnessTask extends ComputeTaskAdapter<List<Long>, Boolean> {
-
     /** Ignite instance */
     @IgniteInstanceResource
     private Ignite ignite = null;

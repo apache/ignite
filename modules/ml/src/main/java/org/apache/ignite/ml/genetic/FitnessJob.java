@@ -36,7 +36,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * Responsible for performing fitness evaluation on an individual chromosome
  */
 public class FitnessJob extends ComputeJobAdapter {
-
     /**
      * Chromosome primary Key
      */
@@ -79,7 +78,7 @@ public class FitnessJob extends ComputeJobAdapter {
 
         long[] geneKeys = chromosome.getGenes();
 
-        List<Gene> genes = new ArrayList();
+        List<Gene> genes = new ArrayList<Gene>();
 
         for (int i = 0; i < geneKeys.length; i++) {
             long aKey = geneKeys[i];

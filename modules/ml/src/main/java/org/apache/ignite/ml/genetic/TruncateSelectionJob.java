@@ -35,7 +35,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * Responsible for performing truncate selection
  */
 public class TruncateSelectionJob extends ComputeJobAdapter {
-
     /** primary key of Chromosome to mutate */
     private Long key;
 

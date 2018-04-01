@@ -48,7 +48,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * chromosomes reside.<br/>
  */
 public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
-
     /** Ignite instance */
     @IgniteInstanceResource
     private Ignite ignite = null;
@@ -69,11 +68,10 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
      * @return Gene primary keys
      */
     private List<Long> getMutatedGenes() {
-        List<Long> mutatedGenes = new ArrayList();
+        List<Long> mutatedGenes = new ArrayList<Long>();
         config.getChromosomeLength();
 
         for (int i = 0; i < config.getChromosomeLength(); i++) {
-            // Gene gene=config.getGenePool().get(selectRandomIndex(config.getGenePool().size()));
             mutatedGenes.add(selectGene(i));
         }
 
@@ -156,7 +154,7 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
      * @return Primary key of Gene
      */
     private long selectGeneByChromsomeCriteria(int k) {
-        List<Gene> genes = new ArrayList();
+        List<Gene> genes = new ArrayList<Gene>();
 
         StringBuffer sbSqlClause = new StringBuffer("_val like '");
         sbSqlClause.append("%");

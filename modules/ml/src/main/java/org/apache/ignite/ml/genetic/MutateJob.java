@@ -35,7 +35,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * Responsible for applying mutation on respective Chromosome based on mutation Rate
  */
 public class MutateJob extends ComputeJobAdapter {
-
     /** primary key of Chromosome to mutate **/
     private Long key;
 
@@ -66,7 +65,6 @@ public class MutateJob extends ComputeJobAdapter {
      * @return Boolean value
      */
     public Boolean execute() throws IgniteException {
-        // TODO Auto-generated method stub
 
         IgniteCache<Long, Chromosome> populationCache = ignite.cache(GAGridConstants.POPULATION_CACHE);
 

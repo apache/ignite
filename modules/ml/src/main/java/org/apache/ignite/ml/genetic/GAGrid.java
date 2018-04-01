@@ -34,7 +34,6 @@ import org.apache.ignite.ml.genetic.cache.GeneCacheConfig;
 import org.apache.ignite.ml.genetic.cache.PopulationCacheConfig;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
-import org.apache.ignite.ml.genetic.utils.GAGridUtils;
 
 /**
  * Central class responsible for orchestrating distributive Genetic Algorithm.
@@ -42,7 +41,6 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
  * This class accepts a GAConfigriation and Ignite instance.
  */
 public class GAGrid {
-
     /** Ignite logger */
     IgniteLogger igniteLogger = null;
     /** GAConfiguraton */
@@ -54,7 +52,7 @@ public class GAGrid {
     /** Gene cache */
     private IgniteCache<Long, Gene> geneCache = null;
     /** population keys */
-    private List<Long> populationKeys = new ArrayList();
+    private List<Long> populationKeys = new ArrayList<Long>();
 
     /**
      * @param config GAConfiguration
@@ -80,7 +78,6 @@ public class GAGrid {
      *
      * @return Average fitness score
      */
-
     private Double calculateAverageFitness() {
 
         double avgFitnessScore = 0;
@@ -137,7 +134,7 @@ public class GAGrid {
      */
     private Chromosome createChromosome(int numberOfGenes) {
         long[] genes = new long[numberOfGenes];
-        List<Long> keys = new ArrayList();
+        List<Long> keys = new ArrayList<Long>();
         int k = 0;
         while (k < numberOfGenes) {
             long key = selectGene(k);
@@ -187,8 +184,6 @@ public class GAGrid {
 
         fittestChomosome = populationCache.get(keys.get(0));
 
-        List<Gene> genes = GAGridUtils.getGenesForChromosome(ignite, fittestChomosome);
-
         // while NOT terminateCondition met
         while (!(config.getTerminateCriteria().isTerminationConditionMet(fittestChomosome, averageFitnessScore,
             generationCount))) {
@@ -228,7 +223,7 @@ public class GAGrid {
      * @return List of primary keys for chromosomes.
      */
     private List<Long> getChromosomesByFittest() {
-        List<Long> orderChromKeysByFittest = new ArrayList();
+        List<Long> orderChromKeysByFittest = new ArrayList<Long>();
         String orderDirection = "desc";
 
         if (config.isHigherFitnessValueFitter() == false) {
@@ -348,7 +343,6 @@ public class GAGrid {
      * @param keys
      * @return List of keys
      */
-
     private List<Long> selectByTruncation(List<Long> keys) {
         double truncatePercentage = this.config.getTruncateRate();
 

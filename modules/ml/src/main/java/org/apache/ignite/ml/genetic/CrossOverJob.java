@@ -49,7 +49,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * </p>
  */
 public class CrossOverJob extends ComputeJobAdapter {
-
     /** Ignite resource */
     @IgniteInstanceResource
     private Ignite ignite = null;
