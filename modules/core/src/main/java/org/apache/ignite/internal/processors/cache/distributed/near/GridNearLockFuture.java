@@ -240,7 +240,7 @@ public final class GridNearLockFuture extends GridCacheCompoundIdentityFuture<Bo
         valMap = new ConcurrentHashMap<>();
 
         if (tx != null && !tx.updateLockFuture(null, this)) {
-            err = tx.rollbackException();
+            err = tx.timedOut() ? tx.timeoutException() : tx.rollbackException();
 
             onComplete(false, false);
         }

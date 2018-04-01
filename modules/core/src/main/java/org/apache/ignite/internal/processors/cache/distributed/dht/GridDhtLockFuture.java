@@ -268,7 +268,7 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
 
                 if (fut != null) {
                     if (fut == GridDhtTxLocalAdapter.ROLLBACK_FUT)
-                        onError(tx.rollbackException());
+                        onError(tx.timedOut() ? tx.timeoutException() : tx.rollbackException());
                     else {
                         // Wait for collocated lock future.
                         assert fut instanceof GridDhtColocatedLockFuture : fut;

@@ -578,7 +578,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
             GridFutureAdapter<GridCacheReturn> enlistFut = new GridFutureAdapter<>();
 
             if (!updateLockFuture(null, enlistFut))
-                return finishFuture(enlistFut, rollbackException(), false);
+                return finishFuture(enlistFut, timedOut() ? timeoutException() : rollbackException(), false);
 
             Set<KeyCacheObject> skipped = null;
 

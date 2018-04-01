@@ -854,7 +854,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
         try {
             if (!updateLockFuture(null, enlistFut))
-                return finishFuture(enlistFut, rollbackException(), false);
+                return finishFuture(enlistFut, timedOut() ? timeoutException() : rollbackException(), false);
 
             addActiveCache(cacheCtx, recovery);
 
@@ -983,7 +983,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         GridFutureAdapter<Void> enlistFut = new GridFutureAdapter<>();
 
         if (!updateLockFuture(null, enlistFut))
-            return finishFuture(enlistFut, rollbackException(), false);
+            return finishFuture(enlistFut, timedOut() ? timeoutException() : rollbackException(), false);
 
         try {
             addActiveCache(cacheCtx, recovery);
@@ -1739,7 +1739,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             GridFutureAdapter<?> enlistFut = new GridFutureAdapter<>();
 
             if (!updateLockFuture(null, enlistFut))
-                return new GridFinishedFuture<>(rollbackException());
+                return new GridFinishedFuture<>(timedOut() ? timeoutException() : rollbackException());
 
             final Map<K, V> retMap = new GridLeanMap<>(keysCnt);
 
@@ -3984,14 +3984,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 expiryPlc,
                 new GridInClosure3<KeyCacheObject, Object, GridCacheVersion>() {
                     @Override public void apply(KeyCacheObject key, Object val, GridCacheVersion loadVer) {
-                        if (isRollbackOnly()) {
-                            if (log.isDebugEnabled())
-                                log.debug("Ignoring loaded value for read because transaction was rolled back: " +
-                                    GridNearTxLocal.this);
-
-                            return;
-                        }
-
                         CacheObject cacheVal = cacheCtx.toCacheObject(val);
 
                         CacheObject visibleVal = cacheVal;

@@ -157,8 +157,11 @@ public final class GridLocalLockFuture<K, V> extends GridCacheFutureAdapter<Bool
         if (log == null)
             log = U.logger(cctx.kernalContext(), logRef, GridLocalLockFuture.class);
 
-        if (tx != null && tx instanceof GridNearTxLocal && !((GridNearTxLocal)tx).updateLockFuture(null, this))
-            onError(((GridNearTxLocal)tx).rollbackException());
+        if (tx != null && tx instanceof GridNearTxLocal && !((GridNearTxLocal)tx).updateLockFuture(null, this)) {
+            GridNearTxLocal tx0 = (GridNearTxLocal)tx;
+
+            onError(tx0.timedOut() ? tx0.timeoutException() : tx0.rollbackException());
+        }
     }
 
     /**

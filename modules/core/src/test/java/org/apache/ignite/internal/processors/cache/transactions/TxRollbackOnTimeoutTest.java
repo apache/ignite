@@ -437,6 +437,8 @@ public class TxRollbackOnTimeoutTest extends GridCommonAbstractTest {
 
                         final Long v = (Long)node.cache(CACHE_NAME).get(k);
 
+                        assertNotNull("Expecting not null value: " + tx, v);
+
                         final int delay = r.nextInt(400);
 
                         if (delay > 0)

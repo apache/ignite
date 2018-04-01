@@ -239,7 +239,7 @@ public final class GridDhtColocatedLockFuture extends GridCacheCompoundIdentityF
         valMap = new ConcurrentHashMap<>();
 
         if (tx != null && !tx.updateLockFuture(null, this)) {
-            onError(tx.rollbackException());
+            onError(tx.timedOut() ? tx.timeoutException() : tx.rollbackException());
 
             onComplete(false, false);
         }
