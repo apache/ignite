@@ -116,6 +116,7 @@ import webConsoleFooter from './components/web-console-footer';
 import igniteIcon from './components/ignite-icon';
 import versionPicker from './components/version-picker';
 import userNotifications from './components/user-notifications';
+import pageAdmin from './components/page-admin';
 import pageConfigure from './components/page-configure';
 import pageConfigureBasic from './components/page-configure-basic';
 import pageConfigureAdvanced from './components/page-configure-advanced';
@@ -129,6 +130,7 @@ import protectFromBsSelectRender from './components/protect-from-bs-select-rende
 import uiGridHovering from './components/ui-grid-hovering';
 import uiGridFilters from './components/ui-grid-filters';
 import listEditable from './components/list-editable';
+import breadcrumbs from './components/breadcrumbs';
 import clusterSelector from './components/cluster-selector';
 import connectedClusters from './components/connected-clusters';
 import pageSignIn from './components/page-signin';
@@ -201,6 +203,7 @@ angular.module('ignite-console', [
     igniteServices.name,
     versionPicker.name,
     userNotifications.name,
+    pageAdmin.name,
     pageConfigure.name,
     pageConfigureBasic.name,
     pageConfigureAdvanced.name,
@@ -224,6 +227,7 @@ angular.module('ignite-console', [
     pageLanding.name,
     pagePasswordChanged.name,
     pagePasswordReset.name,
+    breadcrumbs.name,
     // Ignite modules.
     IgniteModules.name
 ])

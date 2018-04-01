@@ -30,8 +30,11 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.sql.Time;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -44,6 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.LockSupport;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -57,10 +61,10 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.NodeInvalidator;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
@@ -88,12 +92,14 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.NotNull;
@@ -103,6 +109,7 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 
 /**
  * File WAL manager.
@@ -416,6 +423,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         if (!cctx.kernalContext().clientNode()) {
             assert archiver != null;
+
             archiver.start();
 
             if (compressor != null)
@@ -517,9 +525,48 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /**
-     * @return Latest serializer version.
+     *  Collect wal segment files from low pointer (include) to high pointer (not include) and reserve low pointer.
+     *
+     * @param low Low bound.
+     * @param high High bound.
      */
-    public int serializerVersion() {
+    public Collection<File> getAndReserveWalFiles(FileWALPointer low, FileWALPointer high) throws IgniteCheckedException {
+        final long awaitIdx = high.index() - 1;
+
+        while (archiver.lastArchivedAbsoluteIndex() < awaitIdx)
+            LockSupport.parkNanos(Thread.currentThread(), 1_000_000);
+
+        if (!reserve(low))
+            throw new IgniteCheckedException("WAL archive segment has been deleted [idx=" + low.index() + "]");
+
+        List<File> res = new ArrayList<>();
+
+        for (long i = low.index(); i < high.index(); i++) {
+            String segmentName = FileWriteAheadLogManager.FileDescriptor.fileName(i);
+
+            File file = new File(walArchiveDir, segmentName);
+            File fileZip = new File(walArchiveDir, segmentName + ".zip");
+
+            if (file.exists())
+                res.add(file);
+            else if (fileZip.exists())
+                res.add(fileZip);
+            else {
+                if (log.isInfoEnabled()) {
+                    log.info("Segment not found: " + file.getName() + "/" + fileZip.getName());
+
+                    log.info("Stopped iteration on idx: " + i);
+                }
+
+                break;
+            }
+        }
+
+        return res;
+    }
+
+    /** {@inheritDoc}*/
+    @Override public int serializerVersion() {
         return serializerVersion;
     }
 
@@ -553,7 +600,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         catch (IgniteCheckedException e) {
             U.error(log, "Unable to perform segment rollover: " + e.getMessage(), e);
 
-            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
         }
     }
 
@@ -572,7 +619,13 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         // Need to calculate record size first.
         record.size(serializer.size(record));
 
-        for (; ; currWrHandle = rollOver(currWrHandle)) {
+        while (true) {
+            if (record.rollOver()){
+                assert cctx.database().checkpointLockIsHeldByThread();
+
+                currWrHandle = rollOver(currWrHandle);
+            }
+
             WALPointer ptr = currWrHandle.addRecord(record);
 
             if (ptr != null) {
@@ -585,6 +638,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
                 return ptr;
             }
+            else
+                currWrHandle = rollOver(currWrHandle);
 
             checkNode();
 
@@ -594,7 +649,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
     }
 
     /** {@inheritDoc} */
-    @Override public void fsync(WALPointer ptr) throws IgniteCheckedException, StorageException {
+    @Override public void flush(WALPointer ptr, boolean explicitFsync) throws IgniteCheckedException, StorageException {
         if (serializer == null || mode == WALMode.NONE)
             return;
 
@@ -1002,7 +1057,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         catch (IOException e) {
             StorageException se = new StorageException("Unable to initialize WAL segment", e);
 
-            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), se);
+            cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
 
             throw se;
         }
@@ -1040,7 +1095,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             createFile(first);
         }
         else
-            checkFiles(0, false, null);
+            checkFiles(0, false, null, null);
     }
 
     /**
@@ -1142,7 +1197,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * @throws StorageException If node is no longer valid and we missed a WAL operation.
      */
     private void checkNode() throws StorageException {
-        if (cctx.kernalContext().invalidated())
+        if (cctx.kernalContext().invalid())
             throw new StorageException("Failed to perform WAL operation (environment was invalidated by a " +
                     "previous error)");
     }
@@ -1187,6 +1242,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          * come from {@link RecordsIterator} during WAL replay. Map itself is guarded by <code>this</code>.
          */
         private Map<Long, Integer> locked = new HashMap<>();
+
+        /** Formatted index. */
+        private int formatted;
 
         /**
          *
@@ -1285,8 +1343,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     while (curAbsWalIdx == -1 && !stopped)
                         wait();
 
-                    if (curAbsWalIdx != 0 && lastAbsArchivedIdx == -1)
-                        changeLastArchivedIndexAndWakeupCompressor(curAbsWalIdx - 1);
+                    // If the archive directory is empty, we can be sure that there were no WAL segments archived.
+                    // This is ensured by the check in truncate() which will leave at least one file there
+                    // once it was archived.
                 }
 
                 while (!Thread.currentThread().isInterrupted() && !stopped) {
@@ -1373,7 +1432,13 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                     // Notify archiver thread.
                     notifyAll();
 
-                    while (curAbsWalIdx - lastAbsArchivedIdx > dsCfg.getWalSegments() && cleanException == null)
+                    int segments = dsCfg.getWalSegments();
+
+                    while ((curAbsWalIdx - lastAbsArchivedIdx > segments && cleanException == null))
+                        wait();
+
+                    // Wait for formatter so that we do not open an empty file in DEFAULT mode.
+                    while (curAbsWalIdx % dsCfg.getWalSegments() > formatted)
                         wait();
 
                     return curAbsWalIdx;
@@ -1502,11 +1567,23 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
          * {@link FsyncModeFileWriteAheadLogManager#checkOrPrepareFiles()}
          */
         private void allocateRemainingFiles() throws IgniteCheckedException {
-            checkFiles(1, true, new IgnitePredicate<Integer>() {
-                @Override public boolean apply(Integer integer) {
-                    return !checkStop();
-                }
-            });
+            final FileArchiver archiver = this;
+
+            checkFiles(1,
+                true,
+                new IgnitePredicate<Integer>() {
+                    @Override public boolean apply(Integer integer) {
+                        return !checkStop();
+                    }
+                }, new CI1<Integer>() {
+                    @Override public void apply(Integer idx) {
+                        synchronized (archiver) {
+                            formatted = idx;
+
+                            archiver.notifyAll();
+                        }
+                    }
+                });
         }
     }
 
@@ -1645,7 +1722,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 catch (IgniteCheckedException | IOException e) {
                     U.error(log, "Unexpected error during WAL compression", e);
 
-                    NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
                 }
                 catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -1769,7 +1846,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 catch (IOException e) {
                     U.error(log, "Unexpected error during WAL decompression", e);
 
-                    NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, e));
                 }
             }
         }
@@ -1821,7 +1898,12 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
      * @param p Predicate Exit condition.
      * @throws IgniteCheckedException if validation or create file fail.
      */
-    private void checkFiles(int startWith, boolean create, IgnitePredicate<Integer> p) throws IgniteCheckedException {
+    private void checkFiles(
+        int startWith,
+        boolean create,
+        @Nullable IgnitePredicate<Integer> p,
+        @Nullable IgniteInClosure<Integer> completionCallback
+    ) throws IgniteCheckedException {
         for (int i = startWith; i < dsCfg.getWalSegments() && (p == null || (p != null && p.apply(i))); i++) {
             File checkFile = new File(walWorkDir, FileDescriptor.fileName(i));
 
@@ -1835,6 +1917,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             }
             else if (create)
                 createFile(checkFile);
+
+            if (completionCallback != null)
+                completionCallback.apply(i);
         }
     }
 
@@ -2133,7 +2218,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
         /**
          * @throws IgniteCheckedException If failed to close the WAL segment file.
          */
-        public void close() throws IgniteCheckedException {
+        @Override public void close() throws IgniteCheckedException {
             try {
                 fileIO.close();
             }
@@ -2479,7 +2564,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             catch (Throwable e) {
                 StorageException se = new StorageException("Unable to write", new IOException(e));
 
-                NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), se);
+                cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
 
                 // All workers waiting for a next segment must be woken up and stopped
                 signalNextAvailable();
@@ -2793,7 +2878,7 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 catch (IOException e) {
                     StorageException se = new StorageException("Unable to write", e);
 
-                    NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), se);
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, se));
 
                     throw se;
                 }

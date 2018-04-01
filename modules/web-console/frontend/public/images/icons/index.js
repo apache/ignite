@@ -34,4 +34,6 @@ export connectedClusters from './connectedClusters.svg';
 export exclamation from './exclamation.svg';
 export collapse from './collapse.svg';
 export expand from './expand.svg';
+export plus from './plus.svg';
+export home from './home.svg';
 

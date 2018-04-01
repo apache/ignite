@@ -30,6 +30,7 @@ import org.apache.ignite.internal.marshaller.optimized.OptimizedObjectStreamSelf
 import org.apache.ignite.internal.util.GridHandleTableSelfTest;
 import org.apache.ignite.internal.util.io.GridUnsafeDataInputOutputByteOrderSelfTest;
 import org.apache.ignite.internal.util.io.GridUnsafeDataOutputArraySizingSelfTest;
+import org.apache.ignite.marshaller.GridMarshallerMappingConsistencyTest;
 import org.apache.ignite.marshaller.jdk.GridJdkMarshallerSelfTest;
 import org.apache.ignite.testframework.GridTestUtils;
 
@@ -65,6 +66,7 @@ public class IgniteMarshallerSelfTestSuite extends TestSuite {
         GridTestUtils.addTestIfNeeded(suite, DirectByteBufferStreamImplV2ByteOrderSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, GridHandleTableSelfTest.class, ignoredTests);
         GridTestUtils.addTestIfNeeded(suite, OptimizedMarshallerPooledSelfTest.class, ignoredTests);
+        GridTestUtils.addTestIfNeeded(suite, GridMarshallerMappingConsistencyTest.class, ignoredTests);
 
         return suite;
     }
