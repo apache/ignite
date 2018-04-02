@@ -121,7 +121,10 @@ public enum GridTopic {
     TOPIC_WAL,
 
     /** */
-    TOPIC_METRICS;
+    TOPIC_METRICS,
+
+    /** */
+    TOPIC_AUTH;
 
     /** Enum values. */
     private static final GridTopic[] VALS = values();

@@ -745,7 +745,7 @@ public class ZookeeperDiscoveryImpl {
 
             ZkRuntimeState rtState = this.rtState = new ZkRuntimeState(prevJoined);
 
-            DiscoveryDataBag discoDataBag = new DiscoveryDataBag(locNode.id());
+            DiscoveryDataBag discoDataBag = new DiscoveryDataBag(locNode.id(), locNode.isClient());
 
             exchange.collect(discoDataBag);
 
@@ -2137,13 +2137,15 @@ public class ZookeeperDiscoveryImpl {
         joinedNode.order(rtState.evtsData.topVer);
         joinedNode.internalId(internalId);
 
-        DiscoveryDataBag joiningNodeBag = new DiscoveryDataBag(nodeId);
+        DiscoveryDataBag joiningNodeBag = new DiscoveryDataBag(nodeId, joiningNodeData.node().isClient());
 
         joiningNodeBag.joiningNodeData(joiningNodeData.discoveryData());
 
         exchange.onExchange(joiningNodeBag);
 
-        DiscoveryDataBag collectBag = new DiscoveryDataBag(nodeId, new HashSet<Integer>());
+        DiscoveryDataBag collectBag = new DiscoveryDataBag(nodeId,
+            new HashSet<Integer>(),
+            joiningNodeData.node().isClient());
 
         collectBag.joiningNodeData(joiningNodeBag.joiningNodeData());
 
@@ -2778,7 +2780,7 @@ public class ZookeeperDiscoveryImpl {
                 else {
                     joiningData = unmarshalJoinData(joinedEvtData.nodeId, joinedEvtData.joinDataPrefixId);
 
-                    DiscoveryDataBag dataBag = new DiscoveryDataBag(joinedEvtData.nodeId);
+                    DiscoveryDataBag dataBag = new DiscoveryDataBag(joinedEvtData.nodeId, joiningData.node().isClient());
 
                     dataBag.joiningNodeData(joiningData.discoveryData());
 
@@ -2932,7 +2934,7 @@ public class ZookeeperDiscoveryImpl {
             Map<Integer, Serializable> commonDiscoData =
                 marsh.unmarshal(discoDataBytes, U.resolveClassLoader(spi.ignite().configuration()));
 
-            DiscoveryDataBag dataBag = new DiscoveryDataBag(locNode.id());
+            DiscoveryDataBag dataBag = new DiscoveryDataBag(locNode.id(), locNode.isClient());
 
             dataBag.commonData(commonDiscoData);
 

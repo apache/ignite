@@ -66,8 +66,7 @@ public class LSQROnHeapTest {
             datasetBuilder,
             new LinSysPartitionDataBuilderOnHeap<>(
                 (k, v) -> Arrays.copyOf(v, v.length - 1),
-                (k, v) -> v[3],
-                3
+                (k, v) -> v[3]
             )
         );
 
@@ -90,8 +89,7 @@ public class LSQROnHeapTest {
             datasetBuilder,
             new LinSysPartitionDataBuilderOnHeap<>(
                 (k, v) -> Arrays.copyOf(v, v.length - 1),
-                (k, v) -> v[3],
-                3
+                (k, v) -> v[3]
             )
         );
 
@@ -122,8 +120,7 @@ public class LSQROnHeapTest {
             datasetBuilder,
             new LinSysPartitionDataBuilderOnHeap<>(
                 (k, v) -> Arrays.copyOf(v, v.length - 1),
-                (k, v) -> v[4],
-                4
+                (k, v) -> v[4]
             )
         )) {
             LSQRResult res = lsqr.solve(0, 1e-12, 1e-12, 1e8, -1, false, null);

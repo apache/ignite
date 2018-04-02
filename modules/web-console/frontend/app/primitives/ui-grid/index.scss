@@ -266,6 +266,7 @@
     .ui-grid-selection-row-header-buttons {
         position: relative;
         opacity: 1;
+        right: 3px;
 
         &::before {
             content: '';
