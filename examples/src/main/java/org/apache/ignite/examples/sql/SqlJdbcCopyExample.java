@@ -37,16 +37,12 @@ public class SqlJdbcCopyExample {
      * @throws Exception If example execution failed.
      */
     public static void main(String[] args) throws Exception {
-        print("JDBC COPY example started.");
-
         // Open JDBC connection
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/")) {
-            try (Statement stmt = conn.createStatement()) {
-                stmt.executeUpdate("DROP TABLE IF EXISTS City");
-            }
-
-
             print("Connected to server.");
+
+            // Create table.
+            executeCommand(conn, "DROP TABLE IF EXISTS City");
 
             executeCommand(conn,
                 "CREATE TABLE City (" +
@@ -61,15 +57,25 @@ public class SqlJdbcCopyExample {
 
             print("Created database objects.");
 
+            // Load data from CSV file.
             executeCommand(conn, "COPY FROM \"" +
-                IgniteUtils.resolveIgnitePath("examples/sql/city.csv") + "\" " +
+                IgniteUtils.resolveIgnitePath("examples/src/main/resources/sql/city.csv") + "\" " +
                 "INTO City (ID, Name, CountryCode, District, Population) FORMAT CSV");
 
+            // Read data.
             try (Statement stmt = conn.createStatement()) {
                 try (ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM City")) {
                     rs.next();
 
                     print("Populated City table: " + rs.getLong(1) + " entries");
+                }
+            }
+
+            try (Statement stmt = conn.createStatement()) {
+                try (ResultSet rs = stmt.executeQuery("SELECT Name, CountryCode FROM City WHERE ID=5")) {
+                    rs.next();
+
+                    print("City with ID=5: " + rs.getString(1) + ", " + rs.getString(2));
                 }
             }
 
@@ -80,8 +86,6 @@ public class SqlJdbcCopyExample {
 
             print("Dropped database objects.");
         }
-
-        print("JDBC COPY example finished.");
     }
 
     /**
