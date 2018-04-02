@@ -64,7 +64,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaI
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionCountersIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.IndexReuseList;
 import org.apache.ignite.internal.processors.cache.persistence.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.tree.CacheDataRowStore;
@@ -91,7 +91,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     private IndexStorage indexStorage;
 
     /** */
-    private ReuseListImpl reuseList;
+    private IndexReuseList reuseList;
 
     /** {@inheritDoc} */
     @Override protected void initDataStructures() throws IgniteCheckedException {
@@ -99,7 +99,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
         RootPage reuseListRoot = metas.reuseListRoot;
 
-        reuseList = new ReuseListImpl(grp.groupId(),
+        reuseList = new IndexReuseList(grp.groupId(),
             grp.cacheOrGroupName(),
             grp.dataRegion().pageMemory(),
             ctx.wal(),

@@ -24,12 +24,12 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
 
 /**
- * Reuse list.
+ * Index reuse list.
  */
-public class ReuseListImpl extends PagesList implements ReuseList {
+public class IndexReuseList extends PagesList implements ReuseList {
     /** */
-    private static final AtomicReferenceFieldUpdater<ReuseListImpl, Stripe[]> bucketUpdater =
-        AtomicReferenceFieldUpdater.newUpdater(ReuseListImpl.class, Stripe[].class, "bucket");
+    private static final AtomicReferenceFieldUpdater<IndexReuseList, Stripe[]> bucketUpdater =
+        AtomicReferenceFieldUpdater.newUpdater(IndexReuseList.class, Stripe[].class, "bucket");
 
     /** */
     private volatile Stripe[] bucket;
@@ -43,12 +43,14 @@ public class ReuseListImpl extends PagesList implements ReuseList {
      * @param initNew {@code True} if new metadata should be initialized.
      * @throws IgniteCheckedException If failed.
      */
-    public ReuseListImpl(int cacheId,
+    public IndexReuseList(
+        int cacheId,
         String name,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
-        boolean initNew) throws IgniteCheckedException {
+        boolean initNew
+    ) throws IgniteCheckedException {
         super(cacheId, name, pageMem, 1, wal, metaPageId);
 
         reuseList = this;

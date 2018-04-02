@@ -24,7 +24,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.IndexReuseList;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 
@@ -35,20 +35,20 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
     /** {@inheritDoc} */
     @Override protected ReuseList createReuseList(int cacheId, PageMemory pageMem, long rootId, boolean initNew)
         throws IgniteCheckedException {
-        return new TestReuseList(cacheId, "test", pageMem, null, rootId, initNew);
+        return new TestIndexReuseList(cacheId, "test", pageMem, null, rootId, initNew);
     }
 
     /** {@inheritDoc} */
     @Override protected void assertNoLocks() {
         super.assertNoLocks();
 
-        assertTrue(TestReuseList.checkNoLocks());
+        assertTrue(TestIndexReuseList.checkNoLocks());
     }
 
     /**
      *
      */
-    private static class TestReuseList extends ReuseListImpl {
+    private static class TestIndexReuseList extends IndexReuseList {
         /** */
         private static ThreadLocal<Set<Long>> readLocks = new ThreadLocal<Set<Long>>() {
             @Override protected Set<Long> initialValue() {
@@ -72,7 +72,7 @@ public class BPlusTreeReuseSelfTest extends BPlusTreeSelfTest {
          * @param initNew    {@code True} if new metadata should be initialized.
          * @throws IgniteCheckedException If failed.
          */
-        public TestReuseList(
+        public TestIndexReuseList(
             int cacheId,
             String name,
             PageMemory pageMem,

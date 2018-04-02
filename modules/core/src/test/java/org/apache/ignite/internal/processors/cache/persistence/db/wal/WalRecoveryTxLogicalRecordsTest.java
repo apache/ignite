@@ -58,7 +58,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStor
 import org.apache.ignite.internal.processors.cache.persistence.freelist.AbstractFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseListImpl;
+import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.IndexReuseList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -842,7 +842,7 @@ public class WalRecoveryTxLogicalRecordsTest extends GridCommonAbstractTest {
     private T2<long[], Integer> getReuseListData(Ignite ignite, String cacheName) {
         GridCacheContext ctx = ((IgniteEx)ignite).context().cache().cache(cacheName).context();
 
-        ReuseListImpl reuseList = GridTestUtils.getFieldValue(ctx.offheap(), "reuseList");
+        IndexReuseList reuseList = GridTestUtils.getFieldValue(ctx.offheap(), "reuseList");
         PagesList.Stripe[] bucket = GridTestUtils.getFieldValue(reuseList, "bucket");
 
         long[] ids = null;
