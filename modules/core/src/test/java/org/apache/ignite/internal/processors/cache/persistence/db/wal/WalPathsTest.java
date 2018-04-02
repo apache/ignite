@@ -18,15 +18,16 @@
 package org.apache.ignite.internal.processors.cache.persistence.db.wal;
 
 import java.io.File;
+import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-/** */
+/** Tests equal paths to WAL storage and WAL archive. */
 public class WalPathsTest extends GridCommonAbstractTest {
     /** WalPath and WalArchivePath. */
-    private File file;
+    private File walDir;
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
@@ -34,7 +35,7 @@ public class WalPathsTest extends GridCommonAbstractTest {
 
         stopAllGrids();
 
-        U.delete(file);
+        U.delete(walDir);
     }
 
     /**
@@ -47,10 +48,14 @@ public class WalPathsTest extends GridCommonAbstractTest {
 
         DataStorageConfiguration dsCfg = new DataStorageConfiguration();
 
-        file = new File(U.defaultWorkDirectory() + File.separatorChar + getClass().getSimpleName());
+        dsCfg.setDefaultDataRegionConfiguration(new DataRegionConfiguration()
+            .setPersistenceEnabled(true)
+            .setMaxSize(200 * 1024 * 1024));
 
-        dsCfg.setWalPath(file.getAbsolutePath());
-        dsCfg.setWalArchivePath(relativePath ? getClass().getSimpleName() : file.getAbsolutePath());
+        walDir = new File(U.defaultWorkDirectory(), getClass().getSimpleName());
+
+        dsCfg.setWalPath(walDir.getAbsolutePath());
+        dsCfg.setWalArchivePath(relativePath ? getClass().getSimpleName() : walDir.getAbsolutePath());
 
         cfg.setDataStorageConfiguration(dsCfg);
 
