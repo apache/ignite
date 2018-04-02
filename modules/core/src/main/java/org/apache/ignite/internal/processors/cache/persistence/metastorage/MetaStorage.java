@@ -105,7 +105,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     private RootPage reuseListRoot;
 
     /** */
-    private FreeListImpl freeList;
+    private MetaStoreFreeList freeList;
 
     /** */
     private Map<String, byte[]> lastUpdates;
@@ -133,7 +133,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
         getOrAllocateMetas();
 
         if (!empty) {
-            freeList = new FreeListImpl(METASTORAGE_CACHE_ID, "metastorage",
+            freeList = new MetaStoreFreeList(METASTORAGE_CACHE_ID, "metastorage",
                 regionMetrics, dataRegion, null, wal, reuseListRoot.pageId().pageId(),
                 reuseListRoot.isAllocated());
 
@@ -450,11 +450,18 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
     }
 
     /** */
-    public static class FreeListImpl extends AbstractFreeList<MetastorageDataRow> {
+    public static class MetaStoreFreeList extends AbstractFreeList<MetastorageDataRow> {
         /** {@inheritDoc} */
-        FreeListImpl(int cacheId, String name, DataRegionMetricsImpl regionMetrics, DataRegion dataRegion,
+        MetaStoreFreeList(
+            int cacheId,
+            String name,
+            DataRegionMetricsImpl regionMetrics,
+            DataRegion dataRegion,
             ReuseList reuseList,
-            IgniteWriteAheadLogManager wal, long metaPageId, boolean initNew) throws IgniteCheckedException {
+            IgniteWriteAheadLogManager wal,
+            long metaPageId,
+            boolean initNew
+        ) throws IgniteCheckedException {
             super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew);
         }
 
