@@ -40,7 +40,7 @@
     }
 
     .ui-grid-cell {
-        height: $height;
+        height: $height - 1px;
 
         border-color: transparent;
     }
@@ -76,6 +76,10 @@
                 }
             }
         }
+    }
+
+    .ui-grid-row:last-child .ui-grid-cell {
+        border-bottom-width: 0;
     }
 
     .ui-grid-header-viewport {
@@ -239,6 +243,7 @@
 
     .ui-grid-row {
         height: $height;
+        border-bottom: 1px solid $table-border-color;
 
         &:nth-child(odd) {
             .ui-grid-cell {
@@ -250,10 +255,6 @@
             .ui-grid-cell {
                 background-color: #f9f9f9;
             }
-        }
-
-        &:not(:first-child) {
-            border-top: 1px solid $table-border-color;
         }
 
         &.ui-grid-row-selected > [ui-grid-row] > .ui-grid-cell {

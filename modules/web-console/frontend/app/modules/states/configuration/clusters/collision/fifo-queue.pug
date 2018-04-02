@@ -16,12 +16,11 @@
 
 include /app/helpers/jade/mixins
 
--var model = 'backupItem.collision.FifoQueue'
+-var model = '$ctrl.clonedCluster.collision.FifoQueue'
 
-div
-    .details-row
-        +number('Parallel jobs number:', `${model}.parallelJobsNumber`, '"fifoParallelJobsNumber"', 'true', 'availableProcessors * 2', '1',
-            'Number of jobs that can be executed in parallel')
-    .details-row
-        +number('Wait jobs number:', `${model}.waitingJobsNumber`, '"fifoWaitingJobsNumber"', 'true', 'Integer.MAX_VALUE', '0',
-            'Maximum number of jobs that are allowed to wait in waiting queue')
+.pc-form-grid-col-30
+    +number('Parallel jobs number:', `${model}.parallelJobsNumber`, '"fifoParallelJobsNumber"', 'true', 'availableProcessors * 2', '1',
+        'Number of jobs that can be executed in parallel')
+.pc-form-grid-col-30
+    +number('Wait jobs number:', `${model}.waitingJobsNumber`, '"fifoWaitingJobsNumber"', 'true', 'Integer.MAX_VALUE', '0',
+        'Maximum number of jobs that are allowed to wait in waiting queue')

@@ -60,6 +60,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -1586,7 +1588,19 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
+        cfg.setFailureHandler(getFailureHandler(igniteInstanceName));
+
         return cfg;
+    }
+
+    /**
+     * This method should be overridden by subclasses to change failure handler implementation.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @return Failure handler implementation.
+     */
+    protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**

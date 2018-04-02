@@ -17,24 +17,23 @@
 include /app/helpers/jade/mixins
 
 -var form = 'atomics'
--var model = 'backupItem.atomicConfiguration'
+-var model = '$ctrl.clonedCluster.atomicConfiguration'
 -var affModel = model + '.affinity'
 -var rendezvousAff = affModel + '.kind === "Rendezvous"'
 -var customAff = affModel + '.kind === "Custom"'
 
-.panel.panel-default(ng-form=form novalidate)
-    .panel-heading(bs-collapse-toggle='' ng-click=`ui.loadPanel('${form}')`)
+.pca-panel.pca-panel-default(ng-form=form novalidate)
+    .pca-panel-heading(bs-collapse-toggle='' ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
-        label Atomic configuration
-        ignite-form-field-tooltip.tipLabel
-            | Configuration for atomic data structures#[br]
-            | Atomics are distributed across the cluster, essentially enabling performing atomic operations (such as increment-and-get or compare-and-set) with the same globally-visible value#[br]
-            | #[a(href="https://apacheignite.readme.io/docs/atomic-types" target="_blank") More info]
-        ignite-form-revert 
-    .panel-collapse(role='tabpanel' bs-collapse-target='' id=`${form}`)
-        .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
-            .col-sm-6
-                .settings-row
+        .pca-panel-heading-title Atomic configuration
+        .pca-panel-heading-description
+            | Configuration for atomic data structures.
+            | Atomics are distributed across the cluster, essentially enabling performing atomic operations (such as increment-and-get or compare-and-set) with the same globally-visible value. 
+            | #[a.link-success(href="https://apacheignite.readme.io/docs/atomic-types" target="_blank") More info]
+    .pca-panel-collapse(role='tabpanel' bs-collapse-target='' id=`${form}`)
+        .pca-panel-body(ng-if=`ui.isPanelLoaded('${form}')`).pca-form-row
+            .pca-form-column-6.pc-form-grid-row
+                .pc-form-grid-col-30
                     +dropdown('Cache mode:', `${model}.cacheMode`, '"cacheMode"', 'true', 'PARTITIONED',
                         '[\
                             {value: "LOCAL", label: "LOCAL"},\
@@ -47,33 +46,33 @@ include /app/helpers/jade/mixins
                             <li>Replicated - in this mode all the keys are distributed to all participating nodes</li>\
                             <li>Local - in this mode caches residing on different grid nodes will not know about each other</li>\
                         </ul>')
-                .settings-row
+                .pc-form-grid-col-30
                     +number('Sequence reserve:', `${model}.atomicSequenceReserveSize`, '"atomicSequenceReserveSize"', 'true', '1000', '0',
                         'Default number of sequence values reserved for IgniteAtomicSequence instances<br/>\
                         After a certain number has been reserved, consequent increments of sequence will happen locally, without communication with other nodes, until the next reservation has to be made')
-                .settings-row(ng-show=`!(${model}.cacheMode && ${model}.cacheMode != "PARTITIONED")`)
+                .pc-form-grid-col-60(ng-show=`!(${model}.cacheMode && ${model}.cacheMode != "PARTITIONED")`)
                     +number('Backups:', model + '.backups', '"backups"', 'true', '0', '0', 'Number of backup nodes')
-                div(ng-if='$ctrl.available("2.1.0")')
-                    .settings-row
-                        +dropdown('Function:', `${affModel}.kind`, '"AffinityKind"', 'true', 'Default', 'affinityFunction',
-                            'Key topology resolver to provide mapping from keys to nodes\
-                            <ul>\
-                                <li>Rendezvous - Based on Highest Random Weight algorithm<br/></li>\
-                                <li>Custom - Custom implementation of key affinity function<br/></li>\
-                                <li>Default - By default rendezvous affinity function  with 1024 partitions is used<br/></li>\
-                            </ul>')
-                    .panel-details(ng-if=rendezvousAff)
-                        .details-row
+
+                .pc-form-grid-col-60(ng-if-start='$ctrl.available("2.1.0")')
+                    +dropdown('Function:', `${affModel}.kind`, '"AffinityKind"', 'true', 'Default', '$ctrl.Clusters.affinityFunctions',
+                        'Key topology resolver to provide mapping from keys to nodes\
+                        <ul>\
+                            <li>Rendezvous - Based on Highest Random Weight algorithm<br/></li>\
+                            <li>Custom - Custom implementation of key affinity function<br/></li>\
+                            <li>Default - By default rendezvous affinity function  with 1024 partitions is used<br/></li>\
+                        </ul>')
+                .pc-form-group(ng-if-end ng-if=rendezvousAff + ' || ' + customAff)
+                    .pc-form-grid-row
+                        .pc-form-grid-col-30(ng-if-start=rendezvousAff)
                             +number-required('Partitions', `${affModel}.Rendezvous.partitions`, '"RendPartitions"', 'true', rendPartitionsRequired, '1024', '1', 'Number of partitions')
-                        .details-row
+                        .pc-form-grid-col-30
                             +java-class('Backup filter', `${affModel}.Rendezvous.affinityBackupFilter`, '"RendAffinityBackupFilter"', 'true', 'false',
                                 'Backups will be selected from all nodes that pass this filter')
-                        .details-row
+                        .pc-form-grid-col-60(ng-if-end)
                             +checkbox('Exclude neighbors', `${affModel}.Rendezvous.excludeNeighbors`, '"RendExcludeNeighbors"',
                                 'Exclude same - host - neighbors from being backups of each other and specified number of backups')
-                    .panel-details(ng-if=customAff)
-                        .details-row
+                        .pc-form-grid-col-60(ng-if=customAff)
                             +java-class('Class name:', `${affModel}.Custom.className`, '"AffCustomClassName"', 'true', customAff,
                                 'Custom key affinity function implementation class name')
-            .col-sm-6
+            .pca-form-column-6
                 +preview-xml-java(model, 'clusterAtomics')
