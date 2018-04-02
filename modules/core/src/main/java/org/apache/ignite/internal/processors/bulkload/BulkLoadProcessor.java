@@ -62,6 +62,7 @@ public abstract class BulkLoadProcessor implements AutoCloseable {
      * @param batchData Data from the current batch.
      * @param isLastBatch true if this is the last batch.
      * @throws IgniteIllegalStateException when called after {@link #close()}.
+     * @throws IgniteCheckedException On error.
      */
     public abstract void processBatch(byte[] batchData, boolean isLastBatch) throws IgniteCheckedException;
 
