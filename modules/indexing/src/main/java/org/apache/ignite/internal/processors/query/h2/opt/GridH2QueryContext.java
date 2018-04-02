@@ -355,7 +355,7 @@ public class GridH2QueryContext {
 
         for (Key key : qctxs.keySet()) {
             if (key.locNodeId.equals(locNodeId) && key.nodeId.equals(nodeId) && key.qryId == qryId && key.type == type)
-                res |= doClear(new Key(locNodeId, nodeId, qryId, key.segmentId, type), false);
+                res |= doClear(key, false);
         }
 
         return res;
