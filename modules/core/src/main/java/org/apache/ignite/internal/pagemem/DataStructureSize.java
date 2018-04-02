@@ -6,6 +6,8 @@ public interface DataStructureSize {
 
     public void dec();
 
+    public void add(long val);
+
     public long size();
 
     public String name();

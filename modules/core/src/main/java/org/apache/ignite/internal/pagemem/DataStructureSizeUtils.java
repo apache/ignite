@@ -20,6 +20,10 @@ public abstract class DataStructureSizeUtils {
                 size.decrementAndGet();
             }
 
+            @Override public void add(long val) {
+                size.addAndGet(val);
+            }
+
             @Override public long size() {
                 return size.get();
             }
@@ -46,6 +50,21 @@ public abstract class DataStructureSizeUtils {
 
                 if (delegate != null)
                     delegate.dec();
+            }
+
+            @Override public void add(long val) {
+                if (val != 0 && (val > 1 || val < -1)) {
+                    size.addAndGet(val);
+
+                    if (delegate != null)
+                        delegate.add(val);
+                }
+
+                if (val == -1)
+                    dec();
+
+                if (val == 1)
+                    inc();
             }
 
             @Override public long size() {

@@ -87,6 +87,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     /** */
     private final PageEvictionTracker evictionTracker;
 
+    /** */
+    private final DataStructureSize pureDataSize;
+
     /**
      *
      */
@@ -145,8 +148,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             PageIO iox,
             Boolean walPlc,
             T row,
-            int written)
-            throws IgniteCheckedException {
+            int written
+        ) throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
             int rowSize = io.getRowSize(row);
@@ -169,6 +172,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             if (written == rowSize)
                 evictionTracker.touchPage(pageId);
+
+            if (written == rowSize && pureDataSize != null)
+                pureDataSize.add(rowSize);
 
             // Avoid boxing with garbage generation for usual case.
             return written == rowSize ? COMPLETE : written;
@@ -278,15 +284,19 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             PageIO iox,
             Boolean walPlc,
             Void ignored,
-            int itemId)
-            throws IgniteCheckedException {
+            int itemId
+        ) throws IgniteCheckedException {
             AbstractDataPageIO<T> io = (AbstractDataPageIO<T>)iox;
 
             int oldFreeSpace = io.getFreeSpace(pageAddr);
 
             assert oldFreeSpace >= 0 : oldFreeSpace;
 
-            long nextLink = io.removeRow(pageAddr, itemId, pageSize());
+            int pageSize = pageSize();
+
+            int rowSize = io.payloadSize(pageAddr, itemId, pageSize);
+
+            long nextLink = io.removeRow(pageAddr, itemId, pageSize);
 
             if (needWalDeltaRecord(pageId, page, walPlc))
                 wal.log(new DataPageRemoveRecord(cacheId, pageId, itemId));
@@ -302,6 +312,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                     if (oldBucket != newBucket) {
                         // It is possible that page was concurrently taken for put, in this case put will handle bucket change.
                         pageId = maskPartId ? PageIdUtils.maskPartitionId(pageId) : pageId;
+
                         if (removeDataPage(pageId, page, pageAddr, io, oldBucket))
                             put(null, pageId, page, pageAddr, newBucket);
                     }
@@ -312,6 +323,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 if (io.isEmpty(pageAddr))
                     evictionTracker.forgetPage(pageId);
             }
+
+            if (pureDataSize != null)
+                pureDataSize.add(-rowSize);
 
             // For common case boxed 0L will be cached inside of Long, so no garbage will be produced.
             return nextLink;
@@ -327,6 +341,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @param wal Write ahead log manager.
      * @param metaPageId Metadata page ID.
      * @param initNew {@code True} if new metadata should be initialized.
+     * @param pureDataSize
      * @throws IgniteCheckedException If failed.
      */
     public AbstractFreeList(
@@ -338,13 +353,15 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         IgniteWriteAheadLogManager wal,
         long metaPageId,
         boolean initNew,
-        DataStructureSize structureSize
+        DataStructureSize structureSize,
+        DataStructureSize pureDataSize
     ) throws IgniteCheckedException {
         super(grpId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId, structureSize);
 
         rmvRow = new RemoveRowHandler(grpId == 0);
 
         this.evictionTracker = memPlc.evictionTracker();
+        this.pureDataSize = pureDataSize;
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
 

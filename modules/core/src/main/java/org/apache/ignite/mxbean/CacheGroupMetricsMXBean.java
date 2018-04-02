@@ -153,4 +153,11 @@ public interface CacheGroupMetricsMXBean {
      */
     @MXBeanDescription("Total size in bytes for reuse list.")
     public long getReuseListSize();
+
+    /**
+     * Total size in bytes for pure data.
+     *
+     */
+    @MXBeanDescription("Total size in bytes for pure data.")
+    public long getDataSize();
 }

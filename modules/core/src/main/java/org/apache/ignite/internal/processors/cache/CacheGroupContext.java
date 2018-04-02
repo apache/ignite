@@ -159,6 +159,9 @@ public class CacheGroupContext {
     private final DataStructureSize reuseListPages;
 
     /** */
+    private final DataStructureSize pureDataSize;
+
+    /** */
     private volatile boolean walEnabled;
 
     /**
@@ -219,11 +222,13 @@ public class CacheGroupContext {
 
         String pkIndexName = cacheOrGroupName() + "-pkIndex";
         String reuseListName = cacheOrGroupName() + "-reuseList";
+        String pureDataName = cacheOrGroupName() + "-pureData";
 
         pkIndexPages = DataStructureSizeUtils.simpleTracker(pkIndexName);
         reuseListPages = DataStructureSizeUtils.simpleTracker(reuseListName);
+        pureDataSize = DataStructureSizeUtils.simpleTracker(pureDataName);
 
-        mxBean = new CacheGroupMetricsMXBeanImpl(this, pkIndexPages, reuseListPages);
+        mxBean = new CacheGroupMetricsMXBeanImpl(this, pkIndexPages, reuseListPages, pureDataSize);
     }
 
     public DataStructureSize getPkIndexPages() {
@@ -232,6 +237,10 @@ public class CacheGroupContext {
 
     public DataStructureSize getReuseListPages() {
         return reuseListPages;
+    }
+
+    public DataStructureSize getPureDataSize() {
+        return pureDataSize;
     }
 
     /**

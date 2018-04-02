@@ -1125,7 +1125,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         ctx.wal(),
                         reuseRoot.pageId().pageId(),
                         reuseRoot.isAllocated(),
-                        DataStructureSizeUtils.delegateTracker(partName, reuseListPages)
+                        DataStructureSizeUtils.delegateTracker(partName + "-reuseList", reuseListPages),
+                        DataStructureSizeUtils.delegateTracker(partName + "-pureData", pureDataSize)
                     ) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();

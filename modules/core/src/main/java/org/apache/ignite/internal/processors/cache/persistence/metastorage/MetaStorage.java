@@ -462,7 +462,18 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
             long metaPageId,
             boolean initNew
         ) throws IgniteCheckedException {
-            super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew, null);
+            super(
+                cacheId,
+                name,
+                regionMetrics,
+                dataRegion,
+                reuseList,
+                wal,
+                metaPageId,
+                initNew,
+                null,
+                null
+            );
         }
 
         /** {@inheritDoc} */
