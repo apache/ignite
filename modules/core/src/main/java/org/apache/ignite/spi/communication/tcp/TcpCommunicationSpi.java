@@ -773,6 +773,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                 }
             }
 
+            /** {@inheritDoc} */
+            @Override public void onCriticalFailure(FailureType failureType, Throwable failure) {
+                U.handleFailure(ignite, failureType, failure);
+            }
+
             /**
              * @param recovery Recovery descriptor.
              * @param ses Session.
