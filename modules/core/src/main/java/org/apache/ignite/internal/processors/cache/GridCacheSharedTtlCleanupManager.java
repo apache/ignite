@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -123,18 +124,27 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             while (!isCancelled()) {
-                boolean expiredRemains = false;
+                try {
+                    boolean expiredRemains = false;
 
-                for (GridCacheTtlManager mgr : mgrs) {
-                    if (mgr.expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
-                        expiredRemains = true;
+                    for (GridCacheTtlManager mgr : mgrs) {
+                        if (mgr.expire(CLEANUP_WORKER_ENTRIES_PROCESS_LIMIT))
+                            expiredRemains = true;
 
-                    if (isCancelled())
-                        return;
+                        if (isCancelled())
+                            return;
+                    }
+
+                    if (!expiredRemains)
+                        U.sleep(CLEANUP_WORKER_SLEEP_INTERVAL);
                 }
+                catch (Throwable t) {
+                    if (!(t instanceof IgniteInterruptedCheckedException))
+                        U.handleFailure(cctx.kernalContext().grid(), FailureType.SYSTEM_WORKER_TERMINATION,
+                            new IllegalStateException("TTL cleanup worker thread is exiting unexpectedly"));
 
-                if (!expiredRemains)
-                    U.sleep(CLEANUP_WORKER_SLEEP_INTERVAL);
+                    throw t;
+                }
             }
         }
     }
