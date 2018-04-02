@@ -34,7 +34,6 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.management.MBeanServer;
 import org.apache.ignite.IgniteCheckedException;
@@ -784,13 +783,15 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             addCacheOnJoin(cfg, false, caches, templates);
         }
 
-        Map<String, StoredCacheData> storedCaches = ctx.cache().context().pageStore().readCacheConfigurations();
+        if(CU.isPersistenceEnabled(ctx.config())) {
+            Map<String, StoredCacheData> storedCaches = ctx.cache().context().pageStore().readCacheConfigurations();
 
-        if (!F.isEmpty(storedCaches))
-            for (StoredCacheData storedCacheData : storedCaches.values()) {
-                if (!caches.containsKey(storedCacheData.config().getName()))
-                    addStoredCacheOnJoin(caches, templates, storedCacheData);
-            }
+            if (!F.isEmpty(storedCaches))
+                for (StoredCacheData storedCacheData : storedCaches.values()) {
+                    if (!caches.containsKey(storedCacheData.config().getName()))
+                        addStoredCacheOnJoin(caches, templates, storedCacheData);
+                }
+        }
     }
 
     /**
@@ -2459,15 +2460,18 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (discoData.hasJoiningNodeData() && discoData.joiningNodeData() instanceof CacheJoinNodeDiscoveryData){
             CacheJoinNodeDiscoveryData nodeData = (CacheJoinNodeDiscoveryData)discoData.joiningNodeData();
 
+            boolean isGridActive = ctx.grid().active();
+
             for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
                 DynamicCacheDescriptor localDesc = cachesInfo.registeredCaches().get(cacheInfo.cacheData().config().getName());
 
-                boolean needUpdateGridEntities = cachesInfo.needUpdateGridEntities(
-                    cacheInfo.cacheData().queryEntities(), localDesc.schema().entities()
-                );
+                if(localDesc == null)
+                    continue;
 
-                if(needUpdateGridEntities && ctx.grid().active()){
-                    String msg = "Join is fail because query entities";
+                QuerySchema.QuerySchemaPatch schemaPatch = localDesc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
+
+                if(schemaPatch.getConflicts() != null || (isGridActive && !schemaPatch.isEmpty())){
+                    String msg = schemaPatch.getConflicts() != null ? schemaPatch.getConflicts() : "Join is fail because query entities";
 
                     return new IgniteNodeValidationResult(node.id(), msg, msg);
                 }

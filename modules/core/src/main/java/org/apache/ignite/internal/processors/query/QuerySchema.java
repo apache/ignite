@@ -23,7 +23,10 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
@@ -84,15 +87,88 @@ public class QuerySchema implements Serializable {
         }
     }
 
+    public QuerySchemaPatch makePatch(Collection<QueryEntity> incomes){
+        synchronized (mux) {
+            Map<String, QueryEntity> localEntities = entities.stream()
+                .collect(Collectors.toMap(QueryEntity::getTableName, Function.identity()));
+
+            Collection<SchemaAbstractOperation> patchOperations = new ArrayList<>();
+            Collection<QueryEntity> entityToAdd = new ArrayList<>();
+
+            String conflicts = null;
+
+            for (QueryEntity queryEntity : incomes) {
+                if (localEntities.containsKey(queryEntity.getTableName())) {
+                    QueryEntity localEntity = localEntities.get(queryEntity.getTableName());
+
+                    QueryEntity.QueryEntityPatch entityPatch = localEntity.makePatch(queryEntity);
+
+                    if (entityPatch.hasConflict()) {
+                        conflicts = conflicts == null
+                            ? entityPatch.getConflict()
+                            : conflicts + "\n" +entityPatch.getConflict();
+                    }
+
+                    if (!entityPatch.isEmpty())
+                        patchOperations.addAll(entityPatch.getPatchOperations());
+                }else
+                    entityToAdd.add(QueryUtils.copy(queryEntity));
+            }
+
+            return new QuerySchemaPatch(patchOperations, entityToAdd, conflicts);
+        }
+    }
+
+    public static class QuerySchemaPatch {
+        private String conflicts;
+        private Collection<SchemaAbstractOperation> patchOperations;
+        private Collection<QueryEntity> entityToAdd;
+
+        public QuerySchemaPatch(
+            Collection<SchemaAbstractOperation> patchOperations,
+            Collection<QueryEntity> entityToAdd,
+            String conflicts) {
+            this.patchOperations = patchOperations;
+            this.entityToAdd = entityToAdd;
+            this.conflicts = conflicts;
+        }
+
+        public String getConflicts(){
+            return conflicts;
+        }
+
+        public boolean isEmpty() {
+            return patchOperations.isEmpty() && entityToAdd.isEmpty();
+        }
+    }
+
+    public boolean applyPatch(QuerySchemaPatch patch) {
+        synchronized (mux) {
+            if(patch.conflicts != null)
+                return false;
+
+            if(patch.isEmpty())
+                return true;
+
+            patch.patchOperations.forEach(this::finish);
+
+            entities.addAll(patch.entityToAdd);
+
+            return true;
+        }
+    }
+
     /**
      * Process finish message.
      *
      * @param msg Message.
      */
     public void finish(SchemaFinishDiscoveryMessage msg) {
-        synchronized (mux) {
-            SchemaAbstractOperation op = msg.operation();
+        finish(msg.operation());
+    }
 
+    public void finish(SchemaAbstractOperation op) {
+        synchronized (mux) {
             if (op instanceof SchemaIndexCreateOperation) {
                 SchemaIndexCreateOperation op0 = (SchemaIndexCreateOperation)op;
 

@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -342,6 +344,28 @@ public class DynamicCacheDescriptor {
     public void schemaChangeFinish(SchemaFinishDiscoveryMessage msg) {
         synchronized (schemaMux) {
             schema.finish(msg);
+        }
+    }
+
+    /**
+     * Try applying finish message.
+     *
+     * @param msg Message.
+     */
+    public QuerySchema.QuerySchemaPatch makeSchemaPatch(Collection<QueryEntity> target) {
+        synchronized (schemaMux) {
+            return schema.makePatch(target);
+        }
+    }
+
+    /**
+     * Try applying finish message.
+     *
+     * @param msg Message.
+     */
+    public boolean applySchemaPatch(QuerySchema.QuerySchemaPatch patch) {
+        synchronized (schemaMux) {
+            return schema.applyPatch(patch);
         }
     }
 
