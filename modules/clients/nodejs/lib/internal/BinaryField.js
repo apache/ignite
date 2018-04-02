@@ -17,11 +17,30 @@
 
 'use strict';
 
-module.exports = require('./lib/IgniteClient');
-module.exports.ObjectType = require('./lib/ObjectType').ObjectType;
-module.exports.MapObjectType = require('./lib/ObjectType').MapObjectType;
-module.exports.ComplexObjectType = require('./lib/ObjectType').ComplexObjectType;
-module.exports.Errors = require('./lib/Errors');
-module.exports.IgniteClientConfiguration = require('./lib/IgniteClientConfiguration');
-module.exports.CacheConfiguration = require('./lib/CacheConfiguration');
-module.exports.BinaryObject = require('./lib/BinaryObject');
+const BinaryUtils = require('./BinaryUtils');
+
+class BinaryField {
+    constructor(name, type) {
+        this._name = name;
+        this._id = BinaryField._calculateId(name);
+        this._type = type;
+    }
+
+    get id() {
+        return this._id;
+    }
+
+    get name() {
+        return this._name;
+    }
+
+    get type() {
+        return this._type;
+    }
+
+    static _calculateId(name) {
+        return BinaryUtils.hashCode(name);
+    }
+}
+
+module.exports = BinaryField;

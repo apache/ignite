@@ -214,6 +214,10 @@ class ComplexObjectType extends ObjectType {
         return this;
     }
 
+    get typeName() {
+        return this._typeName;
+    }
+
     /** Private methods */
 
     _getObjectConstructor() {

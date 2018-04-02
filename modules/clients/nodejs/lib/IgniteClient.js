@@ -197,7 +197,7 @@ class IgniteClient {
         await this._socket.send(
             BinaryUtils.OPERATION.CACHE_DESTROY,
             (payload) => {
-                payload.writeInteger(BinaryUtils.hashCode(name));
+                payload.writeInteger(CacheClient._calculateId(name));
             });
     }
 

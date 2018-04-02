@@ -67,6 +67,7 @@ class CacheClient {
      */
     setKeyType(type) {
         this._keyType = BinaryUtils.getObjectType(type, 'type');
+        this._binaryModeKeyType = new BinaryUtils.BinaryObjectType(this._keyType);
         return this;
     }
 
@@ -95,6 +96,7 @@ class CacheClient {
      */
     setValueType(type) {
         this._valueType = BinaryUtils.getObjectType(type, 'type');
+        this._binaryModeValueType = new BinaryUtils.BinaryObjectType(this._valueType);
         return this;
     }
 
@@ -137,10 +139,10 @@ class CacheClient {
             BinaryUtils.OPERATION.CACHE_GET,
             (payload) => {
                 this._writeCacheInfo(payload);
-                BinaryWriter.writeObject(payload, key, this._keyType);
+                BinaryWriter.writeObject(payload, key, this._getKeyType());
             },
             (payload) => {
-                value = BinaryReader.readObject(payload, this._valueType);
+                value = BinaryReader.readObject(payload, this._getValueType());
             });
         return value;
     }
@@ -164,8 +166,8 @@ class CacheClient {
             BinaryUtils.OPERATION.CACHE_PUT,
             (payload) => {
                 this._writeCacheInfo(payload);
-                BinaryWriter.writeObject(payload, key, this._keyType);
-                BinaryWriter.writeObject(payload, value, this._valueType);
+                BinaryWriter.writeObject(payload, key, this._getKeyType());
+                BinaryWriter.writeObject(payload, value, this._getValueType());
             });
     }
 
@@ -191,12 +193,21 @@ class CacheClient {
      */
     constructor(name, config, socket) {
         this._name = name;
-        this._cacheId = BinaryUtils.hashCode(this._name);
+        this._cacheId = CacheClient._calculateId(this._name);
         this._config = config;
         this._keyType = null;
         this._valueType = null;
+        this._binaryModeKeyType = new BinaryUtils.BinaryObjectType();
+        this._binaryModeValueType = new BinaryUtils.BinaryObjectType();
         this._binaryMode = false;
         this._socket = socket;
+    }
+
+    /**
+     * @ignore
+     */
+    static _calculateId(name) {
+        return BinaryUtils.hashCode(name);
     }
 
     /**
@@ -205,6 +216,20 @@ class CacheClient {
     _writeCacheInfo(payload) {
         payload.writeInteger(this._cacheId);
         payload.writeByte(this._binaryMode ? 1 : 0);
+    }
+
+    /**
+     * @ignore
+     */
+    _getKeyType() {
+        return this._binaryMode ? this._binaryModeKeyType : this._keyType;
+    }
+
+    /**
+     * @ignore
+     */
+    _getValueType() {
+        return this._binaryMode ? this._binaryModeValueType : this._valueType;
     }
 }
 

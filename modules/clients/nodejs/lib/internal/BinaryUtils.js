@@ -18,6 +18,8 @@
 'use strict';
 
 const ObjectType = require('../ObjectType').ObjectType;
+const MapObjectType = require('../ObjectType').MapObjectType;
+const ComplexObjectType = require('../ObjectType').ComplexObjectType;
 const Errors = require('../Errors');
 const ArgumentChecker = require('./ArgumentChecker');
 
@@ -160,8 +162,16 @@ const TYPE_INFO = Object.freeze({
         NAME : 'map',
         NULLABLE : true
     },
+    [TYPE_CODE.BINARY_OBJECT] : {
+        NAME : 'BinaryObject',
+        NULLABLE : true
+    },
     [TYPE_CODE.NULL] : {
         NAME : 'null',
+        NULLABLE : true
+    },
+    [TYPE_CODE.COMPLEX_OBJECT] : {
+        NAME : 'complex object',
         NULLABLE : true
     }
 });
@@ -194,7 +204,8 @@ class BinaryUtils {
         if (typeof type === 'string') {
             return type;
         }
-        return TYPE_INFO[BinaryUtils.getTypeCode(type)].NAME;
+        const typeCode = BinaryUtils.getTypeCode(type);
+        return TYPE_INFO[typeCode] ? TYPE_INFO[typeCode].NAME : 'code ' + typeCode;
     }
 
     static isNullable(type) {
@@ -205,14 +216,58 @@ class BinaryUtils {
         return type instanceof ObjectType ? type.typeCode : type;
     }
 
-    static getObjectType(type, argName = null) {
+    static getObjectType(type, argName, checkType = true) {
         if (type === null || type instanceof ObjectType) {
             return type;
         }
         else {
-            ArgumentChecker.hasValueFrom(type, argName, ObjectType.TYPE_CODE);
-            return new ObjectType(type);
+            switch (type) {
+                case BinaryUtils.TYPE_CODE.MAP:
+                    return new MapObjectType();
+                case BinaryUtils.TYPE_CODE.COMPLEX_OBJECT:
+                    return new ComplexObjectType();
+                default:
+                    if (checkType) {
+                        ArgumentChecker.hasValueFrom(type, argName, ObjectType.TYPE_CODE);
+                    }
+                    return new ObjectType(type);
+            }
         }
+    }
+
+    static calcObjectTypeCode(object) {
+        const BinaryObject = require('../BinaryObject');
+        const objectType = typeof object;
+        if (object === null) {
+            return BinaryUtils.TYPE_CODE.NULL;
+        }
+        else if (objectType === 'number') {
+            return BinaryUtils.TYPE_CODE.DOUBLE;
+        }
+        else if (objectType === 'string') {
+            return BinaryUtils.TYPE_CODE.STRING;
+        }
+        else if (objectType === 'boolean') {
+            return BinaryUtils.TYPE_CODE.BOOLEAN;
+        }
+        else if (object instanceof Date) {
+            return BinaryUtils.TYPE_CODE.DATE;
+        }
+        else if (object instanceof Array) {
+            if (object.length > 0 && object[0] !== null) {
+                return BinaryUtils.getArrayTypeCode(BinaryUtils.calcObjectTypeCode(object[0]));
+            }
+        }
+        else if (object instanceof Map) {
+            return BinaryUtils.TYPE_CODE.MAP;
+        }
+        else if (object instanceof BinaryObject) {
+            return BinaryUtils.TYPE_CODE.BINARY_OBJECT;
+        }
+        else if (objectType === 'object') {
+            return BinaryUtils.TYPE_CODE.COMPLEX_OBJECT;
+        }
+        throw Errors.IgniteClientError.unsupportedTypeError(objectType);
     }
 
     static checkCompatibility(value, type) {
@@ -222,8 +277,56 @@ class BinaryUtils {
         if (value === null && !BinaryUtils.isNullable(type)) {
             throw Errors.IgniteClientError.typeCastError(BinaryUtils.TYPE_CODE.NULL, type);
         }
-        else if (value !== null && type.typeCode === BinaryUtils.TYPE_CODE.NULL) {
-            throw Errors.IgniteClientError.typeCastError('not null', BinaryUtils.TYPE_CODE.NULL);
+        else if (BinaryUtils.isStandardType(type.typeCode)) {
+            BinaryUtils.checkStandardTypeCompatibility(value, type.typeCode);
+            return;
+        }
+        const valueTypeCode = BinaryUtils.calcObjectTypeCode(value);
+        if (type.typeCode === BinaryUtils.TYPE_CODE.BINARY_OBJECT &&
+            valueTypeCode === BinaryUtils.TYPE_CODE.COMPLEX_OBJECT ||
+            type.typeCode !== BinaryUtils.TYPE_CODE.BINARY_OBJECT &&
+            valueTypeCode === BinaryUtils.TYPE_CODE.BINARY_OBJECT) {
+            throw Errors.IgniteClientError.typeCastError(valueTypeCode, type.typeCode);
+        }
+    }
+
+    static isStandardType(typeCode) {
+        return typeCode !== BinaryUtils.TYPE_CODE.BINARY_OBJECT &&
+            typeCode !== BinaryUtils.TYPE_CODE.COMPLEX_OBJECT;
+    }
+
+    static checkStandardTypeCompatibility(value, typeCode) {
+        switch (typeCode) {
+            case BinaryUtils.TYPE_CODE.BYTE_ARRAY:
+            case BinaryUtils.TYPE_CODE.SHORT_ARRAY:
+            case BinaryUtils.TYPE_CODE.INTEGER_ARRAY:
+            case BinaryUtils.TYPE_CODE.LONG_ARRAY:
+            case BinaryUtils.TYPE_CODE.FLOAT_ARRAY:
+            case BinaryUtils.TYPE_CODE.DOUBLE_ARRAY:
+            case BinaryUtils.TYPE_CODE.CHAR_ARRAY:
+            case BinaryUtils.TYPE_CODE.BOOLEAN_ARRAY:
+            case BinaryUtils.TYPE_CODE.STRING_ARRAY:
+            case BinaryUtils.TYPE_CODE.DATE_ARRAY:
+                if (!value instanceof Array) {
+                    throw Errors.IgniteClientError.typeCastError('not Array', typeCode);
+                }
+                return;
+            case BinaryUtils.TYPE_CODE.MAP:
+                if (!value instanceof Map) {
+                    throw Errors.IgniteClientError.typeCastError('not Map', typeCode);
+                }
+                return;
+            case BinaryUtils.TYPE_CODE.NULL:
+                if (value !== null) {
+                    throw Errors.IgniteClientError.typeCastError('not null', typeCode);
+                }
+                return;
+            default:
+                const valueTypeCode = BinaryUtils.calcObjectTypeCode(value);
+                if (valueTypeCode === BinaryUtils.TYPE_CODE.BINARY_OBJECT) {
+                    throw Errors.IgniteClientError.typeCastError(valueTypeCode, typeCode);
+                }
+                return;
         }
     }
 
@@ -236,6 +339,11 @@ class BinaryUtils {
                 throw Errors.IgniteClientError.typeCastError(BinaryUtils.TYPE_CODE.NULL, expectedType);
             }
         }
+        else if (expectedType.typeCode === BinaryUtils.TYPE_CODE.BINARY_OBJECT ||
+            actualTypeCode === BinaryUtils.TYPE_CODE.BINARY_OBJECT &&
+            expectedType.typeCode === BinaryUtils.TYPE_CODE.COMPLEX_OBJECT) {
+            return;
+        }
         else if (actualTypeCode !== expectedType.typeCode) {
             throw Errors.IgniteClientError.typeCastError(actualTypeCode, expectedType);
         }
@@ -246,7 +354,7 @@ class BinaryUtils {
         if (!elementType) {
             throw Errors.IgniteClientError.internalError();
         }
-        return BinaryUtils.getObjectType(elementType);
+        return BinaryUtils.getObjectType(elementType, null, false);
     }
 
     static getArrayTypeCode(elementTypeCode) {
@@ -273,8 +381,6 @@ class BinaryUtils {
                 return BinaryUtils.TYPE_CODE.UUID_ARRAY;
             case BinaryUtils.TYPE_CODE.DATE:
                 return BinaryUtils.TYPE_CODE.DATE_ARRAY;
-            case BinaryUtils.TYPE_CODE.BINARY_OBJECT:
-                return BinaryUtils.TYPE_CODE.BINARY_OBJECT_ARRAY;
             default:
                 throw Errors.IgniteClientError.internalError();
         }
@@ -286,7 +392,7 @@ class BinaryUtils {
 
     static hashCode(str) {
         let hash = 0, char;
-        if (str.length > 0) {
+        if (str && str.length > 0) {
             for (let i = 0; i < str.length; i++) {
                 char = str.charCodeAt(i);
                 hash = ((hash << 5) - hash) + char;
@@ -295,6 +401,27 @@ class BinaryUtils {
         }
         return hash;
     }
+
+    static contentHashCode(buffer, startPos, endPos) {
+        let hash = 1;
+        for (let i = startPos; i <= endPos; i++) {
+            hash = 31 * hash + buffer._buffer[i];
+            hash |= 0; // Convert to 32bit integer
+        }
+        return hash;
+    }
+}
+
+class BinaryObjectType extends ObjectType {
+    constructor(innerType = null) {
+        super(BinaryUtils.TYPE_CODE.BINARY_OBJECT);
+        this._innerType = innerType;
+    }
+
+    get innerType() {
+        return this._innerType;
+    }
 }
 
 module.exports = BinaryUtils;
+module.exports.BinaryObjectType = BinaryObjectType;

@@ -246,7 +246,7 @@ class ClientSocket {
     _logMessage(requestId, isRequest, message) {
         if (Logger.debug) {
             Logger.logDebug((isRequest ? 'Request: ' : 'Response: ') + requestId);
-            Logger.logDebug(message);
+            Logger.logDebug('[' + [...message] + ']');
         }
     }
 }

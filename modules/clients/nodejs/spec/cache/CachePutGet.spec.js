@@ -198,7 +198,8 @@ describe('cache put get test suite >', () => {
     });
 
     const dateComparator = (date1, date2) => { return !date1 && !date2 || date1.value === date2.value; };
-    const floatComparator = (date1, date2) => { return date1 - date2 < 0.00001; };
+    const floatComparator = (date1, date2) => { return Math.abs(date1 - date2) < 0.00001; };
+    const defaultComparator = (value1, value2) => { return value1 === value2; };
 
     const numericValueModificator = (data) => { return data > 0 ? data - 10 : data + 10; };
     const charValueModificator = (data) => { return String.fromCharCode(data.charCodeAt(0) + 5); };
@@ -260,13 +261,17 @@ describe('cache put get test suite >', () => {
         const cache = await igniteClient.getCache(CACHE_NAME).
             setKeyType(keyType).
             setValueType(valueType);
-        if (!comparator) {
-            comparator = (value1, value2) => { return value1 === value2; }
+        try {
+            if (!comparator) {
+                comparator = defaultComparator;
+            }
+            await putGetPrimitive(cache, key, value, valueType, comparator);
+            const newValue = modificator(value);
+            await putGetPrimitive(cache, key, newValue, valueType, comparator);
         }
-        await putGetPrimitive(cache, key, value, valueType, comparator);
-        const newValue = modificator(value);
-        await putGetPrimitive(cache, key, newValue, valueType, comparator);
-        await cache.removeAll();
+        finally {
+            await cache.removeAll();
+        }
     }
 
     async function putGetPrimitive(cache, key, value, valueType, comparator) {
@@ -293,18 +298,22 @@ describe('cache put get test suite >', () => {
         const cache = await igniteClient.getCache(CACHE_NAME).
             setKeyType(keyType).
             setValueType(valueType);
-        await cache.put(key, value);
-        let result = await cache.get(key);
-        if (!comparator) {
-            comparator = (value1, value2) => { return value1 === value2; }
+        try {
+            await cache.put(key, value);
+            let result = await cache.get(key);
+            if (!comparator) {
+                comparator = defaultComparator;
+            }
+            expect(result instanceof Array).toBe(true,
+                `result is not Array: arrayType=${valueType}, result=${result}`);
+            expect(result.length).toBe(value.length,
+                `unexpected array length: arrayType=${valueType}, put array=${value}, get array=${result}`);
+            expect(result.every((elem, i) => { return comparator(elem, value[i]); })).toBe(true,
+                `arrays are different: arrayType=${valueType}, put array=${value}, get array=${result}`);
         }
-        expect(result instanceof Array).toBe(true,
-            `result is not Array: arrayType=${valueType}, result=${result}`);
-        expect(result.length).toBe(value.length,
-            `unexpected array length: arrayType=${valueType}, put array=${value}, get array=${result}`);
-        expect(result.every((elem, i) => { return comparator(elem, value[i]); })).toBe(true,
-            `arrays are different: arrayType=${valueType}, put array=${value}, get array=${result}`);
-        await cache.removeAll();
+        finally {
+            await cache.removeAll();
+        }
     }
 
     async function putGetMaps(valueType, value, comparator = null) {
@@ -314,7 +323,7 @@ describe('cache put get test suite >', () => {
         await cache.put(key, value);
         let result = await cache.get(key);
         if (!comparator) {
-            comparator = (value1, value2) => { return value1 === value2; }
+            comparator = defaultComparator;
         }
         expect(result instanceof Map).toBe(true,
             `result is not Map: valueType=${valueType}, result=${result}`);

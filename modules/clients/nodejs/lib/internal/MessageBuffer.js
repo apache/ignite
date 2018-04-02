@@ -37,7 +37,12 @@ class MessageBuffer {
         const buf = new MessageBuffer();
         buf._buffer = Buffer.from(source);
         buf._length = buf._buffer.length;
+        buf._capacity = buf._length;
         return buf;
+    }
+
+    get position() {
+        return this._position;
     }
 
     set position(position) {
@@ -49,7 +54,11 @@ class MessageBuffer {
     }
 
     get data() {
-        return this._buffer.slice(0, this.length);
+        return this.getSlice(0, this.length);
+    }
+
+    getSlice(start, end) {
+        return this._buffer.slice(start, end);
     }
 
     writeByte(value) {

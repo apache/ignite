@@ -17,6 +17,7 @@
 
 'use strict';
 
+const BinaryObject = require('../BinaryObject');
 const Errors = require('../Errors');
 const BinaryUtils = require('./BinaryUtils');
 
@@ -72,11 +73,16 @@ class BinaryWriter {
             case BinaryUtils.TYPE_CODE.STRING_ARRAY:
             case BinaryUtils.TYPE_CODE.UUID_ARRAY:
             case BinaryUtils.TYPE_CODE.DATE_ARRAY:
-            case BinaryUtils.TYPE_CODE.BINARY_OBJECT_ARRAY:
                 BinaryWriter._writeArray(buffer, object, objectType);
                 break;
             case BinaryUtils.TYPE_CODE.MAP:
                 BinaryWriter._writeMap(buffer, object, objectType);
+                break;
+            case BinaryUtils.TYPE_CODE.BINARY_OBJECT:
+                BinaryWriter._writeBinaryObject(buffer, object, objectType);
+                break;
+            case BinaryUtils.TYPE_CODE.COMPLEX_OBJECT:
+                BinaryWriter._writeComplexObject(buffer, object, objectType);
                 break;
             default:
                 throw Errors.IgniteClientError.unsupportedTypeError(objectType);
@@ -85,34 +91,9 @@ class BinaryWriter {
 
     static _getObjectType(object, objectType = null) {
         if (objectType === null) {
-            objectType = BinaryWriter._getObjectTypeCode(object);
+            objectType = BinaryUtils.calcObjectTypeCode(object);
         }
-        return BinaryUtils.getObjectType(objectType);
-    }
-
-    static _getObjectTypeCode(object) {
-        const objectType = typeof object;
-        if (objectType === 'number') {
-            return BinaryUtils.TYPE_CODE.DOUBLE;
-        }
-        else if (objectType === 'string') {
-            return BinaryUtils.TYPE_CODE.STRING;
-        }
-        else if (objectType === 'boolean') {
-            return BinaryUtils.TYPE_CODE.BOOLEAN;
-        }
-        else if (object instanceof Date) {
-            return BinaryUtils.TYPE_CODE.DATE;
-        }
-        else if (object instanceof Array) {
-            if (object.length > 0) {
-                return BinaryUtils.getArrayTypeCode(BinaryWriter._getObjectTypeCode(object[0]));
-            }
-        }
-        else if (object instanceof Map) {
-            return BinaryUtils.TYPE_CODE.MAP;
-        }
-        throw Errors.IgniteClientError.unsupportedTypeError(objectType);
+        return BinaryUtils.getObjectType(objectType, null, false);
     }
 
     static _writeArray(buffer, array, arrayType) {
@@ -131,6 +112,20 @@ class BinaryWriter {
             BinaryWriter.writeObject(buffer, key, mapType.mapKeyType);
             BinaryWriter.writeObject(buffer, value, mapType.mapValueType);
         });
+    }
+
+    static _writeBinaryObject(buffer, binaryObject, binaryObjectType) {
+        buffer.position = buffer.position - 1;
+        if (binaryObject instanceof BinaryObject) {
+            binaryObject._write(buffer);
+        }
+        else {
+            BinaryWriter.writeObject(buffer, binaryObject, binaryObjectType.innerType);
+        }
+    }
+
+    static _writeComplexObject(buffer, object, objectType) {
+        BinaryWriter._writeBinaryObject(buffer, BinaryObject.fromObject(object, objectType));
     }
 }
 

@@ -17,6 +17,7 @@
 
 'use strict';
 
+const BinaryObject = require('../BinaryObject');
 const Errors = require('../Errors');
 const BinaryUtils = require('./BinaryUtils');
 
@@ -61,12 +62,15 @@ class BinaryReader {
             case BinaryUtils.TYPE_CODE.STRING_ARRAY:
             case BinaryUtils.TYPE_CODE.UUID_ARRAY:
             case BinaryUtils.TYPE_CODE.DATE_ARRAY:
-            case BinaryUtils.TYPE_CODE.BINARY_OBJECT_ARRAY:
                 return BinaryReader._readArray(buffer, objectTypeCode);
             case BinaryUtils.TYPE_CODE.MAP:
                 return BinaryReader._readMap(buffer, expectedType);
+            case BinaryUtils.TYPE_CODE.BINARY_OBJECT:
+                return BinaryReader._readBinaryObject(buffer, expectedType);
             case BinaryUtils.TYPE_CODE.NULL:
                 return null;
+            case BinaryUtils.TYPE_CODE.COMPLEX_OBJECT:
+                return BinaryReader._readComplexObject(buffer, expectedType);
             default:
                 throw Errors.IgniteClientError.unsupportedTypeError(objectTypeCode);
         }
@@ -96,6 +100,25 @@ class BinaryReader {
             result.set(key, value);
         }
         return result;
+    }
+
+    static _readBinaryObject(buffer, expectedType) {
+        const size = buffer.readInteger();
+        const startPos = buffer.position;
+        buffer.position = startPos + size;
+        const offset = buffer.readInteger();
+        buffer.position = startPos + offset;
+        return BinaryReader.readObject(buffer, expectedType);
+    }
+
+    static _readComplexObject(buffer, expectedType) {
+        buffer.position = buffer.position - 1;
+        const isBinaryMode = expectedType && expectedType instanceof BinaryUtils.BinaryObjectType;
+        const binaryObject = BinaryObject._fromBuffer(buffer, isBinaryMode ? expectedType.innerType : expectedType);
+        if (isBinaryMode) {
+            return binaryObject;
+        }
+        return binaryObject._toObject();
     }
 }
 
