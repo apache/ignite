@@ -16,6 +16,7 @@
  */
 
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
+import _ from 'lodash';
 
 /**
  * Utility service for version parsing and comparing

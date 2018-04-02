@@ -17,34 +17,33 @@
 include /app/helpers/jade/mixins
 
 -var form = 'logger'
--var model = 'backupItem.logger.Log4j'
--var pathRequired = model + '.mode === "Path" && backupItem.logger.kind === "Log4j"'
+-var model = '$ctrl.clonedCluster.logger.Log4j'
+-var pathRequired = model + '.mode === "Path" && $ctrl.clonedCluster.logger.kind === "Log4j"'
 
-div
-    .details-row
-        +dropdown('Level:', `${model}.level`, '"log4jLevel"', 'true', 'Default',
-            '[\
-                {value: "OFF", label: "OFF"},\
-                {value: "FATAL", label: "FATAL"},\
-                {value: "ERROR", label: "ERROR"},\
-                {value: "WARN", label: "WARN"},\
-                {value: "INFO", label: "INFO"},\
-                {value: "DEBUG", label: "DEBUG"},\
-                {value: "TRACE", label: "TRACE"},\
-                {value: "ALL", label: "ALL"},\
-                {value: null, label: "Default"}\
-            ]',
-            'Level for internal log4j implementation')
-    .details-row
-        +dropdown-required('Logger configuration:', `${model}.mode`, '"log4jMode"', 'true', 'true', 'Choose logger mode',
-            '[\
-                {value: "Default", label: "Default"},\
-                {value: "Path", label: "Path"}\
-            ]',
-            'Choose logger configuration\
-            <ul>\
-                <li>Default - default logger</li>\
-                <li>Path - path or URI to XML configuration</li>\
-            </ul>')
-    .details-row(ng-show=pathRequired)
-        +text('Path:', `${model}.path`, '"log4jPath"', pathRequired, 'Input path', 'Path or URI to XML configuration')
+.pc-form-grid-col-30
+    +dropdown('Level:', `${model}.level`, '"log4jLevel"', 'true', 'Default',
+        '[\
+            {value: "OFF", label: "OFF"},\
+            {value: "FATAL", label: "FATAL"},\
+            {value: "ERROR", label: "ERROR"},\
+            {value: "WARN", label: "WARN"},\
+            {value: "INFO", label: "INFO"},\
+            {value: "DEBUG", label: "DEBUG"},\
+            {value: "TRACE", label: "TRACE"},\
+            {value: "ALL", label: "ALL"},\
+            {value: null, label: "Default"}\
+        ]',
+        'Level for internal log4j implementation')
+.pc-form-grid-col-30
+    +dropdown-required('Logger configuration:', `${model}.mode`, '"log4jMode"', 'true', 'true', 'Choose logger mode',
+        '[\
+            {value: "Default", label: "Default"},\
+            {value: "Path", label: "Path"}\
+        ]',
+        'Choose logger configuration\
+        <ul>\
+            <li>Default - default logger</li>\
+            <li>Path - path or URI to XML configuration</li>\
+        </ul>')
+.pc-form-grid-col-60(ng-show=pathRequired)
+    +text('Path:', `${model}.path`, '"log4jPath"', pathRequired, 'Input path', 'Path or URI to XML configuration')

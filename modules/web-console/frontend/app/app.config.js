@@ -17,12 +17,16 @@
 
 import _ from 'lodash';
 import angular from 'angular';
+import negate from 'lodash/negate';
+import isNil from 'lodash/isNil';
+import isEmpty from 'lodash/isEmpty';
+import mixin from 'lodash/mixin';
 
-const nonNil = _.negate(_.isNil);
-const nonEmpty = _.negate(_.isEmpty);
+const nonNil = negate(isNil);
+const nonEmpty = negate(isEmpty);
 const id8 = (uuid) => uuid.substring(0, 8).toUpperCase();
 
-_.mixin({
+mixin({
     nonNil,
     nonEmpty,
     id8
@@ -36,7 +40,7 @@ const igniteConsoleCfg = angular.module('ignite-console.config', ['ngAnimate', '
 
 // Configure AngularJS animation: do not animate fa-spin.
 igniteConsoleCfg.config(['$animateProvider', ($animateProvider) => {
-    $animateProvider.classNameFilter(/^((?!(fa-spin)).)*$/);
+    $animateProvider.classNameFilter(/^((?!(fa-spin|ng-animate-disabled)).)*$/);
 }]);
 
 // AngularStrap modal popup configuration.
@@ -115,3 +119,20 @@ igniteConsoleCfg.config(['$datepickerProvider', ($datepickerProvider) => {
 igniteConsoleCfg.config(['$translateProvider', ($translateProvider) => {
     $translateProvider.useSanitizeValueStrategy('sanitize');
 }]);
+
+// Restores pre 4.3.0 ui-grid getSelectedRows method behavior
+// ui-grid 4.4+ getSelectedRows additionally skips entries without $$hashKey,
+// which breaks most of out code that works with selected rows.
+igniteConsoleCfg.directive('uiGridSelection', function() {
+    function legacyGetSelectedRows() {
+        return this.rows.filter((row) => row.isSelected).map((row) => row.entity);
+    }
+    return {
+        require: '^uiGrid',
+        restrict: 'A',
+        link(scope, el, attr, ctrl) {
+            ctrl.grid.api.registerMethodsFromObject({selection: {legacyGetSelectedRows}});
+        }
+    };
+});
+

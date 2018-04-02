@@ -1,0 +1,88 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include /app/helpers/jade/mixins
+
+div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
+    form(id='cluster' name='ui.inputForm' novalidate ng-submit='$ctrl.save()')
+        .panel-group
+            include /app/modules/states/configuration/clusters/general
+
+            include /app/modules/states/configuration/clusters/atomic
+            include /app/modules/states/configuration/clusters/binary
+            include /app/modules/states/configuration/clusters/cache-key-cfg
+            include /app/modules/states/configuration/clusters/checkpoint
+
+            //- Since ignite 2.3
+            include /app/modules/states/configuration/clusters/client-connector
+
+            include /app/modules/states/configuration/clusters/collision
+            include /app/modules/states/configuration/clusters/communication
+            include /app/modules/states/configuration/clusters/connector
+            include /app/modules/states/configuration/clusters/deployment
+
+            //- Since ignite 2.3
+            include /app/modules/states/configuration/clusters/data-storage
+
+            include /app/modules/states/configuration/clusters/discovery
+            include /app/modules/states/configuration/clusters/events
+            include /app/modules/states/configuration/clusters/failover
+            include /app/modules/states/configuration/clusters/hadoop
+            include /app/modules/states/configuration/clusters/load-balancing
+            include /app/modules/states/configuration/clusters/logger
+            include /app/modules/states/configuration/clusters/marshaller
+
+            //- Since ignite 2.0, deprecated in ignite 2.3
+            include /app/modules/states/configuration/clusters/memory
+
+            include /app/modules/states/configuration/clusters/misc
+            include /app/modules/states/configuration/clusters/metrics
+
+            //- Deprecated in ignite 2.1
+            include /app/modules/states/configuration/clusters/odbc
+
+            //- Since ignite 2.1, deprecated in ignite 2.3
+            include /app/modules/states/configuration/clusters/persistence
+
+            //- Deprecated in ignite 2.3
+            include /app/modules/states/configuration/clusters/sql-connector
+
+            include /app/modules/states/configuration/clusters/service
+            include /app/modules/states/configuration/clusters/ssl
+
+            //- Removed in ignite 2.0
+            include /app/modules/states/configuration/clusters/swap
+
+            include /app/modules/states/configuration/clusters/thread
+            include /app/modules/states/configuration/clusters/time
+            include /app/modules/states/configuration/clusters/transactions
+            include /app/modules/states/configuration/clusters/attributes
+
+.pc-form-actions-panel(n_g-show='$ctrl.$scope.selectedItem')
+    button-preview-project(cluster='$ctrl.cluster' ng-hide='$ctrl.isNew')
+    button-download-project(cluster='$ctrl.cluster' ng-hide='$ctrl.isNew')
+
+    .pc-form-actions-panel__right-after
+
+    button.btn-ignite.btn-ignite--link-success(
+        type='button'
+        ng-click='$ctrl.confirmAndReset()'
+    )
+        | Cancel
+    button.btn-ignite.btn-ignite--success(
+        form='cluster'
+        type='submit'
+    ) Save

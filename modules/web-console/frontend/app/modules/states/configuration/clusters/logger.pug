@@ -17,20 +17,19 @@
 include /app/helpers/jade/mixins
 
 -var form = 'logger'
--var model = 'backupItem.logger'
+-var model = '$ctrl.clonedCluster.logger'
 -var kind = model + '.kind'
 
-.panel.panel-default(ng-form=form novalidate)
-    .panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
+.pca-panel.pca-panel-default(ng-form=form novalidate)
+    .pca-panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
-        label Logger configuration
-        ignite-form-field-tooltip.tipLabel
-            | Logging functionality used throughout the system
-        ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
-            .col-sm-6
-                .settings-row
+        .pca-panel-heading-title Logger configuration
+        .pca-panel-heading-description
+            | Logging functionality used throughout the system.
+    .pca-panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
+        .pca-panel-body(ng-if=`ui.isPanelLoaded('${form}')`).pca-form-row
+            .pca-form-column-6.pc-form-grid-row
+                .pc-form-grid-col-60
                     +dropdown('Logger:', kind, '"logger"', 'true', 'Default',
                         '[\
                             {value: "Log4j", label: "Apache Log4j"},\
@@ -53,14 +52,13 @@ include /app/helpers/jade/mixins
                             <li>Custom - custom logger implementation</li>\
                             <li>Default - Apache Log4j if awailable on classpath or Java logger otherwise</li>\
                         </ul>')
-                .settings-row(ng-show=`${kind} && (${kind} === 'Log4j2' || ${kind} === 'Log4j' || ${kind} === 'Custom')`)
-                    .panel-details
-                        div(ng-show=`${kind} === 'Log4j2'`)
-                            include ./logger/log4j2
-                        div(ng-show=`${kind} === 'Log4j'`)
-                            include ./logger/log4j
-                        div(ng-show=`${kind} === 'Custom'`)
-                            include ./logger/custom
-            .col-sm-6
-                -var model = 'backupItem.logger'
+                .pc-form-group(ng-show=`${kind} && (${kind} === 'Log4j2' || ${kind} === 'Log4j' || ${kind} === 'Custom')`)
+                    .pc-form-grid-row(ng-show=`${kind} === 'Log4j2'`)
+                        include ./logger/log4j2
+                    .pc-form-grid-row(ng-show=`${kind} === 'Log4j'`)
+                        include ./logger/log4j
+                    .pc-form-grid-row(ng-show=`${kind} === 'Custom'`)
+                        include ./logger/custom
+            .pca-form-column-6
+                -var model = '$ctrl.clonedCluster.logger'
                 +preview-xml-java(model, 'clusterLogger')
