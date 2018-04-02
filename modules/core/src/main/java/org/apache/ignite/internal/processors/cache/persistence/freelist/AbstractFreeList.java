@@ -319,7 +319,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     }
 
     /**
-     * @param cacheId Cache ID.
+     * @param grpId Cache group ID.
      * @param name Name (for debug purpose).
      * @param memMetrics Memory metrics.
      * @param memPlc Data region.
@@ -330,17 +330,18 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
      * @throws IgniteCheckedException If failed.
      */
     public AbstractFreeList(
-        int cacheId,
+        int grpId,
         String name,
         DataRegionMetricsImpl memMetrics,
         DataRegion memPlc,
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
-        boolean initNew) throws IgniteCheckedException {
-        super(cacheId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId);
+        boolean initNew
+    ) throws IgniteCheckedException {
+        super(grpId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId);
 
-        rmvRow = new RemoveRowHandler(cacheId == 0);
+        rmvRow = new RemoveRowHandler(grpId == 0);
 
         this.evictionTracker = memPlc.evictionTracker();
         this.reuseList = reuseList == null ? this : reuseList;
@@ -574,7 +575,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
         assert reuseList == this : "not allowed to be a reuse list";
 
-        put(bag, 0, 0, 0L, REUSE_BUCKET);
+        put(wrapMetrics(bag), 0, 0, 0L, REUSE_BUCKET);
     }
 
     /** {@inheritDoc} */

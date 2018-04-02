@@ -32,7 +32,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseL
  */
 public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
     /**
-     * @param cacheId Cache id.
+     * @param grpId Cache group id.
      * @param name Name.
      * @param regionMetrics Region metrics.
      * @param dataRegion Data region.
@@ -42,7 +42,7 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
      * @param initNew Initialize new.
      */
     public CacheFreeList(
-        int cacheId,
+        int grpId,
         String name,
         DataRegionMetricsImpl regionMetrics,
         DataRegion dataRegion,
@@ -51,7 +51,7 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
         long metaPageId,
         boolean initNew
     ) throws IgniteCheckedException {
-        super(cacheId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew);
+        super(grpId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew);
     }
 
     /** {@inheritDoc} */

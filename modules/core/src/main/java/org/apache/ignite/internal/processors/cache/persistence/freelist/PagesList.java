@@ -1139,7 +1139,7 @@ public abstract class PagesList extends DataStructure {
                 if (recycleId != 0L) {
                     assert !isReuseBucket(bucket);
 
-                    reuseList.addForRecycle(new SingletonReuseBag(recycleId));
+                    addForRecycle(new SingletonReuseBag(recycleId));
                 }
 
                 return dataPageId;
@@ -1225,7 +1225,7 @@ public abstract class PagesList extends DataStructure {
                 recycleId = merge(pageId, page, nextId, bucket);
 
             if (recycleId != 0L)
-                reuseList.addForRecycle(new SingletonReuseBag(recycleId));
+                addForRecycle(new SingletonReuseBag(recycleId));
 
             return true;
         }

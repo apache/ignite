@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -56,19 +57,22 @@ public abstract class DataStructure implements PageLockListener {
     /** */
     protected ReuseList reuseList;
 
+    /** */
+    protected final AtomicLong size = new AtomicLong();
+
     /**
-     * @param cacheId Cache group ID.
+     * @param grpId Cache group ID.
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
      */
-    public DataStructure(
-        int cacheId,
+    protected DataStructure(
+        int grpId,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal
     ) {
         assert pageMem != null;
 
-        this.grpId = cacheId;
+        this.grpId = grpId;
         this.pageMem = pageMem;
         this.wal = wal;
     }
@@ -116,9 +120,43 @@ public abstract class DataStructure implements PageLockListener {
         if (pageId == 0)
             pageId = allocatePageNoReuse();
 
+        size.incrementAndGet();
+
         assert pageId != 0;
 
         return pageId;
+    }
+
+    /**
+     *
+     * @param bag Reuse bag.
+     * @return Reuse bag.
+     */
+    protected final ReuseBag wrapMetrics(ReuseBag bag){
+        return new ReuseBag() {
+            @Override public void addFreePage(long pageId) {
+                bag.addFreePage(pageId);
+            }
+
+            @Override public long pollFreePage() {
+                size.decrementAndGet();
+
+                return bag.pollFreePage();
+            }
+
+            @Override public boolean isEmpty() {
+                return bag.isEmpty();
+            }
+        };
+    }
+
+    /**
+     *
+     * @param bag Reuse bag.
+     * @throws IgniteCheckedException If failed.
+     */
+    protected void addForRecycle(final ReuseBag bag) throws IgniteCheckedException {
+        reuseList.addForRecycle(wrapMetrics(bag));
     }
 
     /**

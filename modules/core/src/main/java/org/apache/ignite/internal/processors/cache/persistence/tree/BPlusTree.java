@@ -731,7 +731,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /**
      * @param name Tree name.
-     * @param cacheId Cache ID.
+     * @param grpId Cache ID.
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
      * @param globalRmvId Remove ID.
@@ -741,14 +741,14 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      */
     protected BPlusTree(
         String name,
-        int cacheId,
+        int grpId,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         AtomicLong globalRmvId,
         long metaPageId,
         ReuseList reuseList
     ) throws IgniteCheckedException {
-        super(cacheId, pageMem, wal);
+        super(grpId, pageMem, wal);
 
         assert !F.isEmpty(name);
 
@@ -1634,6 +1634,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         }
         finally {
             x.releaseAll();
+
             checkDestroyed();
         }
     }
@@ -2183,7 +2184,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
                         }
 
                         if (bag.size() == 128) {
-                            reuseList.addForRecycle(bag);
+                            addForRecycle(bag);
 
                             assert bag.isEmpty() : bag.size();
                         }
@@ -2202,7 +2203,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
             releasePage(metaPageId, metaPage);
         }
 
-        reuseList.addForRecycle(bag);
+        addForRecycle(bag);
 
         assert bag.size() == 0 : bag.size();
 
@@ -3933,7 +3934,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         private void reuseFreePages() throws IgniteCheckedException {
             // If we have a bag, then it will be processed at the upper level.
             if (reuseList != null && freePages != null)
-                reuseList.addForRecycle(this);
+                addForRecycle(this);
         }
 
         /**
@@ -4192,6 +4193,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         private void releaseAll() throws IgniteCheckedException {
             releaseTail();
+
             reuseFreePages();
         }
 

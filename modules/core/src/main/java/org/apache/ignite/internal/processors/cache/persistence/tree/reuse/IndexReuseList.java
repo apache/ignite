@@ -67,7 +67,7 @@ public class IndexReuseList extends PagesList implements ReuseList {
 
     /** {@inheritDoc} */
     @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
-        put(bag, 0, 0, 0, 0);
+        put(wrapMetrics(bag), 0, 0, 0, 0);
     }
 
     /** {@inheritDoc} */
