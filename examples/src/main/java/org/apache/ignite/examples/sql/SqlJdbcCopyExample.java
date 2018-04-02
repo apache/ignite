@@ -41,51 +41,40 @@ public class SqlJdbcCopyExample {
 
         // Open JDBC connection
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/")) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate("DROP TABLE IF EXISTS City");
+            }
+
+
             print("Connected to server.");
 
-            // Create database objects.
-            try (Statement stmt = conn.createStatement()) {
-                // Create reference City table based on REPLICATED template.
-                stmt.executeUpdate("CREATE TABLE city (id LONG PRIMARY KEY, name VARCHAR) " +
-                    "WITH \"template=replicated\"");
-
-                // Create table based on PARTITIONED template with one backup.
-                stmt.executeUpdate("CREATE TABLE person (id LONG, name VARCHAR, city_id LONG, " +
-                    "PRIMARY KEY (id, city_id)) WITH \"backups=1, affinity_key=city_id\"");
-            }
+            executeCommand(conn,
+                "CREATE TABLE City (" +
+                "    ID INT(11), " +
+                "    Name CHAR(35), " +
+                "    CountryCode CHAR(3), " +
+                "    District CHAR(20), " +
+                "    Population INT(11), " +
+                "    PRIMARY KEY (ID, CountryCode) " +
+                ") WITH \"template=partitioned, backups=1, affinityKey=CountryCode, CACHE_NAME=City\""
+            );
 
             print("Created database objects.");
 
-            // Populate City via COPY command with records from cityBulkLoad.csv
+            executeCommand(conn, "COPY FROM \"" +
+                IgniteUtils.resolveIgnitePath("examples/sql/city.csv") + "\" " +
+                "INTO City (ID, Name, CountryCode, District, Population) FORMAT CSV");
+
             try (Statement stmt = conn.createStatement()) {
-                stmt.executeUpdate("COPY FROM \"" +
-                    IgniteUtils.resolveIgnitePath("examples/src/main/resources/sql/cityBulkLoad.csv") + "\" " +
-                    "INTO City (id, name) FORMAT CSV");
-            }
+                try (ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM City")) {
+                    rs.next();
 
-            // Populate Person via COPY command with records from personBulkLoad.csv
-            try (Statement stmt = conn.createStatement()) {
-                stmt.executeUpdate("COPY FROM \"" +
-                    IgniteUtils.resolveIgnitePath("examples/src/main/resources/sql/personBulkLoad.csv") + "\" " +
-                    "INTO Person (id, name, city_id) FORMAT CSV");
-            }
-
-            print("Populated data via COPY.");
-
-            // Get data.
-            try (Statement stmt = conn.createStatement()) {
-                try (ResultSet rs =
-                    stmt.executeQuery("SELECT p.name, c.name FROM Person p INNER JOIN City c on c.id = p.city_id")) {
-                    print("Query results:");
-
-                    while (rs.next())
-                        System.out.println(">>>    " + rs.getString(1) + ", " + rs.getString(2));
+                    print("Populated City table: " + rs.getLong(1) + " entries");
                 }
             }
 
             // Drop database objects.
             try (Statement stmt = conn.createStatement()) {
-                stmt.executeUpdate("DROP TABLE Person");
                 stmt.executeUpdate("DROP TABLE City");
             }
 
@@ -103,5 +92,18 @@ public class SqlJdbcCopyExample {
     private static void print(String msg) {
         System.out.println();
         System.out.println(">>> " + msg);
+    }
+
+    /**
+     * Execute SQL command.
+     *
+     * @param conn Connection.
+     * @param sql SQL statement.
+     * @throws Exception If failed.
+     */
+    private static void executeCommand(Connection conn, String sql) throws Exception {
+        try (Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(sql);
+        }
     }
 }
