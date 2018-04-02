@@ -401,6 +401,8 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReconnect3() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8113");
+
         startZK(3);
 
         ZookeeperClient client = createClient(SES_TIMEOUT);
@@ -424,6 +426,8 @@ public class ZookeeperClientTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReconnect4() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8113");
+
         startZK(3);
 
         ZookeeperClient client = new ZookeeperClient(log,
