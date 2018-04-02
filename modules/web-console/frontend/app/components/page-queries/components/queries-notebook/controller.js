@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
 import 'rxjs/add/operator/mergeMap';
 import 'rxjs/add/operator/merge';
 import 'rxjs/add/operator/switchMap';
@@ -147,8 +147,8 @@ class Paragraph {
 
             let cause = err;
 
-            while (_.nonNil(cause)) {
-                if (_.nonEmpty(cause.className) &&
+            while (nonNil(cause)) {
+                if (nonEmpty(cause.className) &&
                     _.includes(['SQLException', 'JdbcSQLException', 'QueryCancelledException'], JavaTypes.shortClassName(cause.className))) {
                     this.error.message = cause.message || cause.className;
 
@@ -158,10 +158,10 @@ class Paragraph {
                 cause = cause.cause;
             }
 
-            if (_.isEmpty(this.error.message) && _.nonEmpty(err.className)) {
+            if (_.isEmpty(this.error.message) && nonEmpty(err.className)) {
                 this.error.message = 'Internal cluster error';
 
-                if (_.nonEmpty(err.className))
+                if (nonEmpty(err.className))
                     this.error.message += ': ' + err.className;
             }
         };
@@ -171,7 +171,7 @@ class Paragraph {
         if (_.isNil(this.queryArgs))
             return null;
 
-        if (_.nonEmpty(this.error.message))
+        if (nonEmpty(this.error.message))
             return 'error';
 
         if (_.isEmpty(this.rows))
@@ -197,7 +197,7 @@ class Paragraph {
     }
 
     queryExecuted() {
-        return _.nonEmpty(this.meta) || _.nonEmpty(this.error.message);
+        return nonEmpty(this.meta) || nonEmpty(this.error.message);
     }
 
     scanExplain() {
@@ -209,11 +209,11 @@ class Paragraph {
     }
 
     chartColumnsConfigured() {
-        return _.nonEmpty(this.chartKeyCols) && _.nonEmpty(this.chartValCols);
+        return nonEmpty(this.chartKeyCols) && nonEmpty(this.chartValCols);
     }
 
     chartTimeLineEnabled() {
-        return _.nonEmpty(this.chartKeyCols) && _.eq(this.chartKeyCols[0], TIME_LINE);
+        return nonEmpty(this.chartKeyCols) && _.eq(this.chartKeyCols[0], TIME_LINE);
     }
 
     executionInProgress(showLocal = false) {
@@ -922,7 +922,7 @@ export class NotebookCtrl {
                     });
 
                     // Await for demo caches.
-                    if (!$ctrl.demoStarted && $root.IgniteDemoMode && _.nonEmpty(cacheNames)) {
+                    if (!$ctrl.demoStarted && $root.IgniteDemoMode && nonEmpty(cacheNames)) {
                         $ctrl.demoStarted = true;
 
                         Loading.finish('sqlLoading');
@@ -935,7 +935,7 @@ export class NotebookCtrl {
 
         const _startWatch = () => {
             const awaitClusters$ = fromPromise(
-                agentMgr.startClusterWatch('Back to Configuration', 'base.configuration.tabs.advanced.clusters'));
+                agentMgr.startClusterWatch('Back to Configuration', 'base.configuration.overview'));
 
             const finishLoading$ = defer(() => {
                 if (!$root.IgniteDemoMode)
@@ -1919,7 +1919,7 @@ export class NotebookCtrl {
                 const tab = '&nbsp;&nbsp;&nbsp;&nbsp;';
 
                 const addToTrace = (item) => {
-                    if (_.nonNil(item)) {
+                    if (nonNil(item)) {
                         const clsName = _.isEmpty(item.className) ? '' : '[' + JavaTypes.shortClassName(item.className) + '] ';
 
                         scope.content.push((scope.content.length > 0 ? tab : '') + clsName + (item.message || ''));

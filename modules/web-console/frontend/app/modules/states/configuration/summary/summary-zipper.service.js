@@ -26,10 +26,12 @@ export default ['$q', function($q) {
 
         worker.onmessage = (e) => {
             defer.resolve(e.data);
+            worker.terminate();
         };
 
         worker.onerror = (err) => {
             defer.reject(err);
+            worker.terminate();
         };
 
         return defer.promise;

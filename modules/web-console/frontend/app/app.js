@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import './vendor';
 import '../public/stylesheets/style.scss';
 import '../app/primitives';
 
@@ -41,6 +42,7 @@ import './modules/dialog/dialog.module';
 import './modules/ace.module';
 import './modules/socket.module';
 import './modules/loading/loading.module';
+import servicesModule from './services';
 // endignite
 
 // Data
@@ -67,10 +69,11 @@ import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directiv
 import igniteUiAceTabs from './directives/ui-ace-tabs.directive';
 import igniteRetainSelection from './directives/retain-selection.directive';
 import btnIgniteLink from './directives/btn-ignite-link';
+import exposeInput from './components/expose-ignite-form-field-control';
 
 // Services.
 import ChartColors from './services/ChartColors.service';
-import Confirm from './services/Confirm.service.js';
+import {default as IgniteConfirm, Confirm} from './services/Confirm.service.js';
 import ConfirmBatch from './services/ConfirmBatch.service.js';
 import CopyToClipboard from './services/CopyToClipboard.service';
 import Countries from './services/Countries.service';
@@ -85,10 +88,11 @@ import LegacyUtils from './services/LegacyUtils.service';
 import Messages from './services/Messages.service';
 import ModelNormalizer from './services/ModelNormalizer.service.js';
 import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
-import Clusters from './services/Clusters';
 import Caches from './services/Caches';
 import {CSV} from './services/CSV';
 import {$exceptionHandler} from './services/exceptionHandler.js';
+import IGFSs from './services/IGFSs';
+import Models from './services/Models';
 
 import AngularStrapTooltip from './services/AngularStrapTooltip.decorator';
 import AngularStrapSelect from './services/AngularStrapSelect.decorator';
@@ -119,6 +123,7 @@ import pageConfigure from './components/page-configure';
 import pageConfigureBasic from './components/page-configure-basic';
 import pageConfigureAdvanced from './components/page-configure-advanced';
 import pageQueries from './components/page-queries';
+import pageConfigureOverview from './components/page-configure-overview';
 import gridColumnSelector from './components/grid-column-selector';
 import gridItemSelected from './components/grid-item-selected';
 import gridNoData from './components/grid-no-data';
@@ -209,6 +214,7 @@ angular.module('ignite-console', [
     pageConfigureBasic.name,
     pageConfigureAdvanced.name,
     pageQueries.name,
+    pageConfigureOverview.name,
     gridColumnSelector.name,
     gridItemSelected.name,
     gridNoData.name,
@@ -221,9 +227,11 @@ angular.module('ignite-console', [
     AngularStrapSelect.name,
     listEditable.name,
     clusterSelector.name,
+    servicesModule.name,
     connectedClusters.name,
     igniteListOfRegisteredUsers.name,
     pageProfile.name,
+    exposeInput.name,
     pageSignIn.name,
     pageLanding.name,
     pagePasswordChanged.name,
@@ -262,8 +270,9 @@ angular.module('ignite-console', [
 .service('JavaTypes', JavaTypes)
 .service('SqlTypes', SqlTypes)
 .service(...ChartColors)
-.service(...Confirm)
-.service(...ConfirmBatch)
+.service(...IgniteConfirm)
+.service(Confirm.name, Confirm)
+.service('IgniteConfirmBatch', ConfirmBatch)
 .service(...CopyToClipboard)
 .service(...Countries)
 .service(...Focus)
@@ -275,9 +284,10 @@ angular.module('ignite-console', [
 .service(...LegacyUtils)
 .service(...UnsavedChangesGuard)
 .service('IgniteActivitiesUserDialog', IgniteActivitiesUserDialog)
-.service('Clusters', Clusters)
 .service('Caches', Caches)
 .service(CSV.name, CSV)
+.service('IGFSs', IGFSs)
+.service('Models', Models)
 // Controllers.
 .controller(...resetPassword)
 // Filters.
@@ -346,11 +356,7 @@ angular.module('ignite-console', [
         $root.revertIdentity = () => {
             $http.get('/api/v1/admin/revert/identity')
                 .then(() => User.load())
-                .then((user) => {
-                    $root.$broadcast('user', user);
-
-                    $state.go('base.settings.admin');
-                })
+                .then(() => $state.go('base.settings.admin'))
                 .then(() => Notebook.load())
                 .catch(Messages.showError);
         };
