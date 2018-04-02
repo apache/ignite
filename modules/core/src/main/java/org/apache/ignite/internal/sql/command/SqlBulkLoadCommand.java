@@ -269,6 +269,7 @@ public class SqlBulkLoadCommand implements SqlCommand {
      *
      * @return The list of columns.
      */
+    @SuppressWarnings("AssignmentOrReturnOfFieldWithMutableType")
     public List<String> columns() {
         return cols;
     }
