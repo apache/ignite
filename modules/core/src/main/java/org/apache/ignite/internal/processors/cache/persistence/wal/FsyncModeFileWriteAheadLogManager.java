@@ -62,6 +62,7 @@ import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.events.WalSegmentArchivedEvent;
 import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -1399,6 +1400,10 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             catch (InterruptedException ignore) {
                 Thread.currentThread().interrupt();
             }
+
+            if (!Thread.currentThread().isInterrupted() && !stopped)
+                U.handleFailure(cctx.kernalContext().grid(), FailureType.SYSTEM_WORKER_TERMINATION,
+                    new IllegalStateException("WAL file archiver thread is exiting unexpectedly (FSYNC mode)"));
         }
 
         /**

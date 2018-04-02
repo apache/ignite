@@ -1560,6 +1560,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             catch (InterruptedException ignore) {
                 Thread.currentThread().interrupt();
             }
+
+            if (!Thread.currentThread().isInterrupted() && !stopped)
+                U.handleFailure(cctx.kernalContext().grid(), FailureType.SYSTEM_WORKER_TERMINATION,
+                    new IllegalStateException("WAL file archiver thread is exiting unexpectedly"));
         }
 
         /**
