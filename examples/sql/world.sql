@@ -44,6 +44,7 @@ CREATE TABLE CountryLanguage (
 CREATE INDEX idx_lang_country_code ON CountryLanguage (CountryCode);
 
 SET STREAMING ON;
+
 INSERT INTO City(ID, Name, CountryCode, District, Population) VALUES (1,'Kabul','AFG','Kabol',1780000);
 INSERT INTO City(ID, Name, CountryCode, District, Population) VALUES (2,'Qandahar','AFG','Qandahar',237500);
 INSERT INTO City(ID, Name, CountryCode, District, Population) VALUES (3,'Herat','AFG','Herat',186800);
