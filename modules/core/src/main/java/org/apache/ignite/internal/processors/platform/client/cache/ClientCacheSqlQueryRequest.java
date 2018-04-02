@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Sql query request.
@@ -54,6 +55,8 @@ public class ClientCacheSqlQueryRequest extends ClientCacheRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
+        authorize(ctx, SecurityPermission.CACHE_READ);
+
         IgniteCache cache = cache(ctx);
 
         ctx.incrementCursors();

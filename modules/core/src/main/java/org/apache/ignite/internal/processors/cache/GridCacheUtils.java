@@ -96,6 +96,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -1288,6 +1289,9 @@ public class GridCacheUtils {
 
         if (e.getCause() instanceof NullPointerException)
             return (NullPointerException)e.getCause();
+
+        if (e.getCause() instanceof SecurityException)
+            return (SecurityException)e.getCause();
 
         C1<IgniteCheckedException, IgniteException> converter = U.getExceptionConverter(e.getClass());
 
