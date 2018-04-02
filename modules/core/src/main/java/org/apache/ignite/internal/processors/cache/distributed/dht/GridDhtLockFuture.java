@@ -53,6 +53,8 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVe
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedLockCancelledException;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -1271,8 +1273,8 @@ public final class GridDhtLockFuture extends GridCacheCompoundIdentityFuture<Boo
                         try {
                             if (entry.initialValue(info.value(),
                                 info.version(),
-                                info,
-                                info.newMvccVersion(),
+                                cctx.mvccEnabled() ? ((MvccVersionAware)info).mvccVersion() : null,
+                                cctx.mvccEnabled() ? ((MvccUpdateVersionAware)info).newMvccVersion() : null,
                                 info.ttl(),
                                 info.expireTime(),
                                 true,

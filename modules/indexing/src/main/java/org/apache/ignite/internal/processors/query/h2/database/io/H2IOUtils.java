@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.processors.query.h2.database.io;
 
 import org.apache.ignite.internal.pagemem.PageUtils;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.assertMvccVersionValid;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
 
 /**
  *
@@ -47,11 +48,13 @@ class H2IOUtils {
         if (storeMvcc) {
             long mvccCrdVer = row.mvccCoordinatorVersion();
             long mvccCntr = row.mvccCounter();
+            int mvccOpCntr = row.mvccOperationCounter();
 
-            assert assertMvccVersionValid(mvccCrdVer, mvccCntr);
+            assert MvccUtils.mvccVersionIsValid(mvccCrdVer, mvccCntr, mvccOpCntr);
 
             PageUtils.putLong(pageAddr, off + 8, mvccCrdVer);
             PageUtils.putLong(pageAddr, off + 16, mvccCntr);
+            PageUtils.putInt(pageAddr, off + 24, mvccOpCntr);
         }
     }
 
@@ -79,11 +82,13 @@ class H2IOUtils {
         if (storeMvcc) {
             long mvccCrdVer = rowIo.getMvccCoordinatorVersion(srcPageAddr, srcIdx);
             long mvccCntr = rowIo.getMvccCounter(srcPageAddr, srcIdx);
+            int mvccOpCntr = rowIo.getMvccOperationCounter(srcPageAddr, srcIdx);
 
-            assert assertMvccVersionValid(mvccCrdVer, mvccCntr);
+            assert MvccUtils.mvccVersionIsValid(mvccCrdVer, mvccCntr, mvccOpCntr);
 
             PageUtils.putLong(dstPageAddr, dstOff + 8, mvccCrdVer);
             PageUtils.putLong(dstPageAddr, dstOff + 16, mvccCntr);
+            PageUtils.putInt(dstPageAddr, dstOff + 24, mvccOpCntr);
         }
     }
 }

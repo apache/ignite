@@ -17,9 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.tree;
 
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 
 /**
  *
@@ -35,30 +33,5 @@ public final class DataInnerIO extends AbstractDataInnerIO {
      */
     private DataInnerIO(int ver) {
         super(T_DATA_REF_INNER, ver, true, 12);
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getCacheId(long pageAddr, int idx) {
-        return CU.UNDEFINED_CACHE_ID;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean storeCacheId() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean storeMvccVersion() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMvccCoordinatorVersion(long pageAddr, int idx) {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMvccCounter(long pageAddr, int idx) {
-        return MvccProcessor.MVCC_COUNTER_NA;
     }
 }

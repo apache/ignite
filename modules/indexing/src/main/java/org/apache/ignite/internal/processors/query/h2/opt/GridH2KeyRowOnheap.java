@@ -63,11 +63,6 @@ public class GridH2KeyRowOnheap extends GridH2Row {
     }
 
     /** {@inheritDoc} */
-    @Override public void mvccVersion(long crdVer, long mvccCntr) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
     @Override public int size() throws IgniteCheckedException {
         throw new UnsupportedOperationException();
     }

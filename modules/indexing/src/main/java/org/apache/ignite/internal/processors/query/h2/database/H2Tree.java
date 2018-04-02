@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusMetaIO;
@@ -42,7 +43,7 @@ import org.h2.value.Value;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.assertMvccVersionValid;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
 
 /**
  */
@@ -161,15 +162,16 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * Create row from link.
      *
      * @param link Link.
+     * @param mvccOpCntr
      * @return Row.
      * @throws IgniteCheckedException if failed.
      */
-    public GridH2Row createRowFromLink(long link, long mvccCrdVer, long mvccCntr) throws IgniteCheckedException {
+    public GridH2Row createRowFromLink(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
         if (rowCache != null) {
             GridH2Row row = rowCache.get(link);
 
             if (row == null) {
-                row = rowStore.getMvccRow(link, mvccCrdVer, mvccCntr);
+                row = rowStore.getMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
 
                 if (row instanceof GridH2KeyValueRowOnheap)
                     rowCache.put((GridH2KeyValueRowOnheap)row);
@@ -178,7 +180,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
             return row;
         }
         else
-            return rowStore.getMvccRow(link, mvccCrdVer, mvccCntr);
+            return rowStore.getMvccRow(link, mvccCrdVer, mvccCntr, mvccOpCntr);
     }
 
     /** {@inheritDoc} */
@@ -294,7 +296,7 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
      * @return Compare result: see {@link Comparator#compare(Object, Object)} for values.
      */
     public int compareRows(GridH2SearchRow r1, GridH2SearchRow r2) {
-        assert !mvccEnabled || r2.indexSearchRow() || assertMvccVersionValid(r2.mvccCoordinatorVersion(), r2.mvccCounter()) : r2;
+        assert !mvccEnabled || r2.indexSearchRow() || MvccUtils.mvccVersionIsValid(r2.mvccCoordinatorVersion(), r2.mvccCounter()) : r2;
         if (r1 == r2)
             return 0;
 
@@ -329,21 +331,13 @@ public abstract class H2Tree extends BPlusTree<GridH2SearchRow, GridH2Row> {
         if (!mvccEnabled || r2.indexSearchRow())
             return 0;
 
-        long crdVer1 = io.getMvccCoordinatorVersion(pageAddr, idx);
-        long crdVer2 = r2.mvccCoordinatorVersion();
-
-        assert crdVer1 != 0;
-
-        int c = -Long.compare(crdVer1, crdVer2);
-
-        if (c != 0)
-            return c;
-
+        long crd = io.getMvccCoordinatorVersion(pageAddr, idx);
         long cntr = io.getMvccCounter(pageAddr, idx);
+        int opCntr = io.getMvccOperationCounter(pageAddr, idx);
 
-        assert cntr != MVCC_COUNTER_NA;
+        assert MvccUtils.mvccVersionIsValid(crd, cntr, opCntr);
 
-        return -Long.compare(cntr, r2.mvccCounter());
+        return -MvccUtils.compare(crd, cntr, opCntr, r2);  // descending order
     }
 
     /**

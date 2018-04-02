@@ -31,17 +31,21 @@ public class MvccSearchRow extends SearchRow {
     /** Counter. */
     private long cntr;
 
+    /** Operation counter. */
+    protected int opCntr;
+
     /**
      * @param cacheId Cache ID.
      * @param key Key.
      * @param crdVer Coordinator version.
      * @param cntr Counter.
      */
-    public MvccSearchRow(int cacheId, KeyCacheObject key, long crdVer, long cntr) {
+    public MvccSearchRow(int cacheId, KeyCacheObject key, long crdVer, long cntr, int opCntr) {
         super(cacheId, key);
 
         this.crdVer = crdVer;
         this.cntr = cntr;
+        this.opCntr = opCntr;
     }
 
     /** {@inheritDoc} */
@@ -52,6 +56,11 @@ public class MvccSearchRow extends SearchRow {
     /** {@inheritDoc} */
     @Override public long mvccCounter() {
         return cntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int mvccOperationCounter() {
+        return opCntr;
     }
 
     /** {@inheritDoc} */

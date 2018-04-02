@@ -40,47 +40,70 @@ public interface RowLinkIO {
      * @param idx Index.
      * @return Cache ID or {@code 0} if cache ID is not defined.
      */
-    public int getCacheId(long pageAddr, int idx);
+    default int getCacheId(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @param pageAddr Page address.
      * @param idx Index.
      * @return Mvcc coordinator version.
      */
-    public long getMvccCoordinatorVersion(long pageAddr, int idx);
+    default long getMvccCoordinatorVersion(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param idx Index.
+     * @return Mvcc operation counter.
+     */
+    default int getMvccOperationCounter(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @param pageAddr Page address.
      * @param idx Index.
      * @return Mvcc counter.
      */
-    public long getMvccCounter(long pageAddr, int idx);
+    default long getMvccCounter(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @param pageAddr Page address.
      * @param idx Index.
      * @return Mvcc coordinator version.
      */
-    public long getMvccLockCoordinatorVersion(long pageAddr, int idx);
+    default long getMvccLockCoordinatorVersion(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @param pageAddr Page address.
      * @param idx Index.
      * @return Mvcc counter.
      */
-    public long getMvccLockCounter(long pageAddr, int idx);
+    default long getMvccLockCounter(long pageAddr, int idx) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @param pageAddr Page address.
      * @param idx Index.
      * @param lockCrd Mvcc lock coordinator version.
      */
-    public void setMvccLockCoordinatorVersion(long pageAddr, int idx, long lockCrd);
+    default void setMvccLockCoordinatorVersion(long pageAddr, int idx, long lockCrd) {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      * @param pageAddr Page address.
      * @param idx Index.
      * @param lockCntr Mvcc lock counter.
      */
-    public void setMvccLockCounter(long pageAddr, int idx, long lockCntr);
+    default void setMvccLockCounter(long pageAddr, int idx, long lockCntr) {
+        throw new UnsupportedOperationException();
+    }
 }

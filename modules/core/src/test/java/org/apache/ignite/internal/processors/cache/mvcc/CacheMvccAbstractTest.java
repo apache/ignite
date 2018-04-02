@@ -59,6 +59,7 @@ import org.apache.ignite.internal.TestRecordingCommunicationSpi;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
@@ -532,12 +533,14 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
                             }
                         }
                         catch (Throwable e) {
-                            IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
+                            if (X.cause(e, IgniteTxTimeoutCheckedException.class) == null) {
+                                IgniteSQLException sqlEx = X.cause(e, IgniteSQLException.class);
 
-                            if (sqlEx == null || sqlEx.statusCode() != IgniteQueryErrorCode.CONCURRENT_UPDATE) {
-                                error("Writer error: ", e);
+                                if (sqlEx == null || sqlEx.statusCode() != IgniteQueryErrorCode.CONCURRENT_UPDATE) {
+                                    error("Writer error: ", e);
 
-                                throw e;
+                                    throw e;
+                                }
                             }
                         }
                         finally {
@@ -1063,7 +1066,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
 
                     KeyCacheObject key = cctx.toCacheKeyObject(entry.getKey());
 
-                    List<T2<Object, MvccVersion>> vers = cctx.offheap().mvccAllVersions(cctx, key);
+                    List<IgniteBiTuple<Object, MvccVersion>> vers = cctx.offheap().mvccAllVersions(cctx, key);
 
                     assertTrue("[entry="  + entry + "; vers=" + vers + ']', vers.size() <= 1);
                 }

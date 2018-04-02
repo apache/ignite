@@ -21,6 +21,7 @@ import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -38,7 +39,7 @@ import static org.apache.ignite.internal.processors.cache.persistence.tree.io.Da
  */
 public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     /** */
-    public static final int MVCC_INFO_SIZE = 4 * 8;
+    public static final int MVCC_INFO_SIZE = 40;
     
     /** */
     public static final IOVersions<DataPageIO> VERSIONS = new IOVersions<>(
@@ -55,8 +56,6 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     /** {@inheritDoc} */
     @Override protected void writeRowData(long pageAddr, int dataOff, int payloadSize, CacheDataRow row,
         boolean newRow) throws IgniteCheckedException {
-        assert row.mvccCoordinatorVersion() > 0 == row.mvccCounter() > 0;
-
         long addr = pageAddr + dataOff;
 
         int cacheIdSize = row.cacheId() != 0 ? 4 : 0;
@@ -67,13 +66,20 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
             addr += 2;
 
             if (mvccInfoSize > 0) {
+                assert MvccUtils.mvccVersionIsValid(row.mvccCoordinatorVersion(), row.mvccCounter(), row.mvccOperationCounter());
+
                 // xid_min.
                 PageUtils.putLong(addr, 0, row.mvccCoordinatorVersion());
                 PageUtils.putLong(addr, 8, row.mvccCounter());
+                PageUtils.putInt(addr, 16, row.mvccOperationCounter());
 
-                // empty xid_max.
-                PageUtils.putLong(addr, 16, row.newMvccCoordinatorVersion());
-                PageUtils.putLong(addr, 24, row.newMvccCounter());
+                assert row.newMvccCoordinatorVersion() == 0
+                    || MvccUtils.mvccVersionIsValid(row.newMvccCoordinatorVersion(), row.newMvccCounter(), row.newMvccOperationCounter());
+
+                // xid_max.
+                PageUtils.putLong(addr, 20, row.newMvccCoordinatorVersion());
+                PageUtils.putLong(addr, 28, row.newMvccCounter());
+                PageUtils.putInt(addr, 36, row.newMvccOperationCounter());
 
                 addr += mvccInfoSize;
             }
@@ -100,8 +106,6 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     /** {@inheritDoc} */
     @Override protected void writeFragmentData(CacheDataRow row, ByteBuffer buf, int rowOff,
         int payloadSize) throws IgniteCheckedException {
-        assert row.mvccCoordinatorVersion() > 0 == row.mvccCounter() > 0;
-
         final int keySize = row.key().valueBytesLength(null);
 
         final int valSize = row.value().valueBytesLength(null);
@@ -204,8 +208,14 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
         else if (type == CACHE_ID)
             writeCacheIdFragment(buf, row.cacheId(), rowOff, len, prevLen);
         else if (type == MVCC_INFO)
-            writeMvccInfoFragment(buf, row.mvccCoordinatorVersion(), row.mvccCounter(),
-                row.newMvccCoordinatorVersion(), row.newMvccCounter(), len);
+            writeMvccInfoFragment(buf,
+                row.mvccCoordinatorVersion(),
+                row.mvccCounter(),
+                row.mvccOperationCounter(),
+                row.newMvccCoordinatorVersion(),
+                row.newMvccCounter(),
+                row.newMvccOperationCounter(),
+                len);
         else if (type != VERSION) {
             // Write key or value.
             final CacheObject co = type == KEY ? row.key() : row.value();
@@ -228,7 +238,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     public void markRemoved(long pageAddr, int dataOff, MvccVersion newVer) {
         long addr = pageAddr + dataOff;
 
-        markRemoved(addr, newVer.coordinatorVersion(), newVer.counter());
+        markRemoved(addr, newVer.coordinatorVersion(), newVer.counter(), newVer.operationCounter());
     }
 
     /**
@@ -240,12 +250,12 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
      * @param mvccCrd Mvcc coordinator.
      * @param mvccCntr Mvcc counter.
      */
-    public void markRemoved(long pageAddr, int itemId, int pageSize, long mvccCrd, long mvccCntr) {
+    public void markRemoved(long pageAddr, int itemId, int pageSize, long mvccCrd, long mvccCntr, int mvccOpCntr) {
         int dataOff = getDataOffset(pageAddr, itemId, pageSize);
 
         long addr = pageAddr + dataOff + (isFragmented(pageAddr, dataOff) ? 10 : 2);
 
-        markRemoved(addr, mvccCrd, mvccCntr);
+        markRemoved(addr, mvccCrd, mvccCntr, mvccOpCntr);
     }
 
     /**
@@ -255,18 +265,13 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
      * @param mvccCrd Mvcc coordinator.
      * @param mvccCntr Mvcc counter.
      */
-    private void markRemoved(long addr, long mvccCrd, long mvccCntr) {
+    private void markRemoved(long addr, long mvccCrd, long mvccCntr, int mvccOpCntr) {
         // Skip xid_min.
-        addr += 16;
-
-        // TODO uncomment when IGNITE-7764 is implemented.
-        //long prevCrd = PageUtils.getLong(addr, 0);
-        //long prevCntr =  PageUtils.getLong(addr, 8);
-
-        //assert prevCrd == 0 && prevCntr == MVCC_COUNTER_NA;
+        addr += 20;
 
         PageUtils.putLong(addr, 0, mvccCrd);
         PageUtils.putLong(addr, 8, mvccCntr);
+        PageUtils.putInt(addr, 16, mvccOpCntr);
     }
 
     /**
@@ -296,6 +301,19 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     }
 
     /**
+     * Returns MVCC operation counter value.
+     *
+     * @param pageAddr Page address.
+     * @param dataOff Data offset.
+     * @return MVCC counter value.
+     */
+    public int mvccOperationCounter(long pageAddr, int dataOff) {
+        long addr = pageAddr + dataOff;
+
+        return PageUtils.getInt(addr, 16);
+    }
+
+    /**
      * Returns new MVCC coordinator number.
      *
      * @param pageAddr Page address.
@@ -306,7 +324,7 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
         long addr = pageAddr + dataOff;
 
         // Skip xid_min.
-        addr += 16;
+        addr += 20;
 
         return PageUtils.getLong(addr, 0);
     }
@@ -322,9 +340,25 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
         long addr = pageAddr + dataOff;
 
         // Skip xid_min.
-        addr += 16;
+        addr += 20;
 
         return PageUtils.getLong(addr, 8);
+    }
+
+    /**
+     * Returns MVCC operation counter value.
+     *
+     * @param pageAddr Page address.
+     * @param dataOff Data offset.
+     * @return MVCC counter value.
+     */
+    public int newMvccOperationCounter(long pageAddr, int dataOff) {
+        long addr = pageAddr + dataOff;
+
+        // Skip xid_min.
+        addr += 20;
+
+        return PageUtils.getInt(addr, 16);
     }
 
     /**
@@ -406,25 +440,33 @@ public class DataPageIO extends AbstractDataPageIO<CacheDataRow> {
     /**
      * @param buf Byte buffer.
      * @param mvccCrd Coordinator version.
-     * @param mvccCnt Counter.
+     * @param mvccCntr Counter.
+     * @param mvccOpCntr Operation counter.
      * @param newMvccCrd New coordinator version.
-     * @param newMvccCnt New counter version.
+     * @param newMvccCntr New counter version.
+     * @param newMvccOpCntr New operation counter.
      * @param len Length.
      */
-    private void writeMvccInfoFragment(ByteBuffer buf, long mvccCrd, long mvccCnt, long newMvccCrd,
-        long newMvccCnt, int len) {
+    private void writeMvccInfoFragment(ByteBuffer buf, long mvccCrd, long mvccCntr, int mvccOpCntr, long newMvccCrd,
+        long newMvccCntr, int newMvccOpCntr, int len) {
         if (mvccCrd == 0)
             return;
 
         assert len >= MVCC_INFO_SIZE : "Mvcc info should fit on the one page!";
 
+        assert MvccUtils.mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr);
+
         // xid_min.
         buf.putLong(mvccCrd);
-        buf.putLong(mvccCnt);
+        buf.putLong(mvccCntr);
+        buf.putInt(mvccOpCntr);
+
+        assert newMvccCrd == 0 || MvccUtils.mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr);
 
         // xid_max.
         buf.putLong(newMvccCrd);
-        buf.putLong(newMvccCnt);
+        buf.putLong(newMvccCntr);
+        buf.putInt(newMvccOpCntr);
     }
 
     /** {@inheritDoc} */

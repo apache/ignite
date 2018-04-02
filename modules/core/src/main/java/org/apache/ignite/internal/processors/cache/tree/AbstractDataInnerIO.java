@@ -19,7 +19,7 @@ package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -28,8 +28,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusInne
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteInClosure;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.assertMvccVersionValid;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
 
 /**
  *
@@ -63,13 +62,19 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
         }
 
         if (storeMvccVersion()) {
-            assert row.mvccCoordinatorVersion() > 0 : row;
-            assert row.mvccCounter() != MVCC_COUNTER_NA : row;
+            long mvccCrd = row.mvccCoordinatorVersion();
+            long mvccCntr = row.mvccCounter();
+            int opCntr = row.mvccOperationCounter();
 
-            PageUtils.putLong(pageAddr, off, row.mvccCoordinatorVersion());
+            assert mvccVersionIsValid(mvccCrd, mvccCntr, opCntr);
+
+            PageUtils.putLong(pageAddr, off, mvccCrd);
             off += 8;
 
-            PageUtils.putLong(pageAddr, off, row.mvccCounter());
+            PageUtils.putLong(pageAddr, off, mvccCntr);
+            off += 8;
+
+            PageUtils.putInt(pageAddr, off, opCntr);
         }
     }
 
@@ -78,21 +83,23 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
         throws IgniteCheckedException {
         long link = getLink(pageAddr, idx);
         int hash = getHash(pageAddr, idx);
-        int cacheId = getCacheId(pageAddr, idx);
+
+        int cacheId = storeCacheId() ? getCacheId(pageAddr, idx) : CU.UNDEFINED_CACHE_ID;
 
         if (storeMvccVersion()) {
-            long mvccTopVer = getMvccCoordinatorVersion(pageAddr, idx);
+            long mvccCrd = getMvccCoordinatorVersion(pageAddr, idx);
             long mvccCntr = getMvccCounter(pageAddr, idx);
+            int opCntr = getMvccOperationCounter(pageAddr, idx);
 
-            assert mvccTopVer > 0 : mvccTopVer;
-            assert mvccCntr != MVCC_COUNTER_NA;
+            assert mvccVersionIsValid(mvccCrd, mvccCntr, opCntr);
 
             return ((CacheDataTree)tree).rowStore().mvccRow(cacheId,
                 hash,
                 link,
                 CacheDataRowAdapter.RowData.KEY_ONLY,
-                mvccTopVer,
-                mvccCntr);
+                mvccCrd,
+                mvccCntr,
+                opCntr);
         }
 
         return ((CacheDataTree)tree).rowStore().keySearchRow(cacheId, hash, link);
@@ -128,15 +135,19 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
         }
 
         if (storeMvccVersion()) {
-            long mvccCrdVer = rowIo.getMvccCoordinatorVersion(srcPageAddr, srcIdx);
+            long mvccCrd = rowIo.getMvccCoordinatorVersion(srcPageAddr, srcIdx);
             long mvccCntr = rowIo.getMvccCounter(srcPageAddr, srcIdx);
+            int opCntr = rowIo.getMvccOperationCounter(srcPageAddr, srcIdx);
 
-            assert assertMvccVersionValid(mvccCrdVer, mvccCntr);
+            assert MvccUtils.mvccVersionIsValid(mvccCrd, mvccCntr, opCntr);
 
-            PageUtils.putLong(dstPageAddr, off, mvccCrdVer);
+            PageUtils.putLong(dstPageAddr, off, mvccCrd);
             off += 8;
 
             PageUtils.putLong(dstPageAddr, off, mvccCntr);
+            off += 8;
+
+            PageUtils.putInt(dstPageAddr, off, opCntr);
         }
     }
 
@@ -160,33 +171,17 @@ public abstract class AbstractDataInnerIO extends BPlusInnerIO<CacheSearchRow> i
             c.apply(new CacheDataRowAdapter(getLink(pageAddr, i)));
     }
 
-    /** {@inheritDoc} */
-    @Override public long getMvccLockCoordinatorVersion(long pageAddr, int idx) {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMvccLockCounter(long pageAddr, int idx) {
-        return MvccProcessor.MVCC_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setMvccLockCoordinatorVersion(long pageAddr, int idx, long lockCrd) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setMvccLockCounter(long pageAddr, int idx, long lockCntr) {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * @return {@code True} if cache ID has to be stored.
      */
-    protected abstract boolean storeCacheId();
+    protected boolean storeCacheId() {
+        return false;
+    }
 
     /**
      * @return {@code True} if mvcc version has to be stored.
      */
-    protected abstract boolean storeMvccVersion();
+    protected boolean storeMvccVersion() {
+        return false;
+    }
 }

@@ -33,8 +33,8 @@ public class MvccLinkAwareSearchRow extends MvccSearchRow {
      * @param mvccCntr Mvcc counter.
      * @param link Link.
      */
-    public MvccLinkAwareSearchRow(int cacheId, KeyCacheObject key, long crdVer, long mvccCntr, long link) {
-        super(cacheId, key, crdVer, mvccCntr);
+    public MvccLinkAwareSearchRow(int cacheId, KeyCacheObject key, long crdVer, long mvccCntr, int mvccOpCntr, long link) {
+        super(cacheId, key, crdVer, mvccCntr, mvccOpCntr);
 
         assert link != 0L;
 

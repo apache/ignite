@@ -45,6 +45,9 @@ public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLong
     private long cntr;
 
     /** */
+    private int opCntr;
+
+    /** */
     @GridDirectTransient
     private int txsCnt;
 
@@ -62,27 +65,21 @@ public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLong
     }
 
     /**
-     * @param crdVer Coordinator version.
-     * @param cntr Counter.
-     * @param cleanupVer Cleanup version.
-     */
-    public MvccSnapshotResponse(long crdVer, long cntr, long cleanupVer) {
-        this.crdVer = crdVer;
-        this.cntr = cntr;
-        this.cleanupVer = cleanupVer;
-    }
-
-    /**
-     * @param crdVer Coordinator version.
-     * @param cntr Counter.
-     * @param cleanupVer Cleanup version.
      * @param futId Future ID.
+     * @param crdVer Coordinator version.
+     * @param cntr Counter.
+     * @param opCntr Operation counter.
+     * @param cleanupVer Cleanup version.
      */
-    public void init(long futId, long crdVer, long cntr, long cleanupVer) {
+    public void init(long futId, long crdVer, long cntr, int opCntr, long cleanupVer) {
         this.futId = futId;
         this.crdVer = crdVer;
         this.cntr = cntr;
+        this.opCntr = opCntr;
         this.cleanupVer = cleanupVer;
+
+        if (txsCnt > 0 && txs.length > txsCnt) // truncate if necessary
+            txs = Arrays.copyOf(txs, txsCnt);
     }
 
     /**
@@ -95,13 +92,6 @@ public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLong
             txs = Arrays.copyOf(txs, txs.length << 1);
 
         txs[txsCnt++] = txId;
-    }
-
-    /**
-     *
-     */
-    public void resetTransactionsCount() {
-        txsCnt = 0;
     }
 
     /** {@inheritDoc} */
@@ -152,6 +142,16 @@ public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLong
     }
 
     /** {@inheritDoc} */
+    @Override public int operationCounter() {
+        return opCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void incrementOperationCounter() {
+        opCntr++;
+    }
+
+    /** {@inheritDoc} */
     @Override public MvccLongList activeTransactions() {
         return this;
     }
@@ -159,7 +159,7 @@ public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLong
     /** {@inheritDoc} */
     @Override public MvccSnapshot withoutActiveTransactions() {
         if (txsCnt > 0)
-            return new MvccSnapshotWithoutTxs(crdVer, cntr, cleanupVer);
+            return new MvccSnapshotWithoutTxs(crdVer, cntr, opCntr, cleanupVer);
 
         return this;
     }
@@ -206,7 +206,13 @@ public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLong
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeLongArray("txs", txs, txsCnt))
+                if (!writer.writeInt("opCntr", opCntr))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeLongArray("txs", txs))
                     return false;
 
                 writer.incrementState();
@@ -257,6 +263,14 @@ public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLong
                 reader.incrementState();
 
             case 4:
+                opCntr = reader.readInt("opCntr");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
                 txs = reader.readLongArray("txs");
 
                 if (!reader.isLastRead())
@@ -278,7 +292,7 @@ public class MvccSnapshotResponse implements MvccMessage, MvccSnapshot, MvccLong
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 6;
     }
 
     /** {@inheritDoc} */

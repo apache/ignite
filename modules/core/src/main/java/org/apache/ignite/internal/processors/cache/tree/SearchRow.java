@@ -87,6 +87,11 @@ public class SearchRow implements CacheSearchRow {
     }
 
     /** {@inheritDoc} */
+    @Override public int mvccOperationCounter() {
+        return MvccProcessor.MVCC_OP_COUNTER_NA;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SearchRow.class, this);
     }

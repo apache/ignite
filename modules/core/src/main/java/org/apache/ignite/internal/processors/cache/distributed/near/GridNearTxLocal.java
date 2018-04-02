@@ -1733,7 +1733,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
             }), new PLC1<Long>(null) {
                 @Override protected Long postLock(Long val) throws IgniteCheckedException {
-                    return fut.get();
+                    Long res = fut.get();
+
+                    assert mvccInfo != null;
+                    assert res != null;
+
+                    if (res > 0)
+                        mvccInfo.snapshot().incrementOperationCounter();
+
+                    return res;
                 }
             }));
         }
@@ -1772,7 +1780,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 }
             }), new PLC1<Long>(null) {
                 @Override protected Long postLock(Long val) throws IgniteCheckedException {
-                    return fut.get();
+                    Long res = fut.get();
+
+                    assert mvccInfo != null;
+                    assert res != null;
+
+                    if (res > 0)
+                        mvccInfo.snapshot().incrementOperationCounter();
+
+                    return res;
                 }
             }));
         }

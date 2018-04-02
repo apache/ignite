@@ -88,8 +88,9 @@ public class H2TreeFilterClosure implements H2Tree.TreeRowClosure<GridH2SearchRo
 
         long rowCrdVer = io.getMvccCoordinatorVersion(pageAddr, idx);
         long rowCntr = io.getMvccCounter(pageAddr, idx);
+        int rowOpCntr = io.getMvccOperationCounter(pageAddr, idx);
 
-        return MvccUtils.isVisible(cctx, mvccSnapshot, rowCrdVer, rowCntr)
+        return MvccUtils.isVisible(cctx, mvccSnapshot, rowCrdVer, rowCntr, rowOpCntr)
                 && !MvccUtils.isNewVisible(cctx, io.getLink(pageAddr, idx), mvccSnapshot);
     }
 

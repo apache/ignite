@@ -18,8 +18,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.plugin.extensions.communication.MessageReader;
 import org.apache.ignite.plugin.extensions.communication.MessageWriter;
@@ -27,7 +27,7 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 /**
  *
  */
-public class GridCacheMvccEntryInfo extends GridCacheEntryInfo {
+public class GridCacheMvccEntryInfo extends GridCacheEntryInfo implements MvccVersionAware, MvccUpdateVersionAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -38,51 +38,59 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo {
     private long mvccCntr;
 
     /** */
+    private int mvccOpCntr;
+
+    /** */
     private long newMvccCrdVer;
 
     /** */
     private long newMvccCntr;
 
-    /** {@inheritDoc} */
-    @Override public void mvccVersion(long crdVer, long ctr) {
-        this.mvccCrdVer = crdVer;
-        this.mvccCntr = ctr;
-    }
+    /** */
+    private int newMvccOpCntr;
 
     /** {@inheritDoc} */
-    @Override public long coordinatorVersion() {
-        return mvccCrdVer;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long counter() {
-        return mvccCntr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public byte fieldsCount() {
-        return 10;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void newMvccVersion(long newCrdVer, long newCtr) {
-        this.newMvccCrdVer = newCrdVer;
-        this.newMvccCntr = newCtr;
-    }
-
-    /** {@inheritDoc} */
-    public MvccVersion newMvccVersion() {
-        return new MvccVersionImpl(newMvccCrdVer, newMvccCntr);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long newCoordinatorVersion() {
+    @Override public long newMvccCoordinatorVersion() {
         return newMvccCrdVer;
     }
 
     /** {@inheritDoc} */
-    @Override public long newCounter() {
+    @Override public long newMvccCounter() {
         return newMvccCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int newMvccOperationCounter() {
+        return newMvccOpCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long mvccCoordinatorVersion() {
+        return mvccCrdVer;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long mvccCounter() {
+        return mvccCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int mvccOperationCounter() {
+        return mvccOpCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void newMvccVersion(long crd, long cntr, int opCntr) {
+        newMvccCrdVer = crd;
+        newMvccCntr = cntr;
+        newMvccOpCntr = opCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void mvccVersion(long crd, long cntr, int opCntr) {
+        mvccCrdVer = crd;
+        mvccCntr = cntr;
+        mvccOpCntr = opCntr;
     }
 
     /** {@inheritDoc} */
@@ -113,16 +121,29 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo {
                 writer.incrementState();
 
             case 8:
-                if (!writer.writeLong("newMvccCntr", newMvccCntr))
+                if (!writer.writeInt("mvccOpCntr", mvccOpCntr))
                     return false;
 
                 writer.incrementState();
 
             case 9:
+                if (!writer.writeLong("newMvccCntr", newMvccCntr))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
                 if (!writer.writeLong("newMvccCrdVer", newMvccCrdVer))
                     return false;
 
                 writer.incrementState();
+
+            case 11:
+                if (!writer.writeInt("newMvccOpCntr", newMvccOpCntr))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -156,7 +177,7 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo {
                 reader.incrementState();
 
             case 8:
-                newMvccCntr = reader.readLong("newMvccCntr");
+                mvccOpCntr = reader.readInt("mvccOpCntr");
 
                 if (!reader.isLastRead())
                     return false;
@@ -164,7 +185,23 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo {
                 reader.incrementState();
 
             case 9:
+                newMvccCntr = reader.readLong("newMvccCntr");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
                 newMvccCrdVer = reader.readLong("newMvccCrdVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 11:
+                newMvccOpCntr = reader.readInt("newMvccOpCntr");
 
                 if (!reader.isLastRead())
                     return false;
@@ -174,6 +211,11 @@ public class GridCacheMvccEntryInfo extends GridCacheEntryInfo {
         }
 
         return reader.afterMessageRead(GridCacheMvccEntryInfo.class);
+    }
+
+    /** {@inheritDoc} */
+    @Override public byte fieldsCount() {
+        return 12;
     }
 
     /** {@inheritDoc} */

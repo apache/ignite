@@ -37,7 +37,7 @@ public final class MvccDataLeafIO extends AbstractDataLeafIO {
      * @param ver Page format version.
      */
     private MvccDataLeafIO(int ver) {
-        super(T_DATA_REF_MVCC_LEAF, ver, 44);
+        super(T_DATA_REF_MVCC_LEAF, ver, 48);
     }
 
     /** {@inheritDoc} */
@@ -46,16 +46,6 @@ public final class MvccDataLeafIO extends AbstractDataLeafIO {
 
         for (int i = 0; i < cnt; i++)
             c.apply(new MvccDataRow(getLink(pageAddr, i)));
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getCacheId(long pageAddr, int idx) {
-        return CU.UNDEFINED_CACHE_ID;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean storeCacheId() {
-        return false;
     }
 
     /** {@inheritDoc} */
@@ -74,22 +64,27 @@ public final class MvccDataLeafIO extends AbstractDataLeafIO {
     }
 
     /** {@inheritDoc} */
+    @Override public int getMvccOperationCounter(long pageAddr, int idx) {
+        return PageUtils.getInt(pageAddr, offset(idx) + 28);
+    }
+
+    /** {@inheritDoc} */
     @Override public long getMvccLockCoordinatorVersion(long pageAddr, int idx) {
-        return PageUtils.getLong(pageAddr, offset(idx) + 28);
+        return PageUtils.getLong(pageAddr, offset(idx) + 32);
     }
 
     /** {@inheritDoc} */
     @Override public long getMvccLockCounter(long pageAddr, int idx) {
-        return PageUtils.getLong(pageAddr, offset(idx) + 36);
+        return PageUtils.getLong(pageAddr, offset(idx) + 40);
     }
 
     /** {@inheritDoc} */
     @Override public void setMvccLockCoordinatorVersion(long pageAddr, int idx, long lockCrd) {
-        PageUtils.putLong(pageAddr, offset(idx) + 28, lockCrd);
+        PageUtils.putLong(pageAddr, offset(idx) + 32, lockCrd);
     }
 
     /** {@inheritDoc} */
     @Override public void setMvccLockCounter(long pageAddr, int idx, long lockCntr) {
-        PageUtils.putLong(pageAddr, offset(idx) + 36, lockCntr);
+        PageUtils.putLong(pageAddr, offset(idx) + 40, lockCntr);
     }
 }

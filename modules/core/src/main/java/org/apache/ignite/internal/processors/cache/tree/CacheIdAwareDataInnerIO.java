@@ -38,27 +38,12 @@ public final class CacheIdAwareDataInnerIO extends AbstractDataInnerIO {
     }
 
     /** {@inheritDoc} */
-    @Override public int getCacheId(long pageAddr, int idx) {
-        return PageUtils.getInt(pageAddr, offset(idx) + 12);
-    }
-
-    /** {@inheritDoc} */
     @Override protected boolean storeCacheId() {
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override protected boolean storeMvccVersion() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMvccCoordinatorVersion(long pageAddr, int idx) {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMvccCounter(long pageAddr, int idx) {
-        return MvccProcessor.MVCC_COUNTER_NA;
+    @Override public int getCacheId(long pageAddr, int idx) {
+        return PageUtils.getInt(pageAddr, offset(idx) + 12);
     }
 }

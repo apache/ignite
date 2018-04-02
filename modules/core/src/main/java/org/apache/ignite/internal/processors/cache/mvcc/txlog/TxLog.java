@@ -211,13 +211,11 @@ public class TxLog implements DbCheckpointListener {
 
     /**
      *
-     * @param major Major version.
-     * @param minor Minor version.
+     * @param key TxKey.
      * @param state  Transaction state for given version.
      * @throws IgniteCheckedException If failed.
      */
-    public void put(long major, long minor, byte state) throws IgniteCheckedException {
-        TxKey key = new TxKey(major, minor);
+    public void put(TxKey key, byte state) throws IgniteCheckedException {
         Sync sync = syncObject(key);
 
         try {
@@ -225,7 +223,7 @@ public class TxLog implements DbCheckpointListener {
 
             try {
                 synchronized (sync) {
-                    tree.putx(new TxRow(major, minor, state));
+                    tree.putx(new TxRow(key.major(), key.minor(), state));
                 }
             }
             finally {

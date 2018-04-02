@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.query.h2.database.io;
 
+import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.IOVersions;
 
 /**
@@ -32,7 +33,22 @@ public class H2MvccInnerIO extends AbstractH2InnerIO {
      * @param ver Page format version.
      */
     private H2MvccInnerIO(int ver) {
-        super(T_H2_MVCC_REF_INNER, ver, 24);
+        super(T_H2_MVCC_REF_INNER, ver, 28);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getMvccCoordinatorVersion(long pageAddr, int idx) {
+        return PageUtils.getLong(pageAddr, offset(idx) + 8);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getMvccCounter(long pageAddr, int idx) {
+        return PageUtils.getLong(pageAddr, offset(idx) + 16);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getMvccOperationCounter(long pageAddr, int idx) {
+        return PageUtils.getInt(pageAddr, offset(idx) + 24);
     }
 
     /** {@inheritDoc} */

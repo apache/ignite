@@ -261,13 +261,6 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends GridCacheIdMe
 
                 assert !entry.detached();
 
-                IgniteTxEntry txEntry = tx.entry(entry.txKey());
-
-                if (txEntry != null) {
-                    throw new IgniteSQLException("One row cannot be changed twice in the same transaction. " +
-                        "Operation is unsupported at the moment.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
-                }
-
                 GridCacheOperation op = it.operation();
 
                 Object[] row0 = row.getClass().isArray() ? (Object[])row : null;
@@ -372,7 +365,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends GridCacheIdMe
                     break;
                 }
 
-                txEntry = tx.addEntry(op,
+                IgniteTxEntry txEntry = tx.addEntry(op,
                     val,
                     null,
                     null,
@@ -387,9 +380,8 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends GridCacheIdMe
                     true,
                     false);
 
-                txEntry.markValid();
                 txEntry.queryEnlisted(true);
-                txEntry.cached(entry);
+                txEntry.markValid();
 
                 cnt++;
             }

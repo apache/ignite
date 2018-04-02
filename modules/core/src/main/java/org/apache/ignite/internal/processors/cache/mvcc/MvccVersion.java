@@ -35,8 +35,14 @@ public interface MvccVersion extends Comparable<MvccVersion> {
      */
     public long counter();
 
+    /**
+     * @return Operation id in scope of current transaction.
+     */
+    public int operationCounter();
+
     /** {@inheritDoc} */
     @Override default int compareTo(@NotNull MvccVersion another) {
-        return  MvccUtils.compare(coordinatorVersion(), counter(), another.coordinatorVersion(), another.counter());
+        return MvccUtils.compare(coordinatorVersion(), counter(), operationCounter(),
+            another.coordinatorVersion(), another.counter(), another.operationCounter());
     }
 }

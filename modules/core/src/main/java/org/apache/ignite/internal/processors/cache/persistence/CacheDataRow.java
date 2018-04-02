@@ -19,12 +19,13 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  * Cache data row.
  */
-public interface CacheDataRow extends CacheSearchRow, Storable {
+public interface CacheDataRow extends MvccUpdateVersionAware, CacheSearchRow, Storable {
     /**
      * @return Cache value.
      */
@@ -54,20 +55,4 @@ public interface CacheDataRow extends CacheSearchRow, Storable {
      * @param key Key.
      */
     public void key(KeyCacheObject key);
-
-    /**
-     * @param crdVer Mvcc coordinator version.
-     * @param mvccCntr Mvcc counter.
-     */
-    public void mvccVersion(long crdVer, long mvccCntr);
-
-    /**
-     * @return New mvcc coordinator version.
-     */
-    public long newMvccCoordinatorVersion();
-
-    /**
-     * @return New mvcc counter.
-     */
-    public long newMvccCounter();
 }

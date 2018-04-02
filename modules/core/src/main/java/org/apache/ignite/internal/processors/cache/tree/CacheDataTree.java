@@ -22,6 +22,7 @@ import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -134,8 +135,6 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
             int cacheId = io.getCacheId(pageAddr, idx);
 
-            assert cacheId != CU.UNDEFINED_CACHE_ID : "Cache ID is not stored";
-
             cmp = Integer.compare(cacheId, row.cacheId());
 
             if (cmp != 0)
@@ -167,20 +166,13 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         if (cmp != 0 || !grp.mvccEnabled())
             return cmp;
 
-        long mvccCrdVer = io.getMvccCoordinatorVersion(pageAddr, idx);
+        long crd = io.getMvccCoordinatorVersion(pageAddr, idx);
+        long cntr = io.getMvccCounter(pageAddr, idx);
+        int opCntr = io.getMvccOperationCounter(pageAddr, idx);
 
-        cmp = Long.compare(row.mvccCoordinatorVersion(), mvccCrdVer);
+        assert MvccUtils.mvccVersionIsValid(crd, cntr,opCntr);
 
-        if (cmp != 0)
-            return cmp;
-
-        long mvccCntr = io.getMvccCounter(pageAddr, idx);
-
-        assert row.mvccCounter() != MvccProcessor.MVCC_COUNTER_NA;
-
-        cmp = Long.compare(row.mvccCounter(), mvccCntr);
-
-        return cmp;
+        return -MvccUtils.compare(crd, cntr, opCntr, row); // descending order
     }
 
     /** {@inheritDoc} */
@@ -190,7 +182,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
 
         long link = rowIo.getLink(pageAddr, idx);
         int hash = rowIo.getHash(pageAddr, idx);
-        int cacheId = rowIo.getCacheId(pageAddr, idx);
+
+        int cacheId = grp.sharedGroup() ? rowIo.getCacheId(pageAddr, idx) : CU.UNDEFINED_CACHE_ID;
 
         CacheDataRowAdapter.RowData x = flags != null ?
             (CacheDataRowAdapter.RowData)flags :
@@ -199,8 +192,9 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         if (grp.mvccEnabled()) {
             long mvccCrdVer = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
             long mvccCntr = rowIo.getMvccCounter(pageAddr, idx);
+            int mvccOpCntr = rowIo.getMvccOperationCounter(pageAddr, idx);
 
-            return rowStore.mvccRow(cacheId, hash, link, x, mvccCrdVer, mvccCntr);
+            return rowStore.mvccRow(cacheId, hash, link, x, mvccCrdVer, mvccCntr, mvccOpCntr);
         }
         else
             return rowStore.dataRow(cacheId, hash, link, x);

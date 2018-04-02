@@ -39,6 +39,9 @@ public class MvccSnapshotWithoutTxs implements MvccSnapshot {
     /** */
     private long cleanupVer;
 
+    /** */
+    private int opCntr;
+
     /**
      * Required by {@link GridIoMessageFactory}.
      */
@@ -51,10 +54,11 @@ public class MvccSnapshotWithoutTxs implements MvccSnapshot {
      * @param cntr Counter.
      * @param cleanupVer Cleanup version.
      */
-    public MvccSnapshotWithoutTxs(long crdVer, long cntr, long cleanupVer) {
+    public MvccSnapshotWithoutTxs(long crdVer, long cntr, int opCntr, long cleanupVer) {
         this.crdVer = crdVer;
         this.cntr = cntr;
         this.cleanupVer = cleanupVer;
+        this.opCntr = opCntr;
     }
 
     /** {@inheritDoc} */
@@ -75,6 +79,16 @@ public class MvccSnapshotWithoutTxs implements MvccSnapshot {
     /** {@inheritDoc} */
     @Override public long counter() {
         return cntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int operationCounter() {
+        return opCntr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void incrementOperationCounter() {
+        throw new UnsupportedOperationException();
     }
 
     /** {@inheritDoc} */
@@ -108,6 +122,12 @@ public class MvccSnapshotWithoutTxs implements MvccSnapshot {
 
             case 2:
                 if (!writer.writeLong("crdVer", crdVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 3:
+                if (!writer.writeInt("opCntr", opCntr))
                     return false;
 
                 writer.incrementState();
@@ -149,6 +169,14 @@ public class MvccSnapshotWithoutTxs implements MvccSnapshot {
 
                 reader.incrementState();
 
+            case 3:
+                opCntr = reader.readInt("opCntr");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(MvccSnapshotWithoutTxs.class);
@@ -161,7 +189,7 @@ public class MvccSnapshotWithoutTxs implements MvccSnapshot {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 3;
+        return 4;
     }
 
     /** {@inheritDoc} */

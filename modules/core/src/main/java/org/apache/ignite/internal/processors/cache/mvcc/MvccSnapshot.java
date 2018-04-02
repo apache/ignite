@@ -40,4 +40,9 @@ public interface MvccSnapshot extends MvccVersion, Message {
      * @return Version without active transactions.
      */
     public MvccSnapshot withoutActiveTransactions();
+
+    /**
+     * Increments operation counter.
+     */
+    public void incrementOperationCounter();
 }

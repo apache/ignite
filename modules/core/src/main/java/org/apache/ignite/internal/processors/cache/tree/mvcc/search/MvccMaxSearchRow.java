@@ -44,6 +44,11 @@ public class MvccMaxSearchRow extends SearchRow {
     }
 
     /** {@inheritDoc} */
+    @Override public int mvccOperationCounter() {
+        return Integer.MAX_VALUE;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MvccMaxSearchRow.class, this);
     }

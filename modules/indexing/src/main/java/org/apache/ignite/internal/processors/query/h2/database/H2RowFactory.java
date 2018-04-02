@@ -72,11 +72,12 @@ public class H2RowFactory {
      * @param link Link.
      * @param mvccCrdVer Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.
+     * @param mvccOpCntr Mvcc operation counter.
      * @return Row.
      * @throws IgniteCheckedException If failed.
      */
-    public GridH2Row getMvccRow(long link, long mvccCrdVer, long mvccCntr) throws IgniteCheckedException {
+    public GridH2Row getMvccRow(long link, long mvccCrdVer, long mvccCntr, int mvccOpCntr) throws IgniteCheckedException {
         return rowDesc.createRow(new MvccDataRow(cctx.group(),0, link,
-            PageIdUtils.partId(PageIdUtils.pageId(link)),null, mvccCrdVer, mvccCntr));
+            PageIdUtils.partId(PageIdUtils.pageId(link)),null, mvccCrdVer, mvccCntr, mvccOpCntr));
     }
 }
