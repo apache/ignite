@@ -292,9 +292,9 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
         offHeapAllocatedSize = m.getOffHeapAllocatedSize();
 
         size = entriesStat.size();
-        sizeLong = m.getSizeLong();
+        sizeLong = entriesStat.sizeLong();
         keySize = entriesStat.keySize();
-        keySizeLong = m.getKeySizeLong();
+        keySizeLong = entriesStat.keySizeLong();
         isEmpty = entriesStat.isEmpty();
 
         dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();

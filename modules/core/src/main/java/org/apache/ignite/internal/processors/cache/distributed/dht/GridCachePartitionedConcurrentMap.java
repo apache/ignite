@@ -111,7 +111,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
 
     /** {@inheritDoc} */
     @Override public long publicSize(int cacheId) {
-        long size = 0;
+        long size = 0L;
 
         for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
             size += part.publicSize(cacheId);
