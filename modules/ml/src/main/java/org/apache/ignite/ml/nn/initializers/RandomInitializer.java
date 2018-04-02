@@ -39,6 +39,22 @@ public class RandomInitializer implements MLPInitializer {
         this.rnd = rnd;
     }
 
+    /**
+     * Constructs RandomInitializer with the given seed.
+     *
+     * @param seed Seed.
+     */
+    public RandomInitializer(long seed) {
+        this.rnd = new Random(seed);
+    }
+
+    /**
+     * Constructs RandomInitializer with random seed.
+     */
+    public RandomInitializer() {
+        this.rnd = new Random();
+    }
+
     /** {@inheritDoc} */
     @Override public void initWeights(Matrix weights) {
         weights.map(value -> 2 * (rnd.nextDouble() - 0.5));

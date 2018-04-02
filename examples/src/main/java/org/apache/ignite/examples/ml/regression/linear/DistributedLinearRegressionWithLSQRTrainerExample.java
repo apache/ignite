@@ -112,14 +112,13 @@ public class DistributedLinearRegressionWithLSQRTrainerExample {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
                 System.out.println(">>> Create new linear regression trainer object.");
-                LinearRegressionLSQRTrainer<Integer, double[]> trainer = new LinearRegressionLSQRTrainer<>();
+                LinearRegressionLSQRTrainer trainer = new LinearRegressionLSQRTrainer();
 
                 System.out.println(">>> Perform the training to get the model.");
                 LinearRegressionModel mdl = trainer.fit(
                     new CacheBasedDatasetBuilder<>(ignite, dataCache),
                     (k, v) -> Arrays.copyOfRange(v, 1, v.length),
-                    (k, v) -> v[0],
-                    4
+                    (k, v) -> v[0]
                 );
 
                 System.out.println(">>> Linear regression model: " + mdl);

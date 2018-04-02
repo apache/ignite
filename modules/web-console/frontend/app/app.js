@@ -60,8 +60,6 @@ import igniteOnEnterFocusMove from './directives/on-enter-focus-move.directive.j
 import igniteOnEscape from './directives/on-escape.directive.js';
 import igniteOnFocusOut from './directives/on-focus-out.directive.js';
 import igniteRestoreInputFocus from './directives/restore-input-focus.directive.js';
-import igniteUiAceJava from './directives/ui-ace-java/ui-ace-java.directive';
-import igniteUiAceSpring from './directives/ui-ace-spring/ui-ace-spring.directive';
 import igniteUiAceCSharp from './directives/ui-ace-sharp/ui-ace-sharp.directive';
 import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive';
 import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
@@ -141,6 +139,9 @@ import pagePasswordChanged from './components/page-password-changed';
 import pagePasswordReset from './components/page-password-reset';
 
 import igniteServices from './services';
+
+import uiAceJava from './directives/ui-ace-java';
+import uiAceSpring from './directives/ui-ace-spring';
 
 // Inject external modules.
 import IgniteModules from 'IgniteModules/index';
@@ -227,6 +228,8 @@ angular.module('ignite-console', [
     pageLanding.name,
     pagePasswordChanged.name,
     pagePasswordReset.name,
+    uiAceJava.name,
+    uiAceSpring.name,
     breadcrumbs.name,
     // Ignite modules.
     IgniteModules.name
@@ -244,8 +247,6 @@ angular.module('ignite-console', [
 .directive(...igniteOnEnter)
 .directive(...igniteOnEnterFocusMove)
 .directive(...igniteOnEscape)
-.directive(...igniteUiAceSpring)
-.directive(...igniteUiAceJava)
 .directive(...igniteUiAceCSharp)
 .directive(...igniteUiAcePojos)
 .directive(...igniteUiAcePom)
