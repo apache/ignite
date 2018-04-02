@@ -39,6 +39,7 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -64,9 +65,11 @@ public class StripedExecutor implements ExecutorService {
      * @param igniteInstanceName Node name.
      * @param poolName Pool name.
      * @param log Logger.
+     * @param stripeFailHnd Handler for critical errors occurred in stripe worker threads.
      */
-    public StripedExecutor(int cnt, String igniteInstanceName, String poolName, final IgniteLogger log) {
-        this(cnt, igniteInstanceName, poolName, log, false);
+    public StripedExecutor(int cnt, String igniteInstanceName, String poolName, final IgniteLogger log,
+        Thread.UncaughtExceptionHandler stripeFailHnd) {
+        this(cnt, igniteInstanceName, poolName, log, stripeFailHnd, false);
     }
 
     /**
@@ -74,9 +77,11 @@ public class StripedExecutor implements ExecutorService {
      * @param igniteInstanceName Node name.
      * @param poolName Pool name.
      * @param log Logger.
+     * @param stripeFailHnd Handler for critical errors occurred in stripe worker threads.
      * @param stealTasks {@code True} to steal tasks.
      */
-    public StripedExecutor(int cnt, String igniteInstanceName, String poolName, final IgniteLogger log, boolean stealTasks) {
+    public StripedExecutor(int cnt, String igniteInstanceName, String poolName, final IgniteLogger log,
+        Thread.UncaughtExceptionHandler stripeFailHnd, boolean stealTasks) {
         A.ensure(cnt > 0, "cnt > 0");
 
         boolean success = false;
@@ -91,15 +96,9 @@ public class StripedExecutor implements ExecutorService {
 
         try {
             for (int i = 0; i < cnt; i++) {
-                stripes[i] = stealTasks ? new StripeConcurrentQueue(
-                    igniteInstanceName,
-                    poolName,
-                    i,
-                    log, stripes) : new StripeConcurrentQueue(
-                        igniteInstanceName,
-                        poolName,
-                        i,
-                        log);
+                stripes[i] = stealTasks
+                    ? new StripeConcurrentQueue(igniteInstanceName, poolName, i, log, stripes, stripeFailHnd)
+                    : new StripeConcurrentQueue(igniteInstanceName, poolName, i, log, stripeFailHnd);
             }
 
             for (int i = 0; i < cnt; i++)
@@ -434,22 +433,28 @@ public class StripedExecutor implements ExecutorService {
         /** Thread executing the loop. */
         protected Thread thread;
 
+        /** */
+        private Thread.UncaughtExceptionHandler stripeFailHnd;
+
         /**
          * @param igniteInstanceName Ignite instance name.
          * @param poolName Pool name.
          * @param idx Stripe index.
          * @param log Logger.
+         * @param stripeFailHnd Handler for critical errors occurred in stripe thread.
          */
         public Stripe(
             String igniteInstanceName,
             String poolName,
             int idx,
-            IgniteLogger log
+            IgniteLogger log,
+            Thread.UncaughtExceptionHandler stripeFailHnd
         ) {
             this.igniteInstanceName = igniteInstanceName;
             this.poolName = poolName;
             this.idx = idx;
             this.log = log;
+            this.stripeFailHnd = stripeFailHnd;
         }
 
         /**
@@ -462,6 +467,8 @@ public class StripedExecutor implements ExecutorService {
                 IgniteThread.GRP_IDX_UNASSIGNED,
                 idx,
                 GridIoPolicy.UNDEFINED);
+
+            thread.setUncaughtExceptionHandler(stripeFailHnd);
 
             thread.start();
         }
@@ -518,9 +525,17 @@ public class StripedExecutor implements ExecutorService {
                     return;
                 }
                 catch (Throwable e) {
+                    if (e instanceof OutOfMemoryError || e instanceof IgniteOutOfMemoryException)
+                        // Re-throwing to exploit stripeFailHnd.
+                        throw e;
+
                     U.error(log, "Failed to execute runnable.", e);
                 }
             }
+
+            if (!stopping)
+                // Throwing to exploit stripeFailHnd.
+                throw new IllegalStateException("Stripe worker thread is exiting unexpectedly");
         }
 
         /**
@@ -576,14 +591,16 @@ public class StripedExecutor implements ExecutorService {
          * @param poolName Pool name.
          * @param idx Stripe index.
          * @param log Logger.
+         * @param stripeFailHnd Handler for critical errors occurred in stripe thread.
          */
         StripeConcurrentQueue(
             String igniteInstanceName,
             String poolName,
             int idx,
-            IgniteLogger log
+            IgniteLogger log,
+            Thread.UncaughtExceptionHandler stripeFailHnd
         ) {
-            this(igniteInstanceName, poolName, idx, log, null);
+            this(igniteInstanceName, poolName, idx, log, null, stripeFailHnd);
         }
 
         /**
@@ -591,19 +608,22 @@ public class StripedExecutor implements ExecutorService {
          * @param poolName Pool name.
          * @param idx Stripe index.
          * @param log Logger.
+         * @param stripeFailHnd Handler for critical errors occurred in stripe thread.
          */
         StripeConcurrentQueue(
             String igniteInstanceName,
             String poolName,
             int idx,
             IgniteLogger log,
-            Stripe[] others
+            Stripe[] others,
+            Thread.UncaughtExceptionHandler stripeFailHnd
         ) {
             super(
                 igniteInstanceName,
                 poolName,
                 idx,
-                log);
+                log,
+                stripeFailHnd);
 
             this.others = others;
 
@@ -702,17 +722,20 @@ public class StripedExecutor implements ExecutorService {
          * @param poolName Pool name.
          * @param idx Stripe index.
          * @param log Logger.
+         * @param stripeFailHnd Handler for critical errors occurred in stripe thread.
          */
         public StripeConcurrentQueueNoPark(
             String igniteInstanceName,
             String poolName,
             int idx,
-            IgniteLogger log
+            IgniteLogger log,
+            Thread.UncaughtExceptionHandler stripeFailHnd
         ) {
             super(igniteInstanceName,
                 poolName,
                 idx,
-                log);
+                log,
+                stripeFailHnd);
         }
 
         /** {@inheritDoc} */
@@ -758,17 +781,20 @@ public class StripedExecutor implements ExecutorService {
          * @param poolName Pool name.
          * @param idx Stripe index.
          * @param log Logger.
+         * @param stripeFailHnd Handler for critical errors occurred in stripe thread.
          */
         public StripeConcurrentBlockingQueue(
             String igniteInstanceName,
             String poolName,
             int idx,
-            IgniteLogger log
+            IgniteLogger log,
+            Thread.UncaughtExceptionHandler stripeFailHnd
         ) {
             super(igniteInstanceName,
                 poolName,
                 idx,
-                log);
+                log,
+                stripeFailHnd);
         }
 
         /** {@inheritDoc} */
