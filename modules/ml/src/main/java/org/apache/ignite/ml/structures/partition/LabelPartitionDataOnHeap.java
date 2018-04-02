@@ -15,8 +15,31 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.ml.structures.partition;
+
 /**
- * <!-- Package description. -->
- * Contains main APIs for kNN regression algorithms.
+ * On Heap partition data that keeps part of a labels.
  */
-package org.apache.ignite.ml.knn.regression;
+public class LabelPartitionDataOnHeap implements AutoCloseable {
+    /** Part of Y vector. */
+    private final double[] y;
+
+    /**
+     * Constructs a new instance of linear system partition data.
+     *
+     * @param y Part of Y vector.
+     */
+    public LabelPartitionDataOnHeap(double[] y) {
+        this.y = y;
+    }
+
+    /** */
+    public double[] getY() {
+        return y;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void close() {
+        // Do nothing, GC will clean up.
+    }
+}

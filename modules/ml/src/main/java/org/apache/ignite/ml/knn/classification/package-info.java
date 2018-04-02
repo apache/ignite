@@ -15,14 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm.multi;
-
-import java.io.Serializable;
-
 /**
- * Partition context of the SVM classification algorithm.
+ * <!-- Package description. -->
+ * Contains main APIs for kNN classification algorithms.
  */
-public class LabelPartitionContext implements Serializable {
-    /** */
-    private static final long serialVersionUID = -7412302212344430126L;
-}
+package org.apache.ignite.ml.knn.classification;
