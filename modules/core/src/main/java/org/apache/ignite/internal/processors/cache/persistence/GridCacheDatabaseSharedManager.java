@@ -132,7 +132,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -216,7 +215,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private static final Pattern CP_FILE_NAME_PATTERN = Pattern.compile("(\\d+)-(.*)-(START|END)\\.bin");
 
     /** Checkpoint file temporary suffix. This is needed to safe writing checkpoint markers through temporary file and renaming. */
-    public static final String CP_FILE_TMP_SUFFIX = ".tmp";
+    public static final String FILE_TMP_SUFFIX = ".tmp";
 
     /** Node started file patter. */
     private static final Pattern NODE_STARTED_FILE_NAME_PATTERN = Pattern.compile("(\\d+)-node-started\\.bin");
@@ -522,24 +521,22 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     * Cleanup checkpoint directory from all temporary files {@link #CP_FILE_TMP_SUFFIX}.
+     * Cleanup checkpoint directory from all temporary files {@link #FILE_TMP_SUFFIX}.
      */
     private void cleanupCheckpointDirectory() throws IgniteCheckedException {
         try {
-            DirectoryStream<Path> tmpFiles = Files.newDirectoryStream(cpDir.toPath(), new DirectoryStream.Filter<Path>() {
+            try (DirectoryStream<Path> files = Files.newDirectoryStream(cpDir.toPath(), new DirectoryStream.Filter<Path>() {
                 @Override
                 public boolean accept(Path path) throws IOException {
-                    return path.endsWith(CP_FILE_TMP_SUFFIX);
+                    return path.endsWith(FILE_TMP_SUFFIX);
                 }
-            });
-
-            for (Path path : tmpFiles)
-                Files.delete(path);
-
-            tmpFiles.close();
+            })) {
+                for (Path path : files)
+                    Files.delete(path);
+            }
         }
         catch (IOException e) {
-            throw new IgniteCheckedException("Unable to cleanup checkpoint directory: " + cpDir, e);
+            throw new IgniteCheckedException("Failed to cleanup checkpoint directory: " + cpDir, e);
         }
     }
 
@@ -784,7 +781,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             notifyMetastorageReadyForReadWrite();
         }
         catch (StorageException | PersistentStorageIOException e) {
-            IgniteCheckedException err = new IgniteCheckedException("Unable to restore memory", e);
+            IgniteCheckedException err = new IgniteCheckedException("Failed to restore memory", e);
 
             cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, err));
 
@@ -805,7 +802,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         FileWALPointer p = (FileWALPointer)ptr;
 
         String fileName = U.currentTimeMillis() + NODE_STARTED_FILE_NAME_SUFFIX;
-        String tmpFileName = fileName + CP_FILE_TMP_SUFFIX;
+        String tmpFileName = fileName + FILE_TMP_SUFFIX;
 
         ByteBuffer buf = ByteBuffer.allocate(20);
         buf.order(ByteOrder.nativeOrder());
@@ -831,7 +828,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             Files.move(Paths.get(cpDir.getAbsolutePath(), tmpFileName), Paths.get(cpDir.getAbsolutePath(), fileName));
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Unable to write node start marker: " + ptr, e);
+            throw new PersistentStorageIOException("Failed to write node start marker: " + ptr, e);
         }
     }
 
@@ -2639,7 +2636,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         FileWALPointer filePtr = (FileWALPointer)ptr;
 
         String fileName = checkpointFileName(cpTs, cpId, type);
-        String tmpFileName = fileName + CP_FILE_TMP_SUFFIX;
+        String tmpFileName = fileName + FILE_TMP_SUFFIX;
 
         try {
             try (FileIO io = ioFactory.create(Paths.get(cpDir.getAbsolutePath(), skipSync ? fileName : tmpFileName).toFile(),
@@ -2669,7 +2666,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             return createCheckPointEntry(cpTs, ptr, cpId, rec, type);
         }
         catch (IOException e) {
-            throw new PersistentStorageIOException("Unable to write checkpoint entry [ptr=" + filePtr
+            throw new PersistentStorageIOException("Failed to write checkpoint entry [ptr=" + filePtr
                     + ", cpTs=" + cpTs
                     + ", cpId=" + cpId
                     + ", type=" + type + "]", e);

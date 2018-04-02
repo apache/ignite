@@ -156,7 +156,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
      */
     public void testRecoveringOnNodeStartMarkerWriteFail() throws Exception {
         // Fail to write node start marker tmp file at the second checkpoint. Pass only initial checkpoint.
-        ioFactory = new FilteringFileIOFactory("started.bin" + GridCacheDatabaseSharedManager.CP_FILE_TMP_SUFFIX, new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 20));
+        ioFactory = new FilteringFileIOFactory("started.bin" + GridCacheDatabaseSharedManager.FILE_TMP_SUFFIX, new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 20));
 
         IgniteEx grid = startGrid(0);
         grid.cluster().active(true);
@@ -211,7 +211,7 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
      */
     public void testRecoveringOnCheckpointBeginFail() throws Exception {
         // Fail to write checkpoint start marker tmp file at the second checkpoint. Pass only initial checkpoint.
-        ioFactory = new FilteringFileIOFactory("START.bin" + GridCacheDatabaseSharedManager.CP_FILE_TMP_SUFFIX, new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 20));
+        ioFactory = new FilteringFileIOFactory("START.bin" + GridCacheDatabaseSharedManager.FILE_TMP_SUFFIX, new LimitedSizeFileIOFactory(new RandomAccessFileIOFactory(), 20));
 
         final IgniteEx grid = startGrid(0);
         grid.cluster().active(true);
