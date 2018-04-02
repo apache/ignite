@@ -49,7 +49,7 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
     private static final ClientListenerProtocolVersion VER_1_1_0 = ClientListenerProtocolVersion.create(1, 1, 0);
 
     /** Supported versions. */
-    private static final Collection<ClientListenerProtocolVersion> supportedVers = Arrays.asList(VER_1_1_0, VER_1_0_0);
+    private static final Collection<ClientListenerProtocolVersion> SUPPORTED_VERS = Arrays.asList(VER_1_1_0, VER_1_0_0);
 
     /** Message parser. */
     private final ClientMessageParser parser;
@@ -84,6 +84,7 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
         kernalCtx = ctx;
 
         parser = new ClientMessageParser(ctx);
+
         this.maxCursors = maxCursors;
     }
 
@@ -107,7 +108,7 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
 
     /** {@inheritDoc} */
     @Override public boolean isVersionSupported(ClientListenerProtocolVersion ver) {
-        return supportedVers.contains(ver);
+        return SUPPORTED_VERS.contains(ver);
     }
 
     /** {@inheritDoc} */
@@ -118,8 +119,8 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
     /** {@inheritDoc} */
     @Override public void initializeFromHandshake(ClientListenerProtocolVersion ver, BinaryReaderExImpl reader)
         throws IgniteCheckedException {
-
         boolean hasMore;
+
         String user = null;
         String pwd = null;
         AuthorizationContext authCtx = null;
@@ -137,19 +138,17 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
                 pwd = reader.readString();
             }
         }
-        else if (kernalCtx.authentication().enabled())
-            throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
 
         if (kernalCtx.security().enabled())
             thirdPartyAuthentication(user, pwd);
         else if (kernalCtx.authentication().enabled()) {
             if (user == null || user.length() == 0)
-                throw new IgniteCheckedException("Unauthenticated sessions are prohibited");
+                throw new IgniteCheckedException("Unauthenticated sessions are prohibited.");
 
             authCtx = kernalCtx.authentication().authenticate(user, pwd);
 
             if (authCtx == null)
-                throw new IgniteCheckedException("Unknown authentication error");
+                throw new IgniteCheckedException("Unknown authentication error.");
         }
 
         handler = new ClientRequestHandler(this, authCtx);
@@ -179,8 +178,8 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
         if (curCnt0 >= maxCursors) {
             throw new IgniteClientException(ClientStatus.TOO_MANY_CURSORS,
                 "Too many open cursors (either close other open cursors or increase the " +
-                    "limit through ClientConnectorConfiguration.maxOpenCursorsPerConnection) [maximum=" + maxCursors +
-                    ", current=" + curCnt0 + ']');
+                "limit through ClientConnectorConfiguration.maxOpenCursorsPerConnection) [maximum=" + maxCursors +
+                ", current=" + curCnt0 + ']');
         }
 
         curCnt.incrementAndGet();

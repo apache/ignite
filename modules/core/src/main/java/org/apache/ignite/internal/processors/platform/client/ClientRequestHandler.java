@@ -54,7 +54,8 @@ public class ClientRequestHandler implements ClientListenerRequestHandler {
             return ((ClientRequest)req).process(ctx);
         }
         finally {
-            AuthorizationContext.clear();
+            if (authCtx != null)
+                AuthorizationContext.clear();
         }
     }
 
