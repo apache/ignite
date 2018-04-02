@@ -24,9 +24,9 @@ const BinaryUtils = require('./BinaryUtils');
 class BinaryReader {
 
     static readObject(buffer, expectedType = null) {
-        const type = buffer.readByte();
-        BinaryUtils.checkTypesComatibility(expectedType, type);
-        return BinaryReader._readTypedObject(buffer, type, expectedType);
+        const typeCode = buffer.readByte();
+        BinaryUtils.checkTypesComatibility(expectedType, typeCode);
+        return BinaryReader._readTypedObject(buffer, typeCode, expectedType);
     }
 
     static readStringArray(buffer) {
@@ -60,7 +60,6 @@ class BinaryReader {
             case BinaryUtils.TYPE_CODE.CHAR_ARRAY:
             case BinaryUtils.TYPE_CODE.BOOLEAN_ARRAY:
             case BinaryUtils.TYPE_CODE.STRING_ARRAY:
-            case BinaryUtils.TYPE_CODE.UUID_ARRAY:
             case BinaryUtils.TYPE_CODE.DATE_ARRAY:
                 return BinaryReader._readArray(buffer, objectTypeCode);
             case BinaryUtils.TYPE_CODE.MAP:
@@ -78,13 +77,13 @@ class BinaryReader {
 
     static _readArray(buffer, arrayTypeCode) {
         const length = buffer.readInteger();
-        const elementType = BinaryUtils.getArrayElementType(arrayTypeCode);
+        const elementTypeCode = BinaryUtils.getArrayElementTypeCode(arrayTypeCode);
         const keepElementType = BinaryUtils.keepArrayElementType(arrayTypeCode);
         const result = new Array(length);
         for (let i = 0; i < length; i++) {
             result[i] = keepElementType ?
-                BinaryReader.readObject(buffer, elementType) :
-                BinaryReader._readTypedObject(buffer, elementType.typeCode);
+                BinaryReader.readObject(buffer, elementTypeCode) :
+                BinaryReader._readTypedObject(buffer, elementTypeCode);
         }
         return result;
     }
@@ -95,8 +94,8 @@ class BinaryReader {
         const mapType = buffer.readByte();
         let key, value;
         for (let i = 0; i < size; i++) {
-            key = BinaryReader.readObject(buffer, expectedMapType ? expectedMapType.mapKeyType : null);
-            value = BinaryReader.readObject(buffer, expectedMapType ? expectedMapType.mapValueType : null);
+            key = BinaryReader.readObject(buffer, expectedMapType ? expectedMapType._keyType : null);
+            value = BinaryReader.readObject(buffer, expectedMapType ? expectedMapType._valueType : null);
             result.set(key, value);
         }
         return result;

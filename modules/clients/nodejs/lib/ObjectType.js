@@ -20,8 +20,8 @@
 const ArgumentChecker = require('./internal/ArgumentChecker');
 
 /**
- * Supported type codes.
- * @typedef ObjectType.TYPE_CODE
+ * ???Supported type codes.
+ * @typedef ObjectType.PRIMITIVE_TYPE
  * @enum
  * @readonly
  * @property BYTE 1
@@ -45,7 +45,7 @@ const ArgumentChecker = require('./internal/ArgumentChecker');
  * @property STRING_ARRAY 20
  * @property DATE_ARRAY 22
  */
-const TYPE_CODE = Object.freeze({
+const PRIMITIVE_TYPE = Object.freeze({
     BYTE : 1,
     SHORT : 2,
     INTEGER : 3,
@@ -69,9 +69,25 @@ const TYPE_CODE = Object.freeze({
 });
 
 /**
+ * ???Supported type codes.
+ * @typedef ObjectType.COMPOSITE_TYPE
+ * @enum
+ * @readonly
+ * @property MAP 25
+ * @property NULL 101
+ * @property COMPLEX_OBJECT 103
+ */
+const COMPOSITE_TYPE = Object.freeze({
+    MAP : 25,
+    NULL : 101,
+    COMPLEX_OBJECT : 103
+});
+
+/** 
+ * ???
  * Class representing a type of object.
  *
- * Every type has mandatory type code {@link ObjectType.TYPE_CODE}.
+ * Every type has mandatory type code {@link ObjectType.PRIMITIVE_TYPE} or {@link ObjectType.COMPOSITE_TYPE}.
  * Some of the types requires subtypes (eg. kind of map or kind of collection) which have defaults.
  *
  * This class helps the Ignite client to make a mapping between JavaScript types
@@ -81,7 +97,7 @@ const TYPE_CODE = Object.freeze({
  * In this case the Ignite client does automatical mapping between some of the JavaScript types
  * and object types - according to the following mapping table:
  * <pre>
- *      JavaScript type         : type code ({@link ObjectType.TYPE_CODE})
+ *      JavaScript type         : type code ({@link ObjectType.PRIMITIVE_TYPE} and {@link ObjectType.COMPOSITE_TYPE})
  *      null                    : NULL
  *      number                  : DOUBLE
  *      string                  : STRING
@@ -97,34 +113,37 @@ const TYPE_CODE = Object.freeze({
  * (empty array has no automatical mapping).
  *
  * All other JavaScript types have no automatical mapping.
+ *
+ * @hideconstructor
  */
-class ObjectType {
 
-    /**
-     * Creates an instance of object type for the specified type code.
-     *
-     * @param {integer} typeCode - type code, one of the {@link ObjectType.TYPE_CODE} constants.
-     *
-     * @return {ObjectType} - new object type instance.
-     *
-     * @throws {IgniteClientError} if error.
-     */
+class ObjectType {
+    static get PRIMITIVE_TYPE() {
+        return PRIMITIVE_TYPE;
+    }
+
+    static get COMPOSITE_TYPE() {
+        return COMPOSITE_TYPE;
+    }    
+
+    /** Private methods */
+
     constructor(typeCode) {
         this._typeCode = typeCode;
-    }
-
-    static get TYPE_CODE() {
-        return TYPE_CODE;
-    }
-
-    get typeCode() {
-        return this._typeCode;
     }
 }
 
 /**
+ * ???
+ *
+ * @hideconstructor
+ */
+class CompositeType extends ObjectType {
+}
+
+/**
  * Supported kinds of map.
- * @typedef ObjectType.MAP_SUBTYPE
+ * @typedef MapObjectType.MAP_SUBTYPE
  * @enum
  * @readonly
  * @property HASH_MAP 1
@@ -138,7 +157,7 @@ const MAP_SUBTYPE = Object.freeze({
 /**
  * ???
  */
-class MapObjectType extends ObjectType {
+class MapObjectType extends CompositeType {
     static get MAP_SUBTYPE() {
         return MAP_SUBTYPE;
     }
@@ -153,50 +172,48 @@ class MapObjectType extends ObjectType {
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      * 
      * @param {integer} [mapSubType=HASH_MAP] - map subtype, one of the {@link MapObjectType.MAP_SUBTYPE} constants.
-     * @param {ObjectType | integer} [keyType=null] - type of the keys in the map:
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [keyType=null] - type of the keys in the map:
+     * ???
      *   - either an instance of object type
      *   - or a type code (means object type with this type code and with default subtype, if applicable)
      *   - or null or not specified (means the type is not specified)
-     * @param {ObjectType | integer} [valueType=null] - type of the values in the map:
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [valueType=null] - type of the values in the map:
+     * ???
      *   - either an instance of object type
      *   - or a type code (means object type with this type code and with default subtype, if applicable)
      *   - or null or not specified (means the type is not specified)
      *
      * @return {MapObjectType} - ???
      *
-     * @throws {IllegalArgumentError} if this object type is not a map.
-     * @throws {UnsupportedTypeError} if the provided subtype is null or not supported.
-     * @throws {IgniteClientError} if other error.
+     * @throws {IgniteClientError} if error.
      */
     constructor(mapSubType = MapObjectType.MAP_SUBTYPE.HASH_MAP, keyType = null, valueType = null) {
+        super(COMPOSITE_TYPE.MAP);
         const BinaryUtils = require('./internal/BinaryUtils');
-        super(BinaryUtils.TYPE_CODE.MAP);
         ArgumentChecker.hasValueFrom(mapSubType, 'mapSubType', MapObjectType.MAP_SUBTYPE);
         this._mapSubType = mapSubType;
         this._keyType = BinaryUtils.getObjectType(keyType, 'keyType');
         this._valueType = BinaryUtils.getObjectType(valueType, 'valueType');
-    }
-
-    get mapSubType() {
-        return this._mapSubType;
-    }
-
-    get keyType() {
-        return this._keyType;
-    }
-
-    get valueType() {
-        return this._valueType;
     }
 }
 
 /**
  * ???
  */
-class ComplexObjectType extends ObjectType {
+class ComplexObjectType extends CompositeType {
+
+    /**
+     * ???
+     * 
+     * @param {object} [objectTemplate=null] - 
+     * @param {string} [typeName=null] -
+     *
+     * @return {ComplexObjectType} - ???
+     *
+     * @throws {IgniteClientError} if error.
+     */
     constructor(objectTemplate = null, typeName = null) {
-        const BinaryUtils = require('./internal/BinaryUtils');
-        super(BinaryUtils.TYPE_CODE.COMPLEX_OBJECT);
+        super(COMPOSITE_TYPE.COMPLEX_OBJECT);
         this._objectTemplate = objectTemplate;
         this._objectConstructor = objectTemplate && objectTemplate.constructor ?
             objectTemplate.constructor : Object;
@@ -207,32 +224,47 @@ class ComplexObjectType extends ObjectType {
         this._fields = new Map();
     }
 
+    /**
+     * ???
+     * 
+     * @param {string} fieldName -
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} fieldType -
+     *
+     * @return {ComplexObjectType} - the same instance of the ComplexObjectType.
+     *
+     * @throws {IgniteClientError} if error.
+     */
     setField(fieldName, fieldType = null) {
         const BinaryUtils = require('./internal/BinaryUtils');
-        const fieldObjectType = BinaryUtils.getObjectType(fieldType, 'fieldType');
-        this._fields.set(fieldName, fieldObjectType);
+        this._fields.set(fieldName, BinaryUtils.getObjectType(fieldType, 'fieldType'));
         return this;
-    }
-
-    get typeName() {
-        return this._typeName;
     }
 
     /** Private methods */
 
+    /**
+     * @ignore
+     */
     _getObjectConstructor() {
         return this._objectConstructor;
     }
 
+    /**
+     * @ignore
+     */
     _getFields() {
         return this._fields ? this._fields.entries() : null;
     }
 
+    /**
+     * @ignore
+     */
     _getFieldType(fieldName) {
         return this._fields.get(fieldName);
     }
 }
 
 module.exports.ObjectType = ObjectType;
+module.exports.CompositeType = CompositeType;
 module.exports.MapObjectType = MapObjectType;
 module.exports.ComplexObjectType = ComplexObjectType;

@@ -67,8 +67,8 @@ class CachePutGetExample {
             await igniteClient.connect(new IgniteClientConfiguration(ENDPOINT));
 
             this._cache = (await igniteClient.getOrCreateCache(CACHE_NAME)).
-                setKeyType(ObjectType.TYPE_CODE.INTEGER).
-                setValueType(ObjectType.TYPE_CODE.STRING);
+                setKeyType(ObjectType.PRIMITIVE_TYPE.INTEGER).
+                setValueType(ObjectType.PRIMITIVE_TYPE.STRING);
 
             while (this._connected) {
                 await this.putGetValues();

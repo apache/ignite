@@ -55,7 +55,7 @@ class BinaryType {
         if (!complexObjectType) {
             complexObjectType = new ComplexObjectType();
         }
-        const result = new BinaryType(complexObjectType.typeName);
+        const result = new BinaryType(complexObjectType._typeName);
         result._objectConstructor = complexObjectType._getObjectConstructor();
         const schema = new BinarySchema();
         if (object) {

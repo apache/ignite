@@ -65,13 +65,6 @@ describe('cache put get test suite >', () => {
                         for (let value1 of typeInfo1.values) {
                             for (let value2 of typeInfo2.values) {
                                 await putGetPrimitiveValues(type1, type2, value1, value2, modificator, comparator);
-                                await putGetPrimitiveValues(
-                                    new ObjectType(type1),
-                                    new ObjectType(type2),
-                                    value1,
-                                    value2,
-                                    modificator,
-                                    typeInfo2.comparator);
                                 if (typeInfo1.typeOptional) {
                                     await putGetPrimitiveValues(null, type2, value1, value2, modificator, comparator);
                                 }
@@ -97,7 +90,7 @@ describe('cache put get test suite >', () => {
                     const values = primitiveValues[primitiveType].values;
                     const comparator = primitiveValues[primitiveType].comparator;
                     await putGetArrays(primitiveType, type, values[0], values, comparator);
-                    await putGetArrays(primitiveType, new ObjectType(type), values[0], [], comparator);
+                    await putGetArrays(primitiveType, type, values[0], [], comparator);
                     if (typeInfo.typeOptional) {
                         await putGetArrays(primitiveType, null, values[0], values, comparator);
                     }
@@ -134,7 +127,7 @@ describe('cache put get test suite >', () => {
                             map, typeInfo2.comparator);
                         await putGetMaps(
                             new MapObjectType(
-                                MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, new ObjectType(type1), new ObjectType(type2)), 
+                                MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, type1, type2), 
                             map, typeInfo2.comparator);
                         if (typeInfo1.typeOptional) {
                             await putGetMaps(new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, null, type2),
@@ -180,7 +173,7 @@ describe('cache put get test suite >', () => {
                             new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, type1, type2),
                             map, comparator);
                         await putGetMaps(
-                            new MapObjectType(MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, new ObjectType(type1), new ObjectType(type2)), 
+                            new MapObjectType(MapObjectType.MAP_SUBTYPE.LINKED_HASH_MAP, type1, type2), 
                             map, comparator);
                         if (typeInfo1.typeOptional) {
                             await putGetMaps(new MapObjectType(MapObjectType.MAP_SUBTYPE.HASH_MAP, null, type2),
@@ -208,48 +201,48 @@ describe('cache put get test suite >', () => {
     const dateValueModificator = (data) => { return new Date(data.value + 12345); };
 
     const primitiveValues = {
-        [ObjectType.TYPE_CODE.BYTE] : { 
+        [ObjectType.PRIMITIVE_TYPE.BYTE] : { 
             values : [-128, 0, 127],
             modificator : numericValueModificator
         },
-        [ObjectType.TYPE_CODE.SHORT] : {
+        [ObjectType.PRIMITIVE_TYPE.SHORT] : {
             values : [-32768, 0, 32767],
             modificator : numericValueModificator
         },
-        [ObjectType.TYPE_CODE.INTEGER] : {
+        [ObjectType.PRIMITIVE_TYPE.INTEGER] : {
             values : [12345, 0, -54321],
             modificator : numericValueModificator
         },
-        [ObjectType.TYPE_CODE.LONG] : {
+        [ObjectType.PRIMITIVE_TYPE.LONG] : {
             values : [12345678912345, 0, -98765432112345],
             modificator : numericValueModificator
         },
-        [ObjectType.TYPE_CODE.FLOAT] : {
+        [ObjectType.PRIMITIVE_TYPE.FLOAT] : {
             values : [-1.155, 0, 123e-5],
             comparator : floatComparator,
             modificator : numericValueModificator
         },
-        [ObjectType.TYPE_CODE.DOUBLE] : {
+        [ObjectType.PRIMITIVE_TYPE.DOUBLE] : {
             values : [-123e5, 0, 0.0001],
             typeOptional : true,
             comparator : floatComparator,
             modificator : numericValueModificator
         },
-        [ObjectType.TYPE_CODE.CHAR] : {
+        [ObjectType.PRIMITIVE_TYPE.CHAR] : {
             values : ['a', String.fromCharCode(0x1234)],
             modificator : charValueModificator
         },
-        [ObjectType.TYPE_CODE.BOOLEAN] : {
+        [ObjectType.PRIMITIVE_TYPE.BOOLEAN] : {
             values : [true, false],
             typeOptional : true,
             modificator : booleanValueModificator
         },
-        [ObjectType.TYPE_CODE.STRING] : {
+        [ObjectType.PRIMITIVE_TYPE.STRING] : {
             values : ['abc', ''],
             typeOptional : true,
             modificator : stringValueModificator
         },
-        [ObjectType.TYPE_CODE.DATE] : {
+        [ObjectType.PRIMITIVE_TYPE.DATE] : {
             values : [new Date(), new Date('1995-12-17'), new Date(0)],
             typeOptional : true,
             comparator : dateComparator,
@@ -282,16 +275,16 @@ describe('cache put get test suite >', () => {
     }
 
     const arrayValues = {
-        [ObjectType.TYPE_CODE.BYTE_ARRAY] : { elemType : ObjectType.TYPE_CODE.BYTE },
-        [ObjectType.TYPE_CODE.SHORT_ARRAY] : { elemType : ObjectType.TYPE_CODE.SHORT },
-        [ObjectType.TYPE_CODE.INTEGER_ARRAY] : { elemType : ObjectType.TYPE_CODE.INTEGER },
-        [ObjectType.TYPE_CODE.LONG_ARRAY] : { elemType : ObjectType.TYPE_CODE.LONG },
-        [ObjectType.TYPE_CODE.FLOAT_ARRAY] : { elemType : ObjectType.TYPE_CODE.FLOAT },
-        [ObjectType.TYPE_CODE.DOUBLE_ARRAY] : { elemType : ObjectType.TYPE_CODE.DOUBLE, typeOptional : true },
-        [ObjectType.TYPE_CODE.CHAR_ARRAY] : { elemType : ObjectType.TYPE_CODE.CHAR },
-        [ObjectType.TYPE_CODE.BOOLEAN_ARRAY] : { elemType : ObjectType.TYPE_CODE.BOOLEAN, typeOptional : true },
-        [ObjectType.TYPE_CODE.STRING_ARRAY] : { elemType : ObjectType.TYPE_CODE.STRING, typeOptional : true },
-        [ObjectType.TYPE_CODE.DATE_ARRAY] : { elemType : ObjectType.TYPE_CODE.DATE, typeOptional : true }
+        [ObjectType.PRIMITIVE_TYPE.BYTE_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.BYTE },
+        [ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.SHORT },
+        [ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.INTEGER },
+        [ObjectType.PRIMITIVE_TYPE.LONG_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.LONG },
+        [ObjectType.PRIMITIVE_TYPE.FLOAT_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.FLOAT },
+        [ObjectType.PRIMITIVE_TYPE.DOUBLE_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.DOUBLE, typeOptional : true },
+        [ObjectType.PRIMITIVE_TYPE.CHAR_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.CHAR },
+        [ObjectType.PRIMITIVE_TYPE.BOOLEAN_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.BOOLEAN, typeOptional : true },
+        [ObjectType.PRIMITIVE_TYPE.STRING_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.STRING, typeOptional : true },
+        [ObjectType.PRIMITIVE_TYPE.DATE_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.DATE, typeOptional : true }
     };
 
     async function putGetArrays(keyType, valueType, key, value, comparator = null) {

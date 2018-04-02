@@ -126,6 +126,9 @@ class BinaryObject {
 
     /** Private methods */
 
+    /**
+     * @ignore
+     */
     static _fromBuffer(buffer, complexObjectType) {
         const result = new BinaryObject(complexObjectType);
         result._buffer = buffer;
@@ -134,6 +137,9 @@ class BinaryObject {
         return result;
     }
 
+    /**
+     * @ignore
+     */
     _toObject() {
         const result = new (this._type._getObjectConstructor());
         for (let field of this._fields.values()) {
@@ -147,11 +153,17 @@ class BinaryObject {
         return result;
     }
 
+    /**
+     * @ignore
+     */
     _setType(binaryType) {
         this._type = binaryType;
         this._schema = binaryType._getSchemas()[0];
     }
 
+    /**
+     * @ignore
+     */
     _write(buffer) {
         if (this._buffer && !this._modified) {
             buffer._writeBuffer(this._buffer.getSlice(this._startPos, this._startPos + this._length));
@@ -181,6 +193,9 @@ class BinaryObject {
         }
     }
 
+    /**
+     * @ignore
+     */
     _writeHeader() {
         this._buffer.position = this._startPos;
         // type code
@@ -202,6 +217,9 @@ class BinaryObject {
         this._buffer.writeInteger(this._schemaOffset);
     }
 
+    /**
+     * @ignore
+     */
     _read() {
         this._readHeader();
         this._buffer.position = this._startPos + this._schemaOffset;
@@ -230,6 +248,9 @@ class BinaryObject {
         this._buffer.position = this._startPos + this._length;
     }
 
+    /**
+     * @ignore
+     */
     _readHeader() {
         // type code
         this._buffer.readByte();

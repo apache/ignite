@@ -35,17 +35,18 @@ class BinaryWriter {
         }
 
         objectType = BinaryWriter._getObjectType(object, objectType);
+        const objectTypeCode = BinaryUtils.getTypeCode(objectType);
 
         if (writeObjectType) {
-            buffer.writeByte(objectType.typeCode);
+            buffer.writeByte(objectTypeCode);
         }
-        switch (objectType.typeCode) {
+        switch (objectTypeCode) {
             case BinaryUtils.TYPE_CODE.BYTE:
             case BinaryUtils.TYPE_CODE.SHORT:
             case BinaryUtils.TYPE_CODE.INTEGER:
             case BinaryUtils.TYPE_CODE.FLOAT:
             case BinaryUtils.TYPE_CODE.DOUBLE:
-                buffer.writeNumber(object, objectType.typeCode);
+                buffer.writeNumber(object, objectTypeCode);
                 break;
             case BinaryUtils.TYPE_CODE.LONG:
                 buffer.writeLong(object);
@@ -71,9 +72,8 @@ class BinaryWriter {
             case BinaryUtils.TYPE_CODE.CHAR_ARRAY:
             case BinaryUtils.TYPE_CODE.BOOLEAN_ARRAY:
             case BinaryUtils.TYPE_CODE.STRING_ARRAY:
-            case BinaryUtils.TYPE_CODE.UUID_ARRAY:
             case BinaryUtils.TYPE_CODE.DATE_ARRAY:
-                BinaryWriter._writeArray(buffer, object, objectType);
+                BinaryWriter._writeArray(buffer, object, objectTypeCode);
                 break;
             case BinaryUtils.TYPE_CODE.MAP:
                 BinaryWriter._writeMap(buffer, object, objectType);
@@ -96,12 +96,12 @@ class BinaryWriter {
         return BinaryUtils.getObjectType(objectType, null, false);
     }
 
-    static _writeArray(buffer, array, arrayType) {
-        const elementType = BinaryUtils.getArrayElementType(arrayType.typeCode);
-        const keepElementType = BinaryUtils.keepArrayElementType(arrayType.typeCode);
+    static _writeArray(buffer, array, arrayTypeCode) {
+        const elementTypeCode = BinaryUtils.getArrayElementTypeCode(arrayTypeCode);
+        const keepElementType = BinaryUtils.keepArrayElementType(arrayTypeCode);
         buffer.writeInteger(array.length);
         for (let elem of array) {
-            BinaryWriter.writeObject(buffer, elem, elementType, keepElementType);
+            BinaryWriter.writeObject(buffer, elem, elementTypeCode, keepElementType);
         }
     }
 
@@ -109,8 +109,8 @@ class BinaryWriter {
         buffer.writeInteger(map.size);
         buffer.writeByte(mapType.mapType);
         map.forEach((value, key) => {
-            BinaryWriter.writeObject(buffer, key, mapType.mapKeyType);
-            BinaryWriter.writeObject(buffer, value, mapType.mapValueType);
+            BinaryWriter.writeObject(buffer, key, mapType._keyType);
+            BinaryWriter.writeObject(buffer, value, mapType._valueType);
         });
     }
 

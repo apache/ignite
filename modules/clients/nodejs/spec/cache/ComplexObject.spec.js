@@ -161,39 +161,39 @@ describe('complex object test suite >', () => {
         Promise.resolve().
             then(async () => {
                 const value1 = new Class1();
-                value1.field_1_1 = getPrimitiveValue(ObjectType.TYPE_CODE.BYTE);
-                value1.field_1_2.field_2_1 = getPrimitiveValue(ObjectType.TYPE_CODE.SHORT);
-                value1.field_1_2.field_2_2 = getPrimitiveValue(ObjectType.TYPE_CODE.INTEGER);
-                value1.field_1_3 = getPrimitiveValue(ObjectType.TYPE_CODE.LONG);
+                value1.field_1_1 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.BYTE);
+                value1.field_1_2.field_2_1 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.SHORT);
+                value1.field_1_2.field_2_2 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.INTEGER);
+                value1.field_1_3 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.LONG);
 
                 const valueType1 = new ComplexObjectType(new Class1()).
-                    setField('field_1_1', ObjectType.TYPE_CODE.BYTE).
+                    setField('field_1_1', ObjectType.PRIMITIVE_TYPE.BYTE).
                     setField('field_1_2', new ComplexObjectType(new Class2()).
-                        setField('field_2_1', ObjectType.TYPE_CODE.SHORT).
-                        setField('field_2_2', ObjectType.TYPE_CODE.INTEGER)).
-                    setField('field_1_3', ObjectType.TYPE_CODE.LONG);
+                        setField('field_2_1', ObjectType.PRIMITIVE_TYPE.SHORT).
+                        setField('field_2_2', ObjectType.PRIMITIVE_TYPE.INTEGER)).
+                    setField('field_1_3', ObjectType.PRIMITIVE_TYPE.LONG);
 
                 const value2 = new SubClass1();
-                value2.field_1_1 = getPrimitiveValue(ObjectType.TYPE_CODE.FLOAT);
-                value2.field_1_2.field_2_1 = getPrimitiveValue(ObjectType.TYPE_CODE.DOUBLE);
-                value2.field_1_2.field_2_2 = getPrimitiveValue(ObjectType.TYPE_CODE.CHAR);
-                value2.field_1_3 = getPrimitiveValue(ObjectType.TYPE_CODE.BOOLEAN);
-                value2.field_1_4 = getPrimitiveValue(ObjectType.TYPE_CODE.STRING);
-                value2.field_1_5.field_3_1 = getPrimitiveValue(ObjectType.TYPE_CODE.DATE);
-                value2.field_1_5.field_3_2 = getPrimitiveValue(ObjectType.TYPE_CODE.SHORT);
-                value2.field_1_6 = getPrimitiveValue(ObjectType.TYPE_CODE.INTEGER);
+                value2.field_1_1 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.FLOAT);
+                value2.field_1_2.field_2_1 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.DOUBLE);
+                value2.field_1_2.field_2_2 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.CHAR);
+                value2.field_1_3 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.BOOLEAN);
+                value2.field_1_4 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.STRING);
+                value2.field_1_5.field_3_1 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.DATE);
+                value2.field_1_5.field_3_2 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.SHORT);
+                value2.field_1_6 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.INTEGER);
 
                 const valueType2 = new ComplexObjectType(new SubClass1()).
-                    setField('field_1_1', ObjectType.TYPE_CODE.FLOAT).
+                    setField('field_1_1', ObjectType.PRIMITIVE_TYPE.FLOAT).
                     setField('field_1_2', new ComplexObjectType(new Class2()).
-                        setField('field_2_1', ObjectType.TYPE_CODE.DOUBLE).
-                        setField('field_2_2', ObjectType.TYPE_CODE.CHAR)).
-                    setField('field_1_3', ObjectType.TYPE_CODE.BOOLEAN).
-                    setField('field_1_4', ObjectType.TYPE_CODE.STRING).
+                        setField('field_2_1', ObjectType.PRIMITIVE_TYPE.DOUBLE).
+                        setField('field_2_2', ObjectType.PRIMITIVE_TYPE.CHAR)).
+                    setField('field_1_3', ObjectType.PRIMITIVE_TYPE.BOOLEAN).
+                    setField('field_1_4', ObjectType.PRIMITIVE_TYPE.STRING).
                     setField('field_1_5', new ComplexObjectType(new Class3()).
-                        setField('field_3_1', ObjectType.TYPE_CODE.DATE).
-                        setField('field_3_2', ObjectType.TYPE_CODE.SHORT)).
-                    setField('field_1_6', ObjectType.TYPE_CODE.INTEGER);
+                        setField('field_3_1', ObjectType.PRIMITIVE_TYPE.DATE).
+                        setField('field_3_2', ObjectType.PRIMITIVE_TYPE.SHORT)).
+                    setField('field_1_6', ObjectType.PRIMITIVE_TYPE.INTEGER);
 
                 await putGetComplexObjectsWithDifferentTypes(
                     value1, value2, valueType1, valueType2, Class1, SubClass1);
@@ -206,38 +206,38 @@ describe('complex object test suite >', () => {
         Promise.resolve().
             then(async () => {
                 const value1 = {};
-                value1.field_1_1 = getPrimitiveValue(ObjectType.TYPE_CODE.BYTE);
+                value1.field_1_1 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.BYTE);
                 value1.field_1_2 = {};
-                value1.field_1_2.field_2_1 = getPrimitiveValue(ObjectType.TYPE_CODE.SHORT);
-                value1.field_1_2.field_2_2 = getPrimitiveValue(ObjectType.TYPE_CODE.INTEGER);
-                value1.field_1_3 = getPrimitiveValue(ObjectType.TYPE_CODE.LONG);
+                value1.field_1_2.field_2_1 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.SHORT);
+                value1.field_1_2.field_2_2 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.INTEGER);
+                value1.field_1_3 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.LONG);
 
                 const valueType1 = new ComplexObjectType({}).
-                    setField('field_1_1', ObjectType.TYPE_CODE.BYTE).
+                    setField('field_1_1', ObjectType.PRIMITIVE_TYPE.BYTE).
                     setField('field_1_2', new ComplexObjectType({}).
-                        setField('field_2_1', ObjectType.TYPE_CODE.SHORT).
-                        setField('field_2_2', ObjectType.TYPE_CODE.INTEGER)).
-                    setField('field_1_3', ObjectType.TYPE_CODE.LONG);
+                        setField('field_2_1', ObjectType.PRIMITIVE_TYPE.SHORT).
+                        setField('field_2_2', ObjectType.PRIMITIVE_TYPE.INTEGER)).
+                    setField('field_1_3', ObjectType.PRIMITIVE_TYPE.LONG);
 
                 const value2 = {};
-                value2.field_1_1 = getPrimitiveValue(ObjectType.TYPE_CODE.FLOAT);
+                value2.field_1_1 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.FLOAT);
                 value2.field_1_2 = {};
-                value2.field_1_2.field_2_1 = getPrimitiveValue(ObjectType.TYPE_CODE.DOUBLE);
+                value2.field_1_2.field_2_1 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.DOUBLE);
                 value2.field_1_2.field_2_2 = {};
-                value2.field_1_2.field_2_2.field_3_1 = getPrimitiveValue(ObjectType.TYPE_CODE.CHAR);
-                value2.field_1_2.field_2_2.field_3_2 = getPrimitiveValue(ObjectType.TYPE_CODE.BOOLEAN);
-                value2.field_1_3 = getPrimitiveValue(ObjectType.TYPE_CODE.STRING);
-                value2.field_1_4 = getPrimitiveValue(ObjectType.TYPE_CODE.DATE);
+                value2.field_1_2.field_2_2.field_3_1 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.CHAR);
+                value2.field_1_2.field_2_2.field_3_2 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.BOOLEAN);
+                value2.field_1_3 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.STRING);
+                value2.field_1_4 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.DATE);
 
                 const valueType2 = new ComplexObjectType({}).
-                    setField('field_1_1', ObjectType.TYPE_CODE.FLOAT).
+                    setField('field_1_1', ObjectType.PRIMITIVE_TYPE.FLOAT).
                     setField('field_1_2', new ComplexObjectType({}).
-                        setField('field_2_1', ObjectType.TYPE_CODE.DOUBLE).
+                        setField('field_2_1', ObjectType.PRIMITIVE_TYPE.DOUBLE).
                         setField('field_2_2', new ComplexObjectType({}).
-                            setField('field_3_1', ObjectType.TYPE_CODE.CHAR).
-                            setField('field_3_2', ObjectType.TYPE_CODE.BOOLEAN))).
-                    setField('field_1_3', ObjectType.TYPE_CODE.STRING).
-                    setField('field_1_4', ObjectType.TYPE_CODE.DATE);
+                            setField('field_3_1', ObjectType.PRIMITIVE_TYPE.CHAR).
+                            setField('field_3_2', ObjectType.PRIMITIVE_TYPE.BOOLEAN))).
+                    setField('field_1_3', ObjectType.PRIMITIVE_TYPE.STRING).
+                    setField('field_1_4', ObjectType.PRIMITIVE_TYPE.DATE);
 
                 await putGetComplexObjects(value1, value2,
                     valueType1, valueType2, false, value2);
@@ -267,39 +267,39 @@ describe('complex object test suite >', () => {
         Promise.resolve().
             then(async () => {
                 const value1 = new Class1();
-                value1.field_1_1 = getArrayValues(ObjectType.TYPE_CODE.BYTE_ARRAY);
-                value1.field_1_2.field_2_1 = getArrayValues(ObjectType.TYPE_CODE.SHORT_ARRAY);
-                value1.field_1_2.field_2_2 = getArrayValues(ObjectType.TYPE_CODE.INTEGER_ARRAY);
-                value1.field_1_3 = getArrayValues(ObjectType.TYPE_CODE.LONG_ARRAY);
+                value1.field_1_1 = getArrayValues(ObjectType.PRIMITIVE_TYPE.BYTE_ARRAY);
+                value1.field_1_2.field_2_1 = getArrayValues(ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY);
+                value1.field_1_2.field_2_2 = getArrayValues(ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY);
+                value1.field_1_3 = getArrayValues(ObjectType.PRIMITIVE_TYPE.LONG_ARRAY);
 
                 const valueType1 = new ComplexObjectType(new Class1()).
-                    setField('field_1_1', ObjectType.TYPE_CODE.BYTE_ARRAY).
+                    setField('field_1_1', ObjectType.PRIMITIVE_TYPE.BYTE_ARRAY).
                     setField('field_1_2', new ComplexObjectType(new Class2()).
-                        setField('field_2_1', ObjectType.TYPE_CODE.SHORT_ARRAY).
-                        setField('field_2_2', ObjectType.TYPE_CODE.INTEGER_ARRAY)).
-                    setField('field_1_3', ObjectType.TYPE_CODE.LONG_ARRAY);
+                        setField('field_2_1', ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY).
+                        setField('field_2_2', ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY)).
+                    setField('field_1_3', ObjectType.PRIMITIVE_TYPE.LONG_ARRAY);
 
                 const value2 = new SubClass1();
-                value2.field_1_1 = getArrayValues(ObjectType.TYPE_CODE.FLOAT_ARRAY);
-                value2.field_1_2.field_2_1 = getArrayValues(ObjectType.TYPE_CODE.DOUBLE_ARRAY);
-                value2.field_1_2.field_2_2 = getArrayValues(ObjectType.TYPE_CODE.CHAR_ARRAY);
-                value2.field_1_3 = getArrayValues(ObjectType.TYPE_CODE.BOOLEAN_ARRAY);
-                value2.field_1_4 = getArrayValues(ObjectType.TYPE_CODE.STRING_ARRAY);
-                value2.field_1_5.field_3_1 = getArrayValues(ObjectType.TYPE_CODE.DATE_ARRAY);
-                value2.field_1_5.field_3_2 = getArrayValues(ObjectType.TYPE_CODE.SHORT_ARRAY);
-                value2.field_1_6 = getArrayValues(ObjectType.TYPE_CODE.INTEGER_ARRAY);
+                value2.field_1_1 = getArrayValues(ObjectType.PRIMITIVE_TYPE.FLOAT_ARRAY);
+                value2.field_1_2.field_2_1 = getArrayValues(ObjectType.PRIMITIVE_TYPE.DOUBLE_ARRAY);
+                value2.field_1_2.field_2_2 = getArrayValues(ObjectType.PRIMITIVE_TYPE.CHAR_ARRAY);
+                value2.field_1_3 = getArrayValues(ObjectType.PRIMITIVE_TYPE.BOOLEAN_ARRAY);
+                value2.field_1_4 = getArrayValues(ObjectType.PRIMITIVE_TYPE.STRING_ARRAY);
+                value2.field_1_5.field_3_1 = getArrayValues(ObjectType.PRIMITIVE_TYPE.DATE_ARRAY);
+                value2.field_1_5.field_3_2 = getArrayValues(ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY);
+                value2.field_1_6 = getArrayValues(ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY);
 
                 const valueType2 = new ComplexObjectType(new SubClass1()).
-                    setField('field_1_1', ObjectType.TYPE_CODE.FLOAT_ARRAY).
+                    setField('field_1_1', ObjectType.PRIMITIVE_TYPE.FLOAT_ARRAY).
                     setField('field_1_2', new ComplexObjectType(new Class2()).
-                        setField('field_2_1', ObjectType.TYPE_CODE.DOUBLE_ARRAY).
-                        setField('field_2_2', ObjectType.TYPE_CODE.CHAR_ARRAY)).
-                    setField('field_1_3', ObjectType.TYPE_CODE.BOOLEAN_ARRAY).
-                    setField('field_1_4', ObjectType.TYPE_CODE.STRING_ARRAY).
+                        setField('field_2_1', ObjectType.PRIMITIVE_TYPE.DOUBLE_ARRAY).
+                        setField('field_2_2', ObjectType.PRIMITIVE_TYPE.CHAR_ARRAY)).
+                    setField('field_1_3', ObjectType.PRIMITIVE_TYPE.BOOLEAN_ARRAY).
+                    setField('field_1_4', ObjectType.PRIMITIVE_TYPE.STRING_ARRAY).
                     setField('field_1_5', new ComplexObjectType(new Class3()).
-                        setField('field_3_1', ObjectType.TYPE_CODE.DATE_ARRAY).
-                        setField('field_3_2', ObjectType.TYPE_CODE.SHORT_ARRAY)).
-                    setField('field_1_6', ObjectType.TYPE_CODE.INTEGER_ARRAY);
+                        setField('field_3_1', ObjectType.PRIMITIVE_TYPE.DATE_ARRAY).
+                        setField('field_3_2', ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY)).
+                    setField('field_1_6', ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY);
 
                 await putGetComplexObjectsWithDifferentTypes(
                     value1, value2, valueType1, valueType2, Class1, SubClass1, true);
@@ -312,51 +312,51 @@ describe('complex object test suite >', () => {
         Promise.resolve().
             then(async () => {
                 const value1 = new Class1();
-                value1.field_1_1 = getMapValue(ObjectType.TYPE_CODE.BYTE);
-                value1.field_1_2.field_2_1 = getMapValue(ObjectType.TYPE_CODE.SHORT);
-                value1.field_1_2.field_2_2 = getMapValue(ObjectType.TYPE_CODE.INTEGER);
-                value1.field_1_3 = getMapValue(ObjectType.TYPE_CODE.LONG);
+                value1.field_1_1 = getMapValue(ObjectType.PRIMITIVE_TYPE.BYTE);
+                value1.field_1_2.field_2_1 = getMapValue(ObjectType.PRIMITIVE_TYPE.SHORT);
+                value1.field_1_2.field_2_2 = getMapValue(ObjectType.PRIMITIVE_TYPE.INTEGER);
+                value1.field_1_3 = getMapValue(ObjectType.PRIMITIVE_TYPE.LONG);
 
                 const valueType1 = new ComplexObjectType(new Class1()).
                     setField('field_1_1', new MapObjectType(
-                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.TYPE_CODE.BYTE, ObjectType.TYPE_CODE.BYTE)).
+                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.BYTE, ObjectType.PRIMITIVE_TYPE.BYTE)).
                     setField('field_1_2', new ComplexObjectType(new Class2()).
                         setField('field_2_1', new MapObjectType(
-                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.TYPE_CODE.SHORT, ObjectType.TYPE_CODE.SHORT)).
+                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.SHORT, ObjectType.PRIMITIVE_TYPE.SHORT)).
                         setField('field_2_2', new MapObjectType(
-                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.TYPE_CODE.INTEGER, ObjectType.TYPE_CODE.INTEGER))).
+                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.INTEGER, ObjectType.PRIMITIVE_TYPE.INTEGER))).
                     setField('field_1_3', new MapObjectType(
-                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.TYPE_CODE.LONG, ObjectType.TYPE_CODE.LONG));
+                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.LONG, ObjectType.PRIMITIVE_TYPE.LONG));
 
                 const value2 = new SubClass1();
-                value2.field_1_1 = getMapValue(ObjectType.TYPE_CODE.FLOAT);
-                value2.field_1_2.field_2_1 = getMapValue(ObjectType.TYPE_CODE.DOUBLE);
-                value2.field_1_2.field_2_2 = getMapValue(ObjectType.TYPE_CODE.CHAR);
-                value2.field_1_3 = getMapValue(ObjectType.TYPE_CODE.BOOLEAN);
-                value2.field_1_4 = getMapValue(ObjectType.TYPE_CODE.STRING);
-                value2.field_1_5.field_3_1 = getMapValue(ObjectType.TYPE_CODE.LONG);
-                value2.field_1_5.field_3_2 = getMapValue(ObjectType.TYPE_CODE.SHORT);
-                value2.field_1_6 = getMapValue(ObjectType.TYPE_CODE.INTEGER);
+                value2.field_1_1 = getMapValue(ObjectType.PRIMITIVE_TYPE.FLOAT);
+                value2.field_1_2.field_2_1 = getMapValue(ObjectType.PRIMITIVE_TYPE.DOUBLE);
+                value2.field_1_2.field_2_2 = getMapValue(ObjectType.PRIMITIVE_TYPE.CHAR);
+                value2.field_1_3 = getMapValue(ObjectType.PRIMITIVE_TYPE.BOOLEAN);
+                value2.field_1_4 = getMapValue(ObjectType.PRIMITIVE_TYPE.STRING);
+                value2.field_1_5.field_3_1 = getMapValue(ObjectType.PRIMITIVE_TYPE.DATE);
+                value2.field_1_5.field_3_2 = getMapValue(ObjectType.PRIMITIVE_TYPE.SHORT);
+                value2.field_1_6 = getMapValue(ObjectType.PRIMITIVE_TYPE.INTEGER);
 
                 const valueType2 = new ComplexObjectType(new SubClass1()).
                     setField('field_1_1', new MapObjectType(
-                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.TYPE_CODE.FLOAT, ObjectType.TYPE_CODE.FLOAT)).
+                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.LONG, ObjectType.PRIMITIVE_TYPE.FLOAT)).
                     setField('field_1_2', new ComplexObjectType(new Class2()).
                         setField('field_2_1', new MapObjectType(
-                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.TYPE_CODE.DOUBLE, ObjectType.TYPE_CODE.DOUBLE)).
+                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.LONG, ObjectType.PRIMITIVE_TYPE.DOUBLE)).
                         setField('field_2_2', new MapObjectType(
-                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.TYPE_CODE.CHAR, ObjectType.TYPE_CODE.CHAR))).
+                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.CHAR, ObjectType.PRIMITIVE_TYPE.CHAR))).
                     setField('field_1_3', new MapObjectType(
-                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.TYPE_CODE.BOOLEAN, ObjectType.TYPE_CODE.BOOLEAN)).
+                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.BOOLEAN, ObjectType.PRIMITIVE_TYPE.BOOLEAN)).
                     setField('field_1_4', new MapObjectType(
-                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.TYPE_CODE.STRING, ObjectType.TYPE_CODE.STRING)).
+                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.STRING, ObjectType.PRIMITIVE_TYPE.STRING)).
                     setField('field_1_5', new ComplexObjectType(new Class3()).
                         setField('field_3_1', new MapObjectType(
-                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.TYPE_CODE.LONG, ObjectType.TYPE_CODE.LONG)).
+                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.LONG, ObjectType.PRIMITIVE_TYPE.DATE)).
                         setField('field_3_2', new MapObjectType(
-                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.TYPE_CODE.SHORT, ObjectType.TYPE_CODE.SHORT))).
+                            MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.SHORT, ObjectType.PRIMITIVE_TYPE.SHORT))).
                     setField('field_1_6', new MapObjectType(
-                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.TYPE_CODE.INTEGER, ObjectType.TYPE_CODE.INTEGER));
+                        MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.INTEGER, ObjectType.PRIMITIVE_TYPE.INTEGER));
 
                 await putGetComplexObjectsWithDifferentTypes(
                     value1, value2, valueType1, valueType2, Class1, SubClass1, true);
@@ -428,39 +428,39 @@ describe('complex object test suite >', () => {
     });
 
     const primitiveValues = {
-        [ObjectType.TYPE_CODE.BYTE] : { 
+        [ObjectType.PRIMITIVE_TYPE.BYTE] : { 
             values : [-128, 0, 127],
         },
-        [ObjectType.TYPE_CODE.SHORT] : {
+        [ObjectType.PRIMITIVE_TYPE.SHORT] : {
             values : [-32768, 0, 32767],
         },
-        [ObjectType.TYPE_CODE.INTEGER] : {
+        [ObjectType.PRIMITIVE_TYPE.INTEGER] : {
             values : [12345, 0, -54321],
         },
-        [ObjectType.TYPE_CODE.LONG] : {
+        [ObjectType.PRIMITIVE_TYPE.LONG] : {
             values : [12345678912345, 0, -98765432112345],
         },
-        [ObjectType.TYPE_CODE.FLOAT] : {
+        [ObjectType.PRIMITIVE_TYPE.FLOAT] : {
             values : [-1.155, 0, 123e-5],
             comparator : floatComparator,
         },
-        [ObjectType.TYPE_CODE.DOUBLE] : {
+        [ObjectType.PRIMITIVE_TYPE.DOUBLE] : {
             values : [-123e5, 0, 0.0001],
             typeOptional : true,
             comparator : floatComparator,
         },
-        [ObjectType.TYPE_CODE.CHAR] : {
+        [ObjectType.PRIMITIVE_TYPE.CHAR] : {
             values : ['a', String.fromCharCode(0x1234)],
         },
-        [ObjectType.TYPE_CODE.BOOLEAN] : {
+        [ObjectType.PRIMITIVE_TYPE.BOOLEAN] : {
             values : [true, false],
             typeOptional : true,
         },
-        [ObjectType.TYPE_CODE.STRING] : {
+        [ObjectType.PRIMITIVE_TYPE.STRING] : {
             values : ['abc', ''],
             typeOptional : true,
         },
-        [ObjectType.TYPE_CODE.DATE] : {
+        [ObjectType.PRIMITIVE_TYPE.DATE] : {
             values : [new Date(), new Date('1995-12-17'), new Date(0)],
             typeOptional : true,
             comparator : dateComparator,
@@ -468,16 +468,16 @@ describe('complex object test suite >', () => {
     };
 
     const arrayValues = {
-        [ObjectType.TYPE_CODE.BYTE_ARRAY] : { elemType : ObjectType.TYPE_CODE.BYTE },
-        [ObjectType.TYPE_CODE.SHORT_ARRAY] : { elemType : ObjectType.TYPE_CODE.SHORT },
-        [ObjectType.TYPE_CODE.INTEGER_ARRAY] : { elemType : ObjectType.TYPE_CODE.INTEGER },
-        [ObjectType.TYPE_CODE.LONG_ARRAY] : { elemType : ObjectType.TYPE_CODE.LONG },
-        [ObjectType.TYPE_CODE.FLOAT_ARRAY] : { elemType : ObjectType.TYPE_CODE.FLOAT },
-        [ObjectType.TYPE_CODE.DOUBLE_ARRAY] : { elemType : ObjectType.TYPE_CODE.DOUBLE, typeOptional : true },
-        [ObjectType.TYPE_CODE.CHAR_ARRAY] : { elemType : ObjectType.TYPE_CODE.CHAR },
-        [ObjectType.TYPE_CODE.BOOLEAN_ARRAY] : { elemType : ObjectType.TYPE_CODE.BOOLEAN, typeOptional : true },
-        [ObjectType.TYPE_CODE.STRING_ARRAY] : { elemType : ObjectType.TYPE_CODE.STRING, typeOptional : true },
-        [ObjectType.TYPE_CODE.DATE_ARRAY] : { elemType : ObjectType.TYPE_CODE.DATE, typeOptional : true }
+        [ObjectType.PRIMITIVE_TYPE.BYTE_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.BYTE },
+        [ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.SHORT },
+        [ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.INTEGER },
+        [ObjectType.PRIMITIVE_TYPE.LONG_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.LONG },
+        [ObjectType.PRIMITIVE_TYPE.FLOAT_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.FLOAT },
+        [ObjectType.PRIMITIVE_TYPE.DOUBLE_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.DOUBLE, typeOptional : true },
+        [ObjectType.PRIMITIVE_TYPE.CHAR_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.CHAR },
+        [ObjectType.PRIMITIVE_TYPE.BOOLEAN_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.BOOLEAN, typeOptional : true },
+        [ObjectType.PRIMITIVE_TYPE.STRING_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.STRING, typeOptional : true },
+        [ObjectType.PRIMITIVE_TYPE.DATE_ARRAY] : { elemType : ObjectType.PRIMITIVE_TYPE.DATE, typeOptional : true }
     };
 
     async function testSuiteCleanup(done) {
@@ -517,7 +517,7 @@ describe('complex object test suite >', () => {
             new ComplexObjectType(new keyClass()), new ComplexObjectType(new valueClass()),
             false, value);
         await putGetComplexObjects(key, value,
-            new ComplexObjectType(key), new ComplexObjectType(value), false, value);
+           new ComplexObjectType(key), new ComplexObjectType(value), false, value);
         await putGetComplexObjects(key, value, keyType, valueType, false, value);
         await putGetComplexObjects(new keyClass(), new valueClass(),
             new ComplexObjectType(new keyClass()), new ComplexObjectType(new valueClass()), false, new valueClass());
@@ -565,6 +565,12 @@ describe('complex object test suite >', () => {
         const values = primitiveValues[typeCode].values;
         const length = values.length;
         values.forEach((value, index) => {
+            if (typeCode === ObjectType.PRIMITIVE_TYPE.FLOAT || typeCode === ObjectType.PRIMITIVE_TYPE.DOUBLE) {
+                value = Math.trunc(value);
+            }
+            else if (typeCode === ObjectType.PRIMITIVE_TYPE.DATE) {
+                value = value ? value.getTime() : value;
+            }
             map.set(value, values[length - index - 1]);
         });
         return map;

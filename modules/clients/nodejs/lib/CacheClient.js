@@ -56,7 +56,8 @@ class CacheClient {
      * will do automatic mapping between some of the JavaScript types and object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      *
-     * @param {ObjectType | integer} type - type of the keys in the cache:
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} type - type of the keys in the cache:
+     * ???
      *   - either an instance of object type
      *   - or a type code (means object type with this type code and with default subtype, if applicable)
      *   - or null (means the type is not specified).
@@ -85,7 +86,8 @@ class CacheClient {
      * will do automatic mapping between some of the JavaScript types and object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      *
-     * @param {ObjectType | integer} type - type of the values in the cache:
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} type - type of the values in the cache:
+     * ???
      *   - either an instance of object type
      *   - or a type code (means object type with this type code and with default subtype, if applicable)
      *   - or null (means the type is not specified).
