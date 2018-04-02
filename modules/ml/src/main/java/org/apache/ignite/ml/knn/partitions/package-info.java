@@ -17,6 +17,6 @@
 
 /**
  * <!-- Package description. -->
- * Contains main APIs for kNN classification algorithms.
+ * Contains helper classes for kNN classification algorithms.
  */
-package org.apache.ignite.ml.knn.models;
+package org.apache.ignite.ml.knn.partitions;

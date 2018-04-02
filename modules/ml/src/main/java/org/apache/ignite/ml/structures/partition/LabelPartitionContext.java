@@ -15,8 +15,14 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.ml.structures.partition;
+
+import java.io.Serializable;
+
 /**
- * <!-- Package description. -->
- * Contains API for Multi-SVM(support vector machines) algorithms.
+ * Base partition context.
  */
-package org.apache.ignite.ml.svm.multi;
+public class LabelPartitionContext implements Serializable {
+    /** */
+    private static final long serialVersionUID = -7412302212344430126L;
+}
