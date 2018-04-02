@@ -43,6 +43,7 @@ class ClientSocket {
 
     constructor(endpoint, onSocketDisconnect) {
         ArgumentChecker.notEmpty(endpoint, 'endpoints');
+        this._endpoint = endpoint;
         this._parseEndpoint(endpoint);
         this._socket = new net.Socket();
         this._state = STATE.INITIAL;
@@ -55,9 +56,6 @@ class ClientSocket {
     }
 
     async connect() {
-        if (this._state !== STATE.INITIAL) {
-            return;
-        }
         return new Promise((resolve, reject) => {
             const handshakePayloadWriter = (payload) => {
                 // Handshake code
@@ -80,8 +78,7 @@ class ClientSocket {
     }
 
     disconnect() {
-        this._state = STATE.DISCONNECTED;
-        this._socket.end();
+        this._disconnect(true, false);
     }
 
     get requestId() {
@@ -99,7 +96,7 @@ class ClientSocket {
             });
         }
         else {
-            throw new Errors.LostConnectionError();
+            throw new Errors.IllegalStateError();
         }
     }
 
@@ -113,11 +110,14 @@ class ClientSocket {
 
         if (!this._socket.write(message)) {
             this._error = 'Request sending failed';
-            this.disconnect();
+            this._disconnect();
         }
     }
 
     _processResponse(message) {
+        if (this._state === STATE.DISCONNECTED) {
+            return;
+        }
         const buffer = MessageBuffer.from(message);
         // Response length
         const length = buffer.readInteger();
@@ -160,7 +160,7 @@ class ClientSocket {
             const errMessage = BinaryReader.readObject(buffer);
             request.reject(new Errors.OperationError(errMessage));
             if (isHandshake) {
-                this.disconnect();
+                this._disconnect();
             }
         }
         else {
@@ -180,24 +180,29 @@ class ClientSocket {
         }
     }
 
-    _disconnect() {
+    _disconnect(close = true, callOnDisconnect = true) {
+        this._state = STATE.DISCONNECTED;
         this._requests.forEach((request, id) => {
             request.reject(new Errors.LostConnectionError(this._error));
             this._requests.delete(id);
         });
-        if (this._wasConnected) {
+        if (this._wasConnected && callOnDisconnect && this._onSocketDisconnect) {
             this._onSocketDisconnect(this._error);
+        }
+        if (close) {
+            this._onSocketDisconnect = null;
+            this._socket.end();
         }
     }
 
     _initSocket() {
         this._socket.on('data', this._processResponse.bind(this));
         this._socket.on('close', () => {
-            this._disconnect();
+            this._disconnect(false);
         });
         this._socket.on('error', (error) => {
             this._error = error;
-            this.disconnect();
+            this._disconnect();
         });
     }
 

@@ -34,18 +34,17 @@ const Logger = require('./internal/Logger');
  * @property DISCONNECTED
  * @property CONNECTING
  * @property CONNECTED
- * @property DISCONNECTING
  */
 const STATE = Object.freeze({
     DISCONNECTED : 0,
     CONNECTING : 1,
-    CONNECTED : 2,
-    DISCONNECTING : 3
+    CONNECTED : 2
 });
 
 /**
  * Class representing Ignite client.
  * 
+ * ???
  * The client can be in one of the two states - "disconnected" or "connected".
  *
  * "Disconnected" state: initial state after a client instance creation,

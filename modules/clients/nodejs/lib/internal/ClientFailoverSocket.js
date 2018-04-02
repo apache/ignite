@@ -17,9 +17,11 @@
 
 'use strict';
 
+const Util = require('util');
 const Errors = require('../Errors');
-const ClientSocket = require('./ClientSocket');
 const IgniteClient = require('../IgniteClient');
+const ClientSocket = require('./ClientSocket');
+const Logger = require('./Logger');
 
 /** Socket wrapper with failover functionality: reconnects on failure. */
 class ClientFailoverSocket {
@@ -34,9 +36,9 @@ class ClientFailoverSocket {
         if (this._state !== IgniteClient.STATE.DISCONNECTED) {
             throw new Errors.IllegalStateError();
         }
-        this._changeState(IgniteClient.STATE.CONNECTING);
         this._config = config;
         this._socket = new ClientSocket(this._config.endpoints[0], this._onSocketDisconnect.bind(this));
+        this._changeState(IgniteClient.STATE.CONNECTING);
         await this._socket.connect();
         this._changeState(IgniteClient.STATE.CONNECTED);
     }
@@ -49,13 +51,11 @@ class ClientFailoverSocket {
     }
 
     disconnect() {
-        if (this._state !== IgniteClient.STATE.DISCONNECTED && this._state !== IgniteClient.STATE.DISCONNECTING) {
-            this._changeState(IgniteClient.STATE.DISCONNECTING);
+        if (this._state !== IgniteClient.STATE.DISCONNECTED) {
+            this._changeState(IgniteClient.STATE.DISCONNECTED);
             if (this._socket) {
                 this._socket.disconnect();
-            }
-            else {
-                this._onSocketDisconnect();
+                this._socket = null;
             }
         }
     }
@@ -66,9 +66,26 @@ class ClientFailoverSocket {
     }
 
     _changeState(state, reason = null) {
+        if (Logger.debug && this._socket) {
+            Logger.logDebug(Util.format('Socket %s: %s -> %s'),
+                this._socket._endpoint, this._getState(this._state), this._getState(state));
+        }
         this._state = state;
         if (this._onStateChanged) {
             this._onStateChanged(state, reason);
+        }
+    }
+
+    _getState(state) {
+        switch (state) {
+            case IgniteClient.STATE.DISCONNECTED:
+                return 'DISCONNECTED';
+            case IgniteClient.STATE.CONNECTING:
+                return 'CONNECTING';
+            case IgniteClient.STATE.CONNECTED:
+                return 'CONNECTED';
+            default:
+                return 'UNKNOWN';
         }
     }
 }
