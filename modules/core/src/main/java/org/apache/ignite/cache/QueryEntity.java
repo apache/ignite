@@ -98,144 +98,6 @@ public class QueryEntity implements Serializable {
     /** Fields default values. */
     private Map<String, Object> defaultFieldValues = new HashMap<>();
 
-    @NotNull public QueryEntityPatch makePatch(QueryEntity target) {
-        if (target == null)
-            return QueryEntityPatch.empty();
-
-        StringBuilder conflicts = new StringBuilder();
-
-        equalsCheck(conflicts, "keyType", keyType, target.keyType);
-        equalsCheck(conflicts, "valType", valType, target.valType);
-        equalsCheck(conflicts, "keyFieldName", keyFieldName, target.keyFieldName);
-        equalsCheck(conflicts, "valueFieldName", valueFieldName, target.valueFieldName);
-        equalsCheck(conflicts, "tableName", tableName, target.tableName);
-
-        List<QueryField> queryFieldsToAdd = new ArrayList<>();
-
-        for (Map.Entry<String, String> targetField : target.getFields().entrySet()) {
-            String targetFieldName = targetField.getKey();
-            String targetFieldType = targetField.getValue();
-
-            if (getFields().containsKey(targetFieldName)) {
-                equalsCheck(conflicts, "fieldType of " + targetFieldName, getFields().get(targetFieldName), targetFieldType);
-
-                if (getNotNullFields() != null && target.getNotNullFields() != null)
-                    equalsCheck(
-                        conflicts,
-                        "nullable of " + targetFieldName,
-                        getNotNullFields().contains(targetFieldName),
-                        target.getNotNullFields().contains(targetFieldName)
-                    );
-
-                if (getDefaultFieldValues().containsKey(targetFieldName) && target.getNotNullFields().contains(targetFieldName))
-                    equalsCheck(
-                        conflicts,
-                        "default value of " + targetFieldName,
-                        getDefaultFieldValues().get(targetFieldName),
-                        target.getDefaultFieldValues().get(targetFieldName)
-                    );
-            }
-            else {
-                queryFieldsToAdd.add(new QueryField(
-                    targetFieldName,
-                    targetFieldType,
-                    !(target.getNotNullFields() != null && target.getNotNullFields().contains(targetFieldName)),
-                    target.getDefaultFieldValues().get(targetFieldName)
-                ));
-            }
-        }
-
-
-        HashSet<QueryIndex> indexesToAdd = new HashSet<>();
-
-        Map<String, QueryIndex> indexMap = getIndexes().stream().collect(Collectors.toMap(QueryIndex::getName, Function.identity()));
-        for (QueryIndex queryIndex : target.getIndexes()) {
-            if(indexMap.containsKey(queryIndex.getName())) {
-                equalsCheck(
-                    conflicts,
-                    "index " + queryIndex.getName(),
-                    indexMap.get(queryIndex.getName()).getFields(),
-                    queryIndex.getFields()
-                );
-            }
-            else
-                indexesToAdd.add(queryIndex);
-        }
-
-        if (conflicts.length() != 0)
-            return QueryEntityPatch.conflict(tableName + " conflict: \n" + conflicts.toString());
-
-        Collection<SchemaAbstractOperation> patchOperations = new ArrayList<>();
-
-        if (!queryFieldsToAdd.isEmpty())
-            patchOperations.add(new SchemaAlterTableAddColumnOperation(
-                UUID.randomUUID(),
-                null,
-                null,
-                tableName,
-                queryFieldsToAdd,
-                true,
-                true
-            ));
-
-        if (!indexesToAdd.isEmpty())
-            indexesToAdd.forEach(index -> patchOperations.add(new SchemaIndexCreateOperation(
-                UUID.randomUUID(),
-                null,
-                null,
-                tableName,
-                index,
-                true,
-                0
-            )));
-
-        return QueryEntityPatch.patch(patchOperations);
-    }
-
-    private void equalsCheck(StringBuilder conflicts, String name, Object source, Object income) {
-        if (!Objects.equals(source, income))
-            conflicts.append(String.format("%s is different: source=%s, income=%s\n", name, source, income));
-    }
-
-    public static class QueryEntityPatch {
-        private String conflict;
-
-        private Collection<SchemaAbstractOperation> patchOperations;
-
-        private QueryEntityPatch(String conflict, Collection<SchemaAbstractOperation> patchOperations) {
-            this.conflict = conflict;
-            this.patchOperations = patchOperations;
-        }
-
-        public static QueryEntityPatch conflict(String conflict) {
-            return new QueryEntityPatch(conflict, null);
-        }
-
-        public static QueryEntityPatch empty() {
-            return new QueryEntityPatch(null, null);
-        }
-
-        public static QueryEntityPatch patch(Collection<SchemaAbstractOperation> patchOperations) {
-            return new QueryEntityPatch(null, patchOperations);
-        }
-
-        public boolean hasConflict() {
-            return conflict != null;
-        }
-
-        public boolean isEmpty() {
-            return patchOperations == null || patchOperations.isEmpty();
-        }
-
-        public String getConflict() {
-            return conflict;
-        }
-
-        public Collection<SchemaAbstractOperation> getPatchOperations() {
-            return patchOperations;
-        }
-    }
-
     /**
      * Creates an empty query entity.
      */
@@ -288,6 +150,146 @@ public class QueryEntity implements Serializable {
      */
     public QueryEntity(Class<?> keyCls, Class<?> valCls) {
         this(convert(processKeyAndValueClasses(keyCls, valCls)));
+    }
+
+    /**
+     * Make query entity patch which allows from this entity achieve not less than target. Other words this patch using
+     * only add operations and skip remove operations.
+     *
+     * @param target query entity to which this entity should be expanded.
+     * @return patch which will can be apply on current query entity to achieve target.
+     */
+    @NotNull public QueryEntityPatch makePatch(QueryEntity target) {
+        if (target == null)
+            return QueryEntityPatch.empty();
+
+        StringBuilder conflicts = new StringBuilder();
+
+        checkEquals(conflicts, "keyType", keyType, target.keyType);
+        checkEquals(conflicts, "valType", valType, target.valType);
+        checkEquals(conflicts, "keyFieldName", keyFieldName, target.keyFieldName);
+        checkEquals(conflicts, "valueFieldName", valueFieldName, target.valueFieldName);
+        checkEquals(conflicts, "tableName", tableName, target.tableName);
+
+        List<QueryField> queryFieldsToAdd = checkFields(target, conflicts);
+
+        HashSet<QueryIndex> indexesToAdd = checkIndices(target, conflicts);
+
+        if (conflicts.length() != 0)
+            return QueryEntityPatch.conflict(tableName + " conflict: \n" + conflicts.toString());
+
+        Collection<SchemaAbstractOperation> patchOperations = new ArrayList<>();
+
+        if (!queryFieldsToAdd.isEmpty())
+            patchOperations.add(new SchemaAlterTableAddColumnOperation(
+                UUID.randomUUID(),
+                null,
+                null,
+                tableName,
+                queryFieldsToAdd,
+                true,
+                true
+            ));
+
+        if (!indexesToAdd.isEmpty())
+            indexesToAdd.forEach(index -> patchOperations.add(new SchemaIndexCreateOperation(
+                UUID.randomUUID(),
+                null,
+                null,
+                tableName,
+                index,
+                true,
+                0
+            )));
+
+        return QueryEntityPatch.patch(patchOperations);
+    }
+
+    /**
+     * Compare local fields with target fields.
+     *
+     * @param target query entity for check.
+     * @param conflicts storage of conflicts.
+     * @return indexes which exist in target and not exist in local.
+     */
+    @NotNull private HashSet<QueryIndex> checkIndices(QueryEntity target, StringBuilder conflicts) {
+        HashSet<QueryIndex> indexesToAdd = new HashSet<>();
+
+        Map<String, QueryIndex> currentIndexes = getIndexes().stream()
+            .collect(Collectors.toMap(QueryIndex::getName, Function.identity()));
+
+        for (QueryIndex queryIndex : target.getIndexes()) {
+            if(currentIndexes.containsKey(queryIndex.getName())) {
+                checkEquals(
+                    conflicts,
+                    "index " + queryIndex.getName(),
+                    currentIndexes.get(queryIndex.getName()).getFields(),
+                    queryIndex.getFields()
+                );
+            }
+            else
+                indexesToAdd.add(queryIndex);
+        }
+        return indexesToAdd;
+    }
+
+    /**
+     * Compare local fields with target fields.
+     *
+     * @param target query entity for check.
+     * @param conflicts storage of conflicts.
+     * @return fields which exist in target and not exist in local.
+     */
+    private List<QueryField> checkFields(QueryEntity target, StringBuilder conflicts) {
+        List<QueryField> queryFieldsToAdd = new ArrayList<>();
+
+        for (Map.Entry<String, String> targetField : target.getFields().entrySet()) {
+            String targetFieldName = targetField.getKey();
+            String targetFieldType = targetField.getValue();
+
+            if (getFields().containsKey(targetFieldName)) {
+                checkEquals(conflicts, "fieldType of " + targetFieldName, getFields().get(targetFieldName), targetFieldType);
+
+                if (getNotNullFields() != null && target.getNotNullFields() != null)
+                    checkEquals(
+                        conflicts,
+                        "nullable of " + targetFieldName,
+                        getNotNullFields().contains(targetFieldName),
+                        target.getNotNullFields().contains(targetFieldName)
+                    );
+
+                if (getDefaultFieldValues().containsKey(targetFieldName) && target.getNotNullFields().contains(targetFieldName))
+                    checkEquals(
+                        conflicts,
+                        "default value of " + targetFieldName,
+                        getDefaultFieldValues().get(targetFieldName),
+                        target.getDefaultFieldValues().get(targetFieldName)
+                    );
+            }
+            else {
+                queryFieldsToAdd.add(new QueryField(
+                    targetFieldName,
+                    targetFieldType,
+                    !(target.getNotNullFields() != null && target.getNotNullFields().contains(targetFieldName)),
+                    target.getDefaultFieldValues().get(targetFieldName)
+                ));
+            }
+        }
+
+        return queryFieldsToAdd;
+    }
+
+    /**
+     * Compare two objects and add formatted text to conflicts if needed.
+     *
+     * @param conflicts storage of conlicts.
+     * @param name name of comparing object
+     * @param source source object
+     * @param received received object
+     */
+    private void checkEquals(StringBuilder conflicts, String name, Object source, Object received) {
+        if (!Objects.equals(source, received))
+            conflicts.append(String.format("%s is different: source=%s, received=%s\n", name, source, received));
     }
 
     /**

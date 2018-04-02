@@ -47,6 +47,7 @@ import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMess
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
 import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.query.QuerySchema;
+import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -1038,11 +1039,10 @@ class ClusterCachesInfo {
             registeredTemplates.put(cacheData.cacheConfiguration().getName(), desc);
         }
 
-        Map<DynamicCacheDescriptor, QuerySchema.QuerySchemaPatch> patchesToApply = new HashMap<>();
+        Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply = new HashMap<>();
         Collection<DynamicCacheDescriptor> cachesToSave = new HashSet<>();
 
         boolean hasSchemaPatchConflict = false;
-
 
         for (CacheData cacheData : cachesData.caches().values()) {
             CacheGroupDescriptor grpDesc = registeredCacheGrps.get(cacheData.groupId());
@@ -1066,18 +1066,17 @@ class ClusterCachesInfo {
 
             Collection<QueryEntity> localQueryEntities = getLocalQueryEntities(cfg.getName());
 
-            QuerySchema.QuerySchemaPatch schemaPatch = desc.makeSchemaPatch(localQueryEntities);
+            QuerySchemaPatch schemaPatch = desc.makeSchemaPatch(localQueryEntities);
 
-                if (schemaPatch.getConflicts() != null) {
-                    hasSchemaPatchConflict = true;
+            if (schemaPatch.getConflicts() != null) {
+                hasSchemaPatchConflict = true;
 
-                    log.warning("Skipping apply patch because conflicts : " + schemaPatch.getConflicts());
-                }
-                if (!schemaPatch.isEmpty())
-                    patchesToApply.put(desc, schemaPatch);
-                else if(!GridFunc.eqNotOrdered(desc.schema().entities(), localQueryEntities))
-                    cachesToSave.add(desc);
-
+                log.warning("Skipping apply patch because conflicts : " + schemaPatch.getConflicts());
+            }
+            else if (!schemaPatch.isEmpty())
+                patchesToApply.put(desc, schemaPatch);
+            else if (!GridFunc.eqNotOrdered(desc.schema().entities(), localQueryEntities))
+                cachesToSave.add(desc); //received config is different of local config - need to resave
 
             desc.receivedOnDiscovery(true);
 
@@ -1092,7 +1091,9 @@ class ClusterCachesInfo {
 
         }
 
+        //skip config manipulation if least one conflict was found
         if (!hasSchemaPatchConflict)
+            //merge config only for inactive grid
             if (!ctx.state().clusterState().active() && !patchesToApply.isEmpty()) {
                 patchesToApply.forEach((cache, patch) -> {
                     if (cache.applySchemaPatch(patch))
@@ -1138,13 +1139,17 @@ class ClusterCachesInfo {
             initStartCachesForLocalJoin(false, disconnectedState());
     }
 
+    /**
+     * Save dynamic cache descriptor on disk
+     *
+     * @param desc cache to save
+     */
     private void saveCacheConfiguration(DynamicCacheDescriptor desc) {
         try {
             ctx.cache().saveCacheConfiguration(desc);
         }
         catch (IgniteCheckedException e) {
-            log.error("Error while saving cache configuration to disk, cfg = "
-                + desc.cacheConfiguration(), e);
+            log.error("Error while saving cache configuration to disk, cfg = " + desc.cacheConfiguration(), e);
         }
     }
 
@@ -1212,7 +1217,7 @@ class ClusterCachesInfo {
                         desc.staticallyConfigured(),
                         desc.sql(),
                         desc.deploymentId(),
-                        desc.schema());
+                        desc.schema().copy());
 
                     desc0.startTopologyVersion(desc.startTopologyVersion());
                     desc0.receivedFromStartVersion(desc.receivedFromStartVersion());
@@ -1474,7 +1479,7 @@ class ClusterCachesInfo {
             }
         }
 
-        Map<DynamicCacheDescriptor, QuerySchema.QuerySchemaPatch> patchesToApply = new HashMap<>();
+        Map<DynamicCacheDescriptor, QuerySchemaPatch> patchesToApply = new HashMap<>();
 
         boolean hasSchemaPatchConflict = false;
         boolean active = ctx.state().clusterState().active();
@@ -1529,7 +1534,7 @@ class ClusterCachesInfo {
 
                 Collection<QueryEntity> joiningEntities = cacheInfo.cacheData().queryEntities();
 
-                QuerySchema.QuerySchemaPatch schemaPatch = desc.makeSchemaPatch(joiningEntities);
+                QuerySchemaPatch schemaPatch = desc.makeSchemaPatch(joiningEntities);
 
                 if (schemaPatch.getConflicts() != null) {
                     hasSchemaPatchConflict = true;
@@ -1543,9 +1548,10 @@ class ClusterCachesInfo {
             ctx.discovery().addClientNode(cfg.getName(), nodeId, cfg.getNearConfiguration() != null);
         }
 
-        if(!hasSchemaPatchConflict && !patchesToApply.isEmpty())
+        //if conflict is appear we don't merge config and we leave existed config
+        if (!hasSchemaPatchConflict && !patchesToApply.isEmpty())
             patchesToApply.forEach((cache, patch) -> {
-                if (cache.applySchemaPatch(patch) )
+                if (cache.applySchemaPatch(patch))
                     saveCacheConfiguration(cache);
             });
 

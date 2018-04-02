@@ -29,6 +29,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.QueryEntityPatch;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstractOperation;
@@ -87,7 +88,14 @@ public class QuerySchema implements Serializable {
         }
     }
 
-    public QuerySchemaPatch makePatch(Collection<QueryEntity> incomes){
+    /**
+     * Make schema patch which allows from current schema achieve not less than target. Other words this patch using
+     * only add operations and skip remove operations.
+     *
+     * @param target query entity list to which current schema should be expanded.
+     * @return patch which will can be apply on current schema to achieve target.
+     */
+    public QuerySchemaPatch makePatch(Collection<QueryEntity> target) {
         synchronized (mux) {
             Map<String, QueryEntity> localEntities = entities.stream()
                 .collect(Collectors.toMap(QueryEntity::getTableName, Function.identity()));
@@ -97,21 +105,22 @@ public class QuerySchema implements Serializable {
 
             String conflicts = null;
 
-            for (QueryEntity queryEntity : incomes) {
+            for (QueryEntity queryEntity : target) {
                 if (localEntities.containsKey(queryEntity.getTableName())) {
                     QueryEntity localEntity = localEntities.get(queryEntity.getTableName());
 
-                    QueryEntity.QueryEntityPatch entityPatch = localEntity.makePatch(queryEntity);
+                    QueryEntityPatch entityPatch = localEntity.makePatch(queryEntity);
 
                     if (entityPatch.hasConflict()) {
                         conflicts = conflicts == null
-                            ? entityPatch.getConflict()
-                            : conflicts + "\n" +entityPatch.getConflict();
+                            ? entityPatch.getConflicts()
+                            : conflicts + "\n" + entityPatch.getConflicts();
                     }
 
                     if (!entityPatch.isEmpty())
                         patchOperations.addAll(entityPatch.getPatchOperations());
-                }else
+                }
+                else
                     entityToAdd.add(QueryUtils.copy(queryEntity));
             }
 
@@ -119,40 +128,23 @@ public class QuerySchema implements Serializable {
         }
     }
 
-    public static class QuerySchemaPatch {
-        private String conflicts;
-        private Collection<SchemaAbstractOperation> patchOperations;
-        private Collection<QueryEntity> entityToAdd;
-
-        public QuerySchemaPatch(
-            Collection<SchemaAbstractOperation> patchOperations,
-            Collection<QueryEntity> entityToAdd,
-            String conflicts) {
-            this.patchOperations = patchOperations;
-            this.entityToAdd = entityToAdd;
-            this.conflicts = conflicts;
-        }
-
-        public String getConflicts(){
-            return conflicts;
-        }
-
-        public boolean isEmpty() {
-            return patchOperations.isEmpty() && entityToAdd.isEmpty();
-        }
-    }
-
+    /**
+     * To try applying query schema patch for changing current schema.
+     *
+     * @param patch patch to apply.
+     * @return {@code True} if applying was success and {@code False} otherwise
+     */
     public boolean applyPatch(QuerySchemaPatch patch) {
         synchronized (mux) {
-            if(patch.conflicts != null)
+            if (patch.getConflicts() != null)
                 return false;
 
-            if(patch.isEmpty())
+            if (patch.isEmpty())
                 return true;
 
-            patch.patchOperations.forEach(this::finish);
+            patch.getPatchOperations().forEach(this::finish);
 
-            entities.addAll(patch.entityToAdd);
+            entities.addAll(patch.getEntityToAdd());
 
             return true;
         }
@@ -167,6 +159,11 @@ public class QuerySchema implements Serializable {
         finish(msg.operation());
     }
 
+    /**
+     * Process operation.
+     *
+     * @param op operation for handle.
+     */
     public void finish(SchemaAbstractOperation op) {
         synchronized (mux) {
             if (op instanceof SchemaIndexCreateOperation) {

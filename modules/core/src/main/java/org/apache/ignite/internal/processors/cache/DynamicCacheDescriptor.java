@@ -27,6 +27,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.internal.processors.query.QuerySchema;
+import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.schema.message.SchemaFinishDiscoveryMessage;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -348,22 +349,25 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * Try applying finish message.
+     * Make schema patch which allows from current schema achieve not less than target. Other words this patch using
+     * only add operations and skip remove operations.
      *
-     * @param msg Message.
+     * @param target query entity list to which current schema should be expanded.
+     * @return patch which will can be apply on current schema to achieve target.
      */
-    public QuerySchema.QuerySchemaPatch makeSchemaPatch(Collection<QueryEntity> target) {
+    public QuerySchemaPatch makeSchemaPatch(Collection<QueryEntity> target) {
         synchronized (schemaMux) {
             return schema.makePatch(target);
         }
     }
 
     /**
-     * Try applying finish message.
+     * Try applying query schema patch for changing current schema.
      *
-     * @param msg Message.
+     * @param patch patch to apply.
+     * @return {@code True} if applying was success and {@code False} otherwise
      */
-    public boolean applySchemaPatch(QuerySchema.QuerySchemaPatch patch) {
+    public boolean applySchemaPatch(QuerySchemaPatch patch) {
         synchronized (schemaMux) {
             return schema.applyPatch(patch);
         }

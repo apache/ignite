@@ -117,6 +117,7 @@ import org.apache.ignite.internal.processors.cluster.DiscoveryDataClusterState;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.QuerySchema;
+import org.apache.ignite.internal.processors.query.QuerySchemaPatch;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.processors.query.schema.SchemaExchangeWorkerTask;
 import org.apache.ignite.internal.processors.query.schema.SchemaNodeLeaveExchangeWorkerTask;
@@ -783,11 +784,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             addCacheOnJoin(cfg, false, caches, templates);
         }
 
-        if(CU.isPersistenceEnabled(ctx.config()) && ctx.cache().context().pageStore() != null) {
+        if (CU.isPersistenceEnabled(ctx.config()) && ctx.cache().context().pageStore() != null) {
             Map<String, StoredCacheData> storedCaches = ctx.cache().context().pageStore().readCacheConfigurations();
 
             if (!F.isEmpty(storedCaches))
                 for (StoredCacheData storedCacheData : storedCaches.values()) {
+                    //ignore stored caches if it already added by static config(static config has higher priority)
                     if (!caches.containsKey(storedCacheData.config().getName()))
                         addStoredCacheOnJoin(caches, templates, storedCacheData);
                 }
@@ -2454,24 +2456,31 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         sharedCtx.walState().onCachesInfoCollected();
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public IgniteNodeValidationResult validateNode(
         ClusterNode node, JoiningNodeDiscoveryData discoData
     ) {
-        if (discoData.hasJoiningNodeData() && discoData.joiningNodeData() instanceof CacheJoinNodeDiscoveryData){
+        if (discoData.hasJoiningNodeData() && discoData.joiningNodeData() instanceof CacheJoinNodeDiscoveryData) {
             CacheJoinNodeDiscoveryData nodeData = (CacheJoinNodeDiscoveryData)discoData.joiningNodeData();
 
             boolean isGridActive = ctx.grid().active();
 
             for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
-                DynamicCacheDescriptor localDesc = cachesInfo.registeredCaches().get(cacheInfo.cacheData().config().getName());
+                DynamicCacheDescriptor localDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());
 
-                if(localDesc == null)
+                if (localDesc == null)
                     continue;
 
-                QuerySchema.QuerySchemaPatch schemaPatch = localDesc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
+                QuerySchemaPatch schemaPatch = localDesc.makeSchemaPatch(cacheInfo.cacheData().queryEntities());
 
-                if(schemaPatch.getConflicts() != null || (isGridActive && !schemaPatch.isEmpty())){
-                    String msg = schemaPatch.getConflicts() != null ? schemaPatch.getConflicts() : "Join is fail because query entities";
+                if (schemaPatch.getConflicts() != null) {
+                    String msg = "Conflicts during configuration merge : " + schemaPatch.getConflicts();
+
+                    return new IgniteNodeValidationResult(node.id(), msg, msg);
+                }
+
+                if (isGridActive && !schemaPatch.isEmpty()) {
+                    String msg = "Node join was have fail because it requires to merge config which impossible on active grid";
 
                     return new IgniteNodeValidationResult(node.id(), msg, msg);
                 }
