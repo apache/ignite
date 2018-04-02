@@ -68,7 +68,7 @@ AutoReq:          no
 AutoProv:         no
 BuildArch:        noarch
 %description -n %{nameLibs}
-Apache Ignite's optinal libs and integrations
+Apache Ignite's optional libs and integrations
 
 
 %package -n %{nameBenchmarks}
@@ -129,7 +129,7 @@ AutoReq:          no
 AutoProv:         no
 BuildArch:        noarch
 %description -n %{nameCpp}
-C++ files necessary for using Apache Ignite
+Sources necessary for using Apache Ignite from C++
 
 
 

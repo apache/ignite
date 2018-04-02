@@ -47,18 +47,18 @@ EOF
 prepEnv () {
     installCmd=""
     packages=""
-    executables="rpmbuild unzip"
+    executables="rpmbuild unzip curl"
 
     # Check OS
     name=$(cat /etc/*release | grep ^NAME | sed -r 's|.*"(.*)".*|\1|')
     case ${name} in
         "Ubuntu")
             installCmd='apt --no-install-recommends'
-            packages="rpm unzip"
+            packages="rpm unzip curl"
             ;;
         "CentOS Linux")
             installCmd="yum"
-            packages="rpm-build unzip"
+            packages="rpm-build unzip curl"
             ;;
         *)
             echo "Unknown or unsupported linux detected"
@@ -69,15 +69,16 @@ prepEnv () {
 
     # Install missing software if necessary
     installFlag=false
-    if [ ! -z installCmd ]; then
+    if [ ! -z ${installCmd} ]; then
         for executable in ${executables}; do
-            type ${executable} &>/dev/null || {
+            command -v ${executable} &>/dev/null || {
                 installFlag=true
                 break
             }
         done
         if ${installFlag}; then
-            ${installCmd} install ${packages}
+            echo "[INFO] Software installation required root privileges"
+            sudo ${installCmd} install ${packages}
         fi
     fi
 }
@@ -90,21 +91,23 @@ prepBin () {
 
 
 getBin () {
-    igniteVersion=$(cat rpm/SPECS/apache-ignite.spec | grep '^*' | head -1 | sed -r 's|.*\ -\ (.*)-.*|\1|')
+    igniteVersion=$(cat rpm/SPECS/apache-ignite.spec | grep Version: | head -1 | sed -r 's|.*:\s+(.*)|\1|')
     binName="apache-ignite-fabric-${igniteVersion}-bin.zip"
     binPreparedFlag=false
 
     cd rpm/SOURCES
-    ls ${binName} && binPreparedFlag=true || true
-    if ! ${binPreparedFlag}; then
-        curl -O https://archive.apache.org/dist/ignite/${igniteVersion}/${binName} && binPreparedFlag=true || true
+    if [ ! -f ${binName} ]; then
+    binPreparedFlag=true
     fi
-    cd ${OLDPWD}
-
+    if ! ${binPreparedFlag}; then
+        curl -O https://archive.apache.org/dist/ignite/${igniteVersion}/${binName}
+        binPreparedFlag=true
+    fi
     if ! ${binPreparedFlag}; then
         echo "[ERROR] Can't find | get Apache Ignite's binary archive."
         exit 1
     fi
+    cd ${OLDPWD}
 }
 
 
@@ -149,32 +152,30 @@ clear
 
 
 # Parse input options
-if [[ ! -z "${1-}" ]]; then
-    until [[ -z "${1-}" ]]; do
-        case "$1" in
-            --src)
-                shift
-                BUILD_FROM_SRC_FLAG=true
-                ;;
-            --rpm)
-                shift
-                BUILD_RPM_FLAG=true
-                ;;
-            --deb)
-                BUILD_DEV_FLAG=true
-                ;;
-            --help)
-                usage
-                exit 0
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --src)
+            shift
+            BUILD_FROM_SRC_FLAG=true
             ;;
-            *)
-                echo "[ERROR] Unknown argument '${1}'"
-                usage
-                exit 1
+        --rpm)
+            shift
+            BUILD_RPM_FLAG=true
             ;;
-        esac
-    done
-fi
+        --deb)
+            BUILD_DEV_FLAG=true
+            ;;
+        --help)
+            usage
+            exit 0
+        ;;
+        *)
+            echo "[ERROR] Unknown argument '${1}'"
+            usage
+            exit 1
+        ;;
+    esac
+done
 if [ ${BUILD_RPM_FLAG} == false -a ${BUILD_DEB_FLAG} == false ]; then
     echo "[ERROR] At least one type of package should be specified: RPM or DEB"
     usage
