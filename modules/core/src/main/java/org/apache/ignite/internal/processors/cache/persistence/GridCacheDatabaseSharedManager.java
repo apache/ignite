@@ -75,10 +75,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.NodeInvalidator;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
@@ -128,7 +129,6 @@ import org.apache.ignite.internal.processors.cache.persistence.snapshot.Snapshot
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
-import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.crc.PureJavaCrc32;
 import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.GridMultiCollectionWrapper;
@@ -376,7 +376,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     private List<MetastorageLifecycleListener> metastorageLifecycleLsnrs;
 
     /** Initially disabled cache groups. */
-    public Collection<Integer> initiallyWalDisabledGrps;
+    private Collection<Integer> initiallyWalDisabledGrps;
 
     /**
      * @param ctx Kernal context.
@@ -2876,7 +2876,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                             chp.progress.cpFinishFut.onDone(e);
 
                             // In case of writing error node should be invalidated and stopped.
-                            NodeInvalidator.INSTANCE.invalidate(cctx.kernalContext(), e);
+                            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
 
                             return;
                         }
@@ -3062,14 +3062,14 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                     if (grp.isLocal() || !grp.walEnabled())
                         continue;
 
-                    int locPartsSize = 0;
+                    ArrayList<GridDhtLocalPartition> parts = new ArrayList<>();
 
-                    for (GridDhtLocalPartition ignored : grp.topology().currentLocalPartitions())
-                        locPartsSize++;
+                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions())
+                        parts.add(part);
 
-                    CacheState state = new CacheState(locPartsSize);
+                    CacheState state = new CacheState(parts.size());
 
-                    for (GridDhtLocalPartition part : grp.topology().currentLocalPartitions()) {
+                    for (GridDhtLocalPartition part : parts) {
                         state.addPartitionState(
                             part.id(),
                             part.dataStore().fullSize(),
