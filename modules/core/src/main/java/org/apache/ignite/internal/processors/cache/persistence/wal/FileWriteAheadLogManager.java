@@ -3222,6 +3222,10 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
             }
 
             unparkWaiters(Long.MAX_VALUE);
+
+            if (!shutdown && !Thread.currentThread().isInterrupted())
+                U.handleFailure(cctx.kernalContext().grid(), FailureType.SYSTEM_WORKER_TERMINATION,
+                    new IllegalStateException("WAL writer thread is exiting unexpectedly"));
         }
 
         /**
