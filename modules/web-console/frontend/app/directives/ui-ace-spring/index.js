@@ -15,8 +15,12 @@
  * limitations under the License.
  */
 
-import IgniteUiAceGeneratorFactory from '../ui-ace.controller';
+import angular from 'angular';
 
-export default class IgniteUiAceSpring extends IgniteUiAceGeneratorFactory {
-    static $inject = ['$scope', '$attrs', 'IgniteVersion', 'SpringTransformer'];
-}
+import UiAceSpringDirective from './ui-ace-spring.directive';
+
+export default angular.module('ignite-console.ui-ace-spring', [
+    'ignite-console.services',
+    'ignite-console.configuration'
+])
+.directive('igniteUiAceSpring', UiAceSpringDirective);
