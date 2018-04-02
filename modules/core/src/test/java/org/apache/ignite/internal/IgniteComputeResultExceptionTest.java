@@ -38,68 +38,6 @@ import org.jetbrains.annotations.Nullable;
  */
 public class IgniteComputeResultExceptionTest extends GridCommonAbstractTest {
     /** */
-    private static class TaskException extends IgniteException {
-        /** */
-        public TaskException() {
-            // No-op.
-        }
-
-        /** */
-        public TaskException(Throwable cause) {
-            super(cause);
-        }
-    }
-
-    /** */
-    private static class NoopJob implements ComputeJob {
-        /** */
-        @Override public void cancel() {
-            // No-op.
-        }
-
-        /** */
-        @Override public Object execute() throws IgniteException {
-            return null;
-        }
-    }
-
-    /** */
-    private static class ResultExceptionTask implements ComputeTask<Object, Object> {
-        /** */
-        private final IgniteException resE;
-
-        /**
-         * @param resE Exception to be rethrown by the
-         */
-        ResultExceptionTask(IgniteException resE) {
-            this.resE = resE;
-        }
-
-        /** */
-        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-            @Nullable Object arg) throws IgniteException {
-            Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
-
-            for (ClusterNode node : subgrid)
-                jobs.put(new NoopJob(), node);
-
-            return jobs;
-        }
-
-        /** */
-        @Override
-        public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
-            throw resE;
-        }
-
-        /** */
-        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
-            return null;
-        }
-    }
-
-
-    /** */
     public void testIgniteExceptionExecute() throws Exception {
         checkExecuteException(new IgniteException());
     }
@@ -182,6 +120,67 @@ public class IgniteComputeResultExceptionTest extends GridCommonAbstractTest {
             } catch (IgniteException e) {
                 assertSame(resE, e);
             }
+        }
+    }
+
+    /** */
+    private static class TaskException extends IgniteException {
+        /** */
+        public TaskException() {
+            // No-op.
+        }
+
+        /** */
+        public TaskException(Throwable cause) {
+            super(cause);
+        }
+    }
+
+    /** */
+    private static class NoopJob implements ComputeJob {
+        /** */
+        @Override public void cancel() {
+            // No-op.
+        }
+
+        /** */
+        @Override public Object execute() throws IgniteException {
+            return null;
+        }
+    }
+
+    /** */
+    private static class ResultExceptionTask implements ComputeTask<Object, Object> {
+        /** */
+        private final IgniteException resE;
+
+        /**
+         * @param resE Exception to be rethrown by the
+         */
+        ResultExceptionTask(IgniteException resE) {
+            this.resE = resE;
+        }
+
+        /** */
+        @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+            @Nullable Object arg) throws IgniteException {
+            Map<ComputeJob, ClusterNode> jobs = new HashMap<>();
+
+            for (ClusterNode node : subgrid)
+                jobs.put(new NoopJob(), node);
+
+            return jobs;
+        }
+
+        /** */
+        @Override
+        public ComputeJobResultPolicy result(ComputeJobResult res, List<ComputeJobResult> rcvd) throws IgniteException {
+            throw resE;
+        }
+
+        /** */
+        @Nullable @Override public Object reduce(List<ComputeJobResult> results) throws IgniteException {
+            return null;
         }
     }
 }

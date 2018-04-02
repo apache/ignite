@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterBiClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformWriterClosure;
 import org.apache.ignite.internal.processors.service.GridServiceProxy;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -585,7 +586,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                     return ((GridServiceProxy)proxy).invokeMethod(mtd, args);
                 }
                 catch (Throwable t) {
-                    throw new IgniteCheckedException(t);
+                    throw IgniteUtils.cast(t);
                 }
             }
         }
