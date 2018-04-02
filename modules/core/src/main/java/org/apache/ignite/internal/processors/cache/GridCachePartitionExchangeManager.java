@@ -2232,6 +2232,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (!futQ.isEmpty()) {
                 for (CachePartitionExchangeWorkerTask task : futQ) {
                     if (task instanceof GridDhtPartitionsExchangeFuture) {
+                        // First event is enough to check,
+                        // because only current exchange future can have multiple discovery events (exchange merge).
                         ClusterNode triggeredBy = ((GridDhtPartitionsExchangeFuture) task).firstEvent().eventNode();
 
                         if (!CU.clientNode(triggeredBy))
