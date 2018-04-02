@@ -783,7 +783,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             addCacheOnJoin(cfg, false, caches, templates);
         }
 
-        if(CU.isPersistenceEnabled(ctx.config())) {
+        if(CU.isPersistenceEnabled(ctx.config()) && ctx.cache().context().pageStore() != null) {
             Map<String, StoredCacheData> storedCaches = ctx.cache().context().pageStore().readCacheConfigurations();
 
             if (!F.isEmpty(storedCaches))
