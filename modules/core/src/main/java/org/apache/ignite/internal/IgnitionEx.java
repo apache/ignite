@@ -1805,7 +1805,11 @@ public class IgnitionEx {
                 cfg.getStripedPoolSize(),
                 cfg.getIgniteInstanceName(),
                 "sys",
-                log);
+                log,
+                (thread, t) -> {
+                    if (grid != null)
+                        U.handleFailure(grid, FailureType.SYSTEM_WORKER_TERMINATION, t);
+                });
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1845,6 +1849,10 @@ public class IgnitionEx {
                 cfg.getIgniteInstanceName(),
                 "data-streamer",
                 log,
+                (thread, t) -> {
+                    if (grid != null)
+                        U.handleFailure(grid, FailureType.SYSTEM_WORKER_TERMINATION, t);
+                },
                 true);
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
