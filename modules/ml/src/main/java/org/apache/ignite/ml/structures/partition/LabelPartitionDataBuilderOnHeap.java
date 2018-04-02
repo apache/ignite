@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm;
+package org.apache.ignite.ml.structures.partition;
 
 import java.io.Serializable;
 import java.util.Iterator;
@@ -23,66 +23,44 @@ import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.dataset.UpstreamEntry;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.structures.LabeledDataset;
-import org.apache.ignite.ml.structures.LabeledVector;
 
 /**
- * SVM partition data builder that builds {@link LabeledDataset}.
+ * Partition data builder that builds {@link LabelPartitionDataOnHeap}.
  *
  * @param <K> Type of a key in <tt>upstream</tt> data.
  * @param <V> Type of a value in <tt>upstream</tt> data.
  * @param <C> Type of a partition <tt>context</tt>.
  */
-public class SVMPartitionDataBuilderOnHeap<K, V, C extends Serializable>
-    implements PartitionDataBuilder<K, V, C, LabeledDataset<Double, LabeledVector>> {
+public class LabelPartitionDataBuilderOnHeap<K, V, C extends Serializable>
+    implements PartitionDataBuilder<K, V, C, LabelPartitionDataOnHeap> {
     /** */
     private static final long serialVersionUID = -7820760153954269227L;
-
-    /** Extractor of X matrix row. */
-    private final IgniteBiFunction<K, V, double[]> xExtractor;
 
     /** Extractor of Y vector value. */
     private final IgniteBiFunction<K, V, Double> yExtractor;
 
     /**
-     * Constructs a new instance of SVM partition data builder.
+     * Constructs a new instance of Label partition data builder.
      *
-     * @param xExtractor Extractor of X matrix row.
      * @param yExtractor Extractor of Y vector value.
      */
-    public SVMPartitionDataBuilderOnHeap(IgniteBiFunction<K, V, double[]> xExtractor,
-                                         IgniteBiFunction<K, V, Double> yExtractor) {
-        this.xExtractor = xExtractor;
+    public LabelPartitionDataBuilderOnHeap(IgniteBiFunction<K, V, Double> yExtractor) {
         this.yExtractor = yExtractor;
     }
 
     /** {@inheritDoc} */
-    @Override public LabeledDataset<Double, LabeledVector> build(Iterator<UpstreamEntry<K, V>> upstreamData,
-        long upstreamDataSize, C ctx) {
-
-        int xCols = -1;
-        double[][] x = null;
+    @Override public LabelPartitionDataOnHeap build(Iterator<UpstreamEntry<K, V>> upstreamData, long upstreamDataSize,
+                                        C ctx) {
         double[] y = new double[Math.toIntExact(upstreamDataSize)];
 
         int ptr = 0;
-
         while (upstreamData.hasNext()) {
             UpstreamEntry<K, V> entry = upstreamData.next();
-            double[] row = xExtractor.apply(entry.getKey(), entry.getValue());
-
-            if (xCols < 0) {
-                xCols = row.length;
-                x = new double[Math.toIntExact(upstreamDataSize)][xCols];
-            }
-            else
-                assert row.length == xCols : "X extractor must return exactly " + xCols + " columns";
-
-            x[ptr] = row;
 
             y[ptr] = yExtractor.apply(entry.getKey(), entry.getValue());
 
             ptr++;
         }
-
-        return new LabeledDataset<>(x, y);
+        return new LabelPartitionDataOnHeap(y);
     }
 }

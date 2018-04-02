@@ -15,31 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.svm.multi;
+package org.apache.ignite.ml.knn.partitions;
+
+import java.io.Serializable;
 
 /**
- * On Heap partition data that keeps part of a labels.
+ * Partition context of the kNN classification algorithm.
  */
-public class LabelPartitionDataOnHeap implements AutoCloseable {
-    /** Part of Y vector. */
-    private final double[] y;
-
-    /**
-     * Constructs a new instance of linear system partition data.
-     *
-     * @param y Part of Y vector.
-     */
-    public LabelPartitionDataOnHeap(double[] y) {
-        this.y = y;
-    }
-
+public class KNNPartitionContext implements Serializable {
     /** */
-    public double[] getY() {
-        return y;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
-        // Do nothing, GC will clean up.
-    }
+    private static final long serialVersionUID = -7212307112344430126L;
 }
