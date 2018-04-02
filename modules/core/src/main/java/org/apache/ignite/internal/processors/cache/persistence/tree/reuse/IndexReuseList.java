@@ -51,7 +51,7 @@ public class IndexReuseList extends PagesList implements ReuseList {
         long metaPageId,
         boolean initNew
     ) throws IgniteCheckedException {
-        super(cacheId, name, pageMem, 1, wal, metaPageId);
+        super(cacheId, name, pageMem, 1, wal, metaPageId, null);
 
         reuseList = this;
 

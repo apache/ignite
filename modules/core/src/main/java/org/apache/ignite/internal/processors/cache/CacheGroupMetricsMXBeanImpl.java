@@ -44,6 +44,12 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /** */
     private final DataStructureSize pkIndexPages;
 
+    /** */
+    private final DataStructureSize reuseListPages;
+
+    /** */
+    private final int pageSize;
+
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
         /**
@@ -57,16 +63,19 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
 
     /**
      * Creates MBean;
-     *
-     * @param ctx Cache group context.
+     *  @param ctx Cache group context.
      * @param pkIndexPages .
+     * @param reuseListPages .
      */
     public CacheGroupMetricsMXBeanImpl(
         CacheGroupContext ctx,
-        DataStructureSize pkIndexPages
+        DataStructureSize pkIndexPages,
+        DataStructureSize reuseListPages
     ) {
         this.ctx = ctx;
         this.pkIndexPages = pkIndexPages;
+        this.reuseListPages = reuseListPages;
+        this.pageSize = ctx.dataRegion().pageMemory().pageSize();
     }
 
     /** {@inheritDoc} */
@@ -264,6 +273,10 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public long getPKIndexesSize() {
-        return pkIndexPages.size() * ctx.dataRegion().pageMemory().pageSize();
+        return pkIndexPages.size() * pageSize;
+    }
+
+    @Override public long getReuseListSize() {
+        return reuseListPages.size() * pageSize;
     }
 }

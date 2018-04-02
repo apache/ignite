@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.pagemem.DataStructureSize;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -336,9 +337,10 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
-        boolean initNew
+        boolean initNew,
+        DataStructureSize structureSize
     ) throws IgniteCheckedException {
-        super(grpId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId);
+        super(grpId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId, structureSize);
 
         rmvRow = new RemoveRowHandler(grpId == 0);
 

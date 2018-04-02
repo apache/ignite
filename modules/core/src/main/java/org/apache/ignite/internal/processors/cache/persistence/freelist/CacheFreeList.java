@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.persistence.freelist;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.DataStructureSize;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
@@ -49,9 +50,10 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
         ReuseList reuseList,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
-        boolean initNew
+        boolean initNew,
+        DataStructureSize structureSize
     ) throws IgniteCheckedException {
-        super(grpId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew);
+        super(grpId, name, regionMetrics, dataRegion, reuseList, wal, metaPageId, initNew, structureSize);
     }
 
     /** {@inheritDoc} */

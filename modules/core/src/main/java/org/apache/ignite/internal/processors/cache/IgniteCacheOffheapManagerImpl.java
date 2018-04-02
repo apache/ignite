@@ -122,6 +122,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** */
     protected DataStructureSize indexPages;
 
+    /** */
+    protected DataStructureSize reuseListPages;
+
     /** {@inheritDoc} */
     @Override public GridAtomicLong globalRemoveId() {
         return globalRmvId;
@@ -150,6 +153,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
         }
 
         indexPages = grp.getPkIndexPages();
+        reuseListPages = grp.getReuseListPages();
     }
 
     /** {@inheritDoc} */

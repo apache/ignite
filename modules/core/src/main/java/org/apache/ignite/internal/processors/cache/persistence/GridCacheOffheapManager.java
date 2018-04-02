@@ -1114,15 +1114,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     RootPage reuseRoot = metas.reuseListRoot;
 
+                    String partName = grp.cacheOrGroupName() + "-" + partId;
+
                     freeList = new CacheFreeList(
                         grp.groupId(),
-                        grp.cacheOrGroupName() + "-" + partId,
+                        partName,
                         grp.dataRegion().memoryMetrics(),
                         grp.dataRegion(),
                         null,
                         ctx.wal(),
                         reuseRoot.pageId().pageId(),
-                        reuseRoot.isAllocated()
+                        reuseRoot.isAllocated(),
+                        DataStructureSizeUtils.delegateTracker(partName, reuseListPages)
                     ) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
@@ -1135,14 +1138,16 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     RootPage treeRoot = metas.treeRoot;
 
+                    String treeName = name;
+
                     CacheDataTree dataTree = new CacheDataTree(
                         grp,
-                        name,
+                        treeName,
                         freeList,
                         rowStore,
                         treeRoot.pageId().pageId(),
                         treeRoot.isAllocated(),
-                        DataStructureSizeUtils.delegateTracker(name, indexPages)
+                        DataStructureSizeUtils.delegateTracker(treeName, indexPages)
                     ) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();

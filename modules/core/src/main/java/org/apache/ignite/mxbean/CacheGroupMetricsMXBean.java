@@ -146,4 +146,11 @@ public interface CacheGroupMetricsMXBean {
      */
     @MXBeanDescription("Total size in bytes for primary key indexes.")
     public long getPKIndexesSize();
+
+    /**
+     * Total size in bytes for reuse list.
+     *
+     */
+    @MXBeanDescription("Total size in bytes for reuse list.")
+    public long getReuseListSize();
 }

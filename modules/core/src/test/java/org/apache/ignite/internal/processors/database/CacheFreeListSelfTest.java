@@ -347,7 +347,17 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
         DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
 
-        return new CacheFreeList(1, "freelist", regionMetrics, dataRegion, null, null, metaPageId, true);
+        return new CacheFreeList(
+            1,
+            "freelist",
+            regionMetrics,
+            dataRegion,
+            null,
+            null,
+            metaPageId,
+            true,
+            null
+        );
     }
 
     /**
