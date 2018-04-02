@@ -571,7 +571,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             activeFuts.add(resFut);
 
             Collection<KeyCacheObjectWrapper> keys =
-                new GridConcurrentHashSet<>(entries.size(), U.capacity(entries.size()), 1);
+                new GridConcurrentHashSet<>(entries.size());
 
             Collection<DataStreamerEntry> entries0 = new ArrayList<>(entries.size());
 
@@ -630,7 +630,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             Collection<KeyCacheObjectWrapper> keys = null;
 
             if (entries.size() > 1) {
-                keys = new GridConcurrentHashSet<>(entries.size(), U.capacity(entries.size()), 1);
+                keys = new GridConcurrentHashSet<>(entries.size());
 
                 for (DataStreamerEntry entry : entries)
                     keys.add(new KeyCacheObjectWrapper(entry.getKey()));

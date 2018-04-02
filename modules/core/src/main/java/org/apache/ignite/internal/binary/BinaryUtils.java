@@ -671,7 +671,7 @@ public class BinaryUtils {
         else if (cls == ConcurrentHashMap8.class)
             return new ConcurrentHashMap8<>(U.capacity(((Map)map).size()));
         else if (cls == ConcurrentHashMap.class)
-            return new ConcurrentHashMap<>(U.capacity(((Map)map).size()));
+            return new ConcurrentHashMap<>(((Map)map).size());
 
         return null;
     }
@@ -691,7 +691,7 @@ public class BinaryUtils {
         else if (map instanceof ConcurrentHashMap8)
             return new ConcurrentHashMap8<>(U.capacity(map.size()));
         else if (map instanceof ConcurrentHashMap)
-            return new ConcurrentHashMap<>(U.capacity(map.size()));
+            return new ConcurrentHashMap<>(map.size());
 
         return U.newHashMap(map.size());
     }
