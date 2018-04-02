@@ -729,14 +729,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         cacheData.sql(sql);
 
-        addStoredCacheOnJoin(caches, templates, cacheData);
-    }
-
-    private void addStoredCacheOnJoin(Map<String, CacheInfo> caches, Map<String, CacheInfo> templates,
-        StoredCacheData cacheData) throws IgniteCheckedException {
-        CacheConfiguration<?, ?> cfg = cacheData.config();
-
-        String cacheName = cfg.getName();
+        CacheConfiguration<?, ?> cfg1 = cacheData.config();
 
         boolean template = cacheName.endsWith("*");
 
@@ -748,18 +741,31 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             CacheType cacheType = cacheType(cacheName);
 
-            if (cacheType != CacheType.USER && cfg.getDataRegionName() == null)
-                cfg.setDataRegionName(sharedCtx.database().systemDateRegionName());
+            if (cacheType != CacheType.USER && cfg1.getDataRegionName() == null)
+                cfg1.setDataRegionName(sharedCtx.database().systemDateRegionName());
 
-            if (!cacheType.userCache())
-                stopSeq.addLast(cacheName);
-            else
-                stopSeq.addFirst(cacheName);
-
-            caches.put(cacheName, new CacheInfo(cacheData, cacheType, cacheData.sql(), 0));
+            addStoredCache(caches, cacheData, cacheName, cacheType);
         }
         else
             templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0));
+    }
+
+    /**
+     * Add stored cache data to caches.
+     *
+     * @param caches cache storage.
+     * @param cacheData cache data to add.
+     * @param cacheName cache name.
+     * @param cacheType cache type.
+     */
+    private void addStoredCache(Map<String, CacheInfo> caches, StoredCacheData cacheData, String cacheName,
+        CacheType cacheType) {
+        if (!cacheType.userCache())
+            stopSeq.addLast(cacheName);
+        else
+            stopSeq.addFirst(cacheName);
+
+        caches.put(cacheName, new CacheInfo(cacheData, cacheType, cacheData.sql(), 0));
     }
 
     /**
@@ -789,9 +795,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (!F.isEmpty(storedCaches))
                 for (StoredCacheData storedCacheData : storedCaches.values()) {
+                    String cacheName = storedCacheData.config().getName();
+
                     //ignore stored caches if it already added by static config(static config has higher priority)
-                    if (!caches.containsKey(storedCacheData.config().getName()))
-                        addStoredCacheOnJoin(caches, templates, storedCacheData);
+                    if (!caches.containsKey(cacheName))
+                        addStoredCache(caches, storedCacheData, cacheName, cacheType(cacheName));
                 }
         }
     }
