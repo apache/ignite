@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  * Testing that if {@link ComputeTask#result(ComputeJobResult, List)} throws an {@link IgniteException}
  * then that exception is thrown as the execution result.
  */
-public class IgniteComputeResultException extends GridCommonAbstractTest {
+public class IgniteComputeResultExceptionTest extends GridCommonAbstractTest {
     /** */
     private static class TaskException extends IgniteException {
         /** */
