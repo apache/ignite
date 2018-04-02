@@ -179,7 +179,18 @@ public class IndexStorageImpl implements IndexStorage {
             final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos,
             final boolean initNew
         ) throws IgniteCheckedException {
-            super(treeName("meta", "Meta"), cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, innerIos, leafIos);
+            super(
+                treeName("meta", "Meta"),
+                cacheId,
+                pageMem,
+                wal,
+                globalRmvId,
+                metaPageId,
+                reuseList,
+                innerIos,
+                leafIos,
+                null
+            );
 
             this.allocPartId = allocPartId;
             this.allocSpace = allocSpace;

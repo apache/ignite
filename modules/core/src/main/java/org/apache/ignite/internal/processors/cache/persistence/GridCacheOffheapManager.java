@@ -29,6 +29,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.pagemem.DataStructureSize;
+import org.apache.ignite.internal.pagemem.DataStructureSizeUtils;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -147,8 +149,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheDataStore createCacheDataStore0(final int p)
-        throws IgniteCheckedException {
+    @Override protected CacheDataStore createCacheDataStore0(final int p) throws IgniteCheckedException {
         boolean exists = ctx.pageStore() != null && ctx.pageStore().exists(grp.groupId(), p);
 
         return new GridCacheDataStore(p, exists);
@@ -1121,7 +1122,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         null,
                         ctx.wal(),
                         reuseRoot.pageId().pageId(),
-                        reuseRoot.isAllocated()) {
+                        reuseRoot.isAllocated()
+                    ) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
 
@@ -1139,7 +1141,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         freeList,
                         rowStore,
                         treeRoot.pageId().pageId(),
-                        treeRoot.isAllocated()) {
+                        treeRoot.isAllocated(),
+                        DataStructureSizeUtils.delegateTracker(name, indexPages)
+                    ) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
 
@@ -1149,7 +1153,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
-                    delegate0 = new CacheDataStoreImpl(partId, name, rowStore, dataTree);
+                    delegate0 = new CacheDataStoreImpl(partId, this.name, rowStore, dataTree);
 
                     int grpId = grp.groupId();
                     long partMetaId = pageMem.partitionMetaPageId(grpId, partId);

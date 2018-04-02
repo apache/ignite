@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.pagemem.DataStructureSize;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -723,9 +724,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long metaPageId,
         ReuseList reuseList,
         IOVersions<? extends BPlusInnerIO<L>> innerIos,
-        IOVersions<? extends BPlusLeafIO<L>> leafIos
+        IOVersions<? extends BPlusLeafIO<L>> leafIos,
+        DataStructureSize tracker
     ) throws IgniteCheckedException {
-        this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList);
+        this(name, cacheId, pageMem, wal, globalRmvId, metaPageId, reuseList, tracker);
+
         setIos(innerIos, leafIos);
     }
 
@@ -746,9 +749,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         IgniteWriteAheadLogManager wal,
         AtomicLong globalRmvId,
         long metaPageId,
-        ReuseList reuseList
+        ReuseList reuseList,
+        DataStructureSize tracker
     ) throws IgniteCheckedException {
-        super(grpId, pageMem, wal);
+        super(grpId, pageMem, wal, tracker);
 
         assert !F.isEmpty(name);
 

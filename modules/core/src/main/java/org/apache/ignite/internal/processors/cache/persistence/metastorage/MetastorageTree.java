@@ -54,9 +54,20 @@ public class MetastorageTree extends BPlusTree<MetastorageSearchRow, Metastorage
         ReuseList reuseList,
         MetastorageRowStore rowStore,
         long metaPageId,
-        boolean initNew) throws IgniteCheckedException {
-        super("Metastorage", cacheId, pageMem, wal,
-            globalRmvId, metaPageId, reuseList, MetastorageInnerIO.VERSIONS, MetastoreLeafIO.VERSIONS);
+        boolean initNew
+    ) throws IgniteCheckedException {
+        super(
+            "Metastorage",
+            cacheId,
+            pageMem,
+            wal,
+            globalRmvId,
+            metaPageId,
+            reuseList,
+            MetastorageInnerIO.VERSIONS,
+            MetastoreLeafIO.VERSIONS,
+            null
+        );
 
         this.rowStore = rowStore;
 

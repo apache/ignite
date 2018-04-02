@@ -139,4 +139,11 @@ public interface CacheGroupMetricsMXBean {
      */
     @MXBeanDescription("Affinity partitions assignment map.")
     public Map<Integer, List<String>> getAffinityPartitionsAssignmentMap();
+
+    /**
+     * Total size in bytes for primary key indexes.
+     *
+     */
+    @MXBeanDescription("Total size in bytes for primary key indexes.")
+    public long getPKIndexesSize();
 }

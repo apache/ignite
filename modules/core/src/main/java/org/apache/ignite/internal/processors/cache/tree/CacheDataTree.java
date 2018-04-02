@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.DataStructureSize;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -60,7 +61,8 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         ReuseList reuseList,
         CacheDataRowStore rowStore,
         long metaPageId,
-        boolean initNew
+        boolean initNew,
+        DataStructureSize tracker
     ) throws IgniteCheckedException {
         super(name,
             grp.groupId(),
@@ -70,7 +72,9 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             metaPageId,
             reuseList,
             grp.sharedGroup() ? CacheIdAwareDataInnerIO.VERSIONS : DataInnerIO.VERSIONS,
-            grp.sharedGroup() ? CacheIdAwareDataLeafIO.VERSIONS : DataLeafIO.VERSIONS);
+            grp.sharedGroup() ? CacheIdAwareDataLeafIO.VERSIONS : DataLeafIO.VERSIONS,
+            tracker
+        );
 
         assert rowStore != null;
 

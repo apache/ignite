@@ -19,8 +19,8 @@ package org.apache.ignite.internal.processors.cache.persistence;
 
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.DataStructureSize;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -58,23 +58,26 @@ public abstract class DataStructure implements PageLockListener {
     protected ReuseList reuseList;
 
     /** */
-    protected final AtomicLong size = new AtomicLong();
+    protected final DataStructureSize dataStructureSize;
 
     /**
      * @param grpId Cache group ID.
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
+     * @param dataStructureSize .
      */
     protected DataStructure(
         int grpId,
         PageMemory pageMem,
-        IgniteWriteAheadLogManager wal
+        IgniteWriteAheadLogManager wal,
+        DataStructureSize dataStructureSize
     ) {
         assert pageMem != null;
 
         this.grpId = grpId;
         this.pageMem = pageMem;
         this.wal = wal;
+        this.dataStructureSize = dataStructureSize;
     }
 
     /**
@@ -120,7 +123,8 @@ public abstract class DataStructure implements PageLockListener {
         if (pageId == 0)
             pageId = allocatePageNoReuse();
 
-        size.incrementAndGet();
+        if (dataStructureSize != null)
+            dataStructureSize.inc();
 
         assert pageId != 0;
 
@@ -132,16 +136,22 @@ public abstract class DataStructure implements PageLockListener {
      * @param bag Reuse bag.
      * @return Reuse bag.
      */
-    protected final ReuseBag wrapMetrics(ReuseBag bag){
+    protected final ReuseBag wrapMetrics(ReuseBag bag) {
+        if (dataStructureSize == null)
+            return bag;
+
         return new ReuseBag() {
             @Override public void addFreePage(long pageId) {
                 bag.addFreePage(pageId);
             }
 
             @Override public long pollFreePage() {
-                size.decrementAndGet();
+                long res = bag.pollFreePage();
 
-                return bag.pollFreePage();
+                if (res != 0)
+                    dataStructureSize.dec();
+
+                return res;
             }
 
             @Override public boolean isEmpty() {

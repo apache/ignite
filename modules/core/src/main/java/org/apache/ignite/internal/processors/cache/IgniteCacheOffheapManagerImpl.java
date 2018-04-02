@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.NodeStoppingException;
+import org.apache.ignite.internal.pagemem.DataStructureSize;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
@@ -118,6 +119,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** */
     protected GridStripedLock partStoreLock = new GridStripedLock(Runtime.getRuntime().availableProcessors());
 
+    /** */
+    protected DataStructureSize indexPages;
+
     /** {@inheritDoc} */
     @Override public GridAtomicLong globalRemoveId() {
         return globalRmvId;
@@ -144,10 +148,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 ctx.database().checkpointReadUnlock();
             }
         }
+
+        indexPages = grp.getPkIndexPages();
     }
 
     /** {@inheritDoc} */
-    public void onCacheStarted(GridCacheContext cctx) throws IgniteCheckedException {
+    @Override public void onCacheStarted(GridCacheContext cctx) throws IgniteCheckedException {
         if (cctx.affinityNode() && cctx.ttl().eagerTtlEnabled() && pendingEntries == null) {
             String name = "PendingEntries";
 
@@ -933,8 +939,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
      * @return Cache data store.
      * @throws IgniteCheckedException If failed.
      */
-    protected CacheDataStore createCacheDataStore0(int p)
-        throws IgniteCheckedException {
+    protected CacheDataStore createCacheDataStore0(int p) throws IgniteCheckedException {
         final long rootPage = allocateForTree();
 
         CacheDataRowStore rowStore = new CacheDataRowStore(grp, grp.freeList(), p);
@@ -947,7 +952,9 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             grp.reuseList(),
             rowStore,
             rootPage,
-            true);
+            true,
+            null //TODO
+        );
 
         return new CacheDataStoreImpl(p, idxName, rowStore, dataTree);
     }

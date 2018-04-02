@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.pagemem.DataStructureSize;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
@@ -39,6 +40,9 @@ import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /** Cache group context. */
     private final CacheGroupContext ctx;
+
+    /** */
+    private final DataStructureSize pkIndexPages;
 
     /** Interface describing a predicate of two integers. */
     private interface IntBiPredicate {
@@ -55,9 +59,14 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
      * Creates MBean;
      *
      * @param ctx Cache group context.
+     * @param pkIndexPages .
      */
-    public CacheGroupMetricsMXBeanImpl(CacheGroupContext ctx) {
+    public CacheGroupMetricsMXBeanImpl(
+        CacheGroupContext ctx,
+        DataStructureSize pkIndexPages
+    ) {
         this.ctx = ctx;
+        this.pkIndexPages = pkIndexPages;
     }
 
     /** {@inheritDoc} */
@@ -251,5 +260,10 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
         }
 
         return assignmentMap;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPKIndexesSize() {
+        return pkIndexPages.size() * ctx.dataRegion().pageMemory().pageSize();
     }
 }

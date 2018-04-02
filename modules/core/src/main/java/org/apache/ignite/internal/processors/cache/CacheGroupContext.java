@@ -34,6 +34,8 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.pagemem.DataStructureSize;
+import org.apache.ignite.internal.pagemem.DataStructureSizeUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -57,7 +59,6 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
@@ -149,7 +150,10 @@ public class CacheGroupContext {
     private boolean qryEnabled;
 
     /** MXBean. */
-    private CacheGroupMetricsMXBean mxBean;
+    private CacheGroupMetricsMXBeanImpl mxBean;
+
+    /** */
+    private final DataStructureSize pkIndexPages;
 
     /** */
     private volatile boolean walEnabled;
@@ -210,7 +214,15 @@ public class CacheGroupContext {
 
         caches = new ArrayList<>();
 
-        mxBean = new CacheGroupMetricsMXBeanImpl(this);
+        String pkIndexName = cacheOrGroupName() + "pkIndex";
+
+        pkIndexPages = DataStructureSizeUtils.simpleTracker(pkIndexName);
+
+        mxBean = new CacheGroupMetricsMXBeanImpl(this, pkIndexPages);
+    }
+
+    public DataStructureSize getPkIndexPages() {
+        return pkIndexPages;
     }
 
     /**
@@ -1008,7 +1020,7 @@ public class CacheGroupContext {
     /**
      * @return MXBean.
      */
-    public CacheGroupMetricsMXBean mxBean() {
+    public CacheGroupMetricsMXBeanImpl mxBean() {
         return mxBean;
     }
 
