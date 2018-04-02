@@ -2730,7 +2730,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+        @Override protected void body() {
             while (!isCancelled()) {
                 waitCheckpointEvent();
 
@@ -2756,6 +2756,10 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 doCheckpoint();
 
             scheduledCp.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
+
+            if (!stopping)
+                U.handleFailure(cctx.kernalContext().grid(), FailureType.SYSTEM_WORKER_TERMINATION,
+                    new IllegalStateException("Checkpointer worker thread is exiting unexpectedly"));
         }
 
         /**
