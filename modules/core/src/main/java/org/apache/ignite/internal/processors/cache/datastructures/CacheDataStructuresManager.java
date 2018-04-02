@@ -48,7 +48,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityManager;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -84,12 +83,6 @@ import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
 public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     /** Known classes which are safe to use on server nodes. */
     private static final Collection<Class<?>> KNOWN_CLS = new HashSet<>();
-
-    /** Cache peek mode primary. */
-    private static final CachePeekMode[] PRIMARY = {CachePeekMode.PRIMARY};
-
-    /** Cache peek mode primary and backup. */
-    private static final CachePeekMode[] PRIMARY_BACKUP = {CachePeekMode.PRIMARY, CachePeekMode.BACKUP};
 
     /**
      *
@@ -138,9 +131,6 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
     /** Init flag. */
     private boolean initFlag;
-
-    /** Set data map init flag. */
-    private volatile boolean activated;
 
     /**
      *
@@ -221,32 +211,15 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * Called before data structures processor starts activation.
-     */
-    public void onBeforeActivate() {
-        if (!activated) {
-            activated = true;
-
-            try {
-                restoreSetDataMap(cctx);
-            }
-            catch (IgniteCheckedException e) {
-                throw U.convertException(e);
-            }
-        }
-    }
-
-
-    /**
      * Restore local set items map from cache.
      *
-     * @param cctx cache context.
+     * @throws IgniteCheckedException If failed.
      */
-    private void restoreSetDataMap(GridCacheContext cctx) throws IgniteCheckedException {
+    public void initSetData() throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Restoring local set items from internal cache " + cctx.name());
 
-        Iterable entries = cctx.cache().localEntries(cctx.isReplicatedAffinityNode() ? PRIMARY_BACKUP : PRIMARY);
+        Iterable entries = cctx.cache().localEntries(new CachePeekMode[] {CachePeekMode.ALL});
 
         for (Object entry : entries) {
             Object key = ((Cache.Entry)entry).getKey();

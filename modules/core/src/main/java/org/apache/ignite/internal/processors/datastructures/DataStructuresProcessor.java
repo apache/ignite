@@ -138,6 +138,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /** Map of continuous query IDs. */
     private final ConcurrentHashMap<Integer, UUID> qryIdMap = new ConcurrentHashMap<>();
 
+    /** Set data map init flag. */
+    private boolean initSetData = true;
+
     /** Listener. */
     private final GridLocalEventListener lsnr = new GridLocalEventListener() {
         @Override public void onEvent(final Event evt) {
@@ -195,9 +198,19 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     public void onBeforeActivate() {
         initLatch = new CountDownLatch(1);
 
-        for (GridCacheContext cctx : ctx.cache().context().cacheContexts()) {
-            if (cctx.dataStructuresCache())
-                cctx.dataStructures().onBeforeActivate();
+        if (initSetData) {
+            initSetData = false;
+
+            for (GridCacheContext cctx : ctx.cache().context().cacheContexts()) {
+                if (cctx.dataStructuresCache()) {
+                    try {
+                        cctx.dataStructures().initSetData();
+                    }
+                    catch (IgniteCheckedException e) {
+                        log.error("Unable to restore local set data map from cache " + cctx.name(), e);
+                    }
+                }
+            }
         }
     }
 
