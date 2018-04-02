@@ -553,7 +553,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed.
      */
     protected void afterTestsStopped() throws Exception {
-        stopAllGridsSilently();
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -1111,6 +1111,9 @@ public abstract class GridAbstractTest extends TestCase {
             String msg = errors.entrySet().stream().map(Map.Entry::toString)
                 .collect(Collectors.joining(", ", "[", "]"));
 
+            if(isMultiJvm())
+                IgniteProcessProxy.killAll(); // In multi-JVM case.
+
             throw new IgniteCheckedException("Failed to stop nodes: [" + msg + "].");
         }
     }
@@ -1649,6 +1652,9 @@ public abstract class GridAbstractTest extends TestCase {
                 counters.setReset(true);
 
                 afterTestsStopped();
+
+                if(isSafeTopology())
+                    stopAllGridsSilently();
 
                 // Remove counters.
                 tests.remove(getClass());

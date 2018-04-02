@@ -101,7 +101,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
+        stopAllGrids();
 
         if (storeStgy != null)
             storeStgy.resetStore();

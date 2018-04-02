@@ -59,6 +59,11 @@ public class IgniteZeroMqStreamerTest extends GridCommonAbstractTest {
         grid().getOrCreateCache(defaultCacheConfiguration());
     }
 
+    /** {@inheritDoc} */
+    @Override public void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
+
     /**
      * @throws Exception Test exception.
      */
