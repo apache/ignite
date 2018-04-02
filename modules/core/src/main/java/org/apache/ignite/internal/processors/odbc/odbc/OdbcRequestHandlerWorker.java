@@ -17,22 +17,20 @@
 
 package org.apache.ignite.internal.processors.odbc.odbc;
 
-import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcRequest;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcRequestHandler;
-import org.apache.ignite.internal.processors.odbc.odbc.OdbcResponse;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * JDBC request handler worker to maintain single threaded transactional execution of SQL statements when MVCC is on.<p>
