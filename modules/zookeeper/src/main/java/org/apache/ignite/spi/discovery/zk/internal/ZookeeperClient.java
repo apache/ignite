@@ -45,11 +45,11 @@ import org.jetbrains.annotations.Nullable;
 public class ZookeeperClient implements Watcher {
     /** */
     private static final long RETRY_TIMEOUT =
-        IgniteSystemProperties.getLong("IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT", 1000);
+        IgniteSystemProperties.getLong("IGNITE_ZOOKEEPER_DISCOVERY_RETRY_TIMEOUT", 2000);
 
     /** */
     private static final int MAX_RETRY_COUNT =
-        IgniteSystemProperties.getInteger("IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT", 5);
+        IgniteSystemProperties.getInteger("IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT", 10);
 
     /** */
     private final AtomicInteger retryCount = new AtomicInteger();
