@@ -70,7 +70,7 @@ public class JdbcThinTcpIo {
     private static final ClientListenerProtocolVersion VER_2_5_0 = ClientListenerProtocolVersion.create(2, 5, 0);
 
     /** Version 2.5.0: added schema field in handshake. */
-    private static final ClientListenerProtocolVersion VER_2_5_1 = ClientListenerProtocolVersion.create(2, 5, 0);
+    private static final ClientListenerProtocolVersion VER_2_5_1 = ClientListenerProtocolVersion.create(2, 5, 1);
 
     /** Current version. */
     private static final ClientListenerProtocolVersion CURRENT_VER = VER_2_5_1;
