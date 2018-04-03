@@ -1808,7 +1808,7 @@ public class IgnitionEx {
                 log,
                 (thread, t) -> {
                     if (grid != null)
-                        U.handleFailure(grid, FailureType.SYSTEM_WORKER_TERMINATION, t);
+                        grid.context().failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, t));
                 });
 
             // Note that since we use 'LinkedBlockingQueue', number of
@@ -1851,7 +1851,7 @@ public class IgnitionEx {
                 log,
                 (thread, t) -> {
                     if (grid != null)
-                        U.handleFailure(grid, FailureType.SYSTEM_WORKER_TERMINATION, t);
+                        grid.context().failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, t));
                 },
                 true);
 

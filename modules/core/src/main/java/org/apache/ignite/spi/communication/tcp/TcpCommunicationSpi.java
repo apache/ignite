@@ -62,9 +62,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -775,7 +775,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
 
             /** {@inheritDoc} */
             @Override public void onCriticalFailure(FailureType failureType, Throwable failure) {
-                U.handleFailure(ignite, failureType, failure);
+                ((IgniteEx)ignite).context().failure().process(new FailureContext(failureType, failure));
             }
 
             /**
@@ -4119,7 +4119,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
                         "TCP communication SPI worker thread is exiting unexpectedly");
 
                 if (criticalFailure != null)
-                    U.handleFailure(ignite, FailureType.SYSTEM_WORKER_TERMINATION, criticalFailure);
+                    ((IgniteEx)ignite).context().failure().process(
+                        new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, criticalFailure));
             }
         }
 
