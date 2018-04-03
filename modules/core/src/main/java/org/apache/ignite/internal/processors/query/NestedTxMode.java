@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.query;
 
+import org.apache.ignite.IgniteException;
+
 /**
  * Behavior options when an attempt to start a nested transaction is made.
  */
@@ -32,4 +34,27 @@ public enum NestedTxMode {
 
     /** Default handling mode. */
     public final static NestedTxMode DEFAULT = ERROR;
+
+    /**
+     * Get enum value from int
+     *
+     * @param val Int value.
+     * @return Enum value.
+     * @throws IgniteException if the is no enum value associated with the int value.
+     */
+    public static NestedTxMode fromByte(byte val) {
+        switch (val) {
+            case 1:
+                return COMMIT;
+
+            case 2:
+                return IGNORE;
+
+            case 3:
+                return ERROR;
+
+            default:
+                throw new IgniteException("Invalid nested transactions handling mode: " + val);
+        }
+    }
 }

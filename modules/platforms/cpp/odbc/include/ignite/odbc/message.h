@@ -109,9 +109,10 @@ namespace ignite
              * @param sql SQL query.
              * @param params Query arguments.
              * @param timeout Timeout.
+             * @param autoCommit Auto commit flag.
              */
             QueryExecuteRequest(const std::string& schema, const std::string& sql, const app::ParameterSet& params,
-                int32_t timeout);
+                int32_t timeout, bool autoCommit);
 
             /**
              * Destructor.
@@ -137,6 +138,9 @@ namespace ignite
 
             /** Timeout. */
             int32_t timeout;
+
+            /** Auto commit. */
+            bool autoCommit;
         };
 
         /**
@@ -154,9 +158,11 @@ namespace ignite
              * @param begin Beginng of the interval.
              * @param end End of the interval.
              * @param timeout Timeout.
+             * @param autoCommit Auto commit flag.
              */
             QueryExecuteBatchtRequest(const std::string& schema, const std::string& sql,
-                const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last, int32_t timeout);
+                const app::ParameterSet& params, SqlUlen begin, SqlUlen end, bool last, int32_t timeout,
+                bool autoCommit);
 
             /**
              * Destructor.
@@ -191,6 +197,9 @@ namespace ignite
 
             /** Timeout. */
             int32_t timeout;
+
+            /** Auto commit. */
+            bool autoCommit;
         };
 
         /**
