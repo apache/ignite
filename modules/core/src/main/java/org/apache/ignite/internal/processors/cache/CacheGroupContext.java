@@ -71,6 +71,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.simpleTracker;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.trackerWithTrackingPages;
 
 /**
  *
@@ -254,41 +255,12 @@ public class CacheGroupContext {
         int pageSize = dataRegion.pageMemory().pageSize();
 
         pkIndexPages = simpleTracker(pkIndexName);
-        indexesPages = simpleTracker(indexesName);
         reuseListPages = simpleTracker(reuseListName);
         dataPages = simpleTracker(dataPagesName);
         pureDataSize = simpleTracker(pureDataName);
         internalSize = simpleTracker(internalName);
-        totalSize = new DataStructureSize() {
-            private final long trackingPages = TrackingPageIO.VERSIONS.latest().countOfPageToTrack(pageSize);
-            private final AtomicLong size = new AtomicLong();
-
-            @Override public void inc() {
-                long val = size.incrementAndGet();
-
-                if (val % trackingPages == 0)
-                    internalSize.add(pageSize);
-            }
-
-            @Override public void dec() {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override public void add(long val) {
-                long prev = size.getAndAdd(val);
-
-                if (prev / trackingPages < ((prev + val) / trackingPages))
-                    internalSize.add(val * pageSize);
-            }
-
-            @Override public long size() {
-                return size.get() + internalSize.size();
-            }
-
-            @Override public String name() {
-                return totalSizeName;
-            }
-        };
+        indexesPages = trackerWithTrackingPages(indexesName, internalSize, pageSize);
+        totalSize = trackerWithTrackingPages(totalSizeName, internalSize, pageSize);
 
         sizes.put(pkIndexName, pkIndexPages);
         sizes.put(indexesName, indexesPages);

@@ -1,11 +1,49 @@
 package org.apache.ignite.internal.pagemem;
 
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 
 public abstract class DataStructureSizeUtils {
 
     private DataStructureSizeUtils() {
 
+    }
+
+    public static DataStructureSize trackerWithTrackingPages(
+        String name,
+        DataStructureSize internalSize,
+        int pageSize
+    ) {
+        return new DataStructureSize() {
+            private final long trackingPages = TrackingPageIO.VERSIONS.latest().countOfPageToTrack(pageSize);
+            private final AtomicLong size = new AtomicLong();
+
+            @Override public void inc() {
+                long val = size.getAndIncrement();
+
+                if (val % trackingPages == 0)
+                    internalSize.add(pageSize);
+            }
+
+            @Override public void dec() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override public void add(long val) {
+                long prev = size.getAndAdd(val);
+
+                if (prev / trackingPages < ((prev + val) / trackingPages))
+                    internalSize.add(val * pageSize);
+            }
+
+            @Override public long size() {
+                return size.get() + (internalSize.size() / pageSize);
+            }
+
+            @Override public String name() {
+                return name;
+            }
+        };
     }
 
     public static DataStructureSize simpleTracker(String name) {

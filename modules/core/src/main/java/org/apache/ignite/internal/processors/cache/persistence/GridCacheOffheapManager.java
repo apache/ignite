@@ -739,7 +739,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     metastoreRoot = pageMem.allocatePage(grpId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX);
                     reuseListRoot = pageMem.allocatePage(grpId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX);
 
-                    indexesPages.add(5/*HEADER,MetaPage,TreeRoot,ReuseList,TrackingPage*/);
+                    indexesPages.add(4/*HEADER,MetaPage,TreeRoot,ReuseList*/);
 
                     pageIO.setTreeRoot(pageAddr, metastoreRoot);
                     pageIO.setReuseListRoot(pageAddr, reuseListRoot);
