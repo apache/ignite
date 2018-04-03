@@ -107,6 +107,37 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
     }
 
     /**
+     * Checks that write behind cache flush frequency was correctly adjusted to nanos
+     * Expecting putAllCnt to be less or equal than elapsed time divided by flush frequency
+     *
+     * @throws Exception If failed.
+     */
+    public void testSimpleStoreFlushFrequencyWithoutCoalescing() throws Exception {
+        initStore(1, false);
+
+        long writeBehindFlushFrequencyNanos = FLUSH_FREQUENCY * 1000 * 1000;
+        int threshold = store.getWriteBehindStoreBatchSize() / 10;
+
+        try {
+            long start = System.nanoTime();
+            for ( int i =0; i < threshold/2; i ++ )
+                store.write(new CacheEntryImpl<>(i, "v" + i));
+            U.sleep(FLUSH_FREQUENCY + 300);
+            for ( int i = threshold/2; i < threshold; i ++ )
+                store.write(new CacheEntryImpl<>(i, "v" + i));
+            long elapsed = System.nanoTime() - start;
+            U.sleep(FLUSH_FREQUENCY + 300);
+
+            int expectedFlushOps = (int)(1 + elapsed / writeBehindFlushFrequencyNanos);
+
+            assertTrue(delegate.getPutAllCount() <= expectedFlushOps);
+        }
+        finally {
+            shutdownStore();
+        }
+    }
+
+    /**
      * Simple store test.
      *
      * @param writeCoalescing Write coalescing flag.
