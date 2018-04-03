@@ -2388,8 +2388,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             IgniteConfiguration cfg = cctx.gridConfig();
 
-                            boolean rollbackEnabled =
-                                cfg.getTransactionConfiguration().getRollbackOnTopologyChangeTimeout() > 0;
+                            long rollbackTimeout = cfg.getTransactionConfiguration().getRollbackOnTopologyChangeTimeout();
 
                             final long dumpTimeout = 2 * cctx.gridConfig().getNetworkTimeout();
 
@@ -2397,8 +2396,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             while (true) {
                                 try {
-                                    resVer = exchFut.get(rollbackEnabled ? cfg.getTransactionConfiguration().
-                                        getRollbackOnTopologyChangeTimeout() : dumpTimeout, TimeUnit.MILLISECONDS);
+                                    resVer = exchFut.get(rollbackTimeout > 0 ? rollbackTimeout : dumpTimeout);
 
                                     break;
                                 }
@@ -2419,8 +2417,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         nextDumpTime = U.currentTimeMillis() + nextDumpTimeout(dumpCnt++, dumpTimeout);
                                     }
 
-                                    if (rollbackEnabled) {
-                                        rollbackEnabled = false;
+                                    if (rollbackTimeout > 0) {
+                                        rollbackTimeout = 0; // Try automatic rollback only once.
 
                                         cctx.tm().rollbackOnTopologyChange(exchFut.initialVersion());
                                     }

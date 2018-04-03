@@ -953,7 +953,7 @@ public class GridCacheSharedContext<K, V> {
      * @throws IgniteCheckedException If failed.
      */
     public void endTx(GridNearTxLocal tx) throws IgniteCheckedException {
-        boolean clearThreadMap = txMgr.userTx() == tx;
+        boolean clearThreadMap = txMgr.threadLocalTx(null) == tx;
 
         if (clearThreadMap)
             tx.txState().awaitLastFuture(this);
@@ -986,7 +986,7 @@ public class GridCacheSharedContext<K, V> {
      * @return Rollback future.
      */
     public IgniteInternalFuture rollbackTxAsync(GridNearTxLocal tx) throws IgniteCheckedException {
-        boolean clearThreadMap = txMgr.userTx() == tx;
+        boolean clearThreadMap = txMgr.threadLocalTx(null) == tx;
 
         if (clearThreadMap)
             tx.txState().awaitLastFuture(this);
