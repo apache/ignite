@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
+import org.apache.ignite.internal.processors.authentication.IgniteAccessControlException;
 import org.apache.ignite.internal.processors.odbc.ClientListenerConnectionContext;
 import org.apache.ignite.internal.processors.odbc.ClientListenerMessageParser;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
@@ -140,7 +141,7 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
         }
 
         if (kernalCtx.security().enabled())
-            thirdPartyAuthentication(user, pwd);
+            authCtx = thirdPartyAuthentication(user, pwd).authorizationContext();
         else if (kernalCtx.authentication().enabled()) {
             if (user == null || user.length() == 0)
                 throw new IgniteCheckedException("Unauthenticated sessions are prohibited.");
@@ -202,7 +203,7 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
     /**
      * Do 3-rd party authentication.
      */
-    private void thirdPartyAuthentication(String user, String pwd) throws IgniteCheckedException {
+    private AuthenticationContext thirdPartyAuthentication(String user, String pwd) throws IgniteCheckedException {
         SecurityCredentials cred = new SecurityCredentials(user, pwd);
 
         AuthenticationContext authCtx = new AuthenticationContext();
@@ -213,5 +214,12 @@ public class ClientConnectionContext implements ClientListenerConnectionContext 
         authCtx.credentials(cred);
 
         secCtx = kernalCtx.security().authenticate(authCtx);
+
+        if (secCtx == null)
+            throw new IgniteAccessControlException(
+                String.format("The user name or password is incorrect [userName=%s]", user)
+            );
+
+        return authCtx;
     }
 }
