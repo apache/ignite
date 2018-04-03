@@ -152,9 +152,6 @@ public abstract class DataStructure implements PageLockListener {
                 if (res != 0)
                     dataStructureSize.dec();
 
-                if (dataStructureSize.size() < 0)
-                    System.out.println("!!!!");
-
                 return res;
             }
 
