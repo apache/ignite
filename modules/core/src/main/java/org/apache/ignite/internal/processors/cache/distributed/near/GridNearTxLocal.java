@@ -3829,6 +3829,13 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public void close() throws IgniteCheckedException {
+        close(true);
+    }
+
+    /**
+     * @param clearThreadMap Clear thread map.
+     */
+    public void close(boolean clearThreadMap) throws IgniteCheckedException {
         TransactionState state = state();
 
         try {
@@ -3841,7 +3848,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
                 rmv = removeTimeoutHandler();
 
             if (state != COMMITTING && state != ROLLING_BACK && (!trackTimeout || rmv))
-                rollbackNearTxLocalAsync(true, false).get();
+                rollbackNearTxLocalAsync(clearThreadMap, false).get();
 
             synchronized (this) {
                 try {
@@ -3858,7 +3865,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             }
         }
         finally {
-            cctx.tm().clearThreadMap(this);
+            if (clearThreadMap)
+                cctx.tm().clearThreadMap(this);
 
             if (accessMap != null) {
                 assert optimistic();

@@ -455,25 +455,25 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 writer.incrementState();
 
             case 29:
-                if (!writer.writeUuid("subjId", subjId))
+                if (!writer.writeBoolean("skipCompletedVers", skipCompletedVers))
                     return false;
 
                 writer.incrementState();
 
             case 30:
-                if (!writer.writeInt("taskNameHash", taskNameHash))
+                if (!writer.writeUuid("subjId", subjId))
                     return false;
 
                 writer.incrementState();
 
             case 31:
-                if (!writer.writeMessage("topVer", topVer))
+                if (!writer.writeInt("taskNameHash", taskNameHash))
                     return false;
 
                 writer.incrementState();
 
             case 32:
-                if (!writer.writeBoolean("skipCompletedVers", skipCompletedVers))
+                if (!writer.writeMessage("topVer", topVer))
                     return false;
 
                 writer.incrementState();
@@ -567,7 +567,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 29:
-                subjId = reader.readUuid("subjId");
+                skipCompletedVers = reader.readBoolean("skipCompletedVers");
 
                 if (!reader.isLastRead())
                     return false;
@@ -575,7 +575,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 30:
-                taskNameHash = reader.readInt("taskNameHash");
+                subjId = reader.readUuid("subjId");
 
                 if (!reader.isLastRead())
                     return false;
@@ -583,7 +583,7 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 31:
-                topVer = reader.readMessage("topVer");
+                taskNameHash = reader.readInt("taskNameHash");
 
                 if (!reader.isLastRead())
                     return false;
@@ -591,12 +591,13 @@ public class GridDhtTxPrepareRequest extends GridDistributedTxPrepareRequest {
                 reader.incrementState();
 
             case 32:
-                skipCompletedVers = reader.readBoolean("skipCompletedVers");
+                topVer = reader.readMessage("topVer");
 
                 if (!reader.isLastRead())
                     return false;
 
                 reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDhtTxPrepareRequest.class);

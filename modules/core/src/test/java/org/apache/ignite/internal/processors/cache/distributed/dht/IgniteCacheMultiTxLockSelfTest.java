@@ -214,21 +214,21 @@ public class IgniteCacheMultiTxLockSelfTest extends GridCommonAbstractTest {
 
                     try {
                         // Explicit lock.
-                        //cache.lock(vals.firstKey(), 0);
+                        cache.lock(vals.firstKey(), 0);
 
                         try {
                             // Put or remove.
-                            //if (ThreadLocalRandom.current().nextDouble(1) < 0.65)
+                            if (ThreadLocalRandom.current().nextDouble(1) < 0.65)
                                 cache.putAll(vals);
-//                            else
-//                                cache.removeAll(vals.keySet());
+                            else
+                                cache.removeAll(vals.keySet());
                         }
                         catch (Exception e) {
                             U.error(log(), "Failed cache operation.", e);
                         }
-//                        finally {
-//                            cache.unlock(vals.firstKey());
-//                        }
+                        finally {
+                            cache.unlock(vals.firstKey());
+                        }
 
                         U.sleep(100);
                     }

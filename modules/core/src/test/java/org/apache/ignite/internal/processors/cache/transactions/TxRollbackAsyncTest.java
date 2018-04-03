@@ -56,6 +56,7 @@ import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -355,13 +356,14 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
                     try (Transaction tx = tryLockNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ,
                         useTimeout ? 500 : 0, 1)) {
-                        // Will block on lock request until rolled back asynchronously.
-                        tryLockNode.cache(CACHE_NAME).get(0);
 
-                        fail("Tx must be rolled back asynchronously");
+                        // Will block on lock request until rolled back asynchronously.
+                        Object o = tryLockNode.cache(CACHE_NAME).get(0);
+
+                        assertNull(o); // If rolled back by close, previous get will return null.
                     }
                     catch (Exception e) {
-                        // Expected.
+                        // If rolled back by rollback, previous get will throw an exception.
                     }
                 }
 
@@ -389,7 +391,10 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                             continue;
 
                         try {
-                            tx.rollback();
+                            if (proc % 2 == 0)
+                                tx.rollback();
+                            else
+                                tx.close();
                         }
                         catch (IgniteException e) {
                             log.warning("Got exception while rolling back a transaction", e);
@@ -580,11 +585,9 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
 
         final int threadCnt = Runtime.getRuntime().availableProcessors() * 2;
 
-        final int keysCnt = threadCnt * 300;
-
         final int txSize = 200;
 
-        for (int k = 0; k < keysCnt; k++)
+        for (int k = 0; k < txSize; k++)
             grid(0).cache(CACHE_NAME).put(k, (long)0);
 
         final long seed = System.currentTimeMillis(); // 1520340457038L;
@@ -615,7 +618,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                     long timeout = r.nextInt(50) + 50; // Timeout is necessary to prevent deadlocks.
 
                     try (Transaction tx = node.transactions().txStart(conc, isolation, timeout, txSize)) {
-                        int setSize = r.nextInt(keysCnt / 2);
+                        int setSize = r.nextInt(txSize / 2) + 1;
 
                         for (int i = 0; i < setSize; i++) {
                             switch (r.nextInt(4)) {
@@ -657,7 +660,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                     total.add(1);
                 }
             }
-        }, 3, "tx-thread");
+        }, threadCnt, "tx-thread");
 
         final AtomicIntegerArray idx = new AtomicIntegerArray(GRID_CNT + 1);
 
@@ -689,7 +692,15 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
                             info("Processed: " + rolledBack.sum());
 
                         try {
-                            futs.add(tx.rollbackAsync());
+                            IgniteFuture<Void> rollbackFut = tx.rollbackAsync();
+
+                            rollbackFut.listen(new IgniteInClosure<IgniteFuture<Void>>() {
+                                @Override public void apply(IgniteFuture<Void> fut) {
+                                    tx.close();
+                                }
+                            });
+
+                            futs.add(rollbackFut);
                         }
                         catch (Throwable t) {
                             log.error("Exception on async rollback", t);
