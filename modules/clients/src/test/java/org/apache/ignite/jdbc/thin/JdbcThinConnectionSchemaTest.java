@@ -179,7 +179,7 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         int clPort = portOf(clientNode);
 
         Callable<Void> mustThrowCl = () -> {
-            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + clPort + incorrectSchema)) {
+            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + clPort + "/" + incorrectSchema)) {
                 // do nothing
             }
 
@@ -187,7 +187,7 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         };
 
         Callable<Void> mustThrowSrv = () -> {
-            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + srvPort + incorrectSchema)) {
+            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + srvPort + "/" + incorrectSchema)) {
                 // do nothing
             }
 
