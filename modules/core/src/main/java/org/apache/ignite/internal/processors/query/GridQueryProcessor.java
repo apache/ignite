@@ -2783,39 +2783,31 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         desc.validateKeyAndValue(key, val);
     }
 
-    /** Checks if schema with specified {@code name} exists in the cluster. */
-    public boolean hasSchema(String name) {
-        assert !F.isEmpty(name) : "Schema cannot be empty or null.";
+    /** Checks if schema with specified {@code schemaName} exists in the cluster. */
+    public boolean hasSchema(String schemaName) {
+        assert !F.isEmpty(schemaName) : "Schema cannot be empty or null.";
+
 
         // Schema "PUBLIC" is special and always exists.
-        if (DFLT_SCHEMA.equals(name))
+        if (DFLT_SCHEMA.equals(schemaName))
             return true;
 
-        // first: try to find fast specified schema in local descriptors.
-        if (hasSchema0(name))
-            return true;
+        Map<String, DynamicCacheDescriptor> descriptors = ctx.cache().cacheDescriptors();
 
-        log.debug("Have not found schema " + name + " with the first attempt. Starting missing caches.");
+        for (Map.Entry<String, DynamicCacheDescriptor> entry : descriptors.entrySet()) {
+            String cacheName = entry.getKey();
+            DynamicCacheDescriptor cacheDesc = entry.getValue();
 
-        // second: if haven't found try to start missing caches and try again.
-        try {
-            ctx.cache().createMissingQueryCaches();
-        }
-        catch (IgniteCheckedException ignored) {
-            // Todo: (review) should we re-throw exception?
-            // No-op.
-            log.warning("Could not start missing caches. Ignoring exception.", ignored);
-        }
+            if (!cacheDesc.cacheType().userCache())
+                continue;
 
-        return hasSchema0(name);
-    }
+            if (cacheDesc.cacheConfiguration().getQueryEntities().isEmpty())
+                continue;
 
-    private boolean hasSchema0(String schema) {
-        for (String cacheName : ctx.cache().publicCacheNames()) {
-            for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
-                if (schema.equals(table.schemaName()))
-                    return true;
-            }
+            String candidateSchema = QueryUtils.normalizeSchemaName(cacheName, cacheDesc.cacheConfiguration().getSqlSchema());
+
+            if (schemaName.equals(candidateSchema))
+                return true;
         }
 
         return false;
