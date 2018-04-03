@@ -74,6 +74,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
+import org.junit.Rule;
+import org.junit.rules.ExpectedException;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.rnd;
@@ -225,6 +227,24 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         checkCursor(tree.find(null, null), map.values().iterator());
         checkCursor(tree.find(10L, 70L), map.subMap(10L, true, 70L, true).values().iterator());
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public void testRetries() throws IgniteCheckedException {
+        TestTree tree = createTestTree(true);
+        tree.numRetries = 1;
+
+        long size = CNT * CNT;
+
+        try {
+            for (long i = 1; i <= size; i++)
+                tree.put(i);
+            fail();
+        }
+        catch (IgniteCheckedException ignored) {
+        }
     }
 
     /**
@@ -2349,6 +2369,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         /** */
         private static ConcurrentMap<Object, Map<Long, Long>> writeLocks = new ConcurrentHashMap<>();
 
+        /** Number of retries. */
+        private int numRetries = super.getLockRetries();
+
         /**
          * @param reuseList Reuse list.
          * @param canGetRow Can get row from inner page.
@@ -2535,6 +2558,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             printLocks(b, writeLocks, beforeWriteLock);
 
             return b.toString();
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        protected int getLockRetries() {
+            return numRetries;
         }
     }
 
