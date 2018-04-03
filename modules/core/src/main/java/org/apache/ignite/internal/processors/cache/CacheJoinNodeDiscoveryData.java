@@ -112,17 +112,22 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
         /** Flags added for future usage. */
         private final long flags;
 
+        private final boolean staticalyConfigured;
+
         /**
          * @param cacheData Cache data.
          * @param cacheType Cache type.
          * @param sql SQL flag - {@code true} if cache was created with {@code CREATE TABLE}.
          * @param flags Flags (for future usage).
+         * @param staticalyConfigured
          */
-        public CacheInfo(StoredCacheData cacheData, CacheType cacheType, boolean sql, long flags) {
+        public CacheInfo(StoredCacheData cacheData, CacheType cacheType, boolean sql, long flags,
+            boolean staticalyConfigured) {
             this.cacheData = cacheData;
             this.cacheType = cacheType;
             this.sql = sql;
             this.flags = flags;
+            this.staticalyConfigured = staticalyConfigured;
         }
 
         /**
@@ -144,6 +149,10 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
          */
         public boolean sql() {
             return sql;
+        }
+
+        public boolean isStaticalyConfigured() {
+            return staticalyConfigured;
         }
 
         /** {@inheritDoc} */

@@ -532,7 +532,7 @@ public class IgniteDynamicSqlRestoreTest extends GridCommonAbstractTest implemen
                 fail("Node should start with fail");
             }
             catch (Exception e) {
-                assertThat(cause(e), containsString("Join is fail because"));
+                assertThat(cause(e), containsString("Node join was have fail because"));
             }
         }
     }

@@ -744,28 +744,28 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             if (cacheType != CacheType.USER && cfg1.getDataRegionName() == null)
                 cfg1.setDataRegionName(sharedCtx.database().systemDateRegionName());
 
-            addStoredCache(caches, cacheData, cacheName, cacheType);
+            addStoredCache(caches, cacheData, cacheName, cacheType, true);
         }
         else
-            templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0));
+            templates.put(cacheName, new CacheInfo(cacheData, CacheType.USER, false, 0, true));
     }
 
     /**
      * Add stored cache data to caches.
-     *
-     * @param caches cache storage.
+     *  @param caches cache storage.
      * @param cacheData cache data to add.
      * @param cacheName cache name.
      * @param cacheType cache type.
+     * @param isStaticalyConfigured
      */
     private void addStoredCache(Map<String, CacheInfo> caches, StoredCacheData cacheData, String cacheName,
-        CacheType cacheType) {
+        CacheType cacheType, boolean isStaticalyConfigured) {
         if (!cacheType.userCache())
             stopSeq.addLast(cacheName);
         else
             stopSeq.addFirst(cacheName);
 
-        caches.put(cacheName, new CacheInfo(cacheData, cacheType, cacheData.sql(), 0));
+        caches.put(cacheName, new CacheInfo(cacheData, cacheType, cacheData.sql(), 0, isStaticalyConfigured));
     }
 
     /**
@@ -799,7 +799,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     //ignore stored caches if it already added by static config(static config has higher priority)
                     if (!caches.containsKey(cacheName))
-                        addStoredCache(caches, storedCacheData, cacheName, cacheType(cacheName));
+                        addStoredCache(caches, storedCacheData, cacheName, cacheType(cacheName), false);
                 }
         }
     }
