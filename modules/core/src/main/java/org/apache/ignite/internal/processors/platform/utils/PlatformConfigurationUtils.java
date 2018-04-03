@@ -621,6 +621,8 @@ public class PlatformConfigurationUtils {
             cfg.setLongQueryWarningTimeout(in.readLong());
         if (in.readBoolean())
             cfg.setActiveOnStart(in.readBoolean());
+        if (in.readBoolean())
+            cfg.setAuthenticationEnabled(in.readBoolean());
 
         Object consId = in.readObjectDetached();
 
@@ -1118,6 +1120,8 @@ public class PlatformConfigurationUtils {
         w.writeLong(cfg.getLongQueryWarningTimeout());
         w.writeBoolean(true);
         w.writeBoolean(cfg.isActiveOnStart());
+        w.writeBoolean(true);
+        w.writeBoolean(cfg.isAuthenticationEnabled());
         w.writeObject(cfg.getConsistentId());
 
         // Thread pools.

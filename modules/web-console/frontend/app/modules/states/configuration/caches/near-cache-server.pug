@@ -17,36 +17,34 @@
 include /app/helpers/jade/mixins
 
 -var form = 'serverNearCache'
--var model = 'backupItem'
+-var model = '$ctrl.clonedCache'
 
-.panel.panel-default(ng-form=form novalidate ng-show=`${model}.cacheMode === 'PARTITIONED'`)
-    .panel-heading(bs-collapse-toggle='' ng-click=`ui.loadPanel('${form}')`)
+.pca-panel(ng-form=form novalidate ng-show=`${model}.cacheMode === 'PARTITIONED'`)
+    .pca-panel-heading(bs-collapse-toggle='' ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
-        label Near cache on server node
-        ignite-form-field-tooltip.tipLabel
-            | Near cache settings#[br]
-            | Near cache is a small local cache that stores most recently or most frequently accessed data#[br]
-            | Should be used in case when it is impossible to send computations to remote nodes#[br]
-            | #[a(href="https://apacheignite.readme.io/docs/near-caches" target="_blank") More info]
-        ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
-            .col-sm-6
+        .pca-panel-heading-title Near cache on server node
+        .pca-panel-heading-description
+            | Near cache settings. 
+            | Near cache is a small local cache that stores most recently or most frequently accessed data. 
+            | Should be used in case when it is impossible to send computations to remote nodes. 
+            a.link-success(href="https://apacheignite.readme.io/docs/near-caches" target="_blank") More info
+    .pca-panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
+        .pca-panel-body.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+            .pca-form-column-6.pc-form-grid-row
                 -var nearCfg = `${model}.nearConfiguration`
                 -var enabled = `${nearCfg}.enabled`
 
-                .settings-row
+                .pc-form-grid-col-60
                     +checkbox('Enabled', enabled, '"nearCacheEnabled"', 'Flag indicating whether to configure near cache')
-                .settings-row
+                .pc-form-grid-col-60
                     +number('Start size:', `${nearCfg}.nearStartSize`, '"nearStartSize"', enabled, '375000', '0',
                         'Initial cache size for near cache which will be used to pre-create internal hash table after start')
-                .settings-row
-                    +evictionPolicy(`${model}.nearConfiguration.nearEvictionPolicy`, '"nearCacheEvictionPolicy"', enabled, 'false',
-                        'Near cache eviction policy\
-                        <ul>\
-                            <li>Least Recently Used (LRU) - Eviction policy based on LRU algorithm and supports batch eviction</li>\
-                            <li>First In First Out (FIFO) - Eviction policy based on FIFO algorithm and supports batch eviction</li>\
-                            <li>SORTED - Eviction policy which will select the minimum cache entry for eviction</li>\
-                        </ul>')
-            .col-sm-6
+                +evictionPolicy(`${model}.nearConfiguration.nearEvictionPolicy`, '"nearCacheEvictionPolicy"', enabled, 'false',
+                    'Near cache eviction policy\
+                    <ul>\
+                        <li>Least Recently Used (LRU) - Eviction policy based on LRU algorithm and supports batch eviction</li>\
+                        <li>First In First Out (FIFO) - Eviction policy based on FIFO algorithm and supports batch eviction</li>\
+                        <li>SORTED - Eviction policy which will select the minimum cache entry for eviction</li>\
+                    </ul>')
+            .pca-form-column-6
                 +preview-xml-java(model, 'cacheNearServer')

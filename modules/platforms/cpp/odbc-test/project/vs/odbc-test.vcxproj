@@ -172,6 +172,7 @@
     <ClCompile Include="..\..\src\api_robustness_test.cpp" />
     <ClCompile Include="..\..\src\application_data_buffer_test.cpp" />
     <ClCompile Include="..\..\src\attributes_test.cpp" />
+    <ClCompile Include="..\..\src\authentication_test.cpp" />
     <ClCompile Include="..\..\src\column_test.cpp" />
     <ClCompile Include="..\..\src\configuration_test.cpp" />
     <ClCompile Include="..\..\src\connection_info_test.cpp" />
@@ -224,6 +225,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\..\config\queries-auth-32.xml" />
+    <None Include="..\..\config\queries-auth.xml" />
     <None Include="..\..\config\queries-default.xml" />
     <None Include="..\..\config\queries-ssl-32.xml" />
     <None Include="..\..\config\queries-ssl.xml" />
