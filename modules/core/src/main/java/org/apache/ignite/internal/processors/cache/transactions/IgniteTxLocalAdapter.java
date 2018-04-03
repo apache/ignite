@@ -1286,13 +1286,17 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         txState.addActiveCache(cacheCtx, recovery, this);
     }
 
+    protected void checkValid() throws IgniteCheckedException {
+        checkValid(true);
+    }
+
     /**
      * Checks transaction expiration.
      *
      * @throws IgniteCheckedException If transaction check failed.
      */
-    protected void checkValid() throws IgniteCheckedException {
-        if (local() && !dht() && remainingTime() == -1)
+    protected void checkValid(boolean checkTimeout) throws IgniteCheckedException {
+        if (local() && !dht() && remainingTime() == -1 && checkTimeout)
             state(MARKED_ROLLBACK, true);
 
         if (isRollbackOnly()) {

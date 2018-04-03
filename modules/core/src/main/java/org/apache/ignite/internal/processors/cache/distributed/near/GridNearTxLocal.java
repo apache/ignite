@@ -113,6 +113,7 @@ import static org.apache.ignite.transactions.TransactionState.MARKED_ROLLBACK;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 import static org.apache.ignite.transactions.TransactionState.ROLLED_BACK;
 import static org.apache.ignite.transactions.TransactionState.ROLLING_BACK;
+import static org.apache.ignite.transactions.TransactionState.SUSPENDED;
 import static org.apache.ignite.transactions.TransactionState.UNKNOWN;
 
 /**
@@ -2885,6 +2886,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
      * @throws IgniteCheckedException If the transaction is in an incorrect state, or timed out.
      */
     public void resume() throws IgniteCheckedException {
+        resume(true);
+    }
+
+    private void resume(boolean timeout) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Resume near local tx: " + this);
 
@@ -2892,7 +2897,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             throw new UnsupportedOperationException("Resume is not supported for pessimistic transactions.");
 
         synchronized (this) {
-            checkValid();
+            checkValid(timeout);
 
             cctx.tm().resumeTx(this);
         }
@@ -4121,6 +4126,15 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
 
     /** {@inheritDoc} */
     @Override public void onTimeout() {
+        if (state() == SUSPENDED) {
+            try {
+                resume(false);
+            }
+            catch (IgniteCheckedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         if (state(MARKED_ROLLBACK, true) || (state() == MARKED_ROLLBACK)) {
             cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                 @Override public void run() {
