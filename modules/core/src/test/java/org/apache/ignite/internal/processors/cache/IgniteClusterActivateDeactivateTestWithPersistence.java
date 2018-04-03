@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -253,22 +254,20 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
 
         ccfg.setGroupName(DEFAULT_CACHE_NAME);
 
-        ccfgs = new CacheConfiguration[]{ccfg};
-
-        startGrids(SRVS);
+        ccfgs = new CacheConfiguration[] {ccfg};
 
         try {
-            ignite(0).active(true);
+            startGrids(SRVS);
 
             fail();
         }
-        catch (IgniteException e) {
-            // Expected error.
+        catch (IgniteCheckedException e) {
+            assertTrue(cause(e).contains("Failed to start configured cache."));
         }
+    }
 
-        for (int i = 0; i < SRVS; i++)
-            assertFalse(ignite(i).active());
-
-        checkNoCaches(SRVS);
+    /** get cause of throwable */
+    private String cause(Throwable throwable) {
+        return throwable.getCause() == null ? throwable.getMessage() : cause(throwable.getCause());
     }
 }

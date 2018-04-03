@@ -42,6 +42,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.GridCachePluginContext;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.managers.discovery.DiscoCache;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateMessage;
@@ -57,6 +58,7 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.CachePluginContext;
 import org.apache.ignite.plugin.CachePluginProvider;
@@ -64,7 +66,6 @@ import org.apache.ignite.plugin.PluginProvider;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -74,6 +75,10 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  * Logic related to cache discovery data processing.
  */
 class ClusterCachesInfo {
+
+    /** Version since which merge config is support */
+    private static final IgniteProductVersion V_MERGE_CONFIG_SINCE = IgniteProductVersion.fromString("2.5.0");
+
     /** */
     private final GridKernalContext ctx;
 
@@ -1092,8 +1097,8 @@ class ClusterCachesInfo {
         }
 
         //skip config manipulation if least one conflict was found
-        if (!hasSchemaPatchConflict)
-            //merge config only for inactive grid
+        if (!hasSchemaPatchConflict && isMergeConfigSupports(ctx.discovery().localNode()))
+            //merged config for cluster only for inactive grid
             if (!ctx.state().clusterState().active() && !patchesToApply.isEmpty()) {
                 patchesToApply.forEach((cache, patch) -> {
                     if (cache.applySchemaPatch(patch))
@@ -1484,6 +1489,8 @@ class ClusterCachesInfo {
         boolean hasSchemaPatchConflict = false;
         boolean active = ctx.state().clusterState().active();
 
+        boolean isMergeConfigSupport = isMergeConfigSupports(null);
+
         for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : joinData.caches().values()) {
             CacheConfiguration<?, ?> cfg = cacheInfo.cacheData().config();
 
@@ -1520,7 +1527,7 @@ class ClusterCachesInfo {
                     grpDesc,
                     false,
                     nodeId,
-                    true,
+                    cacheInfo.isStaticallyConfigured(),
                     cacheInfo.sql(),
                     joinData.cacheDeploymentId(),
                     new QuerySchema(cacheInfo.cacheData().queryEntities()));
@@ -1529,7 +1536,7 @@ class ClusterCachesInfo {
 
                 assert old == null : old;
             }
-            else if (!active) {
+            else if (!active && isMergeConfigSupport) {
                 DynamicCacheDescriptor desc = registeredCaches.get(cfg.getName());
 
                 Collection<QueryEntity> joiningEntities = cacheInfo.cacheData().queryEntities();
@@ -1564,6 +1571,25 @@ class ClusterCachesInfo {
         }
 
         return null;
+    }
+
+    /**
+     * @return {@code True} if grid supports merge config and {@code False} otherwise
+     */
+    public boolean isMergeConfigSupports(ClusterNode joiningNode) {
+        DiscoCache discoCache = ctx.discovery().discoCache();
+
+        if (discoCache == null)
+            return true;
+
+        if (joiningNode != null && joiningNode.version().compareToIgnoreTimestamp(V_MERGE_CONFIG_SINCE) < 0)
+            return false;
+
+        Collection<ClusterNode> nodes = discoCache.allNodes();
+
+        return nodes.stream()
+            .map(ClusterNode::version)
+            .anyMatch(version -> version.compareToIgnoreTimestamp(V_MERGE_CONFIG_SINCE) < 0);
     }
 
     /**

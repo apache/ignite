@@ -2468,10 +2468,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @Nullable @Override public IgniteNodeValidationResult validateNode(
         ClusterNode node, JoiningNodeDiscoveryData discoData
     ) {
+        if(!cachesInfo.isMergeConfigSupports(node))
+            return null;
+
         if (discoData.hasJoiningNodeData() && discoData.joiningNodeData() instanceof CacheJoinNodeDiscoveryData) {
             CacheJoinNodeDiscoveryData nodeData = (CacheJoinNodeDiscoveryData)discoData.joiningNodeData();
 
-            boolean isGridActive = ctx.grid().active();
+            boolean isGridActive = ctx.state().clusterState().active();
 
             for (CacheJoinNodeDiscoveryData.CacheInfo cacheInfo : nodeData.caches().values()) {
                 DynamicCacheDescriptor localDesc = cacheDescriptor(cacheInfo.cacheData().config().getName());

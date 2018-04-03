@@ -234,7 +234,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi {
     public static final int DFLT_PORT = 47500;
 
     /** Default timeout for joining topology (value is <tt>0</tt>). */
-    public static final long DFLT_JOIN_TIMEOUT = 0;
+    public static final long DFLT_JOIN_TIMEOUT = 1000;
 
     /** Default network timeout in milliseconds (value is <tt>5000ms</tt>). */
     public static final long DFLT_NETWORK_TIMEOUT = 5000;
