@@ -69,9 +69,7 @@ public class TruncateSelectionJob extends ComputeJobAdapter {
         long[] geneKeys = chromosome.getGenes();
 
         for (int k = 0; k < this.mutatedGeneKeys.size(); k++) {
-            {
-                geneKeys[k] = this.mutatedGeneKeys.get(k);
-            }
+            geneKeys[k] = this.mutatedGeneKeys.get(k);
         }
 
         chromosome.setGenes(geneKeys);
