@@ -195,7 +195,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
             catch (IgniteCheckedException e){
                 U.error(log, "Failed to perform WAL task", e);
 
-                throw new IgniteException("Failed to perform WAL task",e);
+                throw new IgniteException("Failed to perform WAL task", e);
             }
         }
 

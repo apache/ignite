@@ -26,8 +26,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import junit.framework.AssertionFailedError;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -40,8 +38,6 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
@@ -118,118 +114,82 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testCorrectnessOfDeletionTaskSegments() throws Exception {
-        VisorWalTaskResult printRes = null;
-        VisorWalTaskResult delRes = null;
-        try {
-            IgniteEx ignite1 = startGrid(0);
+        IgniteEx ig0 = (IgniteEx) startGrids(2);
 
-            IgniteEx ignite2 = (IgniteEx) startGridsMultiThreaded(1,1);
+        ig0.cluster().active(true);
 
-            if (checkTopology())
-                checkTopology(2);
+        IgniteCache<Object, Object> cache = ig0.cache(CACHE_NAME);
 
-            ignite1.cluster().active(true);
+        Map<Integer, IndexedObject> map = new HashMap<>();
 
-            IgniteCache<Object, Object> cache = ignite1.cache(CACHE_NAME);
+        for (int k = 0; k < 10_000; k++) {
+            IndexedObject v = new IndexedObject(k);
 
-            Random rnd = new Random();
+            cache.put(k, v);
 
-            Map<Integer, IndexedObject> map = new HashMap<>();
-
-            for (int i = 0; i < 40_000; i++) {
-                if (i % 1000 == 0)
-                    X.println(" >> " + i);
-
-                int k = rnd.nextInt(300_000);
-
-                IndexedObject v = new IndexedObject(rnd.nextInt(10_000));
-
-                cache.put(k, v);
-
-                map.put(k, v);
-            }
-
-            GridCacheDatabaseSharedManager dbMgr1 = (GridCacheDatabaseSharedManager)ignite1.context().cache().context()
-                      .database();
-
-            GridCacheDatabaseSharedManager dbMgr2 = (GridCacheDatabaseSharedManager) ignite2.context().cache().context()
-                    .database();
-
-            dbMgr1.waitForCheckpoint("test");
-
-            dbMgr2.waitForCheckpoint("test");
-
-            for (int i = 0; i < 1_000; i++) {
-                int k = rnd.nextInt(300_000);
-
-                IndexedObject v = new IndexedObject(rnd.nextInt(10_000));
-
-                cache.put(k, v);
-
-                map.put(k, v);
-            }
-
-            dbMgr1.waitForCheckpoint("test");
-
-            dbMgr2.waitForCheckpoint("test");
-
-            printRes = ignite1.compute().execute(VisorWalTask.class,
-                    new VisorTaskArgument<>(ignite1.cluster().node().id(),
-                            new VisorWalTaskArg(VisorWalTaskOperation.PRINT_UNUSED_WAL_SEGMENTS), false));
-
-            assertEquals("Check that print task finished with no exceptions", printRes.results().size(),2);
-
-            List<File> walArchives = new ArrayList<>();
-
-            for(Collection<String> pathsPerNode: printRes.results().values()){
-                assertTrue("Check that all nodes has unused wal segments", pathsPerNode.size() > 0);
-
-                for(String path: pathsPerNode)
-                    walArchives.add(Paths.get(path).toFile());
-            }
-
-            delRes = ignite1.compute().execute(VisorWalTask.class,
-                    new VisorTaskArgument<>(ignite1.cluster().node().id(),
-                            new VisorWalTaskArg(VisorWalTaskOperation.DELETE_UNUSED_WAL_SEGMENTS), false));
-
-            assertEquals("Check that delete task finished with no exceptions", delRes.results().size(),2);
-
-            List<File> walDeletedArchives = new ArrayList<>();
-
-            for(Collection<String> pathsPerNode: delRes.results().values()){
-                assertTrue("Check that unused wal segments deleted from all nodes",
-                        pathsPerNode.size() > 0);
-
-                for(String path: pathsPerNode)
-                    walDeletedArchives.add(Paths.get(path).toFile());
-            }
-
-            stopGrid(0);
-
-            stopGrid(1);
-
-            IgniteEx ignite = (IgniteEx) startGridsMultiThreaded(2);
-
-            cache = ignite.cache(CACHE_NAME);
-
-            for (Integer k : map.keySet())
-                assertEquals(map.get(k), cache.get(k));
-
-            for(File f: walDeletedArchives)
-                assertTrue("Checking existing of deleted wal archive: " + f.getAbsolutePath(), !f.exists());
-
-            for(File f: walArchives)
-                assertTrue( "Checking existing of wal archive from print task after delete: " + f.getAbsolutePath(),
-                        !f.exists());
+            map.put(k, v);
         }
-        catch (AssertionFailedError e){
-            System.out.println("Print task result " + printRes);
 
-            System.out.println("Delete task result " + delRes);
+
+        forceCheckpoint();
+
+        for (int k = 0; k < 1_000; k++) {
+            IndexedObject v = new IndexedObject(k);
+
+            cache.put(k, v);
+
+            map.put(k, v);
         }
-        finally {
-            stopAllGrids();
+
+        forceCheckpoint();
+
+        VisorWalTaskResult  printRes = ig0.compute().execute(VisorWalTask.class,
+                new VisorTaskArgument<>(ig0.cluster().node().id(),
+                        new VisorWalTaskArg(VisorWalTaskOperation.PRINT_UNUSED_WAL_SEGMENTS), false));
+
+        assertEquals("Check that print task finished with no exceptions", printRes.results().size(), 2);
+
+        List<File> walArchives = new ArrayList<>();
+
+        for(Collection<String> pathsPerNode: printRes.results().values()){
+            assertTrue("Check that all nodes has unused wal segments", pathsPerNode.size() > 0);
+
+            for(String path: pathsPerNode)
+                walArchives.add(Paths.get(path).toFile());
         }
+
+        VisorWalTaskResult delRes = ig0.compute().execute(VisorWalTask.class,
+                new VisorTaskArgument<>(ig0.cluster().node().id(),
+                        new VisorWalTaskArg(VisorWalTaskOperation.DELETE_UNUSED_WAL_SEGMENTS), false));
+
+        assertEquals("Check that delete task finished with no exceptions", delRes.results().size(), 2);
+
+        List<File> walDeletedArchives = new ArrayList<>();
+
+        for(Collection<String> pathsPerNode: delRes.results().values()){
+            assertTrue("Check that unused wal segments deleted from all nodes",
+                    pathsPerNode.size() > 0);
+
+            for(String path: pathsPerNode)
+                walDeletedArchives.add(Paths.get(path).toFile());
+        }
+
+        stopAllGrids();
+
+        // Check that IGNITE can starts after deleting
+        IgniteEx ignite = (IgniteEx) startGrids(2);
+
+        cache = ignite.cache(CACHE_NAME);
+
+        for (Integer k : map.keySet())
+            assertEquals(map.get(k), cache.get(k));
+
+        for(File f: walDeletedArchives)
+            assertTrue("Checking existing of deleted wal archive: " + f.getAbsolutePath(), !f.exists());
+
+        for(File f: walArchives)
+            assertTrue( "Checking existing of wal archive from print task after delete: " + f.getAbsolutePath(),
+                    !f.exists());
     }
 
     /**
@@ -274,17 +234,4 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     *
-     */
-    private enum EnumVal {
-        /** */
-        VAL1,
-
-        /** */
-        VAL2,
-
-        /** */
-        VAL3
-    }
 }

@@ -19,9 +19,10 @@
 
 package org.apache.ignite.internal.commandline;
 
-import java.util.*;
-
-import com.google.common.base.Strings;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 import com.google.common.collect.Lists;
 import junit.framework.TestCase;
 
