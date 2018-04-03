@@ -200,7 +200,7 @@ public class CacheDataRowAdapter implements CacheDataRow {
         }
         while(nextLink != 0);
 
-        assert isReady() || rowData == LINK_WITH_HEADER : "ready";
+        assert isReady() : "ready";
     }
 
     /**
@@ -605,21 +605,6 @@ public class CacheDataRowAdapter implements CacheDataRow {
     }
 
     /** {@inheritDoc} */
-    @Override public void mvccVersion(long crdVer, long mvccCntr) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public long newMvccCoordinatorVersion() {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long newMvccCounter() {
-        return MVCC_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
     @Override public int size() throws IgniteCheckedException {
         int len = key().valueBytesLength(null);
 
@@ -641,6 +626,26 @@ public class CacheDataRowAdapter implements CacheDataRow {
     /** {@inheritDoc} */
     @Override public long mvccCounter() {
         return MVCC_COUNTER_NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int mvccOperationCounter() {
+        return (int) MVCC_COUNTER_NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long newMvccCoordinatorVersion() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long newMvccCounter() {
+        return MVCC_COUNTER_NA;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int newMvccOperationCounter() {
+        return (int) MVCC_COUNTER_NA;
     }
 
     /**

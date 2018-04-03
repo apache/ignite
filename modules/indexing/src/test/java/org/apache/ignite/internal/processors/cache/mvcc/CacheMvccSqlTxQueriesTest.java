@@ -1289,10 +1289,9 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
 
 
     /**
-     * TODO IGNITE-6938
      * @throws Exception If failed.
      */
-    public void testQueryInsertRollbackOnKeysConflict() throws Exception {
+    public void testQueryInsertUpdateSameKeys() throws Exception {
         ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
@@ -1305,34 +1304,97 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
 
         IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
 
-        assertThrows(log(), new Callable<Void>() {
-            @Override public Void call() {
-                try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                    tx.timeout(TX_TIMEOUT);
+        try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            tx.timeout(TX_TIMEOUT);
 
-                    SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
+            SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
 
-                    IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
+            IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
 
-                    try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
-                        assertEquals(3L, cur.iterator().next().get(0));
-                    }
-
-                    qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
-
-                    try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
-                        cur.getAll();
-                    }
-
-                    tx.commit();
-                }
-
-                return null;
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                assertEquals(3L, cur.iterator().next().get(0));
             }
-        }, CacheException.class, "One row cannot be changed twice in the same transaction. Operation is unsupported at the moment.");
 
-        for (int i = 1; i <= 6; i++)
-            assertNull(cache.get(1));
+            qry = new SqlFieldsQuery("UPDATE Integer SET _val = (_key * 10)");
+
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                cur.getAll();
+            }
+
+            tx.commit();
+        }
+
+        assertEquals(10, cache.get(1));
+        assertEquals(20, cache.get(2));
+        assertEquals(30, cache.get(3));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryPendingUpdates() throws Exception {
+        ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
+            .setIndexedTypes(Integer.class, Integer.class);
+
+        startGridsMultiThreaded(4);
+
+        Random rnd = ThreadLocalRandom.current();
+
+        Ignite checkNode  = grid(rnd.nextInt(4));
+        final Ignite updateNode = grid(rnd.nextInt(4));
+
+        IgniteCache cache = checkNode.cache(DEFAULT_CACHE_NAME);
+
+        try (Transaction tx = updateNode.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+            tx.timeout(TX_TIMEOUT);
+
+            SqlFieldsQuery qry = new SqlFieldsQuery("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)");
+
+            IgniteCache<Object, Object> cache0 = updateNode.cache(DEFAULT_CACHE_NAME);
+
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry)) {
+                assertEquals(3L, cur.iterator().next().get(0));
+            }
+
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry.setSql("UPDATE Integer SET _val = (_key * 10)"))) {
+                assertEquals(3L, cur.iterator().next().get(0));
+            }
+
+            for (List<?> row : cache0.query(qry.setSql("SELECT _key, _val FROM Integer")).getAll()) {
+                assertEquals((Integer)row.get(0) * 10, row.get(1));
+            }
+
+            try (FieldsQueryCursor<List<?>> cur = cache0.query(qry.setSql("UPDATE Integer SET _val = 15 where _key = 2"))) {
+                assertEquals(1L, cur.iterator().next().get(0));
+            }
+
+            for (List<?> row : cache0.query(qry.setSql("SELECT _key, _val FROM Integer")).getAll()) {
+                if ((Integer)row.get(0) == 2)
+                    assertEquals(15, row.get(1));
+                else
+                    assertEquals((Integer)row.get(0) * 10, row.get(1));
+            }
+
+            GridTestUtils.runAsync(new Runnable() {
+                @Override public void run() {
+                    SqlFieldsQuery qry = new SqlFieldsQuery("SELECT _key, _val FROM Integer");
+
+                    assertTrue(cache.query(qry).getAll().isEmpty());
+                }
+            }).get(TX_TIMEOUT);
+
+            cache0.query(qry.setSql("DELETE FROM Integer")).getAll();
+
+            assertTrue(cache0.query(qry.setSql("SELECT _key, _val FROM Integer")).getAll().isEmpty());
+
+            assertEquals(3L, cache0.query(qry.setSql("INSERT INTO Integer (_key, _val) values (1,1),(2,2),(3,3)")).getAll().iterator().next().get(0));
+
+            tx.commit();
+        }
+
+        assertEquals(1, cache.get(1));
+        assertEquals(2, cache.get(2));
+        assertEquals(3, cache.get(3));
     }
 
     /**

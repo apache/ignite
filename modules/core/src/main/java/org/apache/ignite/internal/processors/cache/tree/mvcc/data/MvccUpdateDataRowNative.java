@@ -23,7 +23,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
@@ -36,14 +38,12 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.assertMvccVersionValid;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
 
 /**
  *
  */
 public class MvccUpdateDataRowNative extends MvccDataRow implements BPlusTree.TreeRowClosure<CacheSearchRow, CacheDataRow> {
-    /** */
-    private final GridCacheContext cctx;
     /** */
     private final MvccSnapshot mvccSnapshot;
     /** */
@@ -82,12 +82,10 @@ public class MvccUpdateDataRowNative extends MvccDataRow implements BPlusTree.Tr
             part,
             expireTime,
             cctx.cacheId(),
-            mvccSnapshot.coordinatorVersion(),
-            mvccSnapshot.counter(),
+            mvccSnapshot,
             newVer);
 
         this.mvccSnapshot = mvccSnapshot;
-        this.cctx = cctx;
     }
 
     /** {@inheritDoc} */
@@ -128,8 +126,6 @@ public class MvccUpdateDataRowNative extends MvccDataRow implements BPlusTree.Tr
                     res = ResultType.PREV_NULL;
                 else
                     res = ResultType.PREV_NOT_NULL;
-
-                oldRow = tree.getRow(io, pageAddr, idx, RowData.LINK_WITH_HEADER);
             }
         }
 
@@ -164,7 +160,7 @@ public class MvccUpdateDataRowNative extends MvccDataRow implements BPlusTree.Tr
             if (cmp >= 0) {
                 // Do not cleanup oldest version.
                 if (canCleanup) {
-                    assert assertMvccVersionValid(rowCrdVer, rowCntr);
+                    assert MvccUtils.mvccVersionIsValid(rowCrdVer, rowCntr);
 
                     // Should not be possible to cleanup active tx.
                     assert rowCrdVer != crdVer || !mvccSnapshot.activeTransactions().contains(rowCntr);
@@ -172,7 +168,8 @@ public class MvccUpdateDataRowNative extends MvccDataRow implements BPlusTree.Tr
                     if (cleanupRows == null)
                         cleanupRows = new ArrayList<>();
 
-                    cleanupRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrdVer, rowCntr, rowIo.getLink(pageAddr, idx)));
+                    cleanupRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrdVer, rowCntr,
+                        rowIo.getMvccOperationCounter(pageAddr, idx), rowIo.getLink(pageAddr, idx)));
                 }
                 else
                     canCleanup = true;
@@ -180,6 +177,16 @@ public class MvccUpdateDataRowNative extends MvccDataRow implements BPlusTree.Tr
         }
 
         return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int mvccOperationCounter() {
+        return MvccProcessor.MVCC_START_OP_CNTR;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int newMvccOperationCounter() {
+        return MvccProcessor.MVCC_START_OP_CNTR;
     }
 
     /**

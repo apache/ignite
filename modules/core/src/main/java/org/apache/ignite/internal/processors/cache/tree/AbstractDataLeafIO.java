@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.tree;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageUtils;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.CacheSearchRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree;
@@ -28,8 +27,7 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusLeaf
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteInClosure;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.assertMvccVersionValid;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
 
 /**
  *
@@ -64,8 +62,9 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
         if (storeMvccVersion()) {
             long mvccCrdVer = row.mvccCoordinatorVersion();
             long mvccCntr = row.mvccCounter();
+            int mvccOpCntr = row.mvccOperationCounter();
 
-            assert assertMvccVersionValid(mvccCrdVer, mvccCntr);
+            assert mvccVersionIsValid(mvccCrdVer, mvccCntr, mvccOpCntr);
 
             PageUtils.putLong(pageAddr, off, mvccCrdVer);
             off += 8;
@@ -73,6 +72,11 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
             PageUtils.putLong(pageAddr, off, mvccCntr);
             off += 8;
 
+            PageUtils.putInt(pageAddr, off, mvccOpCntr);
+            off += 4;
+
+            // Lock version the same as mvcc version, a new row is
+            // always locked by Tx, in scope of which it was created.
             PageUtils.putLong(pageAddr, off, mvccCrdVer);
             off += 8;
 
@@ -106,23 +110,26 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
         }
 
         if (storeMvccVersion()) {
-            long mvccUpdateTopVer = rowIo.getMvccCoordinatorVersion(srcPageAddr, srcIdx);
-            long mvccUpdateCntr = rowIo.getMvccCounter(srcPageAddr, srcIdx);
+            long mvccCrd = rowIo.getMvccCoordinatorVersion(srcPageAddr, srcIdx);
+            long mvccCntr = rowIo.getMvccCounter(srcPageAddr, srcIdx);
+            int mvccOpCntr = rowIo.getMvccOperationCounter(srcPageAddr, srcIdx);
 
-            assert mvccUpdateTopVer > 0 : mvccUpdateCntr;
-            assert mvccUpdateCntr != MVCC_COUNTER_NA;
+            assert mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr);
 
             long lockCrdVer = rowIo.getMvccLockCoordinatorVersion(srcPageAddr, srcIdx);
             long lockCntr = rowIo.getMvccLockCounter(srcPageAddr, srcIdx);
 
-            assert lockCrdVer >= 0;
-            assert lockCntr >= 0;
+            // Lock version cannot be blank
+            assert mvccVersionIsValid(lockCrdVer, lockCntr);
 
-            PageUtils.putLong(dstPageAddr, off, mvccUpdateTopVer);
+            PageUtils.putLong(dstPageAddr, off, mvccCrd);
             off += 8;
 
-            PageUtils.putLong(dstPageAddr, off, mvccUpdateCntr);
+            PageUtils.putLong(dstPageAddr, off, mvccCntr);
             off += 8;
+
+            PageUtils.putInt(dstPageAddr, off, mvccOpCntr);
+            off += 4;
 
             PageUtils.putLong(dstPageAddr, off, lockCrdVer);
             off += 8;
@@ -136,18 +143,23 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
         throws IgniteCheckedException {
         long link = getLink(pageAddr, idx);
         int hash = getHash(pageAddr, idx);
-        int cacheId = getCacheId(pageAddr, idx);
+
+        int cacheId = storeCacheId() ? getCacheId(pageAddr, idx) : CU.UNDEFINED_CACHE_ID;
 
         if (storeMvccVersion()) {
-            long mvccTopVer = getMvccCoordinatorVersion(pageAddr, idx);
+            long mvccCrd = getMvccCoordinatorVersion(pageAddr, idx);
             long mvccCntr = getMvccCounter(pageAddr, idx);
+            int mvccOpCntr = getMvccOperationCounter(pageAddr, idx);
+
+            assert mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr);
 
             return ((CacheDataTree)tree).rowStore().mvccRow(cacheId,
                 hash,
                 link,
                 CacheDataRowAdapter.RowData.KEY_ONLY,
-                mvccTopVer,
-                mvccCntr);
+                mvccCrd,
+                mvccCntr,
+                mvccOpCntr);
         }
 
         return ((CacheDataTree)tree).rowStore().keySearchRow(cacheId, hash, link);
@@ -173,33 +185,17 @@ public abstract class AbstractDataLeafIO extends BPlusLeafIO<CacheSearchRow> imp
             c.apply(new CacheDataRowAdapter(getLink(pageAddr, i)));
     }
 
-    /** {@inheritDoc} */
-    @Override public long getMvccLockCoordinatorVersion(long pageAddr, int idx) {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMvccLockCounter(long pageAddr, int idx) {
-        return MvccProcessor.MVCC_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setMvccLockCoordinatorVersion(long pageAddr, int idx, long lockCrd) {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void setMvccLockCounter(long pageAddr, int idx, long lockCntr) {
-        throw new UnsupportedOperationException();
-    }
-
     /**
      * @return {@code True} if cache ID has to be stored.
      */
-    protected abstract boolean storeCacheId();
+    protected boolean storeCacheId() {
+        return false;
+    }
 
     /**
      * @return {@code True} if mvcc version has to be stored.
      */
-    protected abstract boolean storeMvccVersion();
+    protected boolean storeMvccVersion() {
+        return false;
+    }
 }

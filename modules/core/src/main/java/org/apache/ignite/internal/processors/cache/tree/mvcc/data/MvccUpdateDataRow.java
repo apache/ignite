@@ -24,7 +24,9 @@ import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersion;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
@@ -35,9 +37,11 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.tree.RowLinkIO;
 import org.apache.ignite.internal.processors.cache.tree.mvcc.search.MvccLinkAwareSearchRow;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.isVisible;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
 
 /**
  *
@@ -55,16 +59,16 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     private static final int PRIMARY = CAN_CLEANUP << 1;
     /** */
     private static final int REMOVE = PRIMARY << 1;
-    /** */
-    private static final int FIRST_REMOVED = REMOVE << 1;
 
     /** */
+    @GridToStringExclude
     private final GridCacheContext cctx;
 
     /** */
     private ResultType res;
 
     /** */
+    @GridToStringExclude
     private int state;
 
     /** */
@@ -77,9 +81,11 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     private CacheDataRow oldRow;
 
     /** */
+    @GridToStringExclude
     private long resCrd;
 
     /** */
+    @GridToStringExclude
     private long resCntr;
 
     /**
@@ -109,8 +115,7 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             part,
             expireTime,
             cctx.cacheId(),
-            mvccSnapshot.coordinatorVersion(),
-            mvccSnapshot.counter(),
+            mvccSnapshot,
             newVer);
 
         this.mvccSnapshot = mvccSnapshot;
@@ -142,21 +147,24 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             long lockCrd = rowIo.getMvccLockCoordinatorVersion(pageAddr, idx);
             long lockCntr = rowIo.getMvccLockCounter(pageAddr, idx);
 
-            if (cctx.kernalContext().coordinators().isActive(lockCrd, lockCntr)) {
-                resCrd = lockCrd;
-                resCntr = lockCntr;
+            // may be already locked
+            if (lockCrd != mvccCrd || lockCntr != mvccCntr) {
+                if (cctx.kernalContext().coordinators().isActive(lockCrd, lockCntr)) {
+                    resCrd = lockCrd;
+                    resCntr = lockCntr;
 
-                res = ResultType.LOCKED;
+                    res = ResultType.LOCKED;
 
-                return setFlags(STOP);
+                    return setFlags(STOP);
+                }
+
+                rowIo.setMvccLockCoordinatorVersion(pageAddr, idx, mvccCrd);
+                rowIo.setMvccLockCounter(pageAddr, idx, mvccCntr);
+
+                // TODO Delta record IGNITE-7991
+
+                setFlags(DIRTY);
             }
-
-            rowIo.setMvccLockCoordinatorVersion(pageAddr, idx, mvccCrd);
-            rowIo.setMvccLockCounter(pageAddr, idx, mvccCntr);
-
-            // TODO Delta record IGNITE-7991
-
-            setFlags(DIRTY);
 
             // In case it is a REMOVE operation and the first entry is an aborted one
             // we have to write lock information to the first committed entry as well
@@ -165,139 +173,131 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
                 unsetFlags(CAN_WRITE);
         }
 
+        // Check whether the row was updated by current transaction
         if (isFlagsSet(FIRST)) {
             oldRow = tree.getRow(io, pageAddr, idx, RowData.LINK_WITH_HEADER);
 
             boolean removed = oldRow.newMvccCoordinatorVersion() != 0;
 
-            long rowCrd, rowCntr;
+            long rowCrd, rowCntr; int rowOpCntr;
 
             if (removed) {
                 rowCrd = oldRow.newMvccCoordinatorVersion();
                 rowCntr = oldRow.newMvccCounter();
+                rowOpCntr = oldRow.newMvccOperationCounter();
             }
             else {
                 rowCrd = oldRow.mvccCoordinatorVersion();
                 rowCntr = oldRow.mvccCounter();
+                rowOpCntr = oldRow.mvccOperationCounter();
             }
 
-            // Check whether the row was updated by this transaction
-            int cmp = Long.compare(mvccCrd, rowCrd);
+            if (MvccUtils.compare(mvccSnapshot, rowCrd, rowCntr) == 0) {
+                res = mvccOpCntr == rowOpCntr ? ResultType.VERSION_FOUND :
+                    removed ? ResultType.PREV_NULL : ResultType.PREV_NOT_NULL;
 
-            if (cmp == 0)
-                cmp = Long.compare(mvccSnapshot.counter(), rowCntr);
-
-            if (cmp == 0) {
-                res = ResultType.VERSION_FOUND;
-
-                assert !isFlagsSet(PRIMARY); // Currently can happen on backup node only
+                assert res != ResultType.VERSION_FOUND || !isFlagsSet(PRIMARY); // Can happen on backup node only
 
                 setFlags(LAST_FOUND);
             }
         }
 
+        long rowLink = rowIo.getLink(pageAddr, idx);
         long rowCrd = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
         long rowCntr = rowIo.getMvccCounter(pageAddr, idx);
+        int rowOpCntr = rowIo.getMvccOperationCounter(pageAddr, idx);
 
         if (!isFlagsSet(LAST_FOUND)) {
-            byte txState = cctx.kernalContext().coordinators().state(rowCrd, rowCntr);
+            if (!(resCrd == rowCrd && resCntr == rowCntr)) { // It's possible it is a chain of aborted changes
+                byte txState = cctx.kernalContext().coordinators().state(rowCrd, rowCntr);
 
-            if (txState == TxState.COMMITTED) {
-                if (oldRow.link() != rowIo.getLink(pageAddr, idx))
-                    oldRow = tree.getRow(io, pageAddr, idx, RowData.LINK_WITH_HEADER);
+                if (txState == TxState.COMMITTED) {
+                    if (oldRow.link() != rowLink)
+                        oldRow = tree.getRow(io, pageAddr, idx, RowData.LINK_WITH_HEADER);
 
-                boolean removed = false;
+                    boolean removed = false;
 
-                if (oldRow.newMvccCoordinatorVersion() != 0) {
-                    if (oldRow.newMvccCoordinatorVersion() == resCrd && oldRow.newMvccCounter() == resCntr)
-                        // The row is linked to the previous aborted version;
-                        txState = TxState.ABORTED;
-                    else
-                        // Double check with TxLog if removed version is committed;
-                        txState = cctx.shared().coordinators().state(oldRow.newMvccCoordinatorVersion(), oldRow.newMvccCounter());
+                    if (oldRow.newMvccCoordinatorVersion() != 0) {
+                        if (oldRow.newMvccCoordinatorVersion() == rowCrd && oldRow.newMvccCounter() == rowCntr)
+                            // Row was deleted by the same Tx it was created
+                            txState = TxState.COMMITTED;
+                        else if (oldRow.newMvccCoordinatorVersion() == resCrd && oldRow.newMvccCounter() == resCntr)
+                            // The row is linked to the previously checked aborted version;
+                            txState = TxState.ABORTED;
+                        else
+                            // Check with TxLog if removed version is committed;
+                            txState = cctx.shared().coordinators().state(oldRow.newMvccCoordinatorVersion(), oldRow.newMvccCounter());
 
-                    if (!(txState == TxState.COMMITTED || txState == TxState.ABORTED))
-                        throw new IllegalStateException("Unexpected state: " + txState);
+                        if (!(txState == TxState.COMMITTED || txState == TxState.ABORTED))
+                            throw new IllegalStateException("Unexpected state: " + txState);
 
-                    removed = txState == TxState.COMMITTED;
-                }
-
-                if (removed) {
-                    res = ResultType.PREV_NULL;
-
-                    setFlags(LAST_FOUND | FIRST_REMOVED);
-                }
-                else {
-                    res = ResultType.PREV_NOT_NULL;
-
-                    setFlags(LAST_FOUND);
-                }
-
-                if (isFlagsSet(CHECK_VERSION)) {
-                    assert res == ResultType.PREV_NULL || res == ResultType.PREV_NOT_NULL;
-
-                    long crdVer = removed ? oldRow.newMvccCoordinatorVersion() : oldRow.mvccCoordinatorVersion();
-                    long cntr = removed ? oldRow.newMvccCounter() : oldRow.mvccCounter();
-
-                    if (!isVisible(cctx, mvccSnapshot, crdVer, cntr, false)) {
-                        resCrd = crdVer;
-                        resCntr = cntr;
-
-                        res = ResultType.VERSION_MISMATCH; // Write conflict.
-
-                        return setFlags(STOP);
+                        removed = txState == TxState.COMMITTED;
                     }
 
-                    // no need to check further
-                    unsetFlags(CHECK_VERSION);
+                    res = removed ? ResultType.PREV_NULL : ResultType.PREV_NOT_NULL;
+
+                    setFlags(LAST_FOUND);
+
+                    if (isFlagsSet(CHECK_VERSION)) {
+                        long crdVer = removed ? oldRow.newMvccCoordinatorVersion() : oldRow.mvccCoordinatorVersion();
+                        long cntr = removed ? oldRow.newMvccCounter() : oldRow.mvccCounter();
+                        int opCntr = removed ? oldRow.newMvccOperationCounter() : oldRow.mvccOperationCounter();
+
+                        if (!isVisible(cctx, mvccSnapshot, crdVer, cntr, opCntr, false)) {
+                            resCrd = crdVer;
+                            resCntr = cntr;
+
+                            res = ResultType.VERSION_MISMATCH; // Write conflict.
+
+                            return setFlags(STOP);
+                        }
+
+                        // no need to check further
+                        unsetFlags(CHECK_VERSION);
+                    }
+
+                    if (isFlagsSet(PRIMARY | REMOVE) && cleanupRows != null) {
+                        rowIo.setMvccLockCoordinatorVersion(pageAddr, idx, mvccCrd);
+                        rowIo.setMvccLockCounter(pageAddr, idx, mvccCntr);
+
+                        // TODO Delta record IGNITE-7991
+
+                        setFlags(DIRTY);
+                    }
+
+                    unsetFlags(CAN_WRITE); // No need to acquire write locks anymore
                 }
-
-                if (cleanupRows != null && isFlagsSet(PRIMARY | REMOVE)) {
-                    rowIo.setMvccLockCoordinatorVersion(pageAddr, idx, mvccCrd);
-                    rowIo.setMvccLockCounter(pageAddr, idx, mvccCntr);
-
-                    // TODO Delta record IGNITE-7991
-
-                    setFlags(DIRTY);
+                else if (txState == TxState.ABORTED) { // save aborted version to fast check new version of next row
+                    resCrd = rowCrd;
+                    resCntr = rowCntr;
                 }
-
-                unsetFlags(CAN_WRITE); // No need to acquire write locks anymore
+                else
+                    throw new IllegalStateException("Unexpected state: " + txState);
             }
-            else if (txState == TxState.ABORTED) {// save aborted version to fast check new version of next row
-                resCrd = rowCrd;
-                resCntr = rowCntr;
-            }
-            else
-                throw new IllegalStateException("Unexpected state: " + txState);
         }
 
-        if (isFlagsSet(FIRST_REMOVED)) {
-            assert isFlagsSet(LAST_FOUND);
-            assert !isFlagsSet(CAN_CLEANUP);
+        if (!isFlagsSet(CAN_CLEANUP) && isFlagsSet(LAST_FOUND)
+            && oldRow.link() == rowLink && res == ResultType.PREV_NULL) {
+            // We can cleanup previous row only if it was deleted by another
+            // transaction and delete version is less or equal to cleanup one
+            long rowNewCrd = oldRow.newMvccCoordinatorVersion();
+            long cleanupVer = mvccSnapshot.cleanupVersion();
+            long rowNewCntr = oldRow.newMvccCounter();
 
-            long crdVer = oldRow.newMvccCoordinatorVersion();
-
-            int cmp = crdVer < mvccCrd ? 1 : Long.compare(mvccSnapshot.cleanupVersion(), oldRow.newMvccCounter());
-
-            if (cmp >= 0)
-                setFlags(CAN_CLEANUP); // can cleanup older row in case it was removed;
-
-            // all further rows cannot be removed
-            unsetFlags(FIRST_REMOVED);
+            if (rowNewCrd < mvccCrd || Long.compare(cleanupVer, rowNewCntr) >= 0)
+                setFlags(CAN_CLEANUP);
         }
 
         if (isFlagsSet(CAN_CLEANUP) || !isFlagsSet(LAST_FOUND)) { // can cleanup aborted versions
             if (cleanupRows == null)
                 cleanupRows = new ArrayList<>();
 
-            cleanupRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowIo.getLink(pageAddr, idx)));
+            cleanupRows.add(new MvccLinkAwareSearchRow(cacheId, key, rowCrd, rowCntr, rowOpCntr, rowLink));
         }
-        else if (!isFlagsSet(CAN_CLEANUP) && isFlagsSet(LAST_FOUND)) {
-            int cmp = rowCrd < mvccCrd ? 1 : Long.compare(mvccSnapshot.cleanupVersion(), rowCntr);
-
-            if (cmp >= 0)
-                setFlags(CAN_CLEANUP); // can cleanup oder rows;
-        }
+        else if (!isFlagsSet(CAN_CLEANUP) && isFlagsSet(LAST_FOUND)
+            && (rowCrd < mvccCrd || Long.compare(mvccSnapshot.cleanupVersion(), rowCntr) >= 0))
+                // all further versions are guaranteed to be less than cleanup version
+                setFlags(CAN_CLEANUP);
 
         return unsetFlags(FIRST);
     }
@@ -336,14 +336,16 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
             case VERSION_FOUND:
             case PREV_NULL:
 
-                return new MvccVersionImpl(mvccCrd, mvccCntr);
+                return new MvccVersionImpl(mvccCrd, mvccCntr, mvccOpCntr);
             case PREV_NOT_NULL:
 
-                return new MvccVersionImpl(oldRow.mvccCoordinatorVersion(), oldRow.newMvccCounter());
+                return new MvccVersionImpl(oldRow.mvccCoordinatorVersion(), oldRow.mvccCounter(), oldRow.mvccOperationCounter());
             case LOCKED:
             case VERSION_MISMATCH:
 
-                return new MvccVersionImpl(resCrd, resCntr);
+                assert resCrd != 0 && resCntr != 0;
+
+                return new MvccVersionImpl(resCrd, resCntr, MvccProcessor.MVCC_OP_COUNTER_NA);
             default:
 
                 throw new IllegalStateException("Unexpected result type: " + resultType());
@@ -369,5 +371,4 @@ public class MvccUpdateDataRow extends MvccDataRow implements MvccUpdateResult, 
     @Override public String toString() {
         return S.toString(MvccUpdateDataRow.class, this, "super", super.toString());
     }
-
 }

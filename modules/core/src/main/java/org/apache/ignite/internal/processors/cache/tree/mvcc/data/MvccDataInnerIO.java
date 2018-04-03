@@ -38,7 +38,7 @@ public final class MvccDataInnerIO extends AbstractDataInnerIO {
      * @param ver Page format version.
      */
     private MvccDataInnerIO(int ver) {
-        super(T_DATA_REF_MVCC_INNER, ver, true, 28);
+        super(T_DATA_REF_MVCC_INNER, ver, true, 32);
     }
 
     /** {@inheritDoc} */
@@ -47,16 +47,6 @@ public final class MvccDataInnerIO extends AbstractDataInnerIO {
 
         for (int i = 0; i < cnt; i++)
             c.apply(new MvccDataRow(getLink(pageAddr, i)));
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getCacheId(long pageAddr, int idx) {
-        return CU.UNDEFINED_CACHE_ID;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean storeCacheId() {
-        return false;
     }
 
     /** {@inheritDoc} */
@@ -72,5 +62,10 @@ public final class MvccDataInnerIO extends AbstractDataInnerIO {
     /** {@inheritDoc} */
     @Override public long getMvccCounter(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + 20);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getMvccOperationCounter(long pageAddr, int idx) {
+        return PageUtils.getInt(pageAddr, offset(idx) + 28);
     }
 }

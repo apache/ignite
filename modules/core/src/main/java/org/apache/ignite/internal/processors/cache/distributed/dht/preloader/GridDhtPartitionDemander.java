@@ -52,6 +52,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionImpl;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
@@ -793,7 +795,7 @@ public class GridDhtPartitionDemander {
      *
      * @param from Node which sent entry.
      * @param p Partition id.
-     * @param entry Preloaded entry.
+     * @param info Preloaded entry.
      * @param topVer Topology version.
      * @return {@code False} if partition has become invalid during preloading.
      * @throws IgniteInterruptedCheckedException If interrupted.
@@ -801,7 +803,7 @@ public class GridDhtPartitionDemander {
     private boolean preloadEntry(
         ClusterNode from,
         int p,
-        GridCacheEntryInfo entry,
+        GridCacheEntryInfo info,
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
         ctx.database().checkpointReadLock();
@@ -810,24 +812,24 @@ public class GridDhtPartitionDemander {
             GridCacheEntryEx cached = null;
 
             try {
-                GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(entry.cacheId()) : grp.singleCacheContext();
+                GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(info.cacheId()) : grp.singleCacheContext();
 
-                cached = cctx.dhtCache().entryEx(entry.key());
+                cached = cctx.dhtCache().entryEx(info.key());
 
                 if (log.isDebugEnabled())
-                    log.debug("Rebalancing key [key=" + entry.key() + ", part=" + p + ", node=" + from.id() + ']');
+                    log.debug("Rebalancing key [key=" + info.key() + ", part=" + p + ", node=" + from.id() + ']');
 
                 cctx.shared().database().checkpointReadLock();
 
                 try {
-                    if (preloadPred == null || preloadPred.apply(entry)) {
+                    if (preloadPred == null || preloadPred.apply(info)) {
                         if (cached.initialValue(
-                            entry.value(),
-                            entry.version(),
-                            entry,
-                            entry.newMvccVersion(),
-                            entry.ttl(),
-                            entry.expireTime(),
+                            info.value(),
+                            info.version(),
+                            cctx.mvccEnabled() ? ((MvccVersionAware)info).mvccVersion() : null,
+                            cctx.mvccEnabled() ? ((MvccUpdateVersionAware)info).newMvccVersion() : null,
+                            info.ttl(),
+                            info.expireTime(),
                             true,
                             topVer,
                             cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
@@ -837,7 +839,7 @@ public class GridDhtPartitionDemander {
 
                             if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
                                 cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(),
-                                    (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
+                                    (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
                                     false, null, null, null, true);
                         }
                         else {
@@ -849,7 +851,7 @@ public class GridDhtPartitionDemander {
                         }
                     }
                     else if (log.isDebugEnabled())
-                        log.debug("Rebalance predicate evaluated to false for entry (will ignore): " + entry);
+                        log.debug("Rebalance predicate evaluated to false for entry (will ignore): " + info);
                 }
                 finally {
                     cctx.shared().database().checkpointReadUnlock();
@@ -872,7 +874,7 @@ public class GridDhtPartitionDemander {
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to cache rebalanced entry (will stop rebalancing) [local=" +
-                ctx.localNode() + ", node=" + from.id() + ", key=" + entry.key() + ", part=" + p + ']', e);
+                ctx.localNode() + ", node=" + from.id() + ", key=" + info.key() + ", part=" + p + ']', e);
         }
         finally {
             ctx.database().checkpointReadUnlock();

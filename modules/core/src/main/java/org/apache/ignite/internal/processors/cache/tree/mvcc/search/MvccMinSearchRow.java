@@ -44,6 +44,11 @@ public class MvccMinSearchRow extends SearchRow {
     }
 
     /** {@inheritDoc} */
+    @Override public int mvccOperationCounter() {
+        return 1;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(MvccMinSearchRow.class, this);
     }

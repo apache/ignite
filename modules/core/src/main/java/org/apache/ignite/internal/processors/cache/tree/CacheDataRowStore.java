@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.tree;
 
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter;
@@ -56,11 +55,7 @@ public class CacheDataRowStore extends RowStore {
      * @return Search row.
      */
     CacheSearchRow keySearchRow(int cacheId, int hash, long link) {
-        DataRow dataRow = new DataRow(grp, hash, link, partId, CacheDataRowAdapter.RowData.KEY_ONLY);
-
-        initDataRow(dataRow, cacheId);
-
-        return dataRow;
+        return initDataRow(new DataRow(grp, hash, link, partId, CacheDataRowAdapter.RowData.KEY_ONLY), cacheId);
     }
 
     /**
@@ -70,31 +65,20 @@ public class CacheDataRowStore extends RowStore {
      * @param rowData Required row data.
      * @param crdVer Mvcc coordinator version.
      * @param mvccCntr Mvcc counter.
+     * @param opCntr Mvcc operation counter.
      * @return Search row.
-     * @throws IgniteCheckedException If failed.
      */
-    MvccDataRow mvccRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData, long crdVer, long mvccCntr)
-        throws IgniteCheckedException {
+    MvccDataRow mvccRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData, long crdVer, long mvccCntr, int opCntr) {
         MvccDataRow dataRow = new MvccDataRow(grp,
             hash,
             link,
             partId,
             rowData,
             crdVer,
-            mvccCntr);
+            mvccCntr,
+            opCntr);
 
-        initDataRow(dataRow, cacheId);
-
-        return dataRow;
-    }
-
-    /**
-     * @param dataRow Data row.
-     * @param cacheId Cache ID.
-     */
-    private void initDataRow(DataRow dataRow, int cacheId) {
-        if (dataRow.cacheId() == CU.UNDEFINED_CACHE_ID && grp.sharedGroup())
-            dataRow.cacheId(cacheId);
+        return initDataRow(dataRow, cacheId);
     }
 
     /**
@@ -105,8 +89,14 @@ public class CacheDataRowStore extends RowStore {
      * @return Data row.
      */
     CacheDataRow dataRow(int cacheId, int hash, long link, CacheDataRowAdapter.RowData rowData) {
-        DataRow dataRow = new DataRow(grp, hash, link, partId, rowData);
+        return initDataRow(new DataRow(grp, hash, link, partId, rowData), cacheId);
+    }
 
+    /**
+     * @param dataRow Data row.
+     * @param cacheId Cache ID.
+     */
+    private <T extends DataRow> T initDataRow(T dataRow, int cacheId) {
         if (dataRow.cacheId() == CU.UNDEFINED_CACHE_ID && grp.sharedGroup())
             dataRow.cacheId(cacheId);
 

@@ -36,6 +36,9 @@ public class DataPageMvccMarkUpdatedRecord extends PageDeltaRecord {
     /** */
     private long newMvccCntr;
 
+    /** */
+    private int newMvccOpCntr;
+
     /**
      * @param grpId Cache group ID.
      * @param pageId Page ID.
@@ -43,19 +46,20 @@ public class DataPageMvccMarkUpdatedRecord extends PageDeltaRecord {
      * @param newMvccCrd New MVCC coordinator version.
      * @param newMvccCntr New MVCC counter version.
      */
-    public DataPageMvccMarkUpdatedRecord(int grpId, long pageId, int itemId, long newMvccCrd, long newMvccCntr) {
+    public DataPageMvccMarkUpdatedRecord(int grpId, long pageId, int itemId, long newMvccCrd, long newMvccCntr, int newMvccOpCntr) {
         super(grpId, pageId);
 
         this.itemId = itemId;
         this.newMvccCrd = newMvccCrd;
         this.newMvccCntr = newMvccCntr;
+        this.newMvccOpCntr = newMvccOpCntr;
     }
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
         DataPageIO io = PageIO.getPageIO(pageAddr);
 
-        io.markRemoved(pageAddr, itemId, pageMem.pageSize(), newMvccCrd, newMvccCntr);
+        io.markRemoved(pageAddr, itemId, pageMem.pageSize(), newMvccCrd, newMvccCntr, newMvccOpCntr);
     }
 
     /** {@inheritDoc} */
@@ -82,6 +86,13 @@ public class DataPageMvccMarkUpdatedRecord extends PageDeltaRecord {
      */
     public long newMvccCntr() {
         return newMvccCntr;
+    }
+
+    /**
+     * @return New MVCC operation counter.
+     */
+    public int newMvccOpCntr() {
+        return newMvccOpCntr;
     }
 
     /** {@inheritDoc} */

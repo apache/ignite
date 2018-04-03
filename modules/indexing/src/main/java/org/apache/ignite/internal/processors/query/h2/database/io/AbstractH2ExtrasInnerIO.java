@@ -30,14 +30,12 @@ import org.apache.ignite.internal.processors.query.h2.database.InlineIndexHelper
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2SearchRow;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_COUNTER_NA;
-
 /**
  * Inner page for H2 row references.
  */
 public abstract class AbstractH2ExtrasInnerIO extends BPlusInnerIO<GridH2SearchRow> implements H2RowLinkIO {
     /** Payload size. */
-    private final int payloadSize;
+    protected final int payloadSize;
 
     /** */
     public static void register() {
@@ -135,8 +133,9 @@ public abstract class AbstractH2ExtrasInnerIO extends BPlusInnerIO<GridH2SearchR
         if (storeMvccInfo()) {
             long mvccCrdVer = getMvccCoordinatorVersion(pageAddr, idx);
             long mvccCntr = getMvccCounter(pageAddr, idx);
+            int mvccOpCntr = getMvccOperationCounter(pageAddr, idx);
 
-            return ((H2Tree)tree).createRowFromLink(link, mvccCrdVer, mvccCntr);
+            return ((H2Tree)tree).createRowFromLink(link, mvccCrdVer, mvccCntr, mvccOpCntr);
         }
 
         return ((H2Tree)tree).createRowFromLink(link);
@@ -161,20 +160,5 @@ public abstract class AbstractH2ExtrasInnerIO extends BPlusInnerIO<GridH2SearchR
     /** {@inheritDoc} */
     @Override public final long getLink(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + payloadSize);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMvccCoordinatorVersion(long pageAddr, int idx) {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMvccCounter(long pageAddr, int idx) {
-        return MVCC_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean storeMvccInfo() {
-        return false;
     }
 }

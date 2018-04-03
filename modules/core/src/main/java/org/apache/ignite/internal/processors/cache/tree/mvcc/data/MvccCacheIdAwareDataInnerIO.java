@@ -34,31 +34,35 @@ public final class MvccCacheIdAwareDataInnerIO extends AbstractDataInnerIO {
      * @param ver Page format version.
      */
     private MvccCacheIdAwareDataInnerIO(int ver) {
-        super(T_CACHE_ID_DATA_REF_MVCC_INNER, ver, true, 32);
+        super(T_CACHE_ID_DATA_REF_MVCC_INNER, ver, true, 36);
     }
 
     /** {@inheritDoc} */
-    @Override public final int getCacheId(long pageAddr, int idx) {
+    @Override protected boolean storeCacheId() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean storeMvccVersion() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getCacheId(long pageAddr, int idx) {
         return PageUtils.getInt(pageAddr, offset(idx) + 12);
     }
 
     /** {@inheritDoc} */
-    @Override protected final boolean storeCacheId() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected final boolean storeMvccVersion() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public final long getMvccCoordinatorVersion(long pageAddr, int idx) {
+    @Override public long getMvccCoordinatorVersion(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + 16);
     }
 
     /** {@inheritDoc} */
-    @Override public final long getMvccCounter(long pageAddr, int idx) {
+    @Override public long getMvccCounter(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + 24);
+    }
+
+    @Override public int getMvccOperationCounter(long pageAddr, int idx) {
+        return PageUtils.getInt(pageAddr, offset(idx) + 32);
     }
 }

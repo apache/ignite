@@ -132,6 +132,15 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
     public static final long MVCC_START_CNTR = 1L;
 
     /** */
+    public static final int MVCC_OP_COUNTER_NA = 0;
+
+    /** */
+    public static final int MVCC_START_OP_CNTR = 1;
+
+    /** */
+    public static final int MVCC_READ_OP_CNTR = Integer.MAX_VALUE;
+
+    /** */
     private volatile MvccCoordinator curCrd;
 
     /** */
@@ -281,6 +290,8 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
     }
 
     /**
+     * @param crdVer Mvcc coordinator version.
+     * @param cntr Mvcc counter.
      * @return State for given mvcc version.
      * @throws IgniteCheckedException If fails.
      */
@@ -303,12 +314,13 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
      * @throws IgniteCheckedException If fails;
      */
     public void updateState(MvccVersion ver, byte state) throws IgniteCheckedException {
+        TxKey key = new TxKey(ver.coordinatorVersion(), ver.counter());
         List<LockFuture> waiting;
 
-        txLog.put(ver.coordinatorVersion(), ver.counter(), state);
+        txLog.put(key, state);
 
         if ((state == TxState.ABORTED || state == TxState.COMMITTED)
-                && (waiting = waitList.remove(new TxKey(ver.coordinatorVersion(), ver.counter()))) != null) {
+                && (waiting = waitList.remove(key)) != null) {
             for (LockFuture fut0 : waiting)
                 complete(fut0);
         }
@@ -317,6 +329,8 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
     /**
      * @param cctx Cache context.
      * @param locked Version the entry is locked by.
+     * @return Future, which is completed as soon as the lock will be released.
+     * @throws IgniteCheckedException If failed.
      */
     public IgniteInternalFuture waitFor(GridCacheContext cctx, MvccVersion locked) throws IgniteCheckedException {
         TxKey key = new TxKey(locked.coordinatorVersion(), locked.counter());
@@ -339,6 +353,8 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
 
     /**
      * Checks whether the transaction with given version is active.
+     * @param crdVer Mvcc coordinator version.
+     * @param cntr Mvcc counter.
      * @return {@code True} If active.
      * @throws IgniteCheckedException If fails.
      */
@@ -841,9 +857,7 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
         if (minQry != -1)
             cleanupVer = Math.min(cleanupVer, minQry);
 
-        cleanupVer--;
-
-        res.init(futId, crdVer, ver, cleanupVer);
+        res.init(futId, crdVer, ver, MVCC_START_OP_CNTR, cleanupVer - 1);
 
         return res;
     }
@@ -1004,7 +1018,7 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
             if (minQry == null)
                 minQry = trackVer;
 
-            res.init(futId, crdVer, ver, MVCC_COUNTER_NA);
+            res.init(futId, crdVer, ver, MVCC_READ_OP_CNTR, MVCC_COUNTER_NA);
 
             return res;
         }
@@ -1344,7 +1358,7 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
                 return compoundFut;
             }
 
-            MvccVersion cleanupVer = new MvccVersionImpl(snapshot.coordinatorVersion(), snapshot.cleanupVersion());
+            MvccVersion cleanupVer = new MvccVersionImpl(snapshot.coordinatorVersion(), snapshot.cleanupVersion(), Integer.MAX_VALUE);
 
             if (log.isDebugEnabled())
                 log.debug("Started vacuum with cleanup version=" + cleanupVer + '.');

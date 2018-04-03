@@ -133,11 +133,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
 
     /** Version which is less then any version generated on coordinator. */
     private static final MvccSnapshot ISOLATED_STREAMER_MVCC_SNAPSHOT =
-        new MvccSnapshotWithoutTxs(1L, MvccProcessor.MVCC_START_CNTR, 0L);
+        new MvccSnapshotWithoutTxs(1L, MvccProcessor.MVCC_START_CNTR, MvccProcessor.MVCC_START_OP_CNTR, MvccProcessor.MVCC_COUNTER_NA);
 
     /** Version which is less then any version generated on coordinator (for remove). */
     private static final MvccSnapshot ISOLATED_STREAMER_MVCC_SNAPSHOT_RMV =
-        new MvccSnapshotWithoutTxs(0, MvccProcessor.MVCC_START_CNTR, 0L);
+        new MvccSnapshotWithoutTxs(0, MvccProcessor.MVCC_START_CNTR, MvccProcessor.MVCC_START_OP_CNTR, MvccProcessor.MVCC_COUNTER_NA);
 
     /** Cache receiver. */
     private StreamReceiver<K, V> rcvr = ISOLATED_UPDATER;

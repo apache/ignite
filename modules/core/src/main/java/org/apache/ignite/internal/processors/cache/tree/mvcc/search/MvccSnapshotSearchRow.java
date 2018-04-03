@@ -55,7 +55,7 @@ public class MvccSnapshotSearchRow extends MvccSearchRow implements MvccTreeClos
      */
     public MvccSnapshotSearchRow(GridCacheContext cctx, KeyCacheObject key,
         MvccSnapshot snapshot) {
-        super(cctx.cacheId(), key, snapshot.coordinatorVersion(), snapshot.counter());
+        super(cctx.cacheId(), key, snapshot.coordinatorVersion(), snapshot.counter(), Integer.MAX_VALUE);
 
         this.cctx = cctx;
 
@@ -76,8 +76,11 @@ public class MvccSnapshotSearchRow extends MvccSearchRow implements MvccTreeClos
 
         long rowCrdVer = rowIo.getMvccCoordinatorVersion(pageAddr, idx);
         long rowCntr = rowIo.getMvccCounter(pageAddr, idx);
+        int rowOpCntr = rowIo.getMvccOperationCounter(pageAddr, idx);
 
-        if (MvccUtils.isVisible(cctx, snapshot, rowCrdVer, rowCntr)) {
+        assert MvccUtils.mvccVersionIsValid(rowCrdVer, rowCntr, rowOpCntr);
+
+        if (MvccUtils.isVisible(cctx, snapshot, rowCrdVer, rowCntr, rowOpCntr)) {
             if (MvccUtils.isNewVisible(cctx, rowIo.getLink(pageAddr, idx), snapshot))
                 res = null;
             else {

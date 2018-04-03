@@ -74,7 +74,6 @@ import org.apache.ignite.internal.util.lang.GridInClosure3;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -3872,7 +3871,6 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
     }
 
     /**
-     * @param N Number of object to update in single transaction.
      * @param srvs Number of server nodes.
      * @param clients Number of client nodes.
      * @param cacheBackups Number of cache backups.
@@ -4178,7 +4176,7 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
             KeyCacheObject key0 = cctx.toCacheKeyObject(key);
 
-            List<T2<Object, MvccVersion>> vers = cctx.offheap().mvccAllVersions(cctx, key0);
+            List<IgniteBiTuple<Object, MvccVersion>> vers = cctx.offheap().mvccAllVersions(cctx, key0);
 
             assertEquals(10, vers.size());
 
@@ -4186,11 +4184,11 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
 
             checkRow(cctx, row, key0, vers.get(0).get1());
 
-            for (T2<Object, MvccVersion> ver : vers) {
+            for (IgniteBiTuple<Object, MvccVersion> ver : vers) {
                 MvccVersion cntr = ver.get2();
 
                 MvccSnapshot readVer =
-                    new MvccSnapshotWithoutTxs(cntr.coordinatorVersion(), cntr.counter(), 0);
+                    new MvccSnapshotWithoutTxs(cntr.coordinatorVersion(), cntr.counter(), Integer.MAX_VALUE, 0);
 
                 row = cctx.offheap().mvccRead(cctx, key0, readVer);
 
@@ -4322,7 +4320,11 @@ public class CacheMvccTransactionsTest extends CacheMvccAbstractTest {
      * @return Version.
      */
     private MvccSnapshotResponse version(long crdVer, long cntr) {
-        return new MvccSnapshotResponse(crdVer, cntr, 0);
+        MvccSnapshotResponse res = new MvccSnapshotResponse();
+
+        res.init(0, crdVer, cntr, MvccProcessor.MVCC_START_OP_CNTR, MvccProcessor.MVCC_COUNTER_NA);
+
+        return res;
     }
 
     /**

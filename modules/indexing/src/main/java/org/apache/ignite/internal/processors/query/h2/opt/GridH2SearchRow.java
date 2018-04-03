@@ -17,23 +17,14 @@
 
 package org.apache.ignite.internal.processors.query.h2.opt;
 
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.query.h2.database.H2Tree;
 import org.h2.result.Row;
 
 /**
  *
  */
-public interface GridH2SearchRow extends Row {
-    /**
-     * @return Mvcc coordinator version.
-     */
-    public long mvccCoordinatorVersion();
-
-    /**
-     * @return Mvcc counter.
-     */
-    public long mvccCounter();
-
+public interface GridH2SearchRow extends Row, MvccVersionAware {
     /**
      * @return {@code True} for rows used for index search (as opposed to rows stored in {@link H2Tree}.
      */

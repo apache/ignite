@@ -2129,6 +2129,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
     private class NearTxQueryEnlistResultHandler<Rsp extends GridNearTxQueryEnlistResponse>
         implements CI1<IgniteInternalFuture<Rsp>> {
         /** */
+        private static final long serialVersionUID = 5189735824793607906L;
+
+        /** */
         private GridDhtTxLocal tx;
 
         /** */

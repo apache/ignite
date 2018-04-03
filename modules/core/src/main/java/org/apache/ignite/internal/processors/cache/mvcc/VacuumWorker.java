@@ -43,8 +43,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_COUNTER_NA;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compareNewRowVersion;
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compareRowVersion;
+import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.compare;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.hasNewMvccVersionFast;
 import static org.apache.ignite.internal.processors.cache.persistence.CacheDataRowAdapter.RowData.KEY_ONLY;
 
@@ -167,11 +166,11 @@ public class VacuumWorker  extends GridWorker {
 
                     needCleanup = !first && (row.hash() != prevHash || cacheChanged || !prevKey.equals(row.key()));
 
-                    if (compareRowVersion(row, cleanupVer) <= 0 && hasNewMvccVersionFast(row) &&
-                        compareNewRowVersion(row, cleanupVer) <= 0 &&
+                    if (compare(row, cleanupVer) <= 0 && hasNewMvccVersionFast(row) &&
+                        MvccUtils.compareNewVersion(row, cleanupVer) <= 0 &&
                         ctx.coordinators().state(row.newMvccCoordinatorVersion(), row.newMvccCounter()) == TxState.COMMITTED) {
                         cleanupRow = new MvccLinkAwareSearchRow(row.cacheId(), row.key(), row.mvccCoordinatorVersion(),
-                            row.mvccCounter(), row.link());
+                            row.mvccCounter(), row.mvccOperationCounter(), row.link());
                     }
 
                     metrics.addScannedRowsCount(1);

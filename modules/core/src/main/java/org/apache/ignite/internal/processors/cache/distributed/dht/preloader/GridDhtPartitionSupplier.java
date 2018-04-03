@@ -34,6 +34,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccEntryInfo;
 import org.apache.ignite.internal.processors.cache.IgniteRebalanceIterator;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUpdateVersionAware;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccVersionAware;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
@@ -348,9 +350,8 @@ class GridDhtPartitionSupplier {
                 info.cacheId(row.cacheId());
 
                 if (grp.mvccEnabled()) {
-                    info.mvccVersion(row.mvccCoordinatorVersion(), row.mvccCounter());
-                    info.newMvccVersion(row.newMvccCoordinatorVersion(),
-                        row.newMvccCounter());
+                    ((MvccVersionAware)info).mvccVersion(row);
+                    ((MvccUpdateVersionAware)info).newMvccVersion(row);
                 }
 
                 info.value(row.value());

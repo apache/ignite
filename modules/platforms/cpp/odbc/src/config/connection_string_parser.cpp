@@ -24,6 +24,7 @@
 #include "ignite/odbc/ssl/ssl_mode.h"
 #include "ignite/odbc/config/connection_string_parser.h"
 #include "ignite/odbc/config/config_tools.h"
+#include "ignite/odbc/nested_tx_mode.h"
 
 namespace ignite
 {
@@ -51,6 +52,7 @@ namespace ignite
             const std::string ConnectionStringParser::Key::sslCaFile              = "ssl_ca_file";
             const std::string ConnectionStringParser::Key::user                   = "user";
             const std::string ConnectionStringParser::Key::password               = "password";
+            const std::string ConnectionStringParser::Key::nestedTxMode           = "nested_tx_mode";
 
             ConnectionStringParser::ConnectionStringParser(Configuration& cfg):
                 cfg(cfg)
@@ -423,6 +425,23 @@ namespace ignite
                 else if (lKey == Key::password)
                 {
                     cfg.SetPassword(value);
+                }
+                else if (lKey == Key::nestedTxMode)
+                {
+                    NestedTxMode::Type mode = NestedTxMode::FromString(value);
+
+                    if (mode == NestedTxMode::AI_UNKNOWN)
+                    {
+                        if (diag)
+                        {
+                            diag->AddStatusRecord(SqlState::S01S02_OPTION_VALUE_CHANGED,
+                                "Specified nested transaction mode is not supported. Default value used ('error').");
+                        }
+
+                        return;
+                    }
+
+                    cfg.SetNestedTxMode(mode);
                 }
                 else if (diag)
                 {

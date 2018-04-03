@@ -45,6 +45,7 @@ import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Index rebuild after node restart test.
@@ -179,7 +180,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
                 int key  = row.key().value(icache.context().cacheObjectContext(), false);
 
                 if (mvccEnabled) {
-                    List<T2<Object, MvccVersion>> vers = store.mvccFindAllVersions(icache.context(), row.key());
+                    List<IgniteBiTuple<Object, MvccVersion>> vers = store.mvccFindAllVersions(icache.context(), row.key());
 
                     if (!afterRebuild || key <= AMOUNT / 2)
                         assertEquals(key, vers.size());

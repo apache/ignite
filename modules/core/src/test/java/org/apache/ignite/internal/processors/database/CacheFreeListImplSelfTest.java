@@ -442,6 +442,21 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public long newMvccCoordinatorVersion() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public long newMvccCounter() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int newMvccOperationCounter() {
+            return 0;
+        }
+
+        /** {@inheritDoc} */
         @Override public long mvccCoordinatorVersion() {
             return 0;
         }
@@ -452,20 +467,9 @@ public class CacheFreeListImplSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void mvccVersion(long crdVer, long mvccCntr) {
-            throw new UnsupportedOperationException();
-        }
-
-        /** {@inheritDoc} */
-        @Override public long newMvccCoordinatorVersion() {
+        @Override public int mvccOperationCounter() {
             return 0;
         }
-
-        /** {@inheritDoc} */
-        @Override public long newMvccCounter() {
-            return 0;
-        }
-
     }
 
     /**

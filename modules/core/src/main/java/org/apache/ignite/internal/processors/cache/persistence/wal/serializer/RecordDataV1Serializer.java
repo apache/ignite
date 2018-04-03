@@ -195,7 +195,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 return 4 + 8 + 8;
 
             case MVCC_DATA_PAGE_MARK_UPDATED_RECORD:
-                return 4 + 8 + 4 + 8 + 8;
+                return 4 + 8 + 4 + 8 + 8 + 4;
 
             case INIT_NEW_PAGE_RECORD:
                 return 4 + 8 + 2 + 2 + 8;
@@ -511,8 +511,9 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 itemId = in.readInt();
                 long newMvccCrd = in.readLong();
                 long newMvccCntr = in.readLong();
+                int newMvccOpCntr = in.readInt();
 
-                res = new DataPageMvccMarkUpdatedRecord(cacheId, pageId, itemId, newMvccCrd, newMvccCntr);
+                res = new DataPageMvccMarkUpdatedRecord(cacheId, pageId, itemId, newMvccCrd, newMvccCntr, newMvccOpCntr);
 
                 break;
 
@@ -1046,6 +1047,7 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putInt(rmvRec.itemId());
                 buf.putLong(rmvRec.newMvccCrd());
                 buf.putLong(rmvRec.newMvccCntr());
+                buf.putInt(rmvRec.newMvccOpCntr());
 
                 break;
 

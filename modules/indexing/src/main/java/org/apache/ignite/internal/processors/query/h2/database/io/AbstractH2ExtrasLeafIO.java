@@ -35,9 +35,9 @@ import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVC
 /**
  * Leaf page for H2 row references.
  */
-public class AbstractH2ExtrasLeafIO extends BPlusLeafIO<GridH2SearchRow> implements H2RowLinkIO {
+public abstract class AbstractH2ExtrasLeafIO extends BPlusLeafIO<GridH2SearchRow> implements H2RowLinkIO {
     /** Payload size. */
-    private final int payloadSize;
+    protected final int payloadSize;
 
     /** */
     public static void register() {
@@ -148,8 +148,9 @@ public class AbstractH2ExtrasLeafIO extends BPlusLeafIO<GridH2SearchRow> impleme
         if (storeMvccInfo()) {
             long mvccCrdVer = getMvccCoordinatorVersion(pageAddr, idx);
             long mvccCntr = getMvccCounter(pageAddr, idx);
+            int mvccOpCntr = getMvccOperationCounter(pageAddr, idx);
 
-            return ((H2Tree)tree).createRowFromLink(link, mvccCrdVer, mvccCntr);
+            return ((H2Tree)tree).createRowFromLink(link, mvccCrdVer, mvccCntr, mvccOpCntr);
         }
 
         return ((H2Tree)tree).createRowFromLink(link);
@@ -158,20 +159,5 @@ public class AbstractH2ExtrasLeafIO extends BPlusLeafIO<GridH2SearchRow> impleme
     /** {@inheritDoc} */
     @Override public final long getLink(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + payloadSize);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMvccCoordinatorVersion(long pageAddr, int idx) {
-        return 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMvccCounter(long pageAddr, int idx) {
-        return MVCC_COUNTER_NA;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean storeMvccInfo() {
-        return false;
     }
 }

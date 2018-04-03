@@ -23,32 +23,28 @@ import org.apache.ignite.internal.pagemem.PageUtils;
  *
  */
 class H2MvccExtrasInnerIO extends AbstractH2ExtrasInnerIO {
-    /** */
-    private final int crdVerOff;
-
-    /** */
-    private final int cntrOff;
-
     /**
      * @param type Page type.
      * @param ver Page format version.
      * @param payloadSize Payload size.
      */
     H2MvccExtrasInnerIO(short type, int ver, int payloadSize) {
-        super(type, ver, 24, payloadSize);
-
-        crdVerOff = payloadSize + 8;
-        cntrOff = payloadSize + 16;
+        super(type, ver, 28, payloadSize);
     }
 
     /** {@inheritDoc} */
     @Override public long getMvccCoordinatorVersion(long pageAddr, int idx) {
-        return PageUtils.getLong(pageAddr, offset(idx) + crdVerOff);
+        return PageUtils.getLong(pageAddr, offset(idx) + payloadSize + 8);
     }
 
     /** {@inheritDoc} */
     @Override public long getMvccCounter(long pageAddr, int idx) {
-        return PageUtils.getLong(pageAddr, offset(idx) + cntrOff);
+        return PageUtils.getLong(pageAddr, offset(idx) + payloadSize + 16);
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getMvccOperationCounter(long pageAddr, int idx) {
+        return PageUtils.getInt(pageAddr, offset(idx) + payloadSize + 24);
     }
 
     /** {@inheritDoc} */

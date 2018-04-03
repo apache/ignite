@@ -40,11 +40,6 @@ public abstract class AbstractH2InnerIO extends BPlusInnerIO<GridH2SearchRow> im
     }
 
     /** {@inheritDoc} */
-    @Override public boolean storeMvccInfo() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public void storeByOffset(long pageAddr, int off, GridH2SearchRow row) {
         GridH2Row row0 = (GridH2Row)row;
 
@@ -59,8 +54,9 @@ public abstract class AbstractH2InnerIO extends BPlusInnerIO<GridH2SearchRow> im
         if (storeMvccInfo()) {
             long mvccCrdVer = getMvccCoordinatorVersion(pageAddr, idx);
             long mvccCntr = getMvccCounter(pageAddr, idx);
+            int mvccOpCntr = getMvccOperationCounter(pageAddr, idx);
 
-            return ((H2Tree)tree).createRowFromLink(link, mvccCrdVer, mvccCntr);
+            return ((H2Tree)tree).createRowFromLink(link, mvccCrdVer, mvccCntr, mvccOpCntr);
         }
 
         return ((H2Tree)tree).createRowFromLink(link);
@@ -74,19 +70,5 @@ public abstract class AbstractH2InnerIO extends BPlusInnerIO<GridH2SearchRow> im
     /** {@inheritDoc} */
     @Override public long getLink(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx));
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMvccCoordinatorVersion(long pageAddr, int idx) {
-        assert storeMvccInfo();
-
-        return PageUtils.getLong(pageAddr, offset(idx) + 8);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getMvccCounter(long pageAddr, int idx) {
-        assert storeMvccInfo();
-
-        return PageUtils.getLong(pageAddr, offset(idx) + 16);
     }
 }

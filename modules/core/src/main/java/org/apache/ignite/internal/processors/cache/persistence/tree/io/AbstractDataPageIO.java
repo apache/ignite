@@ -503,6 +503,23 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
 
     /**
      * @param pageAddr Page address.
+     * @param itemId Item to position on.
+     * @param pageSize Page size.
+     * @param reqLen Required payload length.
+     * @return Offset to start of actual fragment data.
+     */
+    public int getPayloadOffset(final long pageAddr, final int itemId, final int pageSize, int reqLen) {
+        int dataOff = getDataOffset(pageAddr, itemId, pageSize);
+
+        int payloadSize = getPageEntrySize(pageAddr, dataOff, 0);
+
+        assert payloadSize >= reqLen : payloadSize;
+
+        return dataOff + PAYLOAD_LEN_SIZE + (isFragmented(pageAddr, dataOff) ? LINK_SIZE : 0);
+    }
+
+    /**
+     * @param pageAddr Page address.
      * @param idx Item index.
      * @return Item.
      */

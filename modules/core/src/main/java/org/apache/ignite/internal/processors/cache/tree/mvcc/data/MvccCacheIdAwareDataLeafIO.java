@@ -34,51 +34,56 @@ public final class MvccCacheIdAwareDataLeafIO extends AbstractDataLeafIO {
      * @param ver Page format version.
      */
     private MvccCacheIdAwareDataLeafIO(int ver) {
-        super(T_CACHE_ID_DATA_REF_MVCC_LEAF, ver, 48);
+        super(T_CACHE_ID_DATA_REF_MVCC_LEAF, ver, 52);
     }
 
     /** {@inheritDoc} */
-    @Override public final int getCacheId(long pageAddr, int idx) {
+    @Override protected boolean storeCacheId() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected boolean storeMvccVersion() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int getCacheId(long pageAddr, int idx) {
         return PageUtils.getInt(pageAddr, offset(idx) + 12);
     }
 
     /** {@inheritDoc} */
-    @Override protected final boolean storeCacheId() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected final boolean storeMvccVersion() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public final long getMvccCoordinatorVersion(long pageAddr, int idx) {
+    @Override public long getMvccCoordinatorVersion(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + 16);
     }
 
     /** {@inheritDoc} */
-    @Override public final long getMvccCounter(long pageAddr, int idx) {
+    @Override public long getMvccCounter(long pageAddr, int idx) {
         return PageUtils.getLong(pageAddr, offset(idx) + 24);
     }
 
     /** {@inheritDoc} */
+    @Override public int getMvccOperationCounter(long pageAddr, int idx) {
+        return PageUtils.getInt(pageAddr, offset(idx) + 32);
+    }
+
+    /** {@inheritDoc} */
     @Override public long getMvccLockCoordinatorVersion(long pageAddr, int idx) {
-        return PageUtils.getLong(pageAddr, offset(idx) + 32);
+        return PageUtils.getLong(pageAddr, offset(idx) + 36);
     }
 
     /** {@inheritDoc} */
     @Override public long getMvccLockCounter(long pageAddr, int idx) {
-        return PageUtils.getLong(pageAddr, offset(idx) + 40);
+        return PageUtils.getLong(pageAddr, offset(idx) + 44);
     }
 
     /** {@inheritDoc} */
     @Override public void setMvccLockCoordinatorVersion(long pageAddr, int idx, long lockCrd) {
-        PageUtils.putLong(pageAddr, offset(idx) + 32, lockCrd);
+        PageUtils.putLong(pageAddr, offset(idx) + 36, lockCrd);
     }
 
     /** {@inheritDoc} */
     @Override public void setMvccLockCounter(long pageAddr, int idx, long lockCntr) {
-        PageUtils.putLong(pageAddr, offset(idx) + 40, lockCntr);
+        PageUtils.putLong(pageAddr, offset(idx) + 44, lockCntr);
     }
 }
