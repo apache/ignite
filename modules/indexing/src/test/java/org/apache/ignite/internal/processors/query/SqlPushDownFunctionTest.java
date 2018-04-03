@@ -68,7 +68,8 @@ public class SqlPushDownFunctionTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSplitJoinWithSubqueryUnion() throws Exception {
-        sql("CREATE TABLE Person (id INTEGER PRIMARY KEY, company_id INTEGER, salary DECIMAL)");
+        sql("CREATE TABLE Person (id INTEGER PRIMARY KEY, company_id INTEGER, salary DECIMAL) " +
+            "with \"template=replicated\"");
         sql("CREATE TABLE Company (id INTEGER PRIMARY KEY, name VARCHAR)");
         sql("CREATE TABLE Address (id INTEGER PRIMARY KEY, person_id INTEGER, city VARCHAR)");
 
@@ -78,8 +79,7 @@ public class SqlPushDownFunctionTest extends GridCommonAbstractTest {
 
         sql("SELECT a.id FROM \n" +
             "(" +
-            "SELECT distinct p1.id, p1.company_id FROM Person p1 WHERE p1.id = 1 \n" +
-            ")  p\n"
+            "SELECT distinct p1.id, p1.company_id FROM Person p1 WHERE p1.id = 1) p\n"
             + "LEFT JOIN Address a ON a.person_id = p.id "
             + "LEFT JOIN Company c ON c.id = p.company_id "
         );
