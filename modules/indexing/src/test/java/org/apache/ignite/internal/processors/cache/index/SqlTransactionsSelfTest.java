@@ -35,6 +35,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -93,6 +94,43 @@ public class SqlTransactionsSelfTest extends AbstractSchemaSelfTest {
         assertTxState(tx, TransactionState.COMMITTED);
 
         assertSqlTxNotPresent();
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testBeginWithMvccDisabledThrows() throws Exception {
+        checkMvccDisabledBehavior("BEGIN");
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testCommitWithMvccDisabledThrows() throws Exception {
+        checkMvccDisabledBehavior("COMMIT");
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testRollbackWithMvccDisabledThrows() throws Exception {
+        checkMvccDisabledBehavior("rollback");
+    }
+
+    /**
+     * @param sql Operation to test.
+     * @throws Exception if failed.
+     */
+    private void checkMvccDisabledBehavior(String sql) throws Exception {
+        try (IgniteEx node = startGrid(commonConfiguration(1))) {
+            GridTestUtils.assertThrows(null, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    execute(node, sql);
+
+                    return null;
+                }
+            }, IgniteSQLException.class, "MVCC must be enabled in order to invoke transactional operation: " + sql);
+        }
     }
 
     /**
