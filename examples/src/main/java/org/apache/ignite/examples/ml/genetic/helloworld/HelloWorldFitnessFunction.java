@@ -40,7 +40,6 @@ import org.apache.ignite.ml.genetic.IFitnessFunction;
  * we achieve a fitness score of '11', as 'HELLO WORLD' contains '11' characters.
  */
 public class HelloWorldFitnessFunction implements IFitnessFunction {
-
     /** Optimal target solution */
     private String targetString = "HELLO WORLD";
 

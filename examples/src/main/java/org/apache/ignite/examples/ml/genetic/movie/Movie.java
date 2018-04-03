@@ -124,7 +124,8 @@ public class Movie {
         this.rating = rating;
     }
 
-    public String toString() {
+    /** {@inheritDoc} */
+    @Override public String toString() {
         return "Movie [name=" + name + ", genre=" + genre + ", rating=" + rating + ", imdbRating=" + imdbRating
             + ", year=" + year + "]";
     }

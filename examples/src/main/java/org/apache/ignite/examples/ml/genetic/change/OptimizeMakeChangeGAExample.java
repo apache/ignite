@@ -49,7 +49,6 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
  */
 public class OptimizeMakeChangeGAExample {
-
     /** Ignite instance */
     private static Ignite ignite = null;
 
