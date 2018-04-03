@@ -34,7 +34,7 @@ angular
         .state('demo.resume', {
             url: '/resume',
             permission: 'demo',
-            redirectTo: 'base.configuration.tabs',
+            redirectTo: 'base.configuration.overview',
             unsaved: true,
             tfMetaTags: {
                 title: 'Demo resume'
@@ -47,11 +47,11 @@ angular
                 const $http = trans.injector().get('$http');
 
                 return $http.post('/api/v1/demo/reset')
-                    .then(() => 'base.configuration.tabs')
+                    .then(() => 'base.configuration.overview')
                     .catch((err) => {
                         trans.injector().get('IgniteMessages').showError(err);
 
-                        return 'base.configuration.tabs';
+                        return 'base.configuration.overview';
                     });
             },
             unsaved: true,

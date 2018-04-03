@@ -17,34 +17,32 @@
 include /app/helpers/jade/mixins
 
 -var form = 'time'
--var model = 'backupItem'
+-var model = '$ctrl.clonedCluster'
 
-.panel.panel-default(ng-form=form novalidate)
-    .panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
+.pca-panel.pca-panel-default(ng-form=form novalidate)
+    .pca-panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
-        label Time configuration
-        ignite-form-field-tooltip.tipLabel
-            | Time settings for CLOCK write ordering mode
-        ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
-            .col-sm-6
+        .pca-panel-heading-title Time configuration
+        .pca-panel-heading-description
+            | Time settings for CLOCK write ordering mode.
+    .pca-panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
+        .pca-panel-body(ng-if=`ui.isPanelLoaded('${form}')`).pca-form-row
+            .pca-form-column-6.pc-form-grid-row
                 //- Removed in ignite 2.0
-                div(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
-                    .settings-row
-                        +number('Samples size:', `${model}.clockSyncSamples`, '"clockSyncSamples"', 'true', '8', '0',
-                            'Number of samples used to synchronize clocks between different nodes<br/>\
-                            Clock synchronization is used for cache version assignment in CLOCK order mode')
-                    .settings-row
-                        +number('Frequency:', `${model}.clockSyncFrequency`, '"clockSyncFrequency"', 'true', '120000', '0',
-                            'Frequency at which clock is synchronized between nodes, in milliseconds<br/>\
-                            Clock synchronization is used for cache version assignment in CLOCK order mode')
+                .pc-form-grid-col-30(ng-if-start='$ctrl.available(["1.0.0", "2.0.0"])')
+                    +number('Samples size:', `${model}.clockSyncSamples`, '"clockSyncSamples"', 'true', '8', '0',
+                        'Number of samples used to synchronize clocks between different nodes<br/>\
+                        Clock synchronization is used for cache version assignment in CLOCK order mode')
+                .pc-form-grid-col-30(ng-if-end)
+                    +number('Frequency:', `${model}.clockSyncFrequency`, '"clockSyncFrequency"', 'true', '120000', '0',
+                        'Frequency at which clock is synchronized between nodes, in milliseconds<br/>\
+                        Clock synchronization is used for cache version assignment in CLOCK order mode')
 
-                .settings-row
+                .pc-form-grid-col-30
                     +number-min-max('Port base:', `${model}.timeServerPortBase`, '"timeServerPortBase"', 'true', '31100', '0', '65535',
                         'Time server provides clock synchronization between nodes<br/>\
                         Base UPD port number for grid time server. Time server will be started on one of free ports in range')
-                .settings-row
+                .pc-form-grid-col-30
                     +number('Port range:', `${model}.timeServerPortRange`, '"timeServerPortRange"', 'true', '100', '1', 'Time server port range')
-            .col-sm-6
+            .pca-form-column-6
                 +preview-xml-java(model, 'clusterTime')
