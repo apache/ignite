@@ -24,12 +24,10 @@ import mixin from 'lodash/mixin';
 
 const nonNil = negate(isNil);
 const nonEmpty = negate(isEmpty);
-const id8 = (uuid) => uuid.substring(0, 8).toUpperCase();
 
 mixin({
     nonNil,
-    nonEmpty,
-    id8
+    nonEmpty
 });
 
 import alertTemplateUrl from 'views/templates/alert.tpl.pug';
