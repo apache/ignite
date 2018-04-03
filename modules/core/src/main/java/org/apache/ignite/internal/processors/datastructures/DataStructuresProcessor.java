@@ -1544,7 +1544,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
     /**
      * @param name Set name.
      * @param cctx Set cache context.
-     * @param collocated Collocated flag.
+     * @param collocated Collocation flag.
      * @throws IgniteCheckedException If failed.
      */
     public void removeSet(final String name, final GridCacheContext cctx,

@@ -516,7 +516,7 @@ public abstract class GridCacheSetAbstractSelfTest extends IgniteCollectionAbstr
         assert set0.size() == 0 : set0.size();
 
         for (int i = 0; i < 5000; i++)
-            assertTrue(String.valueOf(i), set0.add(i));
+            assertTrue(set0.add(i));
 
         createIterators(set0);
 

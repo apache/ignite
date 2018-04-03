@@ -167,7 +167,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             }
 
             CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-                new GridSetQueryPredicate<>(id, collocated), null, false, false);
+                new GridSetQueryPredicate<>(id), null, false, false);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -418,12 +418,16 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         return collocated ? iteratorCollocated() : iterator0();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Get iterator for collocated igniteSet.
+     *
+     * @return iterator for collocated igniteSet.
+     */
     @SuppressWarnings("unchecked")
     private GridCloseableIterator<T> iteratorCollocated() {
         try {
             CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-                new GridSetQueryPredicate<>(id, collocated), null, false, false);
+                new GridSetQueryPredicate<>(id), null, false, false);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -455,6 +459,11 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         }
     }
 
+    /**
+     * Get iterator for non-collocated igniteSet.
+     *
+     * @return iterator for non-collocated igniteSet.
+     */
     @SuppressWarnings("unchecked")
     private GridCloseableIterator<T> iterator0() {
         GridCacheContext ctx0 = ctx.isNear() ? ctx.near().dht().context() : ctx;
