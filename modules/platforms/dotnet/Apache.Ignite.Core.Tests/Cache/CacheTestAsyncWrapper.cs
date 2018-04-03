@@ -573,6 +573,16 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             return GetEnumerator();
         }
+
+        public IQueryMetrics QueryMetrics()
+        {
+            return _cache.QueryMetrics();
+        }
+
+        public void ResetQueryMetrics()
+        {
+            _cache.ResetQueryMetrics();
+        }
     }
 
     /// <summary>

@@ -513,6 +513,16 @@ namespace Apache.Ignite.AspNet.Tests
             {
                 throw new NotImplementedException();
             }
+
+            public IQueryMetrics QueryMetrics()
+            {
+                throw new NotImplementedException();
+            }
+
+            public void ResetQueryMetrics()
+            {
+                throw new NotImplementedException();
+            }
         }
     }
 }
