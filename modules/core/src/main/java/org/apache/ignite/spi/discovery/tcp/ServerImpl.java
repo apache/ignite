@@ -67,7 +67,9 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
@@ -2647,12 +2649,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 throw e;
             } finally {
                 if (criticalFailure != null)
-                    U.handleFailure(spi.ignite(), FailureType.SYSTEM_WORKER_TERMINATION,
-                        criticalFailure);
+                    ((IgniteEx)spi.ignite()).context().failure().process(
+                        new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, criticalFailure));
                 else if (!spi.isNodeStopping0())
-                    U.handleFailure(spi.ignite(), FailureType.SYSTEM_WORKER_TERMINATION,
-                        new IllegalStateException(
-                            "TcpDiscoverSpi message worker thread is exiting while the node is alive"));
+                    ((IgniteEx)spi.ignite()).context().failure().process(
+                        new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION,
+                            new IllegalStateException(
+                                "TcpDiscoverSpi message worker thread is exiting while the node is alive")));
             }
         }
 
@@ -5659,12 +5662,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 U.closeQuiet(srvrSock);
 
                 if (criticalFailure != null)
-                    U.handleFailure(spi.ignite(), FailureType.SYSTEM_WORKER_TERMINATION,
-                        criticalFailure);
+                    ((IgniteEx)spi.ignite()).context().failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION,
+                        criticalFailure));
                 else if (!spi.isNodeStopping0())
-                    U.handleFailure(spi.ignite(), FailureType.SYSTEM_WORKER_TERMINATION,
+                    ((IgniteEx)spi.ignite()).context().failure().process(new FailureContext(
+                        FailureType.SYSTEM_WORKER_TERMINATION,
                         new IllegalStateException(
-                            "TCP discovery acceptor thread is exiting while the node is alive"));
+                            "TCP discovery acceptor thread is exiting while the node is alive")));
             }
         }
 

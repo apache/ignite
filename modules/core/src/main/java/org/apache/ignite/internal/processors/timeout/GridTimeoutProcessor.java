@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.util.Comparator;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -207,14 +208,14 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
             }
             catch (Throwable t) {
                 if (!(t instanceof InterruptedException))
-                    U.handleFailure(ctx.grid(), FailureType.SYSTEM_WORKER_TERMINATION, t);
+                    ctx.failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, t));
 
                 throw t;
             }
 
             if (!isCancelled())
-                U.handleFailure(ctx.grid(), FailureType.SYSTEM_WORKER_TERMINATION,
-                    new IllegalStateException("Timeout worker thread is exiting without being cancelled"));
+                ctx.failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION,
+                    new IllegalStateException("Timeout worker thread is exiting without being cancelled")));
         }
     }
 

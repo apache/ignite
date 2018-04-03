@@ -2758,8 +2758,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             scheduledCp.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
 
             if (!stopping)
-                U.handleFailure(cctx.kernalContext().grid(), FailureType.SYSTEM_WORKER_TERMINATION,
-                    new IllegalStateException("Checkpointer worker thread is exiting unexpectedly"));
+                cctx.kernalContext().failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION,
+                    new IllegalStateException("Checkpointer worker thread is exiting unexpectedly")));
         }
 
         /**

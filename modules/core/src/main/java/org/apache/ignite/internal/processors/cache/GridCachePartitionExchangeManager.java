@@ -48,6 +48,7 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDiagnosticAware;
@@ -2256,7 +2257,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
             finally {
                 if (!stop)
-                    U.handleFailure(cctx.kernalContext().grid(), FailureType.SYSTEM_WORKER_TERMINATION, err);
+                    cctx.kernalContext().failure().process(
+                        new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, err));
             }
         }
 

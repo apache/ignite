@@ -66,6 +66,7 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
@@ -2572,7 +2573,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 catch (Throwable t) {
                     U.error(log, "Unexpected exception in discovery worker thread (ignored).", t);
 
-                    U.handleFailure(ctx.grid(), FailureType.SYSTEM_WORKER_TERMINATION, t);
+                    ctx.failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, t));
 
                     if (t instanceof Error)
                         throw (Error)t;

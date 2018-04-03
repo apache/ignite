@@ -1402,8 +1402,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             }
 
             if (!Thread.currentThread().isInterrupted() && !stopped)
-                U.handleFailure(cctx.kernalContext().grid(), FailureType.SYSTEM_WORKER_TERMINATION,
-                    new IllegalStateException("WAL file archiver thread is exiting unexpectedly (FSYNC mode)"));
+                cctx.kernalContext().failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION,
+                    new IllegalStateException("WAL file archiver thread is exiting unexpectedly (FSYNC mode)")));
         }
 
         /**

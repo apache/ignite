@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -140,8 +141,8 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                 }
                 catch (Throwable t) {
                     if (!(t instanceof IgniteInterruptedCheckedException))
-                        U.handleFailure(cctx.kernalContext().grid(), FailureType.SYSTEM_WORKER_TERMINATION,
-                            new IllegalStateException("TTL cleanup worker thread is exiting unexpectedly"));
+                        cctx.kernalContext().failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION,
+                            new IllegalStateException("TTL cleanup worker thread is exiting unexpectedly")));
 
                     throw t;
                 }
