@@ -43,6 +43,8 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
 
     private static final String PRESTARTED_CACHE = "PrestartedCache";
 
+    private static final String CACHE_WITHOUT_TABLES_NAME = "CacheWithoutTables";
+
     private IgniteEx clientNode;
 
     private IgniteEx serverNode;
@@ -87,22 +89,25 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         clientNode = grid(CLIENT_NODE_NAME);
 
         serverNode.createCache(newCacheCfg(SERVER_CACHE));
+        serverNode.createCache(CACHE_WITHOUT_TABLES_NAME);
+
         clientNode.createCache(newCacheCfg(CLIENT_CACHE));
+
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         serverNode.destroyCache(SERVER_CACHE);
+        serverNode.destroyCache(CACHE_WITHOUT_TABLES_NAME);
+
         clientNode.destroyCache(CLIENT_CACHE);
 
         super.afterTest();
     }
 
-    /** Provides port of given IgniteEx instance */
+    /** Finds port of given IgniteEx instance. */
     private int portOf(IgniteEx node) {
         Collection<GridPortRecord> recs = node.context().ports().records();
-
-        GridPortRecord cliLsnrRec = null;
 
         for (GridPortRecord rec : recs) {
             if (rec.clazz() == ClientListenerProcessor.class)
@@ -141,6 +146,10 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         assertSchemaMissed("\"CLIENTNODECACHE\"");
     }
 
+    /** Verifies that if cache doesn't have indexed types, there is no schema with the same name. */
+    public void testCacheWithoutTables(){
+        assertSchemaMissed('"' + CACHE_WITHOUT_TABLES_NAME + '"');
+    }
     /**
      * Connect to client node and check that schema defined in server cache configuration exists.
      */
