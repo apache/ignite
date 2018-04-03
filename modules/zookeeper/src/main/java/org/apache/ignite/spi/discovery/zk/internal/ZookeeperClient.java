@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -51,7 +52,7 @@ public class ZookeeperClient implements Watcher {
         IgniteSystemProperties.getInteger("IGNITE_ZOOKEEPER_DISCOVERY_MAX_RETRY_COUNT", 5);
 
     /** */
-    private int retryCount;
+    private final AtomicInteger retryCount = new AtomicInteger();
 
     /** */
     private static final int MAX_REQ_SIZE = 1048528;
@@ -224,8 +225,11 @@ public class ZookeeperClient implements Watcher {
 
                         scheduleConnectionCheck();
                     }
-                    else if (newState == ConnectionState.Connected)
+                    else if (newState == ConnectionState.Connected) {
+                        retryCount.set(0);
+
                         stateMux.notifyAll();
+                    }
                     else
                         assert state == ConnectionState.Lost : state;
                 }
@@ -824,7 +828,7 @@ public class ZookeeperClient implements Watcher {
             code == KeeperException.Code.OPERATIONTIMEOUT.intValue();
 
         if (retryByErrorCode) {
-            if (MAX_RETRY_COUNT <= 0 || retryCount++ < MAX_RETRY_COUNT)
+            if (MAX_RETRY_COUNT <= 0 || retryCount.incrementAndGet() < MAX_RETRY_COUNT)
                 return true;
             else
                 return false;
