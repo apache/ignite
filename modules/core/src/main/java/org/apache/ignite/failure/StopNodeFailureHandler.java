@@ -33,19 +33,11 @@ public class StopNodeFailureHandler implements FailureHandler {
                     U.error(ignite.log(), "Stopping local node on Ignite failure: [failureCtx=" + failureCtx + ']');
 
                     IgnitionEx.stop(ignite.name(), true, true);
-
-                    onDone();
                 }
             },
             "node-stopper"
         ).start();
 
         return true;
-    }
-
-    /**
-     *
-     */
-    void onDone() {
     }
 }

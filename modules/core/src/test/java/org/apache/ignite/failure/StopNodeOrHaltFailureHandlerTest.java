@@ -17,9 +17,14 @@
 
 package org.apache.ignite.failure;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.CA;
+import org.apache.ignite.internal.util.typedef.PE;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.multijvm.IgniteProcessProxy;
@@ -37,7 +42,6 @@ public class StopNodeOrHaltFailureHandlerTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"ConstantConditions"})
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(NODES_CNT);
     }
@@ -62,27 +66,35 @@ public class StopNodeOrHaltFailureHandlerTest extends GridCommonAbstractTest {
         IgniteEx rmt1 = grid(1);
         IgniteEx rmt2 = grid(2);
 
-        assert isMultiJvmObject(rmt1);
-        assert isMultiJvmObject(rmt2);
+        assertTrue(isMultiJvmObject(rmt1));
+        assertTrue(isMultiJvmObject(rmt2));
 
-        assert g.cluster().nodes().size() == NODES_CNT;
+        assertTrue(g.cluster().nodes().size() == NODES_CNT);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+
+        g.events().localListen(new PE() {
+            @Override public boolean apply(Event evt) {
+                latch.countDown();
+
+                return true;
+            }
+        }, EventType.EVT_NODE_LEFT, EventType.EVT_NODE_FAILED);
 
         g.compute().broadcast(new CA() {
             @IgniteInstanceResource
             private Ignite ignite;
 
             @Override public void apply() {
-                ignite.countDownLatch("latch", NODES_CNT, false, true).countDown();
-
                 ((IgniteEx)ignite).context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, null));
             }
         });
 
-        assertTrue(g.countDownLatch("latch", NODES_CNT, false, true).await(2000));
+        assertTrue(latch.await(2000, TimeUnit.MILLISECONDS));
 
         Thread.sleep(1000);
 
-        assert ((IgniteProcessProxy)rmt1).getProcess().getProcess().isAlive();
-        assert !((IgniteProcessProxy)rmt2).getProcess().getProcess().isAlive();
+        assertTrue(((IgniteProcessProxy)rmt1).getProcess().getProcess().isAlive());
+        assertFalse(((IgniteProcessProxy)rmt2).getProcess().getProcess().isAlive());
     }
 }

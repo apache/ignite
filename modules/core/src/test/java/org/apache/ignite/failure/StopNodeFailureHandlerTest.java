@@ -20,34 +20,50 @@ package org.apache.ignite.failure;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteState;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgnitionEx;
+import org.apache.ignite.internal.util.typedef.PE;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * {@link StopNodeFailureHandler} tests.
  */
 public class StopNodeFailureHandlerTest extends GridCommonAbstractTest {
+    /** {@inheritDoc} */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return igniteInstanceName.endsWith("1") ?
+            new StopNodeFailureHandler() :
+            new NoOpFailureHandler();
+    }
+
     /**
      * Tests node is stopped after triggering StopNodeFailureHandler.
      */
     public void testNodeStopped() throws Exception {
         try {
-            IgniteEx ignite = startGrid(0);
+            IgniteEx ignite0 = startGrid(0);
+            IgniteEx ignite1 = startGrid(1);
 
             final CountDownLatch latch = new CountDownLatch(1);
 
-            ignite.context().failure().process(
-                new FailureContext(FailureType.CRITICAL_ERROR, null),
-                new StopNodeFailureHandler() {
-                    @Override void onDone() {
-                        latch.countDown();
-                    }
-                });
+            ignite0.events().localListen(new PE() {
+                @Override public boolean apply(Event evt) {
+                    latch.countDown();
 
-            assert latch.await(10000, TimeUnit.MILLISECONDS) : "FailureHandler seems not triggered";
+                    return true;
+                }
+            }, EventType.EVT_NODE_LEFT);
 
-            assert IgnitionEx.state(ignite.name()) == IgniteState.STOPPED_ON_FAILURE;
+            ignite1.context().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, null));
+
+            assertTrue(latch.await(2000, TimeUnit.MILLISECONDS));
+
+            Thread.sleep(1000);
+
+            assertEquals(IgnitionEx.state(ignite0.name()), IgniteState.STARTED);
+            assertEquals(IgnitionEx.state(ignite1.name()), IgniteState.STOPPED_ON_FAILURE);
         }
         finally {
             stopAllGrids();

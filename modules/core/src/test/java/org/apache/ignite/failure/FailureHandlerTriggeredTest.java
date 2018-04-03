@@ -41,13 +41,13 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
      */
     public void testFailureHandlerTriggeredOnExchangeWorkerTermination() throws Exception {
         try {
-            final CountDownLatch latch = new CountDownLatch(1);
+            CountDownLatch latch = new CountDownLatch(1);
 
-            final TestFailureHandler handler = new TestFailureHandler(false, latch);
+            TestFailureHandler hnd = new TestFailureHandler(false, latch);
 
-            IgniteEx ignite = (IgniteEx)startGrid(getConfiguration().setFailureHandler(handler));
+            IgniteEx ignite = startGrid(getConfiguration().setFailureHandler(hnd));
 
-            final GridWorker exchangeWorker =
+            GridWorker exchangeWorker =
                 GridTestUtils.getFieldValue(
                     ignite.context().cache().context().exchange(),
                     GridCachePartitionExchangeManager.class,
@@ -57,10 +57,11 @@ public class FailureHandlerTriggeredTest extends GridCommonAbstractTest {
 
             GridTestUtils.invoke(exchangeWorker, "addCustomTask", new ExchangeWorkerFailureTask());
 
-            assert latch.await(2000, TimeUnit.MILLISECONDS)
-                && handler.failureCtx != null : "TestFailureHandler seems not triggered";
+            assertTrue(latch.await(2000, TimeUnit.MILLISECONDS));
 
-            assert handler.failureCtx.type() == FailureType.SYSTEM_WORKER_TERMINATION;
+            assertNotNull(hnd.failureCtx);
+
+            assertEquals(hnd.failureCtx.type(), FailureType.SYSTEM_WORKER_TERMINATION);
         }
         finally {
             stopAllGrids();
