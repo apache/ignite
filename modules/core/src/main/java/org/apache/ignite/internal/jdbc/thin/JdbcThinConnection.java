@@ -827,14 +827,18 @@ public class JdbcThinConnection implements Connection {
      * @param schemaName Schema name.
      * @return Normalized schema name.
      */
-    private static String normalizeSchema(String schemaName) {
+    private static String normalizeSchema(String schemaName) throws SQLException{
         if (F.isEmpty(schemaName))
             return QueryUtils.DFLT_SCHEMA;
 
         String res;
 
-        if (schemaName.startsWith("\"") && schemaName.endsWith("\""))
+        if (schemaName.startsWith("\"") && schemaName.endsWith("\"")) {
             res = schemaName.substring(1, schemaName.length() - 1);
+
+            if (res.isEmpty())
+                throw new SQLException("Schema cannot be empty sql identifier (\"\")");
+        }
         else
             res = schemaName.toUpperCase();
 
