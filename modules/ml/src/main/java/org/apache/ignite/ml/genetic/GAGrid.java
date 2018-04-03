@@ -226,9 +226,9 @@ public class GAGrid {
         List<Long> orderChromKeysByFittest = new ArrayList<Long>();
         String orderDirection = "desc";
 
-        if (config.isHigherFitnessValueFitter() == false) {
+        if (!config.isHigherFitnessValueFitter())
             orderDirection = "asc";
-        }
+
         String fittestSQL = "select _key from Chromosome order by fitnessScore " + orderDirection;
 
         // Execute query to retrieve keys for ALL Chromosomes by fittnessScore

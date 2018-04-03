@@ -60,7 +60,6 @@ public class TruncateSelectionJob extends ComputeJobAdapter {
      * @return Boolean value
      */
     public Boolean execute() throws IgniteException {
-        // TODO Auto-generated method stub
 
         IgniteCache<Long, Chromosome> populationCache = ignite.cache(GAGridConstants.POPULATION_CACHE);
 

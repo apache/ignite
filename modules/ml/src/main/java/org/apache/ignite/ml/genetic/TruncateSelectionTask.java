@@ -149,7 +149,6 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
      * @return Boolean value
      */
     public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
-        // TODO Auto-generated method stub
         return Boolean.TRUE;
     }
 

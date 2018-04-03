@@ -74,9 +74,8 @@ public class MutateJob extends ComputeJobAdapter {
 
         for (int k = 0; k < this.mutatedGeneKeys.size(); k++) {
             // Mutate gene based on MutatonRate
-            if (this.mutationRate > Math.random()) {
+            if (this.mutationRate > Math.random())
                 geneKeys[k] = this.mutatedGeneKeys.get(k);
-            }
         }
 
         chromosome.setGenes(geneKeys);
