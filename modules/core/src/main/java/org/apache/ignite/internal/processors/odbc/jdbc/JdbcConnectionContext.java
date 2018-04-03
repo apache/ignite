@@ -31,6 +31,8 @@ import org.apache.ignite.internal.processors.odbc.ClientListenerRequestHandler;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.typedef.F;
 
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
+
 /**
  * JDBC Connection Context.
  */
@@ -123,6 +125,12 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
         if (ver.compareTo(VER_2_3_0) >= 0)
             skipReducerOnUpdate = reader.readBoolean();
 
+
+        String schemaName = DFLT_SCHEMA;
+
+        if (true /* FIXME: introduce new version */)
+            schemaName = reader.readString();
+
         AuthorizationContext actx = null;
 
         try {
@@ -146,6 +154,12 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
         catch (Exception e) {
             throw new IgniteCheckedException("Handshake error: " + e.getMessage(), e);
         }
+
+        if (F.isEmpty(schemaName))
+            throw new IgniteCheckedException("Schema cannot be empty.");
+
+        if (!ctx.query().hasSchema(schemaName))
+             throw new IgniteCheckedException("Schema with name " + schemaName + " not found.");
 
         handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder,
             collocated, replicatedOnly, autoCloseCursors, lazyExec, skipReducerOnUpdate, actx, ver);

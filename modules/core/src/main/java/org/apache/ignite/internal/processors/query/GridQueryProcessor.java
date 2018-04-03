@@ -119,6 +119,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.internal.GridTopic.TOPIC_SCHEMA;
 import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SCHEMA_POOL;
+import static org.apache.ignite.internal.processors.query.QueryUtils.DFLT_SCHEMA;
 
 /**
  * Indexing processor.
@@ -2022,7 +2023,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         curCache.set(cctx);
 
         final String schemaName = qry.getSchema() != null ? qry.getSchema()
-            : (cctx != null ? idx.schema(cctx.name()) : QueryUtils.DFLT_SCHEMA);
+            : (cctx != null ? idx.schema(cctx.name()) : DFLT_SCHEMA);
 
         try {
             IgniteOutClosureX<List<FieldsQueryCursor<List<?>>>> clo =
@@ -2780,6 +2781,44 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             return;
 
         desc.validateKeyAndValue(key, val);
+    }
+
+    /** Checks if schema with specified {@code name} exists in the cluster. */
+    public boolean hasSchema(String name) {
+        assert !F.isEmpty(name) : "Schema cannot be empty or null.";
+
+        // Schema "PUBLIC" is special and always exists.
+        if (DFLT_SCHEMA.equals(name))
+            return true;
+
+        // first: try to find fast specified schema in local descriptors.
+        if (hasSchema0(name))
+            return true;
+
+        log.debug("Have not found schema " + name + " with the first attempt. Starting missing caches.");
+
+        // second: if haven't found try to start missing caches and try again.
+        try {
+            ctx.cache().createMissingQueryCaches();
+        }
+        catch (IgniteCheckedException ignored) {
+            // Todo: (review) should we re-throw exception?
+            // No-op.
+            log.warning("Could not start missing caches. Ignoring exception.", ignored);
+        }
+
+        return hasSchema0(name);
+    }
+
+    private boolean hasSchema0(String schema) {
+        for (String cacheName : ctx.cache().publicCacheNames()) {
+            for (GridQueryTypeDescriptor table : ctx.query().types(cacheName)) {
+                if (schema.equals(table.schemaName()))
+                    return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -34,27 +34,28 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
 
-    private static final String CONN_NODE_NAME = "ConnectNode";
+    private static final String CLIENT_NODE_NAME = "ClientNode";
 
-    private static final String OTHER_NODE_NAME = "OtherNode";
+    private static final String SERVER_NODE_NAME = "ServerNode";
 
     private static final String PRESTARTED_CACHE = "PrestartedCache";
 
-    private IgniteEx connectNode;
+    private IgniteEx clientNode;
 
-    private IgniteEx otherNode;
+    private IgniteEx serverNode;
 
-    private static final String OTHER_NODE_CACHE = "OtherNodeCache";
+    private static final String SERVER_CACHE = "ServerNodeCache";
 
-    private static final String CONNECT_NODE_CACHE = "ConnectNodeCache";
+    /** Name of the cache, that is created using client Ignite instance, NOT the cache on client. */
+    private static final String CLIENT_CACHE = "ClientNodeCache";
 
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
         // Node that we don't connect to contains prestarted cache with table.
-        startGrid(OTHER_NODE_NAME, withPrestartedCache(optimize(getConfiguration(OTHER_NODE_NAME))), null);
+        startGrid(SERVER_NODE_NAME, withPrestartedCache(optimize(getConfiguration(SERVER_NODE_NAME))), null);
 
-        startGrid(CONN_NODE_NAME, optimize(getConfiguration(CONN_NODE_NAME)), null);
+        startGrid(CLIENT_NODE_NAME, optimize(getConfiguration(CLIENT_NODE_NAME).setClientMode(true)), null);
     }
 
     @Override protected void afterTestsStopped() throws Exception {
@@ -62,7 +63,7 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
-    private CacheConfiguration <Long, UUID> newCacheCfg(String name) {
+    private CacheConfiguration<Long, UUID> newCacheCfg(String name) {
         CacheConfiguration<Long, UUID> ccfg = new CacheConfiguration<>(name);
 
         ccfg.setIndexedTypes(Long.class, UUID.class);
@@ -73,16 +74,16 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        otherNode = grid(OTHER_NODE_NAME);
-        connectNode = grid(CONN_NODE_NAME);
+        serverNode = grid(SERVER_NODE_NAME);
+        clientNode = grid(CLIENT_NODE_NAME);
 
-        otherNode.createCache(newCacheCfg(OTHER_NODE_CACHE));
-        connectNode.createCache(newCacheCfg(CONNECT_NODE_CACHE));
+        serverNode.createCache(newCacheCfg(SERVER_CACHE));
+        clientNode.createCache(newCacheCfg(CLIENT_CACHE));
     }
 
     @Override protected void afterTest() throws Exception {
-        otherNode.destroyCache(OTHER_NODE_CACHE);
-        connectNode.destroyCache(OTHER_NODE_CACHE);
+        serverNode.destroyCache(SERVER_CACHE);
+        clientNode.destroyCache(CLIENT_CACHE);
 
         super.afterTest();
     }
@@ -97,10 +98,10 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
                 return rec.port();
         }
 
-        throw new RuntimeException("Could not find port to connect to node " + node );
+        throw new RuntimeException("Could not find port to connect to node " + node);
     }
 
-    private IgniteConfiguration withPrestartedCache(IgniteConfiguration cfg) throws Exception{
+    private IgniteConfiguration withPrestartedCache(IgniteConfiguration cfg) throws Exception {
         CacheConfiguration<Long, UUID> ccfg = new CacheConfiguration<Long, UUID>(PRESTARTED_CACHE)
             .setIndexedTypes(Long.class, UUID.class).setCacheMode(CacheMode.PARTITIONED);
 
@@ -109,51 +110,56 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    public void testNonExistingSchemas () throws Exception {
+    public void testNonExistingSchemas() {
         assertSchemaMissed("notExistingSchema");
 
         assertSchemaMissed("\"Public\"");
 
-        assertSchemaMissed("OtherNodeCache"); // not quoted
+        assertSchemaMissed("ServerNodeCache"); // not quoted
 
-        assertSchemaMissed("\"OTHERNODECACHE\"");
+        assertSchemaMissed("\"SERVERNODECACHE\"");
 
-        assertSchemaMissed("\"OtherNodeCa\"");
+        assertSchemaMissed("\"ServerNodeCa\"");
 
-        assertSchemaMissed("\"CONNECTNODECACHE\"");
+        assertSchemaMissed("\"CLIENTNODECACHE\"");
     }
 
     /**
      * Connect to one node and check that schema defined in the other node's cache configuration exists.
      */
     public void testPrestartedCacheTable() {
-        assertSchemaExist(PRESTARTED_CACHE);
+        assertSchemaExist("\"" + PRESTARTED_CACHE + "\"");
     }
 
-    public void testExistingSchemas() {
+    public void testDefaultSchema() {
+        assertSchemaExist(""); // implicitly "PUBLIC"
 
         assertSchemaExist("public");
 
         assertSchemaExist("Public");
 
         assertSchemaExist("\"PUBLIC\"");
+    }
 
-        assertSchemaExist("\"ConnectNodeCache\"");
+    public void testExistingSchemas() {
+        assertSchemaExist("\"ClientNodeCache\"");
 
-        assertSchemaExist("\"OtherNodeCache\"");
+        assertSchemaExist("\"ServerNodeCache\"");
     }
 
     public void assertSchemaExist(String schema) {
-        int port = portOf(connectNode);
+        int port = portOf(clientNode);
 
         try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + port + "/" + schema)) {
             // do nothing
-        } catch (SQLException sqlEx){
+        }
+        catch (SQLException sqlEx) {
             throw new AssertionError("Schema " + schema + " seems to be missed, but it should exist.", sqlEx);
         }
+        // todo: create for server node too.
     }
 
-    public void assertSchemaMissed (String schema) throws Exception {
+    public void assertSchemaMissed(String schema) {
         Callable<Void> mustThrow = () -> {
             try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/" + schema)) {
                 // do nothing
@@ -162,6 +168,6 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
             return null;
         };
 
-        GridTestUtils.assertThrows(log, mustThrow, SQLException.class, "Should found exactly one schemas");
+        GridTestUtils.assertThrows(log, mustThrow, SQLException.class, "Schema with name");
     }
 }
