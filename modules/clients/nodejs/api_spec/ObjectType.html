@@ -28,32 +28,42 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>ObjectType<span class="signature">(typeCode)</span><span class="type-signature"></span></h2>
+        <h2><span class="attribs"><span class="type-signature"></span></span>ObjectType</h2>
         
-            <div class="class-description"><p>Class representing a type of object.</p>
-<p>Every type has mandatory type code <a href="ObjectType.html#.TYPE_CODE">ObjectType.TYPE_CODE</a>.
-Some of the types requires subtypes (eg. kind of map or kind of collection) which have defaults.</p>
+            <div class="class-description"><p>Base class representing a type of Ignite object.</p>
+<p>The class has no public constructor. Only subclasses may be instantiated.</p>
+<p>There are two groups of Ignite object types:</p>
+<ul>
+<li><p>Primitive (simple) types. To fully describe such a type it is enough to specify
+Ignite type code <a href="ObjectType.html#.PRIMITIVE_TYPE">ObjectType.PRIMITIVE_TYPE</a> only.</p>
+</li>
+<li><p>Non-primitive (composite) types. To fully describe such a type
+Ignite type code <a href="ObjectType.html#.COMPOSITE_TYPE">ObjectType.COMPOSITE_TYPE</a> with additional information should be specified.
+Eg. a kind of map or a kind of collection.</p>
+</li>
+</ul>
 <p>This class helps the Ignite client to make a mapping between JavaScript types
 and types used by Ignite.</p>
 <p>In many methods the Ignite client does not require to directly specify an object type.
-In this case the Ignite client does automatical mapping between some of the JavaScript types
-and object types - according to the following mapping table:</p>
+In this case the Ignite client tries to make automatic mapping between JavaScript types
+and Ignite object types according to the following mapping table:</p>
 <p><pre>
-     JavaScript type         : type code (<a href="ObjectType.html#.TYPE_CODE">ObjectType.TYPE_CODE</a>)
+     JavaScript type         : type code (<a href="ObjectType.html#.PRIMITIVE_TYPE">ObjectType.PRIMITIVE_TYPE</a> and <a href="ObjectType.html#.COMPOSITE_TYPE">ObjectType.COMPOSITE_TYPE</a>)
      null                    : NULL
      number                  : DOUBLE
-     string                  : STRING
-     boolean                 : BOOLEAN
-     Date                    : DATE
-     Map                     : MAP (HASH_MAP)
      Array of number         : DOUBLE_ARRAY
+     string                  : STRING
      Array of string         : STRING_ARRAY
+     boolean                 : BOOLEAN
      Array of boolean        : BOOLEAN_ARRAY
+     Date                    : DATE
      Array of Date           : DATE_ARRAY
+     Map                     : MAP (HASH_MAP)
+     any other Object        : COMPLEX_OBJECT
 </pre>
 Note: type of an array content is determined by the type of the first element of the array
-(empty array has no automatical mapping).</p>
-<p>All other JavaScript types have no automatical mapping.</p></div>
+(empty array has no automatic mapping).</p>
+<p>All other JavaScript types have no automatic mapping.</p></div>
         
     
 </header>
@@ -63,21 +73,6 @@ Note: type of an array content is determined by the type of the first element of
     
         
 
-    
-    <h2>Constructor</h2>
-    
-
-    
-    <h4 class="name" id="ObjectType"><span class="type-signature"></span>new ObjectType<span class="signature">(typeCode)</span><span class="type-signature"></span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Creates an instance of object type for the specified type code.</p>
-</div>
 
 
 
@@ -86,54 +81,6 @@ Note: type of an array content is determined by the type of the first element of
 
 
 
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>typeCode</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">integer</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>type code, one of the <a href="ObjectType.html#.TYPE_CODE">ObjectType.TYPE_CODE</a> constants.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
 
 
 
@@ -169,7 +116,7 @@ Note: type of an array content is determined by the type of the first element of
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line119">line 119</a>
+        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line128">line 128</a>
     </li></ul></dd>
     
 
@@ -217,13 +164,13 @@ Note: type of an array content is determined by the type of the first element of
 
         
             
-<h4 class="name" id=".MAP_SUBTYPE"><span class="type-signature">(static, readonly) </span>MAP_SUBTYPE<span class="type-signature"></span></h4>
+<h4 class="name" id=".COMPOSITE_TYPE"><span class="type-signature">(static, readonly) </span>COMPOSITE_TYPE<span class="type-signature"></span></h4>
 
 
 
 
 <div class="description">
-    <p>Supported kinds of map.</p>
+    <p>Supported Ignite type codes for non-primitive (composite) types.</p>
 </div>
 
 
@@ -258,7 +205,7 @@ Note: type of an array content is determined by the type of the first element of
 
         <tr>
             
-                <td class="name"><code>HASH_MAP</code></td>
+                <td class="name"><code>MAP</code></td>
             
 
             <td class="type">
@@ -269,14 +216,14 @@ Note: type of an array content is determined by the type of the first element of
 
             
 
-            <td class="description last"><p>1</p></td>
+            <td class="description last"><p>25</p></td>
         </tr>
 
     
 
         <tr>
             
-                <td class="name"><code>LINKED_HASH_MAP</code></td>
+                <td class="name"><code>NULL</code></td>
             
 
             <td class="type">
@@ -287,7 +234,25 @@ Note: type of an array content is determined by the type of the first element of
 
             
 
-            <td class="description last"><p>2</p></td>
+            <td class="description last"><p>101</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>COMPLEX_OBJECT</code></td>
+            
+
+            <td class="type">
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>103</p></td>
         </tr>
 
     
@@ -326,7 +291,7 @@ Note: type of an array content is determined by the type of the first element of
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line76">line 76</a>
+        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line71">line 71</a>
     </li></ul></dd>
     
 
@@ -344,13 +309,13 @@ Note: type of an array content is determined by the type of the first element of
 
         
             
-<h4 class="name" id=".TYPE_CODE"><span class="type-signature">(static, readonly) </span>TYPE_CODE<span class="type-signature"></span></h4>
+<h4 class="name" id=".PRIMITIVE_TYPE"><span class="type-signature">(static, readonly) </span>PRIMITIVE_TYPE<span class="type-signature"></span></h4>
 
 
 
 
 <div class="description">
-    <p>Supported type codes.</p>
+    <p>Supported Ignite type codes for primitive (simple) types.</p>
 </div>
 
 
@@ -742,42 +707,6 @@ Note: type of an array content is determined by the type of the first element of
         </tr>
 
     
-
-        <tr>
-            
-                <td class="name"><code>MAP</code></td>
-            
-
-            <td class="type">
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>25</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>NULL</code></td>
-            
-
-            <td class="type">
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>101</p></td>
-        </tr>
-
-    
     </tbody>
 </table>
 
@@ -833,313 +762,6 @@ Note: type of an array content is determined by the type of the first element of
     
 
     
-        <h3 class="subsection-title">Methods</h3>
-
-        
-            
-
-    
-
-    
-    <h4 class="name" id="setMapSubType"><span class="type-signature"></span>setMapSubType<span class="signature">(mapSubType, mapKeyType<span class="signature-attributes">opt</span>, mapValueType<span class="signature-attributes">opt</span>)</span><span class="type-signature"> &rarr; {<a href="ObjectType.html">ObjectType</a>}</span></h4>
-    
-
-    
-
-
-
-<div class="description">
-    <p>Specifies a kind of map.
-Optionally specifies types of keys and/or values in the map.</p>
-<p>If key and/or value type is not specified then during operations the Ignite client
-will do automatic mapping between some of the JavaScript types and object types -
-according to the mapping table defined in the description of the <a href="ObjectType.html">ObjectType</a> class.</p>
-<p>By default: HASH_MAP</p>
-</div>
-
-
-
-
-
-
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-        <th>Attributes</th>
-        
-
-        
-        <th>Default</th>
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>mapSubType</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">integer</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                </td>
-            
-
-            <td class="description last"><p>map subtype, one of the <a href="ObjectType.html#.MAP_SUBTYPE">ObjectType.MAP_SUBTYPE</a> constants.</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>mapKeyType</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="ObjectType.html">ObjectType</a></span>
-|
-
-<span class="param-type">integer</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                    null
-                
-                </td>
-            
-
-            <td class="description last"><p>type of the keys in the map:</p>
-<ul>
-<li>either an instance of object type</li>
-<li>or a type code (means object type with this type code and with default subtype, if applicable)</li>
-<li>or null or not specified (means the type is not specified)</li>
-</ul></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>mapValueType</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type"><a href="ObjectType.html">ObjectType</a></span>
-|
-
-<span class="param-type">integer</span>
-
-
-            
-            </td>
-
-            
-                <td class="attributes">
-                
-                    &lt;optional><br>
-                
-
-                
-
-                
-                </td>
-            
-
-            
-                <td class="default">
-                
-                    null
-                
-                </td>
-            
-
-            <td class="description last"><p>type of the values in the map:</p>
-<ul>
-<li>either an instance of object type</li>
-<li>or a type code (means object type with this type code and with default subtype, if applicable)</li>
-<li>or null or not specified (means the type is not specified)</li>
-</ul></td>
-        </tr>
-
-    
-    </tbody>
-</table>
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="ObjectType.js.html">ObjectType.js</a>, <a href="ObjectType.js.html#line159">line 159</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-
-
-
-
-
-<h5>Throws:</h5>
-
-        
-
-<dl>
-    <dt>
-        <div class="param-desc">
-        <p>if error.</p>
-        </div>
-    </dt>
-    <dd></dd>
-    <dt>
-        <dl>
-            <dt>
-                Type
-            </dt>
-            <dd>
-                
-<span class="param-type"><a href="IgniteClientError.html">IgniteClientError</a></span>
-
-
-            </dd>
-        </dl>
-    </dt>
-    <dd></dd>
-</dl>
-
-
-    
-
-
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <ul>
-<li>the same instance of the object type.</li>
-</ul>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type"><a href="ObjectType.html">ObjectType</a></span>
-
-
-    </dd>
-</dl>
-
-    
-
-
-
-
-
-        
-    
 
     
 
@@ -1154,13 +776,13 @@ according to the mapping table defined in the description of the <a href="Object
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BinaryObject.html">BinaryObject</a></li><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sun Apr 01 2018 01:03:41 GMT+0300 (Russia TZ 2 Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Apr 03 2018 16:45:35 GMT+0300 (Russia TZ 2 Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

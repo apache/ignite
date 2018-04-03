@@ -56,13 +56,13 @@ class BinaryType {
             complexObjectType = new ComplexObjectType();
         }
         const result = new BinaryType(complexObjectType._typeName);
-        result._objectConstructor = complexObjectType._getObjectConstructor();
+        result._objectConstructor = complexObjectType._objectConstructor;
         const schema = new BinarySchema();
         if (object) {
             result._addFields(schema, object, complexObjectType);
         }
-        if (complexObjectType._objectTemplate) {
-            result._addFields(schema, complexObjectType._objectTemplate, complexObjectType);
+        if (complexObjectType._template) {
+            result._addFields(schema, complexObjectType._template, complexObjectType);
         }
         for (let [fieldName, fieldType] of complexObjectType._getFields()) {
             result._addField(schema, fieldName, fieldType);
@@ -98,10 +98,6 @@ class BinaryType {
             this._fields.set(field.id, field);
             schema._addFieldId(field.id);
         }
-    }
-
-    _getObjectConstructor() {
-        return this._objectConstructor;
     }
 }
 

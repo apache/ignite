@@ -48,7 +48,6 @@
 const CacheClient = require('./CacheClient');
 const IgniteClientConfiguration = require('./IgniteClientConfiguration');
 const CacheConfiguration = require('./CacheConfiguration');
-const ClientFailoverSocket = require('./internal/ClientFailoverSocket');
 const BinaryUtils = require('./internal/BinaryUtils');
 const BinaryWriter = require('./internal/BinaryWriter');
 const BinaryReader = require('./internal/BinaryReader');
@@ -56,61 +55,84 @@ const ArgumentChecker = require('./internal/ArgumentChecker');
 const Logger = require('./internal/Logger');
 
 /**
+ * State of Ignite client.
+ *
+ * @typedef IgniteClient.STATE
+ * @enum
+ * @readonly
+ * @property DISCONNECTED the client is not connected to any Ignite node,
+ *     operations with the Ignite server are not allowed.
+ *     This is initial state after a client instance creation.
+ *     If connect() method is called, the client moves to CONNECTING state.
+ * @property CONNECTING the client tries to connect to an Ignite node,
+ *     operations with the Ignite server are not allowed.
+ *     If disconnect() method is called, the client moves to DISCONNECTED state.
+ *     If not possible to connect to any Ignite node, the client moves to DISCONNECTED state.
+ *     If connection to an Ignite node is successful, the client moves to CONNECTED state.
+ * @property CONNECTED the client is connected to an Ignite node,
+ *     all operations with the Ignite server are allowed.
+ *     If connection with the Ignite node is lost, the client moves to CONNECTING state.
+ *     If disconnect() method is called, the client moves to DISCONNECTED state.
+ */
+const STATE = Object.freeze({
+    DISCONNECTED : 0,
+    CONNECTING : 1,
+    CONNECTED : 2
+});
+
+/**
  * Class representing Ignite client.
  * 
- * The client can be in one of the two states - "disconnected" or "connected".
- *
- * "Disconnected" state: initial state after a client instance creation,
- * connect() method is allowed only.
- *
- * "Connected" state: all operations are allowed except connect() method.
- *
- * The client goes to the "disconnected" state when it cannot establish a connection
- * to no one of the server nodes specified in the {@link IgniteClientConfiguration}
- * or when disconnect() method is called.
- *
- * When the client goes to the "disconnected" state the callback
- * specified in the connect() method is called.
  */
 class IgniteClient {
 
     /**
-     * The default constructor.
+     * Public constructor.
+     *
+     * @param {IgniteClient.onStateChanged} [onStateChanged] -
+     * callback called everytime when the client has moved to a new state {@link IgniteClient.STATE}.
      *
      * @return {IgniteClient} - new IgniteClient instance.
      */
-    constructor() {
-        this._socket = new ClientFailoverSocket();
+    constructor(onStateChanged = null) {
+        const ClientFailoverSocket = require('./internal/ClientFailoverSocket');
+        this._socket = new ClientFailoverSocket(onStateChanged);
+    }
+
+    static get STATE() {
+        return STATE;
     }
 
     /**
-     * IgniteClient.connect() method callback.
-     * @callback IgniteClient.onDisconnect
-     * @param {IgniteClientError} error - the reason of disconnection,
-     * null when disconnected by disconnect() method.
+     * onStateChanged callback.
+     * @callback IgniteClient.onStateChanged
+     * @param {IgniteClient.STATE} state - the new state of the client.
+     * @param {string} reason - the reason why the state has been changed.
      */
 
     /**
      * Connects the client.
      *
+     * Should be called from DISCONNECTED state only.
+     * Moves the client to CONNECTING state.
+     *
      * @async
      *
      * @param {IgniteClientConfiguration} config - the client configuration.
-     * @param {IgniteClient.onDisconnect} onDisconnect - the callback called when the client is disconnected.
      *
-     * @throws {IllegalStateError} if the client already connected.
+     * @throws {IllegalStateError} if the client is not in DISCONNECTED {@link IgniteClient.STATE}.
      * @throws {IgniteClientError} if other error.
      */
-    async connect(config, onDisconnect) {
+    async connect(config) {
         ArgumentChecker.notEmpty(config, 'config');
         ArgumentChecker.hasType(config, 'config', IgniteClientConfiguration);
-        await this._socket.connect(config, onDisconnect);
+        await this._socket.connect(config);
     }
 
     /**
      * Disconnects the client.
      *
-     * Triggers the callback specified in the connect() method.
+     * Moves the client to DISCONNECTED state from any other state.
      * Does nothing if the client already disconnected.
      */
     disconnect() {
@@ -129,7 +151,7 @@ class IgniteClient {
      *
      * @return {Promise&lt;CacheClient>} - new cache client instance for the created cache.
      *
-     * @throws {IllegalStateError} if the client is disconnected.
+     * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
      * @throws {OperationError} if cache with the provided name already exists.
      * @throws {IgniteClientError} if other error.
      */
@@ -157,7 +179,7 @@ class IgniteClient {
      *
      * @return {Promise&lt;CacheClient>} - new cache client instance for the existing or created cache.
      *
-     * @throws {IllegalStateError} if the client is disconnected.
+     * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
      * @throws {IgniteClientError} if other error.
      */
     async getOrCreateCache(name, cacheConfig = null) {
@@ -194,7 +216,7 @@ class IgniteClient {
      *
      * @param {string} name - cache name.
      *
-     * @throws {IllegalStateError} if the client is disconnected.
+     * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
      * @throws {OperationError} if cache with the provided name does not exist.
      * @throws {IgniteClientError} if other error.
      */
@@ -203,7 +225,7 @@ class IgniteClient {
         await this._socket.send(
             BinaryUtils.OPERATION.CACHE_DESTROY,
             (payload) => {
-                payload.writeInteger(BinaryUtils.hashCode(name));
+                payload.writeInteger(CacheClient._calculateId(name));
             });
     }
 
@@ -215,7 +237,7 @@ class IgniteClient {
      * @return {Array&lt;string>} - array with the existing cache names.
      *     The array is empty if no caches exist.
      *
-     * @throws {IllegalStateError} if the client is disconnected.
+     * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
      * @throws {IgniteClientError} if other error.
      */
     async cacheNames() {
@@ -260,13 +282,13 @@ module.exports = IgniteClient;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BinaryObject.html">BinaryObject</a></li><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sun Apr 01 2018 01:03:41 GMT+0300 (Russia TZ 2 Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Apr 03 2018 16:45:35 GMT+0300 (Russia TZ 2 Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

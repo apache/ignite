@@ -45,7 +45,6 @@
 
 'use strict';
 
-const ObjectType = require('./ObjectType');
 const BinaryUtils = require('./internal/BinaryUtils');
 const BinaryReader = require('./internal/BinaryReader');
 const BinaryWriter = require('./internal/BinaryWriter');
@@ -85,9 +84,9 @@ class CacheClient {
      * will do automatic mapping between some of the JavaScript types and object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      *
-     * @param {ObjectType | integer} type - type of the keys in the cache:
-     *   - either an instance of object type
-     *   - or a type code (means object type with this type code and with default subtype, if applicable)
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} type - type of the keys in the cache:
+     *   - either a type code of primitive (simple) type
+     *   - or an instance of class representing non-primitive (composite) type
      *   - or null (means the type is not specified).
      *
      * @return {CacheClient} - the same instance of the cache client.
@@ -95,10 +94,8 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     setKeyType(type) {
-        this._keyType = BinaryUtils.getObjectType(type);
-        if (this._keyType) {
-            ArgumentChecker.hasValueFrom(this._keyType.typeCode, 'type', ObjectType.TYPE_CODE);
-        }
+        this._keyType = BinaryUtils.getObjectType(type, 'type');
+        this._binaryModeKeyType = new BinaryUtils.BinaryObjectType(this._keyType);
         return this;
     }
 
@@ -116,9 +113,9 @@ class CacheClient {
      * will do automatic mapping between some of the JavaScript types and object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      *
-     * @param {ObjectType | integer} type - type of the values in the cache:
-     *   - either an instance of object type
-     *   - or a type code (means object type with this type code and with default subtype, if applicable)
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} type - type of the values in the cache:
+     *   - either a type code of primitive (simple) type
+     *   - or an instance of class representing non-primitive (composite) type
      *   - or null (means the type is not specified).
      *
      * @return {CacheClient} - the same instance of the cache client.
@@ -126,10 +123,8 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     setValueType(type) {
-        this._valueType = BinaryUtils.getObjectType(type);
-        if (this._valueType) {
-            ArgumentChecker.hasValueFrom(this._valueType.typeCode, 'type', ObjectType.TYPE_CODE);
-        }
+        this._valueType = BinaryUtils.getObjectType(type, 'type');
+        this._binaryModeValueType = new BinaryUtils.BinaryObjectType(this._valueType);
         return this;
     }
 
@@ -172,10 +167,10 @@ class CacheClient {
             BinaryUtils.OPERATION.CACHE_GET,
             (payload) => {
                 this._writeCacheInfo(payload);
-                BinaryWriter.writeObject(payload, key, this._keyType);
+                BinaryWriter.writeObject(payload, key, this._getKeyType());
             },
             (payload) => {
-                value = BinaryReader.readObject(payload, this._valueType);
+                value = BinaryReader.readObject(payload, this._getValueType());
             });
         return value;
     }
@@ -199,8 +194,8 @@ class CacheClient {
             BinaryUtils.OPERATION.CACHE_PUT,
             (payload) => {
                 this._writeCacheInfo(payload);
-                BinaryWriter.writeObject(payload, key, this._keyType);
-                BinaryWriter.writeObject(payload, value, this._valueType);
+                BinaryWriter.writeObject(payload, key, this._getKeyType());
+                BinaryWriter.writeObject(payload, value, this._getValueType());
             });
     }
 
@@ -226,12 +221,21 @@ class CacheClient {
      */
     constructor(name, config, socket) {
         this._name = name;
-        this._cacheId = BinaryUtils.hashCode(this._name);
+        this._cacheId = CacheClient._calculateId(this._name);
         this._config = config;
         this._keyType = null;
         this._valueType = null;
+        this._binaryModeKeyType = new BinaryUtils.BinaryObjectType();
+        this._binaryModeValueType = new BinaryUtils.BinaryObjectType();
         this._binaryMode = false;
         this._socket = socket;
+    }
+
+    /**
+     * @ignore
+     */
+    static _calculateId(name) {
+        return BinaryUtils.hashCode(name);
     }
 
     /**
@@ -240,6 +244,20 @@ class CacheClient {
     _writeCacheInfo(payload) {
         payload.writeInteger(this._cacheId);
         payload.writeByte(this._binaryMode ? 1 : 0);
+    }
+
+    /**
+     * @ignore
+     */
+    _getKeyType() {
+        return this._binaryMode ? this._binaryModeKeyType : this._keyType;
+    }
+
+    /**
+     * @ignore
+     */
+    _getValueType() {
+        return this._binaryMode ? this._binaryModeValueType : this._valueType;
     }
 }
 
@@ -254,13 +272,13 @@ module.exports = CacheClient;
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BinaryObject.html">BinaryObject</a></li><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sun Apr 01 2018 01:03:41 GMT+0300 (Russia TZ 2 Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Apr 03 2018 16:45:35 GMT+0300 (Russia TZ 2 Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

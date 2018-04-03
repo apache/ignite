@@ -93,7 +93,7 @@ during the instance obtaining and cannot be changed after that.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheClient.js.html">CacheClient.js</a>, <a href="CacheClient.js.html#line43">line 43</a>
+        <a href="CacheClient.js.html">CacheClient.js</a>, <a href="CacheClient.js.html#line42">line 42</a>
     </li></ul></dd>
     
 
@@ -248,7 +248,7 @@ during the instance obtaining and cannot be changed after that.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheClient.js.html">CacheClient.js</a>, <a href="CacheClient.js.html#line140">line 140</a>
+        <a href="CacheClient.js.html">CacheClient.js</a>, <a href="CacheClient.js.html#line135">line 135</a>
     </li></ul></dd>
     
 
@@ -460,7 +460,7 @@ during the instance obtaining and cannot be changed after that.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheClient.js.html">CacheClient.js</a>, <a href="CacheClient.js.html#line167">line 167</a>
+        <a href="CacheClient.js.html">CacheClient.js</a>, <a href="CacheClient.js.html#line162">line 162</a>
     </li></ul></dd>
     
 
@@ -575,7 +575,7 @@ during the instance obtaining and cannot be changed after that.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheClient.js.html">CacheClient.js</a>, <a href="CacheClient.js.html#line186">line 186</a>
+        <a href="CacheClient.js.html">CacheClient.js</a>, <a href="CacheClient.js.html#line181">line 181</a>
     </li></ul></dd>
     
 
@@ -762,7 +762,7 @@ during the instance obtaining and cannot be changed after that.</p>
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheClient.js.html">CacheClient.js</a>, <a href="CacheClient.js.html#line122">line 122</a>
+        <a href="CacheClient.js.html">CacheClient.js</a>, <a href="CacheClient.js.html#line117">line 117</a>
     </li></ul></dd>
     
 
@@ -907,10 +907,10 @@ according to the mapping table defined in the description of the <a href="Object
             <td class="type">
             
                 
-<span class="param-type"><a href="ObjectType.html">ObjectType</a></span>
+<span class="param-type"><a href="ObjectType.html#.PRIMITIVE_TYPE">ObjectType.PRIMITIVE_TYPE</a></span>
 |
 
-<span class="param-type">integer</span>
+<span class="param-type"><a href="CompositeType.html">CompositeType</a></span>
 
 
             
@@ -922,8 +922,8 @@ according to the mapping table defined in the description of the <a href="Object
 
             <td class="description last"><p>type of the keys in the cache:</p>
 <ul>
-<li>either an instance of object type</li>
-<li>or a type code (means object type with this type code and with default subtype, if applicable)</li>
+<li>either a type code of primitive (simple) type</li>
+<li>or an instance of class representing non-primitive (composite) type</li>
 <li>or null (means the type is not specified).</li>
 </ul></td>
         </tr>
@@ -966,7 +966,7 @@ according to the mapping table defined in the description of the <a href="Object
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheClient.js.html">CacheClient.js</a>, <a href="CacheClient.js.html#line69">line 69</a>
+        <a href="CacheClient.js.html">CacheClient.js</a>, <a href="CacheClient.js.html#line68">line 68</a>
     </li></ul></dd>
     
 
@@ -1111,10 +1111,10 @@ according to the mapping table defined in the description of the <a href="Object
             <td class="type">
             
                 
-<span class="param-type"><a href="ObjectType.html">ObjectType</a></span>
+<span class="param-type"><a href="ObjectType.html#.PRIMITIVE_TYPE">ObjectType.PRIMITIVE_TYPE</a></span>
 |
 
-<span class="param-type">integer</span>
+<span class="param-type"><a href="CompositeType.html">CompositeType</a></span>
 
 
             
@@ -1126,8 +1126,8 @@ according to the mapping table defined in the description of the <a href="Object
 
             <td class="description last"><p>type of the values in the cache:</p>
 <ul>
-<li>either an instance of object type</li>
-<li>or a type code (means object type with this type code and with default subtype, if applicable)</li>
+<li>either a type code of primitive (simple) type</li>
+<li>or an instance of class representing non-primitive (composite) type</li>
 <li>or null (means the type is not specified).</li>
 </ul></td>
         </tr>
@@ -1170,7 +1170,7 @@ according to the mapping table defined in the description of the <a href="Object
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="CacheClient.js.html">CacheClient.js</a>, <a href="CacheClient.js.html#line100">line 100</a>
+        <a href="CacheClient.js.html">CacheClient.js</a>, <a href="CacheClient.js.html#line97">line 97</a>
     </li></ul></dd>
     
 
@@ -1267,13 +1267,13 @@ according to the mapping table defined in the description of the <a href="Object
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="BinaryObject.html">BinaryObject</a></li><li><a href="CacheClient.html">CacheClient</a></li><li><a href="CacheConfiguration.html">CacheConfiguration</a></li><li><a href="ComplexObjectType.html">ComplexObjectType</a></li><li><a href="CompositeType.html">CompositeType</a></li><li><a href="IgniteClient.html">IgniteClient</a></li><li><a href="IgniteClientConfiguration.html">IgniteClientConfiguration</a></li><li><a href="IgniteClientError.html">IgniteClientError</a></li><li><a href="IllegalStateError.html">IllegalStateError</a></li><li><a href="LostConnectionError.html">LostConnectionError</a></li><li><a href="MapObjectType.html">MapObjectType</a></li><li><a href="ObjectType.html">ObjectType</a></li><li><a href="OperationError.html">OperationError</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Sun Apr 01 2018 01:03:41 GMT+0300 (Russia TZ 2 Standard Time)
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.5.5</a> on Tue Apr 03 2018 16:45:35 GMT+0300 (Russia TZ 2 Standard Time)
 </footer>
 
 <script> prettyPrint(); </script>

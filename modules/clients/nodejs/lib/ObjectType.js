@@ -147,6 +147,7 @@ class ObjectType {
  * The class has no public constructor. Only subclasses may be instantiated.
  *
  * @hideconstructor
+ * @extends ObjectType
  */
 class CompositeType extends ObjectType {
 }
@@ -169,6 +170,8 @@ const MAP_SUBTYPE = Object.freeze({
  *
  * It is described by COMPOSITE_TYPE.MAP {@link ObjectType.COMPOSITE_TYPE}
  * and one of {@link MapObjectType.MAP_SUBTYPE}.
+ *
+ * @extends CompositeType
  */
 class MapObjectType extends CompositeType {
     static get MAP_SUBTYPE() {
@@ -186,7 +189,7 @@ class MapObjectType extends CompositeType {
      * will try to make automatic mapping between JavaScript types and Ignite object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      * 
-     * @param {integer} [mapSubType=HASH_MAP] - map subtype, one of the {@link MapObjectType.MAP_SUBTYPE} constants.
+     * @param {integer} [mapSubType=MAP_SUBTYPE.HASH_MAP] - map subtype, one of the {@link MapObjectType.MAP_SUBTYPE} constants.
      * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [keyType=null] - type of the keys in the map:
      *   - either a type code of primitive (simple) type
      *   - or an instance of class representing non-primitive (composite) type
@@ -215,6 +218,8 @@ class MapObjectType extends CompositeType {
  *
  * It is described by COMPOSITE_TYPE.COMPLEX_OBJECT {@link ObjectType.COMPOSITE_TYPE},
  * a name of the complex type and a set of fields.
+ *
+ * @extends CompositeType
  */
 class ComplexObjectType extends CompositeType {
 
@@ -249,13 +254,13 @@ class ComplexObjectType extends CompositeType {
      */
     constructor(template = null, name = null) {
         super(COMPOSITE_TYPE.COMPLEX_OBJECT);
-        this._objectTemplate = objectTemplate;
-        this._objectConstructor = objectTemplate && objectTemplate.constructor ?
-            objectTemplate.constructor : Object;
-        if (!typeName) {
-            typeName = this._objectConstructor.name;
+        this._template = template;
+        this._objectConstructor = template && template.constructor ?
+            template.constructor : Object;
+        if (!name) {
+            name = this._objectConstructor.name;
         }
-        this._typeName = typeName;
+        this._typeName = name;
         this._fields = new Map();
     }
 
@@ -287,13 +292,6 @@ class ComplexObjectType extends CompositeType {
     }
 
     /** Private methods */
-
-    /**
-     * @ignore
-     */
-    _getObjectConstructor() {
-        return this._objectConstructor;
-    }
 
     /**
      * @ignore

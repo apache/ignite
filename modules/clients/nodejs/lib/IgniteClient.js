@@ -29,28 +29,22 @@ const Logger = require('./internal/Logger');
 /**
  * State of Ignite client.
  *
- * DISCONNECTED - the client is not connected to any Ignite node,
- * operations with the Ignite server are not allowed.
- * This is initial state after a client instance creation.
- * If connect() method is called, the client moves to CONNECTING state.
- *
- * CONNECTING - the client tries to connect to an Ignite node,
- * operations with the Ignite server are not allowed.
- * If disconnect() method is called, the client moves to DISCONNECTED state.
- * If not possible to connect to any Ignite node, the client moves to DISCONNECTED state.
- * If connection to an Ignite node is successful, the client moves to CONNECTED state.
- *
- * CONNECTED - the client is connected to an Ignite node,
- * all operations with the Ignite server are allowed.
- * If connection with the Ignite node is lost, the client moves to CONNECTING state.
- * If disconnect() method is called, the client moves to DISCONNECTED state.
- *
  * @typedef IgniteClient.STATE
  * @enum
  * @readonly
- * @property DISCONNECTED
- * @property CONNECTING
- * @property CONNECTED
+ * @property DISCONNECTED the client is not connected to any Ignite node,
+ *     operations with the Ignite server are not allowed.
+ *     This is initial state after a client instance creation.
+ *     If connect() method is called, the client moves to CONNECTING state.
+ * @property CONNECTING the client tries to connect to an Ignite node,
+ *     operations with the Ignite server are not allowed.
+ *     If disconnect() method is called, the client moves to DISCONNECTED state.
+ *     If not possible to connect to any Ignite node, the client moves to DISCONNECTED state.
+ *     If connection to an Ignite node is successful, the client moves to CONNECTED state.
+ * @property CONNECTED the client is connected to an Ignite node,
+ *     all operations with the Ignite server are allowed.
+ *     If connection with the Ignite node is lost, the client moves to CONNECTING state.
+ *     If disconnect() method is called, the client moves to DISCONNECTED state.
  */
 const STATE = Object.freeze({
     DISCONNECTED : 0,
@@ -67,7 +61,7 @@ class IgniteClient {
     /**
      * Public constructor.
      *
-     * @param {IgniteClient.onStateChanged} [onStateChanged] - (optional)
+     * @param {IgniteClient.onStateChanged} [onStateChanged] -
      * callback called everytime when the client has moved to a new state {@link IgniteClient.STATE}.
      *
      * @return {IgniteClient} - new IgniteClient instance.
