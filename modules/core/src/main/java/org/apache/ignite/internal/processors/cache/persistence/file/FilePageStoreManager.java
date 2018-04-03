@@ -422,10 +422,12 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
      * @return Cache store holder.
      * @throws IgniteCheckedException If failed.
      */
-    private CacheStoreHolder initDir(File cacheWorkDir,
+    private CacheStoreHolder initDir(
+        File cacheWorkDir,
         int grpId,
         int partitions,
-        AllocatedPageTracker allocatedTracker) throws IgniteCheckedException {
+        AllocatedPageTracker allocatedTracker
+    ) throws IgniteCheckedException {
         try {
             boolean dirExisted = checkAndInitCacheWorkDir(cacheWorkDir);
 
@@ -437,20 +439,20 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             FilePageStoreFactory pageStoreFactory = new FileVersionCheckingFactory(
                 pageStoreFileIoFactory, pageStoreV1FileIoFactory, igniteCfg.getDataStorageConfiguration());
 
-            FilePageStore idxStore =
-            pageStoreFactory.createPageStore(
+            FilePageStore idxStore = pageStoreFactory.createPageStore(
                 PageMemory.FLAG_IDX,
                 idxFile,
-                allocatedTracker);
+                allocatedTracker
+            );
 
             FilePageStore[] partStores = new FilePageStore[partitions];
 
             for (int partId = 0; partId < partStores.length; partId++) {
-                FilePageStore partStore =
-                    pageStoreFactory.createPageStore(
+                FilePageStore partStore = pageStoreFactory.createPageStore(
                         PageMemory.FLAG_DATA,
                         getPartitionFile(cacheWorkDir, partId),
-                        allocatedTracker);
+                        allocatedTracker
+                );
 
                     partStores[partId] = partStore;
                 }
@@ -849,10 +851,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
         /**
          *
          */
-        public CacheStoreHolder(FilePageStore idxStore, FilePageStore[] partStores) {
+        private CacheStoreHolder(FilePageStore idxStore, FilePageStore[] partStores) {
             this.idxStore = idxStore;
             this.partStores = partStores;
         }
     }
-
 }

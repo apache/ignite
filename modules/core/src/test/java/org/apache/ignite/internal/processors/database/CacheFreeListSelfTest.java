@@ -358,6 +358,7 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
             true,
             null,
             null,
+            null,
             null
         );
     }

@@ -22,10 +22,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -49,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -164,13 +167,19 @@ public class CacheGroupContext {
     private final DataStructureSize reuseListPages;
 
     /** */
+    private final DataStructureSize dataPages;
+
+    /** */
     private final DataStructureSize pureDataSize;
+
+    /** */
+    private final DataStructureSize internalSize;
 
     /** */
     private final DataStructureSize totalSize;
 
     /** */
-    private final Map<String, DataStructureSize> sizes = new HashMap<>();
+    private final Map<String, DataStructureSize> sizes = new LinkedHashMap<>();
 
     /** */
     private volatile boolean walEnabled;
@@ -238,28 +247,58 @@ public class CacheGroupContext {
         String indexesName = groupName + "-indexes";
         String reuseListName = groupName + "-reuseList";
         String pureDataName = groupName + "-pureData";
+        String dataPagesName = groupName + "-data";
+        String internalName = groupName + "-internal";
         String totalSizeName = groupName + "-totalSize";
+
+        int pageSize = dataRegion.pageMemory().pageSize();
 
         pkIndexPages = simpleTracker(pkIndexName);
         indexesPages = simpleTracker(indexesName);
         reuseListPages = simpleTracker(reuseListName);
+        dataPages = simpleTracker(dataPagesName);
         pureDataSize = simpleTracker(pureDataName);
-        totalSize = simpleTracker(totalSizeName);
+        internalSize = simpleTracker(internalName);
+        totalSize = new DataStructureSize() {
+            private final long trackingPages = TrackingPageIO.VERSIONS.latest().countOfPageToTrack(pageSize);
+            private final AtomicLong size = new AtomicLong();
+
+            @Override public void inc() {
+                long val = size.incrementAndGet();
+
+                if (val % trackingPages == 0)
+                    internalSize.add(pageSize);
+            }
+
+            @Override public void dec() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override public void add(long val) {
+                long prev = size.getAndAdd(val);
+
+                if (prev / trackingPages < ((prev + val) / trackingPages))
+                    internalSize.add(val * pageSize);
+            }
+
+            @Override public long size() {
+                return size.get() + internalSize.size();
+            }
+
+            @Override public String name() {
+                return totalSizeName;
+            }
+        };
 
         sizes.put(pkIndexName, pkIndexPages);
         sizes.put(indexesName, indexesPages);
         sizes.put(reuseListName, reuseListPages);
+        sizes.put(dataPagesName, dataPages);
         sizes.put(pureDataName, pureDataSize);
+        sizes.put(internalName, internalSize);
         sizes.put(totalSizeName, totalSize);
 
-        mxBean = new CacheGroupMetricsMXBeanImpl(
-            this,
-            pkIndexPages,
-            indexesPages,
-            reuseListPages,
-            pureDataSize,
-            totalSize
-            );
+        mxBean = new CacheGroupMetricsMXBeanImpl(this);
     }
 
     public DataStructureSize getPkIndexPages() {
@@ -268,6 +307,14 @@ public class CacheGroupContext {
 
     public DataStructureSize getReuseListPages() {
         return reuseListPages;
+    }
+
+    public DataStructureSize getInternalSize() {
+        return internalSize;
+    }
+
+    public DataStructureSize getDataPages() {
+        return dataPages;
     }
 
     public DataStructureSize getPureDataSize() {

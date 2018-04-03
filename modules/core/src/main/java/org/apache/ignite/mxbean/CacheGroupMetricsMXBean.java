@@ -171,6 +171,12 @@ public interface CacheGroupMetricsMXBean {
     public long getDataSize();
 
     /**
+     * Total size in bytes for internal structures.
+     */
+    @MXBeanDescription("Total size in bytes for internal structures.")
+    public long getInternalSize();
+
+    /**
      * Total size in bytes for all structures.
      */
     @MXBeanDescription("Total size in bytes for all structures.")

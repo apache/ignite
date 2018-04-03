@@ -91,6 +91,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private final DataStructureSize pureDataSize;
 
     /** */
+    private final DataStructureSize dataSize;
+
+    /** */
     private final DataStructureSize totalSize;
 
     /**
@@ -323,6 +326,10 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 else
                     put(null, pageId, page, pageAddr, newBucket);
 
+                //todo
+                if (newBucket == emptyDataPagesBucket && dataSize != null)
+                    dataSize.dec();
+
                 if (io.isEmpty(pageAddr))
                     evictionTracker.forgetPage(pageId);
             }
@@ -356,18 +363,21 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         IgniteWriteAheadLogManager wal,
         long metaPageId,
         boolean initNew,
-        DataStructureSize structureSize,
+        DataStructureSize dsSize,
         DataStructureSize pureDataSize,
+        DataStructureSize dataSize,
         DataStructureSize totalSize
     ) throws IgniteCheckedException {
-        super(grpId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId, structureSize);
+        super(grpId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId, dsSize);
 
         rmvRow = new RemoveRowHandler(grpId == 0);
 
         this.evictionTracker = memPlc.evictionTracker();
         this.pureDataSize = pureDataSize;
+        this.dataSize = dataSize;
         this.totalSize = totalSize;
         this.reuseList = reuseList == null ? this : reuseList;
+
         int pageSize = pageMem.pageSize();
 
         assert U.isPow2(pageSize) : "Page size must be a power of 2: " + pageSize;
@@ -524,8 +534,12 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
             boolean allocated = pageId == 0L;
 
-            if (allocated)
+            if (allocated){
                 pageId = allocateDataPage(row.partition());
+
+                if (dataSize != null)
+                    dataSize.inc();
+            }
             else
                 pageId = PageIdUtils.changePartitionId(pageId, (row.partition()));
 
@@ -601,7 +615,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     @Override public void addForRecycle(ReuseBag bag) throws IgniteCheckedException {
         assert reuseList == this : "not allowed to be a reuse list";
 
-        put(wrapMetrics(bag), 0, 0, 0L, REUSE_BUCKET);
+        put(bag, 0, 0, 0L, REUSE_BUCKET);
     }
 
     /** {@inheritDoc} */

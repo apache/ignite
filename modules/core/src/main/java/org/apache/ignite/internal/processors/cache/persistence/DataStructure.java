@@ -64,20 +64,20 @@ public abstract class DataStructure implements PageLockListener {
      * @param grpId Cache group ID.
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
-     * @param dataStructureSize .
+     * @param dsSize .
      */
     protected DataStructure(
         int grpId,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
-        DataStructureSize dataStructureSize
+        DataStructureSize dsSize
     ) {
         assert pageMem != null;
 
         this.grpId = grpId;
         this.pageMem = pageMem;
         this.wal = wal;
-        this.dataStructureSize = dataStructureSize;
+        this.dataStructureSize = dsSize;
     }
 
     /**
@@ -151,6 +151,9 @@ public abstract class DataStructure implements PageLockListener {
 
                 if (res != 0)
                     dataStructureSize.dec();
+
+                if (dataStructureSize.size() < 0)
+                    System.out.println("!!!!");
 
                 return res;
             }

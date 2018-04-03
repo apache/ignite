@@ -473,6 +473,7 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                 initNew,
                 null,
                 null,
+                null,
                 null
             );
         }

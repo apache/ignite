@@ -44,21 +44,6 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     private final CacheGroupContext ctx;
 
     /** */
-    private final DataStructureSize pkIndexPages;
-
-    /** */
-    private final DataStructureSize indexPages;
-
-    /** */
-    private final DataStructureSize reuseListPages;
-
-    /** */
-    private final DataStructureSize pureDataSize;
-
-    /** */
-    private final DataStructureSize totalSize;
-
-    /** */
     private final int pageSize;
 
     /** Interface describing a predicate of two integers. */
@@ -75,23 +60,9 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     /**
      * Creates MBean;
      *  @param ctx Cache group context.
-     * @param pkIndexPages .
-     * @param reuseListPages .
      */
-    public CacheGroupMetricsMXBeanImpl(
-        CacheGroupContext ctx,
-        DataStructureSize pkIndexPages,
-        DataStructureSize indexPages,
-        DataStructureSize reuseListPages,
-        DataStructureSize pureDataSize,
-        DataStructureSize totalSize
-    ) {
+    public CacheGroupMetricsMXBeanImpl(CacheGroupContext ctx) {
         this.ctx = ctx;
-        this.pkIndexPages = pkIndexPages;
-        this.indexPages = indexPages;
-        this.reuseListPages = reuseListPages;
-        this.pureDataSize = pureDataSize;
-        this.totalSize = totalSize;
         this.pageSize = ctx.dataRegion().pageMemory().pageSize();
     }
 
@@ -290,32 +261,37 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public long getIndexesSize() {
-        return indexPages.size() * pageSize;
+        return ctx.getIndexesPages().size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getPKIndexesSize() {
-        return pkIndexPages.size() * pageSize;
+        return ctx.getPkIndexPages().size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getReuseListSize() {
-        return reuseListPages.size() * pageSize;
+        return ctx.getReuseListPages().size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getPureDataSize() {
-        return pureDataSize.size();
+        return ctx.getPureDataSize().size();
     }
 
     /** {@inheritDoc} */
     @Override public long getDataSize() {
-        return 0;
+        return ctx.getDataPages().size() * pageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getInternalSize() {
+        return ctx.getInternalSize().size();
     }
 
     /** {@inheritDoc} */
     @Override public long getTotalSize() {
-        return totalSize.size() * pageSize;
+        return ctx.getTotalSize().size() * pageSize;
     }
 
     /** {@inheritDoc} */

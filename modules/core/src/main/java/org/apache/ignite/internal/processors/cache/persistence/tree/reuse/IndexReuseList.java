@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.persistence.tree.reuse;
 
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.pagemem.DataStructureSize;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.PagesList;
@@ -49,9 +50,10 @@ public class IndexReuseList extends PagesList implements ReuseList {
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
-        boolean initNew
+        boolean initNew,
+        DataStructureSize dsSize
     ) throws IgniteCheckedException {
-        super(cacheId, name, pageMem, 1, wal, metaPageId, null);
+        super(cacheId, name, pageMem, 1, wal, metaPageId, dsSize);
 
         reuseList = this;
 

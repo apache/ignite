@@ -51,8 +51,9 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
         IgniteWriteAheadLogManager wal,
         long metaPageId,
         boolean initNew,
-        DataStructureSize structureSize,
+        DataStructureSize dsSize,
         DataStructureSize pureDataSize,
+        DataStructureSize dataSize,
         DataStructureSize totalSize
     ) throws IgniteCheckedException {
         super(
@@ -64,8 +65,9 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
             wal,
             metaPageId,
             initNew,
-            structureSize,
+            dsSize,
             pureDataSize,
+            dataSize,
             totalSize
         );
     }

@@ -42,7 +42,8 @@ public class FilePageStoreV2 extends FilePageStore {
         File file,
         FileIOFactory factory,
         DataStorageConfiguration cfg,
-        AllocatedPageTracker allocatedTracker) {
+        AllocatedPageTracker allocatedTracker
+    ) {
         super(type, file, factory, cfg, allocatedTracker);
 
         hdrSize = cfg.getPageSize();

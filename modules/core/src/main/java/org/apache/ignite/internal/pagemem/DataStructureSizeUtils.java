@@ -35,7 +35,7 @@ public abstract class DataStructureSizeUtils {
     }
 
     public static DataStructureSize delegateTracker(String name, DataStructureSize delegate) {
-        DataStructureSize tr = new DataStructureSize() {
+        return new DataStructureSize() {
             private final AtomicLong size = new AtomicLong();
 
             @Override public void inc() {
@@ -75,7 +75,5 @@ public abstract class DataStructureSizeUtils {
                 return name;
             }
         };
-
-        return tr;
     }
 }

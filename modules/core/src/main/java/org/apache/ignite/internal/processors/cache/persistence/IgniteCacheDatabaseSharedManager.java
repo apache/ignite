@@ -190,6 +190,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 true,
                 null,
                 null,
+                null,
                 null
             );
 
