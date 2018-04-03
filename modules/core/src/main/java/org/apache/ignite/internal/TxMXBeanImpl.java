@@ -100,22 +100,20 @@ public class TxMXBeanImpl implements TxMXBean {
      */
     private Map<String, String> getNearTxs(long duration) {
         final Collection<GridNearTxLocal> txs = nearTxs(duration);
-        final Map<UUID, ClusterNode> nodes = nodes();
 
         final HashMap<String, String> res = new HashMap<>(txs.size());
 
         for (GridNearTxLocal tx : txs)
-            res.put(tx.xid().toString(), composeTx(nodes, tx));
+            res.put(tx.xid().toString(), composeTx(tx));
 
         return res;
     }
 
     /**
-     * @param nodes Nodes.
      * @param id Id.
      */
-    private String composeNodeInfo(final Map<UUID, ClusterNode> nodes, final UUID id) {
-        final ClusterNode node = nodes.get(id);
+    private String composeNodeInfo(final UUID id) {
+        final ClusterNode node = gridKernalCtx.discovery().node(id);
         if (node == null)
             return "";
 
@@ -125,10 +123,9 @@ public class TxMXBeanImpl implements TxMXBean {
     }
 
     /**
-     * @param nodes Nodes.
      * @param ids Ids.
      */
-    private String composeNodeInfo(final Map<UUID, ClusterNode> nodes, final Set<UUID> ids) {
+    private String composeNodeInfo(final Set<UUID> ids) {
         final GridStringBuilder sb = new GridStringBuilder();
 
         sb.a("[");
@@ -138,7 +135,7 @@ public class TxMXBeanImpl implements TxMXBean {
         for (UUID id : ids) {
             sb
                 .a(delim)
-                .a(composeNodeInfo(nodes, id));
+                .a(composeNodeInfo(id));
             delim = ", ";
         }
 
@@ -148,10 +145,9 @@ public class TxMXBeanImpl implements TxMXBean {
     }
 
     /**
-     * @param nodes Nodes.
      * @param tx Transaction.
      */
-    private String composeTx(final Map<UUID, ClusterNode> nodes, final GridNearTxLocal tx) {
+    private String composeTx(final GridNearTxLocal tx) {
         final TransactionState txState = tx.state();
 
         String top = txState + ", NEAR, ";
@@ -161,32 +157,13 @@ public class TxMXBeanImpl implements TxMXBean {
             if (!F.isEmpty(transactionNodes)) {
                 final Set<UUID> primaryNodes = transactionNodes.keySet();
                 if (!F.isEmpty(primaryNodes))
-                    top += "PRIMARY: " + composeNodeInfo(nodes, primaryNodes) + ", ";
+                    top += "PRIMARY: " + composeNodeInfo(primaryNodes) + ", ";
             }
         }
 
         final Long duration = System.currentTimeMillis() - tx.startTime();
 
         return top + "DURATION: " + duration;
-    }
-
-    /**
-     *
-     */
-    private Map<UUID, ClusterNode> nodes() {
-        final Collection<ClusterNode> nodesColl = gridKernalCtx.config().getDiscoverySpi().getRemoteNodes();
-        final ClusterNode locNode = gridKernalCtx.config().getDiscoverySpi().getLocalNode();
-        final HashMap<UUID, ClusterNode> nodes = new HashMap<>(nodesColl.size() + 1);
-
-        nodes.put(locNode.id(), locNode);
-
-        if (F.isEmpty(nodesColl))
-            return nodes;
-
-        for (ClusterNode clusterNode : nodesColl)
-            nodes.put(clusterNode.id(), clusterNode);
-
-        return nodes;
     }
 
     /**
