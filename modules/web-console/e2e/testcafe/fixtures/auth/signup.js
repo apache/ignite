@@ -16,7 +16,7 @@
  */
 
 import {dropTestDB, resolveUrl, insertTestUser} from '../../envtools';
-import {PageSignIn} from '../../page-models/PageSignin';
+import {PageSignIn} from '../../page-models/PageSignIn';
 import {errorNotification} from '../../components/notifications';
 import {userMenu} from '../../components/userMenu';
 

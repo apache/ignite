@@ -29,12 +29,19 @@ const fetch = require('node-fetch');
 const ProgressBar = require('progress');
 const chalk = require('chalk');
 const tsm = require('teamcity-service-messages');
+const slash = require('slash');
+const appRoot = require('app-root-path').path;
 
 const {argv} = require('yargs')
+    .option('directory', {
+        alias: 'd',
+        describe: 'parent directory to apply glob pattern from',
+        default: appRoot
+    })
     .option('pugs', {
         alias: 'p',
         describe: 'glob pattern to select templates with',
-        default: '../../{app,views}/**/*.pug'
+        default: '{app,views}/**/*.pug'
     })
     .usage('Usage: $0 [options]')
     .example(
@@ -129,8 +136,12 @@ const main = async() => {
             bar.tick();
     };
 
-    console.log(`Looking for invalid links in ${chalk.cyan(argv.pugs)}.`);
-    const {allLinks, invalidLinks} = await checkDocLinks(argv.pugs, updateBar);
+    const unBackSlashedDirPath = slash(argv.directory);
+    const absolutePugGlob = `${unBackSlashedDirPath}/${argv.pugs}`;
+
+    console.log(`Looking for invalid links in ${chalk.cyan(absolutePugGlob)}.`);
+
+    const {allLinks, invalidLinks} = await checkDocLinks(absolutePugGlob, updateBar);
 
     const reporter = process.env.TEAMCITY ? teamcityReporter : specReporter;
     reporter(allLinks, invalidLinks);

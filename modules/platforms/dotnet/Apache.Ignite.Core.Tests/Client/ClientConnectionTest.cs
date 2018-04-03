@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.Client
     using System.Linq;
     using System.Net;
     using System.Net.Sockets;
+    using System.Text.RegularExpressions;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Client;
@@ -130,8 +131,8 @@ namespace Apache.Ignite.Core.Tests.Client
 
                 Assert.AreEqual(ClientStatusCode.Fail, ex.StatusCode);
 
-                Assert.AreEqual("Client handshake failed: 'Unsupported version.'. " +
-                                "Client version: -1.-1.-1. Server version: 1.0.0", ex.Message);
+                Assert.IsTrue(Regex.IsMatch(ex.Message, "Client handshake failed: 'Unsupported version.'. " +
+                                "Client version: -1.-1.-1. Server version: [0-9]+.[0-9]+.[0-9]+"));
             }
         }
 

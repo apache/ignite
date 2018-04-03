@@ -16,9 +16,8 @@
 
 include /app/helpers/jade/mixins
 
--var model = 'backupItem.collision.Custom'
--var required = 'backupItem.collision.kind === "Custom"'
+-var model = '$ctrl.clonedCluster.collision.Custom'
+-var required = '$ctrl.clonedCluster.collision.kind === "Custom"'
 
-div
-    .details-row
-        +java-class('Class:', `${model}.class`, '"collisionCustom"', 'true', required, 'CollisionSpi implementation class', required)
+.pc-form-grid-col-60
+    +java-class('Class:', `${model}.class`, '"collisionCustom"', 'true', required, 'CollisionSpi implementation class', required)
