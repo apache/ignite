@@ -81,6 +81,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.delegateTracker;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
@@ -1125,8 +1126,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         ctx.wal(),
                         reuseRoot.pageId().pageId(),
                         reuseRoot.isAllocated(),
-                        DataStructureSizeUtils.delegateTracker(partName + "-reuseList", reuseListPages),
-                        DataStructureSizeUtils.delegateTracker(partName + "-pureData", pureDataSize)
+                        delegateTracker(partName + "-reuseList", grp.getReuseListPages()),
+                        delegateTracker(partName + "-pureData", grp.getPureDataSize())
                     ) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
@@ -1148,7 +1149,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         rowStore,
                         treeRoot.pageId().pageId(),
                         treeRoot.isAllocated(),
-                        DataStructureSizeUtils.delegateTracker(treeName, indexPages)
+                        delegateTracker(treeName, grp.getPkIndexPages())
                     ) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();

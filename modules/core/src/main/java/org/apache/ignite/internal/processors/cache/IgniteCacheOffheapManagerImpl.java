@@ -119,14 +119,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     /** */
     protected GridStripedLock partStoreLock = new GridStripedLock(Runtime.getRuntime().availableProcessors());
 
-    /** */
-    protected DataStructureSize indexPages;
-
-    /** */
-    protected DataStructureSize reuseListPages;
-
-    /** */
-    protected DataStructureSize pureDataSize;
 
     /** {@inheritDoc} */
     @Override public GridAtomicLong globalRemoveId() {
@@ -154,10 +146,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 ctx.database().checkpointReadUnlock();
             }
         }
-
-        indexPages = grp.getPkIndexPages();
-        reuseListPages = grp.getReuseListPages();
-        pureDataSize = grp.getPureDataSize();
     }
 
     /** {@inheritDoc} */
