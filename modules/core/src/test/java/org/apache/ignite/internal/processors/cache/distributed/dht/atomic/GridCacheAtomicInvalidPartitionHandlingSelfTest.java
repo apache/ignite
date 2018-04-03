@@ -348,7 +348,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                             info("Failed to verify cache contents, will retry: " + e.getMessage());
 
                             // Give some time to finish async updates.
-                            U.sleep(1000);
+                            U.sleep(2000);
                         }
                     }
                 }
