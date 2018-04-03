@@ -897,27 +897,27 @@ public class GridIoMessageFactory implements MessageFactory {
                 break;
 
             case 130:
-                msg = new ClusterMetricsUpdateMessage();
-
-                break;
-
-            case 131:
-                msg = new ContinuousRoutineStartResultMessage();
-
-                break;
-
-            case 132:
                 msg = new UserManagementOperationFinishedMessage();
 
                 break;
 
-            case 133:
+            case 131:
                 msg = new UserAuthenticateRequestMessage();
 
                 break;
 
-            case 134:
+            case 132:
                 msg = new UserAuthenticateResponseMessage();
+
+                break;
+
+            case 133:
+                msg = new ClusterMetricsUpdateMessage();
+
+                break;
+
+            case 134:
+                msg = new ContinuousRoutineStartResultMessage();
 
                 break;
 
