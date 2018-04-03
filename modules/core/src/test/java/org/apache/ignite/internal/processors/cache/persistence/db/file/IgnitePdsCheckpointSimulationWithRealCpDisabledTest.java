@@ -518,6 +518,7 @@ public class IgnitePdsCheckpointSimulationWithRealCpDisabledTest extends GridCom
 
         // Disable integrated checkpoint thread.
         dbMgr.enableCheckpoints(false);
+        // Thread.sleep(100);
 
         PageMemoryEx mem = (PageMemoryEx) dbMgr.dataRegion(null).pageMemory();
 

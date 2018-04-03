@@ -2699,6 +2699,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /**
      *
+     * This object is used for notification
+     * {@link #wakeupForCheckpoint} uses notify
+     * {@link #waitCheckpointEvent} uses wait
      */
     @SuppressWarnings("NakedNotify")
     public class Checkpointer extends GridWorker {
@@ -2766,6 +2769,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
          */
         private CheckpointProgressSnapshot wakeupForCheckpoint(long delayFromNow, String reason) {
             CheckpointProgress sched = scheduledCp;
+
+            //todo remove
+            new Throwable("Debug: ***** CP Wakeup  ***** ").printStackTrace();
 
             long next = U.currentTimeMillis() + delayFromNow;
 
