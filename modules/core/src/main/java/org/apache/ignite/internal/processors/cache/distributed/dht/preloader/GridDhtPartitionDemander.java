@@ -29,6 +29,7 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -907,6 +908,8 @@ public class GridDhtPartitionDemander {
         /** Unique (per demander) rebalance id. */
         private final long rebalanceId;
 
+        private boolean needCheckpoint;
+
         /**
          * @param grp Cache group.
          * @param assignments Assignments.
@@ -928,6 +931,7 @@ public class GridDhtPartitionDemander {
             this.rebalanceId = rebalanceId;
 
             ctx = grp.shared();
+            needCheckpoint = !grp.localWalEnabled();
         }
 
         /**
@@ -940,6 +944,7 @@ public class GridDhtPartitionDemander {
             this.grp = null;
             this.log = null;
             this.rebalanceId = -1;
+            this.needCheckpoint = false;
         }
 
         /**
@@ -1095,9 +1100,6 @@ public class GridDhtPartitionDemander {
                     remaining.remove(nodeId);
                 }
 
-                if (updateState && !grp.localWalEnabled() && remaining.isEmpty())
-                    ctx.walState().onGroupRebalanceFinished(grp.groupId(), topVer);
-
                 checkIsDone();
             }
         }
@@ -1133,6 +1135,31 @@ public class GridDhtPartitionDemander {
          */
         private void checkIsDone(boolean cancelled) {
             if (remaining.isEmpty()) {
+                if (needCheckpoint) {
+                    IgniteInternalFuture<Void> fut = ctx.walState().onGroupRebalanceFinished(grp.groupId(), topVer);
+
+                    fut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
+                        @Override public void apply(IgniteInternalFuture<Void> fut0) {
+                            try {
+                                fut0.get();
+                            }
+                            catch (IgniteCheckedException ex) {
+                                throw new IgniteException(ex);
+                            }
+
+                            synchronized (RebalanceFuture.this) {
+                                assert needCheckpoint;
+
+                                needCheckpoint = false;
+
+                                checkIsDone(cancelled);
+                            }
+                        }
+                    });
+
+                    return;
+                }
+
                 sendRebalanceFinishedEvent();
 
                 if (log.isInfoEnabled())

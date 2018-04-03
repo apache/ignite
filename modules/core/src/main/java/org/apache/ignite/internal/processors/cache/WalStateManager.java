@@ -378,7 +378,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             cctx.cache().cacheGroup(grpId).localWalEnabled(false);
     }
 
-    public void onGroupRebalanceFinished(int grpId, AffinityTopologyVersion topVer) {
+    public IgniteInternalFuture<Void> onGroupRebalanceFinished(int grpId, AffinityTopologyVersion topVer) {
         // TODO: own after checkpoint.
 
         CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
@@ -387,6 +387,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             if (locPart.state() == MOVING)
                 grp.topology().own(locPart);
         }
+
+        return new GridFinishedFuture<>();
     }
 
     /**
