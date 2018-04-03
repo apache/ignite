@@ -30,6 +30,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -99,6 +100,18 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
      */
     public void testReentrantLock() throws Exception {
         testReentrantLock(true);
+        testReentrantLock(false);
+    }
+
+    /**
+     * Test a sequential lock acquiring and releasing.
+     *
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockWithInterrupted() throws Exception {
+        Thread.interrupted();
+        testReentrantLock(true);
+        Thread.interrupted();
         testReentrantLock(false);
     }
 
@@ -183,30 +196,34 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test a sequential lock acquiring and releasing with interrupt.
+     * Test a sequential lock acquiring and releasing with interrupt before locking.
      *
      * @throws Exception If failed.
      */
-    public void testReentrantLockInterruptibly() throws Exception {
-        testReentrantLockInterruptibly(false);
-        testReentrantLockInterruptibly(true);
+    public void testReentrantLockInterruptiblyBefore() throws Exception {
+        testReentrantLockInterruptiblyBefore(false);
+        testReentrantLockInterruptiblyBefore(true);
     }
 
     /**
-     * Test a sequential lock acquiring and releasing with interrupt.
+     * Test a sequential lock acquiring and releasing with interrupt before locking.
+     *
+     * @throws IgniteCheckedException If failed.
      */
-    void testReentrantLockInterruptibly(boolean fair) {
+    void testReentrantLockInterruptiblyBefore(boolean fair) throws IgniteCheckedException {
         for (int i = 0; i < NODES_CNT; i++) {
             IgniteLock lock1 = createReentrantLock(i, fair ? "fair lock" : "unfair lock", fair);
-            final IgniteLock lock2 = createReentrantLock((i + 1) % NODES_CNT, fair ? "fair lock" : "unfair lock", fair);
+            final IgniteLock lock2 = createReentrantLock(
+                (i + 1) % NODES_CNT, fair ? "fair lock" : "unfair lock", fair
+            );
 
             lock1.lockInterruptibly();
 
             assertTrue(lock1.isLocked());
             assertTrue(lock1.isHeldByCurrentThread());
 
-            Thread thread = new Thread(() -> {
-                boolean flag = false;
+            IgniteInternalFuture<Void> fut = GridTestUtils.runAsync(() -> {
+                Thread.currentThread().interrupt();
 
                 try {
                     lock2.lockInterruptibly();
@@ -214,14 +231,70 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
                     fail();
                 }
                 catch (IgniteInterruptedException ignored) {
-                    flag = true;
+                    // No-op.
                 }
-                assertTrue(flag);
-            });
+                return null;
+            }, "worker");
 
-            thread.start();
+            fut.get(10_000L);
+
+            lock1.unlock();
+
+            assertFalse(lock1.isHeldByCurrentThread());
+        }
+    }
+
+    /**
+     * Test a sequential lock acquiring and releasing with interrupt after locking.
+     *
+     * @throws Exception If failed.
+     */
+    public void testReentrantLockInterruptiblyAfter() throws Exception {
+        testReentrantLockInterruptiblyAfter(false);
+        testReentrantLockInterruptiblyAfter(true);
+    }
+
+    /**
+     * Test a sequential lock acquiring and releasing with interrupt after locking.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
+    void testReentrantLockInterruptiblyAfter(boolean fair) throws IgniteCheckedException {
+        for (int i = 0; i < NODES_CNT; i++) {
+            IgniteLock lock1 = createReentrantLock(i, fair ? "fair lock" : "unfair lock", fair);
+            final IgniteLock lock2 = createReentrantLock(
+                (i + 1) % NODES_CNT, fair ? "fair lock" : "unfair lock", fair
+            );
+
+            lock1.lockInterruptibly();
+
+            assertTrue(lock1.isLocked());
+            assertTrue(lock1.isHeldByCurrentThread());
+
+            final GridFutureAdapter<Thread> threadFut = new GridFutureAdapter<>();
+
+            IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync((Callable<Void>) () -> {
+                threadFut.onDone(Thread.currentThread());
+
+                try {
+                    lock2.lockInterruptibly();
+
+                    fail();
+                }
+                catch (IgniteInterruptedException ignored) {
+                    // No-op.
+                }
+                return null;
+            }, 1, "worker");
+
+            Thread thread = threadFut.get();
+
+            GridTestUtils.waitForCondition(lock2::hasQueuedThreads,
+                500L);
 
             thread.interrupt();
+
+            fut.get(10_000L);
 
             lock1.unlock();
 
@@ -400,7 +473,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
             }
 
             return null;
-        }, NODES_CNT, "worker").get(60_000L);
+        }, NODES_CNT, "worker").get(30_000L);
     }
 
     /**
@@ -500,7 +573,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
         final CountDownLatch lockDoneLatch = new CountDownLatch(1);
         final IgniteLock lock = createReentrantLock(0, fair ? "lockf" : "locku", fair);
 
-        IgniteInternalFuture<Long> future = GridTestUtils.runMultiThreadedAsync(() -> {
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
             lock.lock();
 
             try {
@@ -522,7 +595,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
             assertTrue(
                 "One thread will acquire the lock and another will waiting (but not immediately)," +
                     " but result is " + lock.hasQueuedThreads(),
-                GridTestUtils.waitForCondition(() -> lock.hasQueuedThreads(),
+                GridTestUtils.waitForCondition(lock::hasQueuedThreads,
                     500L));
 
             assertTrue(lock.hasQueuedThreads());
@@ -531,7 +604,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
             holdingLatch.countDown();
         }
 
-        future.get();
+        fut.get();
 
         assertFalse(lock.hasQueuedThreads());
 
@@ -548,7 +621,8 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link GridCacheLockImpl2Fair#hasQueuedThread(Thread)} or {@link GridCacheLockImpl2Unfair#hasQueuedThread(Thread)}.
+     * Test {@link GridCacheLockImpl2Fair#hasQueuedThread(Thread)} or
+     * {@link GridCacheLockImpl2Unfair#hasQueuedThread(Thread)}.
      *
      * @throws IgniteCheckedException If failed.
      * @throws InterruptedException If failed.
@@ -559,7 +633,8 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test {@link GridCacheLockImpl2Fair#hasQueuedThread(Thread)} or {@link GridCacheLockImpl2Unfair#hasQueuedThread(Thread)}.
+     * Test {@link GridCacheLockImpl2Fair#hasQueuedThread(Thread)} or
+     * {@link GridCacheLockImpl2Unfair#hasQueuedThread(Thread)}.
      *
      * @param fair Fair mode on.
      * @throws IgniteCheckedException If failed.
@@ -571,7 +646,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
         final IgniteLock lock = createReentrantLock(0, fair ? "lockf" : "locku", fair);
         final LinkedBlockingQueue<Thread> threads = new LinkedBlockingQueue<>();
 
-        IgniteInternalFuture<Long> future = GridTestUtils.runMultiThreadedAsync(() -> {
+        IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(() -> {
             threads.add(Thread.currentThread());
 
             lock.lock();
@@ -611,7 +686,7 @@ public class IgniteReentrantLockTest extends GridCommonAbstractTest {
             holdingLatch.countDown();
         }
 
-        future.get();
+        fut.get();
 
         assertFalse(lock.hasQueuedThread(ts[0]) || lock.hasQueuedThread(ts[1]));
 
