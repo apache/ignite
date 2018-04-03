@@ -427,15 +427,25 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
      * @return new counter page Id. Same as {@code cntrsPageId} or new value if cache size pages were initialized.
      * @throws IgniteCheckedException if page memory operation failed.
      */
-    private static long writeSharedGroupCacheSizes(PageMemory pageMem, int grpId,
-        long cntrsPageId, int partId, Map<Integer, Long> sizes) throws IgniteCheckedException {
+    private long writeSharedGroupCacheSizes(
+        PageMemory pageMem,
+        int grpId,
+        long cntrsPageId,
+        int partId,
+        Map<Integer, Long> sizes
+    ) throws IgniteCheckedException {
         byte[] data = PagePartitionCountersIO.VERSIONS.latest().serializeCacheSizes(sizes);
 
         int items = data.length / PagePartitionCountersIO.ITEM_SIZE;
         boolean init = cntrsPageId == 0;
 
-        if (init && !sizes.isEmpty())
+        DataStructureSize totalSize = grp.getTotalSize();
+
+        if (init && !sizes.isEmpty()){
             cntrsPageId = pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
+
+            totalSize.inc();
+        }
 
         long nextId = cntrsPageId;
         int written = 0;
@@ -470,6 +480,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         //allocate new counters page
                         nextId = pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         partCntrIo.setNextCountersPageId(curAddr, nextId);
+
+                        totalSize.inc();
                     }
                 }
                 finally {
@@ -1129,7 +1141,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         reuseRoot.pageId().pageId(),
                         reuseRoot.isAllocated(),
                         delegateTracker(partName + "-reuseList", grp.getReuseListPages()),
-                        delegateTracker(partName + "-pureData", grp.getPureDataSize())
+                        delegateTracker(partName + "-pureData", grp.getPureDataSize()),
+                        totalSize
                     ) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
@@ -1234,11 +1247,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
             IgniteWriteAheadLogManager wal = ctx.wal();
 
+            final DataStructureSize totalSize = grp.getTotalSize();
+
             int grpId = grp.groupId();
             long partMetaId = pageMem.partitionMetaPageId(grpId, partId);
             long partMetaPage = pageMem.acquirePage(grpId, partMetaId);
             try {
                 boolean allocated = false;
+
                 long pageAddr = pageMem.writeLock(grpId, partMetaId, partMetaPage);
 
                 try {
@@ -1252,6 +1268,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                         treeRoot = pageMem.allocatePage(grpId, partId, PageMemory.FLAG_DATA);
                         reuseListRoot = pageMem.allocatePage(grpId, partId, PageMemory.FLAG_DATA);
+
+                        totalSize.add(3/*metaPage,treeRoot,reuseListRoot*/);
 
                         assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_DATA;
                         assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_DATA;

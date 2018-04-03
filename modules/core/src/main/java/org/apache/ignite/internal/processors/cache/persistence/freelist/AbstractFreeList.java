@@ -90,6 +90,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     /** */
     private final DataStructureSize pureDataSize;
 
+    /** */
+    private final DataStructureSize totalSize;
+
     /**
      *
      */
@@ -354,7 +357,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         long metaPageId,
         boolean initNew,
         DataStructureSize structureSize,
-        DataStructureSize pureDataSize
+        DataStructureSize pureDataSize,
+        DataStructureSize totalSize
     ) throws IgniteCheckedException {
         super(grpId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId, structureSize);
 
@@ -362,6 +366,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
 
         this.evictionTracker = memPlc.evictionTracker();
         this.pureDataSize = pureDataSize;
+        this.totalSize = totalSize;
         this.reuseList = reuseList == null ? this : reuseList;
         int pageSize = pageMem.pageSize();
 
@@ -478,6 +483,9 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
     private long allocateDataPage(int part) throws IgniteCheckedException {
         assert part <= PageIdAllocator.MAX_PARTITION_ID;
         assert part != PageIdAllocator.INDEX_PARTITION;
+
+        if (totalSize != null)
+            totalSize.inc();
 
         return pageMem.allocatePage(grpId, part, PageIdAllocator.FLAG_DATA);
     }

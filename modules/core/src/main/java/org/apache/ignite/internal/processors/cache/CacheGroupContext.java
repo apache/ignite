@@ -20,8 +20,10 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,7 +37,6 @@ import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.DataStructureSize;
-import org.apache.ignite.internal.pagemem.DataStructureSizeUtils;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -169,6 +170,9 @@ public class CacheGroupContext {
     private final DataStructureSize totalSize;
 
     /** */
+    private final Map<String, DataStructureSize> sizes = new HashMap<>();
+
+    /** */
     private volatile boolean walEnabled;
 
     /**
@@ -228,17 +232,25 @@ public class CacheGroupContext {
 
         caches = new ArrayList<>();
 
-        String pkIndexName = cacheOrGroupName() + "-pkIndex";
-        String indexesName = cacheOrGroupName() + "-indexes";
-        String reuseListName = cacheOrGroupName() + "-reuseList";
-        String pureDataName = cacheOrGroupName() + "-pureData";
-        String totalSizeName = cacheOrGroupName() + "-totalSize";
+        String groupName = cacheOrGroupName();
+
+        String pkIndexName = groupName + "-pkIndex";
+        String indexesName = groupName + "-indexes";
+        String reuseListName = groupName + "-reuseList";
+        String pureDataName = groupName + "-pureData";
+        String totalSizeName = groupName + "-totalSize";
 
         pkIndexPages = simpleTracker(pkIndexName);
         indexesPages = simpleTracker(indexesName);
         reuseListPages = simpleTracker(reuseListName);
         pureDataSize = simpleTracker(pureDataName);
         totalSize = simpleTracker(totalSizeName);
+
+        sizes.put(pkIndexName, pkIndexPages);
+        sizes.put(indexesName, indexesPages);
+        sizes.put(reuseListName, reuseListPages);
+        sizes.put(pureDataName, pureDataSize);
+        sizes.put(totalSizeName, totalSize);
 
         mxBean = new CacheGroupMetricsMXBeanImpl(
             this,
@@ -268,6 +280,10 @@ public class CacheGroupContext {
 
     public DataStructureSize getIndexesPages() {
         return indexesPages;
+    }
+
+    public Map<String, DataStructureSize> getSizes() {
+        return sizes;
     }
 
     /**

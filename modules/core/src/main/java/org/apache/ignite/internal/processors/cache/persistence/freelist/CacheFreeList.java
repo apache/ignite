@@ -52,7 +52,8 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
         long metaPageId,
         boolean initNew,
         DataStructureSize structureSize,
-        DataStructureSize pureDataSize
+        DataStructureSize pureDataSize,
+        DataStructureSize totalSize
     ) throws IgniteCheckedException {
         super(
             grpId,
@@ -64,7 +65,8 @@ public class CacheFreeList extends AbstractFreeList<CacheDataRow> {
             metaPageId,
             initNew,
             structureSize,
-            pureDataSize
+            pureDataSize,
+            totalSize
         );
     }
 
