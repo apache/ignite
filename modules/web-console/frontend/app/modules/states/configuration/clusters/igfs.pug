@@ -17,22 +17,21 @@
 include /app/helpers/jade/mixins
 
 -var form = 'igfs'
--var model = 'backupItem'
+-var model = '$ctrl.clonedCluster'
 
-.panel.panel-default(ng-form=form novalidate)
-    .panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
+.pca-panel.pca-panel-default(ng-form=form novalidate)
+    .pca-panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
-        label IGFS
-        ignite-form-field-tooltip.tipLabel
-            | IGFS (Ignite In-Memory File System) configurations assigned to cluster#[br]
-            | #[a(href="https://apacheignite-fs.readme.io/docs/in-memory-file-system" target="_blank") More info]
-        ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
-            .col-sm-6
+        .pca-panel-heading-title IGFS
+        .pca-panel-heading-description
+            | IGFS (Ignite In-Memory File System) configurations assigned to cluster. 
+            | #[a.link-success(href="https://apacheignite-fs.readme.io/docs/in-memory-file-system" target="_blank") More info]
+    .pca-panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
+        .pca-panel-body(ng-if=`ui.isPanelLoaded('${form}')`).pca-form-row
+            .pca-form-column-6
                 .settings-row
-                    +dropdown-multiple('<span>IGFS:</span><a ui-sref="base.configuration.tabs.advanced.igfs({linkId: linkId()})"> (add)</a>',
+                    +dropdown-multiple('<span>IGFS:</span><a ui-sref="base.configuration.edit.advanced.igfs({linkId: linkId()})"> (add)</a>',
                         `${model}.igfss`, '"igfss"', true, 'Choose IGFS', 'No IGFS configured', 'igfss',
                         'Select IGFS to start in cluster or add a new IGFS')
-            .col-sm-6
+            .pca-form-column-6
                 +preview-xml-java(model, 'igfss', 'igfss')

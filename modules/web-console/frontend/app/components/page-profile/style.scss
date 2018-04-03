@@ -28,4 +28,8 @@ page-profile {
     .btn-ignite + .btn-ignite {
         margin-left: 10px;
     }
+
+    [ignite-icon='expand'], [ignite-icon='collapse'] {
+        color: #757575;
+    }
 }

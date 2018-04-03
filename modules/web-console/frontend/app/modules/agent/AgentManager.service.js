@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 
+import _ from 'lodash';
+import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
+
 import { BehaviorSubject } from 'rxjs/BehaviorSubject';
 
 import Worker from 'worker!./decompress.worker';
@@ -58,7 +61,7 @@ class ConnectionState {
         if (_.isNil(this.cluster))
             this.cluster = _.head(clusters);
 
-        if (_.nonNil(this.cluster))
+        if (nonNil(this.cluster))
             this.cluster.connected = !!_.find(clusters, {id: this.cluster.id});
 
         if (count === 0)
@@ -70,7 +73,7 @@ class ConnectionState {
     }
 
     useConnectedCluster() {
-        if (_.nonEmpty(this.clusters) && !this.cluster.connected) {
+        if (nonEmpty(this.clusters) && !this.cluster.connected) {
             this.cluster = _.head(this.clusters);
 
             this.cluster.connected = true;
@@ -148,7 +151,7 @@ export default class IgniteAgentManager {
     connect() {
         const self = this;
 
-        if (_.nonNil(self.socket))
+        if (nonNil(self.socket))
             return;
 
         self.socket = self.socketFactory();

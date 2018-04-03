@@ -14,52 +14,45 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-include /app/helpers/jade/mixins
+pc-items-table(
+    table-title='::"My domain models"'
+    column-defs='$ctrl.modelsColumnDefs'
+    items='$ctrl.modelsTable'
+    on-action='$ctrl.onModelAction($event)'
+    selected-row-id='$ctrl.selectedItemIDs'
+    on-selection-change='$ctrl.selectionHook($event)'
+)
+    footer-slot
+        div(style='font-style: italic' ng-hide='$ctrl.modelsTable.length')
+            | You have no domain models. #[a.link-success(ui-sref='base.configuration.tabs.advanced.models.model({modelID: "new"})') Create one?]
+        a.link-success(ui-sref='base.configuration.tabs.advanced.models.model({modelID: "new"})' ng-show='$ctrl.modelsTable.length') + Add new domain model
 
-.docs-header
-    h1 Configure Domain Model And SQL Queries
-.docs-body
-    ignite-information
-        ul: li Import database schemas
-            li Configure indexed types
-    div(ignite-loading='loadingDomainModelsScreen' ignite-loading-text='Loading domain models...' ignite-loading-position='top')
-        div(ng-show='ui.ready')
-            hr
-            .padding-bottom-dflt(ng-show='domains && domains.length > 0')
-                table.links(st-table='displayedRows' st-safe-src='domains')
-                    thead
-                        tr
-                            th
-                                .col-sm-9
-                                    .col-sm-6
-                                        lable.labelHeader.labelFormField {{domainModelTitle()}}
-                                    .col-sm-6
-                                        .pull-right.labelLogin.additional-filter(ng-if='(domains | domainsValidation:false:true).length > 0')
-                                            a.labelFormField(ng-if='ui.showValid' ng-click='toggleValid()' bs-tooltip='' data-title='{{::ui.invalidKeyFieldsTooltip}}') Key fields should be configured: {{(displayedRows | domainsValidation:false:true).length}}&nbsp
-                                            a.labelFormField(ng-if='!ui.showValid' ng-click='toggleValid()') Show all domain models: {{displayedRows.length}}&nbsp
-                                .col-sm-3
-                                    input.form-control.pull-right(type='text' st-search='valueType' placeholder='Filter domain models...')
-                        tbody
-                            tr
-                                td
-                                    .scrollable-y(ng-show='(displayedRows | domainsValidation:ui.showValid:true).length > 0' style='max-height: 200px')
-                                        table
-                                            tbody
-                                                tr(ng-repeat='row in (displayedRows | domainsValidation:ui.showValid:true) track by row._id' ignite-bs-affix-update)
-                                                    td
-                                                        a(ng-class='{active: row._id == selectedItem._id}' ng-click='selectItem(row)') {{$index + 1}}) {{row.valueType}}
-                                    label.placeholder(ng-show='(displayedRows | domainsValidation:ui.showValid:true).length == 0') No domain models found
-            .padding-top-dflt(bs-affix)
-                .panel-tip-container(data-placement='bottom' bs-tooltip='' data-title='Create new domain model')
-                    button.btn.btn-primary(id='new-item' ng-click='createItem()') Add domain model
-                .panel-tip-container(bs-tooltip='' data-title='Import domain models from database' data-placement='bottom')
-                    button.btn.btn-primary(ng-click='showImportDomainModal()') Import from database
-                +save-remove-clone-undo-buttons('domain model')
-                hr
-            .bs-affix-fix
-            div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
-                form.form-horizontal(name='ui.inputForm' novalidate ng-if='contentVisible()')
-                    .panel-group
-                        include /app/modules/states/configuration/domains/general
-                        include /app/modules/states/configuration/domains/query
-                        include /app/modules/states/configuration/domains/store
+h2.pc-page-header(ng-if='$ctrl.selectedItemIDs.length !== 1')
+    | {{ $ctrl.selectedItemIDs.length ? 'Multiple' : 'No' }} domain models selected
+    span.pc-page-header-sub Select only one domain model to see settings and edit it
+
+h2.pc-page-header(ng-if='$ctrl.selectedItemIDs.length === 1')
+    | {{ $ctrl.$state.params.modelID !== 'new' ? 'Edit' : 'Create' }} domain model {{ backupItem.valueType ? 'for ‘'+backupItem.valueType+'’ value type' : '' }}
+
+div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels' ng-class='{"pca-form-blocked": $ctrl.selectedItemIDs.length !== 1}')
+    form.form-horizontal(name='ui.inputForm' novalidate )
+        include /app/modules/states/configuration/domains/general
+        include /app/modules/states/configuration/domains/query
+        include /app/modules/states/configuration/domains/store
+
+.pc-form-actions-panel(ng-class='{"pca-form-blocked": $ctrl.selectedItemIDs.length !== 1}')
+    button.btn-ignite.btn-ignite--success(
+        ng-click='showImportDomainModal()'
+        type='button'
+    ) Import from database
+    .pc-form-actions-panel__right-after
+    button.btn-ignite.btn-ignite--link-success(
+        type='button'
+        ng-disabled='!ui.inputForm.$dirty'
+        ng-click='ui.inputForm.$dirty && resetAll()'
+    )
+        | Cancel
+    button.btn-ignite.btn-ignite--success(
+        ng-disabled='!ui.inputForm.$dirty'
+        ng-click='ui.inputForm.$dirty && $ctrl.saveItem(backupItem)'
+    ) Save

@@ -24,7 +24,7 @@
     border-top: none;
 
     [role="button"] {
-      outline: none;
+        outline: none;
     }
 
     sup, sub {
@@ -40,7 +40,7 @@
     }
 
     .ui-grid-cell {
-        height: $height;
+        height: $height - 1px;
 
         border-color: transparent;
     }
@@ -76,6 +76,10 @@
                 }
             }
         }
+    }
+
+    .ui-grid-row:last-child .ui-grid-cell {
+        border-bottom-width: 0;
     }
 
     .ui-grid-header-viewport {
@@ -239,6 +243,7 @@
 
     .ui-grid-row {
         height: $height;
+        border-bottom: 1px solid $table-border-color;
 
         &:nth-child(odd) {
             .ui-grid-cell {
@@ -252,10 +257,6 @@
             }
         }
 
-        &:not(:first-child) {
-            border-top: 1px solid $table-border-color;
-        }
-
         &.ui-grid-row-selected > [ui-grid-row] > .ui-grid-cell {
             background-color: #e5f2f9;
 
@@ -267,6 +268,7 @@
         position: relative;
         opacity: 1;
         right: 3px;
+        display: block;
 
         &::before {
             content: '';
@@ -295,19 +297,19 @@
             }
 
             &::after {
-              content: '';
+                content: '';
 
-              position: absolute;
-              top: 4px;
-              left: 4px;
+                position: absolute;
+                top: 4px;
+                left: 4px;
 
-              width: 4px;
-              height: 8px;
+                width: 4px;
+                height: 8px;
 
-              border: solid #FFF;
-              border-width: 0 2px 2px 0;
+                border: solid #FFF;
+                border-width: 0 2px 2px 0;
 
-              transform: rotate(35deg);
+                transform: rotate(35deg);
             }
         }
     }
@@ -342,7 +344,7 @@
 
                 &::before,
                 &::after {
-                  content: '';
+                    content: '';
                 }
             }
 

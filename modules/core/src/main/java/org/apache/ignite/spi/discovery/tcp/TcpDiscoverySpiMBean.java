@@ -28,6 +28,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Management bean for {@link TcpDiscoverySpi}.
  */
+@MXBeanDescription("MBean provide access to TCP-based discovery SPI.")
 public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
     /**
      * Gets current SPI state.
@@ -194,7 +195,7 @@ public interface TcpDiscoverySpiMBean extends IgniteSpiManagementMBean {
      *
      * @return Map containing message types and respective counts.
      */
-    @MXBeanDescription("Received messages by type.")
+    @MXBeanDescription("Processed messages by type.")
     public Map<String, Integer> getProcessedMessages();
 
     /**

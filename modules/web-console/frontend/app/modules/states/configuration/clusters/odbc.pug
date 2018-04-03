@@ -17,22 +17,32 @@
 include /app/helpers/jade/mixins
 
 -var form = 'odbcConfiguration'
--var model = 'backupItem.odbc'
+-var model = '$ctrl.clonedCluster.odbc'
 -var enabled = model + '.odbcEnabled'
 
-.panel.panel-default(ng-show='$ctrl.available(["1.0.0", "2.1.0"])' ng-form=form novalidate)
-    .panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
+.pca-panel.pca-panel-default(ng-show='$ctrl.available(["1.0.0", "2.1.0"])' ng-form=form novalidate)
+    .pca-panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
-        label ODBC configuration
-        ignite-form-field-tooltip.tipLabel
-            | ODBC server configuration#[br]
-            | #[a(href="https://apacheignite.readme.io/docs/odbc-driver" target="_blank") More info]
-        ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .panel-body(ng-if=`$ctrl.available(["1.0.0", "2.1.0"]) && ui.isPanelLoaded('${form}')`)
-            .col-sm-6
+        .pca-panel-heading-title ODBC configuration
+        .pca-panel-heading-description
+            | ODBC server configuration. 
+            | #[a.link-success(href="https://apacheignite.readme.io/docs/odbc-driver" target="_blank") More info]
+    .pca-panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
+        .pca-panel-body(ng-if=`$ctrl.available(["1.0.0", "2.1.0"]) && ui.isPanelLoaded('${form}')`).pca-form-row
+            .pca-form-column-6
                 .settings-row
-                    +checkbox('Enabled', enabled, '"odbcEnabled"', 'Flag indicating whether to configure ODBC configuration')
+                    +sane-form-field-checkbox({
+                        label: 'Enabled',
+                        model: enabled,
+                        name: '"odbcEnabled"',
+                        tip: 'Flag indicating whether to configure ODBC configuration'
+                    })(
+                        ui-validate=`{
+                            correctMarshaller: '$ctrl.Clusters.odbc.odbcEnabled.correctMarshaller($ctrl.clonedCluster, $value)'
+                        }`
+                        ui-validate-watch='$ctrl.Clusters.odbc.odbcEnabled.correctMarshallerWatch("$ctrl.clonedCluster")'
+                    )
+                        +form-field-feedback(null, 'correctMarshaller', 'ODBC can only be used with BinaryMarshaller')
                 .settings-row
                     +text-ip-address-with-port-range('ODBC endpoint address:', `${model}.endpointAddress`, '"endpointAddress"', enabled, '0.0.0.0:10800..10810',
                         'ODBC endpoint address. <br/>\
@@ -55,5 +65,5 @@ include /app/helpers/jade/mixins
                 .settings-row
                     +number('Pool size:', `${model}.threadPoolSize`, '"ODBCThreadPoolSize"', enabled, 'max(8, availableProcessors)', '1',
                         'Size of thread pool that is in charge of processing ODBC tasks')
-            .col-sm-6
+            .pca-form-column-6
                 +preview-xml-java(model, 'clusterODBC')
