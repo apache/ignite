@@ -32,6 +32,7 @@ export default merge(commonCfg, {
     devtool: 'source-map',
     watch: true,
     module: {
+        exprContextCritical: false,
         rules: [
             {
                 test: /\.css$/,

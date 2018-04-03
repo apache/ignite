@@ -1,3 +1,2 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12">
-    <path fill="#FFF" fill-rule="evenodd" d="M12 6.857H6.857V12H5.143V6.857H0V5.143h5.143V0h1.714v5.143H12v1.714"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 12 12">
+<polyline fill="currentColor" points="12,6.9 6.9,6.9 6.9,12 5.1,12 5.1,6.9 0,6.9 0,5.1 5.1,5.1 5.1,0 6.9,0 6.9,5.1 12,5.1  12,6.9 "/></svg>
