@@ -1064,7 +1064,7 @@ public class GridDhtPartitionDemander {
          */
         private void partitionDone(UUID nodeId, int p, boolean updateState) {
             synchronized (this) {
-                if (updateState) // TODO: do not own immediately if WAL is disabled
+                if (updateState && grp.localWalEnabled())
                     grp.topology().own(grp.topology().localPartition(p));
 
                 if (isDone())
@@ -1094,6 +1094,9 @@ public class GridDhtPartitionDemander {
 
                     remaining.remove(nodeId);
                 }
+
+                if (updateState && !grp.localWalEnabled() && remaining.isEmpty())
+                    ctx.walState().onGroupRebalanceFinished(grp.groupId(), topVer);
 
                 checkIsDone();
             }

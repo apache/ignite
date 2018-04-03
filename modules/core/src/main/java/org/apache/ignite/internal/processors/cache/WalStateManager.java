@@ -27,6 +27,7 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.persistence.CheckpointFuture;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashSet;
@@ -55,6 +56,7 @@ import java.util.UUID;
 
 import static org.apache.ignite.internal.GridTopic.TOPIC_WAL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
@@ -373,6 +375,17 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
 
         for (Integer grpId : grpsToDisableWal)
             cctx.cache().cacheGroup(grpId).localWalEnabled(false);
+    }
+
+    public void onGroupRebalanceFinished(int grpId, AffinityTopologyVersion topVer) {
+        // TODO: own after checkpoint.
+
+        CacheGroupContext grp = cctx.cache().cacheGroup(grpId);
+
+        for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
+            if (locPart.state() == MOVING)
+                grp.topology().own(locPart);
+        }
     }
 
     /**
