@@ -141,23 +141,50 @@ public interface CacheGroupMetricsMXBean {
     public Map<Integer, List<String>> getAffinityPartitionsAssignmentMap();
 
     /**
+     * Total size in bytes for secondary indexes.
+     */
+    @MXBeanDescription("Total size in bytes for secondary indexes")
+    public long getIndexesSize();
+
+    /**
      * Total size in bytes for primary key indexes.
-     *
      */
     @MXBeanDescription("Total size in bytes for primary key indexes.")
     public long getPKIndexesSize();
 
     /**
      * Total size in bytes for reuse list.
-     *
      */
     @MXBeanDescription("Total size in bytes for reuse list.")
     public long getReuseListSize();
 
     /**
      * Total size in bytes for pure data.
-     *
      */
     @MXBeanDescription("Total size in bytes for pure data.")
     public long getDataSize();
+
+    /**
+     * Total size in bytes for all structures.
+     */
+    @MXBeanDescription("Total size in bytes for all structures.")
+    public long getTotalSize();
+
+    /**
+     * Total size in bytes for data pages.
+     */
+    @MXBeanDescription("Total size in bytes for data pages.")
+    public long getDataPagesSize();
+
+    /**
+     * Cache group type.
+     */
+    @MXBeanDescription("Cache group type.")
+    public String getType();
+
+    /**
+     * Local partition indexes.
+     */
+    @MXBeanDescription("Local partition indexes.")
+    public List<Integer> getPartitionIndexes();
 }

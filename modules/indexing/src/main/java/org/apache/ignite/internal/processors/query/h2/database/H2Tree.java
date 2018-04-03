@@ -98,7 +98,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         int inlineSize,
         @Nullable H2RowCache rowCache
     ) throws IgniteCheckedException {
-        super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList);
+        super(name, grpId, pageMem, wal, globalRmvId, metaPageId, reuseList, null);
 
         if (!initNew) {
             // Page is ready - read inline size from it.

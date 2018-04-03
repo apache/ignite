@@ -25,10 +25,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.pagemem.DataStructureSize;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
@@ -277,15 +279,51 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     }
 
     /** {@inheritDoc} */
+    @Override public long getIndexesSize() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public long getPKIndexesSize() {
         return pkIndexPages.size() * pageSize;
     }
 
+    /** {@inheritDoc} */
     @Override public long getReuseListSize() {
         return reuseListPages.size() * pageSize;
     }
 
+    /** {@inheritDoc} */
     @Override public long getDataSize() {
         return pureDataSize.size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getTotalSize() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getDataPagesSize() {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String getType() {
+        CacheMode type = ctx.config().getCacheMode();
+
+        return String.valueOf(type);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<Integer> getPartitionIndexes() {
+        List<GridDhtLocalPartition> parts = ctx.topology().localPartitions();
+
+        List<Integer> partsRes = new ArrayList<>(parts.size());
+
+        for (GridDhtLocalPartition part : parts)
+            partsRes.add(part.id());
+
+        return partsRes;
     }
 }
