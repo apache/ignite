@@ -16,10 +16,12 @@
  */
 
 import angular from 'angular';
+import Clusters from './Clusters';
 import IgniteVersion from './Version.service';
 import {default as DefaultState} from './DefaultState';
 
 export default angular
     .module('ignite-console.services', [])
+    .service('Clusters', Clusters)
     .provider('DefaultState', DefaultState)
     .service('IgniteVersion', IgniteVersion);

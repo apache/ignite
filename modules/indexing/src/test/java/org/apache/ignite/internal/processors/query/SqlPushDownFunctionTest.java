@@ -42,6 +42,29 @@ public class SqlPushDownFunctionTest extends GridCommonAbstractTest {
     }
 
     /**
+     */
+    public void testPushDownFunction() {
+        sql("CREATE TABLE Person(id INTEGER PRIMARY KEY, company_id INTEGER)");
+        sql("CREATE TABLE Company(id INTEGER PRIMARY KEY, name VARCHAR)");
+
+        sql("INSERT INTO Person(id,company_id) VALUES (1, 1), (2, 2), (3, 3)");
+        sql("INSERT INTO Company(id,name) VALUES (1,'n1'), (2,'n2'), (3,'n3')");
+
+        sql("SELECT p.id, sum(p.id) FROM person p " +
+            "LEFT JOIN (select distinct id from company) as c on c.id=p.company_id " +
+            "GROUP BY p.id");
+
+        sql("SELECT count(1) FROM person p " +
+            "LEFT JOIN (select id from company union select id from company) as c on c.id=p.company_id");
+
+        sql("SELECT count(1) FROM person p " +
+            "LEFT JOIN (select id from company union select id from company) as c on c.id=p.company_id");
+
+        sql("SELECT 1, (select count(1)) FROM person p " +
+            "LEFT JOIN (select id from company union select id from company) as c on c.id=p.company_id");
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testSplitJoinWithSubqueryUnion() throws Exception {
@@ -69,6 +92,7 @@ public class SqlPushDownFunctionTest extends GridCommonAbstractTest {
 //            + "LEFT JOIN Company c ON a.id = c.id "
 //        );
     }
+
 
     /**
      * @param sql SQL query.
