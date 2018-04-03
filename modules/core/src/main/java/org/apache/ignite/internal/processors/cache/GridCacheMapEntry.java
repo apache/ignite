@@ -2701,6 +2701,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         ensureFreeSpace();
 
+        boolean deferred = false;
+        boolean obsolete = false;
+
+        GridCacheVersion oldVer = null;
+
         lockEntry();
 
         try {
@@ -2712,12 +2717,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
 
-            final boolean[] expired = new boolean[] {false};
+            final boolean unswapped = ((flags & IS_UNSWAPPED_MASK) != 0);
 
             boolean update;
 
-            // Optimization to access storage only once.
-            update = storeValue(val, expTime, ver, null, new IgnitePredicate<CacheDataRow>() {
+            IgnitePredicate<CacheDataRow> p = new IgnitePredicate<CacheDataRow>() {
                 @Override public boolean apply(@Nullable CacheDataRow row) {
                     boolean update0;
 
@@ -2741,16 +2745,32 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     update0 |= (!preload && deletedUnlocked());
 
-                    long delta = row != null ?
-                        (row.expireTime() == 0 ? 0 : row.expireTime() - U.currentTimeMillis())
-                        : 0;
-
-                    if (delta < 0)
-                        expired[0] = true;
-
                     return update0;
                 }
-            });
+            };
+
+            if (unswapped) {
+                update = p.apply(null);
+
+                // If entry is already unswapped and we are going to modify it, we must run deletion callbacks for old value.
+                if (update) {
+                    long oldExpTime = expireTime();
+                    long delta = (oldExpTime == 0 ? 0 : oldExpTime - U.currentTimeMillis());
+
+                    if (delta < 0) {
+                        if (onExpired(this.val, null)) {
+                            if (cctx.deferredDelete()) {
+                                deferred = true;
+                                oldVer = this.ver;
+                            }
+                            else
+                                obsolete = true;
+                        }
+                    }
+                }
+            }
+            else // Optimization to access storage only once.
+                update = storeValue(val, expTime, ver, null, p);
 
             if (update) {
                 update(val, expTime, ttl, ver, true);
@@ -2817,6 +2837,20 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
         finally {
             unlockEntry();
+
+            // It is necessary to execute these callbacks outside of lock to avoid deadlocks.
+
+            if (obsolete) {
+                onMarkedObsolete();
+
+                cctx.cache().removeEntry(this);
+            }
+
+            if (deferred) {
+                assert oldVer != null;
+
+                cctx.onDeferredDelete(this, oldVer);
+            }
         }
     }
 
