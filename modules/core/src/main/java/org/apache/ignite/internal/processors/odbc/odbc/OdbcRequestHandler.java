@@ -108,7 +108,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     private final boolean skipReducerOnUpdate;
 
     /** Authentication context */
-    private AuthorizationContext actx;
+    private final AuthorizationContext actx;
 
     /**
      * Constructor.

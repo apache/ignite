@@ -47,7 +47,7 @@ public class OdbcMessageParser implements ClientListenerMessageParser {
     protected static final int INIT_CAP = 1024;
 
     /** Kernal context. */
-    protected GridKernalContext ctx;
+    protected final GridKernalContext ctx;
 
     /** Logger. */
     private final IgniteLogger log;

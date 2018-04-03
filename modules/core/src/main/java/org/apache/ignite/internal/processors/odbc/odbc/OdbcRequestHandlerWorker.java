@@ -33,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
- * JDBC request handler worker to maintain single threaded transactional execution of SQL statements when MVCC is on.<p>
+ * ODBC request handler worker to maintain single threaded transactional execution of SQL statements when MVCC is on.<p>
  * This worker is intended for internal use as a temporary solution and from within {@link OdbcRequestHandler},
  * therefore it does not do any fine-grained lifecycle handling as it relies on existing guarantees from
  * {@link ClientListenerNioListener}.
