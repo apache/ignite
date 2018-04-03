@@ -3547,7 +3547,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 authFailedMsg = "Authentication subject is not serializable";
                             }
                             else if (!node.isClient() &&
-                                !subj.systemOperationAllowed(SecurityPermission.CLUSTER_JOIN_SERVER))
+                                !subj.systemOperationAllowed(SecurityPermission.JOIN_AS_SERVER))
                                 authFailedMsg = "Node is not authorised to join as a server node";
 
                             if (authFailedMsg != null) {

@@ -46,7 +46,7 @@ public class ClientCacheCreateWithNameRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.MANAGE_CACHE_CREATE);
+        authorize(ctx, SecurityPermission.CACHE_CREATE);
 
         try {
             ctx.kernalContext().grid().createCache(cacheName);

@@ -25,6 +25,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientRequest;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.platform.client.ClientStatus;
 import org.apache.ignite.internal.processors.platform.client.IgniteClientException;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
@@ -48,10 +49,14 @@ public class ClientCacheCreateWithConfigurationRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.MANAGE_CACHE_CREATE);
+        authorize(ctx, SecurityPermission.CACHE_CREATE);
 
-        if (cacheCfg.isOnheapCacheEnabled())
-            authorize(ctx, SecurityPermission.MANAGE_CACHE_ONHEAP);
+        if (cacheCfg.isOnheapCacheEnabled() &&
+            System.getProperty("DISABLE_ONHEAP_CACHE", "false").toUpperCase().equals("TRUE"))
+            throw new IgniteClientException(
+                ClientStatus.SECURITY_VIOLATION,
+                "Client is not authorized to perform this operation"
+            );
 
         try {
             ctx.kernalContext().grid().createCache(cacheCfg);

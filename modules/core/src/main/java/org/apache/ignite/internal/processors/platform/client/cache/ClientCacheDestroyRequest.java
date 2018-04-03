@@ -43,7 +43,7 @@ public class ClientCacheDestroyRequest extends ClientRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.MANAGE_CACHE_DESTROY);
+        authorize(ctx, SecurityPermission.CACHE_DESTROY);
 
         String cacheName = ClientCacheRequest.cacheDescriptor(ctx, cacheId).cacheName();
 

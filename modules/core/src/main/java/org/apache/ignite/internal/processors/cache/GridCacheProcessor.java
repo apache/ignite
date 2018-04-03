@@ -149,6 +149,7 @@ import org.apache.ignite.marshaller.MarshallerUtils;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 import org.apache.ignite.mxbean.IgniteMBeanAware;
+import org.apache.ignite.plugin.security.SecurityException;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.spi.discovery.DiscoveryDataBag;
@@ -3227,7 +3228,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private void authorizeCacheChange(DynamicCacheChangeRequest req) {
         if (req.cacheType() == null || req.cacheType() == CacheType.USER) {
             if (req.stop())
-                ctx.security().authorize(req.cacheName(), SecurityPermission.MANAGE_CACHE_DESTROY, null);
+                ctx.security().authorize(req.cacheName(), SecurityPermission.CACHE_DESTROY, null);
             else
                 authorizeCacheCreate(req.cacheName(), req.startCacheConfiguration());
         }
@@ -3237,10 +3238,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * Authorize start/create cache operation.
      */
     private void authorizeCacheCreate(String cacheName, CacheConfiguration cacheCfg) {
-        ctx.security().authorize(cacheName, SecurityPermission.MANAGE_CACHE_CREATE, null);
+        ctx.security().authorize(cacheName, SecurityPermission.CACHE_CREATE, null);
 
-        if (cacheCfg != null && cacheCfg.isOnheapCacheEnabled())
-            ctx.security().authorize(cacheName, SecurityPermission.MANAGE_CACHE_ONHEAP, null);
+        if (cacheCfg != null && cacheCfg.isOnheapCacheEnabled() &&
+            System.getProperty("DISABLE_ONHEAP_CACHE", "false").toUpperCase().equals("TRUE"))
+            throw new SecurityException("Authorization failed for enabling on-heap cache.");
     }
 
     /**
