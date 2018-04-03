@@ -4131,7 +4131,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
             zkNodes.add(aliveZkNodePath(client));
         }
 
-        long timeout = 10_000;
+        long timeout = 15_000;
 
         if (closeSock) {
             for (Ignite client : clients) {
