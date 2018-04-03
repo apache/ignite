@@ -464,6 +464,8 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testSemaphoreSingleNodeFailure() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-5975");
+
         final Ignite i1 = grid(0);
 
         IgniteSemaphore sem1 = i1.semaphore(STRUCTURE_NAME, 1, false, true);
