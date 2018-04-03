@@ -302,7 +302,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         for (IgniteInternalTx tx : activeTransactions()) {
             if (tx.local() && tx.near() && needWaitTransaction(tx, topVer)) {
                 if (log.isInfoEnabled())
-                    log.info("Forcibly rolling back near transaction: " + CU.txString(tx));
+                    log.info("The transaction was forcibly rolled back on topology change due to configured timeout: " +
+                        "[tx=" + CU.txString(tx) + ", topVer=" + topVer + ']');
 
                 ((GridNearTxLocal)tx).rollbackNearTxLocalAsync(false, false);
             }
