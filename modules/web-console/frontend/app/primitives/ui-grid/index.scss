@@ -24,7 +24,7 @@
     border-top: none;
 
     [role="button"] {
-      outline: none;
+        outline: none;
     }
 
     sup, sub {
@@ -268,8 +268,7 @@
         position: relative;
         opacity: 1;
         right: 3px;
-        width: 15px;
-        height: 15px;
+        display: block;
 
         &::before {
             content: '';
@@ -298,19 +297,19 @@
             }
 
             &::after {
-              content: '';
+                content: '';
 
-              position: absolute;
-              top: 4px;
-              left: 4px;
+                position: absolute;
+                top: 4px;
+                left: 4px;
 
-              width: 4px;
-              height: 8px;
+                width: 4px;
+                height: 8px;
 
-              border: solid #FFF;
-              border-width: 0 2px 2px 0;
+                border: solid #FFF;
+                border-width: 0 2px 2px 0;
 
-              transform: rotate(35deg);
+                transform: rotate(35deg);
             }
         }
     }
@@ -345,7 +344,7 @@
 
                 &::before,
                 &::after {
-                  content: '';
+                    content: '';
                 }
             }
 
