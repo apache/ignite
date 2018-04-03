@@ -69,6 +69,7 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         TestSuite suite = new TestSuite("Ignite Discovery SPI Test Suite");
 
         // Tcp.
+/*
         suite.addTest(new TestSuite(TcpDiscoveryVmIpFinderSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoverySharedFsIpFinderSelfTest.class));
         suite.addTest(new TestSuite(TcpDiscoveryJdbcIpFinderSelfTest.class));
@@ -83,9 +84,13 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(TcpDiscoverySnapshotHistoryTest.class));
 
         suite.addTest(new TestSuite(GridTcpSpiForwardingSelfTest.class));
+*/
 
-        suite.addTest(new TestSuite(TcpClientDiscoverySpiSelfTest.class));
-        suite.addTest(new TestSuite(TcpClientDiscoveryMarshallerCheckSelfTest.class));
+        for (int i = 0; i < 100; i++) {
+            suite.addTest(new TestSuite(TcpClientDiscoverySpiSelfTest.class));
+        }
+
+        /*suite.addTest(new TestSuite(TcpClientDiscoveryMarshallerCheckSelfTest.class));
         suite.addTest(new TestSuite(TcpClientDiscoverySpiMulticastTest.class));
         suite.addTest(new TestSuite(TcpClientDiscoverySpiFailureTimeoutSelfTest.class));
 
@@ -115,7 +120,7 @@ public class IgniteSpiDiscoverySelfTestSuite extends TestSuite {
         // Disco cache reuse.
         suite.addTest(new TestSuite(IgniteDiscoveryCacheReuseSelfTest.class));
 
-        suite.addTest(new TestSuite(DiscoveryUnmarshalVulnerabilityTest.class));
+        suite.addTest(new TestSuite(DiscoveryUnmarshalVulnerabilityTest.class));*/
 
         return suite;
     }
