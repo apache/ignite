@@ -65,7 +65,7 @@ const STATE = Object.freeze({
 class IgniteClient {
 
     /**
-     * The default constructor.
+     * Public constructor.
      *
      * @param {IgniteClient.onStateChanged} [onStateChanged] - (optional)
      * callback called everytime when the client has moved to a new state {@link IgniteClient.STATE}.
