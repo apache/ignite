@@ -256,6 +256,9 @@ public class IgniteClientRejoinTest extends GridCommonAbstractTest {
 
         Ignite srv1 = startGrid("server1");
 
+        if (!tcpDiscovery())
+            return;
+
         crd = ((IgniteKernal)srv1).localNode();
 
         Ignite srv2 = startGrid("server2");

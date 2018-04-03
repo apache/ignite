@@ -713,6 +713,8 @@ public class IgniteOptimisticTxSuspendResumeTest extends GridCommonAbstractTest 
                 ", backups=" + ccfg.getBackups() +
                 ", near=" + (ccfg.getNearConfiguration() != null) + "]");
 
+            awaitPartitionMapExchange();
+
             int srvNum = serversNumber();
             if (serversNumber() > 1) {
                 ignite(serversNumber() + 1).createNearCache(ccfg.getName(), new NearCacheConfiguration<>());

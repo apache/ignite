@@ -75,6 +75,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.igfs.IgfsThreadFactory;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
@@ -2242,6 +2243,8 @@ public class IgnitionEx {
             }
 
             initializeDefaultSpi(myCfg);
+
+            GridDiscoveryManager.initCommunicationErrorResolveConfiguration(myCfg);
 
             initializeDefaultCacheConfiguration(myCfg);
 

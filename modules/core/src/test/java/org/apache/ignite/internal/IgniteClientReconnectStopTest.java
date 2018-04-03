@@ -23,8 +23,10 @@ import org.apache.ignite.IgniteClientDisconnectedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.internal.managers.discovery.IgniteDiscoverySpi;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -50,15 +52,19 @@ public class IgniteClientReconnectStopTest extends IgniteClientReconnectAbstract
 
         Ignite srv = clientRouter(client);
 
-        TestTcpDiscoverySpi srvSpi = spi(srv);
+        DiscoverySpi srvSpi = spi0(srv);
         final CountDownLatch disconnectLatch = new CountDownLatch(1);
         final CountDownLatch reconnectLatch = new CountDownLatch(1);
 
-        final TestTcpDiscoverySpi clientSpi = spi(client);
+        final IgniteDiscoverySpi clientSpi = spi0(client);
+
+        DiscoverySpiTestListener lsnr = new DiscoverySpiTestListener();
+
+        clientSpi.setInternalListener(lsnr);
 
         log.info("Block reconnect.");
 
-        clientSpi.writeLatch = new CountDownLatch(1);
+        lsnr.startBlockJoin();
 
         client.events().localListen(new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {

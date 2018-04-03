@@ -98,6 +98,11 @@ public class WalStateProposeMessage extends WalStateAbstractMessage {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean stopProcess() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(WalStateProposeMessage.class, this, "super", super.toString());
     }

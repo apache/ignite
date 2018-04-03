@@ -68,6 +68,8 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
                 if (i == 0)
                     ignite = g;
             }
+
+            waitForTopology(NODES_CNT);
         }
         finally {
             Ignition.setClientMode(false);

@@ -49,6 +49,11 @@ public class CustomMessageWrapper implements DiscoverySpiCustomMessage {
         return delegate.isMutable();
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean stopProcess() {
+        return delegate.stopProcess();
+    }
+
     /**
      * @return Delegate.
      */

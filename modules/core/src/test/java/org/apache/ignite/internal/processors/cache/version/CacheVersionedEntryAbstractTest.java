@@ -18,11 +18,12 @@
 package org.apache.ignite.internal.processors.cache.version;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheEntry;
@@ -56,23 +57,15 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     public void testInvoke() throws Exception {
         Cache<Integer, String> cache = grid(0).cache(DEFAULT_CACHE_NAME);
 
-        final AtomicInteger invoked = new AtomicInteger();
-
-        cache.invoke(100, new EntryProcessor<Integer, String, Object>() {
-            @Override public Object process(MutableEntry<Integer, String> entry, Object... arguments)
-                throws EntryProcessorException {
-
-                invoked.incrementAndGet();
-
+        assertNotNull(cache.invoke(100, new EntryProcessor<Integer, String, Object>() {
+            @Override public Object process(MutableEntry<Integer, String> entry, Object... args) {
                 CacheEntry<Integer, String> verEntry = entry.unwrap(CacheEntry.class);
 
                 checkVersionedEntry(verEntry);
 
-                return entry;
+                return verEntry.version();
             }
-        });
-
-        assert invoked.get() > 0;
+        }));
     }
 
     /**
@@ -86,23 +79,17 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
         for (int i = 0; i < ENTRIES_NUM; i++)
             keys.add(i);
 
-        final AtomicInteger invoked = new AtomicInteger();
-
-        cache.invokeAll(keys, new EntryProcessor<Integer, String, Object>() {
-            @Override public Object process(MutableEntry<Integer, String> entry, Object... arguments)
-                throws EntryProcessorException {
-
-                invoked.incrementAndGet();
-
+        Map<Integer, EntryProcessorResult<Object>> res = cache.invokeAll(keys, new EntryProcessor<Integer, String, Object>() {
+            @Override public Object process(MutableEntry<Integer, String> entry, Object... args) {
                 CacheEntry<Integer, String> verEntry = entry.unwrap(CacheEntry.class);
 
                 checkVersionedEntry(verEntry);
 
-                return null;
+                return verEntry.version();
             }
         });
 
-        assert invoked.get() > 0;
+        assertEquals(ENTRIES_NUM, res.size());
     }
 
     /**
