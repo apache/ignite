@@ -91,6 +91,12 @@ namespace ignite
 
                     /** Connection attribute keyword for sslCaFile attribute. */
                     static const std::string sslCaFile;
+
+                    /** Connection attribute keyword for username attribute. */
+                    static const std::string user;
+
+                    /** Connection attribute keyword for password attribute. */
+                    static const std::string password;
                 };
 
                 /**

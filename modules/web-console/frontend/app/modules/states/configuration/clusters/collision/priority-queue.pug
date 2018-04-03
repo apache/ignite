@@ -16,27 +16,26 @@
 
 include /app/helpers/jade/mixins
 
--var model = 'backupItem.collision.PriorityQueue'
+-var model = '$ctrl.clonedCluster.collision.PriorityQueue'
 
-div
-    .details-row
-        +number('Parallel jobs number:', `${model}.parallelJobsNumber`, '"priorityParallelJobsNumber"', 'true', 'availableProcessors * 2', '1',
-            'Number of jobs that can be executed in parallel')
-    .details-row
-        +number('Waiting jobs number:', `${model}.waitingJobsNumber`, '"priorityWaitingJobsNumber"', 'true', 'Integer.MAX_VALUE', '0',
-            'Maximum number of jobs that are allowed to wait in waiting queue')
-    .details-row
-        +text('Priority attribute key:', `${model}.priorityAttributeKey`, '"priorityPriorityAttributeKey"', 'false', 'grid.task.priority',
-            'Task priority attribute key')
-    .details-row
-        +text('Job priority attribute key:', `${model}.jobPriorityAttributeKey`, '"priorityJobPriorityAttributeKey"', 'false', 'grid.job.priority',
-            'Job priority attribute key')
-    .details-row
-        +number('Default priority:', `${model}.defaultPriority`, '"priorityDefaultPriority"', 'true', '0', '0',
-            'Default priority to use if a job does not have priority attribute set')
-    .details-row
-        +number('Starvation increment:', `${model}.starvationIncrement`, '"priorityStarvationIncrement"', 'true', '1', '0',
-            'Value to increment job priority by every time a lower priority job gets behind a higher priority job')
-    .details-row
-        +checkbox('Starvation prevention enabled', `${model}.starvationPreventionEnabled`, '"priorityStarvationPreventionEnabled"',
-            'Job starvation prevention is enabled')
+.pc-form-grid-col-30
+    +number('Parallel jobs number:', `${model}.parallelJobsNumber`, '"priorityParallelJobsNumber"', 'true', 'availableProcessors * 2', '1',
+        'Number of jobs that can be executed in parallel')
+.pc-form-grid-col-30
+    +number('Waiting jobs number:', `${model}.waitingJobsNumber`, '"priorityWaitingJobsNumber"', 'true', 'Integer.MAX_VALUE', '0',
+        'Maximum number of jobs that are allowed to wait in waiting queue')
+.pc-form-grid-col-30
+    +text('Priority attribute key:', `${model}.priorityAttributeKey`, '"priorityPriorityAttributeKey"', 'false', 'grid.task.priority',
+        'Task priority attribute key')
+.pc-form-grid-col-30
+    +text('Job priority attribute key:', `${model}.jobPriorityAttributeKey`, '"priorityJobPriorityAttributeKey"', 'false', 'grid.job.priority',
+        'Job priority attribute key')
+.pc-form-grid-col-30
+    +number('Default priority:', `${model}.defaultPriority`, '"priorityDefaultPriority"', 'true', '0', '0',
+        'Default priority to use if a job does not have priority attribute set')
+.pc-form-grid-col-30
+    +number('Starvation increment:', `${model}.starvationIncrement`, '"priorityStarvationIncrement"', 'true', '1', '0',
+        'Value to increment job priority by every time a lower priority job gets behind a higher priority job')
+.pc-form-grid-col-60
+    +checkbox('Starvation prevention enabled', `${model}.starvationPreventionEnabled`, '"priorityStarvationPreventionEnabled"',
+        'Job starvation prevention is enabled')

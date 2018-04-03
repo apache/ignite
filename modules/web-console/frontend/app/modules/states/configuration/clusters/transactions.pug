@@ -17,20 +17,19 @@
 include /app/helpers/jade/mixins
 
 -var form = 'transactions'
--var model = 'backupItem.transactionConfiguration'
+-var model = '$ctrl.clonedCluster.transactionConfiguration'
 
-.panel.panel-default(ng-form=form novalidate)
-    .panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
+.pca-panel.pca-panel-default(ng-form=form novalidate)
+    .pca-panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
-        label Transactions
-        ignite-form-field-tooltip.tipLabel
-            | Settings for transactions#[br]
-            | #[a(href="https://apacheignite.readme.io/docs/transactions" target="_blank") More info]
-        ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
-            .col-sm-6
-                .settings-row
+        .pca-panel-heading-title Transactions
+        .pca-panel-heading-description
+            | Settings for transactions. 
+            | #[a.link-success(href="https://apacheignite.readme.io/docs/transactions" target="_blank") More info]
+    .pca-panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
+        .pca-panel-body(ng-if=`ui.isPanelLoaded('${form}')`).pca-form-row
+            .pca-form-column-6.pc-form-grid-row
+                .pc-form-grid-col-30
                     +dropdown('Concurrency:', `${model}.defaultTxConcurrency`, '"defaultTxConcurrency"', 'true', 'PESSIMISTIC',
                         '[\
                             {value: "OPTIMISTIC", label: "OPTIMISTIC"},\
@@ -41,7 +40,7 @@ include /app/helpers/jade/mixins
                             <li>OPTIMISTIC - All cache operations are not distributed to other nodes until commit is called</li>\
                             <li>PESSIMISTIC - A lock is acquired on all cache operations with exception of read operations in READ_COMMITTED mode</li>\
                         </ul>')
-                .settings-row
+                .pc-form-grid-col-30
                     +dropdown('Isolation:', `${model}.defaultTxIsolation`, '"defaultTxIsolation"', 'true', 'REPEATABLE_READ',
                         '[\
                             {value: "READ_COMMITTED", label: "READ_COMMITTED"},\
@@ -54,16 +53,16 @@ include /app/helpers/jade/mixins
                             <li>REPEATABLE_READ - If a value was read once within transaction, then all consecutive reads will provide the same in-transaction value</li>\
                             <li>SERIALIZABLE - All transactions occur in a completely isolated fashion, as if all transactions in the system had executed serially, one after the other.</li>\
                         </ul>')
-                .settings-row
+                .pc-form-grid-col-60
                     +number('Default timeout:', `${model}.defaultTxTimeout`, '"defaultTxTimeout"', 'true', '0', '0', 'Default transaction timeout')
-                .settings-row
+                .pc-form-grid-col-30
                     +number('Pessimistic log cleanup delay:', `${model}.pessimisticTxLogLinger`, '"pessimisticTxLogLinger"', 'true', '10000', '0',
                         'Delay, in milliseconds, after which pessimistic recovery entries will be cleaned up for failed node')
-                .settings-row
+                .pc-form-grid-col-30
                     +number('Pessimistic log size:', `${model}.pessimisticTxLogSize`, '"pessimisticTxLogSize"', 'true', '0', '0',
                         'Size of pessimistic transactions log stored on node in order to recover transaction commit if originating node has left grid before it has sent all messages to transaction nodes')
-                .settings-row
+                .pc-form-grid-col-60
                     +java-class('Manager factory:', `${model}.txManagerFactory`, '"txManagerFactory"', 'true', 'false',
                         'Class name of transaction manager factory for integration with JEE app servers')
-            .col-sm-6
+            .pca-form-column-6
                 +preview-xml-java(model, 'clusterTransactions')

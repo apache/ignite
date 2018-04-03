@@ -17,28 +17,27 @@
 include /app/helpers/jade/mixins
 
 -var form = 'deployment'
--var model = 'backupItem'
--var modelDeployment = 'backupItem.deploymentSpi'
+-var model = '$ctrl.clonedCluster'
+-var modelDeployment = '$ctrl.clonedCluster.deploymentSpi'
 -var exclude = model + '.peerClassLoadingLocalClassPathExclude'
--var enabled = 'backupItem.peerClassLoadingEnabled'
+-var enabled = '$ctrl.clonedCluster.peerClassLoadingEnabled'
 -var uriListModel = modelDeployment + '.URI.uriList'
 -var scannerModel = modelDeployment + '.URI.scanners'
 -var uriDeployment = modelDeployment + '.kind === "URI"'
 -var localDeployment = modelDeployment + '.kind === "Local"'
 -var customDeployment = modelDeployment + '.kind === "Custom"'
 
-.panel.panel-default(ng-form=form novalidate)
-    .panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
+.pca-panel.pca-panel-default(ng-form=form novalidate)
+    .pca-panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
-        label Class deployment
-        ignite-form-field-tooltip.tipLabel
-            | Task and resources deployment in cluster#[br]
-            | #[a(href="https://apacheignite.readme.io/docs/deployment-modes" target="_blank") More info]
-        ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id='deployment')
-        .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
-            .col-sm-6
-                .settings-row
+        .pca-panel-heading-title Class deployment
+        .pca-panel-heading-description
+            | Task and resources deployment in cluster.
+            | #[a.link-success(href="https://apacheignite.readme.io/docs/deployment-modes" target="_blank") More info]
+    .pca-panel-collapse(role='tabpanel' bs-collapse-target id='deployment')
+        .pca-panel-body(ng-if=`ui.isPanelLoaded('${form}')`).pca-form-row
+            .pca-form-column-6.pc-form-grid-row
+                .pc-form-grid-col-60
                     +dropdown('Deployment mode:', `${model}.deploymentMode`, '"deploymentMode"', 'true', 'SHARED',
                         '[\
                             {value: "PRIVATE", label: "PRIVATE"},\
@@ -54,74 +53,55 @@ include /app/helpers/jade/mixins
                             <li>SHARED - same as ISOLATED, but now tasks from different master nodes with the same user version and same class loader will share the same class loader on remote nodes</li>\
                             <li>CONTINUOUS - same as SHARED deployment mode, but resources will not be undeployed even after all master nodes left grid</li>\
                         </ul>')
-                .settings-row
+                .pc-form-grid-col-60
                     +checkbox('Enable peer class loading', `${model}.peerClassLoadingEnabled`, '"peerClassLoadingEnabled"', 'Enables/disables peer class loading')
-                .settings-row
+                .pc-form-grid-col-60
                     +number('Missed resources cache size:', `${model}.peerClassLoadingMissedResourcesCacheSize`, '"peerClassLoadingMissedResourcesCacheSize"', enabled, '100', '0',
                         'If size greater than 0, missed resources will be cached and next resource request ignored<br/>\
                         If size is 0, then request for the resource will be sent to the remote node every time this resource is requested')
-                .settings-row
+                .pc-form-grid-col-60
                     +number('Pool size:', `${model}.peerClassLoadingThreadPoolSize`, '"peerClassLoadingThreadPoolSize"', enabled, '2', '1', 'Thread pool size to use for peer class loading')
-                .settings-row
-                    +ignite-form-group
-                        -var uniqueTip = 'Such package already exists'
+                .pc-form-grid-col-60
+                    mixin clusters-deployment-packages
+                        .ignite-form-field
+                            -let items = exclude
+                            -var uniqueTip = 'Such package already exists!'
 
-                        ignite-form-field-label
-                            | Local class path exclude
-                        ignite-form-group-tooltip
-                            | List of packages from the system classpath that need to be peer-to-peer loaded from task originating node<br/>
-                            | '*' is supported at the end of the package name which means that all sub-packages and their classes are included like in Java package import clause
-                        ignite-form-group-add(ng-show=`${enabled}` ng-click='(group.add = [{}])')
-                            | Add package name.
+                            list-editable(
+                                ng-model=items
+                                name='localClassPathExclude'
+                                list-editable-cols=`::[{
+                                    name: "Local class path excludes:",
+                                    tip: "List of packages from the system classpath that need to be peer-to-peer loaded from task originating node<br/>
+                                    '*' is supported at the end of the package name which means that all sub-packages and their classes are included like in Java package import clause"
+                                }]`
+                                ng-disabled=enabledToDisabled(enabled)
+                            )
+                                list-editable-item-view {{ $item }}
 
-                        .group-content(ng-if=`${exclude}.length`)
-                            -var model = 'obj.model';
-                            -var name = '"edit" + $index'
-                            -var valid = `${form}[${name}].$valid`
-                            -var save = `${exclude}[$index] = ${model}`
+                                list-editable-item-edit
+                                    +list-java-package-field('Package name', '$item', '"packageName"', items)(
+                                        ignite-auto-focus
+                                    )
+                                        +unique-feedback('"packageName"', uniqueTip)
 
-                            div(ng-show=enabled)
-                                div(ng-repeat=`model in ${exclude} track by $index` ng-init='obj = {}')
-                                    label.col-xs-12.col-sm-12.col-md-12
-                                        .indexField
-                                            | {{ $index+1 }})
-                                        +table-remove-button(exclude, 'Remove package name')
-                                        span(ng-hide='field.edit')
-                                            a.labelFormField(ng-click=`(field.edit = true) && (${model} = model)`) {{ model }}
-                                        span(ng-if='field.edit')
-                                            +table-java-package-field(name, model, exclude, valid, save, false)
-                                                +table-save-button(valid, save, false)
-                                                +unique-feedback(name, uniqueTip)
+                                list-editable-no-items
+                                    list-editable-add-item-button(
+                                        add-item=`$editLast($ctrl.Clusters.addPeerClassLoadingLocalClassPathExclude(${model}))`
+                                        label-single='package'
+                                        label-multiple='packages'
+                                    )
 
-                            div(ng-hide=enabled)
-                                div(ng-repeat=`model in ${exclude} track by $index`)
-                                    label.col-xs-12.col-sm-12.col-md-12
-                                        .labelFormField.labelField
-                                            | {{ $index+1 }})
-                                        span.labelFormField
-                                            | {{ model }}
-
-                        .group-content(ng-repeat='field in group.add')
-                            -var model = 'new';
-                            -var name = '"new"'
-                            -var valid = `${form}[${name}].$valid`
-                            -var save = `${exclude}.push(${model})`
-
-                            div(type='internal' name='Package name')
-                                label.col-xs-12.col-sm-12.col-md-12
-                                    +table-java-package-field(name, model, exclude, valid, save, true)
-                                        +table-save-button(valid, save, true)
-                                        +unique-feedback(name, uniqueTip)
-
-                        .group-content-empty(ng-if=`!(${exclude}.length) && !group.add.length`)
-                            | Not defined
+                    -var form = '$parent.form'
+                    +clusters-deployment-packages
+                    -var form = 'deployment'
 
                 //- Since ignite 2.0
-                .settings-row(ng-if='$ctrl.available("2.0.0")')
+                .pc-form-grid-col-60(ng-if='$ctrl.available("2.0.0")')
                     +java-class('Class loader:', model + '.classLoader', '"classLoader"', 'true', 'false',
                         'Loader which will be used for instantiating execution context')
 
-                .settings-row
+                .pc-form-grid-col-60
                     +dropdown('Deployment variant:', modelDeployment + '.kind', '"deploymentKind"', 'true', 'Default',
                         '[\
                             {value: "URI", label: "URI"},\
@@ -136,108 +116,80 @@ include /app/helpers/jade/mixins
                             <li>Custom - Custom implementation of DeploymentSpi</li>\
                             <li>Default - Default configuration of LocalDeploymentSpi will be used</li>\
                         </ul>')
-                .panel-details(ng-show=uriDeployment)
-                    .details-row
-                        +ignite-form-group()
-                            -var uniqueTip = 'Such URI already configured'
+                .pc-form-group(ng-show=uriDeployment).pc-form-grid-row
+                    .pc-form-grid-col-60
+                        mixin clusters-deployment-uri
+                            .ignite-form-field
+                                -let items = uriListModel
+                                -var uniqueTip = 'Such URI already configured!'
 
-                            ignite-form-field-label
-                                | URI list
-                            ignite-form-group-tooltip
-                                | List of URI which point to GAR file and which should be scanned by SPI for the new tasks
-                            ignite-form-group-add(ng-click='(group.add = [{}])')
-                                | Add URI.
+                                list-editable(
+                                    ng-model=items
+                                    name='uriList'
+                                    list-editable-cols=`::[{
+                                        name: "URI list:",
+                                        tip: "List of URI which point to GAR file and which should be scanned by SPI for the new tasks"
+                                    }]`
+                                )
+                                    list-editable-item-view {{ $item }}
 
-                            .group-content(ng-if=uriListModel + '.length')
-                                -var model = 'obj.model';
-                                -var name = '"edit" + $index'
-                                -var valid = `${form}[${name}].$valid`
-                                -var save = `${uriListModel}[$index] = ${model}`
+                                    list-editable-item-edit
+                                        +list-url-field('URL', '$item', '"url"', items)
+                                            +unique-feedback('"url"', uniqueTip)
 
-                                div(ng-repeat=`model in ${uriListModel} track by $index` ng-init='obj = {}')
-                                    label.col-xs-12.col-sm-12.col-md-12
-                                        .indexField
-                                            | {{ $index+1 }})
-                                        +table-remove-button(uriListModel, 'Remove URI')
-                                        span(ng-hide='field.edit')
-                                            a.labelFormField(ng-click=`(field.edit = true) && (${model} = model)`) {{ model }}
-                                        span(ng-if='field.edit')
-                                            +table-url-field(name, model, uriListModel, valid, save, false)
-                                                +table-save-button(valid, save, false)
-                                                +unique-feedback(name, uniqueTip)
+                                    list-editable-no-items
+                                        list-editable-add-item-button(
+                                            add-item=`$editLast((${items} = ${items} || []).push(''))`
+                                            label-single='URI'
+                                            label-multiple='URIs'
+                                        )
 
-                            .group-content(ng-repeat='field in group.add')
-                                -var model = 'new';
-                                -var name = '"new"'
-                                -var valid = `${form}[${name}].$valid`
-                                -var save = `${uriListModel}.push(${model})`
+                        - var form = '$parent.form'
+                        +clusters-deployment-uri
+                        - var form = 'deployment'
 
-                                div(type='internal' name='URI')
-                                    label.col-xs-12.col-sm-12.col-md-12
-                                        +table-url-field(name, model, uriListModel, valid, save, true)
-                                            +table-save-button(valid, save, true)
-                                            +unique-feedback(name, uniqueTip)
-
-                            .group-content-empty(ng-if=`!(${uriListModel}.length) && !group.add.length`)
-                                | Not defined
-                    .details-row
+                    .pc-form-grid-col-60
                         +text('Temporary directory path:', modelDeployment + '.URI.temporaryDirectoryPath', '"DeploymentURITemporaryDirectoryPath"', 'false', 'Temporary directory path',
                         'Absolute path to temporary directory which will be used by deployment SPI to keep all deployed classes in')
-                    .details-row
-                        +ignite-form-group()
-                            -var uniqueTip = 'Such scanner already configured'
+                    .pc-form-grid-col-60
+                        mixin clusters-deployment-scanner
+                            .ignite-form-field
+                                -let items = scannerModel
+                                -var uniqueTip = 'Such scanner already configured!'
 
-                            ignite-form-field-label
-                                | Scanner list
-                            ignite-form-group-tooltip
-                                | List of URI deployment scanners
-                            ignite-form-group-add(ng-click='(group.add = [{}])')
-                                | Add scanner
+                                list-editable(
+                                    ng-model=items
+                                    name='scannerModel'
+                                    list-editable-cols=`::[{name: "URI deployment scanners:"}]`
+                                )
+                                    list-editable-item-view {{ $item }}
 
-                            .group-content(ng-if=scannerModel + '.length')
-                                -var model = 'obj.model';
-                                -var name = '"edit" + $index'
-                                -var valid = `${form}[${name}].$valid`
-                                -var save = `${scannerModel}[$index] = ${model}`
+                                    list-editable-item-edit
+                                        +list-java-class-field('Scanner', '$item', '"scanner"', items)
+                                            +unique-feedback('"scanner"', uniqueTip)
 
-                                div(ng-repeat=`model in ${scannerModel} track by $index` ng-init='obj = {}')
-                                    label.col-xs-12.col-sm-12.col-md-12
-                                        .indexField
-                                            | {{ $index+1 }})
-                                        +table-remove-button(scannerModel, 'Remove scanner')
-                                        span(ng-hide='field.edit')
-                                            a.labelFormField(ng-click=`(field.edit = true) && (${model} = model)`) {{ model }}
-                                        span(ng-if='field.edit')
-                                            +table-java-class-field('Scanner:', name, model, scannerModel, valid, save, false)
-                                                +table-save-button(valid, save, false)
-                                                +unique-feedback(name, uniqueTip)
+                                    list-editable-no-items
+                                        list-editable-add-item-button(
+                                            add-item=`$editLast((${items} = ${items} || []).push(''))`
+                                            label-single='scanner'
+                                            label-multiple='scanners'
+                                        )
 
-                            .group-content(ng-repeat='field in group.add')
-                                -var model = 'new';
-                                -var name = '"new"'
-                                -var valid = `${form}[${name}].$valid`
-                                -var save = `${scannerModel}.push(${model})`
+                        - var form = '$parent.form'
+                        +clusters-deployment-scanner
+                        - var form = 'deployment'
 
-                                div(type='internal' name='Scanner')
-                                    label.col-xs-12.col-sm-12.col-md-12
-                                        //- (lbl, name, model, items, valid, save, newItem)
-                                        +table-java-class-field('Scanner:', name, model, scannerModel, valid, save, true)
-                                            +table-save-button(valid, save, true)
-                                            +unique-feedback(name, uniqueTip)
-
-                            .group-content-empty(ng-if=`!(${scannerModel}.length) && !group.add.length`)
-                                | Not defined
-                    .details-row
+                    .pc-form-grid-col-60
                         +java-class('Listener:', `${modelDeployment}.URI.listener`, '"DeploymentURIListener"', 'true', 'false', 'Deployment event listener', uriDeployment)
-                    .details-row
+                    .pc-form-grid-col-60
                         +checkbox('Check MD5', `${modelDeployment}.URI.checkMd5`, '"DeploymentURICheckMd5"', 'Exclude files with same md5s from deployment')
-                    .details-row
+                    .pc-form-grid-col-60
                         +checkbox('Encode URI', `${modelDeployment}.URI.encodeUri`, '"DeploymentURIEncodeUri"', 'URI must be encoded before usage')
-                .panel-details(ng-show=localDeployment)
-                    .details-row
+                .pc-form-group(ng-show=localDeployment).pc-form-grid-row
+                    .pc-form-grid-col-60
                         +java-class('Listener:', `${modelDeployment}.Local.listener`, '"DeploymentLocalListener"', 'true', 'false', 'Deployment event listener', localDeployment)
-                .panel-details(ng-show=customDeployment)
-                    .details-row
+                .pc-form-group(ng-show=customDeployment).pc-form-grid-row
+                    .pc-form-grid-col-60
                         +java-class('Class:', `${modelDeployment}.Custom.className`, '"DeploymentCustom"', 'true', customDeployment, 'DeploymentSpi implementation class', customDeployment)
-            .col-sm-6
+            .pca-form-column-6
                 +preview-xml-java(model, 'clusterDeployment')

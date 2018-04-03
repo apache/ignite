@@ -17,23 +17,22 @@
 include /app/helpers/jade/mixins
 
 -var form = 'statistics'
--var model = 'backupItem'
+-var model = '$ctrl.clonedCache'
 
-.panel.panel-default(ng-form=form novalidate)
-    .panel-heading(bs-collapse-toggle='' ng-click=`ui.loadPanel('${form}')`)
+.pca-panel(ng-form=form novalidate)
+    .pca-panel-heading(bs-collapse-toggle='' ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
-        label Statistics
-        ignite-form-field-tooltip.tipLabel
-            | Cache statistics and management settings
-        ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
-            .col-sm-6
-                .settings-row
+        .pca-panel-heading-title Statistics
+        .pca-panel-heading-description
+            | Cache statistics and management settings.
+    .pca-panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
+        .pca-panel-body.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+            .pca-form-column-6.pc-form-grid-row
+                .pc-form-grid-col-60
                     +checkbox('Statistics enabled', `${model}.statisticsEnabled`, '"statisticsEnabled"', 'Flag indicating whether statistics gathering is enabled on this cache')
-                .settings-row
+                .pc-form-grid-col-60
                     +checkbox('Management enabled', `${model}.managementEnabled`, '"managementEnabled"',
                     'Flag indicating whether management is enabled on this cache<br/>\
                     If enabled the CacheMXBean for each cache is registered in the platform MBean server')
-            .col-sm-6
+            .pca-form-column-6
                 +preview-xml-java(model, 'cacheStatistics')

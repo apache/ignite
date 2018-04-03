@@ -27,7 +27,6 @@ export const createRegularUser = () => {
         await t.eval(() => window.localStorage.showGettingStarted = 'false');
 
         const page = new PageSignIn();
-        await page.open();
         await page.login('a@a', 'a');
     });
 };
