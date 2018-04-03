@@ -32,6 +32,9 @@ import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+/**
+ * Checks that schema is verified at the moment of jdbc driver connection.
+ */
 public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
 
     private static final String CLIENT_NODE_NAME = "ClientNode";
@@ -49,6 +52,7 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
     /** Name of the cache, that is created using client Ignite instance, NOT the cache on client. */
     private static final String CLIENT_CACHE = "ClientNodeCache";
 
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -58,11 +62,15 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         startGrid(CLIENT_NODE_NAME, optimize(getConfiguration(CLIENT_NODE_NAME).setClientMode(true)), null);
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         super.afterTestsStopped();
         stopAllGrids();
     }
 
+    /**
+     * Creates new cache configuration with a table.
+     */
     private CacheConfiguration<Long, UUID> newCacheCfg(String name) {
         CacheConfiguration<Long, UUID> ccfg = new CacheConfiguration<>(name);
 
@@ -71,6 +79,7 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         return ccfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
@@ -81,6 +90,7 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         clientNode.createCache(newCacheCfg(CLIENT_CACHE));
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         serverNode.destroyCache(SERVER_CACHE);
         clientNode.destroyCache(CLIENT_CACHE);
@@ -88,6 +98,7 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         super.afterTest();
     }
 
+    /** Provides port of given IgniteEx instance */
     private int portOf(IgniteEx node) {
         Collection<GridPortRecord> recs = node.context().ports().records();
 
@@ -101,6 +112,9 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         throw new RuntimeException("Could not find port to connect to node " + node);
     }
 
+    /**
+     * Add cache with table to ignite config.
+     */
     private IgniteConfiguration withPrestartedCache(IgniteConfiguration cfg) throws Exception {
         CacheConfiguration<Long, UUID> ccfg = new CacheConfiguration<Long, UUID>(PRESTARTED_CACHE)
             .setIndexedTypes(Long.class, UUID.class).setCacheMode(CacheMode.PARTITIONED);
@@ -110,6 +124,9 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /**
+     * Basic negative test.
+     */
     public void testNonExistingSchemas() {
         assertSchemaMissed("notExistingSchema");
 
@@ -125,12 +142,13 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Connect to one node and check that schema defined in the other node's cache configuration exists.
+     * Connect to client node and check that schema defined in server cache configuration exists.
      */
     public void testPrestartedCacheTable() {
         assertSchemaExist("\"" + PRESTARTED_CACHE + "\"");
     }
 
+    /** PUBLIC schema test. */
     public void testDefaultSchema() {
         assertSchemaExist(""); // implicitly "PUBLIC"
 
