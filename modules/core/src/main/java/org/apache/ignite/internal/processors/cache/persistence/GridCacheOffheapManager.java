@@ -1117,6 +1117,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     String partName = grp.cacheOrGroupName() + "-" + partId;
 
+                    final DataStructureSize totalSize = grp.getTotalSize();
+
                     freeList = new CacheFreeList(
                         grp.groupId(),
                         partName,
@@ -1131,6 +1133,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     ) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
+
+                            totalSize.inc();
 
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
@@ -1153,6 +1157,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     ) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
+
+                            totalSize.inc();
 
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }

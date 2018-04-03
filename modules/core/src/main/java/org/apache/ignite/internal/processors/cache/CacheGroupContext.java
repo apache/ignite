@@ -66,6 +66,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.simpleTracker;
 
 /**
  *
@@ -162,6 +163,9 @@ public class CacheGroupContext {
     private final DataStructureSize pureDataSize;
 
     /** */
+    private final DataStructureSize totalSize;
+
+    /** */
     private volatile boolean walEnabled;
 
     /**
@@ -223,12 +227,20 @@ public class CacheGroupContext {
         String pkIndexName = cacheOrGroupName() + "-pkIndex";
         String reuseListName = cacheOrGroupName() + "-reuseList";
         String pureDataName = cacheOrGroupName() + "-pureData";
+        String totalSizeName = cacheOrGroupName() + "-totalSize";
 
-        pkIndexPages = DataStructureSizeUtils.simpleTracker(pkIndexName);
-        reuseListPages = DataStructureSizeUtils.simpleTracker(reuseListName);
-        pureDataSize = DataStructureSizeUtils.simpleTracker(pureDataName);
+        pkIndexPages = simpleTracker(pkIndexName);
+        reuseListPages = simpleTracker(reuseListName);
+        pureDataSize = simpleTracker(pureDataName);
+        totalSize = simpleTracker(totalSizeName);
 
-        mxBean = new CacheGroupMetricsMXBeanImpl(this, pkIndexPages, reuseListPages, pureDataSize);
+        mxBean = new CacheGroupMetricsMXBeanImpl(
+            this,
+            pkIndexPages,
+            reuseListPages,
+            pureDataSize,
+            totalSize
+            );
     }
 
     public DataStructureSize getPkIndexPages() {
@@ -241,6 +253,10 @@ public class CacheGroupContext {
 
     public DataStructureSize getPureDataSize() {
         return pureDataSize;
+    }
+
+    public DataStructureSize getTotalSize() {
+        return totalSize;
     }
 
     /**

@@ -53,6 +53,9 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     private final DataStructureSize pureDataSize;
 
     /** */
+    private final DataStructureSize totalSize;
+
+    /** */
     private final int pageSize;
 
     /** Interface describing a predicate of two integers. */
@@ -76,12 +79,14 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
         CacheGroupContext ctx,
         DataStructureSize pkIndexPages,
         DataStructureSize reuseListPages,
-        DataStructureSize pureDataSize
+        DataStructureSize pureDataSize,
+        DataStructureSize totalSize
     ) {
         this.ctx = ctx;
         this.pkIndexPages = pkIndexPages;
         this.reuseListPages = reuseListPages;
         this.pureDataSize = pureDataSize;
+        this.totalSize = totalSize;
         this.pageSize = ctx.dataRegion().pageMemory().pageSize();
     }
 
@@ -300,7 +305,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public long getTotalSize() {
-        return 0;
+        return totalSize.size() * pageSize;
     }
 
     /** {@inheritDoc} */

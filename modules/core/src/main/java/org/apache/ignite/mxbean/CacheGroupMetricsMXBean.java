@@ -143,7 +143,7 @@ public interface CacheGroupMetricsMXBean {
     /**
      * Total size in bytes for secondary indexes.
      */
-    @MXBeanDescription("Total size in bytes for secondary indexes")
+    @MXBeanDescription("Total size in bytes for secondary indexes.")
     public long getIndexesSize();
 
     /**
