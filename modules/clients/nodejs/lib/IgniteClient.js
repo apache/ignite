@@ -27,7 +27,24 @@ const ArgumentChecker = require('./internal/ArgumentChecker');
 const Logger = require('./internal/Logger');
 
 /**
- * ???
+ * State of Ignite client.
+ *
+ * DISCONNECTED - the client is not connected to any Ignite node,
+ * operations with the Ignite server are not allowed.
+ * This is initial state after a client instance creation.
+ * If connect() method is called, the client moves to CONNECTING state.
+ *
+ * CONNECTING - the client tries to connect to an Ignite node,
+ * operations with the Ignite server are not allowed.
+ * If disconnect() method is called, the client moves to DISCONNECTED state.
+ * If not possible to connect to any Ignite node, the client moves to DISCONNECTED state.
+ * If connection to an Ignite node is successful, the client moves to CONNECTED state.
+ *
+ * CONNECTED - the client is connected to an Ignite node,
+ * all operations with the Ignite server are allowed.
+ * If connection with the Ignite node is lost, the client moves to CONNECTING state.
+ * If disconnect() method is called, the client moves to DISCONNECTED state.
+ *
  * @typedef IgniteClient.STATE
  * @enum
  * @readonly
@@ -44,27 +61,14 @@ const STATE = Object.freeze({
 /**
  * Class representing Ignite client.
  * 
- * ???
- * The client can be in one of the two states - "disconnected" or "connected".
- *
- * "Disconnected" state: initial state after a client instance creation,
- * connect() method is allowed only.
- *
- * "Connected" state: all operations are allowed except connect() method.
- *
- * The client goes to the "disconnected" state when it cannot establish a connection
- * to no one of the server nodes specified in the {@link IgniteClientConfiguration}
- * or when disconnect() method is called.
- *
- * When the client goes to the "disconnected" state the callback
- * specified in the connect() method is called.
  */
 class IgniteClient {
 
     /**
      * The default constructor.
      *
-     * @param {IgniteClient.onStateChanged} [onStateChanged] - the callback called when ???.
+     * @param {IgniteClient.onStateChanged} [onStateChanged] - (optional)
+     * callback called everytime when the client has moved to a new state {@link IgniteClient.STATE}.
      *
      * @return {IgniteClient} - new IgniteClient instance.
      */
@@ -78,20 +82,23 @@ class IgniteClient {
     }
 
     /**
-     * onStateChanged callback ???.
+     * onStateChanged callback.
      * @callback IgniteClient.onStateChanged
-     * @param {IgniteClient.STATE} state - ???.
-     * @param {string} reason - ???.
+     * @param {IgniteClient.STATE} state - the new state of the client.
+     * @param {string} reason - the reason why the state has been changed.
      */
 
     /**
      * Connects the client.
      *
+     * Should be called from DISCONNECTED state only.
+     * Moves the client to CONNECTING state.
+     *
      * @async
      *
      * @param {IgniteClientConfiguration} config - the client configuration.
      *
-     * @throws {IllegalStateError} if the client already connected.
+     * @throws {IllegalStateError} if the client is not in DISCONNECTED {@link IgniteClient.STATE}.
      * @throws {IgniteClientError} if other error.
      */
     async connect(config) {
@@ -103,7 +110,7 @@ class IgniteClient {
     /**
      * Disconnects the client.
      *
-     * Triggers the callback specified in the connect() method.
+     * Moves the client to DISCONNECTED state from any other state.
      * Does nothing if the client already disconnected.
      */
     disconnect() {
@@ -122,7 +129,7 @@ class IgniteClient {
      *
      * @return {Promise<CacheClient>} - new cache client instance for the created cache.
      *
-     * @throws {IllegalStateError} if the client is disconnected.
+     * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
      * @throws {OperationError} if cache with the provided name already exists.
      * @throws {IgniteClientError} if other error.
      */
@@ -150,7 +157,7 @@ class IgniteClient {
      *
      * @return {Promise<CacheClient>} - new cache client instance for the existing or created cache.
      *
-     * @throws {IllegalStateError} if the client is disconnected.
+     * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
      * @throws {IgniteClientError} if other error.
      */
     async getOrCreateCache(name, cacheConfig = null) {
@@ -187,7 +194,7 @@ class IgniteClient {
      *
      * @param {string} name - cache name.
      *
-     * @throws {IllegalStateError} if the client is disconnected.
+     * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
      * @throws {OperationError} if cache with the provided name does not exist.
      * @throws {IgniteClientError} if other error.
      */
@@ -208,7 +215,7 @@ class IgniteClient {
      * @return {Array<string>} - array with the existing cache names.
      *     The array is empty if no caches exist.
      *
-     * @throws {IllegalStateError} if the client is disconnected.
+     * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
      * @throws {IgniteClientError} if other error.
      */
     async cacheNames() {
