@@ -147,27 +147,54 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         assertSchemaExist("\"ServerNodeCache\"");
     }
 
-    public void assertSchemaExist(String schema) {
-        int port = portOf(clientNode);
+    /**
+     * Checks that thin driver is able to connect to both server and client nodes with {@code schemaName}
+     */
+    public void assertSchemaExist(String schemaName) {
+        int srvPort = portOf(clientNode);
+        int clPort = portOf(clientNode);
 
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + port + "/" + schema)) {
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + srvPort + "/" + schemaName)) {
             // do nothing
         }
         catch (SQLException sqlEx) {
-            throw new AssertionError("Schema " + schema + " seems to be missed, but it should exist.", sqlEx);
+            throw new AssertionError("Schema " + schemaName + " seems to be missed, but it should exist. " +
+                "Tried to connect to " + SERVER_NODE_NAME + ".", sqlEx);
         }
-        // todo: create for server node too.
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + clPort + "/" + schemaName)) {
+            // do nothing
+        }
+        catch (SQLException sqlEx) {
+            throw new AssertionError("Schema " + schemaName + " seems to be missed, but it should exist. " +
+                "Tried to connect to " + CLIENT_NODE_NAME + ".", sqlEx);
+        }
     }
 
-    public void assertSchemaMissed(String schema) {
-        Callable<Void> mustThrow = () -> {
-            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1/" + schema)) {
+    /**
+     * Verifies that correct exception is throw, if thin driver connected with specified non-existing schema name.
+     */
+    public void assertSchemaMissed(String incorrectSchema) {
+        int srvPort = portOf(clientNode);
+        int clPort = portOf(clientNode);
+
+        Callable<Void> mustThrowCl = () -> {
+            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + clPort + incorrectSchema)) {
                 // do nothing
             }
 
             return null;
         };
 
-        GridTestUtils.assertThrows(log, mustThrow, SQLException.class, "Schema with name");
+        Callable<Void> mustThrowSrv = () -> {
+            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + srvPort + incorrectSchema)) {
+                // do nothing
+            }
+
+            return null;
+        };
+
+        GridTestUtils.assertThrows(log, mustThrowCl, SQLException.class, "Schema with name");
+        GridTestUtils.assertThrows(log, mustThrowSrv, SQLException.class, "Schema with name");
     }
 }
