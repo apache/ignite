@@ -47,6 +47,9 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     private final DataStructureSize pkIndexPages;
 
     /** */
+    private final DataStructureSize indexPages;
+
+    /** */
     private final DataStructureSize reuseListPages;
 
     /** */
@@ -78,12 +81,14 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     public CacheGroupMetricsMXBeanImpl(
         CacheGroupContext ctx,
         DataStructureSize pkIndexPages,
+        DataStructureSize indexPages,
         DataStructureSize reuseListPages,
         DataStructureSize pureDataSize,
         DataStructureSize totalSize
     ) {
         this.ctx = ctx;
         this.pkIndexPages = pkIndexPages;
+        this.indexPages = indexPages;
         this.reuseListPages = reuseListPages;
         this.pureDataSize = pureDataSize;
         this.totalSize = totalSize;
@@ -285,7 +290,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public long getIndexesSize() {
-        return 0;
+        return indexPages.size() * pageSize;
     }
 
     /** {@inheritDoc} */
@@ -299,18 +304,18 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
     }
 
     /** {@inheritDoc} */
-    @Override public long getDataSize() {
+    @Override public long getPureDataSize() {
         return pureDataSize.size();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getDataSize() {
+        return 0;
     }
 
     /** {@inheritDoc} */
     @Override public long getTotalSize() {
         return totalSize.size() * pageSize;
-    }
-
-    /** {@inheritDoc} */
-    @Override public long getDataPagesSize() {
-        return 0;
     }
 
     /** {@inheritDoc} */

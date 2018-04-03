@@ -25,6 +25,7 @@ import java.util.NoSuchElementException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.internal.pagemem.DataStructureSize;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
@@ -120,6 +121,8 @@ public class H2TreeIndex extends GridH2IndexBase {
 
             IgniteCacheDatabaseSharedManager db = cctx.shared().database();
 
+            DataStructureSize indexSize = cctx.group().getIndexesPages();
+
             for (int i = 0; i < segments.length; i++) {
                 db.checkpointReadLock();
 
@@ -139,7 +142,9 @@ public class H2TreeIndex extends GridH2IndexBase {
                         cols,
                         inlineIdxs,
                         computeInlineSize(inlineIdxs, inlineSize),
-                        rowCache) {
+                        rowCache,
+                        indexSize
+                    ) {
                         @Override public int compareValues(Value v1, Value v2) {
                             return v1 == v2 ? 0 : table.compareTypeSafe(v1, v2);
                         }

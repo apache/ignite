@@ -157,6 +157,9 @@ public class CacheGroupContext {
     private final DataStructureSize pkIndexPages;
 
     /** */
+    private final DataStructureSize indexesPages;
+
+    /** */
     private final DataStructureSize reuseListPages;
 
     /** */
@@ -194,7 +197,8 @@ public class CacheGroupContext {
         FreeList freeList,
         ReuseList reuseList,
         AffinityTopologyVersion locStartVer,
-        boolean walEnabled) {
+        boolean walEnabled
+    ) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
         assert grpId != 0 : "Invalid group ID [cache=" + ccfg.getName() + ", grpName=" + ccfg.getGroupName() + ']';
@@ -225,11 +229,13 @@ public class CacheGroupContext {
         caches = new ArrayList<>();
 
         String pkIndexName = cacheOrGroupName() + "-pkIndex";
+        String indexesName = cacheOrGroupName() + "-indexes";
         String reuseListName = cacheOrGroupName() + "-reuseList";
         String pureDataName = cacheOrGroupName() + "-pureData";
         String totalSizeName = cacheOrGroupName() + "-totalSize";
 
         pkIndexPages = simpleTracker(pkIndexName);
+        indexesPages = simpleTracker(indexesName);
         reuseListPages = simpleTracker(reuseListName);
         pureDataSize = simpleTracker(pureDataName);
         totalSize = simpleTracker(totalSizeName);
@@ -237,6 +243,7 @@ public class CacheGroupContext {
         mxBean = new CacheGroupMetricsMXBeanImpl(
             this,
             pkIndexPages,
+            indexesPages,
             reuseListPages,
             pureDataSize,
             totalSize
@@ -257,6 +264,10 @@ public class CacheGroupContext {
 
     public DataStructureSize getTotalSize() {
         return totalSize;
+    }
+
+    public DataStructureSize getIndexesPages() {
+        return indexesPages;
     }
 
     /**
