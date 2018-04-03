@@ -59,20 +59,19 @@ import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureHandler;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.failure.RestartProcessFailureHandler;
 import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
-import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.cluster.NodeOrderComparator;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.GridManagerAdapter;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
+import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheGroupDescriptor;
 import org.apache.ignite.internal.processors.cache.ClientCacheChangeDummyDiscoveryMessage;
@@ -2567,16 +2566,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 try {
                     body0();
                 }
-                catch (InterruptedException e) {
-                    throw e;
-                }
                 catch (Throwable t) {
-                    U.error(log, "Unexpected exception in discovery worker thread (ignored).", t);
+                    U.error(log, "Exception in discovery worker thread.", t);
 
-                    ctx.failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, t));
+                    if (t instanceof OutOfMemoryError || t instanceof IgniteOutOfMemoryException)
+                        ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, t));
+                    else if (t instanceof Error || t instanceof InterruptedException && !isCancelled)
+                        ctx.failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, t));
 
-                    if (t instanceof Error)
-                        throw (Error)t;
+                    if (t instanceof InterruptedException || t instanceof Error)
+                        throw t;
                 }
             }
         }
