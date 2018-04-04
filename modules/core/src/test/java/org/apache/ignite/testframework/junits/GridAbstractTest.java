@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -1135,9 +1134,21 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected void stopAllGrids(boolean cancel) {
         try {
-            G.allGrids().stream()
-                .sorted(Comparator.comparing(g -> g.configuration().getDiscoverySpi().isClientMode()))
-                .forEachOrdered(g -> stopGrid(g.name(), cancel, false));
+            Collection<Ignite> clients = new ArrayList<>();
+            Collection<Ignite> srvs = new ArrayList<>();
+
+            for (Ignite g : G.allGrids()) {
+                if (g.configuration().getDiscoverySpi().isClientMode())
+                    clients.add(g);
+                else
+                    srvs.add(g);
+            }
+
+            for (Ignite g : clients)
+                stopGrid(g.name(), cancel, false);
+
+            for (Ignite g : srvs)
+                stopGrid(g.name(), cancel, false);
 
             assert G.allGrids().isEmpty();
         }
@@ -1150,8 +1161,12 @@ public abstract class GridAbstractTest extends TestCase {
      * Stop all server Ignite instances.
      */
     protected void stopAllServers() {
-        G.allGrids().stream().filter(g -> !g.configuration().getDiscoverySpi().isClientMode())
-            .forEach(g -> stopGrid(g.name(), false, true));
+        List<Ignite> ignites = G.allGrids();
+
+        for (Ignite g : ignites) {
+            if (!g.configuration().getDiscoverySpi().isClientMode())
+                stopGrid(g.name(), false);
+        }
     }
 
     /**
