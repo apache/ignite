@@ -794,7 +794,11 @@ public class ZookeeperClient implements Watcher {
                         ", path=" + ((KeeperException)e).getPath() +
                         ", remainingWaitTime=" + remainingTime + ']');
 
+                    long curTime = System.currentTimeMillis();
+
                     stateMux.wait(RETRY_TIMEOUT);
+
+                    log.warning("Waited for mutex " + (System.currentTimeMillis() - curTime) + " " + retryCount.get());
 
                     if (closing)
                         throw new ZookeeperClientFailedException("ZooKeeper client is closed.");
