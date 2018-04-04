@@ -208,7 +208,8 @@ class GridNioSslHandler extends ReentrantLock {
             boolean loop = true;
 
             while (loop) {
-                log.debug("NIO: LOOP: " + handshakeStatus + ". ses" + ses);
+                if (log.isDebugEnabled())
+                    log.debug("NIO: LOOP: " + handshakeStatus + ". ses" + ses);
                 switch (handshakeStatus) {
                     case NOT_HANDSHAKING:
                     case FINISHED: {
@@ -486,7 +487,9 @@ class GridNioSslHandler extends ReentrantLock {
 
         ByteBuffer cp = copy(outNetBuf);
 
-        log.debug("writeNetBuffer: " + cp);
+        if (log.isDebugEnabled())
+            log.debug("writeNetBuffer: " + cp);
+
         return parent.proceedSessionWrite(ses, cp, true);
     }
 
@@ -598,12 +601,13 @@ class GridNioSslHandler extends ReentrantLock {
         do {
             res = sslEngine.unwrap(inNetBuf, appBuf);
 
-            if (log.isDebugEnabled())
+            if (log.isDebugEnabled()) {
                 log.debug("NIO: Unwrapped raw data [status=" + res.getStatus() + ", handshakeStatus=" +
-                    res.getHandshakeStatus() + ", ses=" + ses + ']');
+                        res.getHandshakeStatus() + ", ses=" + ses + ']');
 
                 log.debug("NIO inet buff: " + inNetBuf);
                 log.debug("NIO app buff: " + inNetBuf);
+            }
 
             if (res.getStatus() == Status.BUFFER_OVERFLOW)
                 appBuf = expandBuffer(appBuf, appBuf.capacity() * 2);

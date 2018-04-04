@@ -145,7 +145,9 @@ public class BlockingSslHandler {
             switch (handshakeStatus) {
                 case NOT_HANDSHAKING:
                 case FINISHED: {
-                    log.debug("!!! STOPING LOOP handshakeStatus: " + handshakeStatus );
+                    if (log.isDebugEnabled())
+                        log.debug("!!! STOPING LOOP handshakeStatus: " + handshakeStatus );
+
                     handshakeFinished = true;
 
                     loop = false;
@@ -165,7 +167,9 @@ public class BlockingSslHandler {
                     handshakeStatus = sslEngine.getHandshakeStatus();
 
                     if (status == BUFFER_UNDERFLOW && sslEngine.isInboundDone()) {
-                        log.debug("!!! STOP LOOP status == BUFFER_UNDERFLOW && sslEngine.isInboundDone()");
+                        if (log.isDebugEnabled())
+                            log.debug("!!! STOP LOOP status == BUFFER_UNDERFLOW && sslEngine.isInboundDone()");
+
                         loop = false;
                     }
                     break;
@@ -188,8 +192,10 @@ public class BlockingSslHandler {
                     else {
                         outNetBuf.flip();
 
-                        log.debug("blocking handshakeBuf: " + handshakeBuf);
-                        log.debug("blocking outNetBuf: " + outNetBuf);
+                        if (log.isDebugEnabled()) {
+                            log.debug("blocking handshakeBuf: " + handshakeBuf);
+                            log.debug("blocking outNetBuf: " + outNetBuf);
+                        }
 
                         writeNetBuffer();
                     }
@@ -429,12 +435,13 @@ public class BlockingSslHandler {
         do {
             res = sslEngine.unwrap(inNetBuf, appBuf);
 
-            if (log.isDebugEnabled())
+            if (log.isDebugEnabled()) {
                 log.debug("Unwrapped raw data [status=" + res.getStatus() + ", handshakeStatus=" +
-                    res.getHandshakeStatus() + ']');
+                        res.getHandshakeStatus() + ']');
 
-            log.debug("blocking inet: " + inNetBuf);
-            log.debug("blocking appBuf: " + appBuf);
+                log.debug("blocking inet: " + inNetBuf);
+                log.debug("blocking appBuf: " + appBuf);
+            }
 
             if (res.getStatus() == Status.BUFFER_OVERFLOW)
                 appBuf = expandBuffer(appBuf, appBuf.capacity() * 2);
