@@ -177,8 +177,13 @@ public class ZookeeperClient implements Watcher {
                     return;
                 }
 
-                if (!zk.getState().isAlive())
+                if (!zk.getState().isAlive()) {
+                    assert zk.getState() != ZooKeeper.States.CONNECTING : zk;
+
+                    U.warn(log, "Connection is not alive, skip event processing " + zk.getState() + " " + evt.getState());
+
                     return;
+                }
 
                 Event.KeeperState zkState = evt.getState();
 
@@ -226,6 +231,8 @@ public class ZookeeperClient implements Watcher {
                         scheduleConnectionCheck();
                     }
                     else if (newState == ConnectionState.Connected) {
+                        assert zk.getState().isConnected() : zk;
+
                         retryCount.set(0);
 
                         stateMux.notifyAll();
@@ -831,14 +838,13 @@ public class ZookeeperClient implements Watcher {
             code == KeeperException.Code.SESSIONMOVED.intValue() ||
             code == KeeperException.Code.OPERATIONTIMEOUT.intValue();
 
-        if (retryByErrorCode) {
-            if (MAX_RETRY_COUNT <= 0 || retryCount.incrementAndGet() < MAX_RETRY_COUNT)
-                return true;
-            else
-                return false;
-        }
-        else
+        if (!retryByErrorCode)
             return false;
+
+        if (MAX_RETRY_COUNT > 0 && retryCount.incrementAndGet() >= MAX_RETRY_COUNT)
+            return false;
+
+        return true;
     }
 
     /**
