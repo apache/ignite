@@ -41,6 +41,7 @@ import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_TASK;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NEED_UNWRAP;
 import static javax.net.ssl.SSLEngineResult.HandshakeStatus.NOT_HANDSHAKING;
 import static javax.net.ssl.SSLEngineResult.Status;
+import static javax.net.ssl.SSLEngineResult.Status.BUFFER_OVERFLOW;
 import static javax.net.ssl.SSLEngineResult.Status.BUFFER_UNDERFLOW;
 import static javax.net.ssl.SSLEngineResult.Status.CLOSED;
 import static org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter.HANDSHAKE_FUT_META_KEY;
@@ -165,7 +166,7 @@ class GridNioSslHandler extends ReentrantLock {
         appBuf.order(order);
 
         if (log.isDebugEnabled())
-            log.debug("Started SSL session [netBufSize=" + netBufSize + ", appBufSize=" + appBufSize + ']');
+            log.debug("NIO: Started SSL session [netBufSize=" + netBufSize + ", appBufSize=" + appBufSize + ']');
     }
 
     /**
@@ -186,7 +187,7 @@ class GridNioSslHandler extends ReentrantLock {
             // According to javadoc, the only case when exception is thrown is when no close_notify
             // message was received before TCP connection get closed.
             if (log.isDebugEnabled())
-                log.debug("Unable to correctly close inbound data stream (will ignore) [msg=" + e.getMessage() +
+                log.debug("NIO: Unable to correctly close inbound data stream (will ignore) [msg=" + e.getMessage() +
                     ", ses=" + ses + ']');
         }
     }
@@ -199,7 +200,7 @@ class GridNioSslHandler extends ReentrantLock {
      */
     void handshake() throws IgniteCheckedException, SSLException {
         if (log.isDebugEnabled())
-            log.debug("Entered handshake(): [handshakeStatus=" + handshakeStatus + ", ses=" + ses + ']');
+            log.debug("NIO: Entered handshake(): [handshakeStatus=" + handshakeStatus + ", ses=" + ses + ']');
 
         lock();
 
@@ -207,13 +208,14 @@ class GridNioSslHandler extends ReentrantLock {
             boolean loop = true;
 
             while (loop) {
+                log.debug("NIO: LOOP: " + handshakeStatus + ". ses" + ses);
                 switch (handshakeStatus) {
                     case NOT_HANDSHAKING:
                     case FINISHED: {
                         SSLSession sslSes = sslEngine.getSession();
 
                         if (log.isDebugEnabled())
-                            log.debug("Finished ssl handshake [protocol=" + sslSes.getProtocol() + ", cipherSuite=" +
+                            log.debug("NIO: Finished ssl handshake [protocol=" + sslSes.getProtocol() + ", cipherSuite=" +
                                 sslSes.getCipherSuite() + ", ses=" + ses + ']');
 
                         handshakeFinished = true;
@@ -236,7 +238,7 @@ class GridNioSslHandler extends ReentrantLock {
 
                     case NEED_TASK: {
                         if (log.isDebugEnabled())
-                            log.debug("Need to run ssl tasks: " + ses);
+                            log.debug("NIO: Need to run ssl tasks: " + ses);
 
                         handshakeStatus = runTasks();
 
@@ -245,7 +247,7 @@ class GridNioSslHandler extends ReentrantLock {
 
                     case NEED_UNWRAP: {
                         if (log.isDebugEnabled())
-                            log.debug("Need to unwrap incoming data: " + ses);
+                            log.debug("NIO: Need to unwrap incoming data: " + ses);
 
                         Status status = unwrapHandshake();
 
@@ -258,6 +260,8 @@ class GridNioSslHandler extends ReentrantLock {
                     }
 
                     case NEED_WRAP: {
+                        if (log.isDebugEnabled())
+                            log.debug("NIO: NEED_WRAP : " + handshakeBuf);
                         // If the output buffer has remaining data, clear it.
                         if (outNetBuf.hasRemaining())
                             U.warn(log, "Output net buffer has unsent bytes during handshake (will clear): " + ses);
@@ -271,7 +275,7 @@ class GridNioSslHandler extends ReentrantLock {
                         handshakeStatus = res.getHandshakeStatus();
 
                         if (log.isDebugEnabled())
-                            log.debug("Wrapped handshake data [status=" + res.getStatus() + ", handshakeStatus=" +
+                            log.debug("NIO: Wrapped handshake data [status=" + res.getStatus() + ", handshakeStatus=" +
                                 handshakeStatus + ", ses=" + ses + ']');
 
                         writeNetBuffer();
@@ -291,7 +295,7 @@ class GridNioSslHandler extends ReentrantLock {
         }
 
         if (log.isDebugEnabled())
-            log.debug("Leaved handshake(): [handshakeStatus=" + handshakeStatus + ", ses=" + ses + ']');
+            log.debug("NIO: Leaved handshake(): [handshakeStatus=" + handshakeStatus + ", ses=" + ses + ']');
     }
 
     /**
@@ -308,7 +312,7 @@ class GridNioSslHandler extends ReentrantLock {
             appBuf = expandBuffer(appBuf, inNetBuf.capacity() * 2);
 
             if (log.isDebugEnabled())
-                log.debug("Expanded buffers [inNetBufCapacity=" + inNetBuf.capacity() + ", appBufCapacity=" +
+                log.debug("NIO: Expanded buffers [inNetBufCapacity=" + inNetBuf.capacity() + ", appBufCapacity=" +
                     appBuf.capacity() + ", ses=" + ses + ", ");
         }
 
@@ -359,14 +363,14 @@ class GridNioSslHandler extends ReentrantLock {
                     outNetBuf.position() + src.remaining() * 2, outNetBuf.capacity() * 2));
 
                 if (log.isDebugEnabled())
-                    log.debug("Expanded output net buffer [outNetBufCapacity=" + outNetBuf.capacity() + ", ses=" +
+                    log.debug("NIO: Expanded output net buffer [outNetBufCapacity=" + outNetBuf.capacity() + ", ses=" +
                         ses + ']');
             }
 
             SSLEngineResult res = sslEngine.wrap(src, outNetBuf);
 
             if (log.isDebugEnabled())
-                log.debug("Encrypted data [status=" + res.getStatus() + ", handshakeStaus=" +
+                log.debug("NIO: Encrypted data [status=" + res.getStatus() + ", handshakeStaus=" +
                     res.getHandshakeStatus() + ", ses=" + ses + ']');
 
             if (res.getStatus() == SSLEngineResult.Status.OK) {
@@ -482,6 +486,7 @@ class GridNioSslHandler extends ReentrantLock {
 
         ByteBuffer cp = copy(outNetBuf);
 
+        log.debug("writeNetBuffer: " + cp);
         return parent.proceedSessionWrite(ses, cp, true);
     }
 
@@ -493,7 +498,7 @@ class GridNioSslHandler extends ReentrantLock {
      */
     private void unwrapData() throws IgniteCheckedException, SSLException {
         if (log.isDebugEnabled())
-            log.debug("Unwrapping received data: " + ses);
+            log.debug("NIO: Unwrapping received data: " + ses);
 
         // Flip buffer so we can read it.
         inNetBuf.flip();
@@ -520,6 +525,7 @@ class GridNioSslHandler extends ReentrantLock {
         inNetBuf.flip();
 
         SSLEngineResult res = unwrap0();
+
         handshakeStatus = res.getHandshakeStatus();
 
         checkStatus(res);
@@ -557,7 +563,7 @@ class GridNioSslHandler extends ReentrantLock {
             handshakeStatus = res.getHandshakeStatus();
 
             if (log.isDebugEnabled())
-                log.debug("Renegotiation requested [status=" + res.getStatus() + ", handshakeStatus = " +
+                log.debug("NIO: Renegotiation requested [status=" + res.getStatus() + ", handshakeStatus = " +
                     handshakeStatus + "ses=" + ses + ']');
 
             handshakeFinished = false;
@@ -593,8 +599,11 @@ class GridNioSslHandler extends ReentrantLock {
             res = sslEngine.unwrap(inNetBuf, appBuf);
 
             if (log.isDebugEnabled())
-                log.debug("Unwrapped raw data [status=" + res.getStatus() + ", handshakeStatus=" +
+                log.debug("NIO: Unwrapped raw data [status=" + res.getStatus() + ", handshakeStatus=" +
                     res.getHandshakeStatus() + ", ses=" + ses + ']');
+
+                log.debug("NIO inet buff: " + inNetBuf);
+                log.debug("NIO app buff: " + inNetBuf);
 
             if (res.getStatus() == Status.BUFFER_OVERFLOW)
                 appBuf = expandBuffer(appBuf, appBuf.capacity() * 2);
@@ -615,13 +624,13 @@ class GridNioSslHandler extends ReentrantLock {
 
         while ((runnable = sslEngine.getDelegatedTask()) != null) {
             if (log.isDebugEnabled())
-                log.debug("Running SSL engine task [task=" + runnable + ", ses=" + ses + ']');
+                log.debug("NIO: Running SSL engine task [task=" + runnable + ", ses=" + ses + ']');
 
             runnable.run();
         }
 
         if (log.isDebugEnabled())
-            log.debug("Finished running SSL engine tasks [handshakeStatus=" + sslEngine.getHandshakeStatus() +
+            log.debug("NIO: Finished running SSL engine tasks [handshakeStatus=" + sslEngine.getHandshakeStatus() +
                 ", ses=" + ses + ']');
 
         return sslEngine.getHandshakeStatus();

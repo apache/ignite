@@ -140,9 +140,12 @@ public class BlockingSslHandler {
         boolean loop = true;
 
         while (loop) {
+            if (log.isDebugEnabled())
+                log.debug("LOOP: " + handshakeStatus + '.');
             switch (handshakeStatus) {
                 case NOT_HANDSHAKING:
                 case FINISHED: {
+                    log.debug("!!! STOPING LOOP handshakeStatus: " + handshakeStatus );
                     handshakeFinished = true;
 
                     loop = false;
@@ -161,10 +164,10 @@ public class BlockingSslHandler {
 
                     handshakeStatus = sslEngine.getHandshakeStatus();
 
-                    if (status == BUFFER_UNDERFLOW && sslEngine.isInboundDone())
-                        // Either there is no enough data in buffer or session was closed.
+                    if (status == BUFFER_UNDERFLOW && sslEngine.isInboundDone()) {
+                        log.debug("!!! STOP LOOP status == BUFFER_UNDERFLOW && sslEngine.isInboundDone()");
                         loop = false;
-
+                    }
                     break;
                 }
 
@@ -185,6 +188,9 @@ public class BlockingSslHandler {
                     else {
                         outNetBuf.flip();
 
+                        log.debug("blocking handshakeBuf: " + handshakeBuf);
+                        log.debug("blocking outNetBuf: " + outNetBuf);
+
                         writeNetBuffer();
                     }
 
@@ -193,7 +199,6 @@ public class BlockingSslHandler {
                     if (log.isDebugEnabled())
                         log.debug("Wrapped handshake data [status=" + res.getStatus() + ", handshakeStatus=" +
                             handshakeStatus + ']');
-
                     break;
                 }
 
@@ -373,9 +378,10 @@ public class BlockingSslHandler {
      * @throws GridNioException If failed to pass event to the next filter.
      */
     private Status unwrapHandshake() throws SSLException, IgniteCheckedException {
-        // Flip input buffer so we can read the collected data.
-        readFromNet();
+        if(!inNetBuf.hasRemaining())
+            readFromNet();
 
+        // Flip input buffer so we can read the collected data.
         inNetBuf.flip();
 
         SSLEngineResult res = unwrap0();
@@ -399,7 +405,10 @@ public class BlockingSslHandler {
         else if (res.getStatus() == BUFFER_UNDERFLOW) {
             inNetBuf.compact();
 
-            inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() * 2);
+            if(inNetBuf.capacity() == inNetBuf.limit())
+                inNetBuf = expandBuffer(inNetBuf, inNetBuf.capacity() * 2);
+
+            readFromNet();
         }
         else
             // prepare to be written again
@@ -423,6 +432,9 @@ public class BlockingSslHandler {
             if (log.isDebugEnabled())
                 log.debug("Unwrapped raw data [status=" + res.getStatus() + ", handshakeStatus=" +
                     res.getHandshakeStatus() + ']');
+
+            log.debug("blocking inet: " + inNetBuf);
+            log.debug("blocking appBuf: " + appBuf);
 
             if (res.getStatus() == Status.BUFFER_OVERFLOW)
                 appBuf = expandBuffer(appBuf, appBuf.capacity() * 2);
