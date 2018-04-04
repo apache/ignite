@@ -368,7 +368,8 @@ public class MetaStorage implements DbCheckpointListener, ReadOnlyMetastorage, R
                                 io.getType(),
                                 io.getVersion(),
                                 treeRoot,
-                                reuseListRoot
+                                reuseListRoot,
+                                0
                             ));
 
                         allocated = true;

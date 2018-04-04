@@ -42,9 +42,13 @@ public class PagePartitionMetaIO extends PageMetaIO {
     /** */
     private static final int NEXT_PART_META_PAGE_OFF = PARTITION_STATE_OFF + 1;
 
+    /** End of page partition meta. */
+    static final int END_OF_PARTITION_PAGE_META = NEXT_PART_META_PAGE_OFF + 8;
+
     /** */
     public static final IOVersions<PagePartitionMetaIO> VERSIONS = new IOVersions<>(
-        new PagePartitionMetaIO(1)
+        new PagePartitionMetaIO(1),
+        new PagePartitionMetaIOV2(2)
     );
 
     /** {@inheritDoc} */
@@ -150,6 +154,7 @@ public class PagePartitionMetaIO extends PageMetaIO {
 
     /**
      * Returns partition counters page identifier, page with caches in cache group sizes.
+     *
      * @param pageAddr Partition metadata page address.
      * @return Next meta partial page ID or {@code 0} if it does not exist.
      */
@@ -167,8 +172,27 @@ public class PagePartitionMetaIO extends PageMetaIO {
         PageUtils.putLong(pageAddr, NEXT_PART_META_PAGE_OFF, cntrsPageId);
     }
 
+    /**
+     * @param pageAddr Page address.
+     * @return Pending Tree root page.
+     */
+    public long getPendingTreeRoot(long pageAddr) {
+        throw new UnsupportedOperationException("Per partition pending tree is not supported by " +
+            "this PagePartitionMetaIO version: ver=" + getVersion());
+    }
+
+    /**
+     * @param pageAddr Page address.
+     * @param treeRoot Pending Tree root
+     */
+    public void setPendingTreeRoot(long pageAddr, long treeRoot) {
+        throw new UnsupportedOperationException("Per partition pending tree is not supported by " +
+            "this PagePartitionMetaIO version: ver=" + getVersion());
+    }
+
     /** {@inheritDoc} */
-    @Override protected void printPage(long pageAddr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
+    @Override protected void printPage(long pageAddr, int pageSize,
+        GridStringBuilder sb) throws IgniteCheckedException {
         super.printPage(pageAddr, pageSize, sb);
 
         byte state = getPartitionState(pageAddr);
@@ -180,6 +204,6 @@ public class PagePartitionMetaIO extends PageMetaIO {
             .a(",\n\tpartitionState=").a(state).a("(").a(GridDhtPartitionState.fromOrdinal(state)).a(")")
             .a(",\n\tcountersPageId=").a(getCountersPageId(pageAddr))
             .a("\n]")
-            ;
+        ;
     }
 }
