@@ -2656,6 +2656,14 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
         // no-op
     }
 
+    @Override
+    public String toString() {
+        return "GridDhtPartitionTopologyImpl{" +
+                "diffFromAffinityVer=" + diffFromAffinityVer +
+                ", lastTopChangeVer=" + lastTopChangeVer +
+                '}';
+    }
+
     /**
      * Iterator over current local partitions.
      */

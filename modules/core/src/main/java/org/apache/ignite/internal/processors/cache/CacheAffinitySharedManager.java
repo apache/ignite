@@ -310,6 +310,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             Map<Integer, UUID> partWait = waitInfo.waitGrps.get(checkGrpId);
 
+            log.info("checkRebalanceState waitInfo=" + waitInfo);
+
             boolean rebalanced = true;
 
             if (partWait != null) {
@@ -1974,6 +1976,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
             });
 
+            log.info("initAffinityOnNodeJoin waitRebalanceInfo=" + waitRebalanceInfo);
+
             return waitRebalanceInfo;
         }
     }
@@ -2617,7 +2621,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         /** {@inheritDoc} */
         @Override public String toString() {
             return "WaitRebalanceInfo [topVer=" + topVer +
-                ", grps=" + (waitGrps != null ? waitGrps.keySet() : null) + ']';
+                ", grps=" + (waitGrps != null ? waitGrps.keySet() : null) +
+                    ", assignments=" + assignments.size() +
+                    ", deploymentIds = " + deploymentIds.size() + "]";
         }
     }
 

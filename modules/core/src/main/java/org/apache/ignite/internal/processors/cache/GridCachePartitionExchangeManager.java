@@ -1531,15 +1531,19 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     else if (!grp.isLocal())
                         top = grp.topology();
 
+                    log.info("processSinglePartitionUpdate top=" + top + ", grpId=" + grpId + ", clienTops=" + clientTops);
+
                     if (top != null) {
                         updated |= top.update(null, entry.getValue(), false);
-                        log.info("processSinglePartitionUpdate top=" + top + ", grpId=" + grpId);
                         cctx.affinity().checkRebalanceState(top, grpId);
                     }
                 }
 
-                if (updated)
+                if (updated) {
+                    log.info("processSinglePartitionUpdate scheduleResendPartitions");
+
                     scheduleResendPartitions();
+                }
             }
             else
                 exchangeFuture(msg.exchangeId(), null, null, null, null).onReceiveSingleMessage(node, msg);
