@@ -366,7 +366,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
         }
 
         for (int i = 0; i < 10; i++) {
-            if (i == 9){
+            if (i == 9) {
                 countedDown.set(true);
 
                 allLatchesObtained.await();
