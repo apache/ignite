@@ -81,7 +81,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.delegateTracker;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.wrap;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.merge;
 import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.delegateWithTrackingPages;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
@@ -741,7 +741,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     DataStructureSize internalSize = grp.getInternalSize();
 
                     /*StoreHead,MetaPage,TreeRoot,ReuseListRoot,TrackingPage*/
-                    internalSize.add((pageMem.pageSize() * 5) / 1024);
+                    //internalSize.add(pageMem.pageSize() * 4);
 
                     pageIO.setTreeRoot(pageAddr, metastoreRoot);
                     pageIO.setReuseListRoot(pageAddr, reuseListRoot);
@@ -1156,7 +1156,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     DataStructureSize dataPages = delegateTracker(dataPagesName, grp.getDataPages());
                     DataStructureSize pureDataSize = delegateTracker(pureDataPagesName, grp.getPureDataSize());
                     DataStructureSize internalSize = delegateTracker(internalName, grp.getInternalSize());
-                    DataStructureSize totalPages = delegateWithTrackingPages(totalPagesName, internalSize, pageSize);
+                    DataStructureSize totalPages = merge(
+                        delegateWithTrackingPages(
+                            totalPagesName, internalSize, pageSize
+                        ),
+                        grp.getTotalPages()
+                    );
 
                     freeList = new CacheFreeList(
                         grp.groupId(),
@@ -1170,14 +1175,12 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         reuseListPages,
                         pureDataSize,
                         dataPages,
-                        wrap(totalPages, grp.getTotalPages())
+                        totalPages
                     ) {
                         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
                             assert grp.shared().database().checkpointLockIsHeldByThread();
 
                             totalPages.inc();
-
-                            new Exception().printStackTrace();
 
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
@@ -1202,8 +1205,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             assert grp.shared().database().checkpointLockIsHeldByThread();
 
                             totalPages.inc();
-
-                            new Exception().printStackTrace();
 
                             return pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         }
@@ -1302,8 +1303,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         /* Update metrics after new partition allocated. */
                         DataStructureSize internalSize = grp.getInternalSize();
 
-                        /*StoreHead,MetaPage,TreeRoot,ReuseListRoot,TrackingPage*/
-                        internalSize.add(pageMem.pageSize() * 5);
+                        /* StoreHead,MetaPage,TreeRoot,ReuseListRoot */
+                        internalSize.add(pageMem.pageSize() * 4);
 
                         assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_DATA;
                         assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_DATA;

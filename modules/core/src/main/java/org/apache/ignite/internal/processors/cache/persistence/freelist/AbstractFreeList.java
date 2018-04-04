@@ -494,11 +494,8 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         assert part <= PageIdAllocator.MAX_PARTITION_ID;
         assert part != PageIdAllocator.INDEX_PARTITION;
 
-        if (totalSize != null){
+        if (totalSize != null)
             totalSize.inc();
-
-            new Exception().printStackTrace();
-        }
 
         return pageMem.allocatePage(grpId, part, PageIdAllocator.FLAG_DATA);
     }

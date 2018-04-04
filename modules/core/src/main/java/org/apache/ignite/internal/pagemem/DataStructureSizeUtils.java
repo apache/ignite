@@ -37,7 +37,7 @@ public abstract class DataStructureSizeUtils {
             }
 
             @Override public long size() {
-                return size.get() + (internalSize.size() / pageSize);
+                return size.get();
             }
 
             @Override public String name() {
@@ -72,26 +72,26 @@ public abstract class DataStructureSizeUtils {
         };
     }
 
-    public static DataStructureSize wrap(DataStructureSize size, DataStructureSize delegate) {
+    public static DataStructureSize merge(DataStructureSize first, DataStructureSize second) {
         return new DataStructureSize() {
 
             @Override public void inc() {
-                size.inc();
+                first.inc();
 
-                delegate.inc();
+                second.inc();
             }
 
             @Override public void dec() {
-                size.dec();
+                first.dec();
 
-                delegate.dec();
+                second.dec();
             }
 
             @Override public void add(long val) {
                 if (val != 0 && (val > 1 || val < -1)) {
-                    size.add(val);
+                    first.add(val);
 
-                    delegate.add(val);
+                    second.add(val);
                 }
 
                 if (val == -1)
@@ -102,11 +102,11 @@ public abstract class DataStructureSizeUtils {
             }
 
             @Override public long size() {
-                return size.size();
+                return first.size();
             }
 
             @Override public String name() {
-                return size.name();
+                return first.name();
             }
         };
     }
