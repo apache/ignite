@@ -78,6 +78,8 @@ import org.apache.ignite.plugin.extensions.communication.MessageWriter;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.MSG_WRITER;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.NIO_OPERATION;
 
@@ -2095,25 +2097,28 @@ public class GridNioServer<T> {
                 }
             }
             // Ignore this exception as thread interruption is equal to 'close' call.
+            catch (OutOfMemoryError e) {
+                lsnr.onCriticalFailure(CRITICAL_ERROR, e);
+            }
             catch (ClosedByInterruptException e) {
                 if (log.isDebugEnabled())
                     log.debug("Closing selector due to thread interruption: " + e.getMessage());
             }
             catch (ClosedSelectorException e) {
-                lsnr.onCriticalFailure(FailureType.SYSTEM_WORKER_TERMINATION, e);
+                lsnr.onCriticalFailure(SYSTEM_WORKER_TERMINATION, e);
 
                 throw new IgniteCheckedException("Selector got closed while active.", e);
             }
             catch (IOException e) {
-                lsnr.onCriticalFailure(FailureType.SYSTEM_WORKER_TERMINATION, e);
+                lsnr.onCriticalFailure(SYSTEM_WORKER_TERMINATION, e);
 
                 throw new IgniteCheckedException("Failed to select events on selector.", e);
             }
             finally {
                 if (selector.isOpen()) {
                     if (!closed)
-                        lsnr.onCriticalFailure(FailureType.SYSTEM_WORKER_TERMINATION,
-                            new IllegalStateException("GridNioServer is exiting unexpectedly"));
+                        lsnr.onCriticalFailure(SYSTEM_WORKER_TERMINATION,
+                            new IllegalStateException("Thread " + name() + " is exiting unexpectedly"));
 
                     if (log.isDebugEnabled())
                         log.debug("Closing all connected client sockets.");
@@ -2783,7 +2788,7 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            Throwable criticalFailure = null;
+            Throwable err = null;
 
             try {
                 boolean reset = false;
@@ -2809,20 +2814,21 @@ public class GridNioServer<T> {
             }
             catch (Throwable t) {
                 if (!(t instanceof IgniteInterruptedCheckedException))
-                    criticalFailure = t;
+                    err = t;
 
                 throw t;
             }
             finally {
-                if (criticalFailure != null)
-                    lsnr.onCriticalFailure(FailureType.SYSTEM_WORKER_TERMINATION, criticalFailure);
+                if (err == null && !closed)
+                    err = new IllegalStateException("Thread " + name() + " is exiting unexpectedly");
+
+                if (err instanceof OutOfMemoryError)
+                    lsnr.onCriticalFailure(CRITICAL_ERROR, err);
+                else if (err != null)
+                    lsnr.onCriticalFailure(SYSTEM_WORKER_TERMINATION, err);
 
                 closeSelector(); // Safety.
             }
-
-            if (!closed && !Thread.currentThread().isInterrupted())
-                lsnr.onCriticalFailure(FailureType.SYSTEM_WORKER_TERMINATION,
-                    new IllegalStateException("GridNioAcceptorWorker is exiting unexpectedly"));
         }
 
         /**

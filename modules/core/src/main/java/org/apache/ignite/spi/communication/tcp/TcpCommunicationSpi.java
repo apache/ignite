@@ -147,6 +147,8 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.util.nio.GridNioSessionMetaKey.SSL_META;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.ALREADY_CONNECTED;
 import static org.apache.ignite.spi.communication.tcp.messages.RecoveryLastReceivedMessage.NEED_WAIT;
@@ -4097,7 +4099,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             if (log.isDebugEnabled())
                 log.debug("Tcp communication worker has been started.");
 
-            Throwable criticalFailure = null;
+            Throwable err = null;
 
             try {
                 while (!isInterrupted()) {
@@ -4111,16 +4113,16 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             }
             catch (Throwable t) {
                 if (!(t instanceof InterruptedException))
-                    criticalFailure = t;
+                    err = t;
             }
             finally {
-                if (criticalFailure == null && !stopping)
-                    criticalFailure = new IllegalStateException(
-                        "TCP communication SPI worker thread is exiting unexpectedly");
+                if (err == null && !stopping)
+                    err = new IllegalStateException("Thread  " + getName() + " is exiting unexpectedly");
 
-                if (criticalFailure != null)
-                    ((IgniteEx)ignite).context().failure().process(
-                        new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, criticalFailure));
+                if (err instanceof OutOfMemoryError)
+                    ((IgniteEx)ignite).context().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    ((IgniteEx)ignite).context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
 

@@ -68,7 +68,6 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -152,6 +151,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
@@ -2612,12 +2613,15 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
-            Throwable criticalFailure = null;
+            Throwable err = null;
 
             try {
                 super.body();
             }
             catch (Throwable e) {
+                if (e instanceof OutOfMemoryError)
+                    ((IgniteEx)spi.ignite()).context().failure().process(new FailureContext(CRITICAL_ERROR, e));
+
                 if (!spi.isNodeStopping0() && spiStateCopy() != DISCONNECTING) {
                     final Ignite ignite = spi.ignite();
 
@@ -2642,20 +2646,18 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                if (!(e instanceof InterruptedException))
-                    criticalFailure = e;
+                if (!(e instanceof InterruptedException) && !(e instanceof OutOfMemoryError))
+                    err = e;
 
                 // Must be processed by IgniteSpiThread as well.
                 throw e;
             } finally {
-                if (criticalFailure != null)
+                if (err == null && !spi.isNodeStopping0())
+                    err = new IllegalStateException("Thread " + getName() + " is exiting while the node is alive");
+
+                if (err != null)
                     ((IgniteEx)spi.ignite()).context().failure().process(
-                        new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, criticalFailure));
-                else if (!spi.isNodeStopping0())
-                    ((IgniteEx)spi.ignite()).context().failure().process(
-                        new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION,
-                            new IllegalStateException(
-                                "TcpDiscoverSpi message worker thread is exiting while the node is alive")));
+                        new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
 
@@ -5614,8 +5616,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException {
-            Throwable criticalFailure = null;
+        @Override protected void body() {
+            Throwable err = null;
 
             try {
                 while (!isInterrupted()) {
@@ -5649,6 +5651,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 onException("Failed to accept TCP connection.", e);
 
                 if (!isInterrupted()) {
+                    err = e;
+
                     if (U.isMacInvalidArgumentError(e))
                         U.error(log, "Failed to accept TCP connection\n\t" + U.MAC_INVALID_ARG_MSG, e);
                     else
@@ -5656,19 +5660,19 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
             catch (Throwable t) {
-                criticalFailure = t;
+                err = t;
             }
             finally {
-                U.closeQuiet(srvrSock);
+                if (err == null && !spi.isNodeStopping0())
+                    err = new IllegalStateException("Thread " + getName() + " is exiting while the node is alive");
 
-                if (criticalFailure != null)
-                    ((IgniteEx)spi.ignite()).context().failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION,
-                        criticalFailure));
-                else if (!spi.isNodeStopping0())
-                    ((IgniteEx)spi.ignite()).context().failure().process(new FailureContext(
-                        FailureType.SYSTEM_WORKER_TERMINATION,
-                        new IllegalStateException(
-                            "TCP discovery acceptor thread is exiting while the node is alive")));
+                if (err instanceof OutOfMemoryError)
+                    ((IgniteEx)spi.ignite()).context().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    ((IgniteEx)spi.ignite()).context().failure().process(
+                        new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+
+                U.closeQuiet(srvrSock);
             }
         }
 

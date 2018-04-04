@@ -136,6 +136,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.configuration.IgniteConfiguration.DFLT_THREAD_KEEP_ALIVE_TIME;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEMORY_POLICY_MAX_SIZE;
 import static org.apache.ignite.configuration.MemoryConfiguration.DFLT_MEM_PLC_DEFAULT_NAME;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteComponentType.SPRING;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.RESTART_JVM;
 
@@ -1808,7 +1809,7 @@ public class IgnitionEx {
                 log,
                 (thread, t) -> {
                     if (grid != null)
-                        grid.context().failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, t));
+                        grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                 });
 
             // Note that since we use 'LinkedBlockingQueue', number of
@@ -1851,7 +1852,7 @@ public class IgnitionEx {
                 log,
                 (thread, t) -> {
                     if (grid != null)
-                        grid.context().failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, t));
+                        grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
                 },
                 true);
 
