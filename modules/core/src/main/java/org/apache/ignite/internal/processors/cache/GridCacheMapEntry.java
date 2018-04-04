@@ -2752,8 +2752,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (unswapped) {
                 update = p.apply(null);
 
-                // If entry is already unswapped and we are going to modify it, we must run deletion callbacks for old value.
                 if (update) {
+                    // If entry is already unswapped and we are modifying it, we must run deletion callbacks for old value.
                     long oldExpTime = expireTime();
                     long delta = (oldExpTime == 0 ? 0 : oldExpTime - U.currentTimeMillis());
 
@@ -2763,10 +2763,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                                 deferred = true;
                                 oldVer = this.ver;
                             }
-                            else
+                            else if (val == null)
                                 obsolete = true;
                         }
                     }
+
+                    storeValue(val, expTime, ver, null);
                 }
             }
             else // Optimization to access storage only once.
