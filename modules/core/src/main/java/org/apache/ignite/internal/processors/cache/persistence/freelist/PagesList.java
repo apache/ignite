@@ -136,9 +136,9 @@ public abstract class PagesList extends DataStructure {
         int buckets,
         IgniteWriteAheadLogManager wal,
         long metaPageId,
-        DataStructureSize selfDataStructurePages
+        DataStructureSize selfPages
     ) {
-        super(cacheId, pageMem, wal, selfDataStructurePages);
+        super(cacheId, pageMem, wal, selfPages);
 
         this.name = name;
         this.buckets = buckets;

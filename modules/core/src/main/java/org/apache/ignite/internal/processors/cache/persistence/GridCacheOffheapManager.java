@@ -740,8 +740,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     DataStructureSize internalSize = grp.getInternalSize();
 
-                    /*StoreHead,MetaPage,TreeRoot,ReuseListRoot,TrackingPage*/
-                    //internalSize.add(pageMem.pageSize() * 4);
+                    /*StoreHead,MetaPage,TreeRoot,ReuseListRoot*/
+                    internalSize.add(pageMem.pageSize() * 4);
 
                     pageIO.setTreeRoot(pageAddr, metastoreRoot);
                     pageIO.setReuseListRoot(pageAddr, reuseListRoot);

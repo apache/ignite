@@ -242,12 +242,12 @@ public class CacheGroupContext {
         String groupName = cacheOrGroupName();
 
         String pkIndexName = groupName + "-pkIndex";
-       // String indexesName = groupName + "-indexes";
+        String indexesName = groupName + "-indexes";
         String reuseListName = groupName + "-reuseList";
         String pureDataName = groupName + "-pureData";
         String dataPagesName = groupName + "-data";
         String internalName = groupName + "-internal";
-        String totalSizeName = groupName + "-totalPages";
+        String totalSizeName = groupName + "-partitions";
 
         int pageSize = dataRegion.pageMemory().pageSize();
 
@@ -256,17 +256,16 @@ public class CacheGroupContext {
         dataPages = simpleTracker(dataPagesName);
         pureDataSize = simpleTracker(pureDataName);
         internalSize = simpleTracker(internalName);
-        indexesPages = null;
-       // indexesPages = delegateWithTrackingPages(indexesName, internalSize, pageSize);
+        indexesPages = delegateWithTrackingPages(indexesName, internalSize, pageSize);
         totalPages = simpleTracker(totalSizeName);
 
         sizes.put(pkIndexName, pkIndexPages);
-       // sizes.put(indexesName, indexesPages);
         sizes.put(reuseListName, reuseListPages);
         sizes.put(dataPagesName, dataPages);
         sizes.put(pureDataName, pureDataSize);
-        sizes.put(internalName, internalSize);
         sizes.put(totalSizeName, totalPages);
+        sizes.put(indexesName, indexesPages);
+        sizes.put(internalName, internalSize);
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
     }

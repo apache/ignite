@@ -51,9 +51,9 @@ public class IndexReuseList extends PagesList implements ReuseList {
         IgniteWriteAheadLogManager wal,
         long metaPageId,
         boolean initNew,
-        DataStructureSize dsSize
+        DataStructureSize selfPages
     ) throws IgniteCheckedException {
-        super(cacheId, name, pageMem, 1, wal, metaPageId, dsSize);
+        super(cacheId, name, pageMem, 1, wal, metaPageId, selfPages);
 
         reuseList = this;
 
