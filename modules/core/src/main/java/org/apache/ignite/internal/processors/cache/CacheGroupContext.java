@@ -258,7 +258,7 @@ public class CacheGroupContext {
         internalSize = simpleTracker(internalName);
         indexesPages = null;
        // indexesPages = delegateWithTrackingPages(indexesName, internalSize, pageSize);
-        totalPages = delegateWithTrackingPages(totalSizeName, internalSize, pageSize);
+        totalPages = simpleTracker(totalSizeName);
 
         sizes.put(pkIndexName, pkIndexPages);
        // sizes.put(indexesName, indexesPages);
