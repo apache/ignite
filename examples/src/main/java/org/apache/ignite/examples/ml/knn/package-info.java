@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import id8 from 'app/utils/id8';
-
-export default function() {
-    return id8;
-}
+/**
+ * <!-- Package description. -->
+ * kNN examples.
+ */
+package org.apache.ignite.examples.ml.knn;

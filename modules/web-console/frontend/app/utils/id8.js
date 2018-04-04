@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-import id8 from 'app/utils/id8';
-
-export default function() {
-    return id8;
+export default function id8(uuid = '') {
+    return uuid.substring(0, 8).toUpperCase();
 }

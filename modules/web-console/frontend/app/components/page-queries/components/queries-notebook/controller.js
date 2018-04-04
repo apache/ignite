@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 import {nonEmpty, nonNil} from 'app/utils/lodashMixins';
+import id8 from 'app/utils/id8';
 import 'rxjs/add/operator/mergeMap';
 import 'rxjs/add/operator/merge';
 import 'rxjs/add/operator/switchMap';
@@ -935,7 +936,7 @@ export class NotebookCtrl {
 
         const _startWatch = () => {
             const awaitClusters$ = fromPromise(
-                agentMgr.startClusterWatch('Back to Configuration', 'base.configuration.overview'));
+                agentMgr.startClusterWatch('Back to Configuration', 'default-state'));
 
             const finishLoading$ = defer(() => {
                 if (!$root.IgniteDemoMode)
@@ -1902,7 +1903,7 @@ export class NotebookCtrl {
 
                 // Attach duration and selected node info
                 scope.meta = `Duration: ${$filter('duration')(paragraph.duration)}.`;
-                scope.meta += paragraph.localQueryMode ? ` Node ID8: ${_.id8(paragraph.resNodeId)}` : '';
+                scope.meta += paragraph.localQueryMode ? ` Node ID8: ${id8(paragraph.resNodeId)}` : '';
 
                 // Show a basic modal from a controller
                 $modal({scope, templateUrl: messageTemplateUrl, show: true});
