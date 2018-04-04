@@ -1009,7 +1009,7 @@ public abstract class CacheMvccAbstractTest extends GridCommonAbstractTest {
         for (Ignite node : G.allGrids()) {
             final MvccProcessor crd = ((IgniteKernal)node).context().cache().context().coordinators();
 
-            Set activeTxs = GridTestUtils.getFieldValue(crd, "activeTxs");
+            Map activeTxs = GridTestUtils.getFieldValue(crd, "activeTxs");
 
             assertTrue("Txs on node [node=" + node.name() + ", txs=" + activeTxs.toString() + ']',
                 activeTxs.isEmpty());

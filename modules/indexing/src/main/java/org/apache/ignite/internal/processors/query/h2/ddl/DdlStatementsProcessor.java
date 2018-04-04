@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
@@ -537,7 +538,7 @@ public class DdlStatementsProcessor {
      * @throws IgniteCheckedException If failed.
      */
     private void finishActiveTxIfNecessary() throws IgniteCheckedException {
-        try (GridNearTxLocal tx = idx.tx()) {
+        try (GridNearTxLocal tx = MvccUtils.tx(ctx)) {
             if (tx == null)
                 return;
 

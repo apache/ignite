@@ -38,8 +38,6 @@ import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.processors.cache.mvcc.MvccUtils.mvccVersionIsValid;
-
 /**
  *
  */
@@ -181,11 +179,6 @@ public class MvccUpdateDataRowNative extends MvccDataRow implements BPlusTree.Tr
 
     /** {@inheritDoc} */
     @Override public int mvccOperationCounter() {
-        return MvccProcessor.MVCC_START_OP_CNTR;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int newMvccOperationCounter() {
         return MvccProcessor.MVCC_START_OP_CNTR;
     }
 

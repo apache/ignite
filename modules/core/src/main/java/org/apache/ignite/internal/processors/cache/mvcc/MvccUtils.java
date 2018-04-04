@@ -17,19 +17,34 @@
 
 package org.apache.ignite.internal.processors.cache.mvcc;
 
+import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.txlog.TxState;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.query.IgniteSQLException;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.transactions.TransactionState;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.itemId;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor.MVCC_OP_COUNTER_NA;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.io.DataPageIO.MVCC_INFO_SIZE;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Utils for MVCC.
@@ -77,16 +92,44 @@ public class MvccUtils {
      */
     public static boolean isVisible(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
         int opCntr, boolean useTxLog) throws IgniteCheckedException {
+        if (mvccCrd == 0) {
+            assert mvccCntr == MvccProcessor.MVCC_COUNTER_NA && opCntr == MvccProcessor.MVCC_OP_COUNTER_NA
+                : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntr) + ", snapshot=" + snapshot;
+
+            return false; // Unassigned version is always invisible
+        }
+
         long snapshotCrd = snapshot.coordinatorVersion();
+
+        assert mvccCrd <= snapshotCrd : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntr) + ", snapshot=" + snapshot;
+
         long snapshotCntr = snapshot.counter();
         long snapshotOpCntr = snapshot.operationCounter();
 
         if (mvccCrd < snapshotCrd)
-            return isCommitted(cctx, mvccCrd, mvccCntr, useTxLog);
-        else if (mvccCrd == snapshotCrd && mvccCntr < snapshotCntr)
-            return !snapshot.activeTransactions().contains(mvccCntr) && isCommitted(cctx, mvccCrd, mvccCntr, useTxLog);
-        else
-            return mvccCrd == snapshotCrd && mvccCntr == snapshotCntr && opCntr < snapshotOpCntr; // we don't see own pending updates
+            // Don't check the row with TxLog if the row is expected to be committed.
+            return !useTxLog || isCommitted(cctx, mvccCrd, mvccCntr);
+
+        if (mvccCntr > snapshotCntr) // we don't see future updates
+            return false;
+
+        if (mvccCntr == snapshotCntr) {
+            assert opCntr <= snapshotOpCntr : "rowVer=" + mvccVersion(mvccCrd, mvccCntr, opCntr) + ", snapshot=" + snapshot;
+
+            return opCntr < snapshotOpCntr; // we don't see own pending updates
+        }
+
+        if (snapshot.activeTransactions().contains(mvccCntr)) // we don't see of other transactions' pending updates
+            return false;
+
+        if (!useTxLog)
+            return true; // The checking row is expected to be committed.
+
+        byte state = cctx.shared().coordinators().state(mvccCrd, mvccCntr);
+
+        assert state == TxState.COMMITTED || state == TxState.ABORTED : state;
+
+        return state == TxState.COMMITTED;
     }
 
     /**
@@ -107,7 +150,7 @@ public class MvccUtils {
         int mvccOpCntr, long newMvccCrd,
         long newMvccCntr, int newMvccOpCntr) throws IgniteCheckedException {
         return isVisible(cctx, snapshot, mvccCrd, mvccCntr, mvccOpCntr)
-            && (newMvccCrd == 0 || !isVisible(cctx, snapshot, newMvccCrd, newMvccCntr, newMvccOpCntr));
+            && !isVisible(cctx, snapshot, newMvccCrd, newMvccCntr, newMvccOpCntr);
     }
 
     /**
@@ -319,13 +362,14 @@ public class MvccUtils {
                 long mvccCntr = dataIo.mvccCounter(pageAddr, offset);
                 int mvccOpCntr = dataIo.mvccOperationCounter(pageAddr, offset);
 
-                assert mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr);
+                assert mvccVersionIsValid(mvccCrd, mvccCntr, mvccOpCntr) : mvccVersion(mvccCrd, mvccCntr, mvccOpCntr);
 
                 long newMvccCrd = dataIo.newMvccCoordinator(pageAddr, offset);
                 long newMvccCntr = dataIo.newMvccCounter(pageAddr, offset);
                 int newMvccOpCntr = dataIo.newMvccOperationCounter(pageAddr, offset);
 
-                assert newMvccCrd == 0 || mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr);
+                assert newMvccCrd == 0 || mvccVersionIsValid(newMvccCrd, newMvccCntr, newMvccOpCntr)
+                    : mvccVersion(newMvccCrd, newMvccCntr, newMvccOpCntr);
 
                 return clo.apply(cctx, snapshot, mvccCrd, mvccCntr, mvccOpCntr, newMvccCrd, newMvccCntr, newMvccOpCntr);
             }
@@ -343,12 +387,11 @@ public class MvccUtils {
      * @param cctx Cache context.
      * @param mvccCrd Coordinator version.
      * @param mvccCntr Counter.
-     * @param useTxLog Determines whether TxLog is used.
      * @return {@code True} in case the corresponding transaction is in {@code TxState.COMMITTED} state.
      * @throws IgniteCheckedException If failed.
      */
-    private static boolean isCommitted(GridCacheContext cctx, long mvccCrd, long mvccCntr, boolean useTxLog) throws IgniteCheckedException {
-        return !useTxLog || cctx.shared().coordinators().state(mvccCrd, mvccCntr) == TxState.COMMITTED;
+    private static boolean isCommitted(GridCacheContext cctx, long mvccCrd, long mvccCntr) throws IgniteCheckedException {
+        return cctx.shared().coordinators().state(mvccCrd, mvccCntr) == TxState.COMMITTED;
     }
 
     /**
@@ -361,6 +404,161 @@ public class MvccUtils {
         if (!cctx.atomic() && cctx.gridConfig().isMvccEnabled())
             throw new UnsupportedOperationException(opType + " operations are not supported on transactional " +
                 "caches when MVCC is enabled.");
+    }
+
+
+    /**
+     * @param ctx Grid kernal context.
+     * @return Currently started user transaction, or {@code null} if none started.
+     */
+    @Nullable public static GridNearTxLocal tx(GridKernalContext ctx) {
+        IgniteInternalTx tx0 = ctx.cache().context().tm().tx();
+
+        GridNearTxLocal tx = tx0 != null && tx0.user() ? (GridNearTxLocal)tx0 : null;
+
+        assert tx == null || (tx.pessimistic() && tx.repeatableRead());
+
+        return tx;
+    }
+
+    /**
+     * @param ctx Grid kernal context.
+     * @return Currently started active user transaction, or {@code null} if none started.
+     */
+    @Nullable public static GridNearTxLocal activeTx(GridKernalContext ctx) {
+        GridNearTxLocal tx = tx(ctx);
+
+        if (tx != null) {
+            assert tx.state() == TransactionState.ACTIVE;
+
+            if (!tx.isOperationAllowed(true))
+                throw new IgniteSQLException("SQL queries and cache operations " +
+                    "may not be used in the same transaction.", IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
+
+            return tx;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param ctx Grid kernal context.
+     * @param timeout Transaction timeout.
+     * @return Newly started SQL transaction.
+     */
+    public static GridNearTxLocal txStart(GridKernalContext ctx, long timeout) {
+        return txStart(ctx, null, timeout);
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param timeout Transaction timeout.
+     * @return Newly started SQL transaction.
+     */
+    public static GridNearTxLocal txStart(GridCacheContext cctx, long timeout) {
+        return txStart(cctx.kernalContext(), cctx, timeout);
+    }
+
+    /**
+     * @param ctx Grid kernal context.
+     * @param cctx Cache context.
+     * @param timeout Transaction timeout.
+     * @return Newly started SQL transaction.
+     */
+    private static GridNearTxLocal txStart(GridKernalContext ctx, @Nullable GridCacheContext cctx, long timeout) {
+        if (timeout == 0) {
+            TransactionConfiguration tcfg = cctx != null ?
+                CU.transactionConfiguration(cctx, ctx.config()) : null;
+
+            if (tcfg != null)
+                timeout = tcfg.getDefaultTxTimeout();
+        }
+
+        return ctx.cache().context().tm().newTx(
+            false,
+            false,
+            cctx != null && cctx.systemTx() ? cctx : null,
+            PESSIMISTIC,
+            REPEATABLE_READ,
+            timeout,
+            cctx == null || !cctx.skipStore(),
+            true,
+            0
+        );
+    }
+
+    /**
+     * Initialises MVCC filter and returns MVCC query tracker if needed.
+     * @param cctx Cache context.
+     * @return MVCC query tracker.
+     * @throws IgniteCheckedException If failed.
+     */
+    @NotNull public static MvccQueryTracker mvccTracker(GridCacheContext cctx) throws IgniteCheckedException {
+        return mvccTracker(cctx, false);
+    }
+
+    /**
+     * Initialises MVCC filter and returns MVCC query tracker if needed.
+     * @param cctx Cache context.
+     * @param startTx Start transaction flag.
+     * @return MVCC query tracker.
+     * @throws IgniteCheckedException If failed.
+     */
+    @NotNull public static MvccQueryTracker mvccTracker(GridCacheContext cctx, boolean startTx) throws IgniteCheckedException {
+        assert cctx != null && cctx.mvccEnabled();
+
+        GridNearTxLocal tx = activeTx(cctx.kernalContext());
+
+        if (tx == null && startTx)
+            tx = txStart(cctx, 0);
+
+        if (tx != null)
+            return new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(),
+                requestMvccVersion(cctx, tx));
+
+        final GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
+
+        MvccQueryTracker tracker = new MvccQueryTracker(cctx, true,
+            new IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException>() {
+                @Override public void apply(AffinityTopologyVersion topVer, IgniteCheckedException e) {
+                    fut.onDone(null, e);
+                }
+            });
+
+        tracker.requestVersion(cctx.shared().exchange().readyAffinityVersion());
+
+        fut.get();
+
+        return tracker;
+    }
+
+    /**
+     * @param cctx Cache context.
+     * @param tx Transaction.
+     * @throws IgniteCheckedException If failed.
+     * @return Mvcc snapshot.
+     */
+    public static MvccSnapshot requestMvccVersion(GridCacheContext cctx, GridNearTxLocal tx) throws IgniteCheckedException {
+        tx.addActiveCache(cctx, false);
+
+        if (tx.mvccInfo() == null) {
+            MvccProcessor mvccProc = cctx.shared().coordinators();
+            MvccCoordinator crd = mvccProc.currentCoordinator();
+
+            assert crd != null : tx.topologyVersion();
+
+            if (crd.nodeId().equals(cctx.localNodeId()))
+                tx.mvccInfo(new MvccTxInfo(cctx.localNodeId(), mvccProc.requestTxSnapshotOnCoordinator(tx)));
+            else
+                return mvccProc.requestTxSnapshot(crd, new MvccTxSnapshotResponseListener(tx), tx.nearXidVersion()).get(); // TODO IGNITE-7388
+        }
+
+        return tx.mvccInfo().snapshot();
+    }
+
+    /** */
+    private static MvccVersion mvccVersion(long crd, long cntr, int opCntr) {
+        return new MvccVersionImpl(crd, cntr, opCntr);
     }
 
     /**
@@ -390,7 +588,7 @@ public class MvccUtils {
         /** {@inheritDoc} */
         @Override public Boolean apply(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
             int mvccOpCntr, long newMvccCrd, long newMvccCntr, int newMvccOpCntr) throws IgniteCheckedException {
-            return newMvccCrd != 0 && isVisible(cctx, snapshot, newMvccCrd, newMvccCntr, newMvccOpCntr);
+            return isVisible(cctx, snapshot, newMvccCrd, newMvccCntr, newMvccOpCntr);
         }
     }
 
@@ -402,6 +600,29 @@ public class MvccUtils {
         @Override public MvccVersion apply(GridCacheContext cctx, MvccSnapshot snapshot, long mvccCrd, long mvccCntr,
             int mvccOpCntr, long newMvccCrd, long newMvccCntr, int newMvccOpCntr) {
             return newMvccCrd == 0 ? null : new MvccVersionImpl(newMvccCrd, newMvccCntr, newMvccOpCntr);
+        }
+    }
+
+    /** */
+    private static class MvccTxSnapshotResponseListener implements MvccSnapshotResponseListener {
+        /** */
+        private final GridNearTxLocal tx;
+
+        /**
+         * @param tx Transaction.
+         */
+        MvccTxSnapshotResponseListener(GridNearTxLocal tx) {
+            this.tx = tx;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onResponse(UUID crdId, MvccSnapshot res) {
+            tx.mvccInfo(new MvccTxInfo(crdId, res));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onError(IgniteCheckedException e) {
+            // No-op.
         }
     }
 }

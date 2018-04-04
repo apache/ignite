@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
@@ -507,7 +508,7 @@ public class DmlStatementsProcessor {
 
             DmlDistributedPlanInfo distributedPlan = plan.distributedPlan();
 
-            GridNearTxLocal tx = idx.activeTx();
+            GridNearTxLocal tx = MvccUtils.activeTx(cctx.kernalContext());
 
             boolean implicit = (tx == null);
 
@@ -515,9 +516,9 @@ public class DmlStatementsProcessor {
                 ((SqlFieldsQueryEx)fieldsQry).isAutoCommit());
 
             if (implicit)
-                tx = idx.txStart(cctx, fieldsQry.getTimeout());
+                tx = MvccUtils.txStart(cctx, fieldsQry.getTimeout());
 
-            MvccSnapshot mvccSnapshot = idx.requestMvccVersion(cctx, tx);
+            MvccSnapshot mvccSnapshot = MvccUtils.requestMvccVersion(cctx, tx);
 
             try (GridNearTxLocal toCommit = commit ? tx : null) {
                 long timeout;

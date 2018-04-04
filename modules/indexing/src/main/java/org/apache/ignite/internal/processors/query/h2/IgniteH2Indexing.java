@@ -59,7 +59,6 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -72,12 +71,9 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLocal;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccCoordinator;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccProcessor;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshotResponseListener;
-import org.apache.ignite.internal.processors.cache.mvcc.MvccTxInfo;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryPartitionInfo;
@@ -87,7 +83,6 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
-import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.query.CacheQueryObjectValueContext;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
@@ -155,7 +150,6 @@ import org.apache.ignite.internal.sql.command.SqlSetStreamingCommand;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
 import org.apache.ignite.internal.util.lang.IgniteInClosure2X;
@@ -165,7 +159,6 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiClosure;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteInClosure;
@@ -175,7 +168,6 @@ import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingQueryFilterImpl;
-import org.apache.ignite.transactions.TransactionState;
 import org.h2.api.ErrorCode;
 import org.h2.api.JavaObjectSerializer;
 import org.h2.command.Prepared;
@@ -207,8 +199,6 @@ import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoin
 import static org.apache.ignite.internal.processors.query.h2.opt.DistributedJoinMode.distributedJoinMode;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.LOCAL;
 import static org.apache.ignite.internal.processors.query.h2.opt.GridH2QueryType.PREPARE;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Indexing implementation based on H2 database engine. In this implementation main query language is SQL,
@@ -1092,13 +1082,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             };
         }
         catch (IgniteCheckedException | RuntimeException | Error e) {
-            if ((tx = tx()) != null)
+            if ((tx = MvccUtils.tx(ctx)) != null)
                 tx.setRollbackOnly();
 
             throw e;
         }
         finally {
-            if ((tx != null || (tx = tx()) != null) && tx.isRollbackOnly())
+            if ((tx != null || (tx = MvccUtils.tx(ctx)) != null) && tx.isRollbackOnly())
                 U.close(tx, log);
         }
     }
@@ -1510,41 +1500,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
 
-        return cctx != null && cctx.mvccEnabled() ? mvccTracker(cctx, startTx) : null;
-    }
-
-    /**
-     * Initialises MVCC filter and returns MVCC query tracker if needed.
-     * @param cctx Cache context.
-     * @param startTx Start transaction flag.
-     * @return MVCC query tracker.
-     */
-    @NotNull private MvccQueryTracker mvccTracker(GridCacheContext cctx, boolean startTx) throws IgniteCheckedException {
-        assert cctx != null && cctx.mvccEnabled();
-
-        GridNearTxLocal tx = activeTx();
-
-        if (tx == null && startTx)
-            tx = txStart(cctx, 0);
-
-        if (tx != null)
-            return new MvccQueryTracker(cctx, cctx.shared().coordinators().currentCoordinator(),
-                requestMvccVersion(cctx, tx));
-
-        final GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
-
-        MvccQueryTracker tracker = new MvccQueryTracker(cctx, true,
-            new IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException>() {
-                @Override public void apply(AffinityTopologyVersion topVer, IgniteCheckedException e) {
-                    fut.onDone(null, e);
-                }
-            });
-
-        tracker.requestVersion(readyTopologyVersion());
-
-        fut.get();
-
-        return tracker;
+        return cctx != null && cctx.mvccEnabled() ? MvccUtils.mvccTracker(cctx, startTx) : null;
     }
 
     /**
@@ -1577,7 +1533,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         try {
             final MvccQueryTracker tracker = mvccTracker == null && qry.mvccEnabled() ?
-                mvccTracker(ctx.cache().context().cacheContext(qry.cacheIds().get(0)), startTx) : mvccTracker;
+                MvccUtils.mvccTracker(ctx.cache().context().cacheContext(qry.cacheIds().get(0)), startTx) : mvccTracker;
 
             return new Iterable<List<?>>() {
                 @Override public Iterator<List<?>> iterator() {
@@ -1798,7 +1754,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridNearTxLocal tx = null;
 
         if (mvccEnabled())
-            tx = activeTx();
+            tx = MvccUtils.activeTx(ctx);
 
         if (cmd instanceof SqlBeginTransactionCommand) {
             if (tx != null) {
@@ -1809,7 +1765,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     case COMMIT:
                         doCommit(tx);
 
-                        txStart(null, qry.getTimeout());
+                        MvccUtils.txStart(ctx, qry.getTimeout());
 
                         break;
 
@@ -1828,7 +1784,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 }
             }
             else
-                txStart(null, qry.getTimeout());
+                MvccUtils.txStart(ctx, qry.getTimeout());
         }
         else if (cmd instanceof SqlCommitTransactionCommand) {
             // Do nothing if there's no transaction.
@@ -1842,33 +1798,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             if (tx != null)
                 doRollback(tx);
         }
-    }
-
-    /**
-     * @param cctx Cache context.
-     * @param timeout Transaction timeout.
-     * @return Newly started SQL transaction.
-     */
-    GridNearTxLocal txStart(@Nullable GridCacheContext cctx, long timeout) {
-        if (timeout == 0) {
-            TransactionConfiguration tcfg = cctx != null ?
-                CU.transactionConfiguration(cctx, cctx.kernalContext().config()) : null;
-
-            if (tcfg != null)
-                timeout = tcfg.getDefaultTxTimeout();
-        }
-
-        return ctx.cache().context().tm().newTx(
-            false,
-            false,
-            cctx != null && cctx.systemTx() ? cctx : null,
-            PESSIMISTIC,
-            REPEATABLE_READ,
-            timeout,
-            cctx == null || !cctx.skipStore(),
-            true,
-            0
-        );
     }
 
     /**
@@ -1913,38 +1842,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         finally {
             ctx.cache().context().tm().resetContext();
         }
-    }
-
-    /**
-     * @return Currently started user transaction, or {@code null} if none started.
-     */
-    @Nullable public GridNearTxLocal tx() {
-        IgniteInternalTx tx0 = ctx.cache().context().tm().tx();
-
-        GridNearTxLocal tx = tx0 != null && tx0.user() ? (GridNearTxLocal)tx0 : null;
-
-        assert tx == null || (tx.pessimistic() && tx.repeatableRead());
-
-        return tx;
-    }
-
-    /**
-     * @return Currently started active user transaction, or {@code null} if none started.
-     */
-    @Nullable public GridNearTxLocal activeTx() {
-        GridNearTxLocal tx = tx();
-
-        if (tx != null) {
-            assert tx.state() == TransactionState.ACTIVE;
-
-            if (!tx.isOperationAllowed(true))
-                throw new IgniteSQLException("SQL queries and cache operations " +
-                    "may not be used in the same transaction.", IgniteQueryErrorCode.TRANSACTION_TYPE_MISMATCH);
-
-            return tx;
-        }
-
-        return null;
     }
 
     /** {@inheritDoc} */
@@ -2038,13 +1935,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return res;
         }
         catch (RuntimeException | Error e) {
-            if ((tx = tx()) != null)
+            if ((tx = MvccUtils.tx(ctx)) != null)
                 tx.setRollbackOnly();
 
             throw e;
         }
         finally {
-            if ((tx != null || (tx = tx()) != null) && tx.isRollbackOnly())
+            if ((tx != null || (tx = MvccUtils.tx(ctx)) != null) && tx.isRollbackOnly())
                 U.close(tx, log);
         }
     }
@@ -2332,7 +2229,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      */
     private boolean autoStartTx(SqlFieldsQuery qry) {
         // Let's do this call before anything else so that we always check tx type properly.
-        GridNearTxLocal tx = activeTx();
+        GridNearTxLocal tx = MvccUtils.activeTx(ctx);
 
         return qry instanceof SqlFieldsQueryEx && !((SqlFieldsQueryEx)qry).isAutoCommit() && tx == null;
     }
@@ -3213,7 +3110,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (!mvccEnabled())
             return;
 
-        GridNearTxLocal tx = activeTx();
+        GridNearTxLocal tx = MvccUtils.activeTx(ctx);
 
         if (tx != null)
             doRollback(tx);
@@ -3515,55 +3412,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * @param cctx Cache context.
-     * @param tx Transaction.
-     * @throws IgniteCheckedException If failed.
-     */
-    public MvccSnapshot requestMvccVersion(GridCacheContext cctx, GridNearTxLocal tx) throws IgniteCheckedException {
-        tx.addActiveCache(cctx, false);
-
-        if (tx.mvccInfo() == null) {
-            MvccProcessor mvccProc = cctx.shared().coordinators();
-            MvccCoordinator crd = mvccProc.currentCoordinator();
-
-            assert crd != null : tx.topologyVersion();
-
-            if (crd.nodeId().equals(cctx.localNodeId()))
-                tx.mvccInfo(new MvccTxInfo(cctx.localNodeId(), mvccProc.requestTxSnapshotOnCoordinator(tx)));
-            else
-                return mvccProc.requestTxSnapshot(crd, new MvccTxSnapshotResponseListener(tx), tx.nearXidVersion()).get(); // TODO IGNITE-7388
-        }
-
-        return tx.mvccInfo().snapshot();
-    }
-
-    /**
      * Closeable iterator.
      */
     private interface ClIter<X> extends AutoCloseable, Iterator<X> {
         // No-op.
-    }
-
-    /** */
-    private static class MvccTxSnapshotResponseListener implements MvccSnapshotResponseListener {
-        /** */
-        private final GridNearTxLocal tx;
-
-        /**
-         * @param tx Transaction.
-         */
-        MvccTxSnapshotResponseListener(GridNearTxLocal tx) {
-            this.tx = tx;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onResponse(UUID crdId, MvccSnapshot res) {
-            tx.mvccInfo(new MvccTxInfo(crdId, res));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onError(IgniteCheckedException e) {
-            // No-op.
-        }
     }
 }

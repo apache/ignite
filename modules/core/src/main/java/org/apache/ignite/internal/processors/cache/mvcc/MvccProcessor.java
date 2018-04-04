@@ -19,11 +19,9 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -150,7 +148,7 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
     private final GridAtomicLong committedCntr = new GridAtomicLong(MVCC_START_CNTR);
 
     /** */
-    private final Set<Long> activeTxs = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private final Map<Long, Long> activeTxs = new ConcurrentHashMap<>();
 
     /** */
     private final ActiveQueries activeQueries = new ActiveQueries();
@@ -837,16 +835,16 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
 
         lock.writeLock();
 
-        long ver = mvccCntr.incrementAndGet(), cleanupVer = committedCntr.get() + 1;
+        long ver = mvccCntr.incrementAndGet(), tracking = ver, cleanup = committedCntr.get() + 1;
 
-        for (Long txVer : activeTxs) {
-            if (txVer < cleanupVer)
-                cleanupVer = txVer;
+        for (Map.Entry<Long, Long> txVer : activeTxs.entrySet()) {
+            cleanup = Math.min(txVer.getValue(), cleanup);
+            tracking = Math.min(txVer.getKey(), tracking);
 
-            res.addTx(txVer);
+            res.addTx(txVer.getKey());
         }
 
-        boolean add = activeTxs.add(ver);
+        boolean add = activeTxs.put(ver, tracking) == null;
 
         lock.writeUnlock();
 
@@ -855,9 +853,9 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
         long minQry = activeQueries.minimalQueryCounter();
 
         if (minQry != -1)
-            cleanupVer = Math.min(cleanupVer, minQry);
+            cleanup = Math.min(cleanup, minQry);
 
-        res.init(futId, crdVer, ver, MVCC_START_OP_CNTR, cleanupVer - 1);
+        res.init(futId, crdVer, ver, MVCC_START_OP_CNTR, cleanup - 1);
 
         return res;
     }
@@ -984,16 +982,14 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
 
             lock.writeLock();
 
-            long ver = committedCntr.get(), trackVer = ver;
+            long ver = committedCntr.get(), tracking = ver;
 
-            for (Long txVer : activeTxs) {
+            for (Long txVer : activeTxs.keySet()) {
                 assert txVer != ver;
 
                 if (txVer < ver) {
+                    tracking = Math.min(txVer, tracking);
                     res.addTx(txVer);
-
-                    if (txVer < trackVer)
-                        trackVer = txVer;
                 }
             }
 
@@ -1004,19 +1000,19 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
             if (nodeMap == null) {
                 activeQueries.put(nodeId, nodeMap = new TreeMap<>());
 
-                nodeMap.put(trackVer, new AtomicInteger(1));
+                nodeMap.put(tracking, new AtomicInteger(1));
             }
             else {
-                AtomicInteger cntr = nodeMap.get(trackVer);
+                AtomicInteger cntr = nodeMap.get(tracking);
 
                 if (cntr == null)
-                    nodeMap.put(trackVer, new AtomicInteger(1));
+                    nodeMap.put(tracking, new AtomicInteger(1));
                 else
                     cntr.incrementAndGet();
             }
 
             if (minQry == null)
-                minQry = trackVer;
+                minQry = tracking;
 
             res.init(futId, crdVer, ver, MVCC_READ_OP_CNTR, MVCC_COUNTER_NA);
 
@@ -1107,7 +1103,7 @@ public class MvccProcessor extends GridProcessorAdapter implements DatabaseLifec
                     fut = old;
             }
 
-            if (!activeTxs.contains(txId))
+            if (!activeTxs.containsKey(txId))
                 fut.onDone();
 
             if (!fut.isDone()) {

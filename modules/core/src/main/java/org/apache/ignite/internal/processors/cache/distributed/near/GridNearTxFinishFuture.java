@@ -55,6 +55,7 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
+import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -438,7 +439,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         }
 
         if (!commit)
-            ackMvccCoordinatorOnRollback();
+            listen(new AckCoordinatorOnRollback());
 
         try {
             if (tx.localFinish(commit, clearThreadMap) || (!commit && tx.state() == UNKNOWN)) {
@@ -1193,6 +1194,19 @@ public final class GridNearTxFinishFuture<K, V> extends GridCacheCompoundIdentit
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(CheckRemoteTxMiniFuture.class, this);
+        }
+    }
+
+    /** */
+    private class AckCoordinatorOnRollback extends CIX1<IgniteInternalFuture<IgniteInternalTx>> {
+        /** */
+        private static final long serialVersionUID = 8172699207968328284L;
+
+        /** {@inheritDoc} */
+        @Override public void applyx(IgniteInternalFuture<IgniteInternalTx> future) throws IgniteCheckedException {
+            assert future.isDone();
+
+            ackMvccCoordinatorOnRollback();
         }
     }
 }

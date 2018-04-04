@@ -47,10 +47,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtUnreservedPartitionException;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccQueryTracker;
 import org.apache.ignite.internal.processors.cache.mvcc.MvccSnapshot;
+import org.apache.ignite.internal.processors.cache.mvcc.MvccUtils;
 import org.apache.ignite.internal.processors.query.QueryUtils;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -61,7 +61,6 @@ import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
@@ -561,22 +560,8 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         MvccQueryTracker mvccTracker = null;
 
-        if (cctx.mvccEnabled() && mvccSnapshot == null) {
-            final GridFutureAdapter<Void> fut = new GridFutureAdapter<>();
-
-            mvccTracker = new MvccQueryTracker(cctx, false,
-                new IgniteBiInClosure<AffinityTopologyVersion, IgniteCheckedException>() {
-                    @Override public void apply(AffinityTopologyVersion ver, IgniteCheckedException e) {
-                        fut.onDone(null, e);
-                    }
-                });
-
-            mvccTracker.requestVersion(cctx.shared().exchange().readyAffinityVersion());
-
-            fut.get();
-
-            mvccSnapshot = mvccTracker.snapshot();
-        }
+        if (cctx.mvccEnabled() && mvccSnapshot == null)
+            mvccSnapshot = (mvccTracker = MvccUtils.mvccTracker(cctx)).snapshot();
 
         boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
 

@@ -21,14 +21,12 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.cache.CacheException;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -55,7 +53,6 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.ReadMode.SQL_SUM;
 import static org.apache.ignite.internal.processors.cache.mvcc.CacheMvccAbstractTest.WriteMode.DML;
-import static org.apache.ignite.testframework.GridTestUtils.assertThrows;
 import static org.apache.ignite.testframework.GridTestUtils.runAsync;
 import static org.apache.ignite.testframework.GridTestUtils.runMultiThreaded;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -1081,7 +1078,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testQueryInsertUpdateMiltithread() throws Exception {
+    public void testQueryInsertUpdateMultithread() throws Exception {
         ccfg = cacheConfiguration(PARTITIONED, FULL_SYNC, 2, DFLT_PARTITION_COUNT)
             .setIndexedTypes(Integer.class, Integer.class);
 
@@ -1487,7 +1484,7 @@ public class CacheMvccSqlTxQueriesTest extends CacheMvccAbstractTest {
      * @param ex Exception holder.
      * @param e Exception.
      */
-    private void onException(AtomicReference<Exception> ex, Exception e) {
+    private <T extends Throwable> void onException(AtomicReference<T> ex, T e) {
         if (!ex.compareAndSet(null, e))
             ex.get().addSuppressed(e);
     }
