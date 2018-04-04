@@ -1589,7 +1589,7 @@ class ClusterCachesInfo {
 
         return nodes.stream()
             .map(ClusterNode::version)
-            .anyMatch(version -> version.compareToIgnoreTimestamp(V_MERGE_CONFIG_SINCE) < 0);
+            .noneMatch(version -> version.compareToIgnoreTimestamp(V_MERGE_CONFIG_SINCE) < 0);
     }
 
     /**
