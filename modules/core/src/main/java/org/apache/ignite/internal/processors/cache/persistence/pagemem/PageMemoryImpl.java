@@ -980,9 +980,6 @@ public class PageMemoryImpl implements PageMemoryEx {
         for (int i = 0; i < segments.length; i++) {
             Segment seg = segments[i];
 
-            //todo remove
-            new Throwable("Debug: ***** CP started ***** ").printStackTrace();
-
             if (seg.segCheckpointPages != null)
                 throw new IgniteException("Failed to begin checkpoint (it is already in progress).");
 
