@@ -2783,10 +2783,15 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         desc.validateKeyAndValue(key, val);
     }
 
-    /** Checks if schema with specified {@code schemaName} exists in the cluster. */
-    public boolean hasSchema(String schemaName) {
+    /**
+     *  Whither or not schema with specified {@code schemaName} exists in the cluster and it is accessible for user.
+     *  Schema exist if either it is default schema ("PUBLIC") or there are tables with that schema.
+     *
+     * @param schemaName - name of the schema to look up.
+     * @return true if schema found, false - otherwize.
+     */
+    public boolean hasUserSchema(String schemaName) {
         assert !F.isEmpty(schemaName) : "Schema cannot be empty or null.";
-
 
         // Schema "PUBLIC" is special and always exists.
         if (DFLT_SCHEMA.equals(schemaName))
