@@ -9,7 +9,7 @@ public abstract class DataStructureSizeUtils {
 
     }
 
-    public static DataStructureSize trackerWithTrackingPages(
+    public static DataStructureSize delegateWithTrackingPages(
         String name,
         DataStructureSize internalSize,
         int pageSize

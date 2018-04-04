@@ -58,26 +58,26 @@ public abstract class DataStructure implements PageLockListener {
     protected ReuseList reuseList;
 
     /** */
-    protected final DataStructureSize dataStructureSize;
+    protected final DataStructureSize selfPages;
 
     /**
      * @param grpId Cache group ID.
      * @param pageMem Page memory.
      * @param wal Write ahead log manager.
-     * @param dsSize .
+     * @param selfPages .
      */
     protected DataStructure(
         int grpId,
         PageMemory pageMem,
         IgniteWriteAheadLogManager wal,
-        DataStructureSize dsSize
+        DataStructureSize selfPages
     ) {
         assert pageMem != null;
 
         this.grpId = grpId;
         this.pageMem = pageMem;
         this.wal = wal;
-        this.dataStructureSize = dsSize;
+        this.selfPages = selfPages;
     }
 
     /**
@@ -123,8 +123,8 @@ public abstract class DataStructure implements PageLockListener {
         if (pageId == 0)
             pageId = allocatePageNoReuse();
 
-        if (dataStructureSize != null)
-            dataStructureSize.inc();
+        if (selfPages != null)
+            selfPages.inc();
 
         assert pageId != 0;
 
@@ -137,7 +137,7 @@ public abstract class DataStructure implements PageLockListener {
      * @return Reuse bag.
      */
     protected final ReuseBag wrapMetrics(ReuseBag bag) {
-        if (dataStructureSize == null)
+        if (selfPages == null)
             return bag;
 
         return new ReuseBag() {
@@ -150,7 +150,7 @@ public abstract class DataStructure implements PageLockListener {
                 long res = bag.pollFreePage();
 
                 if (res != 0)
-                    dataStructureSize.dec();
+                    selfPages.dec();
 
                 return res;
             }

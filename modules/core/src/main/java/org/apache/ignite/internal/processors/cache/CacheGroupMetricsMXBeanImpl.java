@@ -27,7 +27,6 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.pagemem.DataStructureSize;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -291,7 +290,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public long getTotalSize() {
-        return ctx.getTotalSize().size() * pageSize;
+        return ctx.getTotalPages().size() * pageSize;
     }
 
     /** {@inheritDoc} */

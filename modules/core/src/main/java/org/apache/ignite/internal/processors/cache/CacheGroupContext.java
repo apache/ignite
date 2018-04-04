@@ -20,14 +20,12 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.affinity.AffinityFunction;
@@ -51,7 +49,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.query.continuous.CounterSkipContext;
 import org.apache.ignite.internal.processors.query.QueryUtils;
@@ -71,7 +68,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
 import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.simpleTracker;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.trackerWithTrackingPages;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.delegateWithTrackingPages;
 
 /**
  *
@@ -177,7 +174,7 @@ public class CacheGroupContext {
     private final DataStructureSize internalSize;
 
     /** */
-    private final DataStructureSize totalSize;
+    private final DataStructureSize totalPages;
 
     /** */
     private final Map<String, DataStructureSize> sizes = new LinkedHashMap<>();
@@ -250,7 +247,7 @@ public class CacheGroupContext {
         String pureDataName = groupName + "-pureData";
         String dataPagesName = groupName + "-data";
         String internalName = groupName + "-internal";
-        String totalSizeName = groupName + "-totalSize";
+        String totalSizeName = groupName + "-totalPages";
 
         int pageSize = dataRegion.pageMemory().pageSize();
 
@@ -259,8 +256,8 @@ public class CacheGroupContext {
         dataPages = simpleTracker(dataPagesName);
         pureDataSize = simpleTracker(pureDataName);
         internalSize = simpleTracker(internalName);
-        indexesPages = trackerWithTrackingPages(indexesName, internalSize, pageSize);
-        totalSize = trackerWithTrackingPages(totalSizeName, internalSize, pageSize);
+        indexesPages = delegateWithTrackingPages(indexesName, internalSize, pageSize);
+        totalPages = delegateWithTrackingPages(totalSizeName, internalSize, pageSize);
 
         sizes.put(pkIndexName, pkIndexPages);
         sizes.put(indexesName, indexesPages);
@@ -268,7 +265,7 @@ public class CacheGroupContext {
         sizes.put(dataPagesName, dataPages);
         sizes.put(pureDataName, pureDataSize);
         sizes.put(internalName, internalSize);
-        sizes.put(totalSizeName, totalSize);
+        sizes.put(totalSizeName, totalPages);
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
     }
@@ -293,8 +290,8 @@ public class CacheGroupContext {
         return pureDataSize;
     }
 
-    public DataStructureSize getTotalSize() {
-        return totalSize;
+    public DataStructureSize getTotalPages() {
+        return totalPages;
     }
 
     public DataStructureSize getIndexesPages() {

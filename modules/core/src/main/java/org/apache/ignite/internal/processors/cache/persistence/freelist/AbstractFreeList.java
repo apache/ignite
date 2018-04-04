@@ -363,19 +363,19 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
         IgniteWriteAheadLogManager wal,
         long metaPageId,
         boolean initNew,
-        DataStructureSize dsSize,
+        DataStructureSize selfPages,
         DataStructureSize pureDataSize,
-        DataStructureSize dataSize,
-        DataStructureSize totalSize
+        DataStructureSize dataPages,
+        DataStructureSize totalPages
     ) throws IgniteCheckedException {
-        super(grpId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId, dsSize);
+        super(grpId, name, memPlc.pageMemory(), BUCKETS, wal, metaPageId, selfPages);
 
         rmvRow = new RemoveRowHandler(grpId == 0);
 
         this.evictionTracker = memPlc.evictionTracker();
         this.pureDataSize = pureDataSize;
-        this.dataSize = dataSize;
-        this.totalSize = totalSize;
+        this.dataSize = dataPages;
+        this.totalSize = totalPages;
         this.reuseList = reuseList == null ? this : reuseList;
 
         int pageSize = pageMem.pageSize();

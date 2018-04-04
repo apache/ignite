@@ -62,9 +62,10 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
         CacheDataRowStore rowStore,
         long metaPageId,
         boolean initNew,
-        DataStructureSize tracker
+        DataStructureSize selfPages
     ) throws IgniteCheckedException {
-        super(name,
+        super(
+            name,
             grp.groupId(),
             grp.dataRegion().pageMemory(),
             grp.dataRegion().config().isPersistenceEnabled() ? grp.shared().wal() : null,
@@ -73,7 +74,7 @@ public class CacheDataTree extends BPlusTree<CacheSearchRow, CacheDataRow> {
             reuseList,
             grp.sharedGroup() ? CacheIdAwareDataInnerIO.VERSIONS : DataInnerIO.VERSIONS,
             grp.sharedGroup() ? CacheIdAwareDataLeafIO.VERSIONS : DataLeafIO.VERSIONS,
-            tracker
+            selfPages
         );
 
         assert rowStore != null;
