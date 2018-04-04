@@ -837,9 +837,9 @@ public class CacheMetricsImpl implements CacheMetrics {
         stat.offHeapPrimaryEntriesCount(offHeapPrimaryEntriesCnt);
         stat.offHeapBackupEntriesCount(offHeapBackupEntriesCnt);
         stat.heapEntriesCount(heapEntriesCnt);
-        stat.size(U.convertToInt(size));
+        stat.size((int) size);
         stat.sizeLong(size);
-        stat.keySize(U.convertToInt(size));
+        stat.keySize((int) size);
         stat.keySizeLong(size);
         stat.isEmpty(isEmpty);
         stat.totalPartitionsCount(owningPartCnt + movingPartCnt);

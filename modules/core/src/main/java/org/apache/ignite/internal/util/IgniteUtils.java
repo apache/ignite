@@ -10348,22 +10348,6 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * Convert long to int without overflow.
-     *
-     * @param x long number.
-     * @return x if x can be converted to {@code int} without a overflow, otherside return the closest value {@code
-     * Integer.MAX_VALUE} or {@code Integer.MIN_VALUE}
-     */
-    public static int convertToInt(long x) {
-        if (x > Integer.MAX_VALUE)
-            x = Integer.MAX_VALUE;
-        else if (x < Integer.MIN_VALUE)
-            x = Integer.MIN_VALUE;
-
-        return (int)x;
-    }
-
-    /**
      * @param lock Lock.
      */
     public static ReentrantReadWriteLockTracer lockTracer(ReadWriteLock lock) {
