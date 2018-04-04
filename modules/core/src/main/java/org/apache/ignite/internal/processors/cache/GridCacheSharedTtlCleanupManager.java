@@ -21,11 +21,13 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.thread.IgniteThread;
+
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 
 /**
  * Periodically removes expired entities from caches with {@link CacheConfiguration#isEagerTtl()} flag set.
@@ -124,8 +126,10 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            while (!isCancelled()) {
-                try {
+            Throwable err = null;
+
+            try {
+                while (!isCancelled()) {
                     boolean expiredRemains = false;
 
                     for (GridCacheTtlManager mgr : mgrs) {
@@ -139,13 +143,21 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
                     if (!expiredRemains)
                         U.sleep(CLEANUP_WORKER_SLEEP_INTERVAL);
                 }
-                catch (Throwable t) {
-                    if (!(t instanceof IgniteInterruptedCheckedException))
-                        cctx.kernalContext().failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION,
-                            new IllegalStateException("TTL cleanup worker thread is exiting unexpectedly")));
+            }
+            catch (Throwable t) {
+                if (!(t instanceof IgniteInterruptedCheckedException))
+                    err = t;
 
-                    throw t;
-                }
+                throw t;
+            }
+            finally {
+                if (err == null && !isCancelled)
+                    err = new IllegalStateException("Thread " + name() + " is exiting unexpectedly");
+
+                if (err instanceof OutOfMemoryError)
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
     }

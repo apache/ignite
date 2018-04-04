@@ -111,6 +111,7 @@ import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_WAL_SERIALIZER_VERSION;
 import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 
 /**
  * File WAL manager.
@@ -1339,6 +1340,8 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
                 }
             }
 
+            Throwable err = null;
+
             try {
                 synchronized (this) {
                     while (curAbsWalIdx == -1 && !stopped)
@@ -1400,10 +1403,18 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
             catch (InterruptedException ignore) {
                 Thread.currentThread().interrupt();
             }
+            catch (Throwable t) {
+                err = t;
+            }
+            finally {
+                if (err == null && !stopped)
+                    err = new IllegalStateException("Thread " + getName() + " is exiting unexpectedly");
 
-            if (!Thread.currentThread().isInterrupted() && !stopped)
-                cctx.kernalContext().failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION,
-                    new IllegalStateException("WAL file archiver thread is exiting unexpectedly (FSYNC mode)")));
+                if (err instanceof OutOfMemoryError)
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+            }
         }
 
         /**

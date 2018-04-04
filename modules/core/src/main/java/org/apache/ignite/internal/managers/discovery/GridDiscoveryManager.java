@@ -143,6 +143,8 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_SEGMENTED;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DATA_REGIONS_OFFHEAP_SIZE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
@@ -2569,10 +2571,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 catch (Throwable t) {
                     U.error(log, "Exception in discovery worker thread.", t);
 
-                    if (t instanceof OutOfMemoryError || t instanceof IgniteOutOfMemoryException)
-                        ctx.failure().process(new FailureContext(FailureType.CRITICAL_ERROR, t));
+                    if (t instanceof OutOfMemoryError)
+                        ctx.failure().process(new FailureContext(CRITICAL_ERROR, t));
                     else if (t instanceof Error || t instanceof InterruptedException && !isCancelled)
-                        ctx.failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, t));
+                        ctx.failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
 
                     if (t instanceof InterruptedException || t instanceof Error)
                         throw t;

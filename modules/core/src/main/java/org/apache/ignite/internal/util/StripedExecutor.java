@@ -39,7 +39,6 @@ import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.IgniteSystemProperties;
-import org.apache.ignite.internal.mem.IgniteOutOfMemoryException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -525,7 +524,7 @@ public class StripedExecutor implements ExecutorService {
                     return;
                 }
                 catch (Throwable e) {
-                    if (e instanceof OutOfMemoryError || e instanceof IgniteOutOfMemoryException)
+                    if (e instanceof OutOfMemoryError)
                         // Re-throwing to exploit stripeFailHnd.
                         throw e;
 
@@ -535,7 +534,8 @@ public class StripedExecutor implements ExecutorService {
 
             if (!stopping)
                 // Throwing to exploit stripeFailHnd.
-                throw new IllegalStateException("Stripe worker thread is exiting unexpectedly");
+                throw new IllegalStateException("Thread " + Thread.currentThread().getName() +
+                    " is exiting unexpectedly");
         }
 
         /**

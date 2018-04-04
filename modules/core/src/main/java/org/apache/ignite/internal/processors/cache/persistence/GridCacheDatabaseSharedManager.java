@@ -163,6 +163,8 @@ import static java.nio.file.StandardOpenOption.READ;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_SKIP_CRC;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_WAL_REBALANCE_THRESHOLD;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaStorage.METASTORAGE_CACHE_ID;
 
 /**
@@ -2731,35 +2733,49 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
         /** {@inheritDoc} */
         @Override protected void body() {
-            while (!isCancelled()) {
-                waitCheckpointEvent();
+            Throwable err = null;
 
-                GridFutureAdapter<Void> enableChangeApplied = GridCacheDatabaseSharedManager.this.enableChangeApplied;
+            try {
+                while (!isCancelled()) {
+                    waitCheckpointEvent();
 
-                if (enableChangeApplied != null) {
-                    enableChangeApplied.onDone();
+                    GridFutureAdapter<Void> enableChangeApplied = GridCacheDatabaseSharedManager.this.enableChangeApplied;
 
-                    GridCacheDatabaseSharedManager.this.enableChangeApplied = null;
-                }
+                    if (enableChangeApplied != null) {
+                        enableChangeApplied.onDone();
 
-                if (checkpointsEnabled)
-                    doCheckpoint();
-                else {
-                    synchronized (this) {
-                        scheduledCp.nextCpTs = U.currentTimeMillis() + checkpointFreq;
+                        GridCacheDatabaseSharedManager.this.enableChangeApplied = null;
+                    }
+
+                    if (checkpointsEnabled)
+                        doCheckpoint();
+                    else {
+                        synchronized (this) {
+                            scheduledCp.nextCpTs = U.currentTimeMillis() + checkpointFreq;
+                        }
                     }
                 }
+
+                // Final run after the cancellation.
+                if (checkpointsEnabled && !shutdownNow)
+                    doCheckpoint();
+
+                scheduledCp.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
             }
+            catch (Throwable t) {
+                err = t;
 
-            // Final run after the cancellation.
-            if (checkpointsEnabled && !shutdownNow)
-                doCheckpoint();
+                throw t;
+            }
+            finally {
+                if (err == null && !(stopping && isCancelled))
+                    err = new IllegalStateException("Thread " + name() + " is exiting unexpectedly");
 
-            scheduledCp.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
-
-            if (!stopping)
-                cctx.kernalContext().failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION,
-                    new IllegalStateException("Checkpointer worker thread is exiting unexpectedly")));
+                if (err instanceof OutOfMemoryError)
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+            }
         }
 
         /**

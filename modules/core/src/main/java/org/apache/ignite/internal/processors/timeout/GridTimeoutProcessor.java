@@ -22,7 +22,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.failure.FailureContext;
-import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.GridConcurrentSkipListSet;
@@ -33,6 +32,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.thread.IgniteThread;
+
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
+import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 
 /**
  * Detects timeout events and processes them.
@@ -148,8 +150,9 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException {
-            try {
+            Throwable err = null;
 
+            try {
                 while (!isCancelled()) {
                     long now = U.currentTimeMillis();
 
@@ -208,14 +211,20 @@ public class GridTimeoutProcessor extends GridProcessorAdapter {
             }
             catch (Throwable t) {
                 if (!(t instanceof InterruptedException))
-                    ctx.failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION, t));
+                    err = t;
 
                 throw t;
             }
+            finally {
+                if (err == null && !isCancelled)
+                    err = new IllegalStateException("Thread " + name() + " is exiting without being cancelled");
 
-            if (!isCancelled())
-                ctx.failure().process(new FailureContext(FailureType.SYSTEM_WORKER_TERMINATION,
-                    new IllegalStateException("Timeout worker thread is exiting without being cancelled")));
+                if (err instanceof OutOfMemoryError)
+                    ctx.failure().process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    ctx.failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+            }
+
         }
     }
 
