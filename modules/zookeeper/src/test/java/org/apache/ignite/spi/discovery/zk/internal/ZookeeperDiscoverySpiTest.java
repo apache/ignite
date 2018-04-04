@@ -3411,6 +3411,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDisconnectOnServersLeft_5() throws Exception {
+        System.setProperty("zookeeper.forceSync", "false");
+
         joinTimeout = 10_000;
 
         disconnectOnServersLeft(5, 10);
@@ -3541,11 +3543,17 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
             final Ignite srv = ignite(0);
 
-            assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
-                @Override public boolean apply() {
-                    return srv.cluster().nodes().size() == NODES;
-                }
-            }, 30_000));
+            try {
+                assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
+                    @Override public boolean apply() {
+                        return srv.cluster().nodes().size() == NODES;
+                    }
+                }, 15_000));
+            } catch (Throwable t) {
+                log.info("Actual cluster size is " + srv.cluster().nodes().size());
+
+                throw t;
+            }
 
             waitForTopology(NODES);
 

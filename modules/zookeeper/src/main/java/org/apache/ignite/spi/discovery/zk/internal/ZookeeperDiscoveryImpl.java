@@ -469,6 +469,8 @@ public class ZookeeperDiscoveryImpl {
                 rtState.top.topologySnapshot(),
                 Collections.<Long, Collection<ClusterNode>>emptyMap(),
                 null);
+        } else {
+            log.error("ZZZZZZZZZZZZZZZZZZZZZZZZ: Event not fired(!)");
         }
 
         try {
