@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCache;
 import org.apache.ignite.internal.processors.platform.client.ClientConnectionContext;
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Sql query request.
@@ -85,6 +86,10 @@ public class ClientCacheSqlFieldsQueryRequest extends ClientCacheRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
+        // TODO: fix "no authorization for SQL field query" security hole. Issues preventing authorization:
+        // 1) SQL operation is not known at this point (is it DML or DDL? is it "create" or "remove"?)
+        // 2) Caches that the SQL is executed against are not known at this point.
+
         ctx.incrementCursors();
 
         try {

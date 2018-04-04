@@ -45,6 +45,15 @@ public enum SecurityPermission {
     /** Events {@code disable} permission. */
     EVENTS_DISABLE,
 
+    /** Cache create permission. */
+    CACHE_CREATE,
+
+    /** Cache create permission. */
+    CACHE_DESTROY,
+
+    /** Join as server node permission. */
+    JOIN_AS_SERVER,
+
     /** Common visor view tasks permission. */
     ADMIN_VIEW,
 

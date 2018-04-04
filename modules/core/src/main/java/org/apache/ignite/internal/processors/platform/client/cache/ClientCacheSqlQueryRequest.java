@@ -26,6 +26,7 @@ import org.apache.ignite.internal.processors.platform.client.ClientConnectionCon
 import org.apache.ignite.internal.processors.platform.client.ClientResponse;
 
 import java.util.concurrent.TimeUnit;
+import org.apache.ignite.plugin.security.SecurityPermission;
 
 /**
  * Sql query request.
@@ -54,6 +55,10 @@ public class ClientCacheSqlQueryRequest extends ClientCacheRequest {
 
     /** {@inheritDoc} */
     @Override public ClientResponse process(ClientConnectionContext ctx) {
+        // TODO: fix "no authorization for SQL field query" security hole. Issues preventing authorization:
+        // 1) SQL operation is not known at this point (is it "INSERT" or "DELETE"?)
+        // 2) Caches that the SQL is executed against are not known at this point.
+
         IgniteCache cache = cache(ctx);
 
         ctx.incrementCursors();
