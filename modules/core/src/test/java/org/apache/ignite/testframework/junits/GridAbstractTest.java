@@ -1158,14 +1158,26 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Stop all server Ignite instances.
+     * @param cancel Cancel flag.
      */
-    protected void stopAllServers() {
+    protected void stopAllClients(boolean cancel) {
+        List<Ignite> ignites = G.allGrids();
+
+        for (Ignite g : ignites) {
+            if (g.configuration().getDiscoverySpi().isClientMode())
+                stopGrid(g.name(), cancel);
+        }
+    }
+
+    /**
+     * @param cancel Cancel flag.
+     */
+    protected void stopAllServers(boolean cancel) {
         List<Ignite> ignites = G.allGrids();
 
         for (Ignite g : ignites) {
             if (!g.configuration().getDiscoverySpi().isClientMode())
-                stopGrid(g.name(), false);
+                stopGrid(g.name(), cancel);
         }
     }
 

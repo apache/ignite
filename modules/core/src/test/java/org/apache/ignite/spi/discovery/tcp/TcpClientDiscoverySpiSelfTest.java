@@ -256,7 +256,8 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        stopAllGrids();
+        stopAllClients(true);
+        stopAllServers(true);
 
         nodeId = null;
         clientIpFinder = null;
