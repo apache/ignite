@@ -1,20 +1,18 @@
 /*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- *  * Licensed to the Apache Software Foundation (ASF) under one or more
- *  * contributor license agreements.  See the NOTICE file distributed with
- *  * this work for additional information regarding copyright ownership.
- *  * The ASF licenses this file to You under the Apache License, Version 2.0
- *  * (the "License"); you may not use this file except in compliance with
- *  * the License.  You may obtain a copy of the License at
- *  *
- *  *      http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.internal.processors.cache.persistence.db;
@@ -28,10 +26,9 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheRebalanceMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -49,23 +46,20 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE;
 
 /**
- * Test correctness of WAL Visor Task and corretness of delete.
+ * Test correctness of WAL Visor Task and correctness of delete.
  */
 public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
-    /** Cache name. */
-    private static final String CACHE_NAME = "cache";
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         System.setProperty(IGNITE_PDS_MAX_CHECKPOINT_MEMORY_HISTORY_SIZE, "2");
 
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        CacheConfiguration<Integer, IgnitePdsUnusedWalSegmentsTest.IndexedObject> ccfg = new CacheConfiguration<>(CACHE_NAME);
+        CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
 
-        ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
+        ccfg.setCacheMode(CacheMode.REPLICATED);
 
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
@@ -77,19 +71,13 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(dbCfg);
 
-        dbCfg.setWalSegmentSize(4 * 1024 * 1024)
+        dbCfg.setWalSegmentSize(2 * 1024 * 1024)
                 .setWalHistorySize(Integer.MAX_VALUE)
                 .setWalSegments(10)
                 .setWalMode(WALMode.LOG_ONLY)
                 .setDefaultDataRegionConfiguration(new DataRegionConfiguration()
                         .setMaxSize(100 * 1024 * 1024)
                         .setPersistenceEnabled(true));
-
-        BinaryConfiguration binCfg = new BinaryConfiguration();
-
-        binCfg.setCompactFooter(false);
-
-        cfg.setBinaryConfiguration(binCfg);
 
         return cfg;
     }
@@ -109,37 +97,24 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests correctness of {@link VisorWalTaskOperation}
+     * Tests correctness of {@link VisorWalTaskOperation}.
      *
      * @throws Exception if failed.
      */
     public void testCorrectnessOfDeletionTaskSegments() throws Exception {
-        IgniteEx ig0 = (IgniteEx) startGrids(2);
+        IgniteEx ig0 = (IgniteEx) startGrids(4);
 
         ig0.cluster().active(true);
 
-        IgniteCache<Object, Object> cache = ig0.cache(CACHE_NAME);
+        IgniteCache<Object, Object> cache = ig0.cache(DEFAULT_CACHE_NAME);
 
-        Map<Integer, IndexedObject> map = new HashMap<>();
-
-        for (int k = 0; k < 10_000; k++) {
-            IndexedObject v = new IndexedObject(k);
-
-            cache.put(k, v);
-
-            map.put(k, v);
-        }
-
+        for (int k = 0; k < 10_000; k++)
+            cache.put(k, new byte[1024]);
 
         forceCheckpoint();
 
-        for (int k = 0; k < 1_000; k++) {
-            IndexedObject v = new IndexedObject(k);
-
-            cache.put(k, v);
-
-            map.put(k, v);
-        }
+        for (int k = 0; k < 1_000; k++)
+            cache.put(k, new byte[1024]);
 
         forceCheckpoint();
 
@@ -147,12 +122,12 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
                 new VisorTaskArgument<>(ig0.cluster().node().id(),
                         new VisorWalTaskArg(VisorWalTaskOperation.PRINT_UNUSED_WAL_SEGMENTS), false));
 
-        assertEquals("Check that print task finished with no exceptions", printRes.results().size(), 2);
+        assertEquals("Check that print task finished without exceptions", printRes.results().size(), 4);
 
         List<File> walArchives = new ArrayList<>();
 
         for(Collection<String> pathsPerNode: printRes.results().values()){
-            assertTrue("Check that all nodes has unused wal segments", pathsPerNode.size() > 0);
+            assertTrue("Check that all nodes has unused WAL segments", pathsPerNode.size() > 0);
 
             for(String path: pathsPerNode)
                 walArchives.add(Paths.get(path).toFile());
@@ -162,76 +137,23 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
                 new VisorTaskArgument<>(ig0.cluster().node().id(),
                         new VisorWalTaskArg(VisorWalTaskOperation.DELETE_UNUSED_WAL_SEGMENTS), false));
 
-        assertEquals("Check that delete task finished with no exceptions", delRes.results().size(), 2);
+        assertEquals("Check that delete task finished with no exceptions", delRes.results().size(), 4);
 
         List<File> walDeletedArchives = new ArrayList<>();
 
         for(Collection<String> pathsPerNode: delRes.results().values()){
-            assertTrue("Check that unused wal segments deleted from all nodes",
+            assertTrue("Check that unused WAL segments deleted from all nodes",
                     pathsPerNode.size() > 0);
 
             for(String path: pathsPerNode)
                 walDeletedArchives.add(Paths.get(path).toFile());
         }
 
-        stopAllGrids();
-
-        // Check that IGNITE can starts after deleting
-        IgniteEx ignite = (IgniteEx) startGrids(2);
-
-        cache = ignite.cache(CACHE_NAME);
-
-        for (Integer k : map.keySet())
-            assertEquals(map.get(k), cache.get(k));
-
         for(File f: walDeletedArchives)
-            assertTrue("Checking existing of deleted wal archive: " + f.getAbsolutePath(), !f.exists());
+            assertTrue("Checking existing of deleted WAL archived segments: " + f.getAbsolutePath(), !f.exists());
 
         for(File f: walArchives)
-            assertTrue( "Checking existing of wal archive from print task after delete: " + f.getAbsolutePath(),
+            assertTrue( "Checking existing of WAL archived segments from print task after delete: " + f.getAbsolutePath(),
                     !f.exists());
     }
-
-    /**
-     *
-     */
-    private static class IndexedObject {
-        /** */
-        @QuerySqlField(index = true)
-        private int iVal;
-
-        /** */
-        private byte[] payload = new byte[1024];
-
-        /**
-         * @param iVal Integer value.
-         */
-        private IndexedObject(int iVal) {
-            this.iVal = iVal;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object o) {
-            if (this == o)
-                return true;
-
-            if (!(o instanceof IndexedObject))
-                return false;
-
-            IndexedObject that = (IndexedObject)o;
-
-            return iVal == that.iVal;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return iVal;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(IndexedObject.class, this);
-        }
-    }
-
 }

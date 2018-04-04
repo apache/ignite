@@ -132,7 +132,7 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
     /**
      * Checks if WAL segments is under lock or reserved.
      *
-     * @param low Pointer since which WAL is locked or reserved. If null, checks from the oldest segment.
+     * @param low Pointer since which WAL is locked or reserved. If {@code null}, checks from the oldest segment.
      * @param high Pointer for which WAL is locked or reserved.
      * @return Number of reserved WAL segments.
      */
@@ -144,5 +144,4 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager, Igni
      * @param grpId Group id.
      */
     public boolean disabled(int grpId);
-
 }

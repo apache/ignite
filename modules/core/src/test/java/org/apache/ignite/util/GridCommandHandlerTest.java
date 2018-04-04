@@ -292,7 +292,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertEquals(2, ignite.cluster().currentBaselineTopology().size());
     }
 
-
     /**
      *  Test execution of --wal print command.
      *
@@ -303,15 +302,12 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
         ignite.cluster().active(true);
 
-        CommandHandler cmd = new CommandHandler();
-
         List<String> nodes = new ArrayList<>(2);
 
         for (ClusterNode node: ignite.cluster().forServers().nodes())
             nodes.add(node.consistentId().toString());
 
         assertEquals(EXIT_CODE_OK, execute("--wal", "print"));
-
 
         for(String id: nodes)
             assertTrue(out.toString().contains(id));
@@ -331,14 +327,13 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
 
     /**
      *  Test execution of --wal delete command.
-     *  @throws Exception
+     *
+     *  @throws Exception if failed.
      */
     public void testUnusedWalDelete() throws Exception {
         Ignite ignite = startGrids(2);
 
         ignite.cluster().active(true);
-
-        CommandHandler cmd = new CommandHandler();
 
         List<String> nodes = new ArrayList<>(2);
 
@@ -346,7 +341,6 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
             nodes.add(node.consistentId().toString());
 
         assertEquals(EXIT_CODE_OK, execute("--wal", "delete"));
-
 
         for(String id: nodes)
             assertTrue(out.toString().contains(id));
@@ -362,6 +356,5 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
         assertTrue(!out.toString().contains(nodes.get(1)));
 
         assertTrue(!out.toString().contains("error"));
-
     }
 }

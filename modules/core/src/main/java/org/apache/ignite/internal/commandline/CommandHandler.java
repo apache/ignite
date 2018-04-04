@@ -383,28 +383,30 @@ public class CommandHandler {
      * Execute WAL command.
      *
      * @param client Client.
-     * @param walAct Wal action to execute.
-     * @param walArgs Wal args.
+     * @param walAct WAL action to execute.
+     * @param walArgs WAL args.
      * @throws Throwable If failed to execute wal action.
      */
     private void wal(GridClient client, String walAct, String walArgs) throws Throwable {
         switch (walAct){
             case WAL_DELETE:
                 deleteUnusedWalSegments(client, walArgs);
+
                 break;
+
             case WAL_PRINT:
             default:
                 printUnusedWalSegments(client, walArgs);
+
                 break;
         }
-
     }
 
     /**
      * Execute delete unused WAL segments task.
      *
      * @param client Client.
-     * @param walArgs Wal args.
+     * @param walArgs WAL args.
      */
     private void deleteUnusedWalSegments(GridClient client, String walArgs) throws Throwable {
         VisorWalTaskResult res = executeTask(client, VisorWalTask.class,
@@ -427,24 +429,25 @@ public class CommandHandler {
     /**
      * Print list of unused wal segments.
      *
-     * @param res Task result with baseline topology.
+     * @param taskRes Task result with baseline topology.
      */
-    private void printUnusedWalSegments0(VisorWalTaskResult res) {
+    private void printUnusedWalSegments0(VisorWalTaskResult taskRes) {
         log("Unused wal segments per node:");
         nl();
 
-        Map<String, Collection<String>> okRes = res.results();
-        Map<String, Exception> failRes = res.exceptions();
-        Map<String, VisorClusterNode> nodesInfo = res.getNodesInfo();
+        Map<String, Collection<String>> res = taskRes.results();
+        Map<String, Exception> failRes = taskRes.exceptions();
+        Map<String, VisorClusterNode> nodesInfo = taskRes.getNodesInfo();
 
-        for(Map.Entry<String, Collection<String>> entry: okRes.entrySet()) {
+        for(Map.Entry<String, Collection<String>> entry: res.entrySet()) {
             VisorClusterNode node = nodesInfo.get(entry.getKey());
 
             log("Node=" + node.getConsistentId());
-            log("     addresses " + U.addressesAsString(node.getAddresses(),node.getHostnames()));
+            log("     addresses " + U.addressesAsString(node.getAddresses(),node.getHostNames()));
 
             for(String fileName: entry.getValue())
                 log("   " + fileName);
+
             nl();
         }
 
@@ -452,8 +455,7 @@ public class CommandHandler {
             VisorClusterNode node = nodesInfo.get(entry.getKey());
 
             log("Node=" + node.getConsistentId());
-            log("     addresses " + U.addressesAsString(node.getAddresses(),node.getHostnames()));
-
+            log("     addresses " + U.addressesAsString(node.getAddresses(),node.getHostNames()));
             log("   failed with error: " + entry.getValue().getMessage());
             nl();
         }
@@ -462,30 +464,29 @@ public class CommandHandler {
     /**
      * Print list of unused wal segments.
      *
-     * @param res Task result with baseline topology.
+     * @param taskRes Task result with baseline topology.
      */
-    private void printDeleteWalSegments0(VisorWalTaskResult res) {
+    private void printDeleteWalSegments0(VisorWalTaskResult taskRes) {
         log("WAL segments deleted for nodes:");
         nl();
 
-        Map<String, Collection<String>> okRes = res.results();
-        Map<String, Exception> failRes = res.exceptions();
-        Map<String, VisorClusterNode> nodesInfo = res.getNodesInfo();
+        Map<String, Collection<String>> res = taskRes.results();
+        Map<String, Exception> errors = taskRes.exceptions();
+        Map<String, VisorClusterNode> nodesInfo = taskRes.getNodesInfo();
 
-        for(Map.Entry<String, Collection<String>> entry: okRes.entrySet()) {
+        for(Map.Entry<String, Collection<String>> entry: res.entrySet()) {
             VisorClusterNode node = nodesInfo.get(entry.getKey());
 
             log("Node=" + node.getConsistentId());
-            log("     addresses " + U.addressesAsString(node.getAddresses(),node.getHostnames()));
+            log("     addresses " + U.addressesAsString(node.getAddresses(),node.getHostNames()));
             nl();
         }
 
-        for(Map.Entry<String, Exception> entry: failRes.entrySet()) {
+        for(Map.Entry<String, Exception> entry: errors.entrySet()) {
             VisorClusterNode node = nodesInfo.get(entry.getKey());
 
             log("Node=" + node.getConsistentId());
-            log("     addresses " + U.addressesAsString(node.getAddresses(),node.getHostnames()));
-
+            log("     addresses " + U.addressesAsString(node.getAddresses(),node.getHostNames()));
             log("   failed with error: " + entry.getValue().getMessage());
             nl();
         }
@@ -494,7 +495,7 @@ public class CommandHandler {
     /**
      * Prepare baseline task argument.
      *
-     * @param op Operation.
+     * @param op Baseline operation.
      * @param s Argument from command line.
      * @return Task argument.
      */
@@ -540,14 +541,16 @@ public class CommandHandler {
 
         if (!F.isEmpty(s)) {
             consistentIds = new ArrayList<>();
+
             for (String consistentId : s.split(","))
                 consistentIds.add(consistentId.trim());
         }
 
-        switch (op){
+        switch (op) {
             case DELETE_UNUSED_WAL_SEGMENTS:
             case PRINT_UNUSED_WAL_SEGMENTS:
                 return new VisorWalTaskArg(op, consistentIds);
+
             default:
                 return new VisorWalTaskArg(VisorWalTaskOperation.PRINT_UNUSED_WAL_SEGMENTS, consistentIds);
         }
@@ -758,9 +761,9 @@ public class CommandHandler {
     }
 
     /**
-     *  Check if raw arg is command or option
+     *  Check if raw arg is command or option.
      *
-     *  @return true If raw arg is command, overwise false
+     *  @return {@code true} If raw arg is command, overwise {@code false}.
      */
     private boolean isCommandOrOption(String raw) {
         return raw != null && raw.contains("--");
@@ -807,6 +810,7 @@ public class CommandHandler {
                     case DEACTIVATE:
                     case STATE:
                         commands.add(Command.of(str));
+
                         break;
 
                     case BASELINE:
@@ -828,6 +832,7 @@ public class CommandHandler {
                         }
 
                         break;
+
                     case WAL:
                         commands.add(WAL);
 
@@ -850,6 +855,7 @@ public class CommandHandler {
                 switch (str) {
                     case CMD_HOST:
                         host = nextArg("Expected host name");
+
                         break;
 
                     case CMD_PORT:
@@ -864,19 +870,24 @@ public class CommandHandler {
                         catch (NumberFormatException ignored) {
                             throw new IllegalArgumentException("Invalid value for port: " + port);
                         }
+
                         break;
 
                     case CMD_USER:
                         user = nextArg("Expected user name");
+
                         break;
 
                     case CMD_PASSWORD:
                         pwd = nextArg("Expected password");
+
                         break;
 
                     case CMD_FORCE:
                         force = true;
+
                         break;
+
                     default:
                         throw new IllegalArgumentException("Unexpected argument: " + str);
                 }

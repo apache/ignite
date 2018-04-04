@@ -838,9 +838,9 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         assert low == null || low instanceof FileWALPointer : low;
 
-        FileWALPointer lowPtr = (FileWALPointer) low;
+        FileWALPointer lowPtr = (FileWALPointer)low;
 
-        FileWALPointer highPtr = (FileWALPointer) high;
+        FileWALPointer highPtr = (FileWALPointer)high;
 
         FileArchiver archiver0 = archiver;
 
@@ -848,16 +848,14 @@ public class FsyncModeFileWriteAheadLogManager extends GridCacheSharedManagerAda
 
         long highIdx = highPtr.index();
 
-        int cntr = 0;
-
-        while(lowIdx < highIdx){
+        while (lowIdx < highIdx) {
             if(archiver0 != null && archiver0.reserved(lowIdx))
-                cntr++;
+                break;
 
             lowIdx++;
         }
 
-        return cntr;
+        return (int)(highIdx - lowIdx + 1);
     }
 
     /** {@inheritDoc} */

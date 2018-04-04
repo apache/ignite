@@ -935,24 +935,22 @@ public class FileWriteAheadLogManager extends GridCacheSharedManagerAdapter impl
 
         assert low == null || low instanceof FileWALPointer : low;
 
-        FileWALPointer lowPtr = (FileWALPointer) low;
+        FileWALPointer lowPtr = (FileWALPointer)low;
 
-        FileWALPointer highPtr = (FileWALPointer) high;
+        FileWALPointer highPtr = (FileWALPointer)high;
 
         long lowIdx = lowPtr != null ? lowPtr.index() : 0;
 
         long highIdx = highPtr.index();
 
-        int cntr = 0;
-
-        while(lowIdx < highIdx){
-            if(segmentReservedOrLocked(lowIdx))
-                cntr++;
+        while (lowIdx < highIdx) {
+            if (segmentReservedOrLocked(lowIdx))
+                break;
 
             lowIdx++;
         }
 
-        return cntr;
+        return (int)(highIdx - lowIdx + 1);
     }
 
     /** {@inheritDoc} */

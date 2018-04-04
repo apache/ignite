@@ -1,20 +1,18 @@
 /*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
  *
- *  * Licensed to the Apache Software Foundation (ASF) under one or more
- *  * contributor license agreements.  See the NOTICE file distributed with
- *  * this work for additional information regarding copyright ownership.
- *  * The ASF licenses this file to You under the Apache License, Version 2.0
- *  * (the "License"); you may not use this file except in compliance with
- *  * the License.  You may obtain a copy of the License at
- *  *
- *  *      http://www.apache.org/licenses/LICENSE-2.0
- *  *
- *  * Unless required by applicable law or agreed to in writing, software
- *  * distributed under the License is distributed on an "AS IS" BASIS,
- *  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  * See the License for the specific language governing permissions and
- *  * limitations under the License.
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.internal.visor.misc;
@@ -58,26 +56,24 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Pattern for segment file names */
+    /** Pattern for segment file names. */
     private static final Pattern WAL_NAME_PATTERN = Pattern.compile("\\d{16}\\.wal");
 
-    /** */
+    /** Pattern for compacted segment file names. */
     private static final Pattern WAL_SEGMENT_FILE_COMPACTED_PATTERN = Pattern.compile("\\d{16}\\.wal\\.zip");
 
-    /** */
+    /** WAL archive file filter. */
     private static final FileFilter WAL_ARCHIVE_FILE_FILTER = new FileFilter() {
         @Override public boolean accept(File file) {
-            return  !file.isDirectory() && (WAL_NAME_PATTERN.matcher(file.getName()).matches() ||
+            return !file.isDirectory() && (WAL_NAME_PATTERN.matcher(file.getName()).matches() ||
                     WAL_SEGMENT_FILE_COMPACTED_PATTERN.matcher(file.getName()).matches());
         }
     };
-
 
     /** {@inheritDoc} */
     @Override protected VisorWalJob job(VisorWalTaskArg arg) {
         return new VisorWalJob(arg, debug);
     }
-
 
     /** {@inheritDoc} */
     @Override protected Collection<UUID> jobNodes(VisorTaskArgument<VisorWalTaskArg> arg) {
@@ -89,17 +85,22 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
         Set<String> nodeIds = taskArg.getConsistentIds() != null ? new HashSet<>(arg.getArgument().getConsistentIds())
                                 : null;
 
-        for(ClusterNode node: srvNodes) {
-            if(nodeIds == null || nodeIds.contains(node.consistentId().toString()))
+        if (nodeIds == null) {
+            for (ClusterNode node : srvNodes)
                 ret.add(node.id());
+        }
+        else {
+            for (ClusterNode node : srvNodes) {
+                if (nodeIds.contains(node.consistentId().toString()))
+                    ret.add(node.id());
+            }
         }
 
         return ret;
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override protected VisorWalTaskResult reduce0(List<ComputeJobResult> results)
-            throws IgniteException {
+    @Nullable @Override protected VisorWalTaskResult reduce0(List<ComputeJobResult> results) throws IgniteException {
         Map<String, Exception> exRes = U.newHashMap(0);
         Map<String, Collection<String>> res = U.newHashMap(results.size());
         Map<String, VisorClusterNode> nodesInfo = U.newHashMap(results.size());
@@ -135,21 +136,6 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
         @LoggerResource
         private transient IgniteLogger log;
 
-        /** */
-        private transient IgniteConfiguration igCfg;
-
-        /** */
-        private transient DataStorageConfiguration dsCfg;
-
-        /** */
-        private transient GridKernalContext cctx;
-
-        /** */
-        private transient File walArchiveDir;
-
-        /** */
-        private transient GridCacheDatabaseSharedManager dbMgr;
-
         /**
          *  @param arg WAL task argument.
          *  @param debug Debug flag.
@@ -158,31 +144,17 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
             super(arg, debug);
         }
 
-        /**
-         * Initialize {@link VisorWalJob}
-         */
-        private void init() throws IgniteCheckedException {
-            cctx = ignite.context();
-
-            igCfg = cctx.config();
-
-            dsCfg = igCfg.getDataStorageConfiguration();
-
-            walArchiveDir = getWalArchiveDir();
-
-            dbMgr = (GridCacheDatabaseSharedManager) cctx.cache().context().database();
-        }
-
-
         /** {@inheritDoc} */
         @Nullable @Override protected Collection<String> run(@Nullable VisorWalTaskArg arg) throws IgniteException {
             try {
-                init();
+                GridKernalContext cctx = ignite.context();
 
-                if(dsCfg == null || dbMgr == null || walArchiveDir == null  || arg == null)
+                GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.cache().context().database();
+
+                if (dbMgr == null || arg == null)
                     return null;
 
-                switch (arg.getOperation()){
+                switch (arg.getOperation()) {
                     case DELETE_UNUSED_WAL_SEGMENTS:
                         return deleteUnusedWalSegments(dbMgr);
 
@@ -203,25 +175,32 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
          * Get unused wal segments.
          *
          * @param  dbMgr Database manager.
-         * @return {@link Collection<String>} of absolute paths of unused WAL segments
+         * @return {@link Collection<String>} of absolute paths of unused WAL segments.
          * @throws IgniteCheckedException if failed.
          */
-        Collection<String> getUnusedWalSegments(GridCacheDatabaseSharedManager dbMgr) throws IgniteCheckedException {
+        Collection<String> getUnusedWalSegments(GridCacheDatabaseSharedManager dbMgr)
+                throws IgniteCheckedException{
             long maxIdx = dbMgr.reservedWalSegmentIndex();
 
-            File [] walFiles = getWalArchiveDir().listFiles(WAL_ARCHIVE_FILE_FILTER);
+            File[] walFiles = getWalArchiveDir().listFiles(WAL_ARCHIVE_FILE_FILTER);
 
             Collection<String> res = new ArrayList<>(walFiles != null && walFiles.length > 0 ? walFiles.length - 1 : 0);
 
-            if(walFiles != null)
+            if(walFiles != null && walFiles.length > 0) {
                 sortWalFiles(walFiles);
 
-                for(File f: walFiles) {
-                    if (getIndex(f) < maxIdx && res.size() < walFiles.length - 1)
+                // Obtain index of last archived WAL segment, it will not be deleted.
+                long lastArchIdx = getIndex(walFiles[walFiles.length - 1]);
+
+                for (File f : walFiles) {
+                    long fileIdx = getIndex(f);
+
+                    if (fileIdx < maxIdx && fileIdx < lastArchIdx)
                         res.add(f.getAbsolutePath());
                     else
                         break;
                 }
+            }
 
             return res;
         }
@@ -230,12 +209,13 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
          * Delete unused wal segments.
          *
          * @param dbMgr Database manager.
-         * @return {@link Collection<String>} deleted WAL segment's files.
+         * @return {@link Collection<String>} of deleted WAL segment's files.
+         * @throws IgniteCheckedException if failed.
          */
-        Collection<String> deleteUnusedWalSegments(GridCacheDatabaseSharedManager dbMgr) {
+        Collection<String> deleteUnusedWalSegments(GridCacheDatabaseSharedManager dbMgr) throws IgniteCheckedException {
             long maxIdx = dbMgr.reservedWalSegmentIndex();
 
-            File[] walFiles = walArchiveDir.listFiles(WAL_ARCHIVE_FILE_FILTER);
+            File[] walFiles = getWalArchiveDir().listFiles(WAL_ARCHIVE_FILE_FILTER);
 
             int num = dbMgr.walSegmentsTruncate();
 
@@ -245,7 +225,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
                 Collection<String> res = new ArrayList<>(num);
 
                 for (File walFile: walFiles) {
-                    if (getIndex(walFile) < maxIdx && num >= 0 && res.size() < walFiles.length - 1)
+                    if (getIndex(walFile) < maxIdx && num > 0)
                         res.add(walFile.getAbsolutePath());
                     else
                         break;
@@ -267,7 +247,11 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
          * @throws IgniteCheckedException if failed.
          */
         private File getWalArchiveDir() throws IgniteCheckedException {
-            PdsFolderSettings resFldrs = cctx.pdsFolderResolver().resolveFolders();
+            IgniteConfiguration igCfg = ignite.context().config();
+
+            DataStorageConfiguration dsCfg = igCfg.getDataStorageConfiguration();
+
+            PdsFolderSettings resFldrs = ignite.context().pdsFolderResolver().resolveFolders();
 
             String consId = resFldrs.folderName();
 
@@ -280,7 +264,8 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
                         new File(workDir0, consId) :
                         new File(U.resolveWorkDirectory(igCfg.getWorkDirectory(), dsCfg.getWalArchivePath(), false),
                                 consId);
-            } else
+            }
+            else
                 dir = new File(U.resolveWorkDirectory(igCfg.getWorkDirectory(),
                         DataStorageConfiguration.DFLT_WAL_ARCHIVE_PATH, false), consId);
 
@@ -292,7 +277,7 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
 
 
         /**
-         * Sort wal files according their inices.
+         * Sort WAL files according their indices.
          *
          * @param files Array of WAL segment files.
          */
@@ -306,12 +291,12 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
     }
 
     /**
-     * Get index from wal segment file.
+     * Get index from WAL segment file.
      *
-     * @param file File.
-     * @return Index of wal segment file.
+     * @param file WAL segment file.
+     * @return Index of WAL segment file.
      */
-    private static long getIndex(File file){
+    private static long getIndex(File file) {
         return Long.parseLong(file.getName().substring(0, 16));
     }
 }

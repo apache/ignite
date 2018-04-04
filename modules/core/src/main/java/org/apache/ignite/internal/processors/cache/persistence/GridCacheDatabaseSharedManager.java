@@ -1791,22 +1791,29 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         if (entry != null) {
             int resCnt = cctx.wal().reserved(null, entry.cpMark);
 
-            long highIdx = ((FileWALPointer) entry.cpMark).index();
+            long highIdx = ((FileWALPointer)entry.cpMark).index();
 
-            return highIdx - resCnt;
+            return highIdx - resCnt + 1;
         }
         else
             return 0;
     }
 
     /**
-     * Safely truncate archived wal segments.
+     * Safely truncate archived WAL segments.
      *
-     * @return number of deleted files
+     * @return Number of deleted files.
      */
     public int walSegmentsTruncate() {
         CheckpointEntry entry = checkpointHistory().firstEntry();
-        return entry != null ? cctx.wal().truncate(null,entry.cpMark) : 0;
+
+        if (entry != null) {
+            onWalTruncated(entry.cpMark);
+
+            return cctx.wal().truncate(null, entry.cpMark);
+        }
+        else
+            return 0;
     }
 
     /**
@@ -3720,7 +3727,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         }
 
         /**
-         * @return First checkpoint entry if exists. Otherwise null.
+         * @return First checkpoint entry if exists. Otherwise {@code null}.
          */
         private CheckpointEntry firstEntry() {
             Map.Entry<Long,CheckpointEntry> entry = histMap.firstEntry();

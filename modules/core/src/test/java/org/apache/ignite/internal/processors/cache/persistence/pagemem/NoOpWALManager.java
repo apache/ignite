@@ -145,5 +145,4 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     @Override public int walArchiveSegments() {
         return 0;
     }
-
 }

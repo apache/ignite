@@ -135,14 +135,14 @@ public class Arguments {
     }
 
     /**
-     * @return WAL action
+     * @return WAL action.
      */
     public String walAction() {
         return walAct;
     }
 
     /**
-     * @return WAL arguments
+     * @return WAL arguments.
      */
     public String walArguments() {
         return walArgs;
