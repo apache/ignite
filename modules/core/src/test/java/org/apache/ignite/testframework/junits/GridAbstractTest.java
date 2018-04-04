@@ -94,7 +94,6 @@ import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.checkpoint.sharedfs.SharedFsCheckpointSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
@@ -780,9 +779,7 @@ public abstract class GridAbstractTest extends TestCase {
             ", actualTopology=" + grid(0).cluster().nodes() + ']');
     }
 
-    /**
-     * Stop single Ignite instance using auto-generated instance name.
-     */
+    /** */
     protected void stopGrid() {
         stopGrid(getTestIgniteInstanceName());
     }
@@ -1099,16 +1096,13 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Stop all Ignite instances with canceling all jobs currently active.
+     *
      */
     protected void stopAllGrids() {
         stopAllGrids(true);
     }
 
     /**
-     * Stop all Ignite instances using {@link DiscoverySpi#isClientMode()} as condition
-     * for stopping client instances before server instances.
-     *
      * @param cancel Cancel flag.
      */
     protected void stopAllGrids(boolean cancel) {
