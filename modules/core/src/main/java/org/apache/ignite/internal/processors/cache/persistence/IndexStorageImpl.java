@@ -136,7 +136,7 @@ public class IndexStorageImpl implements IndexStorage {
 
                 pageId = needAllocate ? pageMem.allocatePage(grpId, allocPartId, allocSpace) : pageId;
 
-                if (needAllocate)
+                if (needAllocate && indexesSize != null)
                     indexesSize.inc();
 
                 tree.put(new IndexItem(idxNameBytes, pageId));

@@ -242,7 +242,7 @@ public class CacheGroupContext {
         String groupName = cacheOrGroupName();
 
         String pkIndexName = groupName + "-pkIndex";
-        String indexesName = groupName + "-indexes";
+       // String indexesName = groupName + "-indexes";
         String reuseListName = groupName + "-reuseList";
         String pureDataName = groupName + "-pureData";
         String dataPagesName = groupName + "-data";
@@ -256,11 +256,12 @@ public class CacheGroupContext {
         dataPages = simpleTracker(dataPagesName);
         pureDataSize = simpleTracker(pureDataName);
         internalSize = simpleTracker(internalName);
-        indexesPages = delegateWithTrackingPages(indexesName, internalSize, pageSize);
+        indexesPages = null;
+       // indexesPages = delegateWithTrackingPages(indexesName, internalSize, pageSize);
         totalPages = delegateWithTrackingPages(totalSizeName, internalSize, pageSize);
 
         sizes.put(pkIndexName, pkIndexPages);
-        sizes.put(indexesName, indexesPages);
+       // sizes.put(indexesName, indexesPages);
         sizes.put(reuseListName, reuseListPages);
         sizes.put(dataPagesName, dataPages);
         sizes.put(pureDataName, pureDataSize);

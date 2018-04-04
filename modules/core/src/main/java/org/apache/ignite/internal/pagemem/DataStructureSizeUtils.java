@@ -72,6 +72,45 @@ public abstract class DataStructureSizeUtils {
         };
     }
 
+    public static DataStructureSize wrap(DataStructureSize size, DataStructureSize delegate) {
+        return new DataStructureSize() {
+
+            @Override public void inc() {
+                size.inc();
+
+                delegate.inc();
+            }
+
+            @Override public void dec() {
+                size.dec();
+
+                delegate.dec();
+            }
+
+            @Override public void add(long val) {
+                if (val != 0 && (val > 1 || val < -1)) {
+                    size.add(val);
+
+                    delegate.add(val);
+                }
+
+                if (val == -1)
+                    dec();
+
+                if (val == 1)
+                    inc();
+            }
+
+            @Override public long size() {
+                return size.size();
+            }
+
+            @Override public String name() {
+                return size.name();
+            }
+        };
+    }
+
     public static DataStructureSize delegateTracker(String name, DataStructureSize delegate) {
         return new DataStructureSize() {
             private final AtomicLong size = new AtomicLong();
