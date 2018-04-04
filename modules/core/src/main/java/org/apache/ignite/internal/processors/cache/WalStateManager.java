@@ -417,6 +417,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         if (session.remainingGrps.isEmpty() && this.session.compareAndSet(session, null)) {
             triggerCheckpoint(0).finishFuture().listen(new IgniteInClosureX<IgniteInternalFuture>() {
                 @Override public void applyx(IgniteInternalFuture future) throws IgniteCheckedException {
+                    // TODO : add sync/reserve mechanics.
                     for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
                         if (grp.localWalEnabled())
                             continue;
