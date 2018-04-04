@@ -153,7 +153,7 @@ public class CacheMetricsImpl implements CacheMetrics {
             dhtCtx = cctx.near().dht().context();
 
         if (cctx.store().store() instanceof GridCacheWriteBehindStore)
-            store = (GridCacheWriteBehindStore) cctx.store().store();
+            store = (GridCacheWriteBehindStore)cctx.store().store();
 
         delegate = null;
     }
@@ -544,7 +544,6 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /**
      * Cache read callback.
-     *
      * @param isHit Hit or miss flag.
      */
     public void onRead(boolean isHit) {
@@ -572,7 +571,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     /**
      * Cache remove callback.
      */
-    public void onRemove() {
+    public void onRemove(){
         rmCnt.incrementAndGet();
 
         if (delegate != null)
@@ -764,7 +763,8 @@ public class CacheMetricsImpl implements CacheMetrics {
         long offHeapPrimaryEntriesCnt = 0L;
         long offHeapBackupEntriesCnt = 0L;
         long heapEntriesCnt = 0L;
-        long size = 0L;
+        int size = 0;
+        long sizeLong = 0L;
         boolean isEmpty;
 
         try {
@@ -775,7 +775,8 @@ public class CacheMetricsImpl implements CacheMetrics {
                     offHeapPrimaryEntriesCnt = offHeapEntriesCnt;
                     offHeapBackupEntriesCnt = offHeapEntriesCnt;
 
-                    size = cctx.cache().sizeLong();
+                    size = cctx.cache().size();
+                    sizeLong = cctx.cache().sizeLong();
 
                     heapEntriesCnt = size;
                 }
@@ -813,7 +814,8 @@ public class CacheMetricsImpl implements CacheMetrics {
                     if (backups.contains(part.id()))
                         offHeapBackupEntriesCnt += cacheSize;
 
-                    size = offHeapEntriesCnt;
+                    size = (int)offHeapEntriesCnt;
+                    sizeLong = offHeapEntriesCnt;
 
                     heapEntriesCnt += part.publicSize(cctx.cacheId());
                 }
@@ -827,6 +829,7 @@ public class CacheMetricsImpl implements CacheMetrics {
             offHeapBackupEntriesCnt = -1L;
             heapEntriesCnt = -1L;
             size = -1;
+            sizeLong = -1;
         }
 
         isEmpty = (offHeapEntriesCnt == 0);
@@ -837,10 +840,10 @@ public class CacheMetricsImpl implements CacheMetrics {
         stat.offHeapPrimaryEntriesCount(offHeapPrimaryEntriesCnt);
         stat.offHeapBackupEntriesCount(offHeapBackupEntriesCnt);
         stat.heapEntriesCount(heapEntriesCnt);
-        stat.size((int) size);
-        stat.sizeLong(size);
-        stat.keySize((int) size);
-        stat.keySizeLong(size);
+        stat.size(size);
+        stat.sizeLong(sizeLong);
+        stat.keySize(size);
+        stat.keySizeLong(sizeLong);
         stat.isEmpty(isEmpty);
         stat.totalPartitionsCount(owningPartCnt + movingPartCnt);
         stat.rebalancingPartitionsCount(movingPartCnt);
@@ -893,7 +896,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     /**
      *
      */
-    public void startRebalance(long delay) {
+    public void startRebalance(long delay){
         rebalanceStartTime.set(delay + U.currentTimeMillis());
     }
 
@@ -927,7 +930,6 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /**
      * Sets clearing partitions number.
-     *
      * @param partitions Partitions number.
      */
     public void rebalanceClearingPartitions(int partitions) {
@@ -936,7 +938,6 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /**
      * First rebalance supply message callback.
-     *
      * @param keysCnt Estimated number of keys.
      */
     public void onRebalancingKeysCountEstimateReceived(long keysCnt) {

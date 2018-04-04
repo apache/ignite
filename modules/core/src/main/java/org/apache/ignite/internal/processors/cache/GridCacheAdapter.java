@@ -3827,7 +3827,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode[] peekModes) throws IgniteCheckedException {
-        return (int) localSizeLong(peekModes);
+        return (int)localSizeLong(peekModes);
     }
 
     /** {@inheritDoc} */
