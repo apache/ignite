@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -282,6 +283,13 @@ public class GridDhtPartitionDemander {
             final RebalanceFuture oldFut = rebalanceFut;
 
             final RebalanceFuture fut = new RebalanceFuture(grp, assignments, log, rebalanceId);
+
+            if (!grp.localWalEnabled())
+                fut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
+                    @Override public void applyx(IgniteInternalFuture<Boolean> future) throws IgniteCheckedException {
+                        ctx.walState().onGroupRebalanceFinished(grp.groupId(), assignments.topologyVersion());
+                    }
+                });
 
             if (!oldFut.isInitial())
                 oldFut.cancel();
@@ -908,7 +916,7 @@ public class GridDhtPartitionDemander {
         /** Unique (per demander) rebalance id. */
         private final long rebalanceId;
 
-        private boolean needCheckpoint;
+        private final boolean needCheckpoint;
 
         /**
          * @param grp Cache group.
@@ -1069,7 +1077,7 @@ public class GridDhtPartitionDemander {
          */
         private void partitionDone(UUID nodeId, int p, boolean updateState) {
             synchronized (this) {
-                if (updateState && grp.localWalEnabled())
+                if (updateState && !needCheckpoint)
                     grp.topology().own(grp.topology().localPartition(p));
 
                 if (isDone())
@@ -1135,31 +1143,6 @@ public class GridDhtPartitionDemander {
          */
         private void checkIsDone(boolean cancelled) {
             if (remaining.isEmpty()) {
-                if (needCheckpoint) {
-                    IgniteInternalFuture<Void> fut = ctx.walState().onGroupRebalanceFinished(grp.groupId(), topVer);
-
-                    fut.listen(new IgniteInClosure<IgniteInternalFuture<Void>>() {
-                        @Override public void apply(IgniteInternalFuture<Void> fut0) {
-                            try {
-                                fut0.get();
-                            }
-                            catch (IgniteCheckedException ex) {
-                                throw new IgniteException(ex);
-                            }
-
-                            synchronized (RebalanceFuture.this) {
-                                assert needCheckpoint;
-
-                                needCheckpoint = false;
-
-                                checkIsDone(cancelled);
-                            }
-                        }
-                    });
-
-                    return;
-                }
-
                 sendRebalanceFinishedEvent();
 
                 if (log.isInfoEnabled())
