@@ -2374,6 +2374,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
      * @return Partition state.
      */
     public GridDhtPartitionState readPartitionState(CacheGroupContext grpCtx, int partId) {
+        GridDhtPartitionState defaultState = GridDhtPartitionState.OWNING;
+
         int grpId = grpCtx.groupId();
         PageMemoryEx pageMem = (PageMemoryEx)grpCtx.dataRegion().pageMemory();
 
@@ -2395,7 +2397,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                                 GridDhtPartitionState state = GridDhtPartitionState.fromOrdinal((int)io.getPartitionState(pageAddr));
 
                                 if (state == null)
-                                    state = GridDhtPartitionState.MOVING;
+                                    return defaultState;
 
                                 return state;
                             }
@@ -2415,7 +2417,7 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                 ", partId=" + partId + "]", e);
         }
 
-        return GridDhtPartitionState.MOVING;
+        return defaultState;
     }
 
     /**
