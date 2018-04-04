@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -41,7 +40,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.stream.Collectors;
 import javax.cache.configuration.Factory;
 import javax.cache.configuration.FactoryBuilder;
 import junit.framework.TestCase;
@@ -81,7 +79,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -1017,31 +1014,12 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Stop Ignite instance and log exception.
-     *
      * @param igniteInstanceName Ignite instance name.
      * @param cancel Cancel flag.
      * @param awaitTop Await topology change flag.
      */
+    @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel, boolean awaitTop) {
-        try {
-            stopGridUnhandledEx(igniteInstanceName, cancel, awaitTop);
-        }
-        catch (Throwable t) {
-            error("Failed to stop node [igniteInstanceName=" + igniteInstanceName + ", cancel=" + cancel + ']', t);
-        }
-    }
-
-    /**
-     * Stop Ignite instance ignoring already stopped.
-     *
-     * @param igniteInstanceName Ignite instance name.
-     * @param cancel Cancel flag.
-     * @param awaitTop Await topology change flag.
-     * @throws Throwable If grid stop fails.
-     */
-    private void stopGridUnhandledEx(@Nullable String igniteInstanceName, boolean cancel,
-        boolean awaitTop) throws Throwable {
         try {
             IgniteEx ignite = grid(igniteInstanceName);
 
@@ -1062,41 +1040,10 @@ public abstract class GridAbstractTest extends TestCase {
         catch (IllegalStateException ignored) {
             // Ignore error if grid already stopped.
         }
-        catch (Throwable t) {
+        catch (Throwable e) {
+            error("Failed to stop grid [igniteInstanceName=" + igniteInstanceName + ", cancel=" + cancel + ']', e);
+
             stopGridErr = true;
-
-            throw t;
-        }
-    }
-
-    /**
-     * Stop all Ignite instances and throw {@link IgniteCheckedException} if some of them failed to stop.
-     */
-    private void stopAllGridsSilently() throws IgniteCheckedException {
-        final Map<String, Throwable> errors = new HashMap<>();
-
-        for (Ignite g : G.allGrids()) {
-            String igniteInstanceName = g.name();
-
-            try {
-                stopGridUnhandledEx(igniteInstanceName, false, false);
-            }
-            catch (Throwable t) {
-                log.error("Ignite instance failed to stop [igniteInstanceName=" + igniteInstanceName +
-                        ", err=" + t.getMessage() + ", stackTrace=" + X.getFullStackTrace(t) + "]");
-
-                errors.put(igniteInstanceName, t);
-            }
-        }
-
-        if (stopGridErr) {
-            String msg = errors.entrySet().stream().map(Map.Entry::toString)
-                .collect(Collectors.joining(", ", "[", "]"));
-
-            if(isMultiJvm())
-                IgniteProcessProxy.killAll(); // In multi-JVM case.
-
-            throw new IgniteCheckedException("Failed to stop nodes [msg=" + msg + "]");
         }
     }
 
@@ -1697,7 +1644,7 @@ public abstract class GridAbstractTest extends TestCase {
                 afterTestsStopped();
 
                 if(isSafeTopology())
-                    stopAllGridsSilently();
+                    stopAllGrids(false);
 
                 // Remove counters.
                 tests.remove(getClass());
