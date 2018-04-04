@@ -217,7 +217,7 @@ class MapObjectType extends CompositeType {
  * Class representing a complex type of Ignite object.
  *
  * It is described by COMPOSITE_TYPE.COMPLEX_OBJECT {@link ObjectType.COMPOSITE_TYPE},
- * a name of the complex type and a JavaScript class which is mapped to/from the Ignite complex type.
+ * a name of the complex type and a JavaScript Object which is mapped to/from the Ignite complex type.
  *
  * @extends CompositeType
  */
@@ -227,9 +227,11 @@ class ComplexObjectType extends CompositeType {
      * Public constructor.
      *
      * Specifies a JavaScript class which will be mapped to/from the complex type.
-     * This specification is done using a template - an instance of the JavaScript class.
+     * This specification is done using an instance of the JavaScript Object.
      *
-     * The template defines the set of fields of the complex type.
+     * The JavaScript Object must have a constructor without parameters or with optional parameters only.
+     *
+     * The JavaScript Object defines a set of fields of the complex type.
      *
      * By default, the fields have no types specified. It means during operations the Ignite client
      * will try to make automatic mapping between JavaScript types and Ignite object types -
@@ -237,17 +239,17 @@ class ComplexObjectType extends CompositeType {
      *
      * A type of any field may be specified later by setFieldType() method.
      *
-     * By default, the name of the complex type is the name of the JavaScript class.
+     * By default, the name of the complex type is the name of the JavaScript Object.
      * The name may be explicitely specified using an optional parameter in the constructor.
      * 
-     * @param {object} template - instance of JavaScript class which will be mapped to/from this complex type.
-     * @param {string} [name=null] - name of the complex type.
+     * @param {object} jsObject - instance of JavaScript Object which will be mapped to/from this complex type.
+     * @param {string} [typeName=null] - name of the complex type.
      *
      * @return {ComplexObjectType} - new ComplexObjectType instance
      *
      * @throws {IgniteClientError} if error.
      */
-    constructor(template, name = null) {
+    constructor(jsObject, typeName = null) {
         super(COMPOSITE_TYPE.COMPLEX_OBJECT);
         this._template = template;
         this._objectConstructor = template && template.constructor ?
