@@ -17,20 +17,19 @@
 include /app/helpers/jade/mixins
 
 -var form = 'query'
--var model = 'backupItem'
+-var model = '$ctrl.clonedCache'
 
-.panel.panel-default(ng-form=form novalidate)
-    .panel-heading(bs-collapse-toggle='' ng-click=`ui.loadPanel('${form}')`)
+.pca-panel(ng-form=form novalidate)
+    .pca-panel-heading(bs-collapse-toggle='' ng-click=`ui.loadPanel('${form}')`)
         ignite-form-panel-chevron
-        label Queries & Indexing
-        ignite-form-field-tooltip.tipLabel
-            | Cache queries settings#[br]
-            | #[a(href="https://apacheignite-sql.readme.io/docs/select" target="_blank") More info]
-        ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
-            .col-sm-6
-                .settings-row
+        .pca-panel-heading-title Queries & Indexing
+        .pca-panel-heading-description
+            | Cache queries settings. 
+            a.link-success(href="https://apacheignite-sql.readme.io/docs/select" target="_blank") More info
+    .pca-panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
+        .pca-panel-body.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+            .pca-form-column-6.pc-form-grid-row
+                .pc-form-grid-col-60
                     +text('SQL schema name:', `${model}.sqlSchema`, '"sqlSchema"', 'false', 'Input schema name',
                         'Specify any custom name to be used as SQL schema for current cache. This name will correspond to SQL ANSI-99 standard.\
                         Nonquoted identifiers are not case sensitive. Quoted identifiers are case sensitive.\
@@ -48,84 +47,71 @@ include /app/helpers/jade/mixins
                         </ul>')
 
                 //- Removed in ignite 2.0
-                .settings-row(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
+                .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
                     +number('On-heap cache for off-heap indexes:', `${model}.sqlOnheapRowCacheSize`, '"sqlOnheapRowCacheSize"', 'true', '10240', '1',
                         'Number of SQL rows which will be cached onheap to avoid deserialization on each SQL index access')
 
                 //- Deprecated in ignite 2.1
-                .settings-row(ng-if='$ctrl.available(["1.0.0", "2.1.0"])')
+                .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.1.0"])')
                     +number('Long query timeout:', `${model}.longQueryWarningTimeout`, '"longQueryWarningTimeout"', 'true', '3000', '0',
                         'Timeout in milliseconds after which long query warning will be printed')
-                .settings-row
+                .pc-form-grid-col-60
                     +number('History size:', `${model}.queryDetailMetricsSize`, '"queryDetailMetricsSize"', 'true', '0', '0',
                         'Size of queries detail metrics that will be stored in memory for monitoring purposes')
-                .settings-row
-                    -var form = 'querySqlFunctionClasses';
-                    -var sqlFunctionClasses = `${model}.sqlFunctionClasses`;
+                .pc-form-grid-col-60
+                    mixin caches-query-list-sql-functions()
+                        .ignite-form-field
+                            -let items = `${model}.sqlFunctionClasses`;
+                            -let uniqueTip = 'SQL function with such class name already exists!'
 
-                    +ignite-form-group(ng-form=form ng-model=`${sqlFunctionClasses}`)
-                        ignite-form-field-label
-                            | SQL functions
-                        ignite-form-group-tooltip
-                            | Collections of classes with user-defined functions for SQL queries
-                        ignite-form-group-add(ng-click='group.add = [{}]')
-                            | Add new user-defined functions for SQL queries
+                            list-editable(
+                                ng-model=items
+                                list-editable-cols=`::[{
+                                    name: 'SQL functions:',
+                                    tip: 'Collections of classes with user-defined functions for SQL queries'
+                                }]`
+                            )
+                                list-editable-item-view {{ $item }}
 
-                        -var uniqueTip = 'SQL function with such class name already exists!'
+                                list-editable-item-edit
+                                    +list-java-class-field('SQL function', '$item', '"sqlFunction"', items)
+                                        +unique-feedback('"sqlFunction"', uniqueTip)
 
-                        .group-content(ng-if=`${sqlFunctionClasses}.length`)
-                            -var model = 'obj.model';
-                            -var name = '"edit" + $index'
-                            -var valid = `${form}[${name}].$valid`
-                            -var save = `${sqlFunctionClasses}[$index] = ${model}`
+                                list-editable-no-items
+                                    list-editable-add-item-button(
+                                        add-item=`$editLast((${items} = ${items} || []).push(""))`
+                                        label-single='SQL function'
+                                        label-multiple='SQL functions'
+                                    )
 
-                            div(ng-repeat=`model in ${sqlFunctionClasses} track by $index` ng-init='obj = {}')
-                                label.col-xs-12.col-sm-12.col-md-12
-                                    .indexField
-                                        | {{ $index+1 }})
-                                    +table-remove-button(sqlFunctionClasses, 'Remove user-defined function')
-
-                                    span(ng-hide='field.edit')
-                                        a.labelFormField(ng-click=`field.edit = true; ${model} = model;`) {{ model }}
-                                    span(ng-if='field.edit')
-                                        +table-java-class-field('SQL function', name, model, sqlFunctionClasses, valid, save, false)
-                                            +table-save-button(valid, save, false)
-                                            +unique-feedback(name, uniqueTip)
-
-                        .group-content(ng-repeat='field in group.add')
-                            -var model = 'new';
-                            -var name = '"new"'
-                            -var valid = `${form}[${name}].$valid`
-                            -var save = `${sqlFunctionClasses}.push(${model})`
-
-                            div
-                                label.col-xs-12.col-sm-12.col-md-12
-                                    +table-java-class-field('SQL function', name, model, sqlFunctionClasses, valid, save, true)
-                                        +table-save-button(valid, save, true)
-                                        +unique-feedback(name, uniqueTip)
-
-                        .group-content-empty(ng-if=`!(${sqlFunctionClasses}.length) && !group.add.length`)
-                            | Not defined
+                    - var form = '$parent.form'
+                    +caches-query-list-sql-functions
+                    - var form = 'query'
 
                 //- Removed in ignite 2.0
-                .settings-row(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
+                .pc-form-grid-col-60(ng-if='$ctrl.available(["1.0.0", "2.0.0"])')
                     +checkbox('Snapshotable index', `${model}.snapshotableIndex`, '"snapshotableIndex"',
                         'Flag indicating whether SQL indexes should support snapshots')
 
-                .settings-row
+                .pc-form-grid-col-60
                     +checkbox('Escape table and filed names', `${model}.sqlEscapeAll`, '"sqlEscapeAll"',
                         'If enabled than all schema, table and field names will be escaped with double quotes (for example: "tableName"."fieldName").<br/>\
                         This enforces case sensitivity for field names and also allows having special characters in table and field names.<br/>\
                         Escaped names will be used for creation internal structures in Ignite SQL engine.')
 
                 //- Since ignite 2.0
-                div(ng-if='$ctrl.available("2.0.0")')
-                    .settings-row
-                        +number('Query parallelism', model + '.queryParallelism', '"queryParallelism"', 'true', '1', '1',
-                            'A hint to query execution engine on desired degree of parallelism within a single node')
-                    .settings-row
-                        +number('SQL index max inline size:', model + '.sqlIndexMaxInlineSize', '"sqlIndexMaxInlineSize"', 'true', '-1', '-1',
-                            'Maximum inline size for sql indexes')
+                .pc-form-grid-col-30(ng-if-start='$ctrl.available("2.0.0")')
+                    +number('Query parallelism', model + '.queryParallelism', '"queryParallelism"', 'true', '1', '1',
+                        'A hint to query execution engine on desired degree of parallelism within a single node')
+                .pc-form-grid-col-30(ng-if-end)
+                    +sane-ignite-form-field-number({
+                        label: 'SQL index max inline size:',
+                        model: `${model}.sqlIndexMaxInlineSize`,
+                        name: '"sqlIndexMaxInlineSize"',
+                        placeholder: '-1',
+                        min: '-1',
+                        tip: 'Maximum inline size for sql indexes'
+                    })
 
-            .col-sm-6
+            .pca-form-column-6
                 +preview-xml-java(model, 'cacheQuery', 'domains')
