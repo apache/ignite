@@ -238,7 +238,9 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
                 if (put) {
                     assertEquals(TX_CNT, cacheMetrics.getCacheTxCommits());
-                    assert cacheMetrics.getAverageTxCommitTime() > 0;
+
+                    // Expected metric value should be in microseconds.
+                    assert cacheMetrics.getAverageTxCommitTime() > 1000 : cacheMetrics.getAverageTxCommitTime();
                 }
             }
             else {
@@ -286,7 +288,9 @@ public abstract class GridCacheTransactionalAbstractMetricsSelfTest extends Grid
 
                 if (put) {
                     assertEquals(TX_CNT, cacheMetrics.getCacheTxRollbacks());
-                    assert cacheMetrics.getAverageTxRollbackTime() > 0;
+
+                    // Expected metric value should be in microseconds.
+                    assert cacheMetrics.getAverageTxRollbackTime() > 1000 : cacheMetrics.getAverageTxRollbackTime();
                 }
             }
             else {

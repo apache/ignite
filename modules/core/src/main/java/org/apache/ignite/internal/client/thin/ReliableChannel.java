@@ -31,7 +31,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.client.ClientConfigurationException;
 import org.apache.ignite.client.ClientConnectionException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -68,7 +67,7 @@ final class ReliableChannel implements AutoCloseable {
     ReliableChannel(
         Function<ClientChannelConfiguration, Result<ClientChannel>> chFactory,
         ClientConfiguration clientCfg
-    ) throws ClientConfigurationException {
+    ) throws ClientException {
         if (chFactory == null)
             throw new NullPointerException("chFactory");
 
@@ -164,7 +163,7 @@ final class ReliableChannel implements AutoCloseable {
     /**
      * @return host:port_range address lines parsed as {@link InetSocketAddress}.
      */
-    private static List<InetSocketAddress> parseAddresses(String[] addrs) throws ClientConfigurationException {
+    private static List<InetSocketAddress> parseAddresses(String[] addrs) throws ClientException {
         Collection<HostAndPortRange> ranges = new ArrayList<>(addrs.length);
 
         for (String a : addrs) {
@@ -177,7 +176,7 @@ final class ReliableChannel implements AutoCloseable {
                 ));
             }
             catch (IgniteCheckedException e) {
-                throw new ClientConfigurationException(e);
+                throw new ClientException(e);
             }
         }
 
