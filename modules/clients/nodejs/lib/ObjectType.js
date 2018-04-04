@@ -217,7 +217,7 @@ class MapObjectType extends CompositeType {
  * Class representing a complex type of Ignite object.
  *
  * It is described by COMPOSITE_TYPE.COMPLEX_OBJECT {@link ObjectType.COMPOSITE_TYPE},
- * a name of the complex type and a set of fields.
+ * a name of the complex type and a JavaScript class which is mapped to/from the Ignite complex type.
  *
  * @extends CompositeType
  */
@@ -226,33 +226,28 @@ class ComplexObjectType extends CompositeType {
     /**
      * Public constructor.
      *
-     * Optionally specifies the name and the fields of the complex type
-     * by providing a template - an instance of object with the required fields.
+     * Specifies a JavaScript class which will be mapped to/from the complex type.
+     * This specification is done using a template - an instance of the JavaScript class.
      *
-     * If the template is not specified, the created complex type has no fields.
-     * If the template is specified, all it's fields are added into the created complex type.
+     * The template defines the set of fields of the complex type.
      *
-     * The added fields have no specified types. It means during operations the Ignite client
+     * By default, the fields have no types specified. It means during operations the Ignite client
      * will try to make automatic mapping between JavaScript types and Ignite object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      *
-     * Fields may be added or updated later by setField() method.
+     * A type of any field may be specified later by setFieldType() method.
      *
-     * If the name of the complex type is not explicitely specified, it is generated
-     * according to the following rules:
-     *   - if the template is specified and has a class name, that class name is used as
-     * the name of the complex type.
-     *   - otherwise, "Object" is used as the name of the complex type.
+     * By default, the name of the complex type is the name of the JavaScript class.
+     * The name may be explicitely specified using an optional parameter in the constructor.
      * 
-     * @param {object} [template=null] - instance of object with the fields
-     * which will be added to the complex type.
+     * @param {object} template - instance of JavaScript class which will be mapped to/from this complex type.
      * @param {string} [name=null] - name of the complex type.
      *
      * @return {ComplexObjectType} - new ComplexObjectType instance
      *
      * @throws {IgniteClientError} if error.
      */
-    constructor(template = null, name = null) {
+    constructor(template, name = null) {
         super(COMPOSITE_TYPE.COMPLEX_OBJECT);
         this._template = template;
         this._objectConstructor = template && template.constructor ?
@@ -265,27 +260,23 @@ class ComplexObjectType extends CompositeType {
     }
 
     /**
-     * Adds new field to the complex type.
-     * Optionally specifies a type of the field.
-     *
-     * If the field with the specified name already exists, the new one is not created
-     * but the type of the existing field is updated.
+     * Specifies a type of the field in the complex type.
      *
      * If the type is not specified then during operations the Ignite client
      * will try to make automatic mapping between JavaScript types and Ignite object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      * 
      * @param {string} fieldName - name of the field.
-     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} [fieldType=null] - type of the field:
+     * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} fieldType - type of the field:
      *   - either a type code of primitive (simple) type
      *   - or an instance of class representing non-primitive (composite) type
-     *   - or null (or not specified) that means the type is not specified
+     *   - or null that means the type is not specified
      *
      * @return {ComplexObjectType} - the same instance of the ComplexObjectType.
      *
      * @throws {IgniteClientError} if error.
      */
-    setField(fieldName, fieldType = null) {
+    setFieldType(fieldName, fieldType) {
         const BinaryUtils = require('./internal/BinaryUtils');
         this._fields.set(fieldName, BinaryUtils.getObjectType(fieldType, 'fieldType'));
         return this;
