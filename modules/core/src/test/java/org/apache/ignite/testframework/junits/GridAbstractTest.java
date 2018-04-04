@@ -1003,28 +1003,6 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @param idx Index of the Ignite instance to stop.
-     */
-    protected void stopAndCancelGrid(int idx) {
-        stopGrid(getTestIgniteInstanceName(idx), true);
-    }
-
-    /**
-     * @param idx Index of the Ignite instance to stop.
-     */
-    protected void stopGrid(int idx) {
-        stopGrid(getTestIgniteInstanceName(idx), false);
-    }
-
-    /**
-     * @param idx Index of the Ignite instance to stop.
-     * @param cancel Cancel flag.
-     */
-    protected void stopGrid(int idx, boolean cancel) {
-        stopGrid(getTestIgniteInstanceName(idx), cancel, false);
-    }
-
-    /**
      * @param igniteInstanceName Ignite instance name.
      */
     protected void stopGrid(@Nullable String igniteInstanceName) {
@@ -1035,6 +1013,7 @@ public abstract class GridAbstractTest extends TestCase {
      * @param igniteInstanceName Ignite instance name.
      * @param cancel Cancel flag.
      */
+    @SuppressWarnings({"deprecation"})
     protected void stopGrid(@Nullable String igniteInstanceName, boolean cancel) {
         stopGrid(igniteInstanceName, cancel, true);
     }
@@ -1363,6 +1342,30 @@ public abstract class GridAbstractTest extends TestCase {
         cfg.setNodeId(UUID.randomUUID());
 
         return cfg;
+    }
+
+    /**
+     * @param idx Index of the grid to stop.
+     */
+    protected void stopGrid(int idx) {
+        stopGrid(getTestIgniteInstanceName(idx), false);
+    }
+
+    /**
+     * Stop Ignite instance using instance index.
+     *
+     * @param idx Grid index.
+     * @param cancel Cancel flag.
+     */
+    protected void stopGrid(int idx, boolean cancel) {
+        stopGrid(getTestIgniteInstanceName(idx), cancel, false);
+    }
+
+    /**
+     * @param idx Index of the grid to stop.
+     */
+    protected void stopAndCancelGrid(int idx) {
+        stopGrid(getTestIgniteInstanceName(idx), true);
     }
 
     /**
