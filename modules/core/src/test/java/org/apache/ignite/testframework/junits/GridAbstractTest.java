@@ -81,6 +81,7 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -1079,7 +1080,11 @@ public abstract class GridAbstractTest extends TestCase {
 
             try {
                 stopGridUnhandledEx(igniteInstanceName, false, false);
-            } catch (Throwable t) {
+            }
+            catch (Throwable t) {
+                log.error("Ignite instance failed to stop [igniteInstanceName=" + igniteInstanceName +
+                        ", err=" + t.getMessage() + ", stackTrace=" + X.getFullStackTrace(t) + "]");
+
                 errors.put(igniteInstanceName, t);
             }
         }
@@ -1091,7 +1096,7 @@ public abstract class GridAbstractTest extends TestCase {
             if(isMultiJvm())
                 IgniteProcessProxy.killAll(); // In multi-JVM case.
 
-            throw new IgniteCheckedException("Failed to stop nodes: [" + msg + "].");
+            throw new IgniteCheckedException("Failed to stop nodes [msg=" + msg + "]");
         }
     }
 
