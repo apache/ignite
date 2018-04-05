@@ -208,6 +208,7 @@ public class GridServiceProxy<T> implements Serializable {
                 catch (IgniteCheckedException e) {
                     // Rethrow original service method exception so that calling user code can handle it correctly.
                     ServiceProxyException svcProxyE = X.cause(e, ServiceProxyException.class);
+
                     if (svcProxyE != null)
                         throw svcProxyE.getCause();
 
