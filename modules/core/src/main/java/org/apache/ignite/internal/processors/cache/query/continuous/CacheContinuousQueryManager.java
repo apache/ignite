@@ -51,14 +51,15 @@ import org.apache.ignite.cache.query.CacheQueryEntryEvent;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicAbstractUpdateFuture;
+import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.continuous.GridContinuousHandler;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -678,17 +679,23 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
         assert pred != null : cctx.config();
 
-        UUID id = cctx.kernalContext().continuous().startRoutine(
-            hnd,
-            internal && loc,
-            bufSize,
-            timeInterval,
-            autoUnsubscribe,
-            pred).get();
+        UUID id = null;
 
         try {
+            id = cctx.kernalContext().continuous().startRoutine(
+                hnd,
+                internal && loc,
+                bufSize,
+                timeInterval,
+                autoUnsubscribe,
+                pred).get();
+
             if (hnd.isQuery() && cctx.userCache() && !onStart)
                 hnd.waitTopologyFuture(cctx.kernalContext());
+        }
+        catch (NodeStoppingException e) {
+            // Wrap original exception to show the source of continuous query start stacktrace.
+            throw new NodeStoppingException(e);
         }
         catch (IgniteCheckedException e) {
             log.warning("Failed to start continuous query.", e);
