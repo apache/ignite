@@ -2666,12 +2666,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
      * @return {@code True} if local node in disconnected state.
      */
     private boolean isLocalNodeDisconnected() {
-        boolean disconnected = false;
+        assert ignite instanceof IgniteKernal;
 
-        if (ignite instanceof IgniteKernal)
-            disconnected = ((IgniteKernal)ignite).context().clientDisconnected();
-
-        return disconnected;
+        return ((IgniteKernal)ignite).context().clientDisconnected();
     }
 
     /**

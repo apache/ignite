@@ -20,9 +20,6 @@ package org.apache.ignite.spi.communication.tcp;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
@@ -48,7 +45,6 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiOperationTimeoutHelper;
 import org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -58,13 +54,24 @@ import org.jetbrains.annotations.Nullable;
  */
 public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTest {
     /** */
+    private static final CountDownLatch COMPUTE_JOB_STARTED = new CountDownLatch(1);
+
+    /** */
     private static final long FAILURE_DETECTION_TIMEOUT = 10000;
 
     /** */
     private static final long JOIN_TIMEOUT = 10000;
 
     /** */
+    private static final long START_JOB_TIMEOUT = 10000;
+
+    /** */
     private static final long DISABLE_NETWORK_DELAY = 2000;
+
+    /** {@inheritDoc} */
+    @Override protected long getTestTimeout() {
+        return 2 * 60 * 1000;
+    }
 
     /**
      * @throws Exception If failed.
@@ -83,7 +90,10 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
 
             final IgniteCompute compute = client.compute();
 
-            runJobsAsync(compute);
+            runJobAsync(compute);
+
+            if (!COMPUTE_JOB_STARTED.await(START_JOB_TIMEOUT, TimeUnit.MILLISECONDS))
+                fail("Compute job wasn't started.");
 
             disableNetwork(client);
 
@@ -129,25 +139,22 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
      *
      * @param compute Ignite compute instance.
      */
-    private void runJobsAsync(final IgniteCompute compute) {
+    private void runJobAsync(final IgniteCompute compute) {
         new Thread(new Runnable() {
             @Override public void run() {
-                Collection<IgniteCallable<Integer>> jobs = new ArrayList<>();
-
-                for (int i = 0; i < 20; i++) {
-                    jobs.add(new IgniteCallable<Integer>() {
+                try {
+                    compute.call(new IgniteCallable<Integer>() {
                         @Override public Integer call() throws Exception {
-                            U.sleep(2000);
+                            COMPUTE_JOB_STARTED.countDown();
 
-                            return 0;
+                            // Simulate long-running job.
+                            new CountDownLatch(1).await();
+
+                            return null;
                         }
                     });
                 }
-
-                try {
-                    compute.call(jobs);
-                }
-                catch(Exception e) {
+                catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -178,11 +185,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
 
         spi.setName("CustomDiscoverySpi");
 
-        TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
-
-        ipFinder.setAddresses(Arrays.asList("127.0.0.1:47500..47509"));
-
-        spi.setIpFinder(ipFinder);
+        spi.setIpFinder(LOCAL_IP_FINDER);
 
         return spi;
     }
@@ -210,7 +213,8 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
             collisionSpi.setParallelJobsNumber(1);
 
             cfg.setCollisionSpi(collisionSpi);
-        } else {
+        }
+        else {
             cfg.setFailureDetectionTimeout(FAILURE_DETECTION_TIMEOUT);
 
             cfg.setDiscoverySpi(getDiscoverySpi().setJoinTimeout(JOIN_TIMEOUT));
@@ -298,7 +302,8 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
                 sleep(timeout);
 
                 return null;
-            } else
+            }
+            else
                 return super.createTcpClient(node, connIdx);
         }
 
@@ -360,7 +365,8 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
                 sleep(timeout);
 
                 return null;
-            } else
+            }
+            else
                 return super.readMessage(sock, in, timeout);
         }
 
@@ -373,7 +379,8 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
                 networkDisabledLatch.countDown();
 
                 throw new IgniteCheckedException("CustomDiscoverySpi: network is disabled.");
-            } else
+            }
+            else
                 super.writeToSocket(sock, msg, timeout);
         }
 
