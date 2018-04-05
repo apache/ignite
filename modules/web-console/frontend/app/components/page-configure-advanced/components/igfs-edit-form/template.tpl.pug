@@ -14,17 +14,16 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
-    form(id='igfs' name='ui.inputForm' novalidate ng-submit='$ctrl.save()')
-        include /app/modules/states/configuration/igfs/general
+form(id='igfs' name='ui.inputForm' novalidate ng-submit='$ctrl.save()')
+    include /app/modules/states/configuration/igfs/general
 
-        include /app/modules/states/configuration/igfs/secondary
-        include /app/modules/states/configuration/igfs/ipc
-        include /app/modules/states/configuration/igfs/fragmentizer
+    include /app/modules/states/configuration/igfs/secondary
+    include /app/modules/states/configuration/igfs/ipc
+    include /app/modules/states/configuration/igfs/fragmentizer
 
-        //- Removed in ignite 2.0
-        include /app/modules/states/configuration/igfs/dual
-        include /app/modules/states/configuration/igfs/misc
+    //- Removed in ignite 2.0
+    include /app/modules/states/configuration/igfs/dual
+    include /app/modules/states/configuration/igfs/misc
 
 .pc-form-actions-panel
     .pc-form-actions-panel__right-after

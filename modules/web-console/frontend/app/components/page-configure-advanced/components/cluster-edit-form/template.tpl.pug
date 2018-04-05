@@ -16,60 +16,59 @@
 
 include /app/helpers/jade/mixins
 
-div(bs-collapse='' data-allow-multiple='true' ng-model='ui.activePanels')
-    form(id='cluster' name='ui.inputForm' novalidate ng-submit='$ctrl.save()')
-        .panel-group
-            include /app/modules/states/configuration/clusters/general
+form(id='cluster' name='ui.inputForm' novalidate ng-submit='$ctrl.save()')
+    .panel-group
+        include /app/modules/states/configuration/clusters/general
 
-            include /app/modules/states/configuration/clusters/atomic
-            include /app/modules/states/configuration/clusters/binary
-            include /app/modules/states/configuration/clusters/cache-key-cfg
-            include /app/modules/states/configuration/clusters/checkpoint
+        include /app/modules/states/configuration/clusters/atomic
+        include /app/modules/states/configuration/clusters/binary
+        include /app/modules/states/configuration/clusters/cache-key-cfg
+        include /app/modules/states/configuration/clusters/checkpoint
 
-            //- Since ignite 2.3
-            include /app/modules/states/configuration/clusters/client-connector
+        //- Since ignite 2.3
+        include /app/modules/states/configuration/clusters/client-connector
 
-            include /app/modules/states/configuration/clusters/collision
-            include /app/modules/states/configuration/clusters/communication
-            include /app/modules/states/configuration/clusters/connector
-            include /app/modules/states/configuration/clusters/deployment
+        include /app/modules/states/configuration/clusters/collision
+        include /app/modules/states/configuration/clusters/communication
+        include /app/modules/states/configuration/clusters/connector
+        include /app/modules/states/configuration/clusters/deployment
 
-            //- Since ignite 2.3
-            include /app/modules/states/configuration/clusters/data-storage
+        //- Since ignite 2.3
+        include /app/modules/states/configuration/clusters/data-storage
 
-            include /app/modules/states/configuration/clusters/discovery
-            include /app/modules/states/configuration/clusters/events
-            include /app/modules/states/configuration/clusters/failover
-            include /app/modules/states/configuration/clusters/hadoop
-            include /app/modules/states/configuration/clusters/load-balancing
-            include /app/modules/states/configuration/clusters/logger
-            include /app/modules/states/configuration/clusters/marshaller
+        include /app/modules/states/configuration/clusters/discovery
+        include /app/modules/states/configuration/clusters/events
+        include /app/modules/states/configuration/clusters/failover
+        include /app/modules/states/configuration/clusters/hadoop
+        include /app/modules/states/configuration/clusters/load-balancing
+        include /app/modules/states/configuration/clusters/logger
+        include /app/modules/states/configuration/clusters/marshaller
 
-            //- Since ignite 2.0, deprecated in ignite 2.3
-            include /app/modules/states/configuration/clusters/memory
+        //- Since ignite 2.0, deprecated in ignite 2.3
+        include /app/modules/states/configuration/clusters/memory
 
-            include /app/modules/states/configuration/clusters/misc
-            include /app/modules/states/configuration/clusters/metrics
+        include /app/modules/states/configuration/clusters/misc
+        include /app/modules/states/configuration/clusters/metrics
 
-            //- Deprecated in ignite 2.1
-            include /app/modules/states/configuration/clusters/odbc
+        //- Deprecated in ignite 2.1
+        include /app/modules/states/configuration/clusters/odbc
 
-            //- Since ignite 2.1, deprecated in ignite 2.3
-            include /app/modules/states/configuration/clusters/persistence
+        //- Since ignite 2.1, deprecated in ignite 2.3
+        include /app/modules/states/configuration/clusters/persistence
 
-            //- Deprecated in ignite 2.3
-            include /app/modules/states/configuration/clusters/sql-connector
+        //- Deprecated in ignite 2.3
+        include /app/modules/states/configuration/clusters/sql-connector
 
-            include /app/modules/states/configuration/clusters/service
-            include /app/modules/states/configuration/clusters/ssl
+        include /app/modules/states/configuration/clusters/service
+        include /app/modules/states/configuration/clusters/ssl
 
-            //- Removed in ignite 2.0
-            include /app/modules/states/configuration/clusters/swap
+        //- Removed in ignite 2.0
+        include /app/modules/states/configuration/clusters/swap
 
-            include /app/modules/states/configuration/clusters/thread
-            include /app/modules/states/configuration/clusters/time
-            include /app/modules/states/configuration/clusters/transactions
-            include /app/modules/states/configuration/clusters/attributes
+        include /app/modules/states/configuration/clusters/thread
+        include /app/modules/states/configuration/clusters/time
+        include /app/modules/states/configuration/clusters/transactions
+        include /app/modules/states/configuration/clusters/attributes
 
 .pc-form-actions-panel(n_g-show='$ctrl.$scope.selectedItem')
     button-preview-project(cluster='$ctrl.cluster' ng-hide='$ctrl.isNew')

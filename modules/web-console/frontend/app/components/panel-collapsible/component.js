@@ -15,32 +15,25 @@
  * limitations under the License.
  */
 
-import merge from 'webpack-merge';
+import template from './template.pug';
+import controller from './controller';
+import './style.scss';
 
-import commonCfg from './webpack.common';
-
-export default merge(commonCfg, {
-    mode: 'development',
-    cache: true,
-    node: {
-        fs: 'empty',
-        child_process: 'empty'
+export default {
+    template,
+    controller,
+    bindings: {
+        opened: '<?',
+        onOpen: '&?',
+        onClose: '&?',
+        title: '@?',
+        description: '@?',
+        disabled: '@?'
     },
-
-    // Entry points.
-    entry: null,
-
-    // Output system.
-    output: null,
-    optimization: {
-        splitChunks: {
-            chunks: 'async'
-        }
-    },
-    module: {
-        exprContextCritical: false,
-        rules: [
-            {test: /\.s?css$/, use: ['ignore-loader']}
-        ]
+    transclude: {
+        title: '?panelTitle',
+        description: '?panelDescription',
+        actions: '?panelActions',
+        content: 'panelContent'
     }
-});
+};

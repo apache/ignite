@@ -15,32 +15,14 @@
  * limitations under the License.
  */
 
-import merge from 'webpack-merge';
+import {Selector} from 'testcafe';
 
-import commonCfg from './webpack.common';
-
-export default merge(commonCfg, {
-    mode: 'development',
-    cache: true,
-    node: {
-        fs: 'empty',
-        child_process: 'empty'
-    },
-
-    // Entry points.
-    entry: null,
-
-    // Output system.
-    output: null,
-    optimization: {
-        splitChunks: {
-            chunks: 'async'
-        }
-    },
-    module: {
-        exprContextCritical: false,
-        rules: [
-            {test: /\.s?css$/, use: ['ignore-loader']}
-        ]
+export class PanelCollapsible {
+    constructor(title) {
+        this._selector = Selector('.panel-collapsible__title').withText(title).parent('panel-collapsible');
+        this.heading = this._selector.find('.panel-collapsible__heading');
+        this.body = this._selector.find('.panel-collapsible__content').addCustomDOMProperties({
+            isOpened: (el) => !el.classList.contains('ng-hide')
+        });
     }
-});
+}

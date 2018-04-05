@@ -75,52 +75,49 @@ mixin list-db-field-edit({ items, itemName, itemsName })
                 label-multiple=itemsName
             )
 
-.pca-panel.pca-panel-default(ng-form=form novalidate)
-    .pca-panel-heading(bs-collapse-toggle='' ng-click=`ui.loadPanel('${form}')`)
-        ignite-form-panel-chevron
-        .pca-panel-heading-title(id='store-title') Domain model for cache store
-        .pca-panel-heading-description
-            | Domain model properties for binding database with cache via POJO cache store. 
-            a.link-success(href="https://apacheignite.readme.io/docs/3rd-party-store" target="_blank") More info
-    .pca-panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .pca-panel-body.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
-            .pca-form-column-6.pc-form-grid-row
-                .pc-form-grid-col-30
-                    +text('Database schema:', model + '.databaseSchema', '"databaseSchema"', 'false', 'Input DB schema name', 'Schema name in database')
-                .pc-form-grid-col-30
-                    +text('Database table:', model + '.databaseTable', '"databaseTable"', 'false', 'Input DB table name', 'Table name in database')
-                .pc-form-grid-col-60
-                    .ignite-form-field
-                        +ignite-form-field__label('Key fields:', '"keyFields"')
-                            +tooltip(`Collection of key fields descriptions for CacheJdbcPojoStore`)
-                        .ignite-form-field__control
-                            +list-db-field-edit({
-                                items: keyFields,
-                                itemName: 'key field',
-                                itemsName: 'key fields'
-                            })(name='keyFields')
-                        .ignite-form-field__errors(
-                            ng-messages=`store.keyFields.$error`
-                            ng-show=`store.keyFields.$invalid`
-                        )
-                            +form-field-feedback(_, 'dbFieldUnique', 'Each key field DB name and Java name should be unique')
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title#store-title Domain model for cache store
+    panel-description
+        | Domain model properties for binding database with cache via POJO cache store. 
+        a.link-success(href="https://apacheignite.readme.io/docs/3rd-party-store" target="_blank") More info
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-30
+                +text('Database schema:', model + '.databaseSchema', '"databaseSchema"', 'false', 'Input DB schema name', 'Schema name in database')
+            .pc-form-grid-col-30
+                +text('Database table:', model + '.databaseTable', '"databaseTable"', 'false', 'Input DB table name', 'Table name in database')
+            .pc-form-grid-col-60
+                .ignite-form-field
+                    +ignite-form-field__label('Key fields:', '"keyFields"')
+                        +tooltip(`Collection of key fields descriptions for CacheJdbcPojoStore`)
+                    .ignite-form-field__control
+                        +list-db-field-edit({
+                            items: keyFields,
+                            itemName: 'key field',
+                            itemsName: 'key fields'
+                        })(name='keyFields')
+                    .ignite-form-field__errors(
+                        ng-messages=`store.keyFields.$error`
+                        ng-show=`store.keyFields.$invalid`
+                    )
+                        +form-field-feedback(_, 'dbFieldUnique', 'Each key field DB name and Java name should be unique')
 
-                .pc-form-grid-col-60
-                    .ignite-form-field
-                        +ignite-form-field__label('Value fields:', '"valueFields"')
-                            +tooltip(`Collection of value fields descriptions for CacheJdbcPojoStore`)
-                        .ignite-form-field__control
-                            +list-db-field-edit({
-                                items: valueFields,
-                                itemName: 'value field',
-                                itemsName: 'value fields'
-                            })(name='valueFields')
-                        .ignite-form-field__errors(
-                            ng-messages=`store.valueFields.$error`
-                            ng-show=`store.valueFields.$invalid`
-                        )
-                            +form-field-feedback(_, 'dbFieldUnique', 'Each value field DB name and Java name should be unique')
+            .pc-form-grid-col-60
+                .ignite-form-field
+                    +ignite-form-field__label('Value fields:', '"valueFields"')
+                        +tooltip(`Collection of value fields descriptions for CacheJdbcPojoStore`)
+                    .ignite-form-field__control
+                        +list-db-field-edit({
+                            items: valueFields,
+                            itemName: 'value field',
+                            itemsName: 'value fields'
+                        })(name='valueFields')
+                    .ignite-form-field__errors(
+                        ng-messages=`store.valueFields.$error`
+                        ng-show=`store.valueFields.$invalid`
+                    )
+                        +form-field-feedback(_, 'dbFieldUnique', 'Each value field DB name and Java name should be unique')
 
-            .pca-form-column-6
-                +preview-xml-java(model, 'domainStore')
+        .pca-form-column-6
+            +preview-xml-java(model, 'domainStore')
 

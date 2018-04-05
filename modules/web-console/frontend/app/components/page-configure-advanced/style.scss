@@ -71,15 +71,12 @@ page-configure-advanced {
         }
     }
 
-    .pca-content {
-        border-left: 1px solid $gray-lighter;
-        padding: 30px;
-        flex: 1;
+    .pca-panel, panel-collapsible {
+        margin-bottom: 20px;
     }
 
-
-    .pca-panel {
-        margin-bottom: 20px;
+    panel-content.pca-form-row {
+        display: flex !important;
     }
 
     .pca-form-row {

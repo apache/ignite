@@ -15,32 +15,11 @@
  * limitations under the License.
  */
 
-import merge from 'webpack-merge';
+import angular from 'angular';
+import component from './component';
+import transclude from './transcludeDirective';
 
-import commonCfg from './webpack.common';
-
-export default merge(commonCfg, {
-    mode: 'development',
-    cache: true,
-    node: {
-        fs: 'empty',
-        child_process: 'empty'
-    },
-
-    // Entry points.
-    entry: null,
-
-    // Output system.
-    output: null,
-    optimization: {
-        splitChunks: {
-            chunks: 'async'
-        }
-    },
-    module: {
-        exprContextCritical: false,
-        rules: [
-            {test: /\.s?css$/, use: ['ignore-loader']}
-        ]
-    }
-});
+export default angular
+    .module('ignite-console.panel-collapsible', [])
+    .directive('panelCollapsibleTransclude', transclude)
+    .component('panelCollapsible', component);
