@@ -118,8 +118,6 @@ public class GridH2Table extends TableBase {
     /** Flag remove index or not when table will be destroyed. */
     private volatile boolean rmIndex;
 
-    private final int tblId;
-
     /**
      * Creates table.
      *
@@ -197,14 +195,7 @@ public class GridH2Table extends TableBase {
         sysIdxsCnt = idxs.size();
 
         lock = new ReentrantReadWriteLock();
-
-        if (createTblData.tableName.equals("PERSON"))
-            tblId = TCNT.getAndIncrement();
-        else
-            tblId = 0;
     }
-
-    private static AtomicInteger TCNT = new AtomicInteger();
 
     /**
      * @return {@code true} If this is a partitioned table.
