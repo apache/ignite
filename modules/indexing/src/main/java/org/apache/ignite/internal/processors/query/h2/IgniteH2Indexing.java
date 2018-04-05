@@ -1343,10 +1343,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public FieldsQueryCursor<List<?>> queryLocalSqlFields(String schemaName, SqlFieldsQuery qry,
         final boolean keepBinary, IndexingQueryFilter filter, GridQueryCancel cancel) throws IgniteCheckedException {
         String sql = qry.getSql();
-        Object[] args = qry.getArgs();
+        List<Object> params = F.asList(qry.getArgs());
+        boolean enforceJoinOrder = qry.isEnforceJoinOrder();
+        boolean startTx = MvccUtils.mvccEnabled(ctx) && autoStartTx(qry);
+        int timeout = qry.getTimeout();
 
-        final GridQueryFieldsResult res = queryLocalSqlFields(schemaName, sql, F.asList(args), filter,
-            qry.isEnforceJoinOrder(), autoStartTx(qry), qry.getTimeout(), cancel);
+        final GridQueryFieldsResult res = queryLocalSqlFields(schemaName, sql, params, filter,
+            enforceJoinOrder, startTx, timeout, cancel);
 
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
             @Override public Iterator<List<?>> iterator() {
@@ -1744,7 +1747,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @throws IgniteCheckedException if failed.
      */
     private void processTxCommand(SqlCommand cmd, SqlFieldsQuery qry) throws IgniteCheckedException {
-        if (!mvccEnabled())
+        if (!MvccUtils.mvccEnabled(ctx))
             throw new IgniteSQLException("MVCC must be enabled in order to invoke transactional operation: " +
                 qry.getSql(), IgniteQueryErrorCode.MVCC_DISABLED);
 
@@ -1753,7 +1756,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         GridNearTxLocal tx = null;
 
-        if (mvccEnabled())
+        if (MvccUtils.mvccEnabled(ctx))
             tx = MvccUtils.activeTx(ctx);
 
         if (cmd instanceof SqlBeginTransactionCommand) {
@@ -1852,7 +1855,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         GridNearTxLocal tx = null;
 
         try {
-            final boolean startTx = autoStartTx(qry);
+            final boolean startTx = MvccUtils.mvccEnabled(ctx) && autoStartTx(qry);
 
             List<FieldsQueryCursor<List<?>>> res = tryQueryDistributedSqlFieldsNative(schemaName, qry, cliCtx);
 
@@ -2278,13 +2281,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     private boolean isFlagSet(int flags, int flag) {
         return (flags & flag) == flag;
-    }
-
-    /**
-     * @return Whether MVCC is enabled or not on {@link IgniteConfiguration}.
-     */
-    private boolean mvccEnabled() {
-        return ctx.grid().configuration().isMvccEnabled();
     }
 
     /**
@@ -3107,7 +3103,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
     /** {@inheritDoc} */
     @Override public void onClientDisconnect() throws IgniteCheckedException {
-        if (!mvccEnabled())
+        if (!MvccUtils.mvccEnabled(ctx))
             return;
 
         GridNearTxLocal tx = MvccUtils.activeTx(ctx);

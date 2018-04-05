@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
@@ -419,6 +420,14 @@ public class MvccUtils {
         assert tx == null || (tx.pessimistic() && tx.repeatableRead());
 
         return tx;
+    }
+
+    /**
+     * @param ctx Grid kernal context.
+     * @return Whether MVCC is enabled or not on {@link IgniteConfiguration}.
+     */
+    public static boolean mvccEnabled(GridKernalContext ctx) {
+        return ctx.config().isMvccEnabled();
     }
 
     /**
