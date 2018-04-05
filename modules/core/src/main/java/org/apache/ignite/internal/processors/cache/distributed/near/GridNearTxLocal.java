@@ -41,6 +41,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.EntryGetResult;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -674,8 +675,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             dataCenterId = null;
 
         // Cached entry may be passed only from entry wrapper.
-        final Map<?, ?> map0 = U.tryToSort(map, cacheCtx.cacheObjectContext());
-        final Map<?, EntryProcessor<K, V, Object>> invokeMap0 = U.tryToSort(invokeMap, cacheCtx.cacheObjectContext());
+        final Map<?, ?> map0 = CacheObjectUtils.sort(map, cacheCtx.cacheObjectContext());
+        final Map<?, EntryProcessor<K, V, Object>> invokeMap0 = CacheObjectUtils.sort(invokeMap, cacheCtx.cacheObjectContext());
 
         if (log.isDebugEnabled())
             log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map0 + ", retval=" + retval + "]");
@@ -1450,12 +1451,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (drMap != null) {
             assert keys == null;
 
-            drMap = U.tryToSort(drMap, cacheCtx.cacheObjectContext());
+            drMap = CacheObjectUtils.sort(drMap, cacheCtx.cacheObjectContext());
 
             keys0 = drMap.keySet();
         }
         else
-            keys0 = U.tryToSort(keys, cacheCtx.cacheObjectContext());
+            keys0 = CacheObjectUtils.sort(keys, cacheCtx.cacheObjectContext());
 
         CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
 

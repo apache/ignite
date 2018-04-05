@@ -1132,7 +1132,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @throws IgniteCheckedException In case of error.
      */
     private void clear(@Nullable Set<? extends K> keys) throws IgniteCheckedException {
-        keys = (Set) U.tryToSort(keys, ctx.cacheObjectContext());
+        keys = (Set) CacheObjectUtils.sort(keys, ctx.cacheObjectContext());
 
         if (isLocal()) {
             if (keys == null)
@@ -1151,7 +1151,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Future.
      */
     private IgniteInternalFuture<?> clearAsync(@Nullable final Set<? extends K> keys) {
-        Set<? extends K> keys0 = (Set) U.tryToSort(keys, ctx.cacheObjectContext());
+        Set<? extends K> keys0 = (Set) CacheObjectUtils.sort(keys, ctx.cacheObjectContext());
 
         if (isLocal())
             return clearLocallyAsync(keys0);
@@ -1478,7 +1478,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public final Map<K, V> getAll(@Nullable Collection<? extends K> keys) throws IgniteCheckedException {
         A.notNull(keys, "keys");
 
-        keys = U.tryToSort(keys, ctx.cacheObjectContext());
+        keys = CacheObjectUtils.sort(keys, ctx.cacheObjectContext());
 
         boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -1500,7 +1500,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         throws IgniteCheckedException {
         A.notNull(keys, "keys");
 
-        keys = U.tryToSort(keys, ctx.cacheObjectContext());
+        keys = CacheObjectUtils.sort(keys, ctx.cacheObjectContext());
 
         boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -1526,7 +1526,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(@Nullable final Collection<? extends K> keys) {
         A.notNull(keys, "keys");
 
-        Collection<? extends K> keys0 = U.tryToSort(keys, ctx.cacheObjectContext());
+        Collection<? extends K> keys0 = CacheObjectUtils.sort(keys, ctx.cacheObjectContext());
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 
@@ -1565,7 +1565,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         @Nullable final Collection<? extends K> keys) {
         A.notNull(keys, "keys");
 
-        Collection<? extends K> keys0 = U.tryToSort(keys, ctx.cacheObjectContext());
+        Collection<? extends K> keys0 = CacheObjectUtils.sort(keys, ctx.cacheObjectContext());
 
         final boolean statsEnabled = ctx.statisticsEnabled();
 

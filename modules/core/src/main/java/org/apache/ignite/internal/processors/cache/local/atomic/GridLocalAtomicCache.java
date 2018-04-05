@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
 import org.apache.ignite.internal.processors.cache.CacheInvokeResult;
 import org.apache.ignite.internal.processors.cache.CacheLazyEntry;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectUtils;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.CacheStorePartialUpdateException;
@@ -710,8 +711,8 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     ) {
         final GridCacheOperation op = invokeMap != null ? TRANSFORM : UPDATE;
 
-        Map<? extends K, ? extends V> map0 = U.tryToSort(map, ctx.cacheObjectContext());
-        Map<? extends K, ? extends EntryProcessor> invokeMap0 = U.tryToSort(invokeMap, ctx.cacheObjectContext());
+        Map<? extends K, ? extends V> map0 = CacheObjectUtils.sort(map, ctx.cacheObjectContext());
+        Map<? extends K, ? extends EntryProcessor> invokeMap0 = CacheObjectUtils.sort(invokeMap, ctx.cacheObjectContext());
 
         final Collection<? extends K> keys =
             map0 != null ? map0.keySet() : invokeMap0 != null ? invokeMap0.keySet() : null;
