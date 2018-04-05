@@ -29,7 +29,7 @@ import org.apache.ignite.ml.trees.performance.ColumnDecisionTreeTrainerBenchmark
 import org.apache.ignite.ml.util.MnistUtils;
 
 /** */
-class MnistMLPTestUtil {
+public class MnistMLPTestUtil {
     /** Name of the property specifying path to training set images. */
     private static final String PROP_TRAINING_IMAGES = "mnist.training.images";
 
@@ -62,7 +62,7 @@ class MnistMLPTestUtil {
      * @return List of MNIST images.
      * @throws IOException In case of exception.
      */
-    static List<MnistUtils.MnistLabeledImage> loadTrainingSet(int cnt) throws IOException {
+    public static List<MnistUtils.MnistLabeledImage> loadTrainingSet(int cnt) throws IOException {
         Properties props = loadMNISTProperties();
         return MnistUtils.mnistAsList(props.getProperty(PROP_TRAINING_IMAGES), props.getProperty(PROP_TRAINING_LABELS), new Random(123L), cnt);
     }
@@ -74,7 +74,7 @@ class MnistMLPTestUtil {
      * @return List of MNIST images.
      * @throws IOException In case of exception.
      */
-    static List<MnistUtils.MnistLabeledImage> loadTestSet(int cnt) throws IOException {
+    public static List<MnistUtils.MnistLabeledImage> loadTestSet(int cnt) throws IOException {
         Properties props = loadMNISTProperties();
         return MnistUtils.mnistAsList(props.getProperty(PROP_TEST_IMAGES), props.getProperty(PROP_TEST_LABELS), new Random(123L), cnt);
     }
