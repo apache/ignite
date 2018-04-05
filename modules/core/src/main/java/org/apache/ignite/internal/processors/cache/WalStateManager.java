@@ -375,7 +375,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             }
 
             if (hasOwning && !grp.localWalEnabled()) {
-//                grpsToEnableWal.add(grp.groupId());
+                grpsToEnableWal.add(grp.groupId());
             }
             else if (!hasOwning && grp.localWalEnabled()) {
                 grpsToDisableWal.add(grp.groupId());
@@ -399,22 +399,22 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             throw new IgniteException(ex);
         }
 
-//        for (Integer grpId : grpsToEnableWal)
-//            cctx.cache().cacheGroup(grpId).localWalEnabled(true);
+        for (Integer grpId : grpsToEnableWal)
+            cctx.cache().cacheGroup(grpId).localWalEnabled(true);
 
         for (Integer grpId : grpsToDisableWal)
             cctx.cache().cacheGroup(grpId).localWalEnabled(false);
     }
 
     public IgniteInternalFuture<Void> onGroupRebalanceFinished(int grpId, AffinityTopologyVersion topVer) {
-        TemporaryDisabledWal session = this.session.get();
+        TemporaryDisabledWal session0 = this.session.get();
 
-        if (session == null || !session.topVer.equals(topVer))
+        if (session0 == null || !session0.topVer.equals(topVer))
             return null;
 
-        session.remainingGrps.remove(grpId);
+        session0.remainingGrps.remove(grpId);
 
-        if (session.remainingGrps.isEmpty() && this.session.compareAndSet(session, null)) {
+        if (session0.remainingGrps.isEmpty() && this.session.compareAndSet(session0, null)) {
             triggerCheckpoint(0).finishFuture().listen(new IgniteInClosureX<IgniteInternalFuture>() {
                 @Override public void applyx(IgniteInternalFuture future) throws IgniteCheckedException {
                     // TODO : add sync/reserve mechanics.
@@ -425,19 +425,32 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                         grp.localWalEnabled(true);
 
                         for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
-                            if (locPart.state() == MOVING)
-                                grp.topology().own(locPart);
+                            if (locPart.state() == MOVING) {
+                                boolean reserved = locPart.reserve();
+
+                                try {
+                                    if (reserved && locPart.state() == MOVING &&
+                                        cctx.discovery().topologyVersionEx().equals(session0.topVer))
+                                        grp.topology().own(locPart);
+                                    else // topology changed, rebalancing must be restarted
+                                        return;
+                                }
+                                finally {
+                                    if (reserved)
+                                        locPart.release();
+                                }
+                            }
                         }
                     }
 
                     cctx.exchange().refreshPartitions();
 
-                    session.doneFut.onDone();
+                    session0.doneFut.onDone();
                 }
             });
         }
 
-        return session.doneFut;
+        return session0.doneFut;
     }
 
     /**
