@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.pagemem.wal.DataStructureSizeAdapter;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 
 public class DataStructureSizeManager {
@@ -56,11 +57,15 @@ public class DataStructureSizeManager {
         sizes.put(GROUP + "-" + cacheOrGroupName, new DataStructureHolder(cacheOrGroupName, grpCtx.dataRegion().pageMemory().pageSize()));
     }
 
+    public void onRegionCreated(DataRegion dataRegion){
+
+    }
+
     public Map<String, DataStructureSize> structureSizes(String structureName) {
         return sizes.get(structureName).sizes;
     }
 
-    public static DataStructureSize sizeCounterWithTrakingPages(
+    public static DataStructureSize sizeCounterWithTrackingPages(
         String name,
         DataStructureSize internalSize,
         int pageSize
@@ -274,7 +279,7 @@ public class DataStructureSizeManager {
             // Index size.
             String indexesTotal = name + "-" + INDEX;
 
-            DataStructureSize indexTotalPages = sizeCounterWithTrakingPages(indexesTotal, internalSize, pageSize);
+            DataStructureSize indexTotalPages = sizeCounterWithTrackingPages(indexesTotal, internalSize, pageSize);
 
             sizes.put(indexesTotal, indexTotalPages);
 

@@ -290,6 +290,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         else if (dataRegionName.equals(DFLT_DATA_REG_DEFAULT_NAME))
             U.warn(log, "Data Region with name 'default' isn't used as a default. " +
                     "Please check Memory Policies configuration.");
+
+        dsSizeMgr.onRegionCreated(memPlc);
     }
 
     /**

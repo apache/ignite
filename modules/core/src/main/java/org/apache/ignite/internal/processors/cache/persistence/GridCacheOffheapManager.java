@@ -92,7 +92,7 @@ import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PK_IND
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PURE_DATA;
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.REUSE_LIST;
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.sizeCounter;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.sizeCounterWithTrakingPages;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.sizeCounterWithTrackingPages;
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.mergeSizeCounters;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
@@ -1178,7 +1178,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         partName + "-" + INTERNAL, grp.sizeOf(INTERNAL));
 
                     DataStructureSize partitionPages = mergeSizeCounters(
-                        sizeCounterWithTrakingPages(partName + "-" + PARTITION, internalSize, pageSize),
+                        sizeCounterWithTrackingPages(partName + "-" + PARTITION, internalSize, pageSize),
                         grp.sizeOf(PARTITION)
                     );
 
