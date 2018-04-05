@@ -402,7 +402,7 @@ public class MvccUtils {
      * @param opType operation type to mention in error message.
      */
     public static void verifyMvccOperationSupport(GridCacheContext<?, ?> cctx, String opType) {
-        if (!cctx.atomic() && cctx.gridConfig().isMvccEnabled())
+        if (cctx.mvccEnabled())
             throw new UnsupportedOperationException(opType + " operations are not supported on transactional " +
                 "caches when MVCC is enabled.");
     }

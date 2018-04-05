@@ -1650,11 +1650,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, mvccSnapshot);
                 }
-                else {
+                else
                     assert res == ResultType.PREV_NULL;
-
-                    incrementSize(cctx.cacheId());
-                }
 
                 if (!grp.storeCacheIdInDataPage() && updateRow.cacheId() != CU.UNDEFINED_CACHE_ID) {
                     updateRow.cacheId(CU.UNDEFINED_CACHE_ID);
@@ -1669,6 +1666,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 boolean old = dataTree.putx(updateRow);
 
                 assert !old;
+
+                incrementSize(cctx.cacheId());
 
                 GridCacheQueryManager qryMgr = cctx.queries();
 
@@ -1737,8 +1736,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     return updateRow;
                 }
                 else if (res == ResultType.PREV_NOT_NULL) {
-                    decrementSize(cacheId);
-
                     CacheDataRow oldRow = updateRow.oldRow();
 
                     assert oldRow != null && oldRow.link() != 0 : oldRow;
@@ -1813,11 +1810,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                     rowStore.updateDataRow(oldRow.link(), mvccUpdateMarker, mvccSnapshot);
                 }
-                else {
+                else
                     assert res == ResultType.PREV_NULL;
-
-                    incrementSize(cctx.cacheId());
-                }
 
                 if (!grp.storeCacheIdInDataPage() && updateRow.cacheId() != CU.UNDEFINED_CACHE_ID) {
                     updateRow.cacheId(CU.UNDEFINED_CACHE_ID);
@@ -1832,6 +1826,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                 boolean old = dataTree.putx(updateRow);
 
                 assert !old;
+
+                incrementSize(cctx.cacheId());
 
                 GridCacheQueryManager qryMgr = cctx.queries();
 
@@ -1891,8 +1887,6 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                     return null;
                 }
                 else if (res == ResultType.PREV_NOT_NULL) {
-                    decrementSize(cacheId);
-
                     CacheDataRow oldRow = updateRow.oldRow();
 
                     assert oldRow != null && oldRow.link() != 0 : oldRow;
@@ -1948,12 +1942,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
                 rowStore.removeRow(row.link());
 
-                if (first) {
-                    if (row.newMvccCoordinatorVersion() == 0)
-                        decrementSize(cctx.cacheId());
+                decrementSize(cctx.cacheId());
 
+                if (first)
                     first = false;
-                }
             }
         }
 
@@ -1983,6 +1975,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
                         clearPendingEntries(cctx, oldRow);
 
                         rowStore.removeRow(cleanupRow.link());
+
+                        decrementSize(cctx.cacheId());
                     }
                 }
             }
