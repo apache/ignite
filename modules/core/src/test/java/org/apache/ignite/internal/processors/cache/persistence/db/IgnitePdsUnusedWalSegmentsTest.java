@@ -23,8 +23,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -35,6 +33,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.misc.VisorWalTask;
 import org.apache.ignite.internal.visor.misc.VisorWalTaskArg;
@@ -57,10 +56,6 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
 
         CacheConfiguration<Integer, Object> ccfg = new CacheConfiguration<>(DEFAULT_CACHE_NAME);
 
-        ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-
-        ccfg.setCacheMode(CacheMode.REPLICATED);
-
         ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         cfg.setCacheConfiguration(ccfg);
@@ -71,7 +66,7 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(dbCfg);
 
-        dbCfg.setWalSegmentSize(2 * 1024 * 1024)
+        dbCfg.setWalSegmentSize(1024 * 1024)
                 .setWalHistorySize(Integer.MAX_VALUE)
                 .setWalSegments(10)
                 .setWalMode(WALMode.LOG_ONLY)
@@ -122,6 +117,32 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
             assertEquals("Check that print task finished without exceptions", printRes.results().size(), 4);
 
             List<File> walArchives = new ArrayList<>();
+
+            printRes.results().entrySet().forEach(e -> {
+                log.warning("Node " + e.getKey());
+                log.warning("Num of segments " + e.getValue().size());
+            });
+
+            for(int i = 0; i < 4; i++){
+                IgniteEx ig = grid(i);
+                log.warning("node:" + ig.cluster().node().consistentId().toString());
+                GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager) ig.context().cache().context()
+                        .database();
+                log.warning("min reserved index: " + dbMgr.reservedWalSegmentIndex());
+
+                File walArchiveDir = GridTestUtils.getFieldValue(ig.context().cache().context().wal(),"walArchiveDir");
+
+                File[] wals = walArchiveDir.listFiles(FileWriteAheadLogManager.WAL_SEGMENT_FILE_FILTER);
+
+
+
+                if (wals != null) {
+                    for (File wal: wals)
+                        log.warning(wal.getAbsolutePath());
+
+                }
+
+            }
 
             for (Collection<String> pathsPerNode : printRes.results().values()) {
                 assertTrue("Check that all nodes has unused WAL segments", pathsPerNode.size() > 0);
