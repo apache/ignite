@@ -25,16 +25,15 @@ import org.apache.ignite.ml.nn.performance.MnistMLPTestUtil;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.util.MnistUtils;
-import org.junit.Test;
 
 import static junit.framework.TestCase.assertTrue;
 
 /**
- * Tests {@link DecisionTreeClassificationTrainer} on the MNIST dataset using locally stored data.
+ * Tests {@link DecisionTreeClassificationTrainer} on the MNIST dataset using locally stored data. For manual run.
  */
 public class DecisionTreeMNISTTest {
     /** */
-    @Test
+//    @Test
     public void testMNIST() throws IOException {
         Map<Integer, MnistUtils.MnistLabeledImage> trainingSet = new HashMap<>();
 

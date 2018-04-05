@@ -32,7 +32,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
  * Tests {@link DecisionTreeClassificationTrainer} on the MNIST dataset that require to start the whole Ignite
- * infrastructure.
+ * infrastructure. For manual run.
  */
 public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
@@ -63,7 +63,7 @@ public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** Tests on the MNIST dataset. */
-    public void testMNIST() throws IOException {
+    public void tstMNIST() throws IOException {
         CacheConfiguration<Integer, MnistUtils.MnistLabeledImage> trainingSetCacheCfg = new CacheConfiguration<>();
         trainingSetCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
         trainingSetCacheCfg.setName("MNIST_TRAINING_SET");
