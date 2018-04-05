@@ -52,7 +52,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.configuration.ConnectorConfiguration;
-import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
@@ -2098,28 +2097,20 @@ public class GridNioServer<T> {
             }
             // Ignore this exception as thread interruption is equal to 'close' call.
             catch (OutOfMemoryError e) {
-                lsnr.onCriticalFailure(CRITICAL_ERROR, e);
+                lsnr.onFailure(CRITICAL_ERROR, e);
             }
             catch (ClosedByInterruptException e) {
                 if (log.isDebugEnabled())
                     log.debug("Closing selector due to thread interruption: " + e.getMessage());
             }
             catch (ClosedSelectorException e) {
-                lsnr.onCriticalFailure(SYSTEM_WORKER_TERMINATION, e);
-
                 throw new IgniteCheckedException("Selector got closed while active.", e);
             }
             catch (IOException e) {
-                lsnr.onCriticalFailure(SYSTEM_WORKER_TERMINATION, e);
-
                 throw new IgniteCheckedException("Failed to select events on selector.", e);
             }
             finally {
                 if (selector.isOpen()) {
-                    if (!closed)
-                        lsnr.onCriticalFailure(SYSTEM_WORKER_TERMINATION,
-                            new IllegalStateException("Thread " + name() + " is exiting unexpectedly"));
-
                     if (log.isDebugEnabled())
                         log.debug("Closing all connected client sockets.");
 
@@ -2819,15 +2810,21 @@ public class GridNioServer<T> {
                 throw t;
             }
             finally {
+                try {
+                    closeSelector(); // Safety.
+                }
+                catch (RuntimeException ignore) {
+                    // No-op.
+                }
+
                 if (err == null && !closed)
-                    err = new IllegalStateException("Thread " + name() + " is exiting unexpectedly");
+                    err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
-                    lsnr.onCriticalFailure(CRITICAL_ERROR, err);
+                    lsnr.onFailure(CRITICAL_ERROR, err);
                 else if (err != null)
-                    lsnr.onCriticalFailure(SYSTEM_WORKER_TERMINATION, err);
+                    lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
 
-                closeSelector(); // Safety.
             }
         }
 

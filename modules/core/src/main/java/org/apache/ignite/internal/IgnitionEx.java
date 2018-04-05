@@ -1807,9 +1807,11 @@ public class IgnitionEx {
                 cfg.getIgniteInstanceName(),
                 "sys",
                 log,
-                (thread, t) -> {
-                    if (grid != null)
-                        grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
+                new Thread.UncaughtExceptionHandler() {
+                    @Override public void uncaughtException(Thread thread, Throwable t) {
+                        if (grid != null)
+                            grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
+                    }
                 });
 
             // Note that since we use 'LinkedBlockingQueue', number of
@@ -1850,9 +1852,11 @@ public class IgnitionEx {
                 cfg.getIgniteInstanceName(),
                 "data-streamer",
                 log,
-                (thread, t) -> {
-                    if (grid != null)
-                        grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
+                new Thread.UncaughtExceptionHandler() {
+                    @Override public void uncaughtException(Thread thread, Throwable t) {
+                        if (grid != null)
+                            grid.context().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, t));
+                    }
                 },
                 true);
 
