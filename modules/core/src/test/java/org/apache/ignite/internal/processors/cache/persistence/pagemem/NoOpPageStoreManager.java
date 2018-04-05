@@ -188,7 +188,7 @@ public class NoOpPageStoreManager implements IgnitePageStoreManager {
     }
 
     /** {@inheritDoc} */
-    @Override public void deleteCacheConfigurationData(CacheConfiguration cacheCfg) throws IgniteCheckedException {
+    @Override public void deleteCacheConfigurationData(StoredCacheData cacheData) throws IgniteCheckedException {
         // No-op.
     }
 

@@ -198,10 +198,10 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager, IgniteCh
     /**
      * Delete cache configuration data file.
      *
-     * @param cacheCfg Cache configuration.
+     * @param cacheData Cache configuration.
      * @throws IgniteCheckedException If failed.
      */
-    public void deleteCacheConfigurationData(CacheConfiguration cacheCfg) throws IgniteCheckedException;
+    public void deleteCacheConfigurationData(StoredCacheData cacheData) throws IgniteCheckedException;
 
     /**
      * @param grpId Cache group ID.

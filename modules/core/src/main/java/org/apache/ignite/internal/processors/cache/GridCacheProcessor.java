@@ -1247,7 +1247,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
             if (destroy && (pageStore = sharedCtx.pageStore()) != null) {
                 try {
-                    pageStore.deleteCacheConfigurationData(ctx.config());
+                    pageStore.deleteCacheConfigurationData(new StoredCacheData(ctx.config()));
                 } catch (IgniteCheckedException e) {
                     U.error(log, "Failed to delete cache configuration data while destroying cache" +
                             "[cache=" + ctx.name() + "]", e);
