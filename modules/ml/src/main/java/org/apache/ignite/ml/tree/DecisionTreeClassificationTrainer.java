@@ -24,40 +24,37 @@ import java.util.Set;
 import java.util.function.Predicate;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
+import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasure;
 import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasureCalculator;
-import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 
 /**
  * Decision tree classifier based on distributed decision tree trainer that allows to fit trees using row-partitioned
  * dataset.
  */
-public class DecisionTreeClassifier extends DecisionTree<GiniImpurityMeasure> {
+public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurityMeasure> {
     /**
      * Constructs a new instance of decision tree classifier.
      *
      * @param maxDeep Max tree deep.
      * @param minImpurityDecrease Min impurity decrease.
      */
-    public DecisionTreeClassifier(int maxDeep, double minImpurityDecrease) {
+    public DecisionTreeClassificationTrainer(int maxDeep, double minImpurityDecrease) {
         super(maxDeep, minImpurityDecrease);
     }
 
     /** {@inheritDoc} */
-    @Override DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, SimpleLabeledDatasetData> dataset,
+    @Override DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset,
         Predicate<double[]> pred) {
         Map<Double, Integer> cnt = dataset.compute(part -> {
 
             if (part.getFeatures() != null) {
                 Map<Double, Integer> map = new HashMap<>();
 
-                double[][] features = convert(part.getFeatures(), part.getRows());
-                double[] labels = part.getLabels();
-
-                for (int i = 0; i < features.length; i++) {
-                    if (pred.test(features[i])) {
-                        double lb = labels[i];
+                for (int i = 0; i < part.getFeatures().length; i++) {
+                    if (pred.test(part.getFeatures()[i])) {
+                        double lb = part.getLabels()[i];
                         if (map.containsKey(lb))
                             map.put(lb, map.get(lb) + 1);
                         else
@@ -86,7 +83,7 @@ public class DecisionTreeClassifier extends DecisionTree<GiniImpurityMeasure> {
     }
 
     /** {@inheritDoc} */
-    @Override ImpurityMeasureCalculator<GiniImpurityMeasure> getImpurityMeasureCalculator(Dataset<EmptyContext, SimpleLabeledDatasetData> dataset) {
+    @Override ImpurityMeasureCalculator<GiniImpurityMeasure> getImpurityMeasureCalculator(Dataset<EmptyContext, DecisionTreeData> dataset) {
         Set<Double> labels = dataset.compute(part -> {
 
             if (part.getLabels() != null) {

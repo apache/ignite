@@ -19,7 +19,7 @@ package org.apache.ignite.ml.tree.impurity.gini;
 
 import java.util.Arrays;
 import java.util.Map;
-import org.apache.ignite.ml.tree.Utils;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.util.StepFunction;
 
@@ -27,6 +27,9 @@ import org.apache.ignite.ml.tree.impurity.util.StepFunction;
  * Gini impurity measure calculator.
  */
 public class GiniImpurityMeasureCalculator implements ImpurityMeasureCalculator<GiniImpurityMeasure> {
+    /** */
+    private static final long serialVersionUID = -522995134128519679L;
+
     /** Label encoder which defines integer value for every label class.  */
     private final Map<Double, Integer> lbEncoder;
 
@@ -41,42 +44,46 @@ public class GiniImpurityMeasureCalculator implements ImpurityMeasureCalculator<
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public StepFunction<GiniImpurityMeasure>[] calculate(double[][] data, double[] labels) {
-        StepFunction<GiniImpurityMeasure>[] res = new StepFunction[data[0].length];
+    @Override public StepFunction<GiniImpurityMeasure>[] calculate(DecisionTreeData data) {
+        if (data.getFeatures().length > 0) {
+            StepFunction<GiniImpurityMeasure>[] res = new StepFunction[data.getFeatures()[0].length];
 
-        for (int col = 0; col < res.length; col++) {
-            Utils.quickSort(data, labels, col);
+            for (int col = 0; col < res.length; col++) {
+                data.sort(col);
 
-            double[] x = new double[data.length + 1];
-            GiniImpurityMeasure[] y = new GiniImpurityMeasure[data.length + 1];
+                double[] x = new double[data.getFeatures().length + 1];
+                GiniImpurityMeasure[] y = new GiniImpurityMeasure[data.getFeatures().length + 1];
 
-            int xPtr = 0, yPtr = 0;
+                int xPtr = 0, yPtr = 0;
 
-            x[xPtr++] = Double.NEGATIVE_INFINITY;
+                x[xPtr++] = Double.NEGATIVE_INFINITY;
 
-            for (int leftSize = 0; leftSize <= data.length; leftSize++) {
-                if (leftSize > 0 && leftSize < data.length && data[leftSize][col] == data[leftSize - 1][col])
-                    continue;
+                for (int leftSize = 0; leftSize <= data.getFeatures().length; leftSize++) {
+                    if (leftSize > 0 && leftSize < data.getFeatures().length && data.getFeatures()[leftSize][col] == data.getFeatures()[leftSize - 1][col])
+                        continue;
 
-                long[] left = new long[lbEncoder.size()];
-                long[] right = new long[lbEncoder.size()];
+                    long[] left = new long[lbEncoder.size()];
+                    long[] right = new long[lbEncoder.size()];
 
-                for (int j = 0; j < leftSize; j++)
-                    left[getLabelCode(labels[j])]++;
+                    for (int j = 0; j < leftSize; j++)
+                        left[getLabelCode(data.getLabels()[j])]++;
 
-                for (int j = leftSize; j < labels.length; j++)
-                    right[getLabelCode(labels[j])]++;
+                    for (int j = leftSize; j < data.getLabels().length; j++)
+                        right[getLabelCode(data.getLabels()[j])]++;
 
-                if (leftSize < data.length)
-                    x[xPtr++] = data[leftSize][col];
+                    if (leftSize < data.getFeatures().length)
+                        x[xPtr++] = data.getFeatures()[leftSize][col];
 
-                y[yPtr++] = new GiniImpurityMeasure(left, right);
+                    y[yPtr++] = new GiniImpurityMeasure(left, right);
+                }
+
+                res[col] = new StepFunction<>(Arrays.copyOf(x, xPtr), Arrays.copyOf(y, yPtr));
             }
 
-            res[col] = new StepFunction<>(Arrays.copyOf(x, xPtr), Arrays.copyOf(y, yPtr));
+            return res;
         }
 
-        return res;
+        return null;
     }
 
     /**

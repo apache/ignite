@@ -15,24 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree.impurity;
+package org.apache.ignite.ml.tree;
 
 import java.io.Serializable;
-import org.apache.ignite.ml.tree.data.DecisionTreeData;
-import org.apache.ignite.ml.tree.impurity.util.StepFunction;
+import java.util.Objects;
+import java.util.function.Predicate;
 
-/**
- * Base interface for impurity measure calculators that calculates all impurity measures required to find a best split.
- *
- * @param <T> Type of impurity measure.
- */
-public interface ImpurityMeasureCalculator<T extends ImpurityMeasure<T>> extends Serializable {
-    /**
-     * Calculates all impurity measures required required to find a best split and returns them as an array of
-     * {@link StepFunction} (for every column).
-     *
-     * @param data Features and labels.
-     * @return Impurity measures as an array of {@link StepFunction} (for every column).
-     */
-    public StepFunction<T>[] calculate(DecisionTreeData data);
+public interface TreeFilter extends Predicate<double[]>, Serializable {
+
+    default TreeFilter and(TreeFilter other) {
+        Objects.requireNonNull(other);
+        return (t) -> test(t) && other.test(t);
+    }
 }

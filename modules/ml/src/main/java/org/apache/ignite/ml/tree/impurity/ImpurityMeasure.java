@@ -1,11 +1,13 @@
 package org.apache.ignite.ml.tree.impurity;
 
+import java.io.Serializable;
+
 /**
  * Base interface for impurity measures that can be used in distributed decision tree algorithm.
  *
  * @param <T> Type of this impurity measure.
  */
-public interface ImpurityMeasure<T extends ImpurityMeasure<T>> extends Comparable<T> {
+public interface ImpurityMeasure<T extends ImpurityMeasure<T>> extends Comparable<T>, Serializable {
     /**
      * Calculates impurity measure as a single double value.
      *

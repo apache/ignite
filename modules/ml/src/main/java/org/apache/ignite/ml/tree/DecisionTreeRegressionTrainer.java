@@ -20,7 +20,7 @@ package org.apache.ignite.ml.tree;
 import java.util.function.Predicate;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasure;
 import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasureCalculator;
@@ -29,26 +29,26 @@ import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasureCalculator;
  * Decision tree regressor based on distributed decision tree trainer that allows to fit trees using row-partitioned
  * dataset.
  */
-public class DecisionTreeRegressor extends DecisionTree<MSEImpurityMeasure> {
+public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasure> {
     /**
      * Constructs a new decision tree regressor.
      *
      * @param maxDeep Max tree deep.
      * @param minImpurityDecrease Min impurity decrease.
      */
-    public DecisionTreeRegressor(int maxDeep, double minImpurityDecrease) {
+    public DecisionTreeRegressionTrainer(int maxDeep, double minImpurityDecrease) {
         super(maxDeep, minImpurityDecrease);
     }
 
     /** {@inheritDoc} */
-    @Override DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, SimpleLabeledDatasetData> dataset,
+    @Override DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset,
         Predicate<double[]> pred) {
         double[] aa = dataset.compute(part -> {
             double mean = 0;
             int cnt = 0;
-            double[][] features = convert(part.getFeatures(), part.getRows());
-            for (int i = 0; i < part.getRows(); i++) {
-                if (pred.test(features[i])) {
+
+            for (int i = 0; i < part.getFeatures().length; i++) {
+                if (pred.test(part.getFeatures()[i])) {
                     mean += part.getLabels()[i];
                     cnt++;
                 }
@@ -66,7 +66,7 @@ public class DecisionTreeRegressor extends DecisionTree<MSEImpurityMeasure> {
     }
 
     /** {@inheritDoc} */
-    @Override ImpurityMeasureCalculator<MSEImpurityMeasure> getImpurityMeasureCalculator(Dataset<EmptyContext, SimpleLabeledDatasetData> dataset) {
+    @Override ImpurityMeasureCalculator<MSEImpurityMeasure> getImpurityMeasureCalculator(Dataset<EmptyContext, DecisionTreeData> dataset) {
         return new MSEImpurityMeasureCalculator();
     }
 

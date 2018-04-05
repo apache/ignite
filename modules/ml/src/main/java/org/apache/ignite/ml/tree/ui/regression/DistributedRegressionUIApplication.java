@@ -26,7 +26,7 @@ import javax.swing.JFrame;
 import javax.swing.WindowConstants;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.tree.DecisionTreeRegressor;
+import org.apache.ignite.ml.tree.DecisionTreeRegressionTrainer;
 import org.apache.ignite.ml.tree.ui.util.ControlPanel;
 
 public class DistributedRegressionUIApplication extends RegressionUIApplication {
@@ -58,7 +58,7 @@ public class DistributedRegressionUIApplication extends RegressionUIApplication 
 
         LocalDatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(map, 2);
 
-        return new DecisionTreeRegressor(maxDeep, minImpurityDecrease).fit(
+        return new DecisionTreeRegressionTrainer(maxDeep, minImpurityDecrease).fit(
             datasetBuilder,
             (k, v) -> Arrays.copyOf(v, v.length - 1),
             (k, v) -> v[v.length - 1]

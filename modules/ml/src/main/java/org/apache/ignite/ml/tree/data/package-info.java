@@ -15,7 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree;
-
-public class DecisionTreeTest {
-}
+/**
+ * <!-- Package description. -->
+ * Contains data and data builder required for decision tree trainers built on top of partition based dataset.
+ */
+package org.apache.ignite.ml.tree.data;

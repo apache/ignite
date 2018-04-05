@@ -26,7 +26,7 @@ import javax.swing.JFrame;
 import javax.swing.WindowConstants;
 import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
-import org.apache.ignite.ml.tree.DecisionTreeClassifier;
+import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.ui.util.ControlPanel;
 
 public class DistributedClassificationUIApplication extends ClassificationUIApplication {
@@ -58,7 +58,7 @@ public class DistributedClassificationUIApplication extends ClassificationUIAppl
 
         LocalDatasetBuilder<Integer, double[]> datasetBuilder = new LocalDatasetBuilder<>(map, 2);
 
-        return new DecisionTreeClassifier(maxDeep, minImpurityDecrease).fit(
+        return new DecisionTreeClassificationTrainer(maxDeep, minImpurityDecrease).fit(
             datasetBuilder,
             (k, v) -> Arrays.copyOf(v, v.length - 1),
             (k, v) -> v[v.length - 1]

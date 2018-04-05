@@ -77,7 +77,7 @@ public class SimpleStepFunctionCompressor<T extends ImpurityMeasure<T>> implemen
          * @param x Argument of the step start.
          * @param y Value of the step.
          */
-        public StepFunctionPoint(double x, T y) {
+        StepFunctionPoint(double x, T y) {
             this.x = x;
             this.y = y;
         }

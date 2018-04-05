@@ -24,6 +24,9 @@ import org.apache.ignite.ml.tree.impurity.ImpurityMeasure;
  * {@code \frac{1}{L}\sum_{i=0}^{n}(y_i - \mu)^2}.
  */
 public class MSEImpurityMeasure implements ImpurityMeasure<MSEImpurityMeasure> {
+    /** */
+    private static final long serialVersionUID = 4536394578628409689L;
+
     /** Sum of all elements in the left part. */
     private final double leftY;
 

@@ -24,6 +24,9 @@ import org.apache.ignite.ml.tree.impurity.ImpurityMeasure;
  * {@code \-frac{1}{L}\sum_{i=1}^{s}l_i^2 - \frac{1}{R}\sum_{i=s+1}^{n}r_i^2}.
  */
 public class GiniImpurityMeasure implements ImpurityMeasure<GiniImpurityMeasure> {
+    /** */
+    private static final long serialVersionUID = 5338129703395229970L;
+
     /** Number of elements of each type in the left part. */
     private final long[] left;
 
@@ -36,7 +39,7 @@ public class GiniImpurityMeasure implements ImpurityMeasure<GiniImpurityMeasure>
      * @param left Number of elements of each type in the left part.
      * @param right Number of elements of each type in the right part.
      */
-    public GiniImpurityMeasure(long[] left, long[] right) {
+    GiniImpurityMeasure(long[] left, long[] right) {
         assert left.length == right.length : "Left and right parts have to be the same length";
 
         this.left = left;

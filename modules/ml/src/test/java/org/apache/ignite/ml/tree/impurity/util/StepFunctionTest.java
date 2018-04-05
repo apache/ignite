@@ -85,6 +85,9 @@ public class StepFunctionTest {
      * Utils class used as impurity measure in tests.
      */
     private static class TestImpurityMeasure implements ImpurityMeasure<TestImpurityMeasure> {
+        /** */
+        private static final long serialVersionUID = 2414020770162797847L;
+
         /** Impurity. */
         private final double impurity;
 

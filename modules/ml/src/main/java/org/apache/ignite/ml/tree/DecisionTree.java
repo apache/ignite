@@ -17,16 +17,17 @@
 
 package org.apache.ignite.ml.tree;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.function.Predicate;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
-import org.apache.ignite.ml.dataset.primitive.builder.data.SimpleLabeledDatasetDataBuilder;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
-import org.apache.ignite.ml.dataset.primitive.data.SimpleLabeledDatasetData;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
 import org.apache.ignite.ml.trainers.DatasetTrainer;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
+import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasure;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.util.StepFunction;
@@ -49,27 +50,17 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
      * @param maxDeep Max tree deep.
      * @param minImpurityDecrease Min impurity decrease.
      */
-    public DecisionTree(int maxDeep, double minImpurityDecrease) {
+    DecisionTree(int maxDeep, double minImpurityDecrease) {
         this.maxDeep = maxDeep;
         this.minImpurityDecrease = minImpurityDecrease;
     }
 
-//    /**
-//     * Builds a new tree trained on the specified dataset.
-//     *
-//     * @param dataset Dataset.
-//     * @return Decision tree.
-//     */
+    /** {@inheritDoc} */
     @Override public <K, V> DecisionTreeNode fit(DatasetBuilder<K, V> datasetBuilder,
         IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
-
-        IgniteBiFunction<K, V, double[]> lbExtractor2 = lbExtractor.andThen(d -> new double[]{d});
-
-
-
-        try (Dataset<EmptyContext, SimpleLabeledDatasetData> dataset = datasetBuilder.build(
+        try (Dataset<EmptyContext, DecisionTreeData> dataset = datasetBuilder.build(
             new EmptyContextBuilder<>(),
-            new SimpleLabeledDatasetDataBuilder<>(featureExtractor, lbExtractor2)
+            new DecisionTreeDataBuilder<>(featureExtractor, lbExtractor)
         )) {
             return split(dataset, e -> true, 0, getImpurityMeasureCalculator(dataset));
         }
@@ -85,7 +76,8 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
      * @param pred Decision tree node predicate.
      * @return Leaf node.
      */
-    abstract DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, SimpleLabeledDatasetData> dataset, Predicate<double[]> pred);
+    abstract DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset,
+        Predicate<double[]> pred);
 
     /**
      * Returns impurity measure calculator.
@@ -93,93 +85,52 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
      * @param dataset Dataset.
      * @return Impurity measure calculator.
      */
-    abstract ImpurityMeasureCalculator<T> getImpurityMeasureCalculator(Dataset<EmptyContext, SimpleLabeledDatasetData> dataset);
+    abstract ImpurityMeasureCalculator<T> getImpurityMeasureCalculator(Dataset<EmptyContext, DecisionTreeData> dataset);
 
     /**
      * Splits the node specified by the given dataset and predicate and returns decision tree node.
      *
      * @param dataset Dataset.
-     * @param pred Decision tree node predicate.
+     * @param filter Decision tree node predicate.
      * @param deep Current tree deep.
      * @param impurityCalc Impurity measure calculator.
      * @return Decision tree node.
      */
-    private DecisionTreeNode split(Dataset<EmptyContext, SimpleLabeledDatasetData> dataset, Predicate<double[]> pred,
-        int deep, ImpurityMeasureCalculator<T> impurityCalc) {
+    private DecisionTreeNode split(Dataset<EmptyContext, DecisionTreeData> dataset, TreeFilter filter, int deep,
+        ImpurityMeasureCalculator<T> impurityCalc) {
         if (deep >= maxDeep)
-            return createLeafNode(dataset, pred);
+            return createLeafNode(dataset, filter);
 
-        StepFunction<T>[] criterionFunctions = calculateImpurityForAllColumns(dataset, pred, impurityCalc);
+        StepFunction<T>[] criterionFunctions = calculateImpurityForAllColumns(dataset, filter, impurityCalc);
 
         if (criterionFunctions == null)
-            return createLeafNode(dataset, pred);
+            return createLeafNode(dataset, filter);
 
         SplitPoint splitPnt = calculateBestSplitPoint(criterionFunctions);
 
         if (splitPnt == null)
-            return createLeafNode(dataset, pred);
+            return createLeafNode(dataset, filter);
 
         return new DecisionTreeConditionalNode(
             splitPnt.col,
             splitPnt.threshold,
-            split(dataset, updatePredicateForThenNode(pred, splitPnt), deep + 1, impurityCalc),
-            split(dataset, updatePredicateForElseNode(pred, splitPnt), deep + 1, impurityCalc)
+            split(dataset, updatePredicateForThenNode(filter, splitPnt), deep + 1, impurityCalc),
+            split(dataset, updatePredicateForElseNode(filter, splitPnt), deep + 1, impurityCalc)
         );
-    }
-
-    double[][] convert(double[] features, int rows) {
-        int cols = features.length / rows;
-
-        double[][] res = new double[rows][cols];
-
-        for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < cols; col++)
-                res[row][col] = features[col * rows + row];
-        }
-
-        return res;
     }
 
     /**
      * Calculates impurity measure functions for all columns for the node specified by the given dataset and predicate.
      *
      * @param dataset Dataset.
-     * @param pred Decision tree node predicate.
+     * @param filter Decision tree node predicate.
      * @param impurityCalc Impurity measure calculator.
      * @return Array of impurity measure functions for all columns.
      */
-    private StepFunction<T>[] calculateImpurityForAllColumns(Dataset<EmptyContext, SimpleLabeledDatasetData> dataset, Predicate<double[]> pred,
-        ImpurityMeasureCalculator<T> impurityCalc) {
+    private StepFunction<T>[] calculateImpurityForAllColumns(Dataset<EmptyContext, DecisionTreeData> dataset,
+        TreeFilter filter, ImpurityMeasureCalculator<T> impurityCalc) {
         return dataset.compute(
-            part -> {
-                if (part.getFeatures() != null) {
-                    double[][] allFeatures = convert(part.getFeatures(), part.getRows());
-                    double[] allLabels = part.getLabels();
-
-                    int nodeSize = 0;
-                    for (int i = 0; i < allFeatures.length; i++)
-                        nodeSize += pred.test(allFeatures[i]) ? 1 : 0;
-
-                    if (nodeSize != 0) {
-                        double[][] nodeFeatures = new double[nodeSize][];
-                        double[] nodeLabels = new double[nodeSize];
-
-                        int ptr = 0;
-                        for (int i = 0; i < allFeatures.length; i++) {
-                            if (pred.test(allFeatures[i])) {
-                                nodeFeatures[ptr] = allFeatures[i];
-                                nodeLabels[ptr] = allLabels[i];
-                                ptr++;
-                            }
-                        }
-
-                        return impurityCalc.calculate(nodeFeatures, nodeLabels);
-                    }
-                }
-
-                return null;
-            },
-            this::reduce
+            part -> impurityCalc.calculate(part.filter(filter)), this::reduce
         );
     }
 
@@ -190,7 +141,7 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
      * @return Best split point.
      */
     private SplitPoint calculateBestSplitPoint(StepFunction<T>[] criterionFunctions) {
-        SplitPoint res = null;
+        SplitPoint<T> res = null;
 
         for (int col = 0; col < criterionFunctions.length; col++) {
             StepFunction<T> criterionFunctionForCol = criterionFunctions[col];
@@ -199,8 +150,9 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
             T[] values = criterionFunctionForCol.getY();
 
             for (int leftSize = 1; leftSize < values.length - 1; leftSize++) {
-                if ((values[0].impurity() - values[leftSize].impurity()) > minImpurityDecrease && (res == null || values[leftSize].compareTo(res.val) < 0))
-                    res = new SplitPoint(values[leftSize], col, calculateThreshold(arguments, leftSize));
+                if ((values[0].impurity() - values[leftSize].impurity()) > minImpurityDecrease
+                    && (res == null || values[leftSize].compareTo(res.val) < 0))
+                    res = new SplitPoint<>(values[leftSize], col, calculateThreshold(arguments, leftSize));
             }
         }
 
@@ -241,29 +193,32 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
     /**
      * Constructs a new predicate for "then" node based on the parent node predicate and split point.
      *
-     * @param pred Parent node predicate.
+     * @param filter Parent node predicate.
      * @param splitPnt Split point.
      * @return Predicate for "then" node.
      */
-    private Predicate<double[]> updatePredicateForThenNode(Predicate<double[]> pred, SplitPoint splitPnt) {
-        return pred.and(f -> f[splitPnt.col] > splitPnt.threshold);
+    private TreeFilter updatePredicateForThenNode(TreeFilter filter, SplitPoint splitPnt) {
+        return filter.and(f -> f[splitPnt.col] > splitPnt.threshold);
     }
 
     /**
      * Constructs a new predicate for "else" node based on the parent node predicate and split point.
      *
-     * @param pred Parent node predicate.
+     * @param filter Parent node predicate.
      * @param splitPnt Split point.
      * @return Predicate for "else" node.
      */
-    private Predicate<double[]> updatePredicateForElseNode(Predicate<double[]> pred, SplitPoint splitPnt) {
-        return pred.and(f -> f[splitPnt.col] <= splitPnt.threshold);
+    private TreeFilter updatePredicateForElseNode(TreeFilter filter, SplitPoint splitPnt) {
+        return filter.and(f -> f[splitPnt.col] <= splitPnt.threshold);
     }
 
     /**
      * Util class that represents split point.
      */
-    private class SplitPoint {
+    private static class SplitPoint<T extends ImpurityMeasure<T>> implements Serializable {
+        /** */
+        private static final long serialVersionUID = -1758525953544425043L;
+
         /** Split point impurity measure value. */
         private final T val;
 
@@ -280,7 +235,7 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
          * @param col Column.
          * @param threshold Threshold.
          */
-        public SplitPoint(T val, int col, double threshold) {
+        SplitPoint(T val, int col, double threshold) {
             this.val = val;
             this.col = col;
             this.threshold = threshold;
