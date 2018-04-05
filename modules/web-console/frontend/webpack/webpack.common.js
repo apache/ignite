@@ -42,8 +42,6 @@ export default {
     },
     // Entry points.
     entry: {
-        polyfill: 'babel-polyfill',
-        vendor: path.join(app, 'vendor.js'),
         app: path.join(app, 'app.js'),
         browserUpdate: path.join(app, 'browserUpdate', 'index.js')
     },
@@ -78,10 +76,6 @@ export default {
 
     module: {
         rules: [
-            {
-                test: /\.json$/,
-                loader: 'json'
-            },
             // Exclude tpl.pug files to import in bundle.
             {
                 test: /^(?:(?!tpl\.pug$).)*\.pug$/, // TODO: check this regexp for correct.
@@ -96,6 +90,7 @@ export default {
                     `pug-html?exports=false&basedir=${basedir}`
                 ]
             },
+            { test: /\.worker\.js$/, use: { loader: 'worker-loader' } },
             {
                 test: /\.js$/,
                 enforce: 'pre',
@@ -105,12 +100,13 @@ export default {
                     options: {
                         failOnWarning: false,
                         failOnError: false,
-                        formatter: eslintFormatter
+                        formatter: eslintFormatter,
+                        context: process.cwd()
                     }
                 }]
             },
             {
-                test: /\.js$/,
+                test: /\.(js)$/,
                 exclude: [node_modules],
                 use: [{
                     loader: 'babel-loader',
@@ -154,6 +150,12 @@ export default {
         ]
     },
 
+    optimization: {
+        splitChunks: {
+            chunks: 'all'
+        }
+    },
+
     // Load plugins.
     plugins: [
         new webpack.LoaderOptionsPlugin({
@@ -169,7 +171,7 @@ export default {
         }),
         new webpack.ProvidePlugin({
             $: 'jquery',
-            jQuery: 'jquery',
+            'window.jQuery': 'jquery',
             _: 'lodash',
             nv: 'nvd3',
             io: 'socket.io-client'
