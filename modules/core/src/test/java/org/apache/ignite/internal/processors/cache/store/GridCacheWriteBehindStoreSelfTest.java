@@ -120,12 +120,17 @@ public class GridCacheWriteBehindStoreSelfTest extends GridCacheWriteBehindStore
 
         try {
             long start = System.nanoTime();
+
             for ( int i =0; i < threshold/2; i ++ )
                 store.write(new CacheEntryImpl<>(i, "v" + i));
+
             U.sleep(FLUSH_FREQUENCY + 300);
+
             for ( int i = threshold/2; i < threshold; i ++ )
                 store.write(new CacheEntryImpl<>(i, "v" + i));
+
             long elapsed = System.nanoTime() - start;
+
             U.sleep(FLUSH_FREQUENCY + 300);
 
             int expectedFlushOps = (int)(1 + elapsed / writeBehindFlushFrequencyNanos);
