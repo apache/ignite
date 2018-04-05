@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import javax.cache.processor.EntryProcessor;
@@ -34,9 +37,7 @@ import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.transactions.Transaction;
 
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_ENTRY_CREATED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_LOCKED;
@@ -47,58 +48,9 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
  */
 public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelfTest {
     /** */
-    private static volatile boolean isSorted = false;
-
-    /** */
-    protected static final Object mux = new Object();
-
-    /** */
-    private static int sortingCntr = 0;
-
-    /** */
-    private void resetCounter() {
-        isSorted = false;
-
-        synchronized (mux) {
-            sortingCntr = 0;
-        }
-    }
-
-    /** */
     private IgniteCache<Object, Object> cache;
 
-    /** Sorted array of comparable objects. */
-    private final String strings[] = {"1_first_entry", "2_second_entry", "3_third_entry", "4_fourth_entry"};
-
-    /** Array of not comparable objects. It is sorted as {@link #binaryObjects}. */
-    private final Object objectsAsBinary[] = {new NotComparable(1), new NotComparable(2),
-        new NotComparable(3), new NotComparable(4)};
-
-    /** Array of not comparable objects wrapped in {@link BinaryObject}. Sorted by BinaryObject's hashcode. */
-    private final Object binaryObjects[] = new Object[4];
-
-    /** Array of not comparable objects. Sorted by hashcode. */
-    private final Object objects[] = new Object[4];
-
-    /** Array of objects loaded by external classloader. It is sorted as {@link #binaryP2PObjects}. */
-    private final Object p2pObjectsAsBinary[] = new Object[4];
-
-    /**
-     * Array of objects loaded by external classloader and wrapped in {@link BinaryObject}.
-     * Sorted by BinaryObject's hashcode.
-     */
-    private final Object binaryP2PObjects[] = new Object[4];
-
-    /** Array of objects loaded by external classloader. It is sorted by hashcode. */
-    private final Object p2pObjects[] = new Object[4];
-
-    /**  */
-    private static final String P2P_PERSON = "org.apache.ignite.tests.p2p.cache.Person";
-
-    /** Used to get values from binary objects. */
-    private BinaryField field;
-
-    /** Used for invoke tests.*/
+    /** Used for invoke tests. */
     private final EntryProcessor<Object, Object, Object> proc = (entry, objects) -> {
         entry.setValue(entry.getKey());
 
@@ -116,196 +68,14 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
     }
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        grid(0).events().localListen(new IgnitePredicate<CacheEvent>() {
-            @Override public boolean apply(CacheEvent event) {
-                if (sortingCntr > 3)
-                    return true;
-
-                synchronized (mux) {
-                    boolean equalStrings = event.key().equals(strings[sortingCntr]);
-                    boolean equalObjects = event.key().equals(objects[sortingCntr]);
-                    boolean equalP2PObjects = event.key().equals(p2pObjects[sortingCntr]);
-                    boolean isBinary = event.key() instanceof BinaryObject;
-                    boolean equalBinaries = isBinary && binaryObjects[0] != null &&
-                        field.value(event.key()).equals(field.value((BinaryObjectEx)binaryObjects[sortingCntr]));
-                    boolean equalP2PBinaries = isBinary && binaryP2PObjects[0] != null &&
-                        field.value(event.key()).equals(field.value((BinaryObjectEx)binaryP2PObjects[sortingCntr]));
-
-                    if (equalStrings || equalObjects || equalP2PObjects || equalBinaries || equalP2PBinaries)
-                        sortingCntr++;
-
-                    if (sortingCntr == 4)
-                        isSorted = true;
-                }
-
-                return true;
-            }
-        }, EVT_CACHE_OBJECT_PUT, EVT_CACHE_ENTRY_CREATED, EVT_CACHE_OBJECT_LOCKED);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
-
-        resetCounter();
 
         cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME).withKeepBinary();
     }
 
-    /** Sorts not comparable objects by hashcode. */
-    private void sortBinaryObjects() {
-        for (int i = 0; i < objectsAsBinary.length; i++) {
-            objects[i] = objectsAsBinary[i];
-
-            binaryObjects[i] = ((IgniteCacheProxy)cache).context().kernalContext().cacheObjects().binary()
-                .toBinary(objectsAsBinary[i]);
-        }
-
-        Arrays.sort(objects, Comparator.comparingInt(Object::hashCode));
-
-        for (int i = 0; i < binaryObjects.length; i++) {
-            for (int j = i + 1; j < binaryObjects.length; j++) {
-                if (binaryObjects[j].hashCode() < binaryObjects[i].hashCode()) {
-                    Object o = objectsAsBinary[i];
-                    objectsAsBinary[i] = objectsAsBinary[j];
-                    objectsAsBinary[j] = o;
-
-                    o = binaryObjects[i];
-                    binaryObjects[i] = binaryObjects[j];
-                    binaryObjects[j] = o;
-                }
-            }
-        }
-
-        field = ((BinaryObjectEx)binaryObjects[0]).rawType().field("val");
-    }
-
-    /** Sorts objects loaded by externall classloader. Sorts by hashcode. */
-    private void sortP2PObjects() throws Exception {
-        ClassLoader ldr = getExternalClassLoader();
-
-        Class personCls = ldr.loadClass(P2P_PERSON);
-        Field f = U.findField(personCls, "id");
-
-        for (int i = 0; i < p2pObjectsAsBinary.length; i++) {
-            p2pObjectsAsBinary[i] = personCls.newInstance();
-            f.set(p2pObjectsAsBinary[i], i);
-
-            p2pObjects[i] = p2pObjectsAsBinary[i];
-
-            binaryP2PObjects[i] = ((IgniteCacheProxy)cache).context().kernalContext().cacheObjects().binary()
-                .toBinary(p2pObjectsAsBinary[i]);
-        }
-
-
-        Arrays.sort(p2pObjects, Comparator.comparingInt(Object::hashCode));
-
-        for (int i = 0; i < binaryP2PObjects.length; i++) {
-            for (int j = i + 1; j < binaryP2PObjects.length; j++) {
-                if (binaryP2PObjects[j].hashCode() < binaryP2PObjects[i].hashCode()) {
-                    Object o = p2pObjectsAsBinary[i];
-                    p2pObjectsAsBinary[i] = p2pObjectsAsBinary[j];
-                    p2pObjectsAsBinary[j] = o;
-
-                    o = binaryP2PObjects[i];
-                    binaryP2PObjects[i] = binaryP2PObjects[j];
-                    binaryP2PObjects[j] = o;
-                }
-            }
-        }
-
-        field = ((BinaryObjectEx)binaryP2PObjects[0]).rawType().field("id");
-    }
-
-    /**
-     * @return Unsorted map with comparable objects.
-     */
-    private Map<Object, Object> comparableMap() {
-        return getUnsortedMap(strings);
-    }
-
-    /**
-     * @return Unsorted map with not comparable objects.
-     */
-    private Map<Object, Object> notComparableMap() {
-        sortBinaryObjects();
-
-        return getUnsortedMap(binaryObjects);
-    }
-
-    /**
-     * @return Unsorted map with objects loaded by externall classloader.
-     */
-    private Map<Object, Object> p2pMap() throws Exception {
-        sortP2PObjects();
-
-        return getUnsortedMap(p2pObjectsAsBinary);
-    }
-
-    /**
-     * @param arr Array of objects to fill the map.
-     * @return Unsorted map with given objects.
-     */
-    private Map<Object, Object> getUnsortedMap(Object[] arr) {
-        Map<Object, Object> map = new HashMap<>();
-
-        map.put(arr[3], arr[3]);
-        map.put(arr[0], arr[0]);
-        map.put(arr[2], arr[2]);
-        map.put(arr[1], arr[1]);
-
-        return map;
-    }
-
-    /**
-     * @return Map with unsorted comparable keys and EntryProcessor as value.
-     */
-    private Map<Object, EntryProcessor<Object, Object, Object>> comparableInvokeMap() {
-        return getInvokeMap(strings);
-    }
-
-    /**
-     * @return Map with unsorted not comparable keys and EntryProcessor as value.
-     */
-    private Map<Object, EntryProcessor<Object, Object, Object>> notComparableInvokeMap() {
-        sortBinaryObjects();
-
-        return getInvokeMap(binaryObjects);
-    }
-
-    /**
-     * @return Map with unsorted keys loaded by externall classloader and EntryProcessor as value.
-     */
-    private Map<Object, EntryProcessor<Object, Object, Object>> getP2PInvokeMap() throws Exception {
-        sortP2PObjects();
-
-        return getInvokeMap(p2pObjectsAsBinary);
-    }
-
-    /** Map with unsorted comparable keys and EntryProcessor as value. */
-    private Map<Object, EntryProcessor<Object, Object, Object>> p2pInvokeMap() throws Exception {
-        return getP2PInvokeMap();
-    }
-
-    /** Map with unsorted keys and EntryProcessor as value. */
-    private Map<Object, EntryProcessor<Object, Object, Object>> getInvokeMap(Object[] arr) {
-        Map<Object, EntryProcessor<Object, Object, Object>> map = new HashMap<>();
-
-        map.put(arr[3], proc);
-        map.put(arr[0], proc);
-        map.put(arr[2], proc);
-        map.put(arr[1], proc);
-
-        return map;
-    }
-
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        assertTrue("Map wasn't sorted.", isSorted);
-
         cache.clear();
 
         super.afterTest();
@@ -328,12 +98,13 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
      */
     public void testPutAllPutAllDeadlock() throws Exception {
         IgniteCache<String, Integer> cache = grid(0).createCache("deadlock");
+
         Map<String, Integer> m1 = new TreeMap<>();
-        Map<String, Integer> m2 = new HashMap<>();
+        Map<String, Integer> m2 = new HashMap<>(10_000);
 
         for (int i = 0; i < 10_000; i++) {
-            m1.put(i+"", i);
-            m2.put(i+"", i+1);
+            m1.put(i + "", i);
+            m2.put(i + "", i + 1);
         }
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
@@ -343,185 +114,304 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
         cache.putAll(m2);
 
         fut.get();
-
-        isSorted = true;
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testPutAllComparable() throws Exception {
-        checkPutAll(comparableMap());
+        checkPutAll(new ComparableComplexObject());
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testPutAllNotcomparable() throws Exception {
-        checkPutAll(notComparableMap());
+        checkPutAll(new NotComparableComplexObject(cache));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testPutAllP2P() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5038");
 
-        checkPutAll(p2pMap());
+        checkPutAll(new P2PComplexObject(cache));
     }
 
-    /** */
-    private void checkPutAll(Map<Object, Object> map) throws Exception {
-        if (atomicityMode() == TRANSACTIONAL) {
-            try (Transaction tx = grid(0).transactions().txStart()) {
-                cache.putAll(map);
-            }
-        } else
-            cache.putAll(map);
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkPutAll(ComplexObject obj) throws Exception {
+        SortingPredicate pred = createEventListener();
+
+        cache.putAll(obj.unsortedMap());
+
+        removeEventListener(pred);
+
+        assertTrue("Sorting failed.", obj.checkSorting(pred.list));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testPutAllAsyncComparable() throws Exception {
-        checkPutAllAsync(comparableMap());
+        checkPutAllAsync(new ComparableComplexObject());
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testPutAllAsyncNotcomparable() throws Exception {
-        checkPutAllAsync(notComparableMap());
+        checkPutAllAsync(new NotComparableComplexObject(cache));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testPutAllAsyncP2P() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5038");
 
-        checkPutAllAsync(p2pMap());
+        checkPutAllAsync(new P2PComplexObject(cache));
     }
 
-    /** */
-    private void checkPutAllAsync(Map<Object, Object> map) throws Exception {
-        if (atomicityMode() == TRANSACTIONAL) {
-            try (Transaction tx = grid(0).transactions().txStart()) {
-                cache.putAllAsync(map).get(1_000);
-            }
-        } else
-            cache.putAllAsync(map).get(1_000);
+    /**
+     * @param obj ComplexObject.
+     * @throws Exception If failed.
+     */
+    private void checkPutAllAsync(ComplexObject obj) throws Exception {
+        SortingPredicate pred = createEventListener();
+
+        cache.putAllAsync(obj.unsortedMap()).get(1_000);
+
+        removeEventListener(pred);
+
+        assertTrue("Sorting failed.", obj.checkSorting(pred.list));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testInvokeAllComparable() throws Exception {
-        checkInvokeAll(comparableInvokeMap());
+        checkInvokeAll(new ComparableComplexObject());
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testInvokeAllNotcomparable() throws Exception {
-        checkInvokeAll(notComparableInvokeMap());
+        checkInvokeAll(new NotComparableComplexObject(cache));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testInvokeAllP2P() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5038");
 
-        checkInvokeAll(p2pInvokeMap());
+        checkInvokeAll(new P2PComplexObject(cache));
     }
 
-    /** */
-    private void checkInvokeAll(Map<Object, EntryProcessor<Object, Object, Object>> map) throws Exception {
-        if (atomicityMode() == TRANSACTIONAL) {
-            try (Transaction tx = grid(0).transactions().txStart()) {
-                cache.invokeAll(map);
-            }
-        } else
-            cache.invokeAll(map);
+    /**
+     * @param obj ComplexObject.
+     * @throws Exception If failed.
+     */
+    private void checkInvokeAll(ComplexObject obj) throws Exception {
+        SortingPredicate pred = createEventListener();
+
+        cache.invokeAll(obj.unsortedInvokeMap());
+
+        removeEventListener(pred);
+
+        assertTrue("Sorting failed.", obj.checkSorting(pred.list));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testInvokeAllAsyncMapComparable() throws Exception {
-        checkInvokeAllAsyncMap(comparableInvokeMap());
+        checkInvokeAllAsyncMap(new ComparableComplexObject());
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testInvokeAllAsyncMapNotcomparable() throws Exception {
-        checkInvokeAllAsyncMap(notComparableInvokeMap());
+        checkInvokeAllAsyncMap(new NotComparableComplexObject(cache));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testInvokeAllAsyncP2P() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5038");
 
-        checkInvokeAllAsyncMap(p2pInvokeMap());
+        checkInvokeAllAsyncMap(new P2PComplexObject(cache));
     }
 
-    /** */
-    private void checkInvokeAllAsyncMap(Map<Object, EntryProcessor<Object, Object, Object>> map) throws Exception {
-        cache.invokeAllAsync(map).get(1_000);
+    /**
+     * @param obj ComplexObject.
+     * @throws Exception If failed.
+     */
+    private void checkInvokeAllAsyncMap(ComplexObject obj) throws Exception {
+        SortingPredicate pred = createEventListener();
+
+        cache.invokeAllAsync(obj.unsortedInvokeMap()).get(1_000);
+
+        removeEventListener(pred);
+
+        assertTrue("Sorting failed.", obj.checkSorting(pred.list));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testInvokeAllAsyncSetComparable() throws Exception {
-        checkInvokeAllAsyncSet(comparableMap());
+        checkInvokeAllAsyncSet(new ComparableComplexObject());
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testInvokeAllAsyncSetNotcomparable() throws Exception {
-        checkInvokeAllAsyncSet(notComparableMap());
+        checkInvokeAllAsyncSet(new NotComparableComplexObject(cache));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testInvokeAllAsyncSetP2P() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5038");
 
-        checkInvokeAllAsyncSet(p2pMap());
+        checkInvokeAllAsyncSet(new P2PComplexObject(cache));
     }
 
-    /** */
-    private void checkInvokeAllAsyncSet(Map<Object, Object> map) throws Exception {
-        cache.invokeAllAsync(map.keySet(), proc).get(1_000);
+    /**
+     * @param obj ComplexObject.
+     * @throws Exception If failed.
+     */
+    private void checkInvokeAllAsyncSet(ComplexObject obj) throws Exception {
+        SortingPredicate pred = createEventListener();
+
+        cache.invokeAllAsync(obj.unsortedMap().keySet(), proc).get(1_000);
+
+        removeEventListener(pred);
+
+        assertTrue("Sorting failed.", obj.checkSorting(pred.list));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testRemoveAllComparable() throws Exception {
-        checkRemoveAll(comparableMap());
+        checkRemoveAll(new ComparableComplexObject());
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testRemoveAllNotcomparable() throws Exception {
-        checkRemoveAll(notComparableMap());
+        checkRemoveAll(new NotComparableComplexObject(cache));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testRemoveAllP2P() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5038");
 
-        checkRemoveAll(p2pMap());
+        checkRemoveAll(new P2PComplexObject(cache));
     }
 
-    /** */
-    private void checkRemoveAll(Map<Object, Object> map) throws Exception {
+    /**
+     * @param obj ComplexObject.
+     * @throws Exception If failed.
+     */
+    private void checkRemoveAll(ComplexObject obj) throws Exception {
+        Map<Object, Object> map = obj.unsortedMap();
+
         cache.putAll(map);
 
-        resetCounter();
+        SortingPredicate pred = createEventListener();
 
         cache.removeAll(map.keySet());
+
+        removeEventListener(pred);
+
+        assertTrue("Sorting failed.", obj.checkSorting(pred.list));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testRemoveAllAsyncComparable() throws Exception {
-        checkRemoveAllAsync(comparableMap());
+        checkRemoveAllAsync(new ComparableComplexObject());
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testRemoveAllAsyncNotcomparable() throws Exception {
-        checkRemoveAllAsync(notComparableMap());
+        checkRemoveAllAsync(new NotComparableComplexObject(cache));
     }
 
-    /** */
+    /**
+     * @throws Exception If failed.
+     */
     public void testRemoveAllAsyncP2P() throws Exception {
         fail("https://issues.apache.org/jira/browse/IGNITE-5038");
 
-        checkRemoveAllAsync(p2pMap());
+        checkRemoveAllAsync(new P2PComplexObject(cache));
+    }
+
+    /**
+     * @param obj ComplexObject.
+     * @throws Exception If failed.
+     */
+    private void checkRemoveAllAsync(ComplexObject obj) throws Exception {
+        Map<Object, Object> map = obj.unsortedMap();
+
+        cache.putAll(map);
+
+        SortingPredicate pred = createEventListener();
+
+        cache.removeAllAsync(map.keySet()).get(1_000);
+
+        removeEventListener(pred);
+
+        assertTrue("Sorting failed.", obj.checkSorting(pred.list));
+    }
+
+    /**
+     * @return SortingPredicate.
+     */
+    private SortingPredicate createEventListener() {
+        SortingPredicate pred = new SortingPredicate();
+
+        grid(0).events().localListen(pred,
+            EVT_CACHE_OBJECT_PUT, EVT_CACHE_ENTRY_CREATED, EVT_CACHE_OBJECT_LOCKED);
+
+        return pred;
+    }
+
+    /**
+     * @param sp SortingPredicate to remove from node.
+     */
+    private void removeEventListener(SortingPredicate sp) {
+        grid(0).events().stopLocalListen(sp);
     }
 
     /** */
-    private void checkRemoveAllAsync(Map<Object, Object> map) throws Exception {
-        cache.putAll(map);
+    private final class SortingPredicate implements IgnitePredicate<CacheEvent> {
+        /** */
+        private ArrayList<Object> list = new ArrayList<>();
 
-        resetCounter();
+        /** {@inheritDoc} */
+        @Override public boolean apply(CacheEvent event) {
+            list.add(event.key());
 
-        cache.removeAllAsync(map.keySet()).get(1_000);
+            return true;
+        }
     }
 
     /** */
@@ -550,6 +440,199 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
         /** {@inheritDoc} */
         @Override public int hashCode() {
             return val;
+        }
+    }
+
+    /** */
+    private abstract class ComplexObject {
+        /** Array of not comparable objects. It is sorted as {@link #binaryObjects}. */
+        final Object objectsSortedAsBinary[] = new Object[4];
+
+        /** Array of not comparable objects wrapped in {@link BinaryObject}. Sorted by BinaryObject's hashcode. */
+        final Object binaryObjects[] = new Object[4];
+
+        /** Array of not comparable objects. Sorted by hashcode. */
+        protected final Object objects[] = new Object[4];
+
+        /** Used to get values from binary objects. */
+        protected BinaryField field;
+
+        /**
+         * @param list List of keys.
+         * @return {@code True} if keys were sorted. Otherwise - {@code false}.
+         */
+        protected boolean checkSorting(List list) {
+            int sortingCntr = 0;
+
+            for (int i = 0; i < list.size() && sortingCntr < objects.length; i++) {
+                boolean equalP2PObjects = list.get(i).equals(objects[sortingCntr]);
+                boolean isBinary = list.get(i) instanceof BinaryObject;
+                boolean equalP2PBinaries = isBinary && binaryObjects[0] != null &&
+                    field.value((BinaryObject)list.get(i)).equals(
+                        field.value((BinaryObjectEx)binaryObjects[sortingCntr]));
+
+                if (equalP2PObjects || equalP2PBinaries)
+                    sortingCntr++;
+            }
+
+            return sortingCntr >= objects.length - 1;
+        }
+
+        /**
+         * @return Unsorted map.
+         */
+        private Map<Object, Object> unsortedMap() {
+            LinkedHashMap<Object, Object> map = new LinkedHashMap<>(4);
+
+            map.put(objects[3], objects[3]);
+            map.put(objects[0], objects[0]);
+            map.put(objects[2], objects[2]);
+            map.put(objects[1], objects[1]);
+
+            return map;
+        }
+
+        /**
+         * @return Unsorted map.
+         */
+        private Map<Object, EntryProcessor<Object, Object, Object>> unsortedInvokeMap() {
+            Map<Object, EntryProcessor<Object, Object, Object>> map = new LinkedHashMap<>();
+
+            map.put(objects[3], proc);
+            map.put(objects[0], proc);
+            map.put(objects[2], proc);
+            map.put(objects[1], proc);
+
+            return map;
+        }
+
+        /** */
+        void sortTwoArraysByHashcodeOfFirstArray() {
+            for (int i = 0; i < binaryObjects.length; i++) {
+                for (int j = i + 1; j < binaryObjects.length; j++) {
+                    if (binaryObjects[j].hashCode() < binaryObjects[i].hashCode()) {
+                        Object o = binaryObjects[i];
+                        binaryObjects[i] = binaryObjects[j];
+                        binaryObjects[j] = o;
+
+                        o = objectsSortedAsBinary[i];
+                        objectsSortedAsBinary[i] = objectsSortedAsBinary[j];
+                        objectsSortedAsBinary[j] = o;
+                    }
+                }
+            }
+        }
+    }
+
+    /** */
+    private final class ComparableComplexObject extends ComplexObject {
+        /** */
+        private ComparableComplexObject() {
+            objects[0] = "1_first_entry";
+            objects[1] = "2_second_entry";
+            objects[2] = "3_third_entry";
+            objects[3] = "4_fourth_entry";
+        }
+
+        /** {@inheritDoc} */
+        @Override protected boolean checkSorting(List list) {
+            int sortingCntr = 0;
+
+            for (int i = 0; i < list.size() && sortingCntr < objects.length; i++) {
+                if (list.get(i).equals(objects[sortingCntr]))
+                    sortingCntr++;
+            }
+
+            return sortingCntr >= objects.length - 1;
+        }
+    }
+
+    /** */
+    private final class NotComparableComplexObject extends ComplexObject {
+        /** {@inheritDoc} */
+        private NotComparableComplexObject(IgniteCache cache) {
+            initializeObjects((IgniteCacheProxy)cache);
+
+            sort();
+
+            field = ((BinaryObjectEx)binaryObjects[0]).rawType().field("val");
+        }
+
+        /**
+         * @param cache IgniteCache to get IgniteBinary.
+         */
+        private void initializeObjects(IgniteCacheProxy cache) {
+            for (int i = 0; i < objects.length; i++)
+                objects[i] = new NotComparable(i);
+
+            for (int i = 0; i < objects.length; i++) {
+                objectsSortedAsBinary[i] = objects[i];
+
+                binaryObjects[i] = cache.context().kernalContext().cacheObjects().binary()
+                    .toBinary(objectsSortedAsBinary[i]);
+            }
+        }
+
+        /**
+         * Sorts not comparable objects by hashcode.
+         */
+        private void sort() {
+            Arrays.sort(objects, Comparator.comparingInt(Object::hashCode));
+
+            sortTwoArraysByHashcodeOfFirstArray();
+        }
+    }
+
+    /** */
+    private final class P2PComplexObject extends ComplexObject {
+        /**  */
+        private static final String P2P_PERSON = "org.apache.ignite.tests.p2p.cache.Person";
+
+        /**
+         * @param cache IgniteCache to get IgniteBinary.
+         */
+        private P2PComplexObject(IgniteCache cache) {
+            initializeObjects((IgniteCacheProxy)cache);
+
+            sort();
+
+            field = ((BinaryObjectEx)binaryObjects[0]).rawType().field("id");
+        }
+
+        /**
+         * Loads {@link #P2P_PERSON} class and creates object arrays with this class.
+         *
+         * @param cache IgniteCache to get IgniteBinary.
+         */
+        private void initializeObjects(IgniteCacheProxy cache) {
+            try {
+                ClassLoader ldr = getExternalClassLoader();
+
+                Class personCls = ldr.loadClass(P2P_PERSON);
+                Field f = U.findField(personCls, "id");
+
+                for (int i = 0; i < objectsSortedAsBinary.length; i++) {
+                    objectsSortedAsBinary[i] = personCls.newInstance();
+                    f.set(objectsSortedAsBinary[i], i);
+
+                    objects[i] = objectsSortedAsBinary[i];
+
+                    binaryObjects[i] = cache.context().kernalContext().cacheObjects().binary()
+                        .toBinary(objectsSortedAsBinary[i]);
+                }
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        /**
+         * Sorts objects loaded by externall classloader. Sorts by hashcode.
+         */
+        private void sort() {
+            Arrays.sort(objects, Comparator.comparingInt(Object::hashCode));
+
+            sortTwoArraysByHashcodeOfFirstArray();
         }
     }
 }
