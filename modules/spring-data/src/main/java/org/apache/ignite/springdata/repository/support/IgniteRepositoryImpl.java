@@ -21,20 +21,16 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.springdata.repository.IgniteRepository;
-import org.springframework.context.annotation.Conditional;
 
 /**
  * General Apache Ignite repository implementation.
- * This bean should've never been loaded by context directly, only via {@link IgniteRepositoryFactory}
  */
-@Conditional(ConditionFalse.class)
 public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteRepository<T, ID> {
     /** Ignite Cache bound to the repository */
     private final IgniteCache<ID, T> cache;
@@ -68,17 +64,17 @@ public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteR
     }
 
     /** {@inheritDoc} */
-    @Override public <S extends T> Iterable<S> saveAll(Iterable<S> entities) {
+    @Override public <S extends T> Iterable<S> save(Iterable<S> entities) {
         throw new UnsupportedOperationException("Use IgniteRepository.save(Map<keys,value>) method instead.");
     }
 
     /** {@inheritDoc} */
-    @Override public Optional<T> findById(ID id) {
-        return Optional.ofNullable(cache.get(id));
+    @Override public T findOne(ID id) {
+        return cache.get(id);
     }
 
     /** {@inheritDoc} */
-    @Override public boolean existsById(ID id) {
+    @Override public boolean exists(ID id) {
         return cache.containsKey(id);
     }
 
@@ -106,7 +102,7 @@ public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteR
     }
 
     /** {@inheritDoc} */
-    @Override public Iterable<T> findAllById(Iterable<ID> ids) {
+    @Override public Iterable<T> findAll(Iterable<ID> ids) {
         if (ids instanceof Set)
             return cache.getAll((Set<ID>)ids).values();
 
@@ -127,22 +123,22 @@ public class IgniteRepositoryImpl<T, ID extends Serializable> implements IgniteR
     }
 
     /** {@inheritDoc} */
-    @Override public void deleteById(ID id) {
+    @Override public void delete(ID id) {
         cache.remove(id);
     }
 
     /** {@inheritDoc} */
     @Override public void delete(T entity) {
-        throw new UnsupportedOperationException("Use IgniteRepository.deleteById(key) method instead.");
+        throw new UnsupportedOperationException("Use IgniteRepository.delete(key) method instead.");
     }
 
     /** {@inheritDoc} */
-    @Override public void deleteAll(Iterable<? extends T> entities) {
-        throw new UnsupportedOperationException("Use IgniteRepository.deleteAllById(keys) method instead.");
+    @Override public void delete(Iterable<? extends T> entities) {
+        throw new UnsupportedOperationException("Use IgniteRepository.deleteAll(keys) method instead.");
     }
 
     /** {@inheritDoc} */
-    @Override public void deleteAllById(Iterable<ID> ids) {
+    @Override public void deleteAll(Iterable<ID> ids) {
         if (ids instanceof Set)
             cache.removeAll((Set<ID>)ids);
 

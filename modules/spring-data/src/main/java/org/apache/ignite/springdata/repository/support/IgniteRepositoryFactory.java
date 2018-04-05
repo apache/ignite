@@ -16,9 +16,10 @@
  */
 package org.apache.ignite.springdata.repository.support;
 
+import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -28,13 +29,16 @@ import org.apache.ignite.springdata.repository.config.RepositoryConfig;
 import org.apache.ignite.springdata.repository.query.IgniteQuery;
 import org.apache.ignite.springdata.repository.query.IgniteQueryGenerator;
 import org.apache.ignite.springdata.repository.query.IgniteRepositoryQuery;
+import org.springframework.data.projection.ProjectionFactory;
 import org.springframework.data.repository.core.EntityInformation;
+import org.springframework.data.repository.core.NamedQueries;
 import org.springframework.data.repository.core.RepositoryInformation;
 import org.springframework.data.repository.core.RepositoryMetadata;
 import org.springframework.data.repository.core.support.AbstractEntityInformation;
 import org.springframework.data.repository.core.support.RepositoryFactorySupport;
 import org.springframework.data.repository.query.EvaluationContextProvider;
 import org.springframework.data.repository.query.QueryLookupStrategy;
+import org.springframework.data.repository.query.RepositoryQuery;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -78,7 +82,7 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     }
 
     /** {@inheritDoc} */
-    @Override public <T, ID> EntityInformation<T, ID> getEntityInformation(Class<T> domainClass) {
+    @Override public <T, ID extends Serializable> EntityInformation<T, ID> getEntityInformation(Class<T> domainClass) {
         return new AbstractEntityInformation<T, ID>(domainClass) {
             @Override public ID getId(T entity) {
                 return null;
@@ -120,28 +124,32 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
     }
 
     /** {@inheritDoc} */
-    @Override protected Optional<QueryLookupStrategy> getQueryLookupStrategy(final QueryLookupStrategy.Key key,
+    @Override protected QueryLookupStrategy getQueryLookupStrategy(final QueryLookupStrategy.Key key,
         EvaluationContextProvider evaluationCtxProvider) {
-        return Optional.of((mtd, metadata, factory, namedQueries) -> {
 
-            final Query annotation = mtd.getAnnotation(Query.class);
+        return new QueryLookupStrategy() {
+            @Override public RepositoryQuery resolveQuery(final Method mtd, final RepositoryMetadata metadata,
+                final ProjectionFactory factory, NamedQueries namedQueries) {
 
-            if (annotation != null) {
-                String qryStr = annotation.value();
+                final Query annotation = mtd.getAnnotation(Query.class);
 
-                if (key != QueryLookupStrategy.Key.CREATE && StringUtils.hasText(qryStr))
-                    return new IgniteRepositoryQuery(metadata,
+                if (annotation != null) {
+                    String qryStr = annotation.value();
+
+                    if (key != Key.CREATE && StringUtils.hasText(qryStr))
+                        return new IgniteRepositoryQuery(metadata,
                             new IgniteQuery(qryStr, isFieldQuery(qryStr), IgniteQueryGenerator.getOptions(mtd)),
                             mtd, factory, ignite.getOrCreateCache(repoToCache.get(metadata.getRepositoryInterface())));
+                }
+
+                if (key == QueryLookupStrategy.Key.USE_DECLARED_QUERY)
+                    throw new IllegalStateException("To use QueryLookupStrategy.Key.USE_DECLARED_QUERY, pass " +
+                        "a query string via org.apache.ignite.springdata.repository.config.Query annotation.");
+
+                return new IgniteRepositoryQuery(metadata, IgniteQueryGenerator.generateSql(mtd, metadata), mtd,
+                    factory, ignite.getOrCreateCache(repoToCache.get(metadata.getRepositoryInterface())));
             }
-
-            if (key == QueryLookupStrategy.Key.USE_DECLARED_QUERY)
-                throw new IllegalStateException("To use QueryLookupStrategy.Key.USE_DECLARED_QUERY, pass " +
-                    "a query string via org.apache.ignite.springdata.repository.config.Query annotation.");
-
-            return new IgniteRepositoryQuery(metadata, IgniteQueryGenerator.generateSql(mtd, metadata), mtd,
-                factory, ignite.getOrCreateCache(repoToCache.get(metadata.getRepositoryInterface())));
-        });
+        };
     }
 
     /**

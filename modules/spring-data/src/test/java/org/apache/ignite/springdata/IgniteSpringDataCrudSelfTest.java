@@ -20,7 +20,6 @@ package org.apache.ignite.springdata;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.Optional;
 import java.util.TreeSet;
 import org.apache.ignite.springdata.misc.ApplicationConfiguration;
 import org.apache.ignite.springdata.misc.Person;
@@ -89,9 +88,9 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
 
         assertEquals(person, repo.save(id, person));
 
-        assertTrue(repo.existsById(id));
+        assertTrue(repo.exists(id));
 
-        assertEquals(person, repo.findById(id).get());
+        assertEquals(person, repo.findOne(id));
 
         try {
             repo.save(person);
@@ -122,7 +121,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
             assertEquals(origPersons.next(), persons.next());
 
         try {
-            repo.saveAll(map.values());
+            repo.save(map.values());
 
             fail("Managed to save a list of Persons with ids");
         }
@@ -130,7 +129,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
             //expected
         }
 
-        persons = repo.findAllById(map.keySet()).iterator();
+        persons = repo.findAll(map.keySet()).iterator();
 
         int counter = 0;
 
@@ -166,10 +165,10 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
     public void testDelete() {
         assertEquals(CACHE_SIZE, repo.count());
 
-        repo.deleteById(0);
+        repo.delete(0);
 
         assertEquals(CACHE_SIZE - 1, repo.count());
-        assertEquals(Optional.empty(),repo.findById(0));
+        assertNull(repo.findOne(0));
 
         try {
             repo.delete(new Person("", ""));
@@ -192,7 +191,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < CACHE_SIZE / 2; i++)
             ids.add(i);
 
-        repo.deleteAllById(ids);
+        repo.deleteAll(ids);
 
         assertEquals(CACHE_SIZE / 2, repo.count());
 
@@ -202,7 +201,7 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 3; i++)
                 persons.add(new Person(String.valueOf(i), String.valueOf(i)));
 
-            repo.deleteAll(persons);
+            repo.delete(persons);
 
             fail("Managed to delete Persons without ids");
         }
