@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.tree.impurity.util;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasure;
 
@@ -25,7 +26,7 @@ import org.apache.ignite.ml.tree.impurity.ImpurityMeasure;
  *
  * @param <T> Type of step function value.
  */
-public interface StepFunctionCompressor<T extends ImpurityMeasure<T>> {
+public interface StepFunctionCompressor<T extends ImpurityMeasure<T>> extends Serializable {
     /**
      * Compresses the given step function.
      *

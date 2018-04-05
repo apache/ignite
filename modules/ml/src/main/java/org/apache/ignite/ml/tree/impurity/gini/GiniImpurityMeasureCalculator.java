@@ -21,7 +21,9 @@ import java.util.Arrays;
 import java.util.Map;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
+import org.apache.ignite.ml.tree.impurity.util.SimpleStepFunctionCompressor;
 import org.apache.ignite.ml.tree.impurity.util.StepFunction;
+import org.apache.ignite.ml.tree.impurity.util.StepFunctionCompressor;
 
 /**
  * Gini impurity measure calculator.
@@ -33,13 +35,28 @@ public class GiniImpurityMeasureCalculator implements ImpurityMeasureCalculator<
     /** Label encoder which defines integer value for every label class.  */
     private final Map<Double, Integer> lbEncoder;
 
+    /** Step function compressor. */
+    private final StepFunctionCompressor<GiniImpurityMeasure> compressor;
+
     /**
      * Constructs a new instance of Gini impurity measure calculator.
      *
      * @param lbEncoder Label encoder which defines integer value for every label class.
      */
     public GiniImpurityMeasureCalculator(Map<Double, Integer> lbEncoder) {
+        this(lbEncoder, new SimpleStepFunctionCompressor<>());
+    }
+
+    /**
+     * Constructs a new instance of Gini impurity measure calculator.
+     *
+     * @param lbEncoder Label encoder which defines integer value for every label class.
+     * @param compressor Step function compressor.
+     */
+    public GiniImpurityMeasureCalculator(Map<Double, Integer> lbEncoder,
+        StepFunctionCompressor<GiniImpurityMeasure> compressor) {
         this.lbEncoder = lbEncoder;
+        this.compressor = compressor;
     }
 
     /** {@inheritDoc} */
@@ -77,7 +94,7 @@ public class GiniImpurityMeasureCalculator implements ImpurityMeasureCalculator<
                     y[yPtr++] = new GiniImpurityMeasure(left, right);
                 }
 
-                res[col] = new StepFunction<>(Arrays.copyOf(x, xPtr), Arrays.copyOf(y, yPtr));
+                res[col] = compressor.compress(new StepFunction<>(Arrays.copyOf(x, xPtr), Arrays.copyOf(y, yPtr)));
             }
 
             return res;
