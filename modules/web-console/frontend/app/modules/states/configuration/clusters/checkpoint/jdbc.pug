@@ -32,6 +32,8 @@ include /app/helpers/jade/mixins
 .pc-form-grid-col-30
     +text('Table name:', '$checkpointSPI.JDBC.checkpointTableName', '"checkpointJdbcCheckpointTableName"', 'false', 'CHECKPOINTS', 'Checkpoint table name')
 .pc-form-grid-col-30
+    +number('Number of retries:', '$checkpointSPI.JDBC.numberOfRetries', '"checkpointJdbcNumberOfRetries"', 'true', '2', '0', 'Number of retries in case of DB failure')
+.pc-form-grid-col-30
     +text('Key field name:', '$checkpointSPI.JDBC.keyFieldName', '"checkpointJdbcKeyFieldName"', 'false', 'NAME', 'Checkpoint key field name')
 .pc-form-grid-col-30
     +dropdown('Key field type:', '$checkpointSPI.JDBC.keyFieldType', '"checkpointJdbcKeyFieldType"', 'true', 'VARCHAR', '::$ctrl.supportedJdbcTypes', 'Checkpoint key field type')
@@ -41,7 +43,5 @@ include /app/helpers/jade/mixins
     +dropdown('Value field type:', '$checkpointSPI.JDBC.valueFieldType', '"checkpointJdbcValueFieldType"', 'true', 'BLOB', '::$ctrl.supportedJdbcTypes', 'Checkpoint value field type')
 .pc-form-grid-col-30
     +text('Expire date field name:', '$checkpointSPI.JDBC.expireDateFieldName', '"checkpointJdbcExpireDateFieldName"', 'false', 'EXPIRE_DATE', 'Checkpoint expire date field name')
-.pc-form-grid-col-30
-    +dropdown('Expire date field type:', '$checkpointSPI.JDBC.expireDateFieldType', '"checkpointJdbcExpireDateFieldType"', 'true', 'DATETIME', '::$ctrl.supportedJdbcTypes', 'Checkpoint expire date field type')
 .pc-form-grid-col-30(ng-if-end)
-    +number('Number of retries:', '$checkpointSPI.JDBC.numberOfRetries', '"checkpointJdbcNumberOfRetries"', 'true', '2', '0', 'Number of retries in case of DB failure')
+    +dropdown('Expire date field type:', '$checkpointSPI.JDBC.expireDateFieldType', '"checkpointJdbcExpireDateFieldType"', 'true', 'DATETIME', '::$ctrl.supportedJdbcTypes', 'Checkpoint expire date field type')
