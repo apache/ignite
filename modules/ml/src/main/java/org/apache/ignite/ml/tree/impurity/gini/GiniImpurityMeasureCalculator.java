@@ -85,11 +85,10 @@ public class GiniImpurityMeasureCalculator implements ImpurityMeasureCalculator<
      * @param lb Label.
      * @return Label code.
      */
-    private int getLabelCode(double lb) {
+    int getLabelCode(double lb) {
         Integer code = lbEncoder.get(lb);
 
-        if (code == null)
-            throw new IllegalArgumentException("Can't find code for label " + lb);
+        assert code != null : "Can't find code for label " + lb;
 
         return code;
     }

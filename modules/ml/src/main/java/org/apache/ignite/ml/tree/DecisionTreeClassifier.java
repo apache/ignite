@@ -45,7 +45,7 @@ public class DecisionTreeClassifier extends DecisionTree<GiniImpurityMeasure> {
     }
 
     /** {@inheritDoc} */
-    @Override TreeLeafNode createLeafNode(Dataset<EmptyContext, SimpleLabeledDatasetData> dataset,
+    @Override DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, SimpleLabeledDatasetData> dataset,
         Predicate<double[]> pred) {
         Map<Double, Integer> cnt = dataset.compute(part -> {
 
@@ -82,7 +82,7 @@ public class DecisionTreeClassifier extends DecisionTree<GiniImpurityMeasure> {
             }
         }
 
-        return new TreeLeafNode(bestVal);
+        return new DecisionTreeLeafNode(bestVal);
     }
 
     /** {@inheritDoc} */

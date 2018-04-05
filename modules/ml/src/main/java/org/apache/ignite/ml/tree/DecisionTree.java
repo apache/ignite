@@ -19,7 +19,6 @@ package org.apache.ignite.ml.tree;
 
 import java.util.Arrays;
 import java.util.function.Predicate;
-import org.apache.ignite.ml.Model;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
@@ -37,7 +36,7 @@ import org.apache.ignite.ml.tree.impurity.util.StepFunction;
  *
  * @param <T> Type of impurity measure.
  */
-public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrainer<Model<double[], Double>, Double> {
+abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrainer<DecisionTreeNode, Double> {
     /** Max tree deep. */
     private final int maxDeep;
 
@@ -61,8 +60,8 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements Data
 //     * @param dataset Dataset.
 //     * @return Decision tree.
 //     */
-    @Override public <K, V> Model<double[], Double> fit(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, double[]> featureExtractor,
-        IgniteBiFunction<K, V, Double> lbExtractor) {
+    @Override public <K, V> DecisionTreeNode fit(DatasetBuilder<K, V> datasetBuilder,
+        IgniteBiFunction<K, V, double[]> featureExtractor, IgniteBiFunction<K, V, Double> lbExtractor) {
 
         IgniteBiFunction<K, V, double[]> lbExtractor2 = lbExtractor.andThen(d -> new double[]{d});
 
@@ -86,7 +85,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements Data
      * @param pred Decision tree node predicate.
      * @return Leaf node.
      */
-    abstract TreeLeafNode createLeafNode(Dataset<EmptyContext, SimpleLabeledDatasetData> dataset, Predicate<double[]> pred);
+    abstract DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, SimpleLabeledDatasetData> dataset, Predicate<double[]> pred);
 
     /**
      * Returns impurity measure calculator.
@@ -105,7 +104,8 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements Data
      * @param impurityCalc Impurity measure calculator.
      * @return Decision tree node.
      */
-    private Model<double[], Double> split(Dataset<EmptyContext, SimpleLabeledDatasetData> dataset, Predicate<double[]> pred, int deep, ImpurityMeasureCalculator<T> impurityCalc) {
+    private DecisionTreeNode split(Dataset<EmptyContext, SimpleLabeledDatasetData> dataset, Predicate<double[]> pred,
+        int deep, ImpurityMeasureCalculator<T> impurityCalc) {
         if (deep >= maxDeep)
             return createLeafNode(dataset, pred);
 
@@ -119,7 +119,7 @@ public abstract class DecisionTree<T extends ImpurityMeasure<T>> implements Data
         if (splitPnt == null)
             return createLeafNode(dataset, pred);
 
-        return new TreeConditionalNode(
+        return new DecisionTreeConditionalNode(
             splitPnt.col,
             splitPnt.threshold,
             split(dataset, updatePredicateForThenNode(pred, splitPnt), deep + 1, impurityCalc),

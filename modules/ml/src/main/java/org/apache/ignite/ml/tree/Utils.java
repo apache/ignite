@@ -65,12 +65,12 @@ public class Utils {
         StringBuilder builder = new StringBuilder();
         for (int i = 0; i < deep; i++)
             builder.append("  ");
-        if (node instanceof TreeLeafNode) {
-            builder.append("return ").append(((TreeLeafNode)node).getVal()).append(";");
+        if (node instanceof DecisionTreeLeafNode) {
+            builder.append("return ").append(((DecisionTreeLeafNode)node).getVal()).append(";");
             System.out.println(builder.toString());
         }
-        else if (node instanceof TreeConditionalNode) {
-            TreeConditionalNode conditionalNode = (TreeConditionalNode) node;
+        else if (node instanceof DecisionTreeConditionalNode) {
+            DecisionTreeConditionalNode conditionalNode = (DecisionTreeConditionalNode) node;
             System.out.println(builder.toString() + "if (f[" + conditionalNode.getCol()+ "] > " + conditionalNode.getThreshold()+ ") {");
             print(conditionalNode.getThenNode(), deep + 1);
             System.out.println(builder.toString() + "} else {");

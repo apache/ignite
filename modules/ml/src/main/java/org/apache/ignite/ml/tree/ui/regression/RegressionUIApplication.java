@@ -32,8 +32,8 @@ import java.util.Random;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.tree.TreeConditionalNode;
-import org.apache.ignite.ml.tree.TreeLeafNode;
+import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
+import org.apache.ignite.ml.tree.DecisionTreeLeafNode;
 import org.apache.ignite.ml.tree.ui.util.ControlPanelListener;
 
 public abstract class RegressionUIApplication extends JPanel implements ControlPanelListener {
@@ -113,12 +113,12 @@ public abstract class RegressionUIApplication extends JPanel implements ControlP
     private List<Line> toLines(Model<double[], Double> node, int left, int right) {
         List<Line> lines = new ArrayList<>();
 
-        if (node instanceof TreeLeafNode) {
-            TreeLeafNode lf = (TreeLeafNode) node;
+        if (node instanceof DecisionTreeLeafNode) {
+            DecisionTreeLeafNode lf = (DecisionTreeLeafNode) node;
             lines.add(new Line(left, (int) lf.getVal(), right, (int) lf.getVal()));
         }
-        else if (node instanceof TreeConditionalNode) {
-            TreeConditionalNode cn = (TreeConditionalNode) node;
+        else if (node instanceof DecisionTreeConditionalNode) {
+            DecisionTreeConditionalNode cn = (DecisionTreeConditionalNode) node;
             lines.addAll(toLines(cn.getThenNode(), (int) cn.getThreshold(), right));
             lines.addAll(toLines(cn.getElseNode(), left, (int) cn.getThreshold()));
         }

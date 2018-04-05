@@ -40,8 +40,7 @@ public class StepFunction<T extends ImpurityMeasure<T>> {
      * @param y Value of every step.
      */
     public StepFunction(double[] x, T[] y) {
-        if (x.length != y.length)
-            throw new IllegalArgumentException("Argument and value arrays have to be the same length");
+        assert x.length == y.length : "Argument and value arrays have to be the same length";
 
         this.x = x;
         this.y = y;

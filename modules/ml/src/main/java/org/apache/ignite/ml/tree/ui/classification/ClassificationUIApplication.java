@@ -33,8 +33,8 @@ import java.util.Random;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import org.apache.ignite.ml.Model;
-import org.apache.ignite.ml.tree.TreeConditionalNode;
-import org.apache.ignite.ml.tree.TreeLeafNode;
+import org.apache.ignite.ml.tree.DecisionTreeConditionalNode;
+import org.apache.ignite.ml.tree.DecisionTreeLeafNode;
 import org.apache.ignite.ml.tree.ui.util.ControlPanelListener;
 
 public abstract class ClassificationUIApplication extends JPanel implements ControlPanelListener {
@@ -126,12 +126,12 @@ public abstract class ClassificationUIApplication extends JPanel implements Cont
     private List<Rectangle> toRectangles(Model<double[], Double> node, int xFrom, int xTo, int yFrom, int yTo) {
         List<Rectangle> res = new ArrayList<>();
 
-        if (node instanceof TreeLeafNode) {
-            TreeLeafNode lf = (TreeLeafNode)node;
+        if (node instanceof DecisionTreeLeafNode) {
+            DecisionTreeLeafNode lf = (DecisionTreeLeafNode)node;
             res.add(new Rectangle(xFrom, yFrom, xTo - xFrom, yTo - yFrom, lf.getVal()));
         }
         else {
-            TreeConditionalNode cn = (TreeConditionalNode)node;
+            DecisionTreeConditionalNode cn = (DecisionTreeConditionalNode)node;
             if (cn.getCol() == 0) {
                 res.addAll(toRectangles(cn.getThenNode(), (int)cn.getThreshold(), xTo, yFrom, yTo));
                 res.addAll(toRectangles(cn.getElseNode(), xFrom, (int)cn.getThreshold(), yFrom, yTo));

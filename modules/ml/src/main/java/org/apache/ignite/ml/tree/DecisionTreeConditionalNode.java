@@ -17,12 +17,13 @@
 
 package org.apache.ignite.ml.tree;
 
-import org.apache.ignite.ml.Model;
-
 /**
  * Decision tree conditional (non-leaf) node.
  */
-public class TreeConditionalNode implements Model<double[], Double> {
+public class DecisionTreeConditionalNode implements DecisionTreeNode {
+    /** */
+    private static final long serialVersionUID = 981630737007982172L;
+
     /** Column of the value to be tested. */
     private final int col;
 
@@ -30,10 +31,10 @@ public class TreeConditionalNode implements Model<double[], Double> {
     private final double threshold;
 
     /** Node that will be used in case tested value is greater then threshold. */
-    private final Model<double[], Double> thenNode;
+    private final DecisionTreeNode thenNode;
 
     /** Node that will be used in case tested value is not greater then threshold. */
-    private final Model<double[], Double> elseNode;
+    private final DecisionTreeNode elseNode;
 
     /**
      * Constructs a new instance of decision tree conditional node.
@@ -43,7 +44,7 @@ public class TreeConditionalNode implements Model<double[], Double> {
      * @param thenNode Node that will be used in case tested value is greater then threshold.
      * @param elseNode Node that will be used in case tested value is not greater then threshold.
      */
-    public TreeConditionalNode(int col, double threshold, Model<double[], Double> thenNode, Model<double[], Double> elseNode) {
+    DecisionTreeConditionalNode(int col, double threshold, DecisionTreeNode thenNode, DecisionTreeNode elseNode) {
         this.col = col;
         this.threshold = threshold;
         this.thenNode = thenNode;
@@ -66,12 +67,12 @@ public class TreeConditionalNode implements Model<double[], Double> {
     }
 
     /** */
-    public Model<double[], Double> getThenNode() {
+    public DecisionTreeNode getThenNode() {
         return thenNode;
     }
 
     /** */
-    public Model<double[], Double> getElseNode() {
+    public DecisionTreeNode getElseNode() {
         return elseNode;
     }
 }

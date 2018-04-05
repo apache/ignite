@@ -97,4 +97,34 @@ public class MSEImpurityMeasure implements ImpurityMeasure<MSEImpurityMeasure> {
             rightCnt - b.rightCnt
         );
     }
+
+    /** */
+    public double getLeftY() {
+        return leftY;
+    }
+
+    /** */
+    public double getLeftY2() {
+        return leftY2;
+    }
+
+    /** */
+    public long getLeftCnt() {
+        return leftCnt;
+    }
+
+    /** */
+    public double getRightY() {
+        return rightY;
+    }
+
+    /** */
+    public double getRightY2() {
+        return rightY2;
+    }
+
+    /** */
+    public long getRightCnt() {
+        return rightCnt;
+    }
 }

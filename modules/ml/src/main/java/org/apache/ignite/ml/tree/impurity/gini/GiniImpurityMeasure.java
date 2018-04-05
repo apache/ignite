@@ -21,7 +21,7 @@ import org.apache.ignite.ml.tree.impurity.ImpurityMeasure;
 
 /**
  * Gini impurity measure which is calculated the following way:
- * {@code \frac{1}{L}\sum_{i=1}^{s}l_i^2 + \frac{1}{R}\sum_{i=s+1}^{n}r_i^2}.
+ * {@code \-frac{1}{L}\sum_{i=1}^{s}l_i^2 - \frac{1}{R}\sum_{i=s+1}^{n}r_i^2}.
  */
 public class GiniImpurityMeasure implements ImpurityMeasure<GiniImpurityMeasure> {
     /** Number of elements of each type in the left part. */
@@ -37,8 +37,7 @@ public class GiniImpurityMeasure implements ImpurityMeasure<GiniImpurityMeasure>
      * @param right Number of elements of each type in the right part.
      */
     public GiniImpurityMeasure(long[] left, long[] right) {
-        if (left.length != right.length)
-            throw new IllegalArgumentException("Left and right parts have to be the same length");
+        assert left.length == right.length : "Left and right parts have to be the same length";
 
         this.left = left;
         this.right = right;
@@ -52,27 +51,27 @@ public class GiniImpurityMeasure implements ImpurityMeasure<GiniImpurityMeasure>
         double leftImpurity = 0;
         double rightImpurity = 0;
 
-        for (long e : left) {
-            leftImpurity += Math.pow(e, 2);
+        for (long e : left)
             leftCnt += e;
-        }
 
-        for (long e : right) {
-            rightImpurity += Math.pow(e, 2);
+        for (long e : right)
             rightCnt += e;
-        }
 
-        double totalImpurity = 0;
-        totalImpurity += leftCnt > 0 ? leftImpurity / leftCnt: 0;
-        totalImpurity += rightCnt > 0 ? rightImpurity / rightCnt : 0;
+        if (leftCnt > 0)
+            for (long e : left)
+                leftImpurity += Math.pow(e, 2) / leftCnt;
 
-        return -totalImpurity;
+        if (rightCnt > 0)
+            for (long e : right)
+                rightImpurity += Math.pow(e, 2) / rightCnt;
+
+        return -(leftImpurity + rightImpurity);
     }
 
     /** {@inheritDoc} */
     @Override public GiniImpurityMeasure add(GiniImpurityMeasure b) {
-        if (left.length != b.left.length || left.length != b.right.length)
-            throw new IllegalArgumentException("Added measure has to have length " + left.length);
+        assert left.length == b.left.length : "Subtracted measure has to have length " + left.length;
+        assert left.length == b.right.length : "Subtracted measure has to have length " + left.length;
 
         long[] leftRes = new long[left.length];
         long[] rightRes = new long[left.length];
@@ -87,8 +86,8 @@ public class GiniImpurityMeasure implements ImpurityMeasure<GiniImpurityMeasure>
 
     /** {@inheritDoc} */
     @Override public GiniImpurityMeasure subtract(GiniImpurityMeasure b) {
-        if (left.length != b.left.length || left.length != b.right.length)
-            throw new IllegalStateException("Subtracted measure has to have length " + left.length);
+        assert left.length == b.left.length : "Subtracted measure has to have length " + left.length;
+        assert left.length == b.right.length : "Subtracted measure has to have length " + left.length;
 
         long[] leftRes = new long[left.length];
         long[] rightRes = new long[left.length];
@@ -99,5 +98,15 @@ public class GiniImpurityMeasure implements ImpurityMeasure<GiniImpurityMeasure>
         }
 
         return new GiniImpurityMeasure(leftRes, rightRes);
+    }
+
+    /** */
+    public long[] getLeft() {
+        return left;
+    }
+
+    /** */
+    public long[] getRight() {
+        return right;
     }
 }

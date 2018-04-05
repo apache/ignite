@@ -41,7 +41,7 @@ public class DecisionTreeRegressor extends DecisionTree<MSEImpurityMeasure> {
     }
 
     /** {@inheritDoc} */
-    @Override TreeLeafNode createLeafNode(Dataset<EmptyContext, SimpleLabeledDatasetData> dataset,
+    @Override DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, SimpleLabeledDatasetData> dataset,
         Predicate<double[]> pred) {
         double[] aa = dataset.compute(part -> {
             double mean = 0;
@@ -62,7 +62,7 @@ public class DecisionTreeRegressor extends DecisionTree<MSEImpurityMeasure> {
             return null;
         }, this::reduce);
 
-        return aa != null ? new TreeLeafNode(aa[0]) : null;
+        return aa != null ? new DecisionTreeLeafNode(aa[0]) : null;
     }
 
     /** {@inheritDoc} */

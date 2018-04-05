@@ -17,31 +17,5 @@
 
 package org.apache.ignite.ml.tree;
 
-import org.apache.ignite.ml.Model;
-
-/**
- * Decision tree leaf node which contains value.
- */
-public class TreeLeafNode implements Model<double[], Double> {
-    /** Value of the node. */
-    private final double val;
-
-    /**
-     * Constructs a new decision tree leaf node.
-     *
-     * @param val Value of the node.
-     */
-    public TreeLeafNode(double val) {
-        this.val = val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Double apply(double[] doubles) {
-        return val;
-    }
-
-    /** */
-    public double getVal() {
-        return val;
-    }
+public class DecisionTreeTest {
 }
