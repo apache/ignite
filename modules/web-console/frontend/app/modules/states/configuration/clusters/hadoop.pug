@@ -24,68 +24,64 @@ include /app/helpers/jade/mixins
 -var customPlanner = plannerModel + '.kind === "Custom"'
 -var libs = model + '.nativeLibraryNames'
 
-.pca-panel.pca-panel-default(ng-form=form novalidate)
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     -var uniqueTip = 'Such native library already exists!'
 
-    .pca-panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
-        ignite-form-panel-chevron
-        .pca-panel-heading-title Hadoop configuration
-        .pca-panel-heading-description
-            | Hadoop Accelerator configuration.
-    .pca-panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .pca-panel-body(ng-if=`ui.isPanelLoaded('${form}')`).pca-form-row
-            .pca-form-column-6.pc-form-grid-row
+    panel-title Hadoop configuration
+    panel-description Hadoop Accelerator configuration.
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
+                +dropdown('Map reduce planner:', plannerModel + '.kind', '"MapReducePlanner"', 'true', 'Default', '[\
+                    {value: "Weighted", label: "Weighted"},\
+                    {value: "Custom", label: "Custom"},\
+                    {value: null, label: "Default"}\
+                ]', 'Implementation of map reduce planner\
+                <ul>\
+                    <li>Weighted - Planner which assigns mappers and reducers based on their "weights"</li>\
+                    <li>Custom - Custom planner implementation</li>\
+                    <li>Default - Default planner implementation</li>\
+                </ul>')
+            .pc-form-group.pc-form-grid-row(ng-show=weightedPlanner)
+                .pc-form-grid-col-20
+                    +number('Local mapper weight:', weightedModel + '.localMapperWeight', '"LocalMapperWeight"', 'true', 100, '0',
+                        'This weight is added to a node when a mapper is assigned and it is input split data is located on this node')
+                .pc-form-grid-col-20
+                    +number('Remote mapper weight:', weightedModel + '.remoteMapperWeight', '"remoteMapperWeight"', 'true', 100, '0',
+                        'This weight is added to a node when a mapper is assigned, but it is input split data is not located on this node')
+                .pc-form-grid-col-20
+                    +number('Local reducer weight:', weightedModel + '.localReducerWeight', '"localReducerWeight"', 'true', 100, '0',
+                        'This weight is added to a node when a reducer is assigned and the node have at least one assigned mapper')
+                .pc-form-grid-col-30
+                    +number('Remote reducer weight:', weightedModel + '.remoteReducerWeight', '"remoteReducerWeight"', 'true', 100, '0',
+                        'This weight is added to a node when a reducer is assigned, but the node does not have any assigned mappers')
+                .pc-form-grid-col-30
+                    +number('Local mapper weight:', weightedModel + '.preferLocalReducerThresholdWeight', '"preferLocalReducerThresholdWeight"', 'true', 200, '0',
+                        "When threshold is reached, a node with mappers is no longer considered as preferred for further reducer assignments")
+            .pc-form-group.pc-form-grid-row(ng-show=customPlanner)
                 .pc-form-grid-col-60
-                    +dropdown('Map reduce planner:', plannerModel + '.kind', '"MapReducePlanner"', 'true', 'Default', '[\
-                        {value: "Weighted", label: "Weighted"},\
-                        {value: "Custom", label: "Custom"},\
-                        {value: null, label: "Default"}\
-                    ]', 'Implementation of map reduce planner\
-                    <ul>\
-                        <li>Weighted - Planner which assigns mappers and reducers based on their "weights"</li>\
-                        <li>Custom - Custom planner implementation</li>\
-                        <li>Default - Default planner implementation</li>\
-                    </ul>')
-                .pc-form-group.pc-form-grid-row(ng-show=weightedPlanner)
-                    .pc-form-grid-col-20
-                        +number('Local mapper weight:', weightedModel + '.localMapperWeight', '"LocalMapperWeight"', 'true', 100, '0',
-                            'This weight is added to a node when a mapper is assigned and it is input split data is located on this node')
-                    .pc-form-grid-col-20
-                        +number('Remote mapper weight:', weightedModel + '.remoteMapperWeight', '"remoteMapperWeight"', 'true', 100, '0',
-                            'This weight is added to a node when a mapper is assigned, but it is input split data is not located on this node')
-                    .pc-form-grid-col-20
-                        +number('Local reducer weight:', weightedModel + '.localReducerWeight', '"localReducerWeight"', 'true', 100, '0',
-                            'This weight is added to a node when a reducer is assigned and the node have at least one assigned mapper')
-                    .pc-form-grid-col-30
-                        +number('Remote reducer weight:', weightedModel + '.remoteReducerWeight', '"remoteReducerWeight"', 'true', 100, '0',
-                            'This weight is added to a node when a reducer is assigned, but the node does not have any assigned mappers')
-                    .pc-form-grid-col-30
-                        +number('Local mapper weight:', weightedModel + '.preferLocalReducerThresholdWeight', '"preferLocalReducerThresholdWeight"', 'true', 200, '0',
-                            "When threshold is reached, a node with mappers is no longer considered as preferred for further reducer assignments")
-                .pc-form-group.pc-form-grid-row(ng-show=customPlanner)
-                    .pc-form-grid-col-60
-                        +java-class('Class name:', plannerModel + '.Custom.className', '"MapReducePlannerCustomClass"', 'true', customPlanner,
-                            'Custom planner implementation')
-                .pc-form-grid-col-30
-                    +number('Finished job info TTL:', model + '.finishedJobInfoTtl', '"finishedJobInfoTtl"', 'true', '30000', '0',
-                        'Finished job info time-to-live in milliseconds')
-                .pc-form-grid-col-30
-                    +number('Max parallel tasks:', model + '.maxParallelTasks', '"maxParallelTasks"', 'true', 'availableProcessors * 2', '1',
-                        'Max number of local tasks that may be executed in parallel')
-                .pc-form-grid-col-30
-                    +number('Max task queue size:', model + '.maxTaskQueueSize', '"maxTaskQueueSize"', 'true', '8192', '1', 'Max task queue size')
-                .pc-form-grid-col-60
-                    .ignite-form-field
-                        +list-text-field({
-                            items: libs,
-                            lbl: 'Library name',
-                            name: 'libraryName',
-                            itemName: 'library name',
-                            itemsName: 'library names'
-                        })(
-                            list-editable-cols=`::[{name: 'Native libraries:'}]`
-                        )
-                            +unique-feedback(_, `${uniqueTip}`)
+                    +java-class('Class name:', plannerModel + '.Custom.className', '"MapReducePlannerCustomClass"', 'true', customPlanner,
+                        'Custom planner implementation')
+            .pc-form-grid-col-30
+                +number('Finished job info TTL:', model + '.finishedJobInfoTtl', '"finishedJobInfoTtl"', 'true', '30000', '0',
+                    'Finished job info time-to-live in milliseconds')
+            .pc-form-grid-col-30
+                +number('Max parallel tasks:', model + '.maxParallelTasks', '"maxParallelTasks"', 'true', 'availableProcessors * 2', '1',
+                    'Max number of local tasks that may be executed in parallel')
+            .pc-form-grid-col-30
+                +number('Max task queue size:', model + '.maxTaskQueueSize', '"maxTaskQueueSize"', 'true', '8192', '1', 'Max task queue size')
+            .pc-form-grid-col-60
+                .ignite-form-field
+                    +list-text-field({
+                        items: libs,
+                        lbl: 'Library name',
+                        name: 'libraryName',
+                        itemName: 'library name',
+                        itemsName: 'library names'
+                    })(
+                        list-editable-cols=`::[{name: 'Native libraries:'}]`
+                    )
+                        +unique-feedback(_, `${uniqueTip}`)
 
-            .pca-form-column-6
-                +preview-xml-java(model, 'clusterHadoop')
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterHadoop')

@@ -19,40 +19,37 @@ include /app/helpers/jade/mixins
 -var form = 'ipc'
 -var model = 'backupItem'
 
-.pca-panel.pca-panel-default(ng-form=form novalidate)
-    .pca-panel-heading(bs-collapse-toggle='' ng-click=`ui.loadPanel('${form}')`)
-        ignite-form-panel-chevron
-        .pca-panel-heading-title IPC
-        .pca-panel-heading-description IGFS Inter-process communication properties.
-    .pca-panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .pca-panel-body.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
-            .pca-form-column-6.pc-form-grid-row
-                -var ipcEndpointConfiguration = `${model}.ipcEndpointConfiguration`
-                -var enabled = `${model}.ipcEndpointEnabled`
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title IPC
+    panel-description IGFS Inter-process communication properties.
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            -var ipcEndpointConfiguration = `${model}.ipcEndpointConfiguration`
+            -var enabled = `${model}.ipcEndpointEnabled`
 
-                .pc-form-grid-col-60
-                    +checkbox('Enabled', enabled, '"ipcEndpointEnabled"', 'IPC endpoint enabled flag')
-                .pc-form-grid-col-60
-                    +dropdown('Type:', `${ipcEndpointConfiguration}.type`, '"ipcEndpointConfigurationType"', enabled, 'TCP',
-                        '[\
-                            {value: "SHMEM", label: "SHMEM"},\
-                            {value: "TCP", label: "TCP"}\
-                        ]',
-                        'IPC endpoint type\
-                        <ul>\
-                            <li>SHMEM - shared memory endpoint</li>\
-                            <li>TCP - TCP endpoint</li>\
-                        </ul>')
-                .pc-form-grid-col-30
-                    +text-ip-address('Host:', `${ipcEndpointConfiguration}.host`, '"ipcEndpointConfigurationHost"', enabled, '127.0.0.1', 'Host endpoint is bound to')
-                .pc-form-grid-col-30
-                    +number-min-max('Port:', `${ipcEndpointConfiguration}.port`, '"ipcEndpointConfigurationPort"', enabled, '10500', '1', '65535', 'Port endpoint is bound to')
-                .pc-form-grid-col-30
-                    +number('Memory size:', `${ipcEndpointConfiguration}.memorySize`, '"ipcEndpointConfigurationMemorySize"', enabled, '262144', '1', 'Shared memory size in bytes allocated for endpoint communication')
-                .pc-form-grid-col-30
-                    +number('Thread count:', `${ipcEndpointConfiguration}.threadCount`, '"ipcEndpointConfigurationThreadCount"', enabled, 'availableProcessors', '1',
-                        'Number of threads used by this endpoint to process incoming requests')
-                .pc-form-grid-col-60
-                    +text-enabled('Token directory:', `${ipcEndpointConfiguration}.tokenDirectoryPath`, '"ipcEndpointConfigurationTokenDirectoryPath"', enabled, 'false', 'ipc/shmem', 'Directory where shared memory tokens are stored')
-            .pca-form-column-6
-                +preview-xml-java(model, 'igfsIPC')
+            .pc-form-grid-col-60
+                +checkbox('Enabled', enabled, '"ipcEndpointEnabled"', 'IPC endpoint enabled flag')
+            .pc-form-grid-col-60
+                +dropdown('Type:', `${ipcEndpointConfiguration}.type`, '"ipcEndpointConfigurationType"', enabled, 'TCP',
+                    '[\
+                        {value: "SHMEM", label: "SHMEM"},\
+                        {value: "TCP", label: "TCP"}\
+                    ]',
+                    'IPC endpoint type\
+                    <ul>\
+                        <li>SHMEM - shared memory endpoint</li>\
+                        <li>TCP - TCP endpoint</li>\
+                    </ul>')
+            .pc-form-grid-col-30
+                +text-ip-address('Host:', `${ipcEndpointConfiguration}.host`, '"ipcEndpointConfigurationHost"', enabled, '127.0.0.1', 'Host endpoint is bound to')
+            .pc-form-grid-col-30
+                +number-min-max('Port:', `${ipcEndpointConfiguration}.port`, '"ipcEndpointConfigurationPort"', enabled, '10500', '1', '65535', 'Port endpoint is bound to')
+            .pc-form-grid-col-30
+                +number('Memory size:', `${ipcEndpointConfiguration}.memorySize`, '"ipcEndpointConfigurationMemorySize"', enabled, '262144', '1', 'Shared memory size in bytes allocated for endpoint communication')
+            .pc-form-grid-col-30
+                +number('Thread count:', `${ipcEndpointConfiguration}.threadCount`, '"ipcEndpointConfigurationThreadCount"', enabled, 'availableProcessors', '1',
+                    'Number of threads used by this endpoint to process incoming requests')
+            .pc-form-grid-col-60
+                +text-enabled('Token directory:', `${ipcEndpointConfiguration}.tokenDirectoryPath`, '"ipcEndpointConfigurationTokenDirectoryPath"', enabled, 'false', 'ipc/shmem', 'Directory where shared memory tokens are stored')
+        .pca-form-column-6
+            +preview-xml-java(model, 'igfsIPC')
