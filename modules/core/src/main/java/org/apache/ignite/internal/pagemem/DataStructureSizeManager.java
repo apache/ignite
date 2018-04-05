@@ -1,12 +1,11 @@
 package org.apache.ignite.internal.pagemem;
 
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.pagemem.wal.DataStructureSizeAdapter;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.simpleTracker;
+import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 
 public class DataStructureSizeManager {
     /** */
@@ -89,7 +88,7 @@ public class DataStructureSizeManager {
         // Index size.
         String indexesTotal = grpName + "-" + INDEX;
 
-        DataStructureSize indexTotalPages = simpleTracker(indexesTotal);
+        DataStructureSize indexTotalPages = delegateWithTrackingPages(indexesTotal, internalSize, pageSize);
 
         sizes.put(indexesTotal, indexTotalPages);
 
@@ -122,5 +121,176 @@ public class DataStructureSizeManager {
 
     public Map<String, DataStructureSize> structureSizes() {
         return sizes;
+    }
+
+    public static DataStructureSize delegateWithTrackingPages(
+        String name,
+        DataStructureSize internalSize,
+        int pageSize
+    ) {
+        return new DataStructureSize() {
+            private final long trackingPages = TrackingPageIO.VERSIONS.latest().countOfPageToTrack(pageSize);
+            private final AtomicLong size = new AtomicLong();
+
+            @Override public void inc() {
+                long val = size.getAndIncrement();
+
+                if (val % trackingPages == 0)
+                    internalSize.add(pageSize);
+            }
+
+            @Override public void dec() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override public void add(long val) {
+                long prev = size.getAndAdd(val);
+
+                if (prev / trackingPages < ((prev + val) / trackingPages))
+                    internalSize.add(val * pageSize);
+            }
+
+            @Override public long size() {
+                return size.get();
+            }
+
+            @Override public String name() {
+                return name;
+            }
+        };
+    }
+
+    public static DataStructureSize simpleTracker(String name) {
+        return new DataStructureSize() {
+            private final AtomicLong size = new AtomicLong();
+
+            @Override public void inc() {
+                size.incrementAndGet();
+
+               /* try {
+                    PrintStream ps = System.err;
+
+                    String msg = name + " " + size.get() + "\n";
+
+                    ps.write(msg.getBytes());
+
+                    new Exception().printStackTrace(ps);
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }*/
+            }
+
+            @Override public void dec() {
+                size.decrementAndGet();
+            }
+
+            @Override public void add(long val) {
+                size.addAndGet(val);
+
+           /*     try {
+                    PrintStream ps = System.err;
+
+                    String msg = name + " " + size.get() + " " + val + "\n";
+
+                    ps.write(msg.getBytes());
+
+                    new Exception().printStackTrace(ps);
+                }
+                catch (IOException e) {
+                    e.printStackTrace();
+                }*/
+            }
+
+            @Override public long size() {
+                return size.get();
+            }
+
+            @Override public String name() {
+                return name;
+            }
+        };
+    }
+
+    public static DataStructureSize merge(DataStructureSize first, DataStructureSize second) {
+        return new DataStructureSize() {
+
+            @Override public void inc() {
+                first.inc();
+
+                second.inc();
+            }
+
+            @Override public void dec() {
+                first.dec();
+
+                second.dec();
+            }
+
+            @Override public void add(long val) {
+                if (val != 0 && (val > 1 || val < -1)) {
+                    first.add(val);
+
+                    second.add(val);
+                }
+
+                if (val == -1)
+                    dec();
+
+                if (val == 1)
+                    inc();
+            }
+
+            @Override public long size() {
+                return first.size();
+            }
+
+            @Override public String name() {
+                return first.name();
+            }
+        };
+    }
+
+    public static DataStructureSize delegateTracker(String name, DataStructureSize delegate) {
+        return new DataStructureSize() {
+            private final AtomicLong size = new AtomicLong();
+
+            @Override public void inc() {
+                size.incrementAndGet();
+
+                if (delegate != null)
+                    delegate.inc();
+            }
+
+            @Override public void dec() {
+                size.decrementAndGet();
+
+                if (delegate != null)
+                    delegate.dec();
+            }
+
+            @Override public void add(long val) {
+                if (val != 0 && (val > 1 || val < -1)) {
+                    size.addAndGet(val);
+
+                    if (delegate != null)
+                        delegate.add(val);
+                }
+
+                if (val == -1)
+                    dec();
+
+                if (val == 1)
+                    inc();
+            }
+
+            @Override public long size() {
+                return size.get();
+            }
+
+            @Override public String name() {
+                return name;
+            }
+        };
     }
 }

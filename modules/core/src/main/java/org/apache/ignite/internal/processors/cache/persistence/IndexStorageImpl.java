@@ -224,9 +224,6 @@ public class IndexStorageImpl implements IndexStorage {
 
         /** {@inheritDoc} */
         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
-            if (selfPages != null)
-                selfPages.inc();
-
             return pageMem.allocatePage(groupId(), allocPartId, allocSpace);
         }
 

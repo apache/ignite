@@ -83,6 +83,7 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.DATA;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.INDEX;
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.INDEX_REUSE_LIST;
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.INDEX_TREE;
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.INTERNAL;
@@ -90,9 +91,9 @@ import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PARTIT
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PK_INDEX;
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PURE_DATA;
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.REUSE_LIST;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.delegateTracker;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.merge;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.delegateWithTrackingPages;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.delegateTracker;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.delegateWithTrackingPages;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.merge;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
@@ -120,7 +121,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.wal(),
             reuseListRoot.pageId().pageId(),
             reuseListRoot.isAllocated(),
-            grp.dataStructureSize(INDEX_REUSE_LIST)
+            merge(grp.dataStructureSize(INDEX_REUSE_LIST), grp.dataStructureSize(INDEX))
         );
 
         RootPage metastoreRoot = metas.treeRoot;
@@ -135,7 +136,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             reuseList,
             metastoreRoot.pageId().pageId(),
             metastoreRoot.isAllocated(),
-            grp.dataStructureSize(INDEX_TREE)
+            merge(grp.dataStructureSize(INDEX_TREE), grp.dataStructureSize(INDEX))
         );
 
         ((GridCacheDatabaseSharedManager)ctx.database()).addCheckpointListener(this);
@@ -169,7 +170,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     pendingRootPage.pageId().pageId(),
                     reuseList,
                     pendingRootPage.isAllocated(),
-                    grp.dataStructureSize(INDEX_TREE)
+                    merge(grp.dataStructureSize(INDEX_TREE), grp.dataStructureSize(INDEX))
                 );
             }
             finally {
