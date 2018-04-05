@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -173,6 +174,26 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         assertSchemaExistOnBothNodes("Public");
 
         assertSchemaExistOnBothNodes("\"PUBLIC\"");
+    }
+
+    /**
+     * Test that if we set custom schema in cache configuration,
+     * we will find that custom schema, not schema with cache name.
+     */
+    public void testCustomSchemaName() {
+        String cacheName = "CacheWithCustomSchema";
+
+        String schemaName = "MyCustomSchema";
+
+        CacheConfiguration<Long, UUID> ccfg = newCacheCfg(cacheName).setSqlSchema(schemaName);
+
+        try (IgniteCache<Long, UUID> cache = serverNode.createCache(ccfg)) {
+            assertSchemaExistOnBothNodes(schemaName);
+            assertSchemaMissedOnBothNodes('"' + cacheName + '"');
+        } finally {
+            serverNode.destroyCache(cacheName);
+        }
+
     }
 
     /** Check schema created (with the table) via {@link CacheConfiguration#setIndexedTypes} exists. */
