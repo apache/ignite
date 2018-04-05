@@ -1107,8 +1107,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         // To correctly rebalance when persistence is enabled, it is necessary to reserve history within exchange.
         partHistReserved = cctx.database().reserveHistoryForExchange();
 
-        waitPartitionRelease(0);
+        // On first phase we wait for finishing all local tx updates, atomic updates and lock releases.
         waitPartitionRelease(1);
+
+        // Second phase is needed to wait for finishing all tx updates from primary to backup nodes remaining after first phase.
+        waitPartitionRelease(2);
 
         boolean topChanged = firstDiscoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT || affChangeMsg != null;
 
@@ -1211,10 +1214,12 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * For the exact list of the objects being awaited for see
      * {@link GridCacheSharedContext#partitionReleaseFuture(AffinityTopologyVersion)} javadoc.
      *
+     * @param phase Phase of partition release.
+     *
      * @throws IgniteCheckedException If failed.
      */
     private void waitPartitionRelease(int phase) throws IgniteCheckedException {
-        Latch releaseLatch = cctx.exchange().latch().getOrCreate("exchange" + phase, initialVersion());
+        Latch releaseLatch = cctx.exchange().latch().getOrCreate("exchange-" + phase, initialVersion());
 
         IgniteInternalFuture<?> partReleaseFut = cctx.partitionReleaseFuture(initialVersion());
 
@@ -1320,7 +1325,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
                         break;
                     }
-                    catch (IgniteFutureTimeoutCheckedException e) {
+                    catch (IgniteFutureTimeoutCheckedException ignored) {
                         U.warn(log, "Unable to await partitions release latch within timeout: " + releaseLatch);
 
                         // Try to resend ack.

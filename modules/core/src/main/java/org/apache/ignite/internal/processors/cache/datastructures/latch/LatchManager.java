@@ -48,6 +48,7 @@ import org.apache.ignite.lang.IgniteProductVersion;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
+import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 
 /**
@@ -101,6 +102,22 @@ public class LatchManager {
                     processAck(nodeId, (LatchAckMessage) msg);
                 }
             });
+
+            // First coordinator initialization.
+            ctx.event().addDiscoveryEventListener((e, cache) -> {
+                if (this.coordinator != null)
+                    return;
+
+                lock.lock();
+
+                try {
+                    if (this.coordinator == null)
+                        this.coordinator = getLatchCoordinator(AffinityTopologyVersion.NONE);
+                }
+                finally {
+                    lock.unlock();
+                }
+            }, EVT_NODE_JOINED);
 
             ctx.event().addDiscoveryEventListener((e, cache) -> {
                 assert e != null;
@@ -206,15 +223,11 @@ public class LatchManager {
                 return latch;
             }
 
-            if (this.coordinator == null)
-                this.coordinator = coordinator;
-
             Collection<ClusterNode> participants = getLatchParticipants(topVer);
 
-            if (coordinator.isLocal())
-                return createServerLatch(id, topVer, participants);
-            else
-                return createClientLatch(id, topVer, coordinator, participants);
+            return coordinator.isLocal()
+                ? createServerLatch(id, topVer, participants)
+                : createClientLatch(id, topVer, coordinator, participants);
         }
         finally {
             lock.unlock();
@@ -519,7 +532,7 @@ public class LatchManager {
         private volatile ClusterNode coordinator;
 
         /** Flag indicates that ack is sent to coordinator. */
-        private boolean ackSent = false;
+        private boolean ackSent;
 
         /**
          * Constructor.
@@ -603,7 +616,7 @@ public class LatchManager {
     /**
      * Base latch functionality with implemented complete / await logic.
      */
-    private abstract class CompletableLatch implements Latch {
+    private abstract static class CompletableLatch implements Latch {
         /** Latch id. */
         @GridToStringInclude
         protected final String id;

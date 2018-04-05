@@ -858,17 +858,9 @@ public class GridCacheSharedContext<K, V> {
         f.add(mvcc().finishDataStreamerUpdates(topVer));
 
         IgniteInternalFuture<?> finishLocalTxsFuture = tm().finishLocalTxs(topVer);
+        // To properly track progress of finishing local tx updates we explicitly add this future to compound set.
         f.add(finishLocalTxsFuture);
-
-        final GridCompoundFuture finishAllTxsFuture = new CacheObjectsReleaseFuture("AllTx", topVer);
-
-        // After finishing all local updates, wait for finishing all tx updates on backups.
-        finishLocalTxsFuture.listen(future -> {
-            finishAllTxsFuture.add(mvcc().finishRemoteTxs(topVer));
-            finishAllTxsFuture.markInitialized();
-        });
-
-        f.add(finishAllTxsFuture);
+        f.add(tm().finishAllTxs(finishLocalTxsFuture, topVer));
 
         f.markInitialized();
 
