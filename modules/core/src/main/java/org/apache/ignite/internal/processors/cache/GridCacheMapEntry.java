@@ -4437,11 +4437,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 treeOp = oldRow != null && oldRow.link() == newRow.link() ?
                     IgniteTree.OperationType.NOOP : IgniteTree.OperationType.PUT;
             }
-            else {
-                entry.cctx.offheap().dataStore(entry.localPartition()).remove(entry.cctx, entry.key, entry.partition());
-
-                treeOp = IgniteTree.OperationType.REMOVE;
-            }
+            else
+                treeOp = oldRow != null ? IgniteTree.OperationType.REMOVE : IgniteTree.OperationType.NOOP;
         }
 
         /** {@inheritDoc} */
