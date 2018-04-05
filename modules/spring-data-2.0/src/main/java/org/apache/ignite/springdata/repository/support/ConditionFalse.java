@@ -14,19 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.springdata20.SpringDataExample;
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+package org.apache.ignite.springdata.repository.support;
+
+import org.springframework.context.annotation.Condition;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
- * Spring Data example test.
+ * Always false condition.
+ * Tells spring context never load bean with such Condition.
  */
-public class SpringDataExampleSelfTest extends GridAbstractExamplesTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testSpringDataExample() throws Exception {
-        SpringDataExample.main(EMPTY_ARGS);
+public class ConditionFalse implements Condition {
+    /**{@inheritDoc}*/
+    @Override public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
+        return false;
     }
 }

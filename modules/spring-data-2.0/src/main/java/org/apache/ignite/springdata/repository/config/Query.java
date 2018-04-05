@@ -14,19 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.springdata20.SpringDataExample;
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+package org.apache.ignite.springdata.repository.config;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Spring Data example test.
+ * Annotation to provide a user defined SQL query for a method.
  */
-public class SpringDataExampleSelfTest extends GridAbstractExamplesTest {
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.METHOD)
+public @interface Query {
     /**
-     * @throws Exception If failed.
+     * SQL query text string.
      */
-    public void testSpringDataExample() throws Exception {
-        SpringDataExample.main(EMPTY_ARGS);
-    }
+    String value() default "";
 }

@@ -14,19 +14,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.springdata20.SpringDataExample;
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+package org.apache.ignite.testsuites;
+
+import junit.framework.TestSuite;
+import org.apache.ignite.springdata.IgniteSpringDataCrudSelfTest;
+import org.apache.ignite.springdata.IgniteSpringDataQueriesSelfTest;
 
 /**
- * Spring Data example test.
+ * Ignite Spring Data test suite.
  */
-public class SpringDataExampleSelfTest extends GridAbstractExamplesTest {
+public class IgniteSpringDataTestSuite extends TestSuite {
     /**
-     * @throws Exception If failed.
+     * @return Test suite.
+     * @throws Exception Thrown in case of the failure.
      */
-    public void testSpringDataExample() throws Exception {
-        SpringDataExample.main(EMPTY_ARGS);
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Spring Data Test Suite");
+
+        suite.addTestSuite(IgniteSpringDataCrudSelfTest.class);
+        suite.addTestSuite(IgniteSpringDataQueriesSelfTest.class);
+
+        return suite;
     }
 }
+

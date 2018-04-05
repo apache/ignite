@@ -14,19 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.examples;
 
-import org.apache.ignite.examples.springdata20.SpringDataExample;
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+package org.apache.ignite.springdata.repository.config;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Inherited;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * Spring Data example test.
+ * The annotation can be used to pass Ignite specific parameters to a bound repository.
  */
-public class SpringDataExampleSelfTest extends GridAbstractExamplesTest {
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited
+public @interface RepositoryConfig {
     /**
-     * @throws Exception If failed.
+     * @return A name of a distributed Apache Ignite cache an annotated repository will be mapped to.
      */
-    public void testSpringDataExample() throws Exception {
-        SpringDataExample.main(EMPTY_ARGS);
-    }
+    String cacheName() default "";
 }

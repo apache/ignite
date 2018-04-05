@@ -14,19 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.examples;
-
-import org.apache.ignite.examples.springdata20.SpringDataExample;
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
 
 /**
- * Spring Data example test.
+ * <!-- Package description. -->
+ * Package includes Spring Data integration related configuration files.
  */
-public class SpringDataExampleSelfTest extends GridAbstractExamplesTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testSpringDataExample() throws Exception {
-        SpringDataExample.main(EMPTY_ARGS);
-    }
-}
+package org.apache.ignite.springdata.repository.config;

@@ -14,19 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.examples;
+package org.apache.ignite.springdata.repository.config;
 
-import org.apache.ignite.examples.springdata20.SpringDataExample;
-import org.apache.ignite.testframework.junits.common.GridAbstractExamplesTest;
+import java.lang.annotation.Annotation;
+import org.springframework.data.repository.config.RepositoryBeanDefinitionRegistrarSupport;
+import org.springframework.data.repository.config.RepositoryConfigurationExtension;
 
 /**
- * Spring Data example test.
+ * Apache Ignite specific implementation of {@link RepositoryBeanDefinitionRegistrarSupport}.
  */
-public class SpringDataExampleSelfTest extends GridAbstractExamplesTest {
-    /**
-     * @throws Exception If failed.
-     */
-    public void testSpringDataExample() throws Exception {
-        SpringDataExample.main(EMPTY_ARGS);
+public class IgniteRepositoriesRegistar extends RepositoryBeanDefinitionRegistrarSupport {
+    /** {@inheritDoc} */
+    @Override protected Class<? extends Annotation> getAnnotation() {
+        return EnableIgniteRepositories.class;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected RepositoryConfigurationExtension getExtension() {
+        return new IgniteRepositoryConfigurationExtension();
     }
 }
