@@ -285,9 +285,7 @@ namespace Apache.Ignite.Core.Impl.Cache
             _offHeapBackupEntriesCount = reader.ReadLong();
             _offHeapAllocatedSize = reader.ReadLong();
             _size = reader.ReadInt();
-            _sizeLong = reader.ReadLong();
             _keySize = reader.ReadInt();
-            _keySizeLong = reader.ReadLong();
             _isEmpty = reader.ReadBoolean();
             _dhtEvictQueueCurrentSize = reader.ReadInt();
             _txThreadMapSize = reader.ReadInt();
@@ -331,6 +329,8 @@ namespace Apache.Ignite.Core.Impl.Cache
             _estimatedRebalancingFinishTime = reader.ReadLong();
             _rebalancingStartTime = reader.ReadLong();
             _rebalancingClearingPartitionsLeft = reader.ReadLong();
+            _sizeLong = reader.ReadLong();
+            _keySizeLong = reader.ReadLong();
         }
 
         /** <inheritDoc /> */

@@ -1439,9 +1439,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         writer.writeLong(metrics.getOffHeapBackupEntriesCount());
         writer.writeLong(metrics.getOffHeapAllocatedSize());
         writer.writeInt(metrics.getSize());
-        writer.writeLong(metrics.getSizeLong());
         writer.writeInt(metrics.getKeySize());
-        writer.writeLong(metrics.getKeySizeLong());
         writer.writeBoolean(metrics.isEmpty());
         writer.writeInt(metrics.getDhtEvictQueueCurrentSize());
         writer.writeInt(metrics.getTxThreadMapSize());
@@ -1485,6 +1483,8 @@ public class PlatformCache extends PlatformAbstractTarget {
         writer.writeLong(metrics.getEstimatedRebalancingFinishTime());
         writer.writeLong(metrics.getRebalancingStartTime());
         writer.writeLong(metrics.getRebalanceClearingPartitionsLeft());
+        writer.writeLong(metrics.getSizeLong());
+        writer.writeLong(metrics.getKeySizeLong());
     }
 
     /**
