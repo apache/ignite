@@ -26,15 +26,12 @@ import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -419,13 +416,11 @@ public class RobinHoodBackwardShiftHashMapTest {
                 assertTrue(val > 0);
             }
 
-            assertThat(sz - map.size(), Matchers.is(list.size()));
+            assertEquals(sz - map.size(), list.size());
 
             Map<FullPageId, Long> res = new HashMap<>();
 
             map.forEach(res::put);
-
-            assertThat(map.size(), Matchers.is(map.size()));
 
             for (int i = 0; i < cap; i++) {
                 GridLongList list1 = map.removeIf(i, i + 1, pred);
@@ -435,7 +430,7 @@ public class RobinHoodBackwardShiftHashMapTest {
 
             check.keySet().removeIf(entry -> pred.test(entry.groupId(), entry.pageId()));
 
-            MatcherAssert.assertThat(res, Matchers.is(check));
+            assertEquals(res, check);
 
         }, cap);
     }

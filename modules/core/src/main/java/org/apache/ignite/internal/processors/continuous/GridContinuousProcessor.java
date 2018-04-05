@@ -49,6 +49,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteDeploymentCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
@@ -350,6 +351,8 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         finally {
             processorStopLock.writeLock().unlock();
         }
+
+        cancelFutures(new NodeStoppingException("Failed to start continuous query (node is stopping)"));
     }
 
     /** {@inheritDoc} */
@@ -845,20 +848,24 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         // Register per-routine notifications listener if ordered messaging is used.
         registerMessageListener(hnd);
 
-        StartFuture fut = new StartFuture(routineId);
-
-        startFuts.put(routineId, fut);
+        if (!lockStopping())
+            return new GridFinishedFuture<>(new NodeStoppingException("Failed to start continuous query (node is stopping)"));
 
         try {
-            if (locIncluded || hnd.isQuery()) {
-                registerHandler(ctx.localNodeId(),
-                    routineId,
-                    hnd,
-                    bufSize,
-                    interval,
-                    autoUnsubscribe,
-                    true);
-            }
+            StartFuture fut = new StartFuture(routineId);
+
+            startFuts.put(routineId, fut);
+
+            try {
+                if (locIncluded || hnd.isQuery()) {
+                    registerHandler(ctx.localNodeId(),
+                        routineId,
+                        hnd,
+                        bufSize,
+                        interval,
+                        autoUnsubscribe,
+                        true);
+                }
 
             ctx.discovery().sendCustomEvent(msg);
         }
@@ -866,17 +873,21 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             startFuts.remove(routineId);
             locInfos.remove(routineId);
 
-            unregisterHandler(routineId, hnd, true);
+                unregisterHandler(routineId, hnd, true);
 
-            fut.onDone(e);
+                fut.onDone(e);
+
+                return fut;
+            }
+
+            // Handler is registered locally.
+            fut.onLocalRegistered();
 
             return fut;
         }
-
-        // Handler is registered locally.
-        fut.onLocalRegistered();
-
-        return fut;
+        finally {
+            unlockStopping();
+        }
     }
 
     /**
@@ -1003,17 +1014,21 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
 
         boolean doStop = false;
 
-        StopFuture fut = stopFuts.get(routineId);
+        if (!lockStopping())
+            return new GridFinishedFuture<>(new NodeStoppingException("Failed to stop continuous query (node is stopping)"));
 
-        // Only one thread will stop routine with provided ID.
-        if (fut == null) {
-            StopFuture old = stopFuts.putIfAbsent(routineId, fut = new StopFuture(ctx));
+        try {
+            StopFuture fut = stopFuts.get(routineId);
 
-            if (old != null)
-                fut = old;
-            else
-                doStop = true;
-        }
+            // Only one thread will stop routine with provided ID.
+            if (fut == null) {
+                StopFuture old = stopFuts.putIfAbsent(routineId, fut = new StopFuture(ctx));
+
+                if (old != null)
+                    fut = old;
+                else
+                    doStop = true;
+            }
 
         if (doStop) {
             boolean stop = false;
@@ -1035,10 +1050,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
             if (!stop) {
                 stopFuts.remove(routineId);
 
-                fut.onDone();
+                    fut.onDone();
 
-                return fut;
-            }
+                    return fut;
+                }
 
             try {
                 ctx.discovery().sendCustomEvent(new StopRoutineDiscoveryMessage(routineId));
@@ -1047,11 +1062,15 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
                 fut.onDone(e);
             }
 
-            if (ctx.isStopping())
-                fut.onDone();
-        }
+                if (ctx.isStopping())
+                    fut.onDone();
+            }
 
-        return fut;
+            return fut;
+        }
+        finally {
+            unlockStopping();
+        }
     }
 
     /**
@@ -1161,7 +1180,7 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) {
         cancelFutures(new IgniteClientDisconnectedCheckedException(reconnectFut, "Client node disconnected."));
 
         if (log.isDebugEnabled()) {

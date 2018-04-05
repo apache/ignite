@@ -573,6 +573,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             storePageMem.stop();
         }
         catch (StorageException e) {
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
             throw new IgniteCheckedException(e);
         }
     }
@@ -748,6 +750,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             notifyMetastorageReadyForReadWrite();
         }
         catch (StorageException e) {
+            cctx.kernalContext().failure().process(new FailureContext(FailureType.CRITICAL_ERROR, e));
+
             throw new IgniteCheckedException(e);
         }
         finally {
@@ -1880,6 +1884,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /**
      * @param status Checkpoint status.
+     * @throws IgniteCheckedException If failed.
+     * @throws StorageException In case I/O error occurred during operations with storage.
      */
     private WALPointer restoreMemory(CheckpointStatus status) throws IgniteCheckedException {
         return restoreMemory(status, false, (PageMemoryEx)metaStorage.pageMemory());
@@ -1888,6 +1894,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @param status Checkpoint status.
      * @param storeOnly If {@code True} restores Metastorage only.
+     * @param storePageMem Metastore page memory.
+     * @throws IgniteCheckedException If failed.
+     * @throws StorageException In case I/O error occurred during operations with storage.
      */
     private WALPointer restoreMemory(CheckpointStatus status, boolean storeOnly,
         PageMemoryEx storePageMem) throws IgniteCheckedException {
@@ -2694,7 +2703,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     }
 
     /**
-     *
+     * Checkpointer object is used for notification on checkpoint begin, predicate is {@link #scheduledCp}<code>.nextCpTs - now
+     * > 0 </code>. Method {@link #wakeupForCheckpoint} uses notify, {@link #waitCheckpointEvent} uses wait
      */
     @SuppressWarnings("NakedNotify")
     public class Checkpointer extends GridWorker {

@@ -84,13 +84,13 @@
         z-index: -1;
     }
     
-    &.bssm-multiple {
+    [class*='bssm-multiple'] {
         .bssm-active-indicator {
             display: initial;
         }
     }
 
-    &:not(.bssm-multiple) {
+    &:not([class*='bssm-multiple']) {
         .bssm-active-indicator {
             display: none;
         }

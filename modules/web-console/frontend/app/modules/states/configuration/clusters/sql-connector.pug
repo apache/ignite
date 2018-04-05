@@ -17,44 +17,42 @@
 include /app/helpers/jade/mixins
 
 -var form = 'query'
--var model = 'backupItem'
+-var model = '$ctrl.clonedCluster'
 -var connectionModel = model + '.sqlConnectorConfiguration'
 -var connectionEnabled = connectionModel + '.enabled'
 
-.panel.panel-default(ng-show='$ctrl.available(["2.1.0", "2.3.0"])' ng-form=form novalidate)
-    .panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
-        ignite-form-panel-chevron
-        label Query configuration
-        ignite-form-field-tooltip.tipLabel
-            | Query configuration
-        //- TODO IGNITE-5415 Add link to documentation.
-        ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .panel-body(ng-if=`$ctrl.available(["2.1.0", "2.3.0"]) && ui.isPanelLoaded('${form}')`)
-            .col-sm-6
-                .settings-row
-                    +checkbox('Enabled', connectionEnabled, '"SqlConnectorEnabled"', 'Flag indicating whether to configure SQL connector configuration')
-                .settings-row
-                    +text-enabled('Host:', `${connectionModel}.host`, '"SqlConnectorHost"', connectionEnabled, 'false', 'localhost', 'Host')
-                .settings-row
-                    +number('Port:', `${connectionModel}.port`, '"SqlConnectorPort"', connectionEnabled, '10800', '1025', 'Port')
-                .settings-row
-                    +number('Port range:', `${connectionModel}.portRange`, '"SqlConnectorPortRange"', connectionEnabled, '100', '0', 'Port range')
-                .settings-row
-                    +number('Socket send buffer size:', `${connectionModel}.socketSendBufferSize`, '"SqlConnectorSocketSendBufferSize"', connectionEnabled, '0', '0',
-                        'Socket send buffer size.<br/>\
-                        When set to <b>0</b>, operation system default will be used')
-                .settings-row
-                    +number('Socket receive buffer size:', `${connectionModel}.socketReceiveBufferSize`, '"SqlConnectorSocketReceiveBufferSize"', connectionEnabled, '0', '0',
-                        'Socket receive buffer size.<br/>\
-                        When set to <b>0</b>, operation system default will be used')
-                .settings-row
-                    +number('Max connection cursors:', `${connectionModel}.maxOpenCursorsPerConnection`, '"SqlConnectorMaxOpenCursorsPerConnection"', connectionEnabled, '128', '0',
-                        'Max number of opened cursors per connection')
-                .settings-row
-                    +number('Pool size:', `${connectionModel}.threadPoolSize`, '"SqlConnectorThreadPoolSize"', connectionEnabled, 'max(8, availableProcessors)', '1',
-                        'Size of thread pool that is in charge of processing SQL requests')
-                .settings-row
-                    +checkbox-enabled('TCP_NODELAY option', `${connectionModel}.tcpNoDelay`, '"SqlConnectorTcpNoDelay"', connectionEnabled, 'Value for TCP_NODELAY socket option')
-            .col-sm-6
-                +preview-xml-java(model, 'clusterQuery')
+panel-collapsible(
+    ng-form=form
+    on-open=`ui.loadPanel('${form}')`
+    ng-show='$ctrl.available(["2.1.0", "2.3.0"])'
+)
+    panel-title Query configuration
+    //- TODO IGNITE-5415 Add link to documentation.
+    panel-content.pca-form-row(ng-if=`$ctrl.available(["2.1.0", "2.3.0"]) && ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
+                +checkbox('Enabled', connectionEnabled, '"SqlConnectorEnabled"', 'Flag indicating whether to configure SQL connector configuration')
+            .pc-form-grid-col-40
+                +text-enabled('Host:', `${connectionModel}.host`, '"SqlConnectorHost"', connectionEnabled, 'false', 'localhost')
+            .pc-form-grid-col-20
+                +number('Port:', `${connectionModel}.port`, '"SqlConnectorPort"', connectionEnabled, '10800', '1025')
+            .pc-form-grid-col-20
+                +number('Port range:', `${connectionModel}.portRange`, '"SqlConnectorPortRange"', connectionEnabled, '100', '0')
+            .pc-form-grid-col-20
+                +number('Socket send buffer size:', `${connectionModel}.socketSendBufferSize`, '"SqlConnectorSocketSendBufferSize"', connectionEnabled, '0', '0',
+                    'Socket send buffer size.<br/>\
+                    When set to <b>0</b>, operation system default will be used')
+            .pc-form-grid-col-20
+                +number('Socket receive buffer size:', `${connectionModel}.socketReceiveBufferSize`, '"SqlConnectorSocketReceiveBufferSize"', connectionEnabled, '0', '0',
+                    'Socket receive buffer size.<br/>\
+                    When set to <b>0</b>, operation system default will be used')
+            .pc-form-grid-col-30
+                +number('Max connection cursors:', `${connectionModel}.maxOpenCursorsPerConnection`, '"SqlConnectorMaxOpenCursorsPerConnection"', connectionEnabled, '128', '0',
+                    'Max number of opened cursors per connection')
+            .pc-form-grid-col-30
+                +number('Pool size:', `${connectionModel}.threadPoolSize`, '"SqlConnectorThreadPoolSize"', connectionEnabled, 'max(8, availableProcessors)', '1',
+                    'Size of thread pool that is in charge of processing SQL requests')
+            .pc-form-grid-col-60
+                +checkbox-enabled('TCP_NODELAY option', `${connectionModel}.tcpNoDelay`, '"SqlConnectorTcpNoDelay"', connectionEnabled)
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterQuery')
