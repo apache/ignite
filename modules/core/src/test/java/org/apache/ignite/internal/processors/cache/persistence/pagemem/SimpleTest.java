@@ -1,5 +1,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;

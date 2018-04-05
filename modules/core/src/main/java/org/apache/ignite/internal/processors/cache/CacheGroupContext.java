@@ -259,12 +259,12 @@ public class CacheGroupContext {
         indexesPages = delegateWithTrackingPages(indexesName, internalSize, pageSize);
         totalPages = simpleTracker(totalSizeName);
 
+        sizes.put(totalSizeName, totalPages);
         sizes.put(pkIndexName, pkIndexPages);
+        sizes.put(indexesName, indexesPages);
         sizes.put(reuseListName, reuseListPages);
         sizes.put(dataPagesName, dataPages);
         sizes.put(pureDataName, pureDataSize);
-        sizes.put(totalSizeName, totalPages);
-        sizes.put(indexesName, indexesPages);
         sizes.put(internalName, internalSize);
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);

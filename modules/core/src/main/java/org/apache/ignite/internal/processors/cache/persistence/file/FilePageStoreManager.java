@@ -122,6 +122,9 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
     /** */
     private final Set<Integer> grpsWithoutIdx = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
 
+    /** */
+    private final Map<String, Integer> cacheOrGroupCfgSize = new HashMap<>();
+
     /**
      * @param ctx Kernal context.
      */
@@ -243,15 +246,19 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
 
     /** {@inheritDoc} */
     @Override public void storeCacheData(StoredCacheData cacheData, boolean overwrite) throws IgniteCheckedException {
-        File cacheWorkDir = cacheWorkDir(cacheData.config());
+        CacheConfiguration<?, ?> ccfg = cacheData.config();
+
+        File cacheWorkDir = cacheWorkDir(ccfg);
         File file;
 
         checkAndInitCacheWorkDir(cacheWorkDir);
 
         assert cacheWorkDir.exists() : "Work directory does not exist: " + cacheWorkDir;
 
-        if (cacheData.config().getGroupName() != null)
-            file = new File(cacheWorkDir, cacheData.config().getName() + CACHE_DATA_FILENAME);
+        boolean isSharedGrp = ccfg.getGroupName() != null;
+
+        if (isSharedGrp)
+            file = new File(cacheWorkDir, ccfg.getName() + CACHE_DATA_FILENAME);
         else
             file = new File(cacheWorkDir, CACHE_DATA_FILENAME);
 
@@ -259,15 +266,27 @@ public class FilePageStoreManager extends GridCacheSharedManagerAdapter implemen
             try {
                 file.createNewFile();
 
+                byte[] bytes = marshaller.marshal(cacheData);
+
+                cacheOrGroupCfgSize.put(isSharedGrp ? ccfg.getGroupName() : ccfg.getName(), bytes.length);
+
                 // Pre-existing file will be truncated upon stream open.
                 try (OutputStream stream = new BufferedOutputStream(new FileOutputStream(file))) {
-                    marshaller.marshal(cacheData, stream);
+                    stream.write(bytes);
                 }
             }
             catch (IOException ex) {
                 throw new IgniteCheckedException("Failed to persist cache configuration: " + cacheData.config().getName(), ex);
             }
         }
+    }
+
+    /**
+     * @param name Cache or Cache group name.
+     * @return Size of cache or cache group configuration in bytes.
+     */
+    public Integer cacheOrGroupCfgSize(String name) {
+        return cacheOrGroupCfgSize.get(name);
     }
 
     /** {@inheritDoc} */

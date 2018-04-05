@@ -35,6 +35,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageSupport;
+import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
@@ -55,6 +56,8 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalP
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.CachePartitionPartialCountersMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.IgniteHistoricalIterator;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStore;
+import org.apache.ignite.internal.processors.cache.persistence.file.FilePageStoreManager;
 import org.apache.ignite.internal.processors.cache.persistence.freelist.CacheFreeList;
 import org.apache.ignite.internal.processors.cache.persistence.pagemem.PageMemoryEx;
 import org.apache.ignite.internal.processors.cache.persistence.partstate.GroupPartitionId;
@@ -129,6 +132,18 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         );
 
         ((GridCacheDatabaseSharedManager)ctx.database()).addCheckpointListener(this);
+
+        IgnitePageStoreManager pageStore = ctx.pageStore();
+
+        if (pageStore instanceof FilePageStoreManager){
+            FilePageStoreManager store = (FilePageStoreManager)pageStore;
+
+            Integer size = store.cacheOrGroupCfgSize(grp.cacheOrGroupName());
+
+            //TODO
+            if (size != null)
+                grp.getInternalSize().add(size);
+        }
     }
 
     /** {@inheritDoc} */
