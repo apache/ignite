@@ -49,6 +49,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProperty;
 import org.apache.ignite.internal.processors.query.GridQueryTypeDescriptor;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.NestedTxMode;
+import org.apache.ignite.internal.processors.query.SqlClientContext;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.typedef.F;
@@ -74,6 +75,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Kernel context. */
     private final GridKernalContext ctx;
 
+    /** Client context. */
+    private final SqlClientContext cliCtx;
+
     /** Logger. */
     private final IgniteLogger log;
 
@@ -89,26 +93,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Current queries cursors. */
     private final ConcurrentHashMap<Long, OdbcQueryResults> qryResults = new ConcurrentHashMap<>();
 
-    /** Distributed joins flag. */
-    private final boolean distributedJoins;
-
-    /** Enforce join order flag. */
-    private final boolean enforceJoinOrder;
-
-    /** Replicated only flag. */
-    private final boolean replicatedOnly;
-
     /** Nested transaction behaviour. */
     private final NestedTxMode nestedTxMode;
-
-    /** Collocated flag. */
-    private final boolean collocated;
-
-    /** Lazy flag. */
-    private final boolean lazy;
-
-    /** Update on server flag. */
-    private final boolean skipReducerOnUpdate;
 
     /** Authentication context */
     private final AuthorizationContext actx;
@@ -135,14 +121,19 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly, boolean collocated, boolean lazy,
         boolean skipReducerOnUpdate, AuthorizationContext actx, NestedTxMode nestedTxMode, ClientListenerProtocolVersion ver) {
         this.ctx = ctx;
+
+        this.cliCtx = new SqlClientContext(
+            ctx,
+            distributedJoins,
+            enforceJoinOrder,
+            collocated,
+            replicatedOnly,
+            lazy,
+            skipReducerOnUpdate
+        );
+
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
-        this.distributedJoins = distributedJoins;
-        this.enforceJoinOrder = enforceJoinOrder;
-        this.replicatedOnly = replicatedOnly;
-        this.collocated = collocated;
-        this.lazy = lazy;
-        this.skipReducerOnUpdate = skipReducerOnUpdate;
         this.actx = actx;
         this.nestedTxMode = nestedTxMode;
         this.ver = ver;
@@ -264,6 +255,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             {
                 for (OdbcQueryResults res : qryResults.values())
                     res.closeAll();
+
+                U.close(cliCtx, log);
             }
             finally {
                 busyLock.leaveBusy();
@@ -285,13 +278,13 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
         qry.setArgs(args);
 
-        qry.setDistributedJoins(distributedJoins);
-        qry.setEnforceJoinOrder(enforceJoinOrder);
-        qry.setReplicatedOnly(replicatedOnly);
-        qry.setCollocated(collocated);
-        qry.setLazy(lazy);
+        qry.setDistributedJoins(cliCtx.isDistributedJoins());
+        qry.setEnforceJoinOrder(cliCtx.isEnforceJoinOrder());
+        qry.setReplicatedOnly(cliCtx.isReplicatedOnly());
+        qry.setCollocated(cliCtx.isCollocated());
+        qry.setLazy(cliCtx.isLazy());
         qry.setSchema(schema);
-        qry.setSkipReducerOnUpdate(skipReducerOnUpdate);
+        qry.setSkipReducerOnUpdate(cliCtx.isSkipReducerOnUpdate());
         qry.setNestedTxMode(nestedTxMode);
         qry.setAutoCommit(autoCommit);
 
@@ -317,6 +310,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
         long qryId = QRY_ID_GEN.getAndIncrement();
 
+        assert !cliCtx.isStream();
+
         try {
             String sql = OdbcEscapeUtils.parse(req.sqlQuery());
 
@@ -326,7 +321,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
 
             SqlFieldsQuery qry = makeQuery(req.schema(), sql, req.arguments(), req.timeout(), req.autoCommit());
 
-            List<FieldsQueryCursor<List<?>>> cursors = ctx.query().querySqlFields(qry, true, false);
+            List<FieldsQueryCursor<List<?>>> cursors = ctx.query().querySqlFields(null, qry, cliCtx, true, false);
 
             OdbcQueryResults results = new OdbcQueryResults(cursors, ver);
 
@@ -386,7 +381,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
                 qry.addBatchedArgs(set);
 
             List<FieldsQueryCursor<List<?>>> qryCurs =
-                ctx.query().querySqlFields(qry, true, true);
+                ctx.query().querySqlFields(null, qry, cliCtx, true, true);
 
             List<Long> rowsAffected = new ArrayList<>(req.arguments().length);
 
