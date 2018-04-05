@@ -105,7 +105,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
      */
     public void testApplyingUpdatesFromCompactedWal() throws Exception {
         IgniteEx ig = (IgniteEx)startGrids(3);
-        ig.active(true);
+        ig.cluster().active(true);
 
         IgniteCache<Integer, byte[]> cache = ig.cache("cache");
 
@@ -162,7 +162,8 @@ public class WalCompactionTest extends GridCommonAbstractTest {
             f.delete();
 
         ig = (IgniteEx)startGrids(3);
-        ig.active(true);
+
+        awaitPartitionMapExchange();
 
         cache = ig.cache(CACHE_NAME);
 
@@ -192,7 +193,7 @@ public class WalCompactionTest extends GridCommonAbstractTest {
      */
     public void testSeekingStartInCompactedSegment() throws Exception {
         IgniteEx ig = (IgniteEx)startGrids(3);
-        ig.active(true);
+        ig.cluster().active(true);
 
         IgniteCache<Integer, byte[]> cache = ig.cache("cache");
 
@@ -281,7 +282,8 @@ public class WalCompactionTest extends GridCommonAbstractTest {
             f.delete();
 
         ig = (IgniteEx)startGrids(3);
-        ig.active(true);
+
+        awaitPartitionMapExchange();
 
         cache = ig.cache(CACHE_NAME);
 
