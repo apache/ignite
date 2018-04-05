@@ -1,6 +1,5 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
-import java.util.concurrent.atomic.LongAdder;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -8,12 +7,17 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.pagemem.DataStructureSizeManager;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.INTERNAL;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PURE_DATA;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.TOTAL;
 
 public class SimpleTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
@@ -79,13 +83,13 @@ public class SimpleTest extends GridCommonAbstractTest {
     }
 
     private void printSizes(CacheGroupContext groupContext) {
-        String leftAlignFormat = "| %-7s | %-9d | %-6d | %-20s |%n";
+        String leftAlignFormat = "| %-7s | %-9d | %-6d | %-28s |%n";
 
-        System.out.format("+---------+-----------+--------+----------------------+%n");
-        System.out.format("|  pages  |   bytes   |   kb   |       name           |%n");
-        System.out.format("+---------+-----------+--------+----------------------+%n");
+        System.out.format("+---------+-----------+--------+------------------------------+%n");
+        System.out.format("|  pages  |   bytes   |   kb   |       name                   |%n");
+        System.out.format("+---------+-----------+--------+------------------------------+%n");
 
-        groupContext.getSizes().forEach((k, v) -> {
+        groupContext.getDsMgr().structureSizes().forEach((k, v) -> {
             long size = v.size();
             long byteSize = size * 4096;
             long kbSize = byteSize / 1024;
@@ -95,14 +99,14 @@ public class SimpleTest extends GridCommonAbstractTest {
             else
                 System.out.println("\t[" + size + " b | " + size / 1024 + " kb]" + "  " + k);*/
 
-            if (!k.contains("pure") && !k.contains("internal"))
+            if (!k.contains(PURE_DATA) && !k.contains(INTERNAL) && !k.contains(TOTAL))
                 System.out.format(leftAlignFormat, String.valueOf(v.size()), byteSize, kbSize, k);
             else
                 System.out.format(leftAlignFormat, "N/A", v.size(), v.size() / 1024, k);
 
         });
 
-        System.out.format("+---------+-----------+--------+----------------------+%n");
+        System.out.format("+---------+-----------+--------+------------------------------+%n");
     }
 
     @Override protected void beforeTestsStarted() throws Exception {

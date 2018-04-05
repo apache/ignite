@@ -37,6 +37,7 @@ import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.pagemem.DataStructureSize;
+import org.apache.ignite.internal.pagemem.DataStructureSizeManager;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -156,31 +157,10 @@ public class CacheGroupContext {
     private CacheGroupMetricsMXBeanImpl mxBean;
 
     /** */
-    private final DataStructureSize pkIndexPages;
-
-    /** */
-    private final DataStructureSize indexesPages;
-
-    /** */
-    private final DataStructureSize reuseListPages;
-
-    /** */
-    private final DataStructureSize dataPages;
-
-    /** */
-    private final DataStructureSize pureDataSize;
-
-    /** */
-    private final DataStructureSize internalSize;
-
-    /** */
-    private final DataStructureSize totalPages;
-
-    /** */
-    private final Map<String, DataStructureSize> sizes = new LinkedHashMap<>();
-
-    /** */
     private volatile boolean walEnabled;
+
+    /** */
+    private final DataStructureSizeManager dsMgr;
 
     /**
      * @param grpId Group ID.
@@ -239,67 +219,17 @@ public class CacheGroupContext {
 
         caches = new ArrayList<>();
 
-        String groupName = cacheOrGroupName();
-
-        String pkIndexName = groupName + "-pkIndex";
-        String indexesName = groupName + "-indexes";
-        String reuseListName = groupName + "-reuseList";
-        String pureDataName = groupName + "-pureData";
-        String dataPagesName = groupName + "-data";
-        String internalName = groupName + "-internal";
-        String totalSizeName = groupName + "-partitions";
-
-        int pageSize = dataRegion.pageMemory().pageSize();
-
-        pkIndexPages = simpleTracker(pkIndexName);
-        reuseListPages = simpleTracker(reuseListName);
-        dataPages = simpleTracker(dataPagesName);
-        pureDataSize = simpleTracker(pureDataName);
-        internalSize = simpleTracker(internalName);
-        indexesPages = delegateWithTrackingPages(indexesName, internalSize, pageSize);
-        totalPages = simpleTracker(totalSizeName);
-
-        sizes.put(totalSizeName, totalPages);
-        sizes.put(pkIndexName, pkIndexPages);
-        sizes.put(indexesName, indexesPages);
-        sizes.put(reuseListName, reuseListPages);
-        sizes.put(dataPagesName, dataPages);
-        sizes.put(pureDataName, pureDataSize);
-        sizes.put(internalName, internalSize);
-
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
+
+        dsMgr = new DataStructureSizeManager(this);
     }
 
-    public DataStructureSize getPkIndexPages() {
-        return pkIndexPages;
+    public DataStructureSize dataStructureSize(String name) {
+        return dsMgr.structureSizes().get(cacheOrGroupName() + "-" + name);
     }
 
-    public DataStructureSize getReuseListPages() {
-        return reuseListPages;
-    }
-
-    public DataStructureSize getInternalSize() {
-        return internalSize;
-    }
-
-    public DataStructureSize getDataPages() {
-        return dataPages;
-    }
-
-    public DataStructureSize getPureDataSize() {
-        return pureDataSize;
-    }
-
-    public DataStructureSize getTotalPages() {
-        return totalPages;
-    }
-
-    public DataStructureSize getIndexesPages() {
-        return indexesPages;
-    }
-
-    public Map<String, DataStructureSize> getSizes() {
-        return sizes;
+    public DataStructureSizeManager getDsMgr() {
+        return dsMgr;
     }
 
     /**

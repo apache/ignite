@@ -35,6 +35,17 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.DATA;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.INDEX;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.INDEX_REUSE_LIST;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.INDEX_TREE;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.INTERNAL;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PARTITION;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PK_INDEX;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PURE_DATA;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.REUSE_LIST;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.TOTAL;
+
 /**
  * Management bean that provides access to {@link CacheGroupContext}.
  */
@@ -260,37 +271,51 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public long getIndexesSize() {
-        return ctx.getIndexesPages().size() * pageSize;
+        return ctx.dataStructureSize(INDEX).size() * pageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexesTreeSize() {
+        return ctx.dataStructureSize(INDEX_TREE).size() * pageSize;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getIndexesReuseListSize() {
+        return ctx.dataStructureSize(INDEX_REUSE_LIST).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getPKIndexesSize() {
-        return ctx.getPkIndexPages().size() * pageSize;
+        return ctx.dataStructureSize(PK_INDEX).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getReuseListSize() {
-        return ctx.getReuseListPages().size() * pageSize;
+        return ctx.dataStructureSize(REUSE_LIST).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getPureDataSize() {
-        return ctx.getPureDataSize().size();
+        return ctx.dataStructureSize(PURE_DATA).size();
     }
 
     /** {@inheritDoc} */
     @Override public long getDataSize() {
-        return ctx.getDataPages().size() * pageSize;
+        return ctx.dataStructureSize(DATA).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getInternalSize() {
-        return ctx.getInternalSize().size();
+        return ctx.dataStructureSize(INTERNAL).size();
+    }
+
+    @Override public long getPartitionSize() {
+        return ctx.dataStructureSize(PARTITION).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getTotalSize() {
-        return ctx.getTotalPages().size() * pageSize;
+        return ctx.dataStructureSize(TOTAL).size() * pageSize;
     }
 
     /** {@inheritDoc} */

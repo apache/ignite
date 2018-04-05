@@ -67,7 +67,7 @@ public class IndexStorageImpl implements IndexStorage {
     private final byte allocSpace;
 
     /** */
-    private final DataStructureSize indexesSize;
+    private final DataStructureSize selfSize;
 
     /**
      * @param pageMem Page memory.
@@ -83,7 +83,7 @@ public class IndexStorageImpl implements IndexStorage {
         final ReuseList reuseList,
         final long rootPageId,
         final boolean initNew,
-        final DataStructureSize dsSize
+        final DataStructureSize selfSize
     ) {
         try {
             this.pageMem = pageMem;
@@ -91,7 +91,7 @@ public class IndexStorageImpl implements IndexStorage {
             this.allocPartId = allocPartId;
             this.allocSpace = allocSpace;
             this.reuseList = reuseList;
-            this.indexesSize = dsSize;
+            this.selfSize = selfSize;
 
             metaTree = new MetaTree(
                 grpId,
@@ -105,7 +105,7 @@ public class IndexStorageImpl implements IndexStorage {
                 MetaStoreInnerIO.VERSIONS,
                 MetaStoreLeafIO.VERSIONS,
                 initNew,
-                dsSize
+                selfSize
             );
         }
         catch (IgniteCheckedException e) {
@@ -136,8 +136,8 @@ public class IndexStorageImpl implements IndexStorage {
 
                 pageId = needAllocate ? pageMem.allocatePage(grpId, allocPartId, allocSpace) : pageId;
 
-                if (needAllocate && indexesSize != null)
-                    indexesSize.inc();
+                if (needAllocate && selfSize != null)
+                    selfSize.inc();
 
                 tree.put(new IndexItem(idxNameBytes, pageId));
 
@@ -201,7 +201,7 @@ public class IndexStorageImpl implements IndexStorage {
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
             final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos,
             final boolean initNew,
-            final DataStructureSize ds
+            final DataStructureSize selfSize
         ) throws IgniteCheckedException {
             super(
                 treeName("meta", "Meta"),
@@ -213,7 +213,7 @@ public class IndexStorageImpl implements IndexStorage {
                 reuseList,
                 innerIos,
                 leafIos,
-                ds
+                selfSize
             );
 
             this.allocPartId = allocPartId;
@@ -224,6 +224,9 @@ public class IndexStorageImpl implements IndexStorage {
 
         /** {@inheritDoc} */
         @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+            if (selfPages != null)
+                selfPages.inc();
+
             return pageMem.allocatePage(groupId(), allocPartId, allocSpace);
         }
 
