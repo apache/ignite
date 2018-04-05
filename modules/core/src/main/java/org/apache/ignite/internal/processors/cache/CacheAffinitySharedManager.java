@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -75,6 +77,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Arrays.stream;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
@@ -228,6 +231,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         caches.clear();
 
         caches.init(cacheGroupDescriptors, cacheDescriptors);
+
+        StackTraceElement[] arr = Thread.currentThread().getStackTrace();
+        String msg = stream(arr).map(e -> e.getClassName() + "." + e.getMethodName() + ":" + e.getLineNumber() + "\n")
+                .collect(Collectors.joining(",", "[", "]"));
+        log.info("initCachesOnLocalJoin complete msg=" + msg + ", cacheGroupDescriptors=" + cacheGroupDescriptors +
+        ", cacheDescriptors=" + cacheDescriptors);
     }
 
     /**
@@ -2689,6 +2698,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
           * @param descs Cache descriptor.
          */
         void initStartedCaches(Collection<DynamicCacheDescriptor> descs) {
+
+            StackTraceElement[] arr = Thread.currentThread().getStackTrace();
+            String msg = stream(arr).map(e -> e.getClassName() + "." + e.getMethodName() + ":" + e.getLineNumber() + "\n")
+                    .collect(Collectors.joining(",", "[", "]"));
+            log.info("initStartedCaches descs=" + descs + ", msg=" + msg);
+
             for (DynamicCacheDescriptor desc : descs) {
                 CacheGroupDescriptor grpDesc = desc.groupDescriptor();
 
@@ -2721,6 +2736,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             for (ExchangeActions.CacheActionData req : exchActions.cacheStartRequests())
                 registerCache(req.descriptor());
+
+            StackTraceElement[] arr = Thread.currentThread().getStackTrace();
+            String msg = stream(arr).map(e -> e.getClassName() + "." + e.getMethodName() + ":" + e.getLineNumber() + "\n")
+                    .collect(Collectors.joining(",", "[", "]"));
+            log.info("updateCachesInfo exchActions=" + exchActions + ", msg=" + msg);
         }
 
         /**

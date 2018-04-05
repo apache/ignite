@@ -118,6 +118,7 @@ import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static java.util.Arrays.stream;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_IO_DUMP_ON_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
@@ -440,6 +441,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                 if (locJoinCtx != null) {
                     exchActs = new ExchangeActions();
+
+                    StackTraceElement[] arr = Thread.currentThread().getStackTrace();
+                    String msg = stream(arr).map(e -> e.getClassName() + "." + e.getMethodName() + ":" + e.getLineNumber() + "\n")
+                            .collect(Collectors.joining(",", "[", "]"));
+                    log.info("initCachesOnLocalJoin set locJoinCtx=" + locJoinCtx + ", msg=" + msg);
 
                     exchActs.localJoinContext(locJoinCtx);
                 }
