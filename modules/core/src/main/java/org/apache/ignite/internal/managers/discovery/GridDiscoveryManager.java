@@ -3118,11 +3118,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param allCacheNodes All cache nodes.
      * @param cacheGrpAffNodes Cache group aff nodes.
      * @param rmtNodesWithCaches Rmt nodes with caches.
-     * @param persistenceBlt persistence baseline
+     * @param bltNodes persistence baseline
      */
     private void fillAffinityNodeCaches(List<ClusterNode> allNodes, Map<Integer, List<ClusterNode>> allCacheNodes,
                                         Map<Integer, List<ClusterNode>> cacheGrpAffNodes, Set<ClusterNode> rmtNodesWithCaches,
-                                        Set<UUID> persistenceBlt) {
+                                        Set<UUID> bltNodes) {
         for (ClusterNode node : allNodes) {
             assert node.order() != 0 : "Invalid node order [locNode=" + localNode() + ", node=" + node + ']';
             assert !node.isDaemon();
@@ -3132,7 +3132,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 Integer grpId = e.getKey();
 
                 if (CU.affinityNode(node, grpAff.cacheFilter)) {
-                    if (grpAff.persistent && persistenceBlt != null && !persistenceBlt.contains(node.id())) //filter out
+                    if (grpAff.persistent && bltNodes != null && !bltNodes.contains(node.id())) //Filter out.
                         continue;
                     
                     List<ClusterNode> nodes = cacheGrpAffNodes.get(grpId);

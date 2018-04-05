@@ -116,7 +116,7 @@ public class IgniteChangingBaselineCacheQueryAdditionalNodeSelfTest extends Grid
 
         awaitPartitionMapExchange();
 
-        startGrid(2); //start extra node
+        startGrid(2); //Start extra node.
 
         doQuery();
     }
@@ -147,8 +147,6 @@ public class IgniteChangingBaselineCacheQueryAdditionalNodeSelfTest extends Grid
 
         doQuery();
     }
-
-
 
     /**
      *
