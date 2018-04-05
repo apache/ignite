@@ -21,10 +21,12 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -124,9 +126,7 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         throw new RuntimeException("Could not find port to connect to node " + node);
     }
 
-    /**
-     * Add cache with table to ignite config.
-     */
+    /** Add cache with table to ignite config. */
     private IgniteConfiguration withPrestartedCache(IgniteConfiguration cfg) throws Exception {
         CacheConfiguration<Long, UUID> ccfg = new CacheConfiguration<Long, UUID>(PRESTARTED_CACHE)
             .setIndexedTypes(Long.class, UUID.class).setCacheMode(CacheMode.PARTITIONED);
@@ -136,9 +136,7 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         return cfg;
     }
 
-    /**
-     * Basic negative test.
-     */
+    /** Basic negative test. */
     public void testNonExistingSchemas() {
         assertSchemaMissedOnBothNodes("notExistingSchema");
 
@@ -203,16 +201,47 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         assertSchemaExistOnBothNodes("\"ServerNodeCache\"");
     }
 
-    /** Check that we can connect to node with specified schema */
-    private void assertSchemaExistsOn(String schemaName, IgniteEx node) {
+    /**
+     * Try to connect with quoted empty string schema name ({@code "\"\""}).
+     * Connection with such schema should be rejected by jdbc client.
+     */
+    public void testEmptyEscapedSchemaIsRejectedByClient() {
+        Callable<Void> connect = connectToNodeCommand("\"\"", clientNode);
+
+        GridTestUtils.assertThrows(log, connect, SQLException.class, "Schema cannot be empty sql identifier (\"\")");
+    }
+
+    /**
+     * Command that connects to node, does nothing and closes connection.
+     *
+     * @param schemaName - schema name to use in connection url.
+     * @param node - to what node to connect.
+     * @return Callable command.
+     */
+    private Callable<Void> connectToNodeCommand (String schemaName, IgniteEx node) {
         int port = portOf(node);
 
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + port + "/" + schemaName)) {
-            // do nothing, just connect and close connection.
+        Callable<Void> command = () -> {
+            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + port + "/" + schemaName)) {
+                // do nothing, just connect, possibly get an exception and close connection.
+            }
+
+            return null;
+        };
+
+        return command;
+    }
+
+    /** Check that we can connect to node with specified schema. */
+    private void assertSchemaExistsOn(String schemaName, IgniteEx node) {
+        try  {
+            connectToNodeCommand(schemaName, node).call();
         }
         catch (SQLException sqlEx) {
             throw new AssertionError("Schema " + schemaName + " seems to be missed, but it should exist. " +
                 "Tried to connect to " + node.name() + ".", sqlEx);
+        } catch (Exception unexpected){
+            throw new AssertionError("Unexpected exception have been thrown. Seems to be a environment error.", unexpected);
         }
     }
 
@@ -224,17 +253,10 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         assertSchemaExistsOn(schemaName, serverNode);
     }
 
+
     /** Check that we can't connect to specified node with specified schema */
     private void assertSchemaMissedOn(String incorrectSchema, IgniteEx node) {
-        int port = portOf(node);
-
-        Callable<Void> mustThrow = () -> {
-            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + port + "/" + incorrectSchema)) {
-                // do nothing, just connect, get exception and close connection.
-            }
-
-            return null;
-        };
+        Callable<Void> mustThrow = connectToNodeCommand(incorrectSchema, node);
 
         GridTestUtils.assertThrows(log, mustThrow, SQLException.class, "Schema with name");
     }
