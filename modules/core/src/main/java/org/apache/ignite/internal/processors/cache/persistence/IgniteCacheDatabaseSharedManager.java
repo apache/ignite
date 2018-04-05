@@ -39,6 +39,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
+import org.apache.ignite.internal.pagemem.DataStructureSizeManager;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -82,6 +83,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** Maximum initial size on 32-bit JVM */
     private static final long MAX_PAGE_MEMORY_INIT_SIZE_32_BIT = 2L * 1024 * 1024 * 1024;
+
+    private DataStructureSizeManager dsSizeMgr;
 
     /** */
     protected volatile Map<String, DataRegion> dataRegionMap;
@@ -1009,6 +1012,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         startMemoryPolicies();
 
         initPageMemoryDataStructures(memCfg);
+
+        dsSizeMgr = new DataStructureSizeManager();
     }
 
     /** {@inheritDoc} */
@@ -1054,5 +1059,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void walEnabled(int grpId, boolean enabled) {
         // No-op.
+    }
+
+    public DataStructureSizeManager dataStructureSizeManager() {
+        return dsSizeMgr;
     }
 }

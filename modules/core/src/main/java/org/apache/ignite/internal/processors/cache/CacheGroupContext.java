@@ -68,8 +68,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.simpleTracker;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.delegateWithTrackingPages;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.GROUP;
 
 /**
  *
@@ -188,7 +187,8 @@ public class CacheGroupContext {
         FreeList freeList,
         ReuseList reuseList,
         AffinityTopologyVersion locStartVer,
-        boolean walEnabled
+        boolean walEnabled,
+        DataStructureSizeManager dsSizeMgr
     ) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
@@ -221,15 +221,15 @@ public class CacheGroupContext {
 
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
 
-        dsMgr = new DataStructureSizeManager(this);
+        dsMgr = dsSizeMgr;
+
+        dsMgr.onCacheGroupCreated(this);
     }
 
-    public DataStructureSize dataStructureSize(String name) {
-        return dsMgr.structureSizes().get(cacheOrGroupName() + "-" + name);
-    }
+    public DataStructureSize sizeOf(String name) {
+        String grpName = cacheOrGroupName();
 
-    public DataStructureSizeManager getDsMgr() {
-        return dsMgr;
+        return dsMgr.structureSizes(GROUP + "-" + grpName).get(grpName + "-" + name);
     }
 
     /**

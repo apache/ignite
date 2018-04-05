@@ -69,6 +69,8 @@ import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.pagemem.DataStructureSize;
+import org.apache.ignite.internal.pagemem.DataStructureSizeManager;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -1963,8 +1965,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         DataRegion memPlc = sharedCtx.database().dataRegion(memPlcName);
         FreeList freeList = sharedCtx.database().freeList(memPlcName);
         ReuseList reuseList = sharedCtx.database().reuseList(memPlcName);
+        DataStructureSizeManager dsSizeMgr = sharedCtx.database().dataStructureSizeManager();
 
-        CacheGroupContext grp = new CacheGroupContext(sharedCtx,
+        CacheGroupContext grp = new CacheGroupContext(
+            sharedCtx,
             desc.groupId(),
             desc.receivedFrom(),
             cacheType,
@@ -1975,7 +1979,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             freeList,
             reuseList,
             exchTopVer,
-            desc.walEnabled()
+            desc.walEnabled(),
+            dsSizeMgr
         );
 
         for (Object obj : grp.configuredUserObjects())

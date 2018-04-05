@@ -121,7 +121,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.wal(),
             reuseListRoot.pageId().pageId(),
             reuseListRoot.isAllocated(),
-            merge(grp.dataStructureSize(INDEX_REUSE_LIST), grp.dataStructureSize(INDEX))
+            merge(grp.sizeOf(INDEX_REUSE_LIST), grp.sizeOf(INDEX))
         );
 
         RootPage metastoreRoot = metas.treeRoot;
@@ -136,7 +136,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             reuseList,
             metastoreRoot.pageId().pageId(),
             metastoreRoot.isAllocated(),
-            merge(grp.dataStructureSize(INDEX_TREE), grp.dataStructureSize(INDEX))
+            merge(grp.sizeOf(INDEX_TREE), grp.sizeOf(INDEX))
         );
 
         ((GridCacheDatabaseSharedManager)ctx.database()).addCheckpointListener(this);
@@ -149,7 +149,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             Integer size = store.cacheOrGroupCfgSize(grp.cacheOrGroupName());
 
             if (size != null)
-                grp.dataStructureSize(INTERNAL).add(size);
+                grp.sizeOf(INTERNAL).add(size);
         }
     }
 
@@ -170,7 +170,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     pendingRootPage.pageId().pageId(),
                     reuseList,
                     pendingRootPage.isAllocated(),
-                    merge(grp.dataStructureSize(INDEX_TREE), grp.dataStructureSize(INDEX))
+                    merge(grp.sizeOf(INDEX_TREE), grp.sizeOf(INDEX))
                 );
             }
             finally {
@@ -472,7 +472,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         if (init && !sizes.isEmpty()){
             cntrsPageId = pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
 
-            grp.dataStructureSize(INDEX_TREE).inc();
+            grp.sizeOf(INDEX_TREE).inc();
         }
 
         long nextId = cntrsPageId;
@@ -509,7 +509,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         nextId = pageMem.allocatePage(grpId, partId, PageIdAllocator.FLAG_DATA);
                         partCntrIo.setNextCountersPageId(curAddr, nextId);
 
-                        grp.dataStructureSize(INDEX_TREE).inc();
+                        grp.sizeOf(INDEX_TREE).inc();
                     }
                 }
                 finally {
@@ -759,7 +759,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     reuseListRoot = pageMem.allocatePage(grpId, PageIdAllocator.INDEX_PARTITION, PageMemory.FLAG_IDX);
 
                     /* FileStoreHeader,MetaPage,TreeRoot,ReuseListRoot */
-                    grp.dataStructureSize(INTERNAL).add(pageMem.pageSize() * 4);
+                    grp.sizeOf(INTERNAL).add(pageMem.pageSize() * 4);
 
                     pageIO.setTreeRoot(pageAddr, metastoreRoot);
                     pageIO.setReuseListRoot(pageAddr, reuseListRoot);
@@ -1163,23 +1163,23 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     int pageSize = grp.dataRegion().pageMemory().pageSize();
 
                     DataStructureSize pkIndexPages = delegateTracker(
-                        partName + "-" + PK_INDEX, grp.dataStructureSize(PK_INDEX));
+                        partName + "-" + PK_INDEX, grp.sizeOf(PK_INDEX));
 
                     DataStructureSize reuseListPages = delegateTracker(
-                        partName + "-" + REUSE_LIST, grp.dataStructureSize(REUSE_LIST));
+                        partName + "-" + REUSE_LIST, grp.sizeOf(REUSE_LIST));
 
                     DataStructureSize dataPages = delegateTracker(
-                        partName + "-" + DATA, grp.dataStructureSize(DATA));
+                        partName + "-" + DATA, grp.sizeOf(DATA));
 
                     DataStructureSize pureDataSize = delegateTracker(
-                        partName + "-" + PURE_DATA, grp.dataStructureSize(PURE_DATA));
+                        partName + "-" + PURE_DATA, grp.sizeOf(PURE_DATA));
 
                     DataStructureSize internalSize = delegateTracker(
-                        partName + "-" + INTERNAL, grp.dataStructureSize(INTERNAL));
+                        partName + "-" + INTERNAL, grp.sizeOf(INTERNAL));
 
                     DataStructureSize partitionPages = merge(
                         delegateWithTrackingPages(partName + "-" + PARTITION, internalSize, pageSize),
-                        grp.dataStructureSize(PARTITION)
+                        grp.sizeOf(PARTITION)
                     );
 
                     freeList = new CacheFreeList(
@@ -1320,7 +1320,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         reuseListRoot = pageMem.allocatePage(grpId, partId, PageMemory.FLAG_DATA);
 
                         /* FileStoreHeader,MetaPage,TreeRoot,ReuseListRoot */
-                        grp.dataStructureSize(INTERNAL).add(pageMem.pageSize() * 4);
+                        grp.sizeOf(INTERNAL).add(pageMem.pageSize() * 4);
 
                         assert PageIdUtils.flag(treeRoot) == PageMemory.FLAG_DATA;
                         assert PageIdUtils.flag(reuseListRoot) == PageMemory.FLAG_DATA;

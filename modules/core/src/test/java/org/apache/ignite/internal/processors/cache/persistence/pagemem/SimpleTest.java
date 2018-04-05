@@ -15,6 +15,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.GROUP;
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.INTERNAL;
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PURE_DATA;
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.TOTAL;
@@ -60,7 +61,7 @@ public class SimpleTest extends GridCommonAbstractTest {
 
         printSizes(groupContext);
 
-        for (int i = 0; i < 1; i++)
+        for (int i = 0; i < 1_000_000; i++)
             cache.put(i, i);
 
         System.out.println("After put");
@@ -72,7 +73,7 @@ public class SimpleTest extends GridCommonAbstractTest {
 
         db.waitForCheckpoint(null);
 
-        for (int i = 0; i < 1; i++)
+        for (int i = 0; i < 1_000_000; i++)
             cache.remove(i);
 
         System.out.println("After remove");
@@ -83,16 +84,19 @@ public class SimpleTest extends GridCommonAbstractTest {
     }
 
     private void printSizes(CacheGroupContext groupContext) {
-        String leftAlignFormat = "| %-7s | %-9d | %-6d | %-28s |%n";
+        String leftAlignFormat = "| %-7s | %-9d | %-6d | %-6d | %-28s |%n";
 
-        System.out.format("+---------+-----------+--------+------------------------------+%n");
-        System.out.format("|  pages  |   bytes   |   kb   |       name                   |%n");
-        System.out.format("+---------+-----------+--------+------------------------------+%n");
+        System.out.format("+---------+-----------+--------+--------+------------------------------+%n");
+        System.out.format("|  pages  |   bytes   |   kb   |   mb   |       name                   |%n");
+        System.out.format("+---------+-----------+--------+--------+------------------------------+%n");
 
-        groupContext.getDsMgr().structureSizes().forEach((k, v) -> {
+        DataStructureSizeManager dsSize = groupContext.shared().database().dataStructureSizeManager();
+
+        dsSize.structureSizes(GROUP + "-" + groupContext.cacheOrGroupName()).forEach((k, v) -> {
             long size = v.size();
             long byteSize = size * 4096;
             long kbSize = byteSize / 1024;
+            long mbSize = kbSize / 1024;
 
           /*  if (!k.contains("pure") && !k.contains("internal"))
                 System.out.println("\t[" + v.size() + " pages | " + byteSize + " b | " + kbSize + " kb]" + "  " + k);
@@ -100,13 +104,13 @@ public class SimpleTest extends GridCommonAbstractTest {
                 System.out.println("\t[" + size + " b | " + size / 1024 + " kb]" + "  " + k);*/
 
             if (!k.contains(PURE_DATA) && !k.contains(INTERNAL) && !k.contains(TOTAL))
-                System.out.format(leftAlignFormat, String.valueOf(v.size()), byteSize, kbSize, k);
+                System.out.format(leftAlignFormat, String.valueOf(v.size()), byteSize, kbSize, mbSize, k);
             else
-                System.out.format(leftAlignFormat, "N/A", v.size(), v.size() / 1024, k);
+                System.out.format(leftAlignFormat, "N/A", v.size(), v.size() / 1024, (v.size() / 1024) / 1024, k);
 
         });
 
-        System.out.format("+---------+-----------+--------+------------------------------+%n");
+        System.out.format("+---------+-----------+--------+--------+------------------------------+%n");
     }
 
     @Override protected void beforeTestsStarted() throws Exception {

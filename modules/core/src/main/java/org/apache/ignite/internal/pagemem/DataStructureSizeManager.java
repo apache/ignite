@@ -9,6 +9,15 @@ import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingP
 
 public class DataStructureSizeManager {
     /** */
+    public static final String GROUP = "group";
+
+    /** */
+    public static final String REGION = "region";
+
+    /** */
+    public static final String NODE = "node";
+
+    /** */
     public static final String TOTAL = "total";
 
     /** */
@@ -39,88 +48,16 @@ public class DataStructureSizeManager {
     public static final String INTERNAL = "internal";
 
     /** */
-    private final Map<String, DataStructureSize> sizes = new LinkedHashMap<>();
+    private final Map<String, DataStructureHolder> sizes = new LinkedHashMap<>();
 
-    /** */
-    private final String grpName;
+    public void onCacheGroupCreated(CacheGroupContext grpCtx){
+        String cacheOrGroupName = grpCtx.cacheOrGroupName();
 
-    private final int pageSize;
-
-    /**
-     * @param grpCtx Cache group context.
-     */
-    public DataStructureSizeManager(CacheGroupContext grpCtx) {
-        grpName = grpCtx.cacheOrGroupName();
-
-        pageSize = grpCtx.dataRegion().pageMemory().pageSize();
-
-        String indexesTree = grpName + "-" + INDEX_TREE;
-        String indexesReuseList = grpName + "-" + INDEX_REUSE_LIST;
-
-        DataStructureSize indexesTreePages = simpleTracker(indexesTree);
-        DataStructureSize indexesReuseListPages = simpleTracker(indexesReuseList);
-
-        sizes.put(indexesTree, indexesTreePages);
-        sizes.put(indexesReuseList, indexesReuseListPages);
-
-        String pkIndex = grpName + "-" + PK_INDEX;
-        String reuseList = grpName + "-" + REUSE_LIST;
-        String data = grpName + "-" + DATA;
-        String pureData = grpName + "-" + PURE_DATA;
-
-        DataStructureSize pkIndexPages = simpleTracker(pkIndex);
-        DataStructureSize reuseListPages = simpleTracker(reuseList);
-        DataStructureSize dataPages = simpleTracker(data);
-        DataStructureSize pureDataSize = simpleTracker(pureData);
-
-        sizes.put(pkIndex, pkIndexPages);
-        sizes.put(reuseList, reuseListPages);
-        sizes.put(data, dataPages);
-        sizes.put(pureData, pureDataSize);
-
-        // Internal size.
-        String internal = grpName + "-" + INTERNAL;
-
-        DataStructureSize internalSize = simpleTracker(internal);
-
-        sizes.put(internal, internalSize);
-
-        // Index size.
-        String indexesTotal = grpName + "-" + INDEX;
-
-        DataStructureSize indexTotalPages = delegateWithTrackingPages(indexesTotal, internalSize, pageSize);
-
-        sizes.put(indexesTotal, indexTotalPages);
-
-        // Partitions size.
-        String partitionTotal = grpName + "-" + PARTITION;
-
-        DataStructureSize partitionTotalPages = simpleTracker(partitionTotal);
-
-        sizes.put(partitionTotal, partitionTotalPages);
-
-        // Total size.
-        final String total = grpName + "-" + TOTAL;
-
-        DataStructureSize totalPages = new DataStructureSizeAdapter() {
-            @Override public long size() {
-                return (indexTotalPages.size() + partitionTotalPages.size()) * pageSize + internalSize.size();
-            }
-
-            @Override public String name() {
-                return total;
-            }
-        };
-
-        sizes.put(total, totalPages);
+        sizes.put(GROUP + "-" + cacheOrGroupName, new DataStructureHolder(cacheOrGroupName, grpCtx.dataRegion().pageMemory().pageSize()));
     }
 
-    private DataStructureSize dataStructureSize(String name) {
-        return sizes.get(grpName + "-" + name);
-    }
-
-    public Map<String, DataStructureSize> structureSizes() {
-        return sizes;
+    public Map<String, DataStructureSize> structureSizes(String structureName) {
+        return sizes.get(structureName).sizes;
     }
 
     public static DataStructureSize delegateWithTrackingPages(
@@ -292,5 +229,72 @@ public class DataStructureSizeManager {
                 return name;
             }
         };
+    }
+
+    public static class DataStructureHolder {
+        /** */
+        private final Map<String, DataStructureSize> sizes = new LinkedHashMap<>();
+
+        public DataStructureHolder(String name, int pageSize) {
+            String indexesTree = name + "-" + INDEX_TREE;
+            String indexesReuseList = name + "-" + INDEX_REUSE_LIST;
+
+            DataStructureSize indexesTreePages = simpleTracker(indexesTree);
+            DataStructureSize indexesReuseListPages = simpleTracker(indexesReuseList);
+
+            sizes.put(indexesTree, indexesTreePages);
+            sizes.put(indexesReuseList, indexesReuseListPages);
+
+            String pkIndex = name + "-" + PK_INDEX;
+            String reuseList = name + "-" + REUSE_LIST;
+            String data = name + "-" + DATA;
+            String pureData = name + "-" + PURE_DATA;
+
+            DataStructureSize pkIndexPages = simpleTracker(pkIndex);
+            DataStructureSize reuseListPages = simpleTracker(reuseList);
+            DataStructureSize dataPages = simpleTracker(data);
+            DataStructureSize pureDataSize = simpleTracker(pureData);
+
+            sizes.put(pkIndex, pkIndexPages);
+            sizes.put(reuseList, reuseListPages);
+            sizes.put(data, dataPages);
+            sizes.put(pureData, pureDataSize);
+
+            // Internal size.
+            String internal = name + "-" + INTERNAL;
+
+            DataStructureSize internalSize = simpleTracker(internal);
+
+            sizes.put(internal, internalSize);
+
+            // Index size.
+            String indexesTotal = name + "-" + INDEX;
+
+            DataStructureSize indexTotalPages = delegateWithTrackingPages(indexesTotal, internalSize, pageSize);
+
+            sizes.put(indexesTotal, indexTotalPages);
+
+            // Partitions size.
+            String partitionTotal = name + "-" + PARTITION;
+
+            DataStructureSize partitionTotalPages = simpleTracker(partitionTotal);
+
+            sizes.put(partitionTotal, partitionTotalPages);
+
+            // Total size.
+            final String total = name + "-" + TOTAL;
+
+            DataStructureSize totalPages = new DataStructureSizeAdapter() {
+                @Override public long size() {
+                    return (indexTotalPages.size() + partitionTotalPages.size()) * pageSize + internalSize.size();
+                }
+
+                @Override public String name() {
+                    return total;
+                }
+            };
+
+            sizes.put(total, totalPages);
+        }
     }
 }

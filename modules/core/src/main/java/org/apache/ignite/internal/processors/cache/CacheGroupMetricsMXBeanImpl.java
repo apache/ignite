@@ -271,51 +271,51 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public long getIndexesSize() {
-        return ctx.dataStructureSize(INDEX).size() * pageSize;
+        return ctx.sizeOf(INDEX).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getIndexesTreeSize() {
-        return ctx.dataStructureSize(INDEX_TREE).size() * pageSize;
+        return ctx.sizeOf(INDEX_TREE).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getIndexesReuseListSize() {
-        return ctx.dataStructureSize(INDEX_REUSE_LIST).size() * pageSize;
+        return ctx.sizeOf(INDEX_REUSE_LIST).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getPKIndexesSize() {
-        return ctx.dataStructureSize(PK_INDEX).size() * pageSize;
+        return ctx.sizeOf(PK_INDEX).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getReuseListSize() {
-        return ctx.dataStructureSize(REUSE_LIST).size() * pageSize;
+        return ctx.sizeOf(REUSE_LIST).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getPureDataSize() {
-        return ctx.dataStructureSize(PURE_DATA).size();
+        return ctx.sizeOf(PURE_DATA).size();
     }
 
     /** {@inheritDoc} */
     @Override public long getDataSize() {
-        return ctx.dataStructureSize(DATA).size() * pageSize;
+        return ctx.sizeOf(DATA).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getInternalSize() {
-        return ctx.dataStructureSize(INTERNAL).size();
+        return ctx.sizeOf(INTERNAL).size();
     }
 
     @Override public long getPartitionSize() {
-        return ctx.dataStructureSize(PARTITION).size() * pageSize;
+        return ctx.sizeOf(PARTITION).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getTotalSize() {
-        return ctx.dataStructureSize(TOTAL).size() * pageSize;
+        return ctx.sizeOf(TOTAL).size() * pageSize;
     }
 
     /** {@inheritDoc} */
