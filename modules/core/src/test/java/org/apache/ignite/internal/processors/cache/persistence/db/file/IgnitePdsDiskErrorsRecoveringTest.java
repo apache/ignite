@@ -35,10 +35,11 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -371,6 +372,16 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             byte[] actualData = (byte[]) recoveredGrid.cache(CACHE_NAME).get(i);
             Assert.assertArrayEquals(data, actualData);
         }
+    }
+
+    /**
+     * Use stop node on critical error handler for this test class.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @return Failure handler instance.
+     */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new StopNodeFailureHandler();
     }
 
     /**

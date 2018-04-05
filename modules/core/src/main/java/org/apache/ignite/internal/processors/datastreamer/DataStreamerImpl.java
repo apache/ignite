@@ -44,6 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import javax.cache.CacheException;
 import javax.cache.expiry.ExpiryPolicy;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
@@ -570,7 +571,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             activeFuts.add(resFut);
 
             Collection<KeyCacheObjectWrapper> keys =
-                new GridConcurrentHashSet<>(entries.size(), U.capacity(entries.size()), 1);
+                new GridConcurrentHashSet<>(entries.size());
 
             Collection<DataStreamerEntry> entries0 = new ArrayList<>(entries.size());
 
@@ -629,7 +630,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
             Collection<KeyCacheObjectWrapper> keys = null;
 
             if (entries.size() > 1) {
-                keys = new GridConcurrentHashSet<>(entries.size(), U.capacity(entries.size()), 1);
+                keys = new GridConcurrentHashSet<>(entries.size());
 
                 for (DataStreamerEntry entry : entries)
                     keys.add(new KeyCacheObjectWrapper(entry.getKey()));
@@ -1752,7 +1753,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         topicBytes = U.marshal(ctx, topic);
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to marshal (request will not be sent).", e);
+                    U.error(log, "Failed to marshal.", e);
+
+                    curFut.onDone(new IgniteException("Failed to marshal.", e));
 
                     return;
                 }
@@ -1770,8 +1773,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             cache.context().deploy().onEnter();
                     }
                     catch (IgniteCheckedException e) {
-                        U.error(log, "Failed to deploy class (request will not be sent): " +
-                            jobPda0.deployClass(), e);
+                        U.error(log, "Failed to deploy class: " + jobPda0.deployClass(), e);
+
+                        curFut.onDone(new IgniteException("Failed to deploy class: " + jobPda0.deployClass(), e));
 
                         return;
                     }
@@ -2107,16 +2111,16 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                             expiryTime = CU.toExpireTime(ttl);
                         }
 
-                    boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
+                        boolean primary = cctx.affinity().primaryByKey(cctx.localNode(), entry.key(), topVer);
 
-                    entry.initialValue(e.getValue(),
-                        ver,
-                        ttl,
-                        expiryTime,
-                        false,
-                        topVer,
-                        primary ? GridDrType.DR_LOAD : GridDrType.DR_PRELOAD,
-                        false);
+                        entry.initialValue(e.getValue(),
+                            ver,
+                            ttl,
+                            expiryTime,
+                            false,
+                            topVer,
+                            primary ? GridDrType.DR_LOAD : GridDrType.DR_PRELOAD,
+                            false);
 
                         cctx.evicts().touch(entry, topVer);
 
@@ -2131,7 +2135,11 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         // No-op.
                     }
                     catch (IgniteCheckedException ex) {
-                        throw new IgniteException("Failed to set initial value for cache entry", ex);
+                        IgniteLogger log = cache.unwrap(Ignite.class).log();
+
+                        U.error(log, "Failed to set initial value for cache entry: " + e, ex);
+
+                        throw new IgniteException("Failed to set initial value for cache entry.", ex);
                     }
                     finally {
                         cctx.shared().database().checkpointReadUnlock();
@@ -2152,7 +2160,9 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         cctx.shared().wal().flush(null, false);
                 }
                 catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to write preloaded entries into write-ahead log: " + e, e);
+                    U.error(log, "Failed to write preloaded entries into write-ahead log.", e);
+
+                    throw new IgniteException("Failed to write preloaded entries into write-ahead log.", e);
                 }
             }
         }
