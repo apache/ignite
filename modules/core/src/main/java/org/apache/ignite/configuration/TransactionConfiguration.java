@@ -217,7 +217,7 @@ public class TransactionConfiguration implements Serializable {
     }
 
     /**
-     * Sets transaction timeout for partition map synchronization.
+     * Sets transaction timeout on partition map synchronization.
      *
      * @param txTimeoutOnPartMapSync Transaction timeout value in milliseconds.
      * @return {@code this} for chaining.
