@@ -801,9 +801,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
             long updCntr = cntrMap.updateCounter(p);
 
-            if (grp.persistenceEnabled())
-                loc.own();
-
             if (updCntr != 0)
                 loc.updateCounter(updCntr);
 

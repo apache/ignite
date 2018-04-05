@@ -222,6 +222,10 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
             // TODO ignite-db
             throw new IgniteException(e);
         }
+
+        // Create partitions in OWNING state by default in case of persistence is enabled.
+        if (grp.persistenceEnabled())
+            state.set((long) OWNING.ordinal() << 32);
     }
 
     /**
