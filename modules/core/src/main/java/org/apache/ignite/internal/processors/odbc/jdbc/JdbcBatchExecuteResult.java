@@ -36,10 +36,18 @@ public class JdbcBatchExecuteResult extends JdbcResult {
     private String errMsg;
 
     /**
-     * Condtructor.
+     * Constructor.
      */
     public JdbcBatchExecuteResult() {
         super(BATCH_EXEC);
+    }
+
+    /**
+     * Constructor for child results.
+     * @param type Result type.
+     */
+    protected JdbcBatchExecuteResult(byte type) {
+        super(type);
     }
 
     /**
@@ -53,6 +61,18 @@ public class JdbcBatchExecuteResult extends JdbcResult {
         this.updateCnts = updateCnts;
         this.errCode = errCode;
         this.errMsg = errMsg;
+    }
+
+    /**
+     * @param type Result type.
+     * @param res Result.
+     */
+    protected JdbcBatchExecuteResult(byte type, JdbcBatchExecuteResult res) {
+        super(type);
+
+        this.updateCnts = res.updateCnts;
+        this.errCode = res.errCode;
+        this.errMsg = res.errMsg;
     }
 
     /**

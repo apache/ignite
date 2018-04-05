@@ -31,6 +31,7 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.jdbc2.JdbcStreamingSelfTest;
 import org.apache.ignite.internal.processors.query.GridQueryCancel;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -45,7 +46,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
     /** */
-    private int batchSize = 17;
+    protected int batchSize = 17;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -54,6 +55,16 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
         super.beforeTestsStarted();
 
         batchSize = 17;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        // Init IndexingWithContext.cliCtx
+        try (Connection c = createOrdinaryConnection()) {
+            execute(c, "SELECT 1");
+        }
     }
 
     /** {@inheritDoc} */
@@ -330,7 +341,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
             U.sleep(500);
 
-            assertEquals((Integer)111, U.field(conn, "streamBatchSize"));
+            assertEquals((Integer)111, U.field((Object)U.field(conn, "streamState"), "streamBatchSize"));
 
             SqlClientContext cliCtx = sqlClientContext();
 
@@ -418,7 +429,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
     /**
      * Check that there's nothing in cache.
      */
-    private void assertCacheEmpty() {
+    protected void assertCacheEmpty() {
         assertEquals(0, cache().size(CachePeekMode.ALL));
     }
 
@@ -427,7 +438,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
      * @param sql Statement.
      * @throws SQLException if failed.
      */
-    private static void execute(Connection conn, String sql) throws SQLException {
+    protected static void execute(Connection conn, String sql) throws SQLException {
         try (Statement s = conn.createStatement()) {
             s.execute(sql);
         }
@@ -444,9 +455,10 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
     /**
      * Check that streaming state on target node is as expected.
+     *
      * @param on Expected streaming state.
      */
-    private void assertStreamingState(boolean on) {
+    protected void assertStreamingState(boolean on) {
         SqlClientContext cliCtx = sqlClientContext();
 
         assertEquals(on, cliCtx.isStream());
@@ -462,7 +474,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
     /**
      *
      */
-    private static final class IndexingWithContext extends IgniteH2Indexing {
+    static final class IndexingWithContext extends IgniteH2Indexing {
         /** Client context. */
         static SqlClientContext cliCtx;
 

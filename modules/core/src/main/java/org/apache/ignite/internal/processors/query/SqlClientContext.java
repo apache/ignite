@@ -20,10 +20,15 @@ package org.apache.ignite.internal.processors.query;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.concurrent.locks.LockSupport;
+import javax.cache.configuration.Factory;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
+import org.apache.ignite.thread.IgniteThread;
 
 /**
  * Container for connection properties passed by various drivers (JDBC drivers, possibly ODBC) having notion of an
@@ -32,6 +37,9 @@ import org.apache.ignite.internal.util.typedef.internal.U;
  * see JDBC thin driver
  */
 public class SqlClientContext implements AutoCloseable {
+    /** Worker thread join timeout. */
+    private static final long WORKER_THREAD_JOIN_TIMEOUT = 10_000;
+
     /** Kernal context. */
     private final GridKernalContext ctx;
 
@@ -68,11 +76,18 @@ public class SqlClientContext implements AutoCloseable {
     /** Streamers for various caches. */
     private Map<String, IgniteDataStreamer<?, ?>> streamers;
 
+    /** Ordered batch thread. */
+    private IgniteThread orderedBatchThread;
+
+    /** Ordered batch worker factory. */
+    private Factory<GridWorker> orderedBatchWorkerFactory;
+
     /** Logger. */
     private final IgniteLogger log;
 
     /**
      * @param ctx Kernal context.
+     * @param orderedBatchWorkerFactory Ordered batch worker factory.
      * @param distributedJoins Distributed joins flag.
      * @param enforceJoinOrder Enforce join order flag.
      * @param collocated Collocated flag.
@@ -80,9 +95,11 @@ public class SqlClientContext implements AutoCloseable {
      * @param lazy Lazy query execution flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
      */
-    public SqlClientContext(GridKernalContext ctx, boolean distributedJoins, boolean enforceJoinOrder,
+    public SqlClientContext(GridKernalContext ctx, Factory<GridWorker> orderedBatchWorkerFactory,
+        boolean distributedJoins, boolean enforceJoinOrder,
         boolean collocated, boolean replicatedOnly, boolean lazy, boolean skipReducerOnUpdate) {
         this.ctx = ctx;
+        this.orderedBatchWorkerFactory = orderedBatchWorkerFactory;
         this.distributedJoins = distributedJoins;
         this.enforceJoinOrder = enforceJoinOrder;
         this.collocated = collocated;
@@ -100,8 +117,10 @@ public class SqlClientContext implements AutoCloseable {
      * @param flushFreq Flush frequency for streamers.
      * @param perNodeBufSize Per node streaming buffer size.
      * @param perNodeParOps Per node streaming parallel operations number.
+     * @param ordered Ordered stream flag.
      */
-    public void enableStreaming(boolean allowOverwrite, long flushFreq, int perNodeBufSize, int perNodeParOps) {
+    public void enableStreaming(boolean allowOverwrite, long flushFreq, int perNodeBufSize,
+        int perNodeParOps, boolean ordered) {
         if (isStream())
             return;
 
@@ -111,7 +130,24 @@ public class SqlClientContext implements AutoCloseable {
         this.streamFlushTimeout = flushFreq;
         this.streamNodeBufSize = perNodeBufSize;
         this.streamNodeParOps = perNodeParOps;
+
+        if (ordered) {
+            orderedBatchThread = new IgniteThread(orderedBatchWorkerFactory.create());
+
+            orderedBatchThread.start();
+        }
     }
+
+    /**
+     * Unpark ordered worker thread.
+     */
+    public void nextOrderedBatchReady() {
+        if (isStream())
+            return;
+
+        LockSupport.unpark(orderedBatchThread);
+    }
+
 
     /**
      * Turn off streaming on this client context - with closing all open streamers, if any.
@@ -131,6 +167,8 @@ public class SqlClientContext implements AutoCloseable {
         }
 
         streamers = null;
+
+        orderedBatchThread = null;
     }
 
     /**
@@ -220,4 +258,5 @@ public class SqlClientContext implements AutoCloseable {
         for (IgniteDataStreamer<?, ?> s : streamers.values())
             U.close(s, log);
     }
+
 }

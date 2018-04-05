@@ -24,20 +24,28 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.sql.BatchUpdateException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerNioListener;
 import org.apache.ignite.internal.processors.odbc.ClientListenerProtocolVersion;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
+import org.apache.ignite.internal.processors.odbc.ClientListenerResponse;
 import org.apache.ignite.internal.processors.odbc.SqlStateCode;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcBatchExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteRequest;
+import org.apache.ignite.internal.processors.odbc.jdbc.JdbcOrderedBatchExecuteResult;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQuery;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryCloseRequest;
 import org.apache.ignite.internal.processors.odbc.jdbc.JdbcQueryFetchRequest;
@@ -48,7 +56,9 @@ import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteProductVersion;
+import org.apache.ignite.thread.IgniteThread;
 
 /**
  * JDBC IO layer implementation based on blocking IPC streams.
@@ -90,6 +100,9 @@ public class JdbcThinTcpIo {
     /** Initial output for query close message. */
     private static final int QUERY_CLOSE_MSG_SIZE = 9;
 
+    /** Will wait when queue size will be less the maximum to send next request. */
+    private static final int MAX_RECV_RESPONCE_QUEUE_SIZE = 10;
+
     /** Random. */
     private static final Random RND = new Random(U.currentTimeMillis());
 
@@ -113,6 +126,21 @@ public class JdbcThinTcpIo {
 
     /** Address index. */
     private int srvIdx;
+
+    /** Async reader error. */
+    private volatile SQLException asyncReaderErr;
+
+    /** Async response reader thread. */
+    private Thread asyncResponseReaderThread;
+
+    /** Received responses. */
+    private final PriorityBlockingQueue<Long> recvResponseOrderQueue = new PriorityBlockingQueue<>();
+
+    /** Stop async read. */
+    private volatile boolean stopAsyncRead;
+
+    /** Last response order. */
+    private long lastRespOrder = -1;
 
     /**
      * Constructor.
@@ -143,6 +171,8 @@ public class JdbcThinTcpIo {
         List<String> inaccessibleAddrs = null;
 
         List<Exception> exceptions = null;
+
+        asyncReaderErr = null;
 
         HostAndPortRange[] srvs = connProps.getAddresses();
 
@@ -396,6 +426,32 @@ public class JdbcThinTcpIo {
 
     /**
      * @param req Request.
+     * @throws IOException In case of IO error.
+     * @throws SQLException On error.
+     */
+    void sendBatchRequestWithAsyncResponse(JdbcOrderedBatchExecuteRequest req) throws IOException, SQLException {
+        if (!igniteVer.greaterThanEqual(2, 5, 0)) {
+            throw new SQLException("Streaming without response doesn't supported by server [driverProtocolVer=" + CURRENT_VER +
+                ", remoteNodeVer=" + igniteVer + ']', SqlStateCode.INTERNAL_ERROR);
+        }
+
+        if (asyncReaderErr != null)
+            throw asyncReaderErr;
+
+        while (recvResponseOrderQueue.size() > MAX_RECV_RESPONCE_QUEUE_SIZE)
+            LockSupport.parkNanos(1000);
+
+        int cap = guessCapacity(req);
+
+        BinaryWriterExImpl writer = new BinaryWriterExImpl(null, new BinaryHeapOutputStream(cap), null, null);
+
+        req.writeBinary(writer);
+
+        send(writer.array());
+    }
+
+    /**
+     * @param req Request.
      * @return Server response.
      * @throws IOException In case of IO error.
      */
@@ -514,6 +570,8 @@ public class JdbcThinTcpIo {
             endpoint.close();
 
         closed = true;
+
+        stopAsyncResponseReader();
     }
 
     /**
@@ -528,5 +586,90 @@ public class JdbcThinTcpIo {
      */
     IgniteProductVersion igniteVersion() {
         return igniteVer;
+    }
+
+    /**
+     *
+     */
+    void startAsyncResponseReader() {
+        stopAsyncRead = false;
+
+        lastRespOrder = -1;
+
+        asyncResponseReaderThread = new Thread(new AsyncResponseReceiver());
+
+        asyncResponseReaderThread.start();
+    }
+
+    /**
+     *
+     */
+    void stopAsyncResponseReader() {
+        System.out.println("+++ stopAsyncResponseReader");
+        stopAsyncRead = true;
+
+        if (asyncResponseReaderThread != null)
+            asyncResponseReaderThread.interrupt();
+    }
+
+    /**
+     * Await response with specified order.
+     *
+     * @param order Order.
+     */
+    void waitResponse(long order) {
+        while (order != lastRespOrder) {
+            LockSupport.parkNanos(1000);
+
+            System.out.println("+++ WAIT " + order + " / " + lastRespOrder);
+        }
+    }
+
+    /**
+     *
+     */
+    private class AsyncResponseReceiver implements Runnable {
+        /** {@inheritDoc} */
+        @Override public void run() {
+            try {
+                long nextOrder = 0;
+
+                while (!stopAsyncRead) {
+                    BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),
+                        null, null, false);
+
+                    JdbcResponse resp = new JdbcResponse();
+
+                    resp.readBinary(reader);
+
+                    if (resp.response() instanceof JdbcOrderedBatchExecuteResult) {
+                        JdbcOrderedBatchExecuteResult res = (JdbcOrderedBatchExecuteResult)resp.response();
+
+                        System.out.println("+++ RESP " + res.order()) ;
+
+                        recvResponseOrderQueue.put(res.order());
+
+                        if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
+                            asyncReaderErr = new BatchUpdateException(res.errorMessage(),
+                                IgniteQueryErrorCode.codeToSqlState(res.errorCode()),
+                                res.errorCode(), res.updateCounts());
+                        }
+                    }
+
+
+                    for (;recvResponseOrderQueue.peek() != null && recvResponseOrderQueue.peek() == nextOrder;
+                        nextOrder++) {
+                        recvResponseOrderQueue.poll();
+
+                        lastRespOrder = nextOrder;
+                    }
+                }
+
+                System.out.println("+++ END OF ASYNC RECV THREAD") ;
+            }
+            catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
