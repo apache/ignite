@@ -38,7 +38,7 @@ public class Person {
     }
 
     /**
-     *
+     * @return First name.
      */
     public String getFirstName() {
         return firstName;
@@ -52,7 +52,7 @@ public class Person {
     }
 
     /**
-     *
+     * @return Second name.
      */
     public String getSecondName() {
         return secondName;
@@ -84,6 +84,7 @@ public class Person {
 
         if (firstName != null ? !firstName.equals(person.firstName) : person.firstName != null)
             return false;
+
         return secondName != null ? secondName.equals(person.secondName) : person.secondName == null;
 
     }

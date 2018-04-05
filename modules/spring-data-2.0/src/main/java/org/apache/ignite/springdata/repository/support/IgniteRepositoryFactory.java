@@ -129,15 +129,17 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
             if (annotation != null) {
                 String qryStr = annotation.value();
 
-                if (key != QueryLookupStrategy.Key.CREATE && StringUtils.hasText(qryStr))
+                if (key != QueryLookupStrategy.Key.CREATE && StringUtils.hasText(qryStr)) {
                     return new IgniteRepositoryQuery(metadata,
                             new IgniteQuery(qryStr, isFieldQuery(qryStr), IgniteQueryGenerator.getOptions(mtd)),
                             mtd, factory, ignite.getOrCreateCache(repoToCache.get(metadata.getRepositoryInterface())));
+                }
             }
 
-            if (key == QueryLookupStrategy.Key.USE_DECLARED_QUERY)
+            if (key == QueryLookupStrategy.Key.USE_DECLARED_QUERY) {
                 throw new IllegalStateException("To use QueryLookupStrategy.Key.USE_DECLARED_QUERY, pass " +
-                    "a query string via org.apache.ignite.springdata.repository.config.Query annotation.");
+                        "a query string via org.apache.ignite.springdata.repository.config.Query annotation.");
+            }
 
             return new IgniteRepositoryQuery(metadata, IgniteQueryGenerator.generateSql(mtd, metadata), mtd,
                 factory, ignite.getOrCreateCache(repoToCache.get(metadata.getRepositoryInterface())));
@@ -152,9 +154,3 @@ public class IgniteRepositoryFactory extends RepositoryFactorySupport {
         return qry.matches("^SELECT.*") && !qry.matches("^SELECT\\s+(?:\\w+\\.)?+\\*.*");
     }
 }
-
-
-
-
-
-

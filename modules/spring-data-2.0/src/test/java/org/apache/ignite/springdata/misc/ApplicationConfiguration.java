@@ -33,6 +33,10 @@ import org.apache.ignite.springdata.repository.config.EnableIgniteRepositories;
 @Configuration
 @EnableIgniteRepositories
 public class ApplicationConfiguration {
+
+    /**
+     * Ignite instance bean.
+     */
     @Bean
     public Ignite igniteInstance() {
         IgniteConfiguration cfg = new IgniteConfiguration();

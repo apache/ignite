@@ -226,8 +226,9 @@ public class IgniteSpringDataCrudSelfTest extends GridCommonAbstractTest {
      *
      */
     private void fillInRepository() {
-        for (int i = 0; i < CACHE_SIZE; i++)
+        for (int i = 0; i < CACHE_SIZE; i++) {
             repo.save(i, new Person("person" + Integer.toHexString(i),
-                "lastName" + Integer.toHexString((i + 16) % 256)));
+                    "lastName" + Integer.toHexString((i + 16) % 256)));
+        }
     }
 }

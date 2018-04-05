@@ -47,6 +47,9 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
     /** Number of entries to store */
     private static int CACHE_SIZE = 1000;
 
+    /**
+     * Performs context initialization before tests.
+     */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
@@ -59,11 +62,15 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
         repo = ctx.getBean(PersonRepository.class);
         repo2 = ctx.getBean(PersonSecondRepository.class);
 
-        for (int i = 0; i < CACHE_SIZE; i++)
+        for (int i = 0; i < CACHE_SIZE; i++) {
             repo.save(i, new Person("person" + Integer.toHexString(i),
-                "lastName" + Integer.toHexString((i + 16) % 256)));
+                    "lastName" + Integer.toHexString((i + 16) % 256)));
+        }
     }
 
+    /**
+     * Performs context destroy after tests.
+     */
     @Override protected void afterTestsStopped() throws Exception {
         ctx.destroy();
 
@@ -154,6 +161,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
 
         for (Person person : pageable1) {
             firstNames.add(person.getFirstName());
+
             assertTrue(person.getFirstName().matches("^[a-z]+$"));
         }
 
@@ -163,6 +171,7 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
 
         for (Person person : pageable2) {
             firstNames.add(person.getFirstName());
+
             assertTrue(person.getFirstName().matches("^[a-z]+$"));
         }
 
@@ -288,4 +297,3 @@ public class IgniteSpringDataQueriesSelfTest extends GridCommonAbstractTest {
         }
     }
 }
-

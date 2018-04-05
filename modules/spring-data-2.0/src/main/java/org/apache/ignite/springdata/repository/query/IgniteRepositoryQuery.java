@@ -75,15 +75,19 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
 
     /** Type. */
     private final Class<?> type;
+
     /** Sql. */
     private final IgniteQuery qry;
+
     /** Cache. */
     private final IgniteCache cache;
 
     /** Method. */
     private final Method mtd;
+
     /** Metadata. */
     private final RepositoryMetadata metadata;
+
     /** Factory. */
     private final ProjectionFactory factory;
 
@@ -102,7 +106,6 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         type = metadata.getDomainType();
         this.qry = qry;
         this.cache = cache;
-
         this.metadata = metadata;
         this.mtd = mtd;
         this.factory = factory;
@@ -127,6 +130,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
     /**
      * @param mtd Method.
      * @param isFieldQry Is field query.
+     * @return Return strategy type.
      */
     private ReturnStrategy calcReturnType(Method mtd, boolean isFieldQry) {
         Class<?> returnType = mtd.getReturnType();
@@ -160,6 +164,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
     /**
      * @param cls Class 1.
      * @param mtd Method.
+     * @return if {@code mtd} return type is assignable from {@code cls}
      */
     private boolean hasAssignableGenericReturnTypeFrom(Class<?> cls, Method mtd) {
         Type[] actualTypeArguments = ((ParameterizedType)mtd.getGenericReturnType()).getActualTypeArguments();
@@ -187,6 +192,7 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
     /**
      * @param prmtrs Prmtrs.
      * @param qryCursor Query cursor.
+     * @return Query cursor or slice
      */
     @Nullable private Object transformQueryCursor(Object[] prmtrs, QueryCursor qryCursor) {
         if (this.qry.isFieldQuery()) {
@@ -303,4 +309,3 @@ public class IgniteRepositoryQuery implements RepositoryQuery {
         return query;
     }
 }
-

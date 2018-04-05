@@ -89,4 +89,3 @@ public class IgniteRepositoryFactoryBean<T extends Repository<S, ID>, S, ID exte
         }
     }
 }
-

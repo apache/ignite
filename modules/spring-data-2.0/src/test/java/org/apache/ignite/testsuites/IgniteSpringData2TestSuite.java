@@ -38,4 +38,3 @@ public class IgniteSpringData2TestSuite extends TestSuite {
         return suite;
     }
 }
-

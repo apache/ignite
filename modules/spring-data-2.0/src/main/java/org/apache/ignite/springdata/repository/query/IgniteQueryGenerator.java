@@ -29,10 +29,10 @@ import org.springframework.data.repository.query.parser.PartTree;
  * Ignite query generator for Spring Data framework.
  */
 public class IgniteQueryGenerator {
-
     /**
      * @param mtd Method.
      * @param metadata Metadata.
+     * @return Generated ignite query.
      */
     @NotNull public static IgniteQuery generateSql(Method mtd, RepositoryMetadata metadata) {
         PartTree parts = new PartTree(mtd.getName(), metadata.getDomainType());
@@ -60,6 +60,7 @@ public class IgniteQueryGenerator {
 
             for (PartTree.OrPart orPart : parts) {
                 sql.append("(");
+
                 for (Part part : orPart) {
                     handleQueryPart(sql, part);
                     sql.append(" AND ");
@@ -88,6 +89,7 @@ public class IgniteQueryGenerator {
      *
      * @param sql SQL text string.
      * @param sort Sort method.
+     * @return Sorting criteria in StringBuilder.
      */
     public static StringBuilder addSorting(StringBuilder sql, Sort sort) {
         if (sort != null && sort != Sort.unsorted()) {
@@ -98,6 +100,7 @@ public class IgniteQueryGenerator {
 
                 if (order.getNullHandling() != Sort.NullHandling.NATIVE) {
                     sql.append(" ").append("NULL ");
+
                     switch (order.getNullHandling()) {
                         case NULLS_FIRST:
                             sql.append("FIRST");
@@ -153,6 +156,7 @@ public class IgniteQueryGenerator {
 
         for (int i = 0; i < types.length - 1; i++) {
             Class<?> tp = types[i];
+
             if (tp == Sort.class || tp == Pageable.class)
                 throw new AssertionError("Sort and Pageable parameters are allowed only in the last position");
         }
@@ -240,4 +244,3 @@ public class IgniteQueryGenerator {
         sql.append(")");
     }
 }
-

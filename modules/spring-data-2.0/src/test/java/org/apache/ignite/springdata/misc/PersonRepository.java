@@ -89,4 +89,3 @@ public interface PersonRepository extends IgniteRepository<Person, Integer> {
     @Query("SELECT count(1) FROM (SELECT DISTINCT secondName FROM Person WHERE firstName REGEXP ?)")
     public int countQuery(String val);
 }
-
