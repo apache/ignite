@@ -66,6 +66,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxy;
 import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyImpl;
+import org.apache.ignite.internal.processors.cache.transactions.TransactionProxyRollbackOnlyImpl;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.transactions.IgniteTxOptimisticCheckedException;
@@ -168,6 +169,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** */
     @GridToStringExclude
     private TransactionProxyImpl proxy;
+
+    /** */
+    @GridToStringExclude
+    private TransactionProxyImpl rollbackOnlyProxy;
 
     /** Tx label. */
     private @Nullable String lb;
@@ -344,6 +349,22 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
     /** {@inheritDoc} */
     @Override public boolean ownsLockUnsafe(GridCacheEntryEx entry) {
         return entry.detached() || super.ownsLockUnsafe(entry);
+    }
+
+    /** {@inheritDoc} */
+    @Override public long timeout(long timeout) {
+        long old = super.timeout(timeout);
+
+        if (old == timeout)
+            return old;
+
+        if (trackTimeout)
+            cctx.time().removeTimeoutObject(this);
+
+        if (timeout() > 0 && !implicit())
+            trackTimeout = cctx.time().addTimeoutObject(this);
+
+        return old;
     }
 
     /** {@inheritDoc} */
@@ -3935,6 +3956,16 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             proxy = new TransactionProxyImpl(this, cctx, false);
 
         return proxy;
+    }
+
+    /**
+     * @return Public API proxy.
+     */
+    public TransactionProxy rollbackOnlyProxy() {
+        if (rollbackOnlyProxy == null)
+            rollbackOnlyProxy = new TransactionProxyRollbackOnlyImpl<>(this, cctx, false);
+
+        return rollbackOnlyProxy;
     }
 
     /**

@@ -55,5 +55,9 @@ public class TxRollbackAsyncWithPersistenceTest extends TxRollbackAsyncTest {
 
         cleanPersistenceDir();
     }
+
+    @Override public void testMixedAsyncRollbackTypes() throws Exception {
+        super.testMixedAsyncRollbackTypes();
+    }
 }
 

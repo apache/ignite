@@ -36,7 +36,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -2388,7 +2387,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             IgniteConfiguration cfg = cctx.gridConfig();
 
-                            long rollbackTimeout = cfg.getTransactionConfiguration().getRollbackOnTopologyChangeTimeout();
+                            long rollbackTimeout = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapSynchronization();
 
                             final long dumpTimeout = 2 * cctx.gridConfig().getNetworkTimeout();
 
@@ -2405,6 +2404,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         U.warn(diagnosticLog, "Failed to wait for partition map exchange [" +
                                             "topVer=" + exchFut.initialVersion() +
                                             ", node=" + cctx.localNodeId() + "]. " +
+                                            (rollbackTimeout == 0 ? "Consider changing TransactionConfiguration.txTimeoutOnPartitionMapSynchronization to non default value to avoid this message. " : "") +
                                             "Dumping pending objects that might be the cause: ");
 
                                         try {

@@ -107,6 +107,10 @@ public interface IgniteTransactions {
 
     /**
      * Returns list of active transactions started on local node.
+     * <p>
+     * Note: returned transaction handle will only support getters, {@link Transaction#rollback()} and
+     * {@link Transaction#rollbackAsync()} methods. Trying to invoke other methods will lead to
+     * UnsupportedOperationException.
      *
      * @return Transactions started on local node.
      */
@@ -115,9 +119,9 @@ public interface IgniteTransactions {
     /**
      * Returns instance of Ignite Transactions which produces transactions marked with given label.
      *
-     * @param label label.
+     * @param lb label.
      * @return {@code This} for chaining.
      * @throws NullPointerException if label is null.
      */
-    public IgniteTransactions withLabel(String label);
+    public IgniteTransactions withLabel(String lb);
 }

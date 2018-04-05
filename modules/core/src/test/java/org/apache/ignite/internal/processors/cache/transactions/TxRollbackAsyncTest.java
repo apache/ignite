@@ -33,7 +33,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
@@ -590,7 +592,7 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         for (int k = 0; k < txSize; k++)
             grid(0).cache(CACHE_NAME).put(k, (long)0);
 
-        final long seed = System.currentTimeMillis(); // 1520340457038L;
+        final long seed = 1522775538453L;
 
         final Random r = new Random(seed);
 
@@ -749,6 +751,103 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         assertEquals("total != completed + failed", total.sum(), completed.sum() + failed.sum());
 
         checkFutures();
+    }
+
+    /**
+     * Tests proxy object returned by {@link IgniteTransactions#localActiveTransactions()}
+     */
+    public void testRollbackProxy() throws Exception {
+        final CountDownLatch keyLocked = new CountDownLatch(1);
+
+        CountDownLatch waitCommit = new CountDownLatch(1);
+
+        Ignite ig = ignite(0);
+
+        IgniteInternalFuture<?> lockFut = lockInTx(ig, keyLocked, waitCommit, 0);
+
+        U.awaitQuiet(keyLocked);
+
+        Collection<Transaction> txs = ig.transactions().localActiveTransactions();
+
+        for (Transaction tx : txs) {
+            try {
+                tx.timeout(1);
+
+                fail("timeout");
+            }
+            catch (Exception e) {
+                // No-op.
+            }
+
+            try {
+                tx.setRollbackOnly();
+
+                fail("setRollbackOnly");
+            }
+            catch (Exception e) {
+                // No-op.
+            }
+
+            try {
+                tx.commit();
+
+                fail("commit");
+            }
+            catch (Exception e) {
+                // No-op.
+            }
+
+            try {
+                tx.commitAsync();
+
+                fail("commitAsync");
+            }
+            catch (Exception e) {
+                // No-op.
+            }
+
+            try {
+                tx.suspend();
+
+                fail("suspend");
+            }
+            catch (Exception e) {
+                // No-op.
+            }
+
+            try {
+                tx.resume();
+
+                fail("resume");
+            }
+            catch (Exception e) {
+                // No-op.
+            }
+
+            try {
+                tx.close();
+
+                fail("close");
+            }
+            catch (Exception e) {
+                // No-op.
+            }
+
+            tx.rollback();
+
+            tx.rollbackAsync().get();
+        }
+
+        waitCommit.countDown();
+
+        try {
+            lockFut.get();
+
+            fail();
+        }
+        catch (IgniteCheckedException e) {
+            // No-op.
+        }
     }
 
     /**

@@ -1225,14 +1225,14 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
 
         IgniteConfiguration cfg = cctx.gridConfig();
 
-        boolean rollbackEnabled = cfg.getTransactionConfiguration().getRollbackOnTopologyChangeTimeout() > 0;
+        boolean rollbackEnabled = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapSynchronization() > 0;
 
         long waitTimeout = 2 * cfg.getNetworkTimeout();
 
         while (true) {
             try {
                 partReleaseFut.get(rollbackEnabled ?
-                    cfg.getTransactionConfiguration().getRollbackOnTopologyChangeTimeout() :
+                    cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapSynchronization() :
                     waitTimeout, TimeUnit.MILLISECONDS);
 
                 break;
