@@ -131,17 +131,10 @@ class ClientCacheRequest extends ClientRequest {
         if (secCtx != null) {
             DynamicCacheDescriptor cacheDesc = cacheDescriptor(ctx, cacheId);
 
-            try {
+            runWithSecurityExceptionHandler(() -> {
                 for (SecurityPermission p : perm)
                     ctx.kernalContext().security().authorize(cacheDesc.cacheName(), p, secCtx);
-            }
-            catch (SecurityException ex) {
-                throw new IgniteClientException(
-                    ClientStatus.SECURITY_VIOLATION,
-                    "Client is not authorized to perform this operation",
-                    ex
-                );
-            }
+            });
         }
     }
 }

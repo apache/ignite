@@ -63,23 +63,42 @@ public class ClientRequest implements ClientListenerRequest {
     }
 
     /**
-     * Authorize specified operation.
+     * Run the code with converting {@link SecurityException} to {@link IgniteClientException}.
+     */
+    protected static void runWithSecurityExceptionHandler(Runnable runnable) {
+        try {
+            runnable.run();
+        }
+        catch (SecurityException ex) {
+            throw new IgniteClientException(
+                ClientStatus.SECURITY_VIOLATION,
+                "Client is not authorized to perform this operation",
+                ex
+            );
+        }
+    }
+
+    /**
+     * Authorize for specified permission.
+     */
+    protected void authorize(ClientConnectionContext ctx, SecurityPermission perm) {
+        SecurityContext secCtx = ctx.securityContext();
+
+        if (secCtx != null)
+            runWithSecurityExceptionHandler(() -> ctx.kernalContext().security().authorize(null, perm, secCtx));
+    }
+
+    /**
+     * Authorize for multiple permissions.
      */
     protected void authorize(ClientConnectionContext ctx, SecurityPermission... perm) {
         SecurityContext secCtx = ctx.securityContext();
 
         if (secCtx != null) {
-            try {
+            runWithSecurityExceptionHandler(() -> {
                 for (SecurityPermission p : perm)
                     ctx.kernalContext().security().authorize(null, p, secCtx);
-            }
-            catch (SecurityException ex) {
-                throw new IgniteClientException(
-                    ClientStatus.SECURITY_VIOLATION,
-                    "Client is not authorized to perform this operation",
-                    ex
-                );
-            }
+            });
         }
     }
 }

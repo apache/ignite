@@ -3241,7 +3241,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         ctx.security().authorize(cacheName, SecurityPermission.CACHE_CREATE, null);
 
         if (cacheCfg != null && cacheCfg.isOnheapCacheEnabled() &&
-            System.getProperty("DISABLE_ONHEAP_CACHE", "false").toUpperCase().equals("TRUE"))
+            System.getProperty(IgniteSystemProperties.IGNITE_DISABLE_ONHEAP_CACHE, "false")
+                .toUpperCase().equals("TRUE")
+            )
             throw new SecurityException("Authorization failed for enabling on-heap cache.");
     }
 

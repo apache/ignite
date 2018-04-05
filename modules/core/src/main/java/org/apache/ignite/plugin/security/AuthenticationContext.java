@@ -139,7 +139,7 @@ public class AuthenticationContext {
     }
 
     /**
-     * @return Native Apache Ignite authorization context acquired after authentication or {@code} null if native
+     * @return Native Apache Ignite authorization context acquired after authentication or {@code null} if native
      * Ignite authentication is not used.
      */
     public AuthorizationContext authorizationContext(){
