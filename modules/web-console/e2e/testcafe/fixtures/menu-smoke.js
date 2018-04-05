@@ -39,7 +39,7 @@ test('Ingite main menu smoke test', async(t) => {
     await t
         .click(configureNavButton)
         .expect(Selector('title').innerText)
-        .eql('Basic Configuration – Apache Ignite Web Console');
+        .eql('Configuration – Apache Ignite Web Console');
 
     await t
         .click(queriesNavButton)

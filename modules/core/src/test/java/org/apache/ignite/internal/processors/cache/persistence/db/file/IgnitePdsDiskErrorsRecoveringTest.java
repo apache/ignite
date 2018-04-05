@@ -24,7 +24,6 @@ import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
@@ -35,16 +34,16 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.file.RandomAccessFileIOFactory;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
@@ -267,6 +266,16 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             byte[] actualData = (byte[]) recoveredGrid.cache(CACHE_NAME).get(i);
             Assert.assertArrayEquals(data, actualData);
         }
+    }
+
+    /**
+     * Use stop node on critical error handler for this test class.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @return Failure handler instance.
+     */
+    @Override protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new StopNodeFailureHandler();
     }
 
     /**
