@@ -34,6 +34,8 @@ import org.junit.runners.Suite;
 @Suite.SuiteClasses({
     DecisionTreeClassificationTrainerTest.class,
     DecisionTreeRegressionTrainerTest.class,
+    DecisionTreeClassificationTrainerIntegrationTest.class,
+    DecisionTreeRegressionTrainerIntegrationTest.class,
     DecisionTreeDataTest.class,
     GiniImpurityMeasureCalculatorTest.class,
     GiniImpurityMeasureTest.class,

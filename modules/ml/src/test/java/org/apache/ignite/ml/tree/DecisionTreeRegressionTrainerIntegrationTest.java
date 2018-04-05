@@ -28,9 +28,9 @@ import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Tests for {@link DecisionTreeClassificationTrainer} that require to start the whole Ignite infrastructure.
+ * Tests for {@link DecisionTreeRegressionTrainer} that require to start the whole Ignite infrastructure.
  */
-public class DecisionTreeClassificationTrainerIntegrationTest extends GridCommonAbstractTest {
+public class DecisionTreeRegressionTrainerIntegrationTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
 
@@ -73,7 +73,7 @@ public class DecisionTreeClassificationTrainerIntegrationTest extends GridCommon
             data.put(i, new double[]{x, x > 0 ? 1 : 0});
         }
 
-        DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0);
+        DecisionTreeRegressionTrainer trainer = new DecisionTreeRegressionTrainer(1, 0);
 
         DecisionTreeNode tree = trainer.fit(
             new CacheBasedDatasetBuilder<>(ignite, data),

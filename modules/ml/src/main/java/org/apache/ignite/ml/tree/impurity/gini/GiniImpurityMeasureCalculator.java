@@ -73,25 +73,24 @@ public class GiniImpurityMeasureCalculator implements ImpurityMeasureCalculator<
 
                 int xPtr = 0, yPtr = 0;
 
-                x[xPtr++] = Double.NEGATIVE_INFINITY;
+                long[] left = new long[lbEncoder.size()];
+                long[] right = new long[lbEncoder.size()];
 
-                for (int leftSize = 0; leftSize <= data.getFeatures().length; leftSize++) {
-                    if (leftSize > 0 && leftSize < data.getFeatures().length && data.getFeatures()[leftSize][col] == data.getFeatures()[leftSize - 1][col])
+                for (int i = 0; i < data.getLabels().length; i++)
+                    right[getLabelCode(data.getLabels()[i])]++;
+
+                x[xPtr++] = Double.NEGATIVE_INFINITY;
+                y[yPtr++] = new GiniImpurityMeasure(Arrays.copyOf(left, left.length), Arrays.copyOf(right, right.length));
+
+                for (int i = 0; i < data.getFeatures().length; i++) {
+                    left[getLabelCode(data.getLabels()[i])]++;
+                    right[getLabelCode(data.getLabels()[i])]--;
+
+                    if (i < (data.getFeatures().length - 1) && data.getFeatures()[i + 1][col] == data.getFeatures()[i][col])
                         continue;
 
-                    long[] left = new long[lbEncoder.size()];
-                    long[] right = new long[lbEncoder.size()];
-
-                    for (int j = 0; j < leftSize; j++)
-                        left[getLabelCode(data.getLabels()[j])]++;
-
-                    for (int j = leftSize; j < data.getLabels().length; j++)
-                        right[getLabelCode(data.getLabels()[j])]++;
-
-                    if (leftSize < data.getFeatures().length)
-                        x[xPtr++] = data.getFeatures()[leftSize][col];
-
-                    y[yPtr++] = new GiniImpurityMeasure(left, right);
+                    x[xPtr++] = data.getFeatures()[i][col];
+                    y[yPtr++] = new GiniImpurityMeasure(Arrays.copyOf(left, left.length), Arrays.copyOf(right, right.length));
                 }
 
                 res[col] = compressor.compress(new StepFunction<>(Arrays.copyOf(x, xPtr), Arrays.copyOf(y, yPtr)));

@@ -121,7 +121,7 @@ public class ColumnDecisionTreeTrainerBenchmark extends BaseDecisionTreeTest {
      * This test is for manual run only.
      * To run this test rename this method so it starts from 'test'.
      */
-    public void tstCacheMixed() {
+    public void testCacheMixed() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
         int ptsPerReg = 150;
         int featCnt = 10;

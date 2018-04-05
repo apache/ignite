@@ -64,6 +64,30 @@ public class GiniImpurityMeasureCalculatorTest {
 
     /** */
     @Test
+    public void testCalculateWithRepeatedData() {
+        double[][] data = new double[][]{{0}, {1}, {2}, {2}, {3}};
+        double[] labels = new double[]{0, 1, 1, 1, 1};
+
+        Map<Double, Integer> encoder = new HashMap<>();
+        encoder.put(0.0, 0);
+        encoder.put(1.0, 1);
+        GiniImpurityMeasureCalculator calculator = new GiniImpurityMeasureCalculator(encoder);
+
+        StepFunction<GiniImpurityMeasure>[] impurity = calculator.calculate(new DecisionTreeData(data, labels));
+
+        assertEquals(1, impurity.length);
+
+        // Check Gini calculated for the first column.
+        assertArrayEquals(new double[]{Double.NEGATIVE_INFINITY, 0, 1, 2, 3}, impurity[0].getX(), 1e-10);
+        assertEquals(-3.400, impurity[0].getY()[0].impurity(), 1e-3);
+        assertEquals(-5.000, impurity[0].getY()[1].impurity(),1e-3);
+        assertEquals(-4.000, impurity[0].getY()[2].impurity(),1e-3);
+        assertEquals(-3.500, impurity[0].getY()[3].impurity(),1e-3);
+        assertEquals(-3.400, impurity[0].getY()[4].impurity(),1e-3);
+    }
+
+    /** */
+    @Test
     public void testGetLabelCode() {
         Map<Double, Integer> encoder = new HashMap<>();
         encoder.put(0.0, 0);

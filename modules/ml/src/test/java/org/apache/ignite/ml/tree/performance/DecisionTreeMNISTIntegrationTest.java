@@ -15,22 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree;
+package org.apache.ignite.ml.tree.performance;
 
-import java.util.Arrays;
-import java.util.Random;
+import java.io.IOException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
+import org.apache.ignite.ml.nn.performance.MnistMLPTestUtil;
+import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
+import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.ignite.ml.util.MnistUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
- * Tests for {@link DecisionTreeClassificationTrainer} that require to start the whole Ignite infrastructure.
+ * Tests {@link DecisionTreeClassificationTrainer} on the MNIST dataset that require to start the whole Ignite
+ * infrastructure.
  */
-public class DecisionTreeClassificationTrainerIntegrationTest extends GridCommonAbstractTest {
+public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
     /** Number of nodes in grid */
     private static final int NODE_COUNT = 3;
 
@@ -58,42 +62,46 @@ public class DecisionTreeClassificationTrainerIntegrationTest extends GridCommon
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
     }
 
-    /** */
-    public void testFit() {
-        int size = 100;
-
-        CacheConfiguration<Integer, double[]> trainingSetCacheCfg = new CacheConfiguration<>();
+    /** Tests on the MNIST dataset. */
+    public void testMNIST() throws IOException {
+        CacheConfiguration<Integer, MnistUtils.MnistLabeledImage> trainingSetCacheCfg = new CacheConfiguration<>();
         trainingSetCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
-        trainingSetCacheCfg.setName("TRAINING_SET");
-        IgniteCache<Integer, double[]> data = ignite.createCache(trainingSetCacheCfg);
+        trainingSetCacheCfg.setName("MNIST_TRAINING_SET");
+        IgniteCache<Integer, MnistUtils.MnistLabeledImage> trainingSet = ignite.createCache(trainingSetCacheCfg);
 
-        Random rnd = new Random(0);
-        for (int i = 0; i < size; i++) {
-            double x = rnd.nextDouble() - 0.5;
-            data.put(i, new double[]{x, x > 0 ? 1 : 0});
+        int i = 0;
+        for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTrainingSet(60_000))
+            trainingSet.put(i++, e);
+
+        DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(10, 0);
+
+        System.out.println("Training started...");
+        long t1 = System.currentTimeMillis();
+        DecisionTreeNode mdl = trainer.fit(
+            new CacheBasedDatasetBuilder<>(ignite, trainingSet),
+            (k, v) -> v.getPixels(),
+            (k, v) -> (double) v.getLabel()
+        );
+        long t2 = System.currentTimeMillis();
+
+        System.out.println("Training completed in " + (t2 - t1) / 1000.0 + "s");
+
+        int correctAnswers = 0;
+        int incorrectAnswers = 0;
+
+        for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTestSet(10_000)) {
+            double res = mdl.apply(e.getPixels());
+
+            if (res == e.getLabel())
+                correctAnswers++;
+            else
+                incorrectAnswers++;
         }
 
-        DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(1, 0);
+        double accuracy = 1.0 * correctAnswers / (correctAnswers + incorrectAnswers);
 
-        DecisionTreeNode tree = trainer.fit(
-            new CacheBasedDatasetBuilder<>(ignite, data),
-            (k, v) -> Arrays.copyOf(v, v.length - 1),
-            (k, v) -> v[v.length - 1]
-        );
+        System.out.println("Accuracy : " + accuracy);
 
-        assertTrue(tree instanceof DecisionTreeConditionalNode);
-
-        DecisionTreeConditionalNode node = (DecisionTreeConditionalNode) tree;
-
-        assertEquals(0, node.getThreshold(), 1e-3);
-
-        assertTrue(node.getThenNode() instanceof DecisionTreeLeafNode);
-        assertTrue(node.getElseNode() instanceof DecisionTreeLeafNode);
-
-        DecisionTreeLeafNode thenNode = (DecisionTreeLeafNode) node.getThenNode();
-        DecisionTreeLeafNode elseNode = (DecisionTreeLeafNode) node.getElseNode();
-
-        assertEquals(1, thenNode.getVal(), 1e-10);
-        assertEquals(0, elseNode.getVal(), 1e-10);
+        assertTrue(accuracy > 0.8);
     }
 }
