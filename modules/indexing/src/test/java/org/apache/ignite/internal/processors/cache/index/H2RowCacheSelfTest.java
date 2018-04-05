@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.query.h2.H2RowCache;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2KeyValueRowOnheap;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.jsr166.ConcurrentLinkedHashMap;
 
 /**
  * Tests H2RowCacheRegistry.
@@ -352,7 +353,7 @@ public class H2RowCacheSelfTest extends GridCommonAbstractTest {
         grid().cache(cacheName)
             .query(new SqlQuery(Value.class, "_key = " + key)).getAll().size();
 
-        ConcurrentHashMap<Long, GridH2KeyValueRowOnheap> rowsMap = GridTestUtils.getFieldValue(rowCache, "rows");
+        ConcurrentLinkedHashMap<Long, GridH2KeyValueRowOnheap> rowsMap = GridTestUtils.getFieldValue(rowCache, "rows");
 
         for (Map.Entry<Long, GridH2KeyValueRowOnheap> e : rowsMap.entrySet()) {
             GridH2KeyValueRowOnheap val = e.getValue();
