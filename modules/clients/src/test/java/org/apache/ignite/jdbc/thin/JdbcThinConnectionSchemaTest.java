@@ -23,6 +23,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -36,22 +37,28 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Checks that schema is verified at the moment of jdbc driver connection.
  */
 public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
-
+    /** */
     private static final String CLIENT_NODE_NAME = "ClientNode";
 
+    /** */
     private static final String SERVER_NODE_NAME = "ServerNode";
 
+    /** Cache name for cache that will be started on cluster startup. Is defined in IgniteConfiguration. */
     private static final String PRESTARTED_CACHE = "PrestartedCache";
 
+    /** Name of dynamic cache, that doesn't have indexed types. */
     private static final String CACHE_WITHOUT_TABLES_NAME = "CacheWithoutTables";
 
+    /** */
     private IgniteEx clientNode;
 
+    /** */
     private IgniteEx serverNode;
 
+    /** Cache created using Ignite server instance. */
     private static final String SERVER_CACHE = "ServerNodeCache";
 
-    /** Name of the cache, that is created using client Ignite instance, NOT the cache on client. */
+    /** Name of the cache, that is created using Ignite cache instance, NOT the cache on client. */
     private static final String CLIENT_CACHE = "ClientNodeCache";
 
     /** {@inheritDoc} */
@@ -133,95 +140,110 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
      * Basic negative test.
      */
     public void testNonExistingSchemas() {
-        assertSchemaMissed("notExistingSchema");
+        assertSchemaMissedOnBothNodes("notExistingSchema");
 
-        assertSchemaMissed("\"Public\"");
+        assertSchemaMissedOnBothNodes("\"Public\"");
 
-        assertSchemaMissed("ServerNodeCache"); // not quoted
+        assertSchemaMissedOnBothNodes("ServerNodeCache"); // not quoted
 
-        assertSchemaMissed("\"SERVERNODECACHE\"");
+        assertSchemaMissedOnBothNodes("\"SERVERNODECACHE\"");
 
-        assertSchemaMissed("\"ServerNodeCa\"");
+        assertSchemaMissedOnBothNodes("\"ServerNodeCa\"");
 
-        assertSchemaMissed("\"CLIENTNODECACHE\"");
+        assertSchemaMissedOnBothNodes("\"CLIENTNODECACHE\"");
     }
 
     /** Verifies that if cache doesn't have indexed types, there is no schema with the same name. */
-    public void testCacheWithoutTables(){
-        assertSchemaMissed('"' + CACHE_WITHOUT_TABLES_NAME + '"');
+    public void testCacheWithoutTables() {
+        assertSchemaMissedOnBothNodes('"' + CACHE_WITHOUT_TABLES_NAME + '"');
     }
+
     /**
      * Connect to client node and check that schema defined in server cache configuration exists.
      */
     public void testPrestartedCacheTable() {
-        assertSchemaExist("\"" + PRESTARTED_CACHE + "\"");
+        assertSchemaExistOnBothNodes("\"" + PRESTARTED_CACHE + "\"");
     }
 
     /** PUBLIC schema test. */
     public void testDefaultSchema() {
-        assertSchemaExist(""); // implicitly "PUBLIC"
+        assertSchemaExistOnBothNodes(""); // implicitly "PUBLIC"
 
-        assertSchemaExist("public");
+        assertSchemaExistOnBothNodes("public");
 
-        assertSchemaExist("Public");
+        assertSchemaExistOnBothNodes("Public");
 
-        assertSchemaExist("\"PUBLIC\"");
+        assertSchemaExistOnBothNodes("\"PUBLIC\"");
     }
 
-    public void testExistingSchemas() {
-        assertSchemaExist("\"ClientNodeCache\"");
+    /**
+     * Test that if we set custom schema in cache configuration,
+     * we will find that custom schema, not schema with cache name.
+     */
+    public void testCustomSchemaName() {
+        String cacheName = "CacheWithCustomSchema";
 
-        assertSchemaExist("\"ServerNodeCache\"");
+        String schemaName = "MyCustomSchema";
+
+        CacheConfiguration<Long, UUID> ccfg = newCacheCfg(cacheName).setSqlSchema(schemaName);
+
+        try (IgniteCache<Long, UUID> cache = serverNode.createCache(ccfg)) {
+            assertSchemaExistOnBothNodes(schemaName);
+            assertSchemaMissedOnBothNodes('"' + cacheName + '"');
+        } finally {
+            serverNode.destroyCache(cacheName);
+        }
+
+    }
+
+    /** Check schema created (with the table) via {@link CacheConfiguration#setIndexedTypes} exists. */
+    public void testDynamicCacheSchemas() {
+        assertSchemaExistOnBothNodes("\"ClientNodeCache\"");
+
+        assertSchemaExistOnBothNodes("\"ServerNodeCache\"");
+    }
+
+    /** Check that we can connect to node with specified schema */
+    private void assertSchemaExistsOn(String schemaName, IgniteEx node) {
+        int port = portOf(node);
+
+        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + port + "/" + schemaName)) {
+            // do nothing, just connect and close connection.
+        }
+        catch (SQLException sqlEx) {
+            throw new AssertionError("Schema " + schemaName + " seems to be missed, but it should exist. " +
+                "Tried to connect to " + node.name() + ".", sqlEx);
+        }
     }
 
     /**
      * Checks that thin driver is able to connect to both server and client nodes with {@code schemaName}
      */
-    public void assertSchemaExist(String schemaName) {
-        int srvPort = portOf(clientNode);
-        int clPort = portOf(clientNode);
+    private void assertSchemaExistOnBothNodes(String schemaName) {
+        assertSchemaExistsOn(schemaName, clientNode);
+        assertSchemaExistsOn(schemaName, serverNode);
+    }
 
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + srvPort + "/" + schemaName)) {
-            // do nothing
-        }
-        catch (SQLException sqlEx) {
-            throw new AssertionError("Schema " + schemaName + " seems to be missed, but it should exist. " +
-                "Tried to connect to " + SERVER_NODE_NAME + ".", sqlEx);
-        }
+    /** Check that we can't connect to specified node with specified schema */
+    private void assertSchemaMissedOn(String incorrectSchema, IgniteEx node) {
+        int port = portOf(node);
 
-        try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + clPort + "/" + schemaName)) {
-            // do nothing
-        }
-        catch (SQLException sqlEx) {
-            throw new AssertionError("Schema " + schemaName + " seems to be missed, but it should exist. " +
-                "Tried to connect to " + CLIENT_NODE_NAME + ".", sqlEx);
-        }
+        Callable<Void> mustThrow = () -> {
+            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + port + "/" + incorrectSchema)) {
+                // do nothing, just connect, get exception and close connection.
+            }
+
+            return null;
+        };
+
+        GridTestUtils.assertThrows(log, mustThrow, SQLException.class, "Schema with name");
     }
 
     /**
-     * Verifies that correct exception is throw, if thin driver connected with specified non-existing schema name.
+     * Verifies that correct exception is thrown, if thin driver connected with specified non-existing schema name.
      */
-    public void assertSchemaMissed(String incorrectSchema) {
-        int srvPort = portOf(clientNode);
-        int clPort = portOf(clientNode);
-
-        Callable<Void> mustThrowCl = () -> {
-            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + clPort + "/" + incorrectSchema)) {
-                // do nothing
-            }
-
-            return null;
-        };
-
-        Callable<Void> mustThrowSrv = () -> {
-            try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + srvPort + "/" + incorrectSchema)) {
-                // do nothing
-            }
-
-            return null;
-        };
-
-        GridTestUtils.assertThrows(log, mustThrowCl, SQLException.class, "Schema with name");
-        GridTestUtils.assertThrows(log, mustThrowSrv, SQLException.class, "Schema with name");
+    private void assertSchemaMissedOnBothNodes(String incorrectSchema) {
+        assertSchemaMissedOn(incorrectSchema, clientNode);
+        assertSchemaMissedOn(incorrectSchema, serverNode);
     }
 }

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.odbc.jdbc;
 
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
@@ -162,7 +161,7 @@ public class JdbcConnectionContext implements ClientListenerConnectionContext {
         if (F.isEmpty(schemaName))
             throw new IgniteCheckedException("Schema cannot be empty.");
 
-        if (!ctx.query().hasSchema(schemaName))
+        if (!ctx.query().hasUserSchema(schemaName))
              throw new IgniteCheckedException("Schema with name " + schemaName + " not found.");
 
         handler = new JdbcRequestHandler(ctx, busyLock, maxCursors, distributedJoins, enforceJoinOrder,
