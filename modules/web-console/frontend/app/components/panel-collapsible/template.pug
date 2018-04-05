@@ -14,19 +14,11 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-form(id='model' name='ui.inputForm' novalidate ng-submit='$ctrl.save()')
-    include /app/modules/states/configuration/domains/general
-    include /app/modules/states/configuration/domains/query
-    include /app/modules/states/configuration/domains/store
-
-.pc-form-actions-panel
-    .pc-form-actions-panel__right-after
-    button.btn-ignite.btn-ignite--link-success(
-        type='button'
-        ng-click='$ctrl.confirmAndReset()'
-    )
-        | Cancel
-    button.btn-ignite.btn-ignite--success(
-        form='model'
-        type='submit'
-    ) Save
+.panel-collapsible__heading(ng-click='$ctrl.toggle()')
+    .panel-collapsible__status-icon
+        svg(ng-show='$ctrl.opened' ignite-icon='collapse')
+        svg(ng-hide='$ctrl.opened' ignite-icon='expand')
+    .panel-collapsible__title(panel-collapsible-transclude='title') {{::$ctrl.title}}
+    .panel-collapsible__description(panel-collapsible-transclude='description') {{::$ctrl.description}}
+    .panel-collapsible__actions(panel-collapsible-transclude='actions' ng-click='$event.stopPropagation()')
+.panel-collapsible__content(panel-collapsible-transclude='content' ng-show='$ctrl.opened')

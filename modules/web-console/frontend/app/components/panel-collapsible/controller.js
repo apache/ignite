@@ -15,32 +15,38 @@
  * limitations under the License.
  */
 
-import merge from 'webpack-merge';
+export default class PanelCollapsible {
+    /** @type {Boolean} */
+    opened;
+    /** @type {ng.ICompiledExpression} */
+    onOpen;
+    /** @type {ng.ICompiledExpression} */
+    onClose;
+    /** @type {String} */
+    disabled;
 
-import commonCfg from './webpack.common';
+    static $inject = ['$transclude'];
 
-export default merge(commonCfg, {
-    mode: 'development',
-    cache: true,
-    node: {
-        fs: 'empty',
-        child_process: 'empty'
-    },
-
-    // Entry points.
-    entry: null,
-
-    // Output system.
-    output: null,
-    optimization: {
-        splitChunks: {
-            chunks: 'async'
-        }
-    },
-    module: {
-        exprContextCritical: false,
-        rules: [
-            {test: /\.s?css$/, use: ['ignore-loader']}
-        ]
+    /**
+     * @param {ng.ITranscludeFunction} $transclude
+     */
+    constructor($transclude) {
+        this.$transclude = $transclude;
     }
-});
+    toggle() {
+        if (this.opened)
+            this.close();
+        else
+            this.open();
+    }
+    open() {
+        if (this.disabled) return;
+        this.opened = true;
+        if (this.onOpen && this.opened) this.onOpen({});
+    }
+    close() {
+        if (this.disabled) return;
+        this.opened = false;
+        if (this.onClose && !this.opened) this.onClose({});
+    }
+}
