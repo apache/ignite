@@ -15,21 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.functions;
-
-import java.io.Serializable;
-import java.util.Objects;
-import java.util.function.BiFunction;
+package org.apache.ignite.ml.tree.ui.util;
 
 /**
- * Serializable binary function.
- *
- * @see java.util.function.BiFunction
+ * Control panel listener.
  */
-public interface IgniteBiFunction<A, B, T> extends BiFunction<A, B, T>, Serializable {
+public interface ControlPanelListener {
+    /**
+     * Do on "max deep" change.
+     *
+     * @param maxDeep New value of "max deep".
+     */
+    public void doOnMaxDeepChange(int maxDeep);
 
-    default <V> IgniteBiFunction<A, B, V> andThen(IgniteFunction<? super T, ? extends V> after) {
-        Objects.requireNonNull(after);
-        return (A t, B u) -> after.apply(apply(t, u));
-    }
+    /**
+     * Do on "min impurity decrease" change.
+     *
+     * @param minImpurityDecrease New value of "min impurity decrease" change.
+     */
+    public void doOnMinImpurityDecreaseChange(double minImpurityDecrease);
+
+    /**
+     * Do on "clean".
+     */
+    public void doOnClean();
+
+    /**
+     * Fo on "generate".
+     */
+    public void doOnGenerate();
 }

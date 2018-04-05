@@ -15,21 +15,33 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.functions;
+package org.apache.ignite.ml.tree;
 
-import java.io.Serializable;
-import java.util.Objects;
-import java.util.function.BiFunction;
+import org.apache.ignite.ml.Model;
 
 /**
- * Serializable binary function.
- *
- * @see java.util.function.BiFunction
+ * Decision tree leaf node which contains value.
  */
-public interface IgniteBiFunction<A, B, T> extends BiFunction<A, B, T>, Serializable {
+public class TreeLeafNode implements Model<double[], Double> {
+    /** Value of the node. */
+    private final double val;
 
-    default <V> IgniteBiFunction<A, B, V> andThen(IgniteFunction<? super T, ? extends V> after) {
-        Objects.requireNonNull(after);
-        return (A t, B u) -> after.apply(apply(t, u));
+    /**
+     * Constructs a new decision tree leaf node.
+     *
+     * @param val Value of the node.
+     */
+    public TreeLeafNode(double val) {
+        this.val = val;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Double apply(double[] doubles) {
+        return val;
+    }
+
+    /** */
+    public double getVal() {
+        return val;
     }
 }

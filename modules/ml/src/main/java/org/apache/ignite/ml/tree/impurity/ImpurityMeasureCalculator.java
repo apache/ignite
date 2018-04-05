@@ -15,21 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.math.functions;
+package org.apache.ignite.ml.tree.impurity;
 
-import java.io.Serializable;
-import java.util.Objects;
-import java.util.function.BiFunction;
+import org.apache.ignite.ml.tree.impurity.util.StepFunction;
 
 /**
- * Serializable binary function.
+ * Base interface for impurity measure calculators that calculates all impurity measures required to find a best split.
  *
- * @see java.util.function.BiFunction
+ * @param <T> Type of impurity measure.
  */
-public interface IgniteBiFunction<A, B, T> extends BiFunction<A, B, T>, Serializable {
-
-    default <V> IgniteBiFunction<A, B, V> andThen(IgniteFunction<? super T, ? extends V> after) {
-        Objects.requireNonNull(after);
-        return (A t, B u) -> after.apply(apply(t, u));
-    }
+public interface ImpurityMeasureCalculator<T extends ImpurityMeasure<T>>{
+    /**
+     * Calculates all impurity measures required required to find a best split and returns them as an array of
+     * {@link StepFunction} (for every column).
+     *
+     * @param features Features.
+     * @param labels Labels.
+     * @return Impurity measures as an array of {@link StepFunction} (for every column).
+     */
+    public StepFunction<T>[] calculate(double[][] features, double[] labels);
 }
