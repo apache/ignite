@@ -372,15 +372,10 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     assert exchId.isJoined() || added;
 
                     for (int p = 0; p < num; p++) {
-                        if (localNode(p, aff) || initLocalPartition(p, discoCache)) {
+                        if (localNode(p, aff)) {
                             GridDhtLocalPartition locPart = createPartition(p);
 
-                            if (grp.persistenceEnabled()) {
-                                GridCacheDatabaseSharedManager db = (GridCacheDatabaseSharedManager)grp.shared().database();
-
-                                locPart.restoreState(db.readPartitionState(grp, locPart.id()));
-                            }
-                            else {
+                            if (!grp.persistenceEnabled()) {
                                 boolean owned = locPart.own();
 
                                 assert owned : "Failed to own partition for oldest node [grp=" + grp.cacheOrGroupName() +
@@ -443,21 +438,6 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     }
 
     /**
-     * @param p Partition ID to restore.
-     * @param discoCache Disco cache to use.
-     * @return {@code True} if should restore local partition.
-     */
-    private boolean initLocalPartition(int p, DiscoCache discoCache) {
-        IgnitePageStoreManager storeMgr = ctx.pageStore();
-
-        return
-            grp.persistenceEnabled() &&
-            storeMgr instanceof FilePageStoreManager &&
-            discoCache.baselineNode(ctx.localNodeId()) &&
-            Files.exists(((FilePageStoreManager)storeMgr).getPath(grp.sharedGroup(), grp.cacheOrGroupName(), p));
-    }
-
-    /**
      * @param affVer Affinity version.
      * @param aff Affinity assignments.
      * @param updateSeq Update sequence.
@@ -480,8 +460,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
             // If this node's map is empty, we pre-create local partitions,
             // so local map will be sent correctly during exchange.
-            else if (localNode(p, aff))
+            else if (localNode(p, aff)) {
                 createPartition(p);
+            }
         }
     }
 
@@ -819,6 +800,9 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             locParts.set(p, loc = new GridDhtLocalPartition(ctx, grp, p));
 
             long updCntr = cntrMap.updateCounter(p);
+
+            if (grp.persistenceEnabled())
+                loc.own();
 
             if (updCntr != 0)
                 loc.updateCounter(updCntr);
@@ -2092,9 +2076,11 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             result.add(ctx.localNodeId());
                         }
 
-                        U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
-                            "[nodeId=" + ctx.localNodeId() + ", grp=" + grp.cacheOrGroupName() +
-                            ", partId=" + locPart.id() + ", haveHistory=" + haveHistory + "]");
+                        if (locPart.initialUpdateCounter() > 0) {
+                            U.warn(log, "Partition has been scheduled for rebalancing due to outdated update counter " +
+                                "[nodeId=" + ctx.localNodeId() + ", grp=" + grp.cacheOrGroupName() +
+                                ", partId=" + locPart.id() + ", haveHistory=" + haveHistory + "]");
+                        }
                     }
                 }
 
