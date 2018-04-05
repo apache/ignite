@@ -670,6 +670,7 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     @Override protected void writeExternalData(ObjectOutput out) throws IOException {
         U.writeString(out, name);
         U.writeEnum(out, mode);
+
         out.writeBoolean(sys);
         out.writeInt(size);
         out.writeInt(keySize);
@@ -733,9 +734,9 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         mode = CacheMode.fromOrdinal(in.readByte());
         sys = in.readBoolean();
         size = in.readInt();
-        sizeLong = in.readLong();
         keySize = in.readInt();
         reads = in.readLong();
+        avgReadTime = in.readFloat();
         writes = in.readLong();
         hits = in.readLong();
         misses = in.readLong();
