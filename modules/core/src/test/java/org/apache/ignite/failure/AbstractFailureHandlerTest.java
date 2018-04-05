@@ -54,7 +54,7 @@ public class AbstractFailureHandlerTest extends GridCommonAbstractTest {
 
             ctx = failureCtx;
 
-            return true;
+            return false;
         }
 
         /**
