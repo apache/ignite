@@ -2754,7 +2754,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 if (update) {
                     // If entry is already unswapped and we are modifying it, we must run deletion callbacks for old value.
-                    long oldExpTime = expireTime();
+                    long oldExpTime = expireTimeUnlocked();
                     long delta = (oldExpTime == 0 ? 0 : oldExpTime - U.currentTimeMillis());
 
                     if (delta < 0) {
