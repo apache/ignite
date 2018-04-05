@@ -108,9 +108,9 @@ public interface IgniteTransactions {
     /**
      * Returns list of active transactions started on local node.
      * <p>
-     * Note: returned transaction handle will only support getters, {@link Transaction#rollback()} and
-     * {@link Transaction#rollbackAsync()} methods. Trying to invoke other methods will lead to
-     * UnsupportedOperationException.
+     * Note: returned transaction handle will only support getters, {@link Transaction#close()},
+     * {@link Transaction#rollback()}, {@link Transaction#rollbackAsync()} methods.
+     * Trying to invoke other methods will lead to UnsupportedOperationException.
      *
      * @return Transactions started on local node.
      */

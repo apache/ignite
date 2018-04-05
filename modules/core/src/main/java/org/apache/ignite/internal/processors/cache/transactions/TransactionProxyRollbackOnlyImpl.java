@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxLo
 import org.apache.ignite.lang.IgniteFuture;
 
 /**
- * Cache transaction proxy which support only rollback operations and getters.
+ * Cache transaction proxy which support only rollback or close operations and getters.
  */
 @SuppressWarnings("unchecked")
 public class TransactionProxyRollbackOnlyImpl<K, V> extends TransactionProxyImpl<K, V> {
@@ -59,11 +59,6 @@ public class TransactionProxyRollbackOnlyImpl<K, V> extends TransactionProxyImpl
 
     /** {@inheritDoc} */
     @Override public void resume() throws IgniteException {
-        throw new UnsupportedOperationException();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() {
         throw new UnsupportedOperationException();
     }
 
