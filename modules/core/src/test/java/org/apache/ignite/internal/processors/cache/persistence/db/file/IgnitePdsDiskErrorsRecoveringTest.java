@@ -40,6 +40,7 @@ import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridKernalState;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIODecorator;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
@@ -225,16 +226,18 @@ public class IgnitePdsDiskErrorsRecoveringTest extends GridCommonAbstractTest {
             grid.cache(CACHE_NAME).put(i, data);
         }
 
+        String errMsg = "Failed to write checkpoint entry";
+
         boolean checkpointFailed = false;
         try {
             forceCheckpoint();
         }
         catch (IgniteCheckedException e) {
-            if (e.getMessage().contains("Unable to write checkpoint entry"))
+            if (e.getMessage().contains(errMsg))
                 checkpointFailed = true;
         }
 
-        Assert.assertTrue("Checkpoint must be failed by IgniteCheckedException (Unable to write checkpoint entry)", checkpointFailed);
+        Assert.assertTrue("Checkpoint must be failed by IgniteCheckedException: " + errMsg, checkpointFailed);
 
         // Grid should be automatically stopped after checkpoint fail.
         awaitStop(grid);
