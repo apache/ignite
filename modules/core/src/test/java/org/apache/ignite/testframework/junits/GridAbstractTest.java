@@ -1298,7 +1298,7 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Stop Ignite instance using instance index.
+     * Stop Ignite instance using index.
      *
      * @param idx Grid index.
      * @param cancel Cancel flag.
@@ -1729,9 +1729,11 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * Gets flag of checking existence running Ignite instances before {@link #beforeTestsStarted()} mehtod execution.
+     * By default, test would started only if there is no alive Ignite instances and after {@link #afterTestsStopped()}
+     * all started Ignite instances would be stopped. Set returning value <code>false</code> if alive Ingite instances
+     * after test execution is correct behavior for these test.
      *
-     * @return <code>True</code> turn on assertion check.
+     * @return <code>True</code> by default.
      * @see VariationsTestsConfig#isStopNodes() Example of why instances should not be stopped.
      */
     protected boolean isSafeTopology() {
