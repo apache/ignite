@@ -735,9 +735,7 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
         size = in.readInt();
         sizeLong = in.readLong();
         keySize = in.readInt();
-        keySizeLong = in.readLong();
         reads = in.readLong();
-        avgReadTime = in.readFloat();
         writes = in.readLong();
         hits = in.readLong();
         misses = in.readLong();
