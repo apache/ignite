@@ -524,6 +524,9 @@ public abstract class IgniteUtils {
     /** Ignite MBeans disabled flag. */
     public static boolean IGNITE_MBEANS_DISABLED = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MBEANS_DISABLED);
 
+    /** Ignite mbean worker control enabled flag. */
+    public static boolean IGNITE_MBEAN_WORKER_CTRL_ENABLED = IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_MBEAN_WORKER_CTRL_ENABLED);
+
     /** */
     private static final boolean assertionsEnabled;
 

@@ -29,6 +29,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.internal.client.GridClient;
 import org.apache.ignite.internal.marshaller.optimized.OptimizedMarshaller;
+import org.apache.ignite.mxbean.SystemWorkerControlMXBean;
 import org.apache.ignite.stream.StreamTransformer;
 import org.jetbrains.annotations.Nullable;
 
@@ -421,6 +422,15 @@ public final class IgniteSystemProperties {
      * Default is {@code false}
      */
     public static final String IGNITE_MBEANS_DISABLED = "IGNITE_MBEANS_DISABLED";
+
+    /**
+     * If property is set to {@code true}, then {@link SystemWorkerControlMXBean} will be enabled.
+     *
+     * Default is {@code false}
+     *
+     * @see IgniteSystemProperties#IGNITE_MBEANS_DISABLED
+     */
+    public static final String IGNITE_MBEAN_WORKER_CTRL_ENABLED = "IGNITE_MBEAN_WORKER_CTRL_ENABLED";
 
     /**
      * Property controlling size of buffer holding last exception. Default value of {@code 1000}.
