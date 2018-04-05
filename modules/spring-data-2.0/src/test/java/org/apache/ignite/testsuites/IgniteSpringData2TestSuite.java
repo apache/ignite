@@ -22,15 +22,15 @@ import org.apache.ignite.springdata.IgniteSpringDataCrudSelfTest;
 import org.apache.ignite.springdata.IgniteSpringDataQueriesSelfTest;
 
 /**
- * Ignite Spring Data test suite.
+ * Ignite Spring Data 2.0 test suite.
  */
-public class IgniteSpringDataTestSuite extends TestSuite {
+public class IgniteSpringData2TestSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception Thrown in case of the failure.
      */
     public static TestSuite suite() throws Exception {
-        TestSuite suite = new TestSuite("Spring Data Test Suite");
+        TestSuite suite = new TestSuite("Spring Data 2.0 Test Suite");
 
         suite.addTestSuite(IgniteSpringDataCrudSelfTest.class);
         suite.addTestSuite(IgniteSpringDataQueriesSelfTest.class);
