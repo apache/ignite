@@ -1883,6 +1883,8 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /**
      * @param status Checkpoint status.
+     * @throws IgniteCheckedException If failed.
+     * @throws StorageException In case of IO error occurred during operations with storage.
      */
     private WALPointer restoreMemory(CheckpointStatus status) throws IgniteCheckedException {
         return restoreMemory(status, false, (PageMemoryEx)metaStorage.pageMemory());
@@ -1891,6 +1893,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
     /**
      * @param status Checkpoint status.
      * @param storeOnly If {@code True} restores Metastorage only.
+     * @param storePageMem Metastore page memory.
+     * @throws IgniteCheckedException If failed.
+     * @throws StorageException In case of IO error occurred during operations with storage.
      */
     private WALPointer restoreMemory(CheckpointStatus status, boolean storeOnly,
         PageMemoryEx storePageMem) throws IgniteCheckedException {
@@ -2698,6 +2703,9 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
 
     /**
      *
+     * Checkpointer object is used for notification on checkpoint begin, predicate is {@link #scheduledCp}
+     * {@code .nextCpTs - now > 0}. Method {@link #wakeupForCheckpoint} uses notify,
+     * {@link #waitCheckpointEvent} uses wait
      */
     @SuppressWarnings("NakedNotify")
     public class Checkpointer extends GridWorker {
@@ -2755,26 +2763,34 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
                         }
                     }
                 }
-
-                // Final run after the cancellation.
-                if (checkpointsEnabled && !shutdownNow)
-                    doCheckpoint();
-
-                scheduledCp.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
             }
             catch (Throwable t) {
                 err = t;
+
+                scheduledCp.cpFinishFut.onDone(t);
 
                 throw t;
             }
             finally {
                 if (err == null && !(stopping && isCancelled))
-                    err = new IllegalStateException("Thread " + name() + " is exiting unexpectedly");
+                    err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
                 else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+            }
+
+            // Final run after the cancellation.
+            if (checkpointsEnabled && !shutdownNow) {
+                try {
+                    doCheckpoint();
+
+                    scheduledCp.cpFinishFut.onDone(new NodeStoppingException("Node is stopping."));
+                }
+                catch (Throwable e) {
+                    scheduledCp.cpFinishFut.onDone(e);
+                }
             }
         }
 

@@ -152,7 +152,7 @@ public class GridCacheSharedTtlCleanupManager extends GridCacheSharedManagerAdap
             }
             finally {
                 if (err == null && !isCancelled)
-                    err = new IllegalStateException("Thread " + name() + " is exiting unexpectedly");
+                    err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));

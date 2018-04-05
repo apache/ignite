@@ -776,7 +776,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             }
 
             /** {@inheritDoc} */
-            @Override public void onCriticalFailure(FailureType failureType, Throwable failure) {
+            @Override public void onFailure(FailureType failureType, Throwable failure) {
                 ((IgniteEx)ignite).context().failure().process(new FailureContext(failureType, failure));
             }
 
@@ -4114,10 +4114,12 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             catch (Throwable t) {
                 if (!(t instanceof InterruptedException))
                     err = t;
+
+                throw t;
             }
             finally {
                 if (err == null && !stopping)
-                    err = new IllegalStateException("Thread  " + getName() + " is exiting unexpectedly");
+                    err = new IllegalStateException("Thread  " + getName() + " is terminated unexpectedly.");
 
                 if (err instanceof OutOfMemoryError)
                     ((IgniteEx)ignite).context().failure().process(new FailureContext(CRITICAL_ERROR, err));

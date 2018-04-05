@@ -76,6 +76,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.CustomMessageWrapper;
 import org.apache.ignite.internal.managers.discovery.DiscoveryServerOnlyCustomMessage;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.processors.security.SecurityUtils;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
@@ -2619,9 +2620,6 @@ class ServerImpl extends TcpDiscoveryImpl {
                 super.body();
             }
             catch (Throwable e) {
-                if (e instanceof OutOfMemoryError)
-                    ((IgniteEx)spi.ignite()).context().failure().process(new FailureContext(CRITICAL_ERROR, e));
-
                 if (!spi.isNodeStopping0() && spiStateCopy() != DISCONNECTING) {
                     final Ignite ignite = spi.ignite();
 
@@ -2646,18 +2644,21 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                 }
 
-                if (!(e instanceof InterruptedException) && !(e instanceof OutOfMemoryError))
-                    err = e;
+                err = e;
 
                 // Must be processed by IgniteSpiThread as well.
                 throw e;
-            } finally {
+            }
+            finally {
                 if (err == null && !spi.isNodeStopping0())
-                    err = new IllegalStateException("Thread " + getName() + " is exiting while the node is alive");
+                    err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly.");
 
-                if (err != null)
-                    ((IgniteEx)spi.ignite()).context().failure().process(
-                        new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+                FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
+
+                if (err instanceof OutOfMemoryError)
+                    failure.process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
+                    failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
 
@@ -5661,16 +5662,19 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
             catch (Throwable t) {
                 err = t;
+
+                throw t;
             }
             finally {
                 if (err == null && !spi.isNodeStopping0())
-                    err = new IllegalStateException("Thread " + getName() + " is exiting while the node is alive");
+                    err = new IllegalStateException("Thread " + getName() + " is terminated unexpectedly.");
+
+                FailureProcessor failure = ((IgniteEx)spi.ignite()).context().failure();
 
                 if (err instanceof OutOfMemoryError)
-                    ((IgniteEx)spi.ignite()).context().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                    failure.process(new FailureContext(CRITICAL_ERROR, err));
                 else if (err != null)
-                    ((IgniteEx)spi.ignite()).context().failure().process(
-                        new FailureContext(SYSTEM_WORKER_TERMINATION, err));
+                    failure.process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
 
                 U.closeQuiet(srvrSock);
             }

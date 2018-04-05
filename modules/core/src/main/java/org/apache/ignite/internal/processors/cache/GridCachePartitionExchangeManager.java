@@ -2258,11 +2258,11 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             }
             finally {
                 if (err == null && !stop)
-                    err = new IllegalStateException("Thread " + name() + " is exiting unexpectedly");
+                    err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
 
                 if (err instanceof OutOfMemoryError)
                     cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
-                else if (!stop)
+                else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }

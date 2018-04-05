@@ -74,7 +74,5 @@ public interface GridNioServerListener<T> {
     /**
      * Called when critical failure occurs in server implementation.
      */
-    default public void onCriticalFailure(FailureType failureType, Throwable failure) {
-        // No-op.
-    }
+    public void onFailure(FailureType failureType, Throwable failure);
 }
