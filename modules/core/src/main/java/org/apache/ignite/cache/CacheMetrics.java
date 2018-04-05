@@ -244,14 +244,14 @@ public interface CacheMetrics {
     public int getSize();
 
     /**
-     * Gets number of non-{@code null} values in the cache.
+     * Gets number of non-{@code null} values in the cache as a long value.
      *
      * @return Number of non-{@code null} values in the cache.
      */
     public long getSizeLong();
 
     /**
-     * Gets number of keys in the cache, possibly with {@code null} values.
+     * Gets number of keys in the cache, possibly with {@code null} values as a long value.
      *
      * @return Number of keys in the cache.
      */
