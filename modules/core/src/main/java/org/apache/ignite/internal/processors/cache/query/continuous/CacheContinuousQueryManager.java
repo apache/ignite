@@ -52,6 +52,7 @@ import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.ContinuousQueryWithTransformer.EventListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -681,17 +682,23 @@ public class CacheContinuousQueryManager extends GridCacheManagerAdapter {
 
         assert pred != null : cctx.config();
 
-        UUID id = cctx.kernalContext().continuous().startRoutine(
-            hnd,
-            internal && loc,
-            bufSize,
-            timeInterval,
-            autoUnsubscribe,
-            pred).get();
+        UUID id = null;
 
         try {
+            id = cctx.kernalContext().continuous().startRoutine(
+                hnd,
+                internal && loc,
+                bufSize,
+                timeInterval,
+                autoUnsubscribe,
+                pred).get();
+
             if (hnd.isQuery() && cctx.userCache() && !onStart)
                 hnd.waitTopologyFuture(cctx.kernalContext());
+        }
+        catch (NodeStoppingException e) {
+            // Wrap original exception to show the source of continuous query start stacktrace.
+            throw new NodeStoppingException(e);
         }
         catch (IgniteCheckedException e) {
             log.warning("Failed to start continuous query.", e);
