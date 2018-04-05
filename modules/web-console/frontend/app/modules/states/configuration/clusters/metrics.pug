@@ -25,7 +25,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
     panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
         .pca-form-column-6.pc-form-grid-row
             .pc-form-grid-col-30
-                +number('Elapsed time:', `${model}.metricsExpireTime`, '"metricsExpireTime"', 'true', 'Long.MAX_VALUE', '1',
+                +number('Expire time:', `${model}.metricsExpireTime`, '"metricsExpireTime"', 'true', 'Long.MAX_VALUE', '1',
                     'Time in milliseconds after which a certain metric value is considered expired')
             .pc-form-grid-col-30
                 +number('History size:', `${model}.metricsHistorySize`, '"metricsHistorySize"', 'true', '10000', '1',
