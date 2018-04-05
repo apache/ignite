@@ -104,6 +104,8 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
 
         cfg.setDataStorageConfiguration(dbCfg);
 
+        cfg.setIncludeEventTypes(new int[0]);
+
         return cfg;
     }
 

@@ -454,11 +454,6 @@ public class IgniteTopologyValidatorGridSplitCacheTest extends IgniteCacheTopolo
                 putCnt++;
             }
             catch (Throwable t) {
-                IgniteException e = new IgniteException("Failed to put entry [cache=" + cacheName + ", key=" +
-                    key + ']', t);
-
-                log.error(e.getMessage(), e.getCause());
-
                 if (ex == null)
                     ex = new IgniteException("Failed to put entry [node=" + g.name() + ']');
 
