@@ -345,7 +345,6 @@ public class JdbcThinTcpIo {
                 handshake(srvProtocolVer);
             else if (VER_2_1_0.equals(srvProtocolVer))
                 handshake_2_1_0();
-            // Todo: add exception handling in case of no schema found.
             else {
                 throw new SQLException("Handshake failed [driverProtocolVer=" + CURRENT_VER +
                     ", remoteNodeProtocolVer=" + srvProtocolVer + ", err=" + err + ']',
