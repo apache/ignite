@@ -60,7 +60,7 @@ public class DataStructureSizeManager {
         return sizes.get(structureName).sizes;
     }
 
-    public static DataStructureSize delegateWithTrackingPages(
+    public static DataStructureSize sizeCounterWithTrakingPages(
         String name,
         DataStructureSize internalSize,
         int pageSize
@@ -149,7 +149,7 @@ public class DataStructureSizeManager {
         };
     }
 
-    public static DataStructureSize merge(DataStructureSize first, DataStructureSize second) {
+    public static DataStructureSize mergeSizeCounters(DataStructureSize first, DataStructureSize second) {
         return new DataStructureSize() {
 
             @Override public void inc() {
@@ -188,7 +188,7 @@ public class DataStructureSizeManager {
         };
     }
 
-    public static DataStructureSize delegateTracker(String name, DataStructureSize delegate) {
+    public static DataStructureSize sizeCounter(String name, DataStructureSize delegate) {
         return new DataStructureSize() {
             private final AtomicLong size = new AtomicLong();
 
@@ -232,10 +232,14 @@ public class DataStructureSizeManager {
     }
 
     public static class DataStructureHolder {
+        private final String name;
+
         /** */
         private final Map<String, DataStructureSize> sizes = new LinkedHashMap<>();
 
         public DataStructureHolder(String name, int pageSize) {
+            this.name = name;
+
             String indexesTree = name + "-" + INDEX_TREE;
             String indexesReuseList = name + "-" + INDEX_REUSE_LIST;
 
@@ -270,7 +274,7 @@ public class DataStructureSizeManager {
             // Index size.
             String indexesTotal = name + "-" + INDEX;
 
-            DataStructureSize indexTotalPages = delegateWithTrackingPages(indexesTotal, internalSize, pageSize);
+            DataStructureSize indexTotalPages = sizeCounterWithTrakingPages(indexesTotal, internalSize, pageSize);
 
             sizes.put(indexesTotal, indexTotalPages);
 

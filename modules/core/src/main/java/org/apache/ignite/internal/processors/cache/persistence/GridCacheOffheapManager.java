@@ -91,9 +91,9 @@ import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PARTIT
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PK_INDEX;
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PURE_DATA;
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.REUSE_LIST;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.delegateTracker;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.delegateWithTrackingPages;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.merge;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.sizeCounter;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.sizeCounterWithTrakingPages;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.mergeSizeCounters;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
@@ -121,7 +121,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             ctx.wal(),
             reuseListRoot.pageId().pageId(),
             reuseListRoot.isAllocated(),
-            merge(grp.sizeOf(INDEX_REUSE_LIST), grp.sizeOf(INDEX))
+            mergeSizeCounters(grp.sizeOf(INDEX_REUSE_LIST), grp.sizeOf(INDEX))
         );
 
         RootPage metastoreRoot = metas.treeRoot;
@@ -136,7 +136,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
             reuseList,
             metastoreRoot.pageId().pageId(),
             metastoreRoot.isAllocated(),
-            merge(grp.sizeOf(INDEX_TREE), grp.sizeOf(INDEX))
+            mergeSizeCounters(grp.sizeOf(INDEX_TREE), grp.sizeOf(INDEX))
         );
 
         ((GridCacheDatabaseSharedManager)ctx.database()).addCheckpointListener(this);
@@ -170,7 +170,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     pendingRootPage.pageId().pageId(),
                     reuseList,
                     pendingRootPage.isAllocated(),
-                    merge(grp.sizeOf(INDEX_TREE), grp.sizeOf(INDEX))
+                    mergeSizeCounters(grp.sizeOf(INDEX_TREE), grp.sizeOf(INDEX))
                 );
             }
             finally {
@@ -1162,23 +1162,23 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     int pageSize = grp.dataRegion().pageMemory().pageSize();
 
-                    DataStructureSize pkIndexPages = delegateTracker(
+                    DataStructureSize pkIndexPages = sizeCounter(
                         partName + "-" + PK_INDEX, grp.sizeOf(PK_INDEX));
 
-                    DataStructureSize reuseListPages = delegateTracker(
+                    DataStructureSize reuseListPages = sizeCounter(
                         partName + "-" + REUSE_LIST, grp.sizeOf(REUSE_LIST));
 
-                    DataStructureSize dataPages = delegateTracker(
+                    DataStructureSize dataPages = sizeCounter(
                         partName + "-" + DATA, grp.sizeOf(DATA));
 
-                    DataStructureSize pureDataSize = delegateTracker(
+                    DataStructureSize pureDataSize = sizeCounter(
                         partName + "-" + PURE_DATA, grp.sizeOf(PURE_DATA));
 
-                    DataStructureSize internalSize = delegateTracker(
+                    DataStructureSize internalSize = sizeCounter(
                         partName + "-" + INTERNAL, grp.sizeOf(INTERNAL));
 
-                    DataStructureSize partitionPages = merge(
-                        delegateWithTrackingPages(partName + "-" + PARTITION, internalSize, pageSize),
+                    DataStructureSize partitionPages = mergeSizeCounters(
+                        sizeCounterWithTrakingPages(partName + "-" + PARTITION, internalSize, pageSize),
                         grp.sizeOf(PARTITION)
                     );
 
