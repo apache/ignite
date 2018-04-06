@@ -85,7 +85,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     private AffinityTopologyVersion lastAffVer;
 
     /** Registered caches (updated from exchange thread). */
-    private final Map<Integer, DynamicCacheDescriptor> registeredCaches = new HashMap<>();
+    private final Map<Integer, DynamicCacheDescriptor> registeredCaches = new ConcurrentHashMap<>();
 
     /** */
     private WaitRebalanceInfo waitInfo;
