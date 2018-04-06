@@ -86,8 +86,6 @@ export default class ClusterEditFormController {
 
         this.$scope.ui = this.IgniteFormUtils.formUI();
         this.$scope.ui.loadedPanels = ['checkpoint', 'serviceConfiguration', 'odbcConfiguration'];
-        this.$scope.ui.activePanels = [0];
-        this.$scope.ui.topPanels = [0];
     }
     $onChanges(changes) {
         if (

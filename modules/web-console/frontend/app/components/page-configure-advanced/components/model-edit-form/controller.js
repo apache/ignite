@@ -50,9 +50,6 @@ export default class ModelEditFormController {
 
         this.queryFieldTypes = this.LegacyUtils.javaBuiltInClasses.concat('byte[]');
         this.$scope.ui = this.IgniteFormUtils.formUI();
-        this.$scope.ui.activePanels = [0, 1];
-        this.$scope.ui.topPanels = [0, 1, 2];
-        this.$scope.ui.expanded = true;
 
         this.$scope.javaBuiltInClasses = this.LegacyUtils.javaBuiltInClasses;
         this.$scope.supportedJdbcTypes = this.LegacyUtils.mkOptions(this.LegacyUtils.SUPPORTED_JDBC_TYPES);

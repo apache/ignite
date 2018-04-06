@@ -19,31 +19,32 @@ include /app/helpers/jade/mixins
 -var form = 'clientNearCache'
 -var model = '$ctrl.clonedCache'
 
-.pca-panel(ng-form=form novalidate ng-show=`${model}.cacheMode === 'PARTITIONED'`)
-    .pca-panel-heading(bs-collapse-toggle='' ng-click=`ui.loadPanel('${form}')`)
-        ignite-form-panel-chevron
-        .pca-panel-heading-title Near cache on client node
-        .pca-panel-heading-description
-            | Near cache settings for client nodes. 
-            | Near cache is a small local cache that stores most recently or most frequently accessed data. 
-            | Should be used in case when it is impossible to send computations to remote nodes.
-    .pca-panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .pca-panel-body.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
-            .pca-form-column-6.pc-form-grid-row
-                -var nearCfg = `${model}.clientNearConfiguration`
-                -var enabled = `${nearCfg}.enabled`
+panel-collapsible(
+    ng-form=form
+    on-open=`ui.loadPanel('${form}')`
+    ng-show=`${model}.cacheMode === 'PARTITIONED'`
+)
+    panel-title Near cache on client node
+    panel-description
+        | Near cache settings for client nodes. 
+        | Near cache is a small local cache that stores most recently or most frequently accessed data. 
+        | Should be used in case when it is impossible to send computations to remote nodes.
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            -var nearCfg = `${model}.clientNearConfiguration`
+            -var enabled = `${nearCfg}.enabled`
 
-                .pc-form-grid-col-60
-                    +checkbox('Enabled', enabled, '"clientNearEnabled"', 'Flag indicating whether to configure near cache')
-                .pc-form-grid-col-60
-                    +number('Start size:', `${nearCfg}.nearStartSize`, '"clientNearStartSize"', enabled, '375000', '0',
-                        'Initial cache size for near cache which will be used to pre-create internal hash table after start')
-                +evictionPolicy(`${nearCfg}.nearEvictionPolicy`, '"clientNearCacheEvictionPolicy"', enabled, 'false',
-                    'Near cache eviction policy\
-                    <ul>\
-                        <li>Least Recently Used (LRU) - Eviction policy based on LRU algorithm and supports batch eviction</li>\
-                        <li>First In First Out (FIFO) - Eviction policy based on FIFO algorithm and supports batch eviction</li>\
-                        <li>SORTED - Eviction policy which will select the minimum cache entry for eviction</li>\
-                    </ul>')
-            .pca-form-column-6
-                +preview-xml-java(model, 'cacheNearClient')
+            .pc-form-grid-col-60
+                +checkbox('Enabled', enabled, '"clientNearEnabled"', 'Flag indicating whether to configure near cache')
+            .pc-form-grid-col-60
+                +number('Start size:', `${nearCfg}.nearStartSize`, '"clientNearStartSize"', enabled, '375000', '0',
+                    'Initial cache size for near cache which will be used to pre-create internal hash table after start')
+            +evictionPolicy(`${nearCfg}.nearEvictionPolicy`, '"clientNearCacheEvictionPolicy"', enabled, 'false',
+                'Near cache eviction policy\
+                <ul>\
+                    <li>Least Recently Used (LRU) - Eviction policy based on LRU algorithm and supports batch eviction</li>\
+                    <li>First In First Out (FIFO) - Eviction policy based on FIFO algorithm and supports batch eviction</li>\
+                    <li>SORTED - Eviction policy which will select the minimum cache entry for eviction</li>\
+                </ul>')
+        .pca-form-column-6
+            +preview-xml-java(model, 'cacheNearClient')

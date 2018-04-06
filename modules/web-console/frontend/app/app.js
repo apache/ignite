@@ -134,6 +134,7 @@ import uiGridHovering from './components/ui-grid-hovering';
 import uiGridFilters from './components/ui-grid-filters';
 import listEditable from './components/list-editable';
 import breadcrumbs from './components/breadcrumbs';
+import panelCollapsible from './components/panel-collapsible';
 import clusterSelector from './components/cluster-selector';
 import connectedClusters from './components/connected-clusters';
 import pageSignIn from './components/page-signin';
@@ -226,6 +227,7 @@ angular.module('ignite-console', [
     AngularStrapTooltip.name,
     AngularStrapSelect.name,
     listEditable.name,
+    panelCollapsible.name,
     clusterSelector.name,
     servicesModule.name,
     connectedClusters.name,
