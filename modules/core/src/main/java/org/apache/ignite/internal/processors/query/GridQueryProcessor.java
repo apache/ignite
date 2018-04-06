@@ -2788,7 +2788,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      *  Schema exist if either it is default schema ("PUBLIC") or there are tables with that schema.
      *
      * @param schemaName - name of the schema to look up.
-     * @return true if schema found, false - otherwize.
+     * @return {@code true} if schema found, {@code false} - otherwise.
      */
     public boolean hasUserSchema(String schemaName) {
         assert !F.isEmpty(schemaName) : "Schema cannot be empty or null.";
