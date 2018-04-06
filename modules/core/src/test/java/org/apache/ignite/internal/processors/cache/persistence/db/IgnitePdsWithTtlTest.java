@@ -159,7 +159,7 @@ public class IgnitePdsWithTtlTest extends IgnitePdsAbstractTest {
     protected void waitAndCheckExpired(IgniteCache<Integer, String> cache) throws IgniteInterruptedCheckedException {
         GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
-                return cache.size() == 0;
+                return cache.size() == 0 && cache.localPeek(0) == null ;
             }
         }, TimeUnit.SECONDS.toMillis(EXPIRATION_TIMEOUT + 1));
 
