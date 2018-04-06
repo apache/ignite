@@ -130,6 +130,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
             }
         });
 
+        cfg.setConsistentId(igniteInstanceName);
+
         System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING,
             Boolean.toString(disableWalDuringRebalancing));
 
