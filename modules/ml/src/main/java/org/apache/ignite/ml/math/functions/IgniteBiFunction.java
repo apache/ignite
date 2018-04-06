@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.math.functions;
 
 import java.io.Serializable;
-import java.util.Objects;
 import java.util.function.BiFunction;
 
 /**
@@ -27,9 +26,4 @@ import java.util.function.BiFunction;
  * @see java.util.function.BiFunction
  */
 public interface IgniteBiFunction<A, B, T> extends BiFunction<A, B, T>, Serializable {
-
-    default <V> IgniteBiFunction<A, B, V> andThen(IgniteFunction<? super T, ? extends V> after) {
-        Objects.requireNonNull(after);
-        return (A t, B u) -> after.apply(apply(t, u));
-    }
 }
