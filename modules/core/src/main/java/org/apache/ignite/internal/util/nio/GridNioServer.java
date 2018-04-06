@@ -1740,6 +1740,8 @@ public class GridNioServer<T> {
 
         /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            Throwable err = null;
+
             try {
                 boolean reset = false;
 
@@ -1765,8 +1767,22 @@ public class GridNioServer<T> {
             catch (Throwable e) {
                 U.error(log, "Caught unhandled exception in NIO worker thread (restart the node).", e);
 
+                err = e;
+
                 if (e instanceof Error)
                     throw e;
+            }
+            finally {
+                if (err instanceof OutOfMemoryError)
+                    lsnr.onFailure(CRITICAL_ERROR, err);
+                else if (!closed) {
+                    if (err == null)
+                        lsnr.onFailure(SYSTEM_WORKER_TERMINATION,
+                            new IllegalStateException("Thread " + name() + " is terminated unexpectedly"));
+                    else if (err instanceof InterruptedException)
+                        lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
+                } else if (err != null)
+                    lsnr.onFailure(SYSTEM_WORKER_TERMINATION, err);
             }
         }
 
@@ -2096,9 +2112,6 @@ public class GridNioServer<T> {
                 }
             }
             // Ignore this exception as thread interruption is equal to 'close' call.
-            catch (OutOfMemoryError e) {
-                lsnr.onFailure(CRITICAL_ERROR, e);
-            }
             catch (ClosedByInterruptException e) {
                 if (log.isDebugEnabled())
                     log.debug("Closing selector due to thread interruption: " + e.getMessage());
