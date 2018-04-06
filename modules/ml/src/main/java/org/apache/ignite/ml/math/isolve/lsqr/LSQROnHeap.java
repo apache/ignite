@@ -51,34 +51,43 @@ public class LSQROnHeap<K, V> extends AbstractLSQR implements AutoCloseable {
             ctx.setU(Arrays.copyOf(data.getY(), data.getY().length));
 
             return BLAS.getInstance().dnrm2(data.getY().length, data.getY(), 1);
-        }, (a, b) -> a == null ? b : Math.sqrt(a * a + b * b));
+        }, (a, b) -> a == null ? b : b == null ? a : Math.sqrt(a * a + b * b));
     }
 
     /** {@inheritDoc} */
     @Override protected double beta(double[] x, double alfa, double beta) {
         return dataset.computeWithCtx((ctx, data) -> {
-            BLAS.getInstance().dgemv("N", data.getRows(), data.getCols(), alfa, data.getX(),
+            if (data.getX() == null)
+                return null;
+
+            int cols = data.getX().length / data.getRows();
+            BLAS.getInstance().dgemv("N", data.getRows(), cols, alfa, data.getX(),
                 Math.max(1, data.getRows()), x, 1, beta, ctx.getU(), 1);
 
             return BLAS.getInstance().dnrm2(ctx.getU().length, ctx.getU(), 1);
-        }, (a, b) -> a == null ? b : Math.sqrt(a * a + b * b));
+        }, (a, b) -> a == null ? b : b == null ? a : Math.sqrt(a * a + b * b));
     }
 
     /** {@inheritDoc} */
     @Override protected double[] iter(double bnorm, double[] target) {
         double[] res = dataset.computeWithCtx((ctx, data) -> {
+            if (data.getX() == null)
+                return null;
+
+            int cols =  data.getX().length / data.getRows();
             BLAS.getInstance().dscal(ctx.getU().length, 1 / bnorm, ctx.getU(), 1);
-            double[] v = new double[data.getCols()];
-            BLAS.getInstance().dgemv("T", data.getRows(), data.getCols(), 1.0, data.getX(),
+            double[] v = new double[cols];
+            BLAS.getInstance().dgemv("T", data.getRows(), cols, 1.0, data.getX(),
                 Math.max(1, data.getRows()), ctx.getU(), 1, 0, v, 1);
 
             return v;
         }, (a, b) -> {
             if (a == null)
                 return b;
+            else if (b == null)
+                return a;
             else {
                 BLAS.getInstance().daxpy(a.length, 1.0, a, 1, b, 1);
-
                 return b;
             }
         });
@@ -92,7 +101,7 @@ public class LSQROnHeap<K, V> extends AbstractLSQR implements AutoCloseable {
      * @return number of columns
      */
     @Override protected int getColumns() {
-        return dataset.compute(LinSysPartitionDataOnHeap::getCols, (a, b) -> a == null ? b : a);
+        return dataset.compute(data -> data.getX() == null ? null :  data.getX().length / data.getRows(), (a, b) -> a == null ? b : a);
     }
 
     /** {@inheritDoc} */

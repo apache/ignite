@@ -83,6 +83,14 @@ export default (config) => {
             ChromeHeadlessNoSandbox: {
                 base: 'ChromeHeadless',
                 flags: ['--no-sandbox']
+            },
+            ChromeDebug: {
+                base: 'Chrome',
+                flags: [
+                    '--start-maximized',
+                    '--auto-open-devtools-for-tabs'
+                ],
+                debug: true
             }
         },
 

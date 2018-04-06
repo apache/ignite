@@ -699,6 +699,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         }
 
         ctx.state().cacheProcessorStarted();
+        ctx.authentication().cacheProcessorStarted();
     }
 
     /**
@@ -1189,7 +1190,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         try {
             if (!cache.isNear() && ctx.shared().wal() != null) {
                 try {
-                    ctx.shared().wal().fsync(null);
+                    ctx.shared().wal().flush(null, false);
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to flush write-ahead log on cache stop " +

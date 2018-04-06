@@ -46,6 +46,7 @@ import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
+import org.apache.ignite.internal.processors.authentication.IgniteAuthenticationProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
 import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
@@ -57,6 +58,7 @@ import org.apache.ignite.internal.processors.cluster.GridClusterStateProcessor;
 import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
+import org.apache.ignite.internal.processors.failure.FailureProcessor;
 import org.apache.ignite.internal.processors.hadoop.HadoopHelper;
 import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsHelper;
@@ -332,6 +334,11 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteAuthenticationProcessor authentication() {
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public IgfsProcessorAdapter igfs() {
         return null;
     }
@@ -452,12 +459,13 @@ public class StandaloneGridKernalContext implements GridKernalContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void markSegmented() {
+    @Override public boolean invalid() {
+        return false;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean segmented() {
-        return false;
+    @Override public FailureProcessor failure() {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -622,16 +630,6 @@ public class StandaloneGridKernalContext implements GridKernalContext {
                 return new PdsFolderSettings(new File("."), U.maskForFileName(""));
             }
         };
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean invalidated() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void invalidate() {
-
     }
 
     /** {@inheritDoc} */

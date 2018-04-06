@@ -16,17 +16,20 @@
 
 include /app/helpers/jade/mixins
 
-mixin discovery-jdbc(modelAt = 'backupItem')
+mixin discovery-jdbc(modelAt = '$ctrl.clonedCluster')
     -const model = `${modelAt}.discovery.Jdbc`
     -const required = `${modelAt}.discovery.kind === "Jdbc"`
 
-    .details-row
-        +text('Data source bean name:', `${model}.dataSourceBean`,
-            '"dataSourceBean"', required, 'Input bean name', 'Name of the data source bean in Spring context')
-    .details-row
-        +dialect('Dialect:', `${model}.dialect`, '"dialect"', required,
-            'Dialect of SQL implemented by a particular RDBMS:', 'Generic JDBC dialect', 'Choose JDBC dialect')
-    .details-row
-        +checkbox('DB schema should be initialized by Ignite', `${model}.initSchema`, '"initSchema"',
-            'Flag indicating whether DB schema should be initialized by Ignite or was explicitly created by user')
-    .pcb-flex-grid-break
+    .pc-form-grid-row&attributes(attributes=attributes)
+        .pc-form-grid-col-30
+            +text('Data source bean name:', `${model}.dataSourceBean`,
+                '"dataSourceBean"', required, 'Input bean name', 'Name of the data source bean in Spring context')
+        .pc-form-grid-col-30
+            +dialect('Dialect:', `${model}.dialect`, '"dialect"', required,
+                'Dialect of SQL implemented by a particular RDBMS:', 'Generic JDBC dialect', 'Choose JDBC dialect')
+        .pc-form-grid-col-60
+            +checkbox('DB schema should be initialized by Ignite', `${model}.initSchema`, '"initSchema"',
+                'Flag indicating whether DB schema should be initialized by Ignite or was explicitly created by user')
+        .pc-form-grid-col-30(ng-if=`$ctrl.Clusters.requiresProprietaryDrivers(${modelAt})`)
+            a.link-success(ng-href=`{{ $ctrl.Clusters.JDBCDriverURL(${modelAt}) }}` target='_blank')
+                | Download JDBC drivers?

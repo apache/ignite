@@ -180,10 +180,10 @@ public class DecisionTreesExample {
             int ptsCnt = 60000;
             int featCnt = 28 * 28;
 
-            Stream<DenseLocalOnHeapVector> trainingMnistStream = MnistUtils.mnist(trainingImagesPath, trainingLabelsPath,
+            Stream<DenseLocalOnHeapVector> trainingMnistStream = MnistUtils.mnistAsStream(trainingImagesPath, trainingLabelsPath,
                 new Random(123L), ptsCnt);
 
-            Stream<DenseLocalOnHeapVector> testMnistStream = MnistUtils.mnist(testImagesPath, testLabelsPath,
+            Stream<DenseLocalOnHeapVector> testMnistStream = MnistUtils.mnistAsStream(testImagesPath, testLabelsPath,
                 new Random(123L), 10_000);
 
             IgniteCache<BiIndex, Double> cache = createBiIndexedCache(ignite);
@@ -241,7 +241,7 @@ public class DecisionTreesExample {
         for (String s : missing) {
             String f = s + ".gz";
             System.out.println(">>> Downloading " + f + "...");
-            URL website = new URL("http://yann.lecun.com/exdb/mnist/" + f);
+            URL website = new URL("http://yann.lecun.com/exdb/mnistAsStream/" + f);
             ReadableByteChannel rbc = Channels.newChannel(website.openStream());
             FileOutputStream fos = new FileOutputStream(MNIST_DIR + "/" + f);
             fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);

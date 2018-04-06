@@ -17,136 +17,281 @@
 
 import angular from 'angular';
 
+import {default as ActivitiesData} from 'app/core/activities/Activities.data';
+
 // Common directives.
 import previewPanel from './configuration/preview-panel.directive.js';
 
 // Summary screen.
-import ConfigurationSummaryCtrl from './configuration/summary/summary.controller';
 import ConfigurationResource from './configuration/Configuration.resource';
-import summaryTabs from './configuration/summary/summary-tabs.directive';
 import IgniteSummaryZipper from './configuration/summary/summary-zipper.service';
 
-import clustersTpl from 'views/configuration/clusters.tpl.pug';
-import cachesTpl from 'views/configuration/caches.tpl.pug';
-import domainsTpl from 'views/configuration/domains.tpl.pug';
-import igfsTpl from 'views/configuration/igfs.tpl.pug';
-import summaryTpl from 'views/configuration/summary.tpl.pug';
-import summaryTabsTemplateUrl from 'views/configuration/summary-tabs.pug';
-
-import clustersCtrl from 'Controllers/clusters-controller';
-import domainsCtrl from 'Controllers/domains-controller';
-import cachesCtrl from 'Controllers/caches-controller';
-import igfsCtrl from 'Controllers/igfs-controller';
-
 import base2 from 'views/base2.pug';
+import pageConfigureAdvancedClusterComponent from 'app/components/page-configure-advanced/components/page-configure-advanced-cluster/component';
+import pageConfigureAdvancedModelsComponent from 'app/components/page-configure-advanced/components/page-configure-advanced-models/component';
+import pageConfigureAdvancedCachesComponent from 'app/components/page-configure-advanced/components/page-configure-advanced-caches/component';
+import pageConfigureAdvancedIGFSComponent from 'app/components/page-configure-advanced/components/page-configure-advanced-igfs/component';
+
+import get from 'lodash/get';
+import {Observable} from 'rxjs/Observable';
+
+const idRegex = `new|[a-z0-9]+`;
+
+const shortCachesResolve = ['ConfigSelectors', 'ConfigureState', 'ConfigEffects', '$transition$', (ConfigSelectors, ConfigureState, {etp}, $transition$) => {
+    if ($transition$.params().clusterID === 'new') return Promise.resolve();
+    return Observable.fromPromise($transition$.injector().getAsync('_cluster'))
+    .switchMap(() => ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1))
+    .switchMap((cluster) => {
+        return etp('LOAD_SHORT_CACHES', {ids: cluster.caches, clusterID: cluster._id});
+    })
+    .toPromise();
+}];
+
+/**
+ * @param {ActivitiesData} ActivitiesData
+ * @param {uirouter.UIRouter} $uiRouter
+ */
+function initConfiguration(ActivitiesData, $uiRouter) {
+    $uiRouter.transitionService.onSuccess({to: 'base.configuration.**'}, (transition) => {
+        ActivitiesData.post({group: 'configuration', action: transition.targetState().name()});
+    });
+}
+
+initConfiguration.$inject = ['IgniteActivitiesData', '$uiRouter'];
 
 angular.module('ignite-console.states.configuration', ['ui.router'])
     .directive(...previewPanel)
-    // Summary screen
-    .directive(...summaryTabs)
     // Services.
     .service('IgniteSummaryZipper', IgniteSummaryZipper)
     .service('IgniteConfigurationResource', ConfigurationResource)
-    .run(['$templateCache', ($templateCache) => {
-        $templateCache.put('summary-tabs.html', summaryTabsTemplateUrl);
-    }])
+    .run(initConfiguration)
     // Configure state provider.
     .config(['$stateProvider', ($stateProvider) => {
         // Setup the states.
         $stateProvider
             .state('base.configuration', {
                 abstract: true,
+                permission: 'configuration',
+                url: '/configuration',
+                onEnter: ['ConfigureState', (ConfigureState) => ConfigureState.dispatchAction({type: 'PRELOAD_STATE', state: {}})],
                 views: {
                     '@': {
                         template: base2
                     }
+                },
+                resolve: {
+                    _shortClusters: ['ConfigEffects', ({etp}) => {
+                        return etp('LOAD_USER_CLUSTERS');
+                    }]
+                },
+                resolvePolicy: {
+                    async: 'NOWAIT'
                 }
             })
-            .state('base.configuration.tabs', {
-                url: '/configuration',
+            .state('base.configuration.overview', {
+                url: '/overview',
+                component: 'pageConfigureOverview',
                 permission: 'configuration',
-                template: '<page-configure></page-configure>',
-                redirectTo: (trans) => {
-                    const PageConfigure = trans.injector().get('PageConfigure');
-
-                    return PageConfigure.onStateEnterRedirect(trans.to());
+                tfMetaTags: {
+                    title: 'Configuration'
+                }
+            })
+            .state('base.configuration.edit', {
+                url: `/{clusterID:${idRegex}}`,
+                permission: 'configuration',
+                component: 'pageConfigure',
+                resolve: {
+                    _cluster: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
+                        return $transition$.injector().getAsync('_shortClusters').then(() => {
+                            return etp('LOAD_AND_EDIT_CLUSTER', {clusterID: $transition$.params().clusterID});
+                        });
+                    }]
+                },
+                data: {
+                    errorState: 'base.configuration.overview'
+                },
+                redirectTo: ($transition$) => {
+                    const [ConfigureState, ConfigSelectors] = ['ConfigureState', 'ConfigSelectors'].map((t) => $transition$.injector().get(t));
+                    const waitFor = ['_cluster', '_shortClusters'].map((t) => $transition$.injector().getAsync(t));
+                    return Observable.fromPromise(Promise.all(waitFor)).switchMap(() => {
+                        return Observable.combineLatest(
+                            ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1),
+                            ConfigureState.state$.let(ConfigSelectors.selectShortClusters()).take(1)
+                        );
+                    })
+                    .map(([cluster = {caches: []}, clusters]) => {
+                        return (clusters.value.size > 10 || cluster.caches.length > 5)
+                            ? 'base.configuration.edit.advanced'
+                            : 'base.configuration.edit.basic';
+                    })
+                    .toPromise();
                 },
                 failState: 'signin',
                 tfMetaTags: {
                     title: 'Configuration'
                 }
             })
-            .state('base.configuration.tabs.basic', {
+            .state('base.configuration.edit.basic', {
                 url: '/basic',
+                component: 'pageConfigureBasic',
                 permission: 'configuration',
-                template: '<page-configure-basic></page-configure-basic>',
+                resolve: {
+                    _shortCaches: shortCachesResolve
+                },
+                resolvePolicy: {
+                    async: 'NOWAIT'
+                },
                 tfMetaTags: {
                     title: 'Basic Configuration'
-                },
-                resolve: {
-                    list: ['IgniteConfigurationResource', 'PageConfigure', (configuration, pageConfigure) => {
-                        // TODO IGNITE-5271: remove when advanced config is hooked into ConfigureState too.
-                        // This resolve ensures that basic always has fresh data, i.e. after going back from advanced
-                        // after adding a cluster.
-                        return configuration.read().then((data) => {
-                            pageConfigure.loadList(data);
-                        });
-                    }]
                 }
             })
-            .state('base.configuration.tabs.advanced', {
+            .state('base.configuration.edit.advanced', {
                 url: '/advanced',
-                template: '<page-configure-advanced></page-configure-advanced>',
-                redirectTo: 'base.configuration.tabs.advanced.clusters'
-            })
-            .state('base.configuration.tabs.advanced.clusters', {
-                url: '/clusters',
-                templateUrl: clustersTpl,
+                component: 'pageConfigureAdvanced',
                 permission: 'configuration',
-                tfMetaTags: {
-                    title: 'Configure Clusters'
+                redirectTo: 'base.configuration.edit.advanced.cluster'
+            })
+            .state('base.configuration.edit.advanced.cluster', {
+                url: '/cluster',
+                component: pageConfigureAdvancedClusterComponent.name,
+                permission: 'configuration',
+                resolve: {
+                    _shortCaches: shortCachesResolve
                 },
-                controller: clustersCtrl,
-                controllerAs: '$ctrl'
+                resolvePolicy: {
+                    async: 'NOWAIT'
+                },
+                tfMetaTags: {
+                    title: 'Configure Cluster'
+                }
             })
-            .state('base.configuration.tabs.advanced.caches', {
+            .state('base.configuration.edit.advanced.caches', {
                 url: '/caches',
-                templateUrl: cachesTpl,
                 permission: 'configuration',
+                component: pageConfigureAdvancedCachesComponent.name,
+                resolve: {
+                    _shortCachesAndModels: ['ConfigSelectors', 'ConfigureState', 'ConfigEffects', '$transition$', (ConfigSelectors, ConfigureState, {etp}, $transition$) => {
+                        if ($transition$.params().clusterID === 'new') return Promise.resolve();
+                        return Observable.fromPromise($transition$.injector().getAsync('_cluster'))
+                        .switchMap(() => ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1))
+                        .map((cluster) => {
+                            return Promise.all([
+                                etp('LOAD_SHORT_CACHES', {ids: cluster.caches, clusterID: cluster._id}),
+                                etp('LOAD_SHORT_MODELS', {ids: cluster.models, clusterID: cluster._id}),
+                                etp('LOAD_SHORT_IGFSS', {ids: cluster.igfss, clusterID: cluster._id})
+                            ]);
+                        })
+                        .toPromise();
+                    }]
+                },
+                resolvePolicy: {
+                    async: 'NOWAIT'
+                },
                 tfMetaTags: {
                     title: 'Configure Caches'
-                },
-                controller: cachesCtrl,
-                controllerAs: '$ctrl'
+                }
             })
-            .state('base.configuration.tabs.advanced.domains', {
-                url: '/domains',
-                templateUrl: domainsTpl,
+            .state('base.configuration.edit.advanced.caches.cache', {
+                url: `/{cacheID:${idRegex}}`,
                 permission: 'configuration',
+                resolve: {
+                    _cache: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
+                        const {clusterID, cacheID} = $transition$.params();
+                        if (cacheID === 'new') return Promise.resolve();
+                        return etp('LOAD_CACHE', {cacheID});
+                    }]
+                },
+                data: {
+                    errorState: 'base.configuration.edit.advanced.caches'
+                },
+                resolvePolicy: {
+                    async: 'NOWAIT'
+                },
                 tfMetaTags: {
-                    title: 'Configure Domain Model'
-                },
-                controller: domainsCtrl,
-                controllerAs: '$ctrl'
+                    title: 'Configure Caches'
+                }
             })
-            .state('base.configuration.tabs.advanced.igfs', {
-                url: '/igfs',
-                templateUrl: igfsTpl,
+            .state('base.configuration.edit.advanced.models', {
+                url: '/models',
+                component: pageConfigureAdvancedModelsComponent.name,
                 permission: 'configuration',
+                resolve: {
+                    _shortCachesAndModels: ['ConfigSelectors', 'ConfigureState', 'ConfigEffects', '$transition$', (ConfigSelectors, ConfigureState, {etp}, $transition$) => {
+                        if ($transition$.params().clusterID === 'new') return Promise.resolve();
+                        return Observable.fromPromise($transition$.injector().getAsync('_cluster'))
+                        .switchMap(() => ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1))
+                        .map((cluster) => {
+                            return Promise.all([
+                                etp('LOAD_SHORT_CACHES', {ids: cluster.caches, clusterID: cluster._id}),
+                                etp('LOAD_SHORT_MODELS', {ids: cluster.models, clusterID: cluster._id})
+                            ]);
+                        })
+                        .toPromise();
+                    }]
+                },
+                resolvePolicy: {
+                    async: 'NOWAIT'
+                },
+                tfMetaTags: {
+                    title: 'Configure SQL Schemes'
+                }
+            })
+            .state('base.configuration.edit.advanced.models.model', {
+                url: `/{modelID:${idRegex}}`,
+                resolve: {
+                    _cache: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
+                        const {clusterID, modelID} = $transition$.params();
+                        if (modelID === 'new') return Promise.resolve();
+                        return etp('LOAD_MODEL', {modelID});
+                    }]
+                },
+                data: {
+                    errorState: 'base.configuration.edit.advanced.models'
+                },
+                permission: 'configuration',
+                resolvePolicy: {
+                    async: 'NOWAIT'
+                }
+            })
+            .state('base.configuration.edit.advanced.igfs', {
+                url: '/igfs',
+                component: pageConfigureAdvancedIGFSComponent.name,
+                permission: 'configuration',
+                resolve: {
+                    _shortIGFSs: ['ConfigSelectors', 'ConfigureState', 'ConfigEffects', '$transition$', (ConfigSelectors, ConfigureState, {etp}, $transition$) => {
+                        if ($transition$.params().clusterID === 'new') return Promise.resolve();
+                        return Observable.fromPromise($transition$.injector().getAsync('_cluster'))
+                        .switchMap(() => ConfigureState.state$.let(ConfigSelectors.selectCluster($transition$.params().clusterID)).take(1))
+                        .map((cluster) => {
+                            return Promise.all([
+                                etp('LOAD_SHORT_IGFSS', {ids: cluster.igfss, clusterID: cluster._id})
+                            ]);
+                        })
+                        .toPromise();
+                    }]
+                },
+                resolvePolicy: {
+                    async: 'NOWAIT'
+                },
                 tfMetaTags: {
                     title: 'Configure IGFS'
-                },
-                controller: igfsCtrl,
-                controllerAs: '$ctrl'
+                }
             })
-            .state('base.configuration.tabs.advanced.summary', {
-                url: '/summary',
-                templateUrl: summaryTpl,
+            .state('base.configuration.edit.advanced.igfs.igfs', {
+                url: `/{igfsID:${idRegex}}`,
                 permission: 'configuration',
-                controller: ConfigurationSummaryCtrl,
-                controllerAs: 'ctrl',
-                tfMetaTags: {
-                    title: 'Configurations Summary'
+                resolve: {
+                    _igfs: ['ConfigEffects', '$transition$', ({etp}, $transition$) => {
+                        const {clusterID, igfsID} = $transition$.params();
+                        if (igfsID === 'new') return Promise.resolve();
+                        return etp('LOAD_IGFS', {igfsID});
+                    }]
+                },
+                data: {
+                    errorState: 'base.configuration.edit.advanced.igfs'
+                },
+                resolvePolicy: {
+                    async: 'NOWAIT'
                 }
             });
     }]);

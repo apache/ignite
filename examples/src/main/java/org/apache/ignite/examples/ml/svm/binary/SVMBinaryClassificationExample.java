@@ -51,13 +51,13 @@ public class SVMBinaryClassificationExample {
                 SVMBinaryClassificationExample.class.getSimpleName(), () -> {
                 IgniteCache<Integer, double[]> dataCache = getTestCache(ignite);
 
-                SVMLinearBinaryClassificationTrainer<Integer, double[]> trainer = new SVMLinearBinaryClassificationTrainer<>();
+                SVMLinearBinaryClassificationTrainer trainer = new SVMLinearBinaryClassificationTrainer();
 
                 SVMLinearBinaryClassificationModel mdl = trainer.fit(
                     new CacheBasedDatasetBuilder<>(ignite, dataCache),
                     (k, v) -> Arrays.copyOfRange(v, 1, v.length),
-                    (k, v) -> v[0],
-                    4);
+                    (k, v) -> v[0]
+                );
 
                 System.out.println(">>> SVM model " + mdl);
 
@@ -71,7 +71,6 @@ public class SVMBinaryClassificationExample {
                 // Build confusion matrix. See https://en.wikipedia.org/wiki/Confusion_matrix
                 int[][] confusionMtx = {{0, 0}, {0, 0}};
 
-
                 try (QueryCursor<Cache.Entry<Integer, double[]>> observations = dataCache.query(new ScanQuery<>())) {
                     for (Cache.Entry<Integer, double[]> observation : observations) {
                         double[] val = observation.getValue();
@@ -84,9 +83,9 @@ public class SVMBinaryClassificationExample {
                         if(groundTruth != prediction)
                             amountOfErrors++;
 
-
                         int idx1 = (int)prediction == -1.0 ? 0 : 1;
                         int idx2 = (int)groundTruth == -1.0 ? 0 : 1;
+
                         confusionMtx[idx1][idx2]++;
 
                         System.out.printf(">>> | %.4f\t\t| %.4f\t\t|\n", prediction, groundTruth);
@@ -126,7 +125,7 @@ public class SVMBinaryClassificationExample {
     }
 
 
-    /** The Iris dataset. */
+    /** The 1st and 2nd classes from the Iris dataset. */
     private static final double[][] data = {
         {-1, 5.1, 3.5, 1.4, 0.2},
         {-1, 4.9, 3, 1.4, 0.2},
