@@ -28,6 +28,7 @@ import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasure;
 import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.util.StepFunctionCompressor;
+import org.apache.ignite.ml.tree.leaf.MostCommonDecisionTreeLeafBuilder;
 
 /**
  * Decision tree classifier based on distributed decision tree trainer that allows to fit trees using row-partitioned
@@ -52,44 +53,7 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
      */
     public DecisionTreeClassificationTrainer(int maxDeep, double minImpurityDecrease,
         StepFunctionCompressor<GiniImpurityMeasure> compressor) {
-        super(maxDeep, minImpurityDecrease, compressor);
-    }
-
-    /** {@inheritDoc} */
-    @Override DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset, TreeFilter pred) {
-        Map<Double, Integer> cnt = dataset.compute(part -> {
-
-            if (part.getFeatures() != null) {
-                Map<Double, Integer> map = new HashMap<>();
-
-                for (int i = 0; i < part.getFeatures().length; i++) {
-                    if (pred.test(part.getFeatures()[i])) {
-                        double lb = part.getLabels()[i];
-
-                        if (map.containsKey(lb))
-                            map.put(lb, map.get(lb) + 1);
-                        else
-                            map.put(lb, 1);
-                    }
-                }
-
-                return map;
-            }
-
-            return null;
-        }, this::reduce);
-
-        double bestVal = 0;
-        int bestCnt = -1;
-
-        for (Map.Entry<Double, Integer> e : cnt.entrySet()) {
-            if (e.getValue() > bestCnt) {
-                bestCnt = e.getValue();
-                bestVal = e.getKey();
-            }
-        }
-
-        return new DecisionTreeLeafNode(bestVal);
+        super(maxDeep, minImpurityDecrease, compressor, new MostCommonDecisionTreeLeafBuilder());
     }
 
     /** {@inheritDoc} */
@@ -125,22 +89,5 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
             encoder.put(lb, idx++);
 
         return new GiniImpurityMeasureCalculator(encoder);
-    }
-
-    /** */
-    private Map<Double, Integer> reduce(Map<Double, Integer> a, Map<Double, Integer> b) {
-        if (a == null)
-            return b;
-        else if (b == null)
-            return a;
-        else {
-            for (Map.Entry<Double, Integer> e : b.entrySet()) {
-                if (a.containsKey(e.getKey()))
-                    a.put(e.getKey(), a.get(e.getKey()) + e.getValue());
-                else
-                    a.put(e.getKey(), e.getValue());
-            }
-            return a;
-        }
     }
 }

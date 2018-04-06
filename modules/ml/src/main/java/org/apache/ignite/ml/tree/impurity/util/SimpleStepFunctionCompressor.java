@@ -44,7 +44,7 @@ public class SimpleStepFunctionCompressor<T extends ImpurityMeasure<T>> implemen
      * Constructs a new instance of simple step function compressor with default parameters.
      */
     public SimpleStepFunctionCompressor() {
-        this(10, 0.05, 0.1);
+        this(10, 0.1, 0.05);
     }
 
     /**

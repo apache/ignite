@@ -24,6 +24,7 @@ import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasure;
 import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.util.StepFunctionCompressor;
+import org.apache.ignite.ml.tree.leaf.MeanDecisionTreeLeafBuilder;
 
 /**
  * Decision tree regressor based on distributed decision tree trainer that allows to fit trees using row-partitioned
@@ -48,55 +49,12 @@ public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasu
      */
     public DecisionTreeRegressionTrainer(int maxDeep, double minImpurityDecrease,
         StepFunctionCompressor<MSEImpurityMeasure> compressor) {
-        super(maxDeep, minImpurityDecrease, compressor);
-    }
-
-    /** {@inheritDoc} */
-    @Override DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset, TreeFilter pred) {
-        double[] aa = dataset.compute(part -> {
-            double mean = 0;
-            int cnt = 0;
-
-            for (int i = 0; i < part.getFeatures().length; i++) {
-                if (pred.test(part.getFeatures()[i])) {
-                    mean += part.getLabels()[i];
-                    cnt++;
-                }
-            }
-
-            if (cnt != 0) {
-                mean = mean / cnt;
-
-                return new double[] {mean, cnt};
-            }
-
-            return null;
-        }, this::reduce);
-
-        return aa != null ? new DecisionTreeLeafNode(aa[0]) : null;
+        super(maxDeep, minImpurityDecrease, compressor, new MeanDecisionTreeLeafBuilder());
     }
 
     /** {@inheritDoc} */
     @Override ImpurityMeasureCalculator<MSEImpurityMeasure> getImpurityMeasureCalculator(
         Dataset<EmptyContext, DecisionTreeData> dataset) {
         return new MSEImpurityMeasureCalculator();
-    }
-
-    /** */
-    private double[] reduce(double[] a, double[] b) {
-        if (a == null)
-            return b;
-        else if (b == null)
-            return a;
-        else {
-            double aMean = a[0];
-            double aCnt = a[1];
-            double bMean = b[0];
-            double bCnt = b[1];
-
-            double mean = (aMean * aCnt + bMean * bCnt) / (aCnt + bCnt);
-
-            return new double[] {mean, aCnt + bCnt};
-        }
     }
 }

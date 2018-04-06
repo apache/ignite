@@ -15,34 +15,24 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.tree;
+package org.apache.ignite.ml.tree.leaf;
+
+import org.apache.ignite.ml.dataset.Dataset;
+import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
+import org.apache.ignite.ml.tree.DecisionTreeLeafNode;
+import org.apache.ignite.ml.tree.TreeFilter;
+import org.apache.ignite.ml.tree.data.DecisionTreeData;
 
 /**
- * Decision tree leaf node which contains value.
+ * Base interface for decision tree leaf builders.
  */
-public class DecisionTreeLeafNode implements DecisionTreeNode {
-    /** */
-    private static final long serialVersionUID = -472145568088482206L;
-
-    /** Value of the node. */
-    private final double val;
-
+public interface DecisionTreeLeafBuilder {
     /**
-     * Constructs a new decision tree leaf node.
+     * Creates new leaf node for given dataset and node predicate.
      *
-     * @param val Value of the node.
+     * @param dataset Dataset.
+     * @param pred Node predicate.
+     * @return Leaf node.
      */
-    public DecisionTreeLeafNode(double val) {
-        this.val = val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Double apply(double[] doubles) {
-        return val;
-    }
-
-    /** */
-    public double getVal() {
-        return val;
-    }
+    public DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset, TreeFilter pred);
 }
