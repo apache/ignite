@@ -87,18 +87,4 @@ public class ClientRequest implements ClientListenerRequest {
         if (secCtx != null)
             runWithSecurityExceptionHandler(() -> ctx.kernalContext().security().authorize(null, perm, secCtx));
     }
-
-    /**
-     * Authorize for multiple permissions.
-     */
-    protected void authorize(ClientConnectionContext ctx, SecurityPermission... perm) {
-        SecurityContext secCtx = ctx.securityContext();
-
-        if (secCtx != null) {
-            runWithSecurityExceptionHandler(() -> {
-                for (SecurityPermission p : perm)
-                    ctx.kernalContext().security().authorize(null, p, secCtx);
-            });
-        }
-    }
 }

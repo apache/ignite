@@ -44,7 +44,7 @@ public class ClientCacheReplaceIfEqualsRequest extends ClientCacheKeyValueReques
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public ClientResponse process(ClientConnectionContext ctx) {
-        authorize(ctx, SecurityPermission.CACHE_PUT, SecurityPermission.CACHE_REMOVE);
+        authorize(ctx, SecurityPermission.CACHE_READ, SecurityPermission.CACHE_PUT);
 
         boolean res = cache(ctx).replace(key(), val(), newVal);
 
