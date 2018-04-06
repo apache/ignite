@@ -230,7 +230,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         // Clean-up in case of client reconnect.
         caches.clear();
 
-        caches.init(cacheGroupDescriptors, cacheDescriptors);
+//        caches.init(cacheGroupDescriptors, cacheDescriptors);
+        caches.init(cctx.cache().cacheGroupDescriptors(), cctx.cache().cacheDescriptors());
 
         StackTraceElement[] arr = Thread.currentThread().getStackTrace();
         String msg = stream(arr).map(e -> e.getClassName() + "." + e.getMethodName() + ":" + e.getLineNumber() + "\n")
