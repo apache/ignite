@@ -94,7 +94,9 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
 
             assertTrue("Expected that at least resIdx greater than 0, real is " + resIdx, resIdx > 0);
 
-            assertTrue("Expected that dbMbr returns valid resIdx", dbMgr.reservedWalSegmentIndex() == resIdx);
+            FileWALPointer lowPtr = (FileWALPointer)dbMgr.checkpointHistory().lowCheckpointBound();
+
+            assertTrue("Expected that dbMbr returns valid resIdx", lowPtr.index() == resIdx);
 
             // Reserve previous WAL segment.
             wal.reserve(new FileWALPointer(resIdx - 1, 0, 0));
@@ -126,12 +128,14 @@ public class IgnitePdsUnusedWalSegmentsTest extends GridCommonAbstractTest {
 
             assertTrue("Expected that at least resIdx greater than 0, real is " + resIdx, resIdx > 0);
 
-            assertTrue("Expected that dbMbr returns valid resIdx", dbMgr.reservedWalSegmentIndex() == resIdx);
+            FileWALPointer lowPtr = (FileWALPointer) dbMgr.checkpointHistory().lowCheckpointBound();
+
+            assertTrue("Expected that dbMbr returns valid resIdx", lowPtr.index() == resIdx);
 
             // Reserve previous WAL segment.
             wal.reserve(new FileWALPointer(resIdx - 1, 0, 0));
 
-            int numDel = dbMgr.walSegmentsTruncate();
+            int numDel = wal.truncate(null, lowPtr);
 
             int expNumDel = (int)resIdx - 1;
 

@@ -114,8 +114,6 @@ public class GridInternalTaskUnusedWalSegmentsTest extends GridCommonAbstractTes
             List<File> walArchives = new ArrayList<>();
 
             for (Collection<String> pathsPerNode : printRes.results().values()) {
-                assertTrue("Check that all nodes has unused WAL segments", pathsPerNode.size() > 0);
-
                 for (String path : pathsPerNode)
                     walArchives.add(Paths.get(path).toFile());
             }

@@ -1779,43 +1779,6 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
         lsnrs.remove(lsnr);
     }
 
-
-    /**
-     * Index of WAL reserved segment index. Segments with indices below can be truncated.
-     *
-     * @return Index of WAL reserved segment.
-     */
-    public long reservedWalSegmentIndex() {
-        CheckpointEntry entry = checkpointHistory().firstEntry();
-
-        if (entry != null) {
-            int resCnt = cctx.wal().reserved(null, entry.cpMark);
-
-            long highIdx = ((FileWALPointer)entry.cpMark).index();
-
-            return highIdx - resCnt + 1;
-        }
-        else
-            return 0;
-    }
-
-    /**
-     * Safely truncate archived WAL segments.
-     *
-     * @return Number of deleted files.
-     */
-    public int walSegmentsTruncate() {
-        CheckpointEntry entry = checkpointHistory().firstEntry();
-
-        if (entry != null) {
-            onWalTruncated(entry.cpMark);
-
-            return cctx.wal().truncate(null, entry.cpMark);
-        }
-        else
-            return 0;
-    }
-
     /**
      * @return Read checkpoint status.
      * @throws IgniteCheckedException If failed to read checkpoint status page.
@@ -3733,6 +3696,17 @@ public class GridCacheDatabaseSharedManager extends IgniteCacheDatabaseSharedMan
             Map.Entry<Long,CheckpointEntry> entry = histMap.firstEntry();
 
             return entry != null ? entry.getValue() : null;
+        }
+
+        /**
+         * Get WAL pointer to low checkpoint bound.
+         *
+         * @return WAL pointer to low checkpoint bound.
+         */
+        public WALPointer lowCheckpointBound() {
+            CheckpointEntry entry = firstEntry();
+
+            return entry != null ? entry.cpMark : null;
         }
 
         /**

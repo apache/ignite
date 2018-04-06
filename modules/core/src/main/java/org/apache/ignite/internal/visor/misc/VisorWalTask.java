@@ -38,8 +38,11 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.filename.PdsFolderSettings;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
+import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.VisorJob;
@@ -150,17 +153,18 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
                 GridKernalContext cctx = ignite.context();
 
                 GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)cctx.cache().context().database();
+                FileWriteAheadLogManager wal = (FileWriteAheadLogManager)cctx.cache().context().wal();
 
-                if (dbMgr == null || arg == null)
+                if (dbMgr == null || arg == null || wal == null)
                     return null;
 
                 switch (arg.getOperation()) {
                     case DELETE_UNUSED_WAL_SEGMENTS:
-                        return deleteUnusedWalSegments(dbMgr);
+                        return deleteUnusedWalSegments(dbMgr, wal);
 
                     case PRINT_UNUSED_WAL_SEGMENTS:
                     default:
-                        return getUnusedWalSegments(dbMgr);
+                        return getUnusedWalSegments(dbMgr, wal);
 
                 }
             }
@@ -174,13 +178,20 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
         /**
          * Get unused wal segments.
          *
-         * @param  dbMgr Database manager.
+         * @param  wal Database manager.
          * @return {@link Collection<String>} of absolute paths of unused WAL segments.
          * @throws IgniteCheckedException if failed.
          */
-        Collection<String> getUnusedWalSegments(GridCacheDatabaseSharedManager dbMgr)
-                throws IgniteCheckedException{
-            long maxIdx = dbMgr.reservedWalSegmentIndex();
+        Collection<String> getUnusedWalSegments(
+            GridCacheDatabaseSharedManager dbMgr,
+            FileWriteAheadLogManager wal
+        ) throws IgniteCheckedException{
+            WALPointer lowBoundForTruncate = dbMgr.checkpointHistory().lowCheckpointBound();
+
+            if (lowBoundForTruncate == null)
+                return Collections.emptyList();
+
+            int maxIdx = resolveMaxReservedIndex(wal, lowBoundForTruncate);
 
             File[] walFiles = getWalArchiveDir().listFiles(WAL_ARCHIVE_FILE_FILTER);
 
@@ -212,12 +223,22 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
          * @return {@link Collection<String>} of deleted WAL segment's files.
          * @throws IgniteCheckedException if failed.
          */
-        Collection<String> deleteUnusedWalSegments(GridCacheDatabaseSharedManager dbMgr) throws IgniteCheckedException {
-            long maxIdx = dbMgr.reservedWalSegmentIndex();
+        Collection<String> deleteUnusedWalSegments(
+            GridCacheDatabaseSharedManager dbMgr,
+            FileWriteAheadLogManager wal
+        ) throws IgniteCheckedException {
+            WALPointer lowBoundForTruncate = dbMgr.checkpointHistory().lowCheckpointBound();
+
+            if (lowBoundForTruncate == null)
+                return Collections.emptyList();
+
+            int maxIdx = resolveMaxReservedIndex(wal, lowBoundForTruncate);
 
             File[] walFiles = getWalArchiveDir().listFiles(WAL_ARCHIVE_FILE_FILTER);
 
-            int num = dbMgr.walSegmentsTruncate();
+            dbMgr.onWalTruncated(lowBoundForTruncate);
+
+            int num = wal.truncate(null, lowBoundForTruncate);
 
             if (walFiles != null) {
                 sortWalFiles(walFiles);
@@ -238,6 +259,19 @@ public class VisorWalTask extends VisorMultiNodeTask<VisorWalTaskArg, VisorWalTa
             else
                 return Collections.emptyList();
 
+        }
+
+        /**
+         *
+         */
+        private int resolveMaxReservedIndex(FileWriteAheadLogManager wal, WALPointer lowBoundForTruncate) {
+            FileWALPointer low = (FileWALPointer)lowBoundForTruncate;
+
+            int resCnt = wal.reserved(null, lowBoundForTruncate);
+
+            long highIdx = low.index();
+
+            return (int)(highIdx - resCnt + 1);
         }
 
         /**
