@@ -195,7 +195,8 @@
     <ClCompile Include="..\..\src\query\type_info_query.cpp" />
     <ClCompile Include="..\..\src\result_page.cpp" />
     <ClCompile Include="..\..\src\row.cpp" />
-    <ClCompile Include="..\..\src\sql_parser.cpp" />
+    <ClCompile Include="..\..\src\sql\sql_lexer.cpp" />
+    <ClCompile Include="..\..\src\sql\sql_parser.cpp" />
     <ClCompile Include="..\..\src\ssl\secure_socket_client.cpp" />
     <ClCompile Include="..\..\src\ssl\ssl_gateway.cpp" />
     <ClCompile Include="..\..\src\ssl\ssl_mode.cpp" />
@@ -248,7 +249,8 @@
     <ClInclude Include="..\..\include\ignite\odbc\result_page.h" />
     <ClInclude Include="..\..\include\ignite\odbc\row.h" />
     <ClInclude Include="..\..\include\ignite\odbc\socket_client.h" />
-    <ClInclude Include="..\..\include\ignite\odbc\sql_parser.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\sql\sql_lexer.h" />
+    <ClInclude Include="..\..\include\ignite\odbc\sql\sql_parser.h" />
     <ClInclude Include="..\..\include\ignite\odbc\ssl\secure_socket_client.h" />
     <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_bindings.h" />
     <ClInclude Include="..\..\include\ignite\odbc\ssl\ssl_gateway.h" />

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include "ignite/odbc/sql_parser.h"
+#include "ignite/odbc/sql/sql_parser.h"
 
 namespace ignite
 {
