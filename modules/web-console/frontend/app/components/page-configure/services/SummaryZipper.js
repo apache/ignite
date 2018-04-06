@@ -17,7 +17,10 @@
 
 import Worker from './summary.worker';
 
-export default ['$q', function($q) {
+/**
+ * @param {ng.IQService} $q
+ */
+export default function SummaryZipperService($q) {
     return function(message) {
         const defer = $q.defer();
         const worker = new Worker();
@@ -36,4 +39,6 @@ export default ['$q', function($q) {
 
         return defer.promise;
     };
-}];
+}
+
+SummaryZipperService.$inject = ['$q'];
