@@ -39,6 +39,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -46,6 +47,7 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -200,6 +202,15 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         IgniteEx newIgnite = startGrid(3);
 
+        final GridCacheDatabaseSharedManager.CheckpointHistory cpHistory =
+            ((GridCacheDatabaseSharedManager)newIgnite.context().cache().context().database()).checkpointHistory();
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !cpHistory.checkpoints().isEmpty();
+            }
+        }, 10_000);
+
         U.sleep(10); // To ensure timestamp granularity.
 
         long newIgniteStartedTimestamp = System.currentTimeMillis();
@@ -227,9 +238,6 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         for (Integer k = 0; k < 1000; k++)
             assertEquals("k=" + k, k, cache.get(k));
-
-        GridCacheDatabaseSharedManager.CheckpointHistory cpHistory =
-            ((GridCacheDatabaseSharedManager)newIgnite.context().cache().context().database()).checkpointHistory();
 
         int checkpointsBeforeNodeStarted = 0;
         int checkpointsBeforeRebalance = 0;
