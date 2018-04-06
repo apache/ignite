@@ -24,14 +24,14 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.ignite.ml.DatasetTrainer;
+import org.apache.ignite.ml.trainers.SingleLabelDatasetTrainer;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.svm.multi.LabelPartitionContext;
-import org.apache.ignite.ml.svm.multi.LabelPartitionDataBuilderOnHeap;
-import org.apache.ignite.ml.svm.multi.LabelPartitionDataOnHeap;
+import org.apache.ignite.ml.structures.partition.LabelPartitionContext;
+import org.apache.ignite.ml.structures.partition.LabelPartitionDataBuilderOnHeap;
+import org.apache.ignite.ml.structures.partition.LabelPartitionDataOnHeap;
 
 /**
  * Base class for a soft-margin SVM linear multiclass-classification trainer based on the communication-efficient
@@ -39,8 +39,8 @@ import org.apache.ignite.ml.svm.multi.LabelPartitionDataOnHeap;
  *
  * All common parameters are shared with bunch of binary classification trainers.
  */
-public class SVMLinearMultiClassClassificationTrainer<K, V>
-    implements DatasetTrainer<K, V, SVMLinearMultiClassClassificationModel> {
+public class SVMLinearMultiClassClassificationTrainer
+    implements SingleLabelDatasetTrainer<SVMLinearMultiClassClassificationModel> {
     /** Amount of outer SDCA algorithm iterations. */
     private int amountOfIterations = 20;
 
@@ -56,12 +56,11 @@ public class SVMLinearMultiClassClassificationTrainer<K, V>
      * @param datasetBuilder   Dataset builder.
      * @param featureExtractor Feature extractor.
      * @param lbExtractor      Label extractor.
-     * @param cols             Number of columns.
      * @return Model.
      */
-    @Override public SVMLinearMultiClassClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
+    @Override public <K, V> SVMLinearMultiClassClassificationModel fit(DatasetBuilder<K, V> datasetBuilder,
                                                                 IgniteBiFunction<K, V, double[]> featureExtractor,
-                                                                IgniteBiFunction<K, V, Double> lbExtractor, int cols) {
+                                                                IgniteBiFunction<K, V, Double> lbExtractor) {
         List<Double> classes = extractClassLabels(datasetBuilder, lbExtractor);
 
         SVMLinearMultiClassClassificationModel multiClsMdl = new SVMLinearMultiClassClassificationModel();
@@ -80,14 +79,14 @@ public class SVMLinearMultiClassClassificationTrainer<K, V>
                 else
                     return -1.0;
             };
-            multiClsMdl.add(clsLb, trainer.fit(datasetBuilder, featureExtractor, lbTransformer, cols));
+            multiClsMdl.add(clsLb, trainer.fit(datasetBuilder, featureExtractor, lbTransformer));
         });
 
         return multiClsMdl;
     }
 
     /** Iterates among dataset and collects class labels. */
-    private List<Double> extractClassLabels(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Double> lbExtractor) {
+    private <K, V> List<Double> extractClassLabels(DatasetBuilder<K, V> datasetBuilder, IgniteBiFunction<K, V, Double> lbExtractor) {
         assert datasetBuilder != null;
 
         PartitionDataBuilder<K, V, LabelPartitionContext, LabelPartitionDataOnHeap> partDataBuilder = new LabelPartitionDataBuilderOnHeap<>(lbExtractor);
@@ -122,7 +121,7 @@ public class SVMLinearMultiClassClassificationTrainer<K, V>
      * @param lambda The regularization parameter. Should be more than 0.0.
      * @return Trainer with new lambda parameter value.
      */
-    public SVMLinearMultiClassClassificationTrainer<K, V>  withLambda(double lambda) {
+    public SVMLinearMultiClassClassificationTrainer  withLambda(double lambda) {
         assert lambda > 0.0;
         this.lambda = lambda;
         return this;
@@ -152,7 +151,7 @@ public class SVMLinearMultiClassClassificationTrainer<K, V>
      * @param amountOfIterations The parameter value.
      * @return Trainer with new amountOfIterations parameter value.
      */
-    public SVMLinearMultiClassClassificationTrainer<K, V>  withAmountOfIterations(int amountOfIterations) {
+    public SVMLinearMultiClassClassificationTrainer  withAmountOfIterations(int amountOfIterations) {
         this.amountOfIterations = amountOfIterations;
         return this;
     }
@@ -172,7 +171,7 @@ public class SVMLinearMultiClassClassificationTrainer<K, V>
      * @param amountOfLocIterations The parameter value.
      * @return Trainer with new amountOfLocIterations parameter value.
      */
-    public SVMLinearMultiClassClassificationTrainer<K, V>  withAmountOfLocIterations(int amountOfLocIterations) {
+    public SVMLinearMultiClassClassificationTrainer  withAmountOfLocIterations(int amountOfLocIterations) {
         this.amountOfLocIterations = amountOfLocIterations;
         return this;
     }

@@ -18,6 +18,6 @@ include /app/helpers/jade/mixins
 
 -var model = `${modelAt}.discovery.ZooKeeper.retryPolicy.OneTime`
 
-div
-    .details-row
-        +number('Interval:', `${model}.sleepMsBetweenRetry`, '"oneSleepMsBetweenRetry"', 'true', '1000', '0', 'Time in ms to retry attempt')
+.pc-form-grid-col-30(ng-if-start=`${modelRetryPolicyKind} === 'OneTime'`)
+    +number('Interval:', `${model}.sleepMsBetweenRetry`, '"oneSleepMsBetweenRetry"', 'true', '1000', '0', 'Time in ms to retry attempt')
+.pc-form-grid__break(ng-if-end)
