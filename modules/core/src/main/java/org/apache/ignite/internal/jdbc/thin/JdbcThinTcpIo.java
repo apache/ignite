@@ -556,8 +556,6 @@ public class JdbcThinTcpIo {
      * Close the client IO.
      */
     public void close() {
-        System.out.println("+++ close");
-
         if (closed)
             return;
 

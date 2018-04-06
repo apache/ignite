@@ -54,7 +54,7 @@ public class JdbcThinStreamingNotOrderedSelfTest extends JdbcThinStreamingSelfTe
             + " ALLOW_OVERWRITE " + (allowOverwrite ? 1 : 0)
             + " PER_NODE_BUFFER_SIZE 1000 "
             + " FLUSH_FREQUENCY " + flushFreq
-            + " ORDERED " +  (ordered ? "ON" : "OFF")
+            + " ORDERED " +  (ordered ? "ON" : "OFF") + ";"
         );
 
         return c;

@@ -76,8 +76,7 @@ public class UploadBenchmarkArguments implements StreamerParams {
 
     @Parameter(names = {"--streamer-ordered"},
         description = "Streamer benchmarks only: set streamer ordered flag.")
-    private boolean streamerOrdered = false;
-
+    private boolean streamerOrdered = true;
 
     /** How many rows to upload during warmup. */
     @Parameter(names = {"--upload-warmup-rows"})

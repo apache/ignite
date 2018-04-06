@@ -83,7 +83,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
         Connection c = JdbcThinAbstractSelfTest.connect(grid(0), null       );
 
         execute(c, "SET STREAMING 1 BATCH_SIZE " + batchSize + " ALLOW_OVERWRITE " + (allowOverwrite ? 1 : 0) +
-            " PER_NODE_BUFFER_SIZE 1000 FLUSH_FREQUENCY " + flushFreq);
+            " PER_NODE_BUFFER_SIZE 1000 FLUSH_FREQUENCY " + flushFreq + " ORDERED ON" );
 
         return c;
     }

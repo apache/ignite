@@ -126,9 +126,6 @@ public class SqlSetStreamingCommand implements SqlCommand {
 
                     ordered = parseBoolean(lex);
 
-                    if (flushFreq <= 0)
-                        throw error(lex, "Invalid flush frequency (must be positive).");
-
                     break;
 
                 default:
