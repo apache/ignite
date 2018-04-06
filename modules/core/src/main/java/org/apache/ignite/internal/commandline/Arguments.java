@@ -50,6 +50,16 @@ public class Arguments {
     private String baselineArgs;
 
     /**
+     * Action for WAL command.
+     */
+    private String walAct;
+
+    /**
+     * Arguments for WAL command.
+     */
+    private String walArgs;
+
+    /**
      * @param cmd Command.
      * @param host Host.
      * @param port Port.
@@ -57,12 +67,12 @@ public class Arguments {
      * @param pwd Password.
      * @param baselineAct Baseline action.
      * @param baselineArgs Baseline args.
+     * @param walAct WAL action.
+     * @param walArgs WAL args.
      * @param force Force flag.
      */
     public Arguments(Command cmd, String host, String port, String user, String pwd,
-        String baselineAct, String baselineArgs,
-        boolean force
-    ) {
+        String baselineAct, String baselineArgs, String walAct, String walArgs, boolean force) {
         this.cmd = cmd;
         this.host = host;
         this.port = port;
@@ -70,6 +80,8 @@ public class Arguments {
         this.pwd = pwd;
         this.baselineAct = baselineAct;
         this.baselineArgs = baselineArgs;
+        this.walAct = walAct;
+        this.walArgs = walArgs;
         this.force = force;
     }
 
@@ -120,6 +132,20 @@ public class Arguments {
      */
     public String baselineArguments() {
         return baselineArgs;
+    }
+
+    /**
+     * @return WAL action.
+     */
+    public String walAction() {
+        return walAct;
+    }
+
+    /**
+     * @return WAL arguments.
+     */
+    public String walArguments() {
+        return walArgs;
     }
 
     /**

@@ -43,6 +43,7 @@ import org.apache.ignite.thread.GridThreadPoolExecutorServiceSelfTest;
 import org.apache.ignite.thread.IgniteThreadPoolSizeTest;
 import org.apache.ignite.util.GridCommandHandlerTest;
 import org.apache.ignite.util.GridIntListSelfTest;
+import org.apache.ignite.util.GridInternalTaskUnusedWalSegmentsTest;
 import org.apache.ignite.util.GridLongListSelfTest;
 import org.apache.ignite.util.GridMessageCollectionTest;
 import org.apache.ignite.util.GridPartitionMapSelfTest;
@@ -116,6 +117,7 @@ public class IgniteUtilSelfTestSuite extends TestSuite {
         // control.sh
         suite.addTestSuite(CommandHandlerParsingTest.class);
         suite.addTestSuite(GridCommandHandlerTest.class);
+        suite.addTestSuite(GridInternalTaskUnusedWalSegmentsTest.class);
 
         return suite;
     }
