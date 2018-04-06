@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -1035,7 +1036,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param grpId Group ID.
      * @return WAL enabled flag.
      */
-    public boolean walEnabled(int grpId) {
+    public boolean walEnabled(int grpId, boolean local) {
         return false;
     }
 
@@ -1045,7 +1046,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param grpId Group id.
      * @param enabled flag.
      */
-    public void walEnabled(int grpId, boolean enabled) {
+    public void walEnabled(int grpId, boolean enabled, boolean local) {
         // No-op.
     }
 }

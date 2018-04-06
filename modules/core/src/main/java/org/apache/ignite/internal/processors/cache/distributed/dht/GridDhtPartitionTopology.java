@@ -356,6 +356,8 @@ public interface GridDhtPartitionTopology {
      */
     public boolean own(GridDhtLocalPartition part);
 
+    public void ownMoving(AffinityTopologyVersion topVer);
+
     /**
      * @param part Evicted partition.
      * @param updateSeq Update sequence increment flag.

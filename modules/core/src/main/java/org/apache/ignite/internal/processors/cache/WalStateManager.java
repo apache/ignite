@@ -49,6 +49,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -112,7 +113,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
     private boolean disconnected;
 
     /** Holder for groups with temporary disabled WAL. */
-    private final AtomicReference<TemporaryDisabledWal> tmpDisabledWal = new AtomicReference<>();
+    private volatile TemporaryDisabledWal tmpDisabledWal;
 
     /**
      * Constructor.
@@ -390,14 +391,14 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 grpsWithWalDisabled.add(grp.groupId());
         }
 
-        tmpDisabledWal.set(new TemporaryDisabledWal(grpsWithWalDisabled, topVer));
+        tmpDisabledWal = new TemporaryDisabledWal(grpsWithWalDisabled, topVer);
 
         if (grpsToEnableWal.isEmpty() && grpsToDisableWal.isEmpty())
             return;
 
         try {
             if (hasNonEmptyOwning && !grpsToEnableWal.isEmpty())
-                triggerCheckpoint(0).beginFuture().get();
+                triggerCheckpoint(0).finishFuture().get();
         }
         catch (IgniteCheckedException ex) {
             throw new IgniteException(ex);
@@ -417,45 +418,42 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param topVer Topology version.
      */
     public void onGroupRebalanceFinished(int grpId, AffinityTopologyVersion topVer) {
-        TemporaryDisabledWal session0 = this.tmpDisabledWal.get();
+        TemporaryDisabledWal session0 = tmpDisabledWal;
 
         if (session0 == null || !session0.topVer.equals(topVer))
             return;
 
         session0.remainingGrps.remove(grpId);
 
-        if (session0.remainingGrps.isEmpty() && this.tmpDisabledWal.compareAndSet(session0, null)) {
+        if (session0.remainingGrps.isEmpty()) {
+            synchronized (mux) {
+                if (tmpDisabledWal != session0)
+                    return;
+
+                for (Integer grpId0 : session0.disabledGrps) {
+                    CacheGroupContext grp = cctx.cache().cacheGroup(grpId0);
+
+                    assert grp != null;
+
+                    if (!grp.localWalEnabled())
+                        grp.localWalEnabled(true);
+                }
+
+                tmpDisabledWal = null;
+            }
+
             CheckpointFuture cpFut = triggerCheckpoint(0);
 
             assert cpFut != null;
 
             cpFut.finishFuture().listen(new IgniteInClosureX<IgniteInternalFuture>() {
                 @Override public void applyx(IgniteInternalFuture future) {
-                    for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-                        if (grp.localWalEnabled())
-                            continue;
+                    for (Integer grpId0 : session0.disabledGrps) {
+                        CacheGroupContext grp = cctx.cache().cacheGroup(grpId0);
 
-                        for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
-                            if (locPart.state() == MOVING) {
-                                boolean reserved = locPart.reserve();
+                        assert grp != null;
 
-                                try {
-                                    if (reserved && locPart.state() == MOVING &&
-                                        cctx.discovery().topologyVersionEx().equals(session0.topVer)) {
-                                        if (!grp.localWalEnabled())
-                                            grp.localWalEnabled(true);
-
-                                        grp.topology().own(locPart);
-                                    }
-                                    else // topology changed, rebalancing must be restarted
-                                        return;
-                                }
-                                finally {
-                                    if (reserved)
-                                        locPart.release();
-                                }
-                            }
-                        }
+                        grp.topology().ownMoving(session0.topVer);
                     }
 
                     cctx.exchange().refreshPartitions();
@@ -1059,6 +1057,9 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      *
      */
     private static class TemporaryDisabledWal {
+        /** Groups with disabled WAL. */
+        private final Set<Integer> disabledGrps;
+
         /** Remaining groups. */
         private final Set<Integer> remainingGrps;
 
@@ -1066,9 +1067,11 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         private final AffinityTopologyVersion topVer;
 
         /** */
-        public TemporaryDisabledWal(Set<Integer> remainingGrps,
+        public TemporaryDisabledWal(
+            Set<Integer> disabledGrps,
             AffinityTopologyVersion topVer) {
-            this.remainingGrps = remainingGrps;
+            this.disabledGrps = Collections.unmodifiableSet(disabledGrps);
+            this.remainingGrps = new HashSet<>(disabledGrps);
             this.topVer = topVer;
         }
     }

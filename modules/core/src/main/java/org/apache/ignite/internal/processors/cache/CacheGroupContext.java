@@ -202,7 +202,7 @@ public class CacheGroupContext {
         this.globalWalEnabled = walEnabled;
         this.localWalEnabled = true;
 
-        persistWalState(walEnabled);
+        persistGlobalWalState(walEnabled);
 
         ioPlc = cacheType.ioPolicy();
 
@@ -1046,7 +1046,7 @@ public class CacheGroupContext {
      * @param enabled Global WAL enabled flag.
      */
     public void globalWalEnabled(boolean enabled) {
-        persistWalState(enabled);
+        persistGlobalWalState(enabled);
 
         this.globalWalEnabled = enabled;
     }
@@ -1055,13 +1055,22 @@ public class CacheGroupContext {
      * @param enabled Local WAL enabled flag.
      */
     public void localWalEnabled(boolean enabled) {
+        persistLocalWalState(enabled);
+
         this.localWalEnabled = enabled;
     }
 
     /**
      * @param enabled Enabled flag..
      */
-    private void persistWalState(boolean enabled) {
-        shared().database().walEnabled(grpId, enabled);
+    private void persistGlobalWalState(boolean enabled) {
+        shared().database().walEnabled(grpId, enabled, false);
+    }
+
+    /**
+     * @param enabled Enabled flag..
+     */
+    private void persistLocalWalState(boolean enabled) {
+        shared().database().walEnabled(grpId, enabled, true);
     }
 }

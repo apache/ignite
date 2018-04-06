@@ -350,7 +350,36 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     }
 
     public void testDataClearedAfterRestartWithDisabledWal() throws Exception {
-        throw new UnsupportedOperationException("Not implemented");
+        Ignite ignite = startGrid(0);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int k = 0; k < 10_000; k++)
+            cache.put(k, k);
+
+        IgniteEx newIgnite = startGrid(1);
+
+        ignite.cluster().setBaselineTopology(2);
+
+        CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
+
+        assertFalse(grpCtx.localWalEnabled());
+
+        stopGrid(1);
+        stopGrid(0);
+
+        newIgnite = startGrid(1);
+
+        newIgnite.cluster().active(true);
+
+        newIgnite.cluster().setBaselineTopology(newIgnite.cluster().nodes());
+
+        cache = newIgnite.cache(DEFAULT_CACHE_NAME);
+
+        for (int k = 0; k < 10_000; k++)
+            assertFalse("k=" + k +", v=" + cache.get(k), cache.containsKey(k));
     }
 
     public void testWalNotDisabledAfterShrinkingBaselineTopology() throws Exception {
