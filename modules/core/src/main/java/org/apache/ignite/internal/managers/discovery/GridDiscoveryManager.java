@@ -781,6 +781,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     ((IgniteKernal)ctx.grid()).onDisconnected();
 
+                    if (!locJoin.isDone())
+                        locJoin.onDone(new IgniteCheckedException("Node disconnected"));
+
                     locJoin = new GridFutureAdapter<>();
 
                     registeredCaches.clear();
@@ -2116,6 +2119,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
         }
+    }
+
+    /**
+     * @return Local join future.
+     */
+    public GridFutureAdapter<DiscoveryLocalJoinData> localJoinFuture() {
+        return locJoin;
     }
 
     /**

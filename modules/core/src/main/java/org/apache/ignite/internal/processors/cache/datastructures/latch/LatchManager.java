@@ -104,20 +104,9 @@ public class LatchManager {
             });
 
             // First coordinator initialization.
-            ctx.event().addDiscoveryEventListener((e, cache) -> {
-                if (this.coordinator != null)
-                    return;
-
-                lock.lock();
-
-                try {
-                    if (this.coordinator == null)
-                        this.coordinator = getLatchCoordinator(AffinityTopologyVersion.NONE);
-                }
-                finally {
-                    lock.unlock();
-                }
-            }, EVT_NODE_JOINED);
+            ctx.discovery().localJoinFuture().listen(f -> {
+                this.coordinator = getLatchCoordinator(AffinityTopologyVersion.NONE);
+            });
 
             ctx.event().addDiscoveryEventListener((e, cache) -> {
                 assert e != null;
@@ -357,6 +346,8 @@ public class LatchManager {
      * @param left Left node.
      */
     private void processNodeLeft(ClusterNode left) {
+        assert this.coordinator != null : "Coordinator is not initialized";
+
         lock.lock();
 
         try {
