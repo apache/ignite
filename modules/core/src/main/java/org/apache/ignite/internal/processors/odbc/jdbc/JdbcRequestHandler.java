@@ -251,8 +251,6 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @return Response.
      */
     private ClientListenerResponse dispatchBatchOrdered(JdbcOrderedBatchExecuteRequest req) {
-        log.info("+++ RECV " + req.order());
-
         orderedBatches.put(req);
 
         if (!cliCtx.isStreamOrdered())
