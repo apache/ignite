@@ -20,7 +20,6 @@ package org.apache.ignite.jdbc.thin;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
@@ -28,8 +27,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.odbc.ClientListenerProcessor;
-import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -73,8 +70,8 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        super.afterTestsStopped();
         stopAllGrids();
+        super.afterTestsStopped();
     }
 
     /**
@@ -110,18 +107,6 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
         clientNode.destroyCache(CLIENT_CACHE);
 
         super.afterTest();
-    }
-
-    /** Finds port of given IgniteEx instance. */
-    private int portOf(IgniteEx node) {
-        Collection<GridPortRecord> recs = node.context().ports().records();
-
-        for (GridPortRecord rec : recs) {
-            if (rec.clazz() == ClientListenerProcessor.class)
-                return rec.port();
-        }
-
-        throw new RuntimeException("Could not find port to connect to node " + node);
     }
 
     /** Add cache with table to ignite config. */
@@ -217,7 +202,7 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
      * @return Callable command.
      */
     private Callable<Void> connectToNodeCommand (String schemaName, IgniteEx node) {
-        int port = portOf(node);
+        int port = GridTestUtils.jdbcPortOf(node);
 
         Callable<Void> command = () -> {
             try (Connection conn = DriverManager.getConnection("jdbc:ignite:thin://127.0.0.1:" + port + "/" + schemaName)) {
