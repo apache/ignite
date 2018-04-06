@@ -33,7 +33,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 /**
  * Tests for streaming via thin driver.
  */
-public class JdbcThinStreamingOrderedSelfTest extends JdbcThinStreamingSelfTest {
+public class JdbcThinStreamingNotOrderedSelfTest extends JdbcThinStreamingSelfTest {
     /** {@inheritDoc} */
     @Override protected Connection createStreamedConnection(boolean allowOverwrite, long flushFreq) throws Exception {
         return createStreamedConnection(allowOverwrite, flushFreq, false);
@@ -46,7 +46,7 @@ public class JdbcThinStreamingOrderedSelfTest extends JdbcThinStreamingSelfTest 
      * @return Connection to use for the test.
      * @throws Exception if failed.
      */
-    protected Connection createStreamedConnection(boolean allowOverwrite, long flushFreq,
+    private Connection createStreamedConnection(boolean allowOverwrite, long flushFreq,
         boolean ordered) throws Exception {
         Connection c = JdbcThinAbstractSelfTest.connect(grid(0), null);
 
@@ -54,14 +54,9 @@ public class JdbcThinStreamingOrderedSelfTest extends JdbcThinStreamingSelfTest 
             + " ALLOW_OVERWRITE " + (allowOverwrite ? 1 : 0)
             + " PER_NODE_BUFFER_SIZE 1000 "
             + " FLUSH_FREQUENCY " + flushFreq
-            + " ORDERED " +  (ordered ? 1 : 0)
+            + " ORDERED " +  (ordered ? "ON" : "OFF")
         );
 
         return c;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void testOnlyInsertsAllowed() {
-        // Skip this test for streaming mode without responses.
     }
 }

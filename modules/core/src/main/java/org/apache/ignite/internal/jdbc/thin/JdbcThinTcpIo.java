@@ -32,7 +32,6 @@ import java.util.Random;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.locks.LockSupport;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.streams.BinaryHeapInputStream;
@@ -56,9 +55,7 @@ import org.apache.ignite.internal.util.HostAndPortRange;
 import org.apache.ignite.internal.util.ipc.loopback.IpcClientTcpEndpoint;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteProductVersion;
-import org.apache.ignite.thread.IgniteThread;
 
 /**
  * JDBC IO layer implementation based on blocking IPC streams.
@@ -136,11 +133,11 @@ public class JdbcThinTcpIo {
     /** Received responses. */
     private final PriorityBlockingQueue<Long> recvResponseOrderQueue = new PriorityBlockingQueue<>();
 
-    /** Stop async read. */
-    private volatile boolean stopAsyncRead;
+    /** Last recieved response order. */
+    private long lastReceivedRespOrder = -1;
 
-    /** Last response order. */
-    private long lastRespOrder = -1;
+    /** Await last response order. */
+    private long lastRespOrder = -2;
 
     /**
      * Constructor.
@@ -559,6 +556,8 @@ public class JdbcThinTcpIo {
      * Close the client IO.
      */
     public void close() {
+        System.out.println("+++ close");
+
         if (closed)
             return;
 
@@ -572,6 +571,16 @@ public class JdbcThinTcpIo {
         closed = true;
 
         stopAsyncResponseReader();
+    }
+
+    /**
+     *
+     */
+    private void stopAsyncResponseReader() {
+        lastRespOrder = lastReceivedRespOrder = 0;
+
+        if (asyncResponseReaderThread != null)
+            asyncResponseReaderThread.interrupt();
     }
 
     /**
@@ -592,37 +601,34 @@ public class JdbcThinTcpIo {
      *
      */
     void startAsyncResponseReader() {
-        stopAsyncRead = false;
+        lastReceivedRespOrder = -1;
 
-        lastRespOrder = -1;
+        lastRespOrder = -2;
 
         asyncResponseReaderThread = new Thread(new AsyncResponseReceiver());
 
         asyncResponseReaderThread.start();
     }
 
-    /**
-     *
-     */
-    void stopAsyncResponseReader() {
-        System.out.println("+++ stopAsyncResponseReader");
-        stopAsyncRead = true;
-
-        if (asyncResponseReaderThread != null)
-            asyncResponseReaderThread.interrupt();
-    }
 
     /**
      * Await response with specified order.
      *
      * @param order Order.
      */
-    void waitResponse(long order) {
-        while (order != lastRespOrder) {
+    void waitResponse(long order) throws SQLException {
+        while (order != lastReceivedRespOrder)
             LockSupport.parkNanos(1000);
 
-            System.out.println("+++ WAIT " + order + " / " + lastRespOrder);
-        }
+        if (asyncReaderErr != null)
+            throw asyncReaderErr;
+    }
+
+    /**
+     * @param order Last order.
+     */
+    void setLastOrder(long order) {
+        lastRespOrder = order;
     }
 
     /**
@@ -634,7 +640,7 @@ public class JdbcThinTcpIo {
             try {
                 long nextOrder = 0;
 
-                while (!stopAsyncRead) {
+                while (lastRespOrder != lastReceivedRespOrder) {
                     BinaryReaderExImpl reader = new BinaryReaderExImpl(null, new BinaryHeapInputStream(read()),
                         null, null, false);
 
@@ -645,8 +651,6 @@ public class JdbcThinTcpIo {
                     if (resp.response() instanceof JdbcOrderedBatchExecuteResult) {
                         JdbcOrderedBatchExecuteResult res = (JdbcOrderedBatchExecuteResult)resp.response();
 
-                        System.out.println("+++ RESP " + res.order()) ;
-
                         recvResponseOrderQueue.put(res.order());
 
                         if (res.errorCode() != ClientListenerResponse.STATUS_SUCCESS) {
@@ -656,19 +660,19 @@ public class JdbcThinTcpIo {
                         }
                     }
 
+                    if (resp.status() != ClientListenerResponse.STATUS_SUCCESS)
+                        asyncReaderErr = new SQLException(resp.error(), IgniteQueryErrorCode.codeToSqlState(resp.status()));
 
                     for (;recvResponseOrderQueue.peek() != null && recvResponseOrderQueue.peek() == nextOrder;
                         nextOrder++) {
                         recvResponseOrderQueue.poll();
 
-                        lastRespOrder = nextOrder;
+                        lastReceivedRespOrder = nextOrder;
                     }
                 }
-
-                System.out.println("+++ END OF ASYNC RECV THREAD") ;
             }
             catch (IOException e) {
-                e.printStackTrace();
+                asyncReaderErr = new SQLException("Streaming error", SqlStateCode.INTERNAL_ERROR, e);
             }
         }
     }

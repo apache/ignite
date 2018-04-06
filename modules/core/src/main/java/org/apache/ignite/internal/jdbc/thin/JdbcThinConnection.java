@@ -194,8 +194,7 @@ public class JdbcThinConnection implements Connection {
                 }
 
                 cliIo.startAsyncResponseReader();
-            } else
-                cliIo.stopAsyncResponseReader();
+            }
         }
         else
             throw IgniteQueryErrorCode.createJdbcSqlException("Unsupported native statement: " + sql,
@@ -234,7 +233,9 @@ public class JdbcThinConnection implements Connection {
      * @throws SQLException if failed.
      */
     private void executeBatch(boolean lastBatch) throws SQLException {
-        System.out.println("+++ SEND " + streamState.order);
+        if (lastBatch)
+            cliIo.setLastOrder(streamState.order);
+
         sendRequestWithoutResponse(
             new JdbcOrderedBatchExecuteRequest(schema, streamState.streamBatch, lastBatch, streamState.order));
 
@@ -394,13 +395,17 @@ public class JdbcThinConnection implements Connection {
         if (isClosed())
             return;
 
-        if (isStream() && !F.isEmpty(streamState.streamBatch)) {
-            try {
-                executeBatch(true);
+        if (isStream()) {
+            if (!F.isEmpty(streamState.streamBatch)) {
+                try {
+                    executeBatch(true);
+                }
+                catch (SQLException e) {
+                    LOG.log(Level.WARNING, "Exception during batch send on streamed connection close", e);
+                }
             }
-            catch (SQLException e) {
-                LOG.log(Level.WARNING, "Exception during batch send on streamed connection close", e);
-            }
+            else
+                cliIo.waitResponse(streamState.order - 1);
         }
 
         closed = true;

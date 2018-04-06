@@ -212,7 +212,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     return executeBatch((JdbcBatchExecuteRequest)req);
 
                 case BATCH_EXEC_ORDERED:
-                    return executeBatchOrdered((JdbcOrderedBatchExecuteRequest)req);
+                    return dispatchBatchOrdered((JdbcOrderedBatchExecuteRequest)req);
 
                 case META_TABLES:
                     return getTablesMeta((JdbcMetaTablesRequest)req);
@@ -250,8 +250,43 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
      * @param req Ordered batch request.
      * @return Response.
      */
-    private ClientListenerResponse executeBatchOrdered(JdbcOrderedBatchExecuteRequest req) {
+    private ClientListenerResponse dispatchBatchOrdered(JdbcOrderedBatchExecuteRequest req) {
+        log.info("+++ RECV " + req.order());
+
         orderedBatches.put(req);
+
+        if (!cliCtx.isStreamOrdered())
+            executeBatchOrdered(req);
+
+        return null;
+    }
+
+    /**
+     * @param req Ordered batch request.
+     * @return Response.
+     */
+    private ClientListenerResponse executeBatchOrdered(JdbcOrderedBatchExecuteRequest req) {
+        try {
+            if (req.isLastStreamBatch()) {
+                while (orderedBatches.size() > 1)
+                    LockSupport.parkNanos(1000);
+            }
+
+            JdbcResponse resp = (JdbcResponse)executeBatch(req);
+
+            if (resp.response() instanceof JdbcBatchExecuteResult) {
+                resp = new JdbcResponse(
+                    new JdbcOrderedBatchExecuteResult((JdbcBatchExecuteResult)resp.response(), req.order()));
+            }
+
+            sender.send(resp);
+        } catch (Exception e) {
+            U.error(null, "Error processing file batch", e);
+
+            sender.send(new JdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Server error: " + e));
+        }
+
+        orderedBatches.poll();
 
         return null;
     }
@@ -990,10 +1025,8 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
             long nextBatchOrder = 0;
 
             while (true) {
-                if (!cliCtx.isStream()) {
-                    log.info("+++ STOP STREAMING ORDER THREAD ");
+                if (!cliCtx.isStream())
                     return;
-                }
 
                 JdbcOrderedBatchExecuteRequest req = orderedBatches.peek();
 
@@ -1003,18 +1036,7 @@ public class JdbcRequestHandler implements ClientListenerRequestHandler {
                     continue;
                 }
 
-                orderedBatches.poll();
-
-                JdbcResponse resp = (JdbcResponse)executeBatch(req);
-
-                if (resp.response() instanceof JdbcBatchExecuteResult) {
-                    resp = new JdbcResponse(
-                        new JdbcOrderedBatchExecuteResult((JdbcBatchExecuteResult)resp.response(), nextBatchOrder));
-
-                    log.info("+++ RESP " + nextBatchOrder);
-                }
-
-                sender.send(resp);
+                executeBatchOrdered(req);
 
                 nextBatchOrder++;
             }

@@ -61,6 +61,9 @@ public class SqlClientContext implements AutoCloseable {
     /** Skip reducer on update flag. */
     private final boolean skipReducerOnUpdate;
 
+    /** Monitor. */
+    private final Object mux = new Object();
+
     /** Allow overwrites for duplicate keys on streamed {@code INSERT}s. */
     private boolean streamAllowOverwrite;
 
@@ -72,6 +75,9 @@ public class SqlClientContext implements AutoCloseable {
 
     /** Auto flush frequency for streaming. */
     private long streamFlushTimeout;
+
+    /** Stream ordered. */
+    private boolean streamOrdered;
 
     /** Streamers for various caches. */
     private Map<String, IgniteDataStreamer<?, ?>> streamers;
@@ -121,54 +127,48 @@ public class SqlClientContext implements AutoCloseable {
      */
     public void enableStreaming(boolean allowOverwrite, long flushFreq, int perNodeBufSize,
         int perNodeParOps, boolean ordered) {
-        if (isStream())
-            return;
+        synchronized (mux) {
+            if (isStream())
+                return;
 
-        streamers = new HashMap<>();
+            streamers = new HashMap<>();
 
-        this.streamAllowOverwrite = allowOverwrite;
-        this.streamFlushTimeout = flushFreq;
-        this.streamNodeBufSize = perNodeBufSize;
-        this.streamNodeParOps = perNodeParOps;
+            this.streamAllowOverwrite = allowOverwrite;
+            this.streamFlushTimeout = flushFreq;
+            this.streamNodeBufSize = perNodeBufSize;
+            this.streamNodeParOps = perNodeParOps;
+            this.streamOrdered = ordered;
 
-        if (ordered) {
-            orderedBatchThread = new IgniteThread(orderedBatchWorkerFactory.create());
+            if (ordered) {
+                orderedBatchThread = new IgniteThread(orderedBatchWorkerFactory.create());
 
-            orderedBatchThread.start();
+                orderedBatchThread.start();
+            }
         }
     }
-
-    /**
-     * Unpark ordered worker thread.
-     */
-    public void nextOrderedBatchReady() {
-        if (isStream())
-            return;
-
-        LockSupport.unpark(orderedBatchThread);
-    }
-
 
     /**
      * Turn off streaming on this client context - with closing all open streamers, if any.
      */
     public void disableStreaming() {
-        if (!isStream())
-            return;
+        synchronized (mux) {
+            if (!isStream())
+                return;
 
-        Iterator<IgniteDataStreamer<?, ?>> it = streamers.values().iterator();
+            Iterator<IgniteDataStreamer<?, ?>> it = streamers.values().iterator();
 
-        while (it.hasNext()) {
-            IgniteDataStreamer<?, ?> streamer = it.next();
+            while (it.hasNext()) {
+                IgniteDataStreamer<?, ?> streamer = it.next();
 
-            U.close(streamer, log);
+                U.close(streamer, log);
 
-            it.remove();
+                it.remove();
+            }
+
+            streamers = null;
+
+            orderedBatchThread = null;
         }
-
-        streamers = null;
-
-        orderedBatchThread = null;
     }
 
     /**
@@ -217,7 +217,16 @@ public class SqlClientContext implements AutoCloseable {
      * @return Streaming state flag (on or off).
      */
     public boolean isStream() {
-        return streamers != null;
+        synchronized (mux) {
+            return streamers != null;
+        }
+    }
+
+    /**
+     * @return Stream ordered flag.
+     */
+    public boolean isStreamOrdered() {
+        return streamOrdered;
     }
 
     /**
@@ -225,29 +234,31 @@ public class SqlClientContext implements AutoCloseable {
      * @return Streamer for given cache.
      */
     public IgniteDataStreamer<?, ?> streamerForCache(String cacheName) {
-        if (streamers == null)
-            return null;
+        synchronized (mux) {
+            if (streamers == null)
+                return null;
 
-        IgniteDataStreamer<?, ?> res = streamers.get(cacheName);
+            IgniteDataStreamer<?, ?> res = streamers.get(cacheName);
 
-        if (res != null)
+            if (res != null)
+                return res;
+
+            res = ctx.grid().dataStreamer(cacheName);
+
+            res.autoFlushFrequency(streamFlushTimeout);
+
+            res.allowOverwrite(streamAllowOverwrite);
+
+            if (streamNodeBufSize > 0)
+                res.perNodeBufferSize(streamNodeBufSize);
+
+            if (streamNodeParOps > 0)
+                res.perNodeParallelOperations(streamNodeParOps);
+
+            streamers.put(cacheName, res);
+
             return res;
-
-        res = ctx.grid().dataStreamer(cacheName);
-
-        res.autoFlushFrequency(streamFlushTimeout);
-
-        res.allowOverwrite(streamAllowOverwrite);
-
-        if (streamNodeBufSize > 0)
-            res.perNodeBufferSize(streamNodeBufSize);
-
-        if (streamNodeParOps > 0)
-            res.perNodeParallelOperations(streamNodeParOps);
-
-        streamers.put(cacheName, res);
-
-        return res;
+        }
     }
 
     /** {@inheritDoc} */
@@ -258,5 +269,4 @@ public class SqlClientContext implements AutoCloseable {
         for (IgniteDataStreamer<?, ?> s : streamers.values())
             U.close(s, log);
     }
-
 }
