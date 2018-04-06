@@ -17,16 +17,28 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -35,6 +47,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstractTest {
     /** */
     private static boolean disableWalDuringRebalancing = true;
+
+    /** */
+    private final AtomicReference<CountDownLatch> supplyMessageLatch = new AtomicReference<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -58,6 +73,49 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                 .setRebalanceDelay(-1)
         );
 
+        cfg.setCommunicationSpi(new TcpCommunicationSpi() {
+            @Override public void sendMessage(ClusterNode node, Message msg) throws IgniteSpiException {
+                if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionSupplyMessage) {
+                    int grpId = ((GridDhtPartitionSupplyMessage)((GridIoMessage)msg).message()).groupId();
+
+                    if (grpId == CU.cacheId(DEFAULT_CACHE_NAME)) {
+                        CountDownLatch latch0 = supplyMessageLatch.get();
+
+                        if (latch0 != null)
+                            try {
+                                latch0.await();
+                            }
+                            catch (InterruptedException ex) {
+                                throw new IgniteException(ex);
+                            }
+                    }
+                }
+
+                super.sendMessage(node, msg);
+            }
+
+            @Override public void sendMessage(ClusterNode node, Message msg,
+                IgniteInClosure<IgniteException> ackC) throws IgniteSpiException {
+                if (msg instanceof GridIoMessage && ((GridIoMessage)msg).message() instanceof GridDhtPartitionSupplyMessage) {
+                    int grpId = ((GridDhtPartitionSupplyMessage)((GridIoMessage)msg).message()).groupId();
+
+                    if (grpId == CU.cacheId(DEFAULT_CACHE_NAME)) {
+                        CountDownLatch latch0 = supplyMessageLatch.get();
+
+                        if (latch0 != null)
+                            try {
+                                latch0.await();
+                            }
+                            catch (InterruptedException ex) {
+                                throw new IgniteException(ex);
+                            }
+                    }
+                }
+
+                super.sendMessage(node, msg, ackC);
+            }
+        });
+
         System.setProperty(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING,
             Boolean.toString(disableWalDuringRebalancing));
 
@@ -74,6 +132,15 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         super.afterTest();
+
+        CountDownLatch latch = supplyMessageLatch.get();
+
+        if (latch != null) {
+            while (latch.getCount() > 0)
+                latch.countDown();
+
+            supplyMessageLatch.set(null);
+        }
 
         stopAllGrids();
 
@@ -189,5 +256,56 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         ignite.cluster().enableWal(DEFAULT_CACHE_NAME);
 
         assertTrue(grpCtx.walEnabled());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testParallelExchangeDuringRebalance() throws Exception {
+        Ignite ignite = startGrids(3);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int k = 0; k < 10_000; k++)
+            cache.put(k, k);
+
+        IgniteEx newIgnite = startGrid(3);
+
+        CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
+
+        CountDownLatch latch = new CountDownLatch(1);
+
+        supplyMessageLatch.set(latch);
+
+        ignite.cluster().setBaselineTopology(ignite.cluster().nodes());
+
+        for (Ignite g : G.allGrids())
+            g.cache(DEFAULT_CACHE_NAME).rebalance();
+
+        assertFalse(grpCtx.walEnabled());
+
+        startGrid(4); // Trigger exchange
+
+        assertFalse(grpCtx.walEnabled());
+
+        latch.countDown();
+
+        assertFalse(grpCtx.walEnabled());
+
+        for (Ignite g : G.allGrids())
+            g.cache(DEFAULT_CACHE_NAME).rebalance();
+
+        awaitPartitionMapExchange();
+
+        assertTrue(grpCtx.walEnabled());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testParallelExchangeDuringCheckpoint() throws Exception {
+
     }
 }
