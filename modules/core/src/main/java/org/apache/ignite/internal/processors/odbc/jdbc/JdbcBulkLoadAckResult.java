@@ -86,7 +86,7 @@ public class JdbcBulkLoadAckResult extends JdbcResult {
 
         writer.writeLong(qryId);
         writer.writeString(params.localFileName());
-        writer.writeInt(params.batchSize());
+        writer.writeInt(params.packetSize());
     }
 
     /** {@inheritDoc} */
@@ -98,8 +98,8 @@ public class JdbcBulkLoadAckResult extends JdbcResult {
         String locFileName = reader.readString();
         int batchSize = reader.readInt();
 
-        if (!BulkLoadAckClientParameters.isValidBatchSize(batchSize))
-            throw new BinaryObjectException(BulkLoadAckClientParameters.batchSizeErrorMsg(batchSize));
+        if (!BulkLoadAckClientParameters.isValidPacketSize(batchSize))
+            throw new BinaryObjectException(BulkLoadAckClientParameters.packetSizeErrorMesssage(batchSize));
 
         params = new BulkLoadAckClientParameters(locFileName, batchSize);
     }

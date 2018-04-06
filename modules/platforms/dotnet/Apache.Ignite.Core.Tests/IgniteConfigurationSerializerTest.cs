@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Store;
-    using Apache.Ignite.Core.Cluster.Ssl;
+    using Apache.Ignite.Core.Ssl;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Configuration;
@@ -97,6 +97,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(cfg.AutoGenerateIgniteInstanceName);
             Assert.AreEqual(new TimeSpan(1, 2, 3), cfg.LongQueryWarningTimeout);
             Assert.IsFalse(cfg.IsActiveOnStart);
+            Assert.IsTrue(cfg.AuthenticationEnabled);
             Assert.AreEqual("someId012", cfg.ConsistentId);
             Assert.IsFalse(cfg.RedirectJavaConsoleOutput);
 

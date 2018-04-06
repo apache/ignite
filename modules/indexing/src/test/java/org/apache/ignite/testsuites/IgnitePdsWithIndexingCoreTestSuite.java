@@ -33,6 +33,7 @@ import org.apache.ignite.internal.processors.cache.persistence.db.file.IgnitePds
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryPPCTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.IgniteWalRecoveryWithCompactionTest;
+import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalPathsTest;
 import org.apache.ignite.internal.processors.cache.persistence.db.wal.WalRecoveryTxLogicalRecordsTest;
 
 /**
@@ -50,6 +51,7 @@ public class IgnitePdsWithIndexingCoreTestSuite extends TestSuite {
         suite.addTestSuite(IgnitePdsPageEvictionTest.class);
         suite.addTestSuite(IgnitePdsMultiNodePutGetRestartTest.class);
         suite.addTestSuite(IgnitePersistentStoreCacheGroupsTest.class);
+        suite.addTestSuite(WalPathsTest.class);
         suite.addTestSuite(WalRecoveryTxLogicalRecordsTest.class);
 
         suite.addTestSuite(IgniteWalRecoveryTest.class);

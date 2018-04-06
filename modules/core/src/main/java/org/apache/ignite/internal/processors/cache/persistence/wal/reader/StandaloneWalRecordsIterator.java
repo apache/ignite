@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.persistence.wal.ByteBufferExp
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileInput;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWALPointer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializer;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordSerializerFactoryImpl;
 import org.apache.ignite.internal.processors.cache.persistence.wal.serializer.RecordV1Serializer;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
@@ -153,7 +154,7 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         final boolean workDir,
         @Nullable final File[] walFiles) throws IgniteCheckedException {
         if (walFilesDir != null) {
-            FileWriteAheadLogManager.FileDescriptor[] descs = loadFileDescriptors(walFilesDir);
+            FileWriteAheadLogManager.FileDescriptor[] descs = FileWriteAheadLogManager.loadFileDescriptors(walFilesDir);
             curWalSegmIdx = !F.isEmpty(descs) ? descs[0].getIdx() : 0;
             this.walFilesDir = walFilesDir;
         }
@@ -224,8 +225,8 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
     }
 
     /** {@inheritDoc} */
-    @Override protected FileWriteAheadLogManager.ReadFileHandle advanceSegment(
-        @Nullable final FileWriteAheadLogManager.ReadFileHandle curWalSegment) throws IgniteCheckedException {
+    @Override protected AbstractReadFileHandle advanceSegment(
+        @Nullable final AbstractReadFileHandle curWalSegment) throws IgniteCheckedException {
 
         if (curWalSegment != null)
             curWalSegment.close();
@@ -379,5 +380,11 @@ class StandaloneWalRecordsIterator extends AbstractWalRecordsIterator {
         closeCurrentWalSegment();
 
         curWalSegmIdx = Integer.MAX_VALUE;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected AbstractReadFileHandle createReadFileHandle(FileIO fileIO, long idx,
+        RecordSerializer ser, FileInput in) {
+        return new FileWriteAheadLogManager.ReadFileHandle(fileIO, idx, ser, in);
     }
 }

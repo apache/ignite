@@ -25,21 +25,16 @@ export default class PageProfileController {
     }
 
     $onInit() {
-        const self = this;
-
-        self.ui = {};
+        this.ui = {};
 
         this.User.read()
-            .then((user) => self.ui.user = angular.copy(user));
+            .then((user) => this.ui.user = angular.copy(user));
 
-        self.ui.countries = this.Countries.getAll();
+        this.ui.countries = this.Countries.getAll();
     }
 
-    toggleToken() {
-        this.ui.expandedToken = !this.ui.expandedToken;
-
-        if (!this.ui.expandedToken)
-            this.ui.user.token = this.$root.user.token;
+    onSecurityTokenPanelClose() {
+        this.ui.user.token = this.$root.user.token;
     }
 
     generateToken() {
@@ -47,26 +42,16 @@ export default class PageProfileController {
             .then(() => this.ui.user.token = this.LegacyUtils.randomString(20));
     }
 
-    togglePassword() {
-        this.ui.expandedPassword = !this.ui.expandedPassword;
-
-        if (this.ui.expandedPassword)
-            this.Focus.move('profile_password');
-        else {
-            delete this.ui.user.password;
-            delete this.ui.user.confirm;
-        }
+    onPasswordPanelClose() {
+        delete this.ui.user.password;
+        delete this.ui.user.confirm;
     }
 
     saveUser() {
         return this.$http.post('/api/v1/profile/save', this.ui.user)
             .then(this.User.load)
             .then(() => {
-                if (this.ui.expandedPassword)
-                    this.togglePassword();
-
-                if (this.ui.expandedToken)
-                    this.toggleToken();
+                this.ui.expandedPassword = this.ui.expandedToken = false;
 
                 this.Messages.showInfo('Profile saved.');
 

@@ -27,6 +27,9 @@ import IgniteIGFSDefaults from './defaults/IGFS.service';
 import JavaTypes from '../../../services/JavaTypes.service';
 import VersionService from 'app/services/Version.service';
 
+import isNil from 'lodash/isNil';
+import {nonNil, nonEmpty} from 'app/utils/lodashMixins';
+
 const clusterDflts = new IgniteClusterDefaults();
 const cacheDflts = new IgniteCacheDefaults();
 const igfsDflts = new IgniteIGFSDefaults();
@@ -77,13 +80,13 @@ export default class IgniteConfigurationGenerator {
         this.clusterAtomics(cluster.atomicConfiguration, available, cfg);
         this.clusterBinary(cluster.binaryConfiguration, cfg);
         this.clusterCacheKeyConfiguration(cluster.cacheKeyConfiguration, cfg);
-        this.clusterCheckpoint(cluster, cluster.caches, cfg);
+        this.clusterCheckpoint(cluster, available, cluster.caches, cfg);
 
         if (available('2.3.0'))
             this.clusterClientConnector(cluster, available, cfg);
 
         this.clusterCollision(cluster.collision, cfg);
-        this.clusterCommunication(cluster, cfg);
+        this.clusterCommunication(cluster, available, cfg);
         this.clusterConnector(cluster.connector, cfg);
 
         // Since ignite 2.3
@@ -202,7 +205,7 @@ export default class IgniteConfigurationGenerator {
 
         cfg.stringProperty('localHost');
 
-        if (_.isNil(cluster.discovery))
+        if (isNil(cluster.discovery))
             return cfg;
 
         const discovery = new Bean('org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi', 'discovery',
@@ -235,6 +238,11 @@ export default class IgniteConfigurationGenerator {
                     'ipFinder', cluster.discovery.S3, clusterDflts.discovery.S3);
 
                 ipFinder.stringProperty('bucketName');
+
+                if (available('2.4.0')) {
+                    ipFinder.stringProperty('bucketEndpoint')
+                        .stringProperty('SSEAlgorithm');
+                }
 
                 break;
             case 'Cloud':
@@ -343,7 +351,7 @@ export default class IgniteConfigurationGenerator {
                         case 'Custom':
                             const className = _.get(policy, 'Custom.className');
 
-                            if (_.nonEmpty(className))
+                            if (nonEmpty(className))
                                 retryPolicyBean = new EmptyBean(className);
 
                             break;
@@ -355,7 +363,7 @@ export default class IgniteConfigurationGenerator {
                         ipFinder.beanProperty('retryPolicy', retryPolicyBean);
                 }
 
-                ipFinder.pathProperty('basePath', '/services')
+                ipFinder.pathProperty('basePath')
                     .stringProperty('serviceName')
                     .boolProperty('allowDuplicateRegistrations');
 
@@ -430,7 +438,7 @@ export default class IgniteConfigurationGenerator {
         if (acfg.valueOf('cacheMode') === 'PARTITIONED')
             acfg.intProperty('backups');
 
-        if (available('2.1.0') && _.nonNil(atomics))
+        if (available('2.1.0') && nonNil(atomics))
             this.affinity(atomics.affinity, acfg);
 
         if (acfg.isEmpty())
@@ -499,7 +507,7 @@ export default class IgniteConfigurationGenerator {
     }
 
     // Generate checkpoint configurations.
-    static clusterCheckpoint(cluster, caches, cfg = this.igniteConfigurationBean()) {
+    static clusterCheckpoint(cluster, available, caches, cfg = this.igniteConfigurationBean()) {
         const cfgs = _.filter(_.map(cluster.checkpointSpi, (spi) => {
             switch (_.get(spi, 'kind')) {
                 case 'FS':
@@ -585,12 +593,18 @@ export default class IgniteConfigurationGenerator {
 
                     s3Bean.stringProperty('bucketNameSuffix');
 
+                    if (available('2.4.0')) {
+                        s3Bean.stringProperty('bucketEndpoint')
+                            .stringProperty('SSEAlgorithm');
+                    }
+
                     const clientBean = new Bean('com.amazonaws.ClientConfiguration', 'clientCfg', spi.S3.clientConfiguration,
                         clusterDflts.checkpointSpi.S3.clientConfiguration);
 
                     clientBean.enumProperty('protocol')
                         .intProperty('maxConnections')
-                        .stringProperty('userAgent');
+                        .stringProperty('userAgentPrefix')
+                        .stringProperty('userAgentSuffix');
 
                     const locAddr = new Bean('java.net.InetAddress', '', spi.S3.clientConfiguration)
                         .factoryMethod('getByName')
@@ -609,7 +623,8 @@ export default class IgniteConfigurationGenerator {
                         clientBean.property('proxyPassword', `checkpoint.s3.proxy.${userName}.password`);
 
                     clientBean.stringProperty('proxyDomain')
-                        .stringProperty('proxyWorkstation');
+                        .stringProperty('proxyWorkstation')
+                        .stringProperty('nonProxyHosts');
 
                     const retryPolicy = spi.S3.clientConfiguration.retryPolicy;
 
@@ -682,7 +697,8 @@ export default class IgniteConfigurationGenerator {
                                 break;
 
                             case 'Custom':
-                                retryBean = new Bean('com.amazonaws.retry.RetryPolicy', 'retryPolicy', policy);
+                                retryBean = new Bean('com.amazonaws.retry.RetryPolicy', 'retryPolicy', policy,
+                                    clusterDflts.checkpointSpi.S3.clientConfiguration.retryPolicy);
 
                                 retryBean.beanConstructorArgument('retryCondition', retryBean.valueOf('retryCondition') ? new EmptyBean(retryBean.valueOf('retryCondition')) : null)
                                     .beanConstructorArgument('backoffStrategy', retryBean.valueOf('backoffStrategy') ? new EmptyBean(retryBean.valueOf('backoffStrategy')) : null)
@@ -703,14 +719,17 @@ export default class IgniteConfigurationGenerator {
                         .intProperty('socketTimeout')
                         .intProperty('connectionTimeout')
                         .intProperty('requestTimeout')
-                        .intProperty('socketSendBufferSizeHints')
                         .stringProperty('signerOverride')
                         .intProperty('connectionTTL')
                         .intProperty('connectionMaxIdleMillis')
                         .emptyBeanProperty('dnsResolver')
                         .intProperty('responseMetadataCacheSize')
                         .emptyBeanProperty('secureRandom')
+                        .intProperty('clientExecutionTimeout')
                         .boolProperty('useReaper')
+                        .boolProperty('cacheResponseMetadata')
+                        .boolProperty('useExpectContinue')
+                        .boolProperty('useThrottleRetries')
                         .boolProperty('useGzip')
                         .boolProperty('preemptiveBasicProxyAuth')
                         .boolProperty('useTcpKeepAlive');
@@ -759,7 +778,7 @@ export default class IgniteConfigurationGenerator {
                 default:
                     return null;
             }
-        }), (checkpointBean) => _.nonNil(checkpointBean));
+        }), (checkpointBean) => nonNil(checkpointBean));
 
         cfg.arrayProperty('checkpointSpi', 'checkpointSpi', cfgs, 'org.apache.ignite.spi.checkpoint.CheckpointSpi');
 
@@ -839,15 +858,15 @@ export default class IgniteConfigurationGenerator {
 
                 colSpi.intProperty('parallelJobsNumber')
                     .intProperty('waitingJobsNumber')
-                    .intProperty('priorityAttributeKey')
-                    .intProperty('jobPriorityAttributeKey')
+                    .stringProperty('priorityAttributeKey')
+                    .stringProperty('jobPriorityAttributeKey')
                     .intProperty('defaultPriority')
                     .intProperty('starvationIncrement')
                     .boolProperty('starvationPreventionEnabled');
 
                 break;
             case 'Custom':
-                if (_.nonNil(_.get(collision, 'Custom.class')))
+                if (nonNil(_.get(collision, 'Custom.class')))
                     colSpi = new EmptyBean(collision.Custom.class);
 
                 break;
@@ -855,14 +874,14 @@ export default class IgniteConfigurationGenerator {
                 return cfg;
         }
 
-        if (_.nonNil(colSpi))
+        if (nonNil(colSpi))
             cfg.beanProperty('collisionSpi', colSpi);
 
         return cfg;
     }
 
     // Generate communication group.
-    static clusterCommunication(cluster, cfg = this.igniteConfigurationBean(cluster)) {
+    static clusterCommunication(cluster, available, cfg = this.igniteConfigurationBean(cluster)) {
         const commSpi = new Bean('org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi', 'communicationSpi',
             cluster.communication, clusterDflts.communication);
 
@@ -893,8 +912,10 @@ export default class IgniteConfigurationGenerator {
 
         cfg.intProperty('networkTimeout')
             .intProperty('networkSendRetryDelay')
-            .intProperty('networkSendRetryCount')
-            .intProperty('discoveryStartupDelay');
+            .intProperty('networkSendRetryCount');
+
+        if (available(['1.0.0', '2.3.0']))
+            cfg.intProperty('discoveryStartupDelay');
 
         return cfg;
     }
@@ -1091,7 +1112,7 @@ export default class IgniteConfigurationGenerator {
             if (!eventStorageBean.isEmpty() || !available(['1.0.0', '2.0.0']))
                 cfg.beanProperty('eventStorageSpi', eventStorageBean);
 
-            if (_.nonEmpty(cluster.includeEventTypes)) {
+            if (nonEmpty(cluster.includeEventTypes)) {
                 const eventGrps = _.filter(this.eventGrps, ({value}) => _.includes(cluster.includeEventTypes, value));
 
                 cfg.eventTypes('evts', 'includeEventTypes', this.filterEvents(eventGrps, available));
@@ -1289,7 +1310,7 @@ export default class IgniteConfigurationGenerator {
 
         switch (_.get(logger, 'kind')) {
             case 'Log4j':
-                if (logger.Log4j && (logger.Log4j.mode === 'Default' || logger.Log4j.mode === 'Path' && _.nonEmpty(logger.Log4j.path))) {
+                if (logger.Log4j && (logger.Log4j.mode === 'Default' || logger.Log4j.mode === 'Path' && nonEmpty(logger.Log4j.path))) {
                     loggerBean = new Bean('org.apache.ignite.logger.log4j.Log4JLogger',
                         'logger', logger.Log4j, clusterDflts.logger.Log4j);
 
@@ -1301,7 +1322,7 @@ export default class IgniteConfigurationGenerator {
 
                 break;
             case 'Log4j2':
-                if (logger.Log4j2 && _.nonEmpty(logger.Log4j2.path)) {
+                if (logger.Log4j2 && nonEmpty(logger.Log4j2.path)) {
                     loggerBean = new Bean('org.apache.ignite.logger.log4j2.Log4J2Logger',
                         'logger', logger.Log4j2, clusterDflts.logger.Log4j2);
 
@@ -1327,7 +1348,7 @@ export default class IgniteConfigurationGenerator {
 
                 break;
             case 'Custom':
-                if (logger.Custom && _.nonEmpty(logger.Custom.class))
+                if (logger.Custom && nonEmpty(logger.Custom.class))
                     loggerBean = new EmptyBean(logger.Custom.class);
 
                 break;
@@ -1442,6 +1463,7 @@ export default class IgniteConfigurationGenerator {
         storageBean.stringProperty('storagePath')
             .intProperty('checkpointFrequency')
             .intProperty('checkpointThreads')
+            .enumProperty('checkpointWriteOrder')
             .enumProperty('walMode')
             .stringProperty('walPath')
             .stringProperty('walArchivePath')
@@ -1687,20 +1709,20 @@ export default class IgniteConfigurationGenerator {
 
     // Java code generator for cluster's SSL configuration.
     static clusterSsl(cluster, cfg = this.igniteConfigurationBean(cluster)) {
-        if (cluster.sslEnabled && _.nonNil(cluster.sslContextFactory)) {
+        if (cluster.sslEnabled && nonNil(cluster.sslContextFactory)) {
             const bean = new Bean('org.apache.ignite.ssl.SslContextFactory', 'sslCtxFactory',
                 cluster.sslContextFactory);
 
             bean.intProperty('keyAlgorithm')
                 .pathProperty('keyStoreFilePath');
 
-            if (_.nonEmpty(bean.valueOf('keyStoreFilePath')))
+            if (nonEmpty(bean.valueOf('keyStoreFilePath')))
                 bean.propertyChar('keyStorePassword', 'ssl.key.storage.password', 'YOUR_SSL_KEY_STORAGE_PASSWORD');
 
             bean.intProperty('keyStoreType')
                 .intProperty('protocol');
 
-            if (_.nonEmpty(cluster.sslContextFactory.trustManagers)) {
+            if (nonEmpty(cluster.sslContextFactory.trustManagers)) {
                 bean.arrayProperty('trustManagers', 'trustManagers',
                     _.map(cluster.sslContextFactory.trustManagers, (clsName) => new EmptyBean(clsName)),
                     'javax.net.ssl.TrustManager');
@@ -1708,7 +1730,7 @@ export default class IgniteConfigurationGenerator {
             else {
                 bean.pathProperty('trustStoreFilePath');
 
-                if (_.nonEmpty(bean.valueOf('trustStoreFilePath')))
+                if (nonEmpty(bean.valueOf('trustStoreFilePath')))
                     bean.propertyChar('trustStorePassword', 'ssl.trust.storage.password', 'YOUR_SSL_TRUST_STORAGE_PASSWORD');
 
                 bean.intProperty('trustStoreType');
@@ -1818,7 +1840,7 @@ export default class IgniteConfigurationGenerator {
     static domainModelGeneral(domain, cfg = this.domainConfigurationBean(domain)) {
         switch (cfg.valueOf('queryMetadata')) {
             case 'Annotations':
-                if (_.nonNil(domain.keyType) && _.nonNil(domain.valueType)) {
+                if (nonNil(domain.keyType) && nonNil(domain.valueType)) {
                     cfg.varArgProperty('indexedTypes', 'indexedTypes',
                         [javaTypes.fullClassName(domain.keyType), javaTypes.fullClassName(domain.valueType)],
                         'java.lang.Class');
@@ -1985,7 +2007,7 @@ export default class IgniteConfigurationGenerator {
         ccfg.intProperty('copyOnRead');
 
         if (ccfg.valueOf('cacheMode') === 'PARTITIONED' && ccfg.valueOf('atomicityMode') === 'TRANSACTIONAL')
-            ccfg.intProperty('invalidate');
+            ccfg.intProperty('isInvalidate', 'invalidate');
 
         return ccfg;
     }
@@ -2138,7 +2160,7 @@ export default class IgniteConfigurationGenerator {
                     };
 
                     const types = _.reduce(domains, (acc, domain) => {
-                        if (_.isNil(domain.databaseTable))
+                        if (isNil(domain.databaseTable))
                             return acc;
 
                         const typeBean = this.domainJdbcTypeBean(_.merge({}, domain, {cacheName: cache.name}))
@@ -2233,7 +2255,7 @@ export default class IgniteConfigurationGenerator {
 
         const settings = _.get(filter, kind);
 
-        if (!_.isNil(settings)) {
+        if (!isNil(settings)) {
             switch (kind) {
                 case 'IGFS':
                     const foundIgfs = _.find(igfss, {_id: settings.igfs});
@@ -2245,7 +2267,7 @@ export default class IgniteConfigurationGenerator {
 
                     break;
                 case 'Custom':
-                    if (_.nonEmpty(settings.className))
+                    if (nonEmpty(settings.className))
                         return new EmptyBean(settings.className);
 
                     break;
@@ -2336,7 +2358,7 @@ export default class IgniteConfigurationGenerator {
     // Generate domain models configs.
     static cacheDomains(domains, available, ccfg) {
         const qryEntities = _.reduce(domains, (acc, domain) => {
-            if (_.isNil(domain.queryMetadata) || domain.queryMetadata === 'Configuration') {
+            if (isNil(domain.queryMetadata) || domain.queryMetadata === 'Configuration') {
                 const qryEntity = this.domainModelGeneral(domain);
 
                 this.domainModelQuery(domain, available, qryEntity);

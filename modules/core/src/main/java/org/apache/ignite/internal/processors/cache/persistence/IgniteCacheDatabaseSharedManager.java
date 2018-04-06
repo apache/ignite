@@ -58,7 +58,6 @@ import org.apache.ignite.internal.processors.cache.persistence.metastorage.MetaS
 import org.apache.ignite.internal.processors.cache.persistence.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cluster.IgniteChangeGlobalStateSupport;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -268,7 +267,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (dfltMemPlcName == null)
             dfltMemPlcName = DFLT_DATA_REG_DEFAULT_NAME;
 
-        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(dataRegionCfg, fillFactorProvider(dataRegionCfg));
+        DataRegionMetricsImpl memMetrics = new DataRegionMetricsImpl(dataRegionCfg, freeSpaceProvider(dataRegionCfg));
 
         DataRegion memPlc = initMemory(dataStorageCfg, dataRegionCfg, memMetrics, trackable);
 
@@ -289,28 +288,23 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dataRegCfg Data region configuration.
      * @return Closure.
      */
-    protected IgniteOutClosure<Float> fillFactorProvider(final DataRegionConfiguration dataRegCfg) {
+    protected IgniteOutClosure<Long> freeSpaceProvider(final DataRegionConfiguration dataRegCfg) {
         final String dataRegName = dataRegCfg.getName();
 
-        return new IgniteOutClosure<Float>() {
+        return new IgniteOutClosure<Long>() {
             private CacheFreeListImpl freeList;
 
-            @Override public Float apply() {
+            @Override public Long apply() {
                 if (freeList == null) {
                     CacheFreeListImpl freeList0 = freeListMap.get(dataRegName);
 
                     if (freeList0 == null)
-                        return (float) 0;
+                        return 0L;
 
                     freeList = freeList0;
                 }
 
-                T2<Long, Long> fillFactor = freeList.fillFactor();
-
-                if (fillFactor.get2() == 0)
-                    return (float) 0;
-
-                return (float) fillFactor.get1() / fillFactor.get2();
+                return freeList.freeSpace();
             }
         };
     }
@@ -388,6 +382,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         checkMetricsProperties(regCfg);
 
         checkRegionEvictionProperties(regCfg, memCfg);
+
+        checkRegionMemoryStorageType(regCfg);
     }
 
     /**
@@ -488,6 +484,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 "DataRegionConfiguration.initialSize property to set correct size in bytes or use 64-bit JVM) " +
                 "[name=" + regCfg.getName() +
                 ", size=" + U.readableSize(regCfg.getInitialSize(), true) + "]");
+    }
+
+    /**
+     * @param regCfg DataRegionConfiguration to validate.
+     * @throws IgniteCheckedException If config is invalid.
+     */
+    private void checkRegionMemoryStorageType(DataRegionConfiguration regCfg) throws IgniteCheckedException {
+        if (regCfg.isPersistenceEnabled() && regCfg.getSwapPath() != null)
+            throw new IgniteCheckedException("DataRegionConfiguration must not have both persistence " +
+                "storage and swap space enabled at the same time (Use DataRegionConfiguration.setSwapPath(null)  " +
+                "to disable the swap space usage or DataRegionConfiguration.setPersistenceEnabled(false) " +
+                "to disable the persistence) [name=" + regCfg.getName() + ", swapPath=" + regCfg.getSwapPath() +
+                ", persistenceEnabled=" + regCfg.isPersistenceEnabled() + "]"
+            );
     }
 
     /**

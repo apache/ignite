@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import Worker from 'worker!./summary.worker';
+import Worker from './summary.worker';
 
 export default ['$q', function($q) {
     return function(message) {
@@ -26,10 +26,12 @@ export default ['$q', function($q) {
 
         worker.onmessage = (e) => {
             defer.resolve(e.data);
+            worker.terminate();
         };
 
         worker.onerror = (err) => {
             defer.reject(err);
+            worker.terminate();
         };
 
         return defer.promise;

@@ -18,7 +18,7 @@
 FROM ubuntu:14.04
 
 ENV NPM_CONFIG_LOGLEVEL info
-ENV NODE_VERSION 8.6.0
+ENV NODE_VERSION 8.11.1
 
 # Before package list update.
 RUN set -ex  && \
@@ -48,6 +48,8 @@ RUN curl -SLO "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-
   grep " node-v$NODE_VERSION-linux-x64.tar.xz\$" SHASUMS256.txt | sha256sum -c - && \
   tar -xJf "node-v$NODE_VERSION-linux-x64.tar.xz" -C /usr/local --strip-components=1 && \
   rm "node-v$NODE_VERSION-linux-x64.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt
+
+ENV NPM_CONFIG_LOGLEVEL warn
 
 # Install global node packages.
 RUN npm install -g pm2

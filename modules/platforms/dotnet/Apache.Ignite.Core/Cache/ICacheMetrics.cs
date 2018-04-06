@@ -637,5 +637,14 @@ namespace Apache.Ignite.Core.Cache
         /// Rebalancing start time.
         /// </returns>
         long RebalancingStartTime { get; }
+
+        /// <summary>
+        /// Gets number of partitions.
+        /// need to be cleared before actual rebalance start.
+        /// </summary>
+        /// <returns>
+        /// Number of clearing partitions for rebalance.
+        /// </returns>
+        long RebalanceClearingPartitionsLeft { get; }
     }
 }
