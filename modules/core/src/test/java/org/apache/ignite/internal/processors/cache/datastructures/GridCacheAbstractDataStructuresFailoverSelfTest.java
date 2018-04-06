@@ -19,7 +19,9 @@ package org.apache.ignite.internal.processors.cache.datastructures;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -37,6 +39,7 @@ import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
+import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
@@ -50,11 +53,13 @@ import org.apache.ignite.configuration.CollectionConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.typedef.CA;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteCallable;
@@ -1109,7 +1114,35 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
      * @throws Exception If failed.
      */
     public void testAtomicSequenceInitialization() throws Exception {
+        checkAtomicSequenceInitialization(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicSequenceInitializationOnStableNodes() throws Exception {
+        checkAtomicSequenceInitialization(true);
+    }
+
+    /**
+     * @param limitProjection {@code True} if test should call init only on stable nodes.
+     * @throws Exception If failed.
+     */
+    private void checkAtomicSequenceInitialization(boolean limitProjection) throws Exception {
         int threadCnt = 3;
+
+        IgniteCompute compute;
+
+        if (limitProjection) {
+            List<UUID> nodeIds = new ArrayList<>(gridCount());
+
+            for (int i = 0; i < gridCount(); i++)
+                nodeIds.add(grid(i).cluster().localNode().id());
+
+            compute = grid(0).compute(grid(0).cluster().forNodeIds(nodeIds));
+        }
+        else
+            compute = grid(0).compute();
 
         final AtomicInteger idx = new AtomicInteger(gridCount());
 
@@ -1137,20 +1170,29 @@ public abstract class GridCacheAbstractDataStructuresFailoverSelfTest extends Ig
         }, threadCnt, "test-thread");
 
         while (!fut.isDone()) {
-            grid(0).compute().call(new IgniteCallable<Object>() {
+            compute.call(new IgniteCallable<Object>() {
                 /** */
                 @IgniteInstanceResource
                 private Ignite g;
 
-                @Override public Object call() throws Exception {
-                    IgniteAtomicSequence seq = g.atomicSequence(STRUCTURE_NAME, 1, true);
+                @Override public Object call() {
+                    try {
+                        IgniteAtomicSequence seq = g.atomicSequence(STRUCTURE_NAME, 1, true);
 
-                    assert seq != null;
+                        assert seq != null;
 
-                    for (int i = 0; i < 1000; i++)
-                        seq.getAndIncrement();
+                        for (int i = 0; i < 1000; i++)
+                            seq.getAndIncrement();
 
-                    return null;
+                        return null;
+                    }
+                    catch (IgniteException e) {
+                        // Fail if we are on stable nodes or exception is not node stop.
+                        if (limitProjection || !X.hasCause(e, NodeStoppingException.class))
+                            throw e;
+
+                        return null;
+                    }
                 }
             });
         }
