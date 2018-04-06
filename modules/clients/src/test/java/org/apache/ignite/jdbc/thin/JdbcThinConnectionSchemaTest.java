@@ -21,12 +21,10 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Collection;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
@@ -51,17 +49,17 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
     /** Name of dynamic cache, that doesn't have indexed types. */
     private static final String CACHE_WITHOUT_TABLES_NAME = "CacheWithoutTables";
 
-    /** */
-    private IgniteEx clientNode;
-
-    /** */
-    private IgniteEx serverNode;
-
     /** Cache created using Ignite server instance. */
     private static final String SERVER_CACHE = "ServerNodeCache";
 
     /** Name of the cache, that is created using Ignite cache instance, NOT the cache on client. */
     private static final String CLIENT_CACHE = "ClientNodeCache";
+
+    /** */
+    private IgniteEx clientNode;
+
+    /** */
+    private IgniteEx serverNode;
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -127,7 +125,7 @@ public class JdbcThinConnectionSchemaTest extends GridCommonAbstractTest {
     }
 
     /** Add cache with table to ignite config. */
-    private IgniteConfiguration withPrestartedCache(IgniteConfiguration cfg) throws Exception {
+    private IgniteConfiguration withPrestartedCache(IgniteConfiguration cfg) {
         CacheConfiguration<Long, UUID> ccfg = new CacheConfiguration<Long, UUID>(PRESTARTED_CACHE)
             .setIndexedTypes(Long.class, UUID.class).setCacheMode(CacheMode.PARTITIONED);
 
