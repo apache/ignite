@@ -25,7 +25,6 @@ import java.util.Random;
 import java.util.stream.Stream;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.ml.math.impls.vector.DenseLocalOnHeapVector;
-import org.apache.ignite.ml.trees.performance.ColumnDecisionTreeTrainerBenchmark;
 import org.apache.ignite.ml.util.MnistUtils;
 
 /** */
@@ -83,7 +82,7 @@ public class MnistMLPTestUtil {
     private static Properties loadMNISTProperties() throws IOException {
         Properties res = new Properties();
 
-        InputStream is = ColumnDecisionTreeTrainerBenchmark.class.getClassLoader().getResourceAsStream("manualrun/trees/columntrees.manualrun.properties");
+        InputStream is = MnistMLPTestUtil.class.getClassLoader().getResourceAsStream("manualrun/trees/columntrees.manualrun.properties");
 
         res.load(is);
 
