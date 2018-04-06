@@ -711,8 +711,22 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
     ) {
         final GridCacheOperation op = invokeMap != null ? TRANSFORM : UPDATE;
 
-        Map<? extends K, ? extends V> map0 = CacheObjectUtils.sort(map, ctx.cacheObjectContext());
-        Map<? extends K, ? extends EntryProcessor> invokeMap0 = CacheObjectUtils.sort(invokeMap, ctx.cacheObjectContext());
+        Map<? extends K, ? extends V> map0;
+        Map<? extends K, ? extends EntryProcessor> invokeMap0;
+
+        CacheOperationContext opCtx = ctx.operationContextPerCall();
+
+        final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+
+        if (opCtx != null && opCtx.isAutoSorting()) {
+            map0 = CacheObjectUtils.sort(map, ctx.cacheObjectContext());
+            invokeMap0 = CacheObjectUtils.sort(invokeMap, ctx.cacheObjectContext());
+        } else {
+            map0 = map;
+            invokeMap0 = invokeMap;
+        }
+
+        System.out.println("asd123 keyset: "+map0.keySet());
 
         final Collection<? extends K> keys =
             map0 != null ? map0.keySet() : invokeMap0 != null ? invokeMap0.keySet() : null;
@@ -723,11 +737,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
 
         final boolean readThrough = ctx.readThrough();
 
-        CacheOperationContext opCtx = ctx.operationContextPerCall();
-
         final ExpiryPolicy expiry = expiryPerCall();
-
-        final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
 
         return asyncOp(new Callable<Object>() {
             @Override public Object call() throws Exception {

@@ -734,6 +734,11 @@ public class HibernateCacheProxy implements IgniteInternalCache<Object, Object> 
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteInternalCache autoSorting() {
+        return delegate.autoSorting();
+    }
+
+    /** {@inheritDoc} */
     @Override public IgniteInternalCache cache() {
         return delegate.cache();
     }

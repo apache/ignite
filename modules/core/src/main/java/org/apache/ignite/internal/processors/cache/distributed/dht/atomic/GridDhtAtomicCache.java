@@ -991,10 +991,12 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        map = CacheObjectUtils.sort(map, ctx.cacheObjectContext());
-        invokeMap= CacheObjectUtils.sort(invokeMap, ctx.cacheObjectContext());
-        conflictPutMap = CacheObjectUtils.sort(conflictPutMap, ctx.cacheObjectContext());
-        conflictRmvMap = CacheObjectUtils.sort(conflictRmvMap, ctx.cacheObjectContext());
+        if (opCtx.isAutoSorting()) {
+            map = CacheObjectUtils.sort(map, ctx.cacheObjectContext());
+            invokeMap = CacheObjectUtils.sort(invokeMap, ctx.cacheObjectContext());
+            conflictPutMap = CacheObjectUtils.sort(conflictPutMap, ctx.cacheObjectContext());
+            conflictRmvMap = CacheObjectUtils.sort(conflictRmvMap, ctx.cacheObjectContext());
+        }
 
         if (opCtx != null && opCtx.hasDataCenterId()) {
             assert conflictPutMap == null : conflictPutMap;
@@ -1304,7 +1306,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         Collection<GridCacheVersion> drVers = null;
 
-        keys = CacheObjectUtils.sort(keys, ctx.cacheObjectContext());
+        if (opCtx != null && opCtx.isAutoSorting())
+            keys = CacheObjectUtils.sort(keys, ctx.cacheObjectContext());
 
         if (opCtx != null && keys != null && opCtx.hasDataCenterId()) {
             assert conflictMap == null : conflictMap;

@@ -675,8 +675,16 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
             dataCenterId = null;
 
         // Cached entry may be passed only from entry wrapper.
-        final Map<?, ?> map0 = CacheObjectUtils.sort(map, cacheCtx.cacheObjectContext());
-        final Map<?, EntryProcessor<K, V, Object>> invokeMap0 = CacheObjectUtils.sort(invokeMap, cacheCtx.cacheObjectContext());
+        final Map<?, ?> map0;
+        final Map<?, EntryProcessor<K, V, Object>> invokeMap0;
+
+        if (opCtx != null && opCtx.isAutoSorting()) {
+            map0 = CacheObjectUtils.sort(map, cacheCtx.cacheObjectContext());
+            invokeMap0 = CacheObjectUtils.sort(invokeMap, cacheCtx.cacheObjectContext());
+        } else {
+            map0 = map;
+            invokeMap0 = (Map<K, EntryProcessor<K, V, Object>>) invokeMap;
+        }
 
         if (log.isDebugEnabled())
             log.debug("Called putAllAsync(...) [tx=" + this + ", map=" + map0 + ", retval=" + retval + "]");
@@ -1446,19 +1454,21 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (retval)
             needReturnValue(true);
 
+        CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
+
         final Collection<?> keys0;
 
         if (drMap != null) {
             assert keys == null;
 
-            drMap = CacheObjectUtils.sort(drMap, cacheCtx.cacheObjectContext());
+            if (opCtx != null && opCtx.isAutoSorting())
+                drMap = CacheObjectUtils.sort(drMap, cacheCtx.cacheObjectContext());
 
             keys0 = drMap.keySet();
         }
         else
-            keys0 = CacheObjectUtils.sort(keys, cacheCtx.cacheObjectContext());
-
-        CacheOperationContext opCtx = cacheCtx.operationContextPerCall();
+            keys0 = opCtx != null && opCtx.isAutoSorting()
+                ? CacheObjectUtils.sort(keys, cacheCtx.cacheObjectContext()) : keys;
 
         final Byte dataCenterId;
 

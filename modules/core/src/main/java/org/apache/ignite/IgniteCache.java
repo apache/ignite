@@ -177,6 +177,13 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public <K1, V1> IgniteCache<K1, V1> withKeepBinary();
 
     /**
+     *
+     *
+     * @return
+     */
+    public <K1, V1> IgniteCache<K1, V1> withKeyAutoSorting();
+
+    /**
      * Executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.
      *
      * @param p Optional predicate (may be {@code null}). If provided, will be used to

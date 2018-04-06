@@ -77,6 +77,13 @@ public interface IgniteCacheProxy<K, V> extends IgniteCache<K, V>, Externalizabl
     public <K1, V1> IgniteCache<K1, V1> keepBinary();
 
     /**
+     *
+     *
+     * @return
+     */
+    public <K1, V1> IgniteCache<K1, V1> keyAutoSorting();
+
+    /**
      * @param dataCenterId Data center ID.
      * @return Projection for data center id.
      */

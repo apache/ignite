@@ -269,6 +269,13 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public <K1, V1> IgniteInternalCache<K1, V1> keepBinary();
 
     /**
+     *
+     *
+     * @return New internal cache instance with automatic sorting keys for batch operations.
+     */
+    public <K1, V1> IgniteInternalCache<K1, V1> autoSorting();
+
+    /**
      * Returns {@code true} if this map contains no key-value mappings.
      *
      * @return {@code true} if this map contains no key-value mappings.
