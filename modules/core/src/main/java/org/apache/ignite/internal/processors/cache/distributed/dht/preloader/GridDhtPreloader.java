@@ -450,11 +450,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
             if (rebalanceFut.isDone() && Boolean.TRUE.equals(rebalanceFut.result()))
                 return false;
-            else
-                return true;
         }
 
-        return false;
+        return true;
     }
 
     /** {@inheritDoc} */
