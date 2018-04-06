@@ -21,6 +21,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParametersDelegate;
 import java.util.Collections;
 import org.apache.ignite.IgniteDataStreamer;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
@@ -59,6 +60,10 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-sm", "--syncMode"}, description = "Synchronization mode")
     private CacheWriteSynchronizationMode syncMode = CacheWriteSynchronizationMode.PRIMARY_SYNC;
+
+    /** */
+    @Parameter(names = {"--atomic-mode", "--atomicMode"})
+    @Nullable private CacheAtomicityMode atomicMode = null;
 
     /** */
     @Parameter(names = {"-cl", "--client"}, description = "Client flag")
@@ -391,6 +396,11 @@ public class IgniteBenchmarkArguments {
      */
     public CacheWriteSynchronizationMode syncMode() {
         return syncMode;
+    }
+
+    /** With what cache atomicity mode to create tables. */
+    @Nullable public CacheAtomicityMode atomicMode(){
+        return atomicMode;
     }
 
     /**

@@ -17,21 +17,36 @@
 
 package org.apache.ignite.yardstick.jdbc;
 
-import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteException;
 import org.yardstickframework.BenchmarkConfiguration;
 
-import static org.apache.ignite.yardstick.jdbc.JdbcUtils.fillData;
-
 /**
- * Abstract class for benchmarks that use {@link SqlFieldsQuery}.
+ * Benchmark that fetches data from cache to compare with SQL SELECT operation.
  */
-public abstract class AbstractNativeBenchmark extends IgniteAbstractBenchmark {
-    /** {@inheritDoc} */
+public class NativeJavaApiPutRemoveBenchmark extends AbstractNativeBenchmark {
+    /** Cache for created table. */
+    private IgniteCache<Object, Object> tabCache;
+
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
-        fillData(cfg, (IgniteEx)ignite(), args.range(), args.atomicMode());
+        tabCache = ignite().cache("SQL_PUBLIC_TEST_LONG");
+    }
+
+    @Override public boolean test(Map<Object, Object> ctx) throws Exception {
+        long insertKey = ThreadLocalRandom.current().nextLong(args.range()) + 1 + args.range();
+        long insertVal = insertKey + 1;
+
+        try {
+            tabCache.put(insertKey, insertVal);
+            tabCache.remove(insertKey);
+        } catch (IgniteException ign){
+            // Collision occurred, ignoring.
+        }
+
+        return true;
     }
 }
