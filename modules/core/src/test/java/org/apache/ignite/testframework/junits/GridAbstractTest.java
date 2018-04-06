@@ -995,21 +995,23 @@ public abstract class GridAbstractTest extends TestCase {
         if (cfg == null)
             cfg = optimize(getConfiguration(igniteInstanceName));
 
-        DiscoverySpi discoverySpi = locNode.configuration().getDiscoverySpi();
+        if (locNode != null) {
+            DiscoverySpi discoverySpi = locNode.configuration().getDiscoverySpi();
 
-        if (discoverySpi != null && !(discoverySpi instanceof TcpDiscoverySpi)) {
-            try {
-                // Clone added to support ZookeeperDiscoverySpi.
-                Method m = discoverySpi.getClass().getDeclaredMethod("cloneSpiConfiguration");
+            if (discoverySpi != null && !(discoverySpi instanceof TcpDiscoverySpi)) {
+                try {
+                    // Clone added to support ZookeeperDiscoverySpi.
+                    Method m = discoverySpi.getClass().getDeclaredMethod("cloneSpiConfiguration");
 
-                m.setAccessible(true);
+                    m.setAccessible(true);
 
-                cfg.setDiscoverySpi((DiscoverySpi)m.invoke(discoverySpi));
+                    cfg.setDiscoverySpi((DiscoverySpi) m.invoke(discoverySpi));
 
-                resetDiscovery = false;
-            }
-            catch (NoSuchMethodException e) {
-                // Ignore.
+                    resetDiscovery = false;
+                }
+                catch (NoSuchMethodException e) {
+                    // Ignore.
+                }
             }
         }
 
