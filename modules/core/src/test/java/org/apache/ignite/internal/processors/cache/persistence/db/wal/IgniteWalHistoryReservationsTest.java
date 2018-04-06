@@ -33,10 +33,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.WALMode;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.persistence.wal.FileWriteAheadLogManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -455,20 +453,5 @@ public class IgniteWalHistoryReservationsTest extends GridCommonAbstractTest {
      */
     private void deleteWorkFiles() throws IgniteCheckedException {
         deleteRecursively(U.resolveWorkDirectory(U.defaultWorkDirectory(), DFLT_STORE_DIR, false));
-    }
-
-    /**
-     *
-     */
-    private void forceCheckpoint() throws Exception {
-        for (Ignite ignite : G.allGrids()) {
-            if (ignite.cluster().localNode().isClient())
-                continue;
-
-            GridCacheDatabaseSharedManager dbMgr = (GridCacheDatabaseSharedManager)((IgniteEx)ignite).context()
-                .cache().context().database();
-
-            dbMgr.waitForCheckpoint("test");
-        }
     }
 }

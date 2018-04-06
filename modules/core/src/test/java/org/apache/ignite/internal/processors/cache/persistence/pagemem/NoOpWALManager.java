@@ -92,6 +92,11 @@ public class NoOpWALManager implements IgniteWriteAheadLogManager {
     }
 
     /** {@inheritDoc} */
+    @Override public int reserved(WALPointer low, WALPointer high) {
+        return 0;
+    }
+
+    /** {@inheritDoc} */
     @Override public void start(GridCacheSharedContext cctx) throws IgniteCheckedException {
         // No-op.
     }

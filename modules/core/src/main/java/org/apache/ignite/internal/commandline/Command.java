@@ -31,7 +31,10 @@ public enum Command {
     STATE("--state"),
 
     /** */
-    BASELINE("--baseline");
+    BASELINE("--baseline"),
+
+    /** */
+    WAL("--wal");
 
     /** */
     private final String text;
