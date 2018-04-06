@@ -344,9 +344,8 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 int ioVer = in.readUnsignedShort();
                 long treeRoot = in.readLong();
                 long reuseListRoot = in.readLong();
-                long pendingTreeRoot = (ioVer > 1) ? in.readLong() : 0;
 
-                res = new MetaPageInitRecord(cacheId, pageId, ioType, ioVer, treeRoot, reuseListRoot, pendingTreeRoot);
+                res = new MetaPageInitRecord(cacheId, pageId, ioType, ioVer, treeRoot, reuseListRoot);
 
                 break;
 
@@ -888,7 +887,6 @@ public class RecordDataV1Serializer implements RecordDataSerializer {
                 buf.putShort((short)updRootsRec.ioVersion());
                 buf.putLong(updRootsRec.treeRoot());
                 buf.putLong(updRootsRec.reuseListRoot());
-                buf.putLong(updRootsRec.pendingTreeRoot());
 
                 break;
 

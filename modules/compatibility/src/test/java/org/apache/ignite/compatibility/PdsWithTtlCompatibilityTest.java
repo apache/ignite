@@ -186,8 +186,6 @@ public class PdsWithTtlCompatibilityTest extends IgnitePersistenceCompatibilityA
             IgniteCache<Object, Object> cache = ignite.createCache(cacheCfg);
 
             saveCacheData(cache);
-
-            ignite.active(false);
         }
     }
 }

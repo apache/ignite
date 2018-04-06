@@ -724,8 +724,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             pageIO.getType(),
                             pageIO.getVersion(),
                             metastoreRoot,
-                            reuseListRoot,
-                            0
+                            reuseListRoot
                         ));
 
                     allocated = true;
@@ -1206,7 +1205,11 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     PageMemoryEx pageMem = (PageMemoryEx)grp.dataRegion().pageMemory();
 
-                    delegate0 = new CacheDataStoreImpl(partId, name, rowStore, dataTree);
+                    delegate0 = new CacheDataStoreImpl(partId, name, rowStore, dataTree) {
+                        @Override public PendingEntriesTree pendingTree() {
+                            return pendingTree;
+                        }
+                    };
 
                     int grpId = grp.groupId();
                     long partMetaId = pageMem.partitionMetaPageId(grpId, partId);
@@ -1306,15 +1309,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         io.setPendingTreeRoot(pageAddr, pendingTreeRoot);
 
                         if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
-                            wal.log(new MetaPageInitRecord(
-                                grpId,
-                                partMetaId,
-                                io.getType(),
-                                io.getVersion(),
-                                treeRoot,
-                                reuseListRoot,
-                                pendingTreeRoot
-                            ));
+                            wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), partMetaPage, pageMem.pageSize()));
 
                         allocated = true;
                     }
@@ -1324,7 +1319,6 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                         treeRoot = io.getTreeRoot(pageAddr);
                         reuseListRoot = io.getReuseListRoot(pageAddr);
 
-                        //TODO: IGNITE-5874: move page upgrade to proper place?
                         int pageVersion = PagePartitionMetaIO.getVersion(pageAddr);
                         if (pageVersion < 2) {
                             assert pageVersion == 1;

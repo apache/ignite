@@ -21,7 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.PageMetaIO;
-import org.apache.ignite.internal.processors.cache.persistence.tree.io.PagePartitionMetaIO;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
@@ -35,9 +34,6 @@ public class MetaPageInitRecord extends InitNewPageRecord {
     private long reuseListRoot;
 
     /** */
-    private long pendingTreeRoot;
-
-    /** */
     private int ioType;
 
     /**
@@ -47,15 +43,13 @@ public class MetaPageInitRecord extends InitNewPageRecord {
      * @param treeRoot Tree root.
      * @param reuseListRoot Reuse list root.
      */
-    public MetaPageInitRecord(int grpId, long pageId, int ioType, int ioVer, long treeRoot, long reuseListRoot,
-        long pendingTreeRoot) {
+    public MetaPageInitRecord(int grpId, long pageId, int ioType, int ioVer, long treeRoot, long reuseListRoot) {
         super(grpId, pageId, ioType, ioVer, pageId);
 
         assert ioType == PageIO.T_META || ioType == PageIO.T_PART_META;
 
         this.treeRoot = treeRoot;
         this.reuseListRoot = reuseListRoot;
-        this.pendingTreeRoot = pendingTreeRoot;
         this.ioType = ioType;
     }
 
@@ -73,13 +67,6 @@ public class MetaPageInitRecord extends InitNewPageRecord {
         return reuseListRoot;
     }
 
-    /**
-     * @return Pending tree root.
-     */
-    public long pendingTreeRoot() {
-        return pendingTreeRoot;
-    }
-
     /** {@inheritDoc} */
     @Override public int ioType() {
         return ioType;
@@ -87,17 +74,12 @@ public class MetaPageInitRecord extends InitNewPageRecord {
 
     /** {@inheritDoc} */
     @Override public void applyDelta(PageMemory pageMem, long pageAddr) throws IgniteCheckedException {
-        assert ioType != PageIO.T_PART_META || ioVer == 1 || pendingTreeRoot != 0;
-
         PageMetaIO io = PageMetaIO.getPageIO(ioType, ioVer);
 
         io.initNewPage(pageAddr, newPageId, pageMem.pageSize());
 
         io.setTreeRoot(pageAddr, treeRoot);
         io.setReuseListRoot(pageAddr, reuseListRoot);
-
-        if (ioType == PageIO.T_PART_META && ioVer > 1)
-            ((PagePartitionMetaIO)io).setPendingTreeRoot(pageAddr, pendingTreeRoot);
     }
 
     /** {@inheritDoc} */
