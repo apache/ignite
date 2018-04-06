@@ -17,6 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.persistence;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.nio.file.OpenOption;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
@@ -32,9 +37,10 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionSupplyMessage;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
+import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -49,7 +55,10 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     private static boolean disableWalDuringRebalancing = true;
 
     /** */
-    private final AtomicReference<CountDownLatch> supplyMessageLatch = new AtomicReference<>();
+    private static final AtomicReference<CountDownLatch> supplyMessageLatch = new AtomicReference<>();
+
+    /** */
+    private static final AtomicReference<CountDownLatch> fileIOLatch = new AtomicReference<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
@@ -65,6 +74,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                 )
                 // Test verifies checkpoint count, so it is essencial that no checkpoint is triggered by timeout
                 .setCheckpointFrequency(999_999_999_999L)
+//                .setFileIOFactory(new TestFileIOFactory(new DataStorageConfiguration().getFileIOFactory()))
         );
 
         cfg.setCacheConfiguration(
@@ -133,13 +143,22 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        CountDownLatch latch = supplyMessageLatch.get();
+        CountDownLatch msgLatch = supplyMessageLatch.get();
 
-        if (latch != null) {
-            while (latch.getCount() > 0)
-                latch.countDown();
+        if (msgLatch != null) {
+            while (msgLatch.getCount() > 0)
+                msgLatch.countDown();
 
             supplyMessageLatch.set(null);
+        }
+
+        CountDownLatch fileLatch = fileIOLatch.get();
+
+        if (fileLatch != null) {
+            while (fileLatch.getCount() > 0)
+                fileLatch.countDown();
+
+            fileIOLatch.set(null);
         }
 
         stopAllGrids();
@@ -233,7 +252,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        for (int k = 0; k < 1000; k++)
+        for (int k = 0; k < 10_000; k++)
             cache.put(k, k);
 
         IgniteEx newIgnite = startGrid(3);
@@ -262,6 +281,17 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testParallelExchangeDuringRebalance() throws Exception {
+        doTestParallelExchange(supplyMessageLatch);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testParallelExchangeDuringCheckpoint() throws Exception {
+        doTestParallelExchange(fileIOLatch);
+    }
+
+    private void doTestParallelExchange(AtomicReference<CountDownLatch> latchRef) throws Exception {
         Ignite ignite = startGrids(3);
 
         ignite.cluster().active(true);
@@ -277,7 +307,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         CountDownLatch latch = new CountDownLatch(1);
 
-        supplyMessageLatch.set(latch);
+        latchRef.set(latch);
 
         ignite.cluster().setBaselineTopology(ignite.cluster().nodes());
 
@@ -302,10 +332,110 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         assertTrue(grpCtx.walEnabled());
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testParallelExchangeDuringCheckpoint() throws Exception {
+    private static class TestFileIOFactory implements FileIOFactory {
 
+        private final FileIOFactory delegate;
+
+        public TestFileIOFactory(FileIOFactory delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override public FileIO create(File file) throws IOException {
+            return new TestFileIO(delegate.create(file));
+        }
+
+        @Override public FileIO create(File file, OpenOption... modes) throws IOException {
+            return new TestFileIO(delegate.create(file, modes));
+        }
+    }
+
+    private static class TestFileIO implements FileIO {
+        private final FileIO delegate;
+
+        public TestFileIO(FileIO delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override public long position() throws IOException {
+            return delegate.position();
+        }
+
+        @Override public void position(long newPosition) throws IOException {
+            delegate.position(newPosition);
+        }
+
+        @Override public int read(ByteBuffer destBuf) throws IOException {
+            return delegate.read(destBuf);
+        }
+
+        @Override public int read(ByteBuffer destBuf, long position) throws IOException {
+            return delegate.read(destBuf, position);
+        }
+
+        @Override public int read(byte[] buf, int off, int len) throws IOException {
+            return delegate.read(buf, off, len);
+        }
+
+        @Override public int write(ByteBuffer srcBuf) throws IOException {
+            CountDownLatch latch = fileIOLatch.get();
+
+            if (latch != null && Thread.currentThread().getName().contains("checkpoint"))
+                try {
+                    latch.await();
+                }
+                catch (InterruptedException ex) {
+                    throw new IgniteException(ex);
+                }
+
+            return delegate.write(srcBuf);
+        }
+
+        @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
+            CountDownLatch latch = fileIOLatch.get();
+
+            if (latch != null && Thread.currentThread().getName().contains("checkpoint"))
+                try {
+                    latch.await();
+                }
+                catch (InterruptedException ex) {
+                    throw new IgniteException(ex);
+                }
+
+            return delegate.write(srcBuf, position);
+        }
+
+        @Override public void write(byte[] buf, int off, int len) throws IOException {
+            CountDownLatch latch = fileIOLatch.get();
+
+            if (latch != null && Thread.currentThread().getName().contains("checkpoint"))
+                try {
+                    latch.await();
+                }
+                catch (InterruptedException ex) {
+                    throw new IgniteException(ex);
+                }
+
+            delegate.write(buf, off, len);
+        }
+
+        @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
+            return delegate.map(maxWalSegmentSize);
+        }
+
+        @Override public void force() throws IOException {
+            delegate.force();
+        }
+
+        @Override public long size() throws IOException {
+            return delegate.size();
+        }
+
+        @Override public void clear() throws IOException {
+            delegate.clear();
+        }
+
+        @Override public void close() throws IOException {
+            delegate.close();
+        }
     }
 }

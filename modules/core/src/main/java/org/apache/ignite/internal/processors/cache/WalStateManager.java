@@ -424,16 +424,18 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                         if (grp.localWalEnabled())
                             continue;
 
-                        grp.localWalEnabled(true);
-
                         for (GridDhtLocalPartition locPart : grp.topology().currentLocalPartitions()) {
                             if (locPart.state() == MOVING) {
                                 boolean reserved = locPart.reserve();
 
                                 try {
                                     if (reserved && locPart.state() == MOVING &&
-                                        cctx.discovery().topologyVersionEx().equals(session0.topVer))
+                                        cctx.discovery().topologyVersionEx().equals(session0.topVer)) {
+                                        if (!grp.localWalEnabled())
+                                            grp.localWalEnabled(true);
+
                                         grp.topology().own(locPart);
+                                    }
                                     else // topology changed, rebalancing must be restarted
                                         return;
                                 }
