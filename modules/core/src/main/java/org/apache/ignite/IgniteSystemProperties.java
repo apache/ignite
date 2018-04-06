@@ -840,7 +840,12 @@ public final class IgniteSystemProperties {
      * @see CacheConfiguration#readFromBackup
      */
     public static final String IGNITE_READ_LOAD_BALANCING = "IGNITE_READ_LOAD_BALANCING";
-  
+
+    /**
+     * Number of repetitions to capture a lock in the B+Tree.
+     */
+    public static final String IGNITE_BPLUS_TREE_LOCK_RETRIES = "IGNITE_BPLUS_TREE_LOCK_RETRIES";
+
     /**
      * Enforces singleton.
      */

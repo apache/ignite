@@ -74,8 +74,6 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentLinkedHashMap;
-import org.junit.Rule;
-import org.junit.rules.ExpectedException;
 
 import static org.apache.ignite.internal.pagemem.PageIdUtils.effectivePageId;
 import static org.apache.ignite.internal.processors.cache.persistence.tree.BPlusTree.rnd;
@@ -241,6 +239,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         try {
             for (long i = 1; i <= size; i++)
                 tree.put(i);
+
             fail();
         }
         catch (IgniteCheckedException ignored) {

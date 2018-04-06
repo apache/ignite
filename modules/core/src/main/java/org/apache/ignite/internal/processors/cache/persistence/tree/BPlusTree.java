@@ -88,10 +88,11 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
     private static volatile boolean interrupted;
 
     /** */
-    private static final String IGNITE_BPLUS_TREE_LOCK_RETRIES = "IGNITE_BPLUS_TREE_LOCK_RETRIES";
+    private static final int IGNITE_BPLUS_TREE_LOCK_RETRIES_DEFAULT = 1000;
 
     /** */
-    private static final int IGNITE_BPLUS_TREE_LOCK_RETRIES_DEFAULT = 1000;
+    private static final int LOCK_RETRIES = IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_BPLUS_TREE_LOCK_RETRIES,
+                                                        IGNITE_BPLUS_TREE_LOCK_RETRIES_DEFAULT);
 
     /** */
     private final AtomicBoolean destroyed = new AtomicBoolean(false);
@@ -1130,7 +1131,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         try {
             for (;;) {
-                g.canLockRetry();
+                g.checkLockRetry();
 
                 // Init args.
                 g.pageId = pageId;
@@ -1670,7 +1671,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
             for (;;) {
                 if (res == RETRY)
-                    x.canLockRetry();
+                    x.checkLockRetry();
 
                 // Init args.
                 x.pageId(pageId);
@@ -1827,7 +1828,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         try {
             for (;;) {
-                r.canLockRetry();
+                r.checkLockRetry();
 
                 // Init args.
                 r.pageId = pageId;
@@ -2326,7 +2327,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         try {
             for (;;) {
-                p.canLockRetry();
+                p.checkLockRetry();
 
                 // Init args.
                 p.pageId = pageId;
@@ -2440,7 +2441,7 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** Ignore row passed, find last row */
         boolean findLast;
 
-        /** */
+        /** Number of repetitions to capture a lock in the B+Tree (countdown) */
         int lockRetriesCnt = getLockRetries();
 
         /**
@@ -2559,9 +2560,10 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /**
          * @throws IgniteCheckedException If the operation can not be retried.
          */
-        final void canLockRetry() throws IgniteCheckedException {
+        final void checkLockRetry() throws IgniteCheckedException {
             if (lockRetriesCnt == 0)
                 throw new IgniteCheckedException("Maximum of retries " + getLockRetries() + " reached.");
+
             lockRetriesCnt--;
         }
     }
@@ -4946,6 +4948,6 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
      * @return Return number of retries.
      */
     protected int getLockRetries() {
-        return IgniteSystemProperties.getInteger(IGNITE_BPLUS_TREE_LOCK_RETRIES, IGNITE_BPLUS_TREE_LOCK_RETRIES_DEFAULT);
+        return LOCK_RETRIES;
     }
 }
