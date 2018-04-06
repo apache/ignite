@@ -37,6 +37,9 @@ import org.jetbrains.annotations.NotNull;
  */
 public class PageEvictionAbstractTest extends GridCommonAbstractTest {
     /** */
+    public static final int[] NO_EVENTS = new int[0];
+
+    /** */
     protected static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Offheap size for memory policy. */
@@ -103,6 +106,8 @@ public class PageEvictionAbstractTest extends GridCommonAbstractTest {
         dbCfg.setPageSize(PAGE_SIZE);
 
         cfg.setDataStorageConfiguration(dbCfg);
+
+        cfg.setIncludeEventTypes(NO_EVENTS);
 
         return cfg;
     }
