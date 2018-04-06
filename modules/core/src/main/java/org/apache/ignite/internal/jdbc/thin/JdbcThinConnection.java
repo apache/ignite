@@ -72,9 +72,6 @@ public class JdbcThinConnection implements Connection {
     /** Logger. */
     private static final Logger LOG = Logger.getLogger(JdbcThinConnection.class.getName());
 
-    /** Schema name. */
-    private String schema;
-
     /** Closed flag. */
     private boolean closed;
 
@@ -135,7 +132,6 @@ public class JdbcThinConnection implements Connection {
 
         String normSchema = normalizeSchema(connProps.getSchema());
 
-        this.schema = normSchema;
         this.connProps.setSchema(normSchema);
 
         cliIo = new JdbcThinTcpIo(connProps);
@@ -195,7 +191,7 @@ public class JdbcThinConnection implements Connection {
             // Actual ON, if needed.
             if (newVal) {
                 sendRequest(new JdbcQueryExecuteRequest(JdbcStatementType.ANY_STATEMENT_TYPE,
-                    schema, 1, 1, sql, null));
+                    getSchema(), 1, 1, sql, null));
 
                 streamBatchSize = ((SqlSetStreamingCommand)cmd).batchSize();
 
@@ -237,7 +233,7 @@ public class JdbcThinConnection implements Connection {
      * @throws SQLException if failed.
      */
     private void executeBatch(boolean lastBatch) throws SQLException {
-        JdbcBatchExecuteResult res = sendRequest(new JdbcBatchExecuteRequest(schema, streamBatch, lastBatch));
+        JdbcBatchExecuteResult res = sendRequest(new JdbcBatchExecuteRequest(getSchema(), streamBatch, lastBatch));
 
         streamBatch = null;
 
@@ -266,7 +262,7 @@ public class JdbcThinConnection implements Connection {
 
         checkCursorOptions(resSetType, resSetConcurrency, resSetHoldability);
 
-        JdbcThinStatement stmt  = new JdbcThinStatement(this, resSetHoldability, schema);
+        JdbcThinStatement stmt  = new JdbcThinStatement(this, resSetHoldability, getSchema());
 
         if (timeout > 0)
             stmt.timeout(timeout);
@@ -297,7 +293,7 @@ public class JdbcThinConnection implements Connection {
         if (sql == null)
             throw new SQLException("SQL string cannot be null.");
 
-        JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql, resSetHoldability, schema);
+        JdbcThinPreparedStatement stmt = new JdbcThinPreparedStatement(this, sql, resSetHoldability, getSchema());
 
         if (timeout > 0)
             stmt.timeout(timeout);
@@ -703,14 +699,14 @@ public class JdbcThinConnection implements Connection {
     @Override public void setSchema(String schema) throws SQLException {
         ensureNotClosed();
 
-        this.schema = normalizeSchema(schema);
+        connProps.setSchema(normalizeSchema(schema));
     }
 
     /** {@inheritDoc} */
     @Override public String getSchema() throws SQLException {
         ensureNotClosed();
 
-        return schema;
+        return connProps.getSchema();
     }
 
     /** {@inheritDoc} */
