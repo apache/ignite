@@ -194,7 +194,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
 
-        for (int k = 0; k < 1000; k++)
+        for (int k = 0; k < 10_000; k++)
             cache.put(k, k);
 
         IgniteEx newIgnite = startGrid(3);

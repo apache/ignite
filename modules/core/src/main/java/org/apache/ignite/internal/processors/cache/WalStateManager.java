@@ -353,6 +353,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         Set<Integer> grpsToDisableWal = new HashSet<>();
         Set<Integer> grpsWithWalDisabled = new HashSet<>();
 
+        boolean hasNonEmptyOwning = false;
+
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
             if (grp.isLocal() || !grp.affinityNode() || !grp.persistenceEnabled())
                 continue;
@@ -363,7 +365,14 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
                 if (locPart.state() == OWNING) {
                     hasOwning = true;
 
-                    break;
+                    if (hasNonEmptyOwning)
+                        break;
+
+                    if (locPart.updateCounter() > 0) {
+                        hasNonEmptyOwning = true;
+
+                        break;
+                    }
                 }
             }
 
@@ -385,7 +394,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
             return;
 
         try {
-            if (!grpsToEnableWal.isEmpty())
+            if (hasNonEmptyOwning && !grpsToEnableWal.isEmpty())
                 triggerCheckpoint(0).beginFuture().get();
         }
         catch (IgniteCheckedException ex) {
