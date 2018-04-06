@@ -21,24 +21,87 @@ import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PURE_D
 import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.TOTAL;
 
 public class SimpleTest extends GridCommonAbstractTest {
+    /** */
+    private static final String IN_MEMORY_REGION = "in_memory_region";
+
+    /** */
+    private static final String IN_MEMORY_GROUP_NAME = "in_memory_group";
+
+    /** */
+    private static final String IN_MEMORY_CACHE = "in_memory_cache";
+
+    /** */
+    private static final String IN_MEMORY_CACHE_1_GROUP = "in_memory_cache_group_1";
+
+    /** */
+    private static final String IN_MEMORY_CACHE_2_GROUP = "in_memory_cache_group_2";
+
+    //-----------------------------------------
+
+    /** */
+    private static final String PERSISTENT_REGION = "persistent_region";
+
+    /** */
+    private static final String PERSISTENT_GROUP_NAME = "persistent_group";
+
+    /** */
+    private static final String PERSISTENT_CACHE = "persistent_cache";
+
+    /** */
+    private static final String PERSISTENT_CACHE_1_GROUP = "persistent_cache_group_1";
+
+    /** */
+    private static final String PERSISTENT_CACHE_2_GROUP = "persistent_cache_group_2";
+
+    //-----------------------------------------
+
+    /** */
+    private static final String NODE_CONST_ID = "NODE";
+
+
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
 
-        cfg.setConsistentId("NODE");
+        cfg.setConsistentId(NODE_CONST_ID);
 
-        cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(new TcpDiscoveryVmIpFinder(true)));
+        cfg.setDiscoverySpi(
+            new TcpDiscoverySpi()
+                .setIpFinder(new TcpDiscoveryVmIpFinder(true))
+        );
 
         cfg.setCacheConfiguration(
-            new CacheConfiguration("myCache")
-                .setAffinity(
-                    new RendezvousAffinityFunction(false, 1)
-                )
-        );
+            new CacheConfiguration(IN_MEMORY_CACHE)
+                .setDataRegionName(IN_MEMORY_REGION)
+                .setAffinity(new RendezvousAffinityFunction(false, 1)),
+            new CacheConfiguration(IN_MEMORY_CACHE_1_GROUP)
+                .setDataRegionName(IN_MEMORY_REGION)
+                .setGroupName(IN_MEMORY_GROUP_NAME)
+                .setAffinity(new RendezvousAffinityFunction(false, 1)),
+            new CacheConfiguration(IN_MEMORY_CACHE_2_GROUP)
+                .setDataRegionName(IN_MEMORY_REGION)
+                .setGroupName(IN_MEMORY_GROUP_NAME)
+                .setAffinity(new RendezvousAffinityFunction(false, 1)),
+            //------------------------------------------------
+            new CacheConfiguration(PERSISTENT_CACHE)
+                .setDataRegionName(PERSISTENT_REGION)
+                .setAffinity(new RendezvousAffinityFunction(false, 1)),
+            new CacheConfiguration(PERSISTENT_CACHE_1_GROUP)
+                .setDataRegionName(PERSISTENT_REGION)
+                .setGroupName(PERSISTENT_GROUP_NAME)
+                .setAffinity(new RendezvousAffinityFunction(false, 1)),
+            new CacheConfiguration(PERSISTENT_CACHE_2_GROUP)
+                .setDataRegionName(PERSISTENT_REGION)
+                .setGroupName(PERSISTENT_GROUP_NAME)
+                .setAffinity(new RendezvousAffinityFunction(false, 1))
+            );
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
-                .setDefaultDataRegionConfiguration(
+                .setDataRegionConfigurations(
                     new DataRegionConfiguration()
+                        .setName(IN_MEMORY_REGION),
+                    new DataRegionConfiguration()
+                        .setName(PERSISTENT_REGION)
                         .setPersistenceEnabled(true)
                 )
         );
