@@ -331,6 +331,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         assertFalse(grpCtx.walEnabled());
 
+        // TODO : test with client node as well
         startGrid(4); // Trigger exchange
 
         assertFalse(grpCtx.walEnabled());
@@ -345,6 +346,14 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         awaitPartitionMapExchange();
 
         assertTrue(grpCtx.walEnabled());
+    }
+
+    public void testDataClearedAfterRestartWithDisabledWal() throws Exception {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    public void testWalNotDisabledAfterShrinkingBaselineTopology() throws Exception {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     private static class TestFileIOFactory implements FileIOFactory {
