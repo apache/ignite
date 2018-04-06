@@ -40,7 +40,13 @@ public class GridSetQueryPredicate<K, V> implements IgniteBiPredicate<K, V>, Ext
     private IgniteUuid setId;
 
     /** */
+    private boolean collocated;
+
+    /** */
     private GridCacheContext ctx;
+
+    /** */
+    private boolean filter;
 
     /**
      * Required by {@link Externalizable}.
@@ -51,9 +57,28 @@ public class GridSetQueryPredicate<K, V> implements IgniteBiPredicate<K, V>, Ext
 
     /**
      * @param setId Set ID.
+     * @param collocated Collocation flag.
      */
-    public GridSetQueryPredicate(IgniteUuid setId) {
+    public GridSetQueryPredicate(IgniteUuid setId, boolean collocated) {
         this.setId = setId;
+        this.collocated = collocated;
+    }
+
+    /**
+     * @param ctx Cache context.
+     */
+    public void init(GridCacheContext ctx) {
+        this.ctx = ctx;
+
+        filter = filterKeys();
+    }
+
+    /**
+     *
+     * @return Collocation flag.
+     */
+    public boolean collocated() {
+        return collocated;
     }
 
     /**
@@ -66,18 +91,27 @@ public class GridSetQueryPredicate<K, V> implements IgniteBiPredicate<K, V>, Ext
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public boolean apply(K k, V v) {
-        return true;
+        return !filter || ctx.affinity().primaryByKey(ctx.localNode(), k, ctx.affinity().affinityTopologyVersion());
     }
 
+    /**
+     * @return {@code True} if need to filter out non-primary keys during processing of set data query.
+     */
+    private boolean filterKeys() {
+        return !collocated && !(ctx.isLocal() || ctx.isReplicated()) &&
+            (ctx.config().getBackups() > 0 || CU.isNearEnabled(ctx));
+    }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         U.writeGridUuid(out, setId);
+        out.writeBoolean(collocated);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         setId = U.readGridUuid(in);
+        collocated = in.readBoolean();
     }
 
     /** {@inheritDoc} */

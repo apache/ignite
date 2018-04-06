@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -31,6 +32,9 @@ import org.apache.ignite.lang.IgniteUuid;
 public class GridCacheSetItemKey implements SetItemKey, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
+
+    /** */
+    private IgniteUuid setId;
 
     /** */
     @GridToStringInclude(sensitive = true)
@@ -44,15 +48,17 @@ public class GridCacheSetItemKey implements SetItemKey, Externalizable {
     }
 
     /**
+     * @param setId Set unique ID.
      * @param item Set item.
      */
-    GridCacheSetItemKey(Object item) {
+    GridCacheSetItemKey(IgniteUuid setId, Object item) {
+        this.setId = setId;
         this.item = item;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteUuid setId() {
-        throw new UnsupportedOperationException("Non collocated IgniteSet key does not have identifier.");
+        return setId;
     }
 
     /** {@inheritDoc} */
@@ -62,7 +68,11 @@ public class GridCacheSetItemKey implements SetItemKey, Externalizable {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        return item.hashCode();
+        int res = setId == null ? 0 : setId.hashCode();
+
+        res = 31 * res + item.hashCode();
+
+        return res;
     }
 
     /** {@inheritDoc} */
@@ -75,16 +85,21 @@ public class GridCacheSetItemKey implements SetItemKey, Externalizable {
 
         GridCacheSetItemKey that = (GridCacheSetItemKey)o;
 
-        return item.equals(that.item);
+        if ((setId == null && that.setId != null) || (setId != null && that.setId == null))
+            return false;
+
+        return (setId == null || setId.equals(that.setId)) && item.equals(that.item);
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
+        U.writeGridUuid(out, setId);
         out.writeObject(item);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        setId = U.readGridUuid(in);
         item = in.readObject();
     }
 

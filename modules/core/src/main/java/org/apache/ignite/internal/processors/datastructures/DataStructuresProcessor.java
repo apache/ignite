@@ -924,9 +924,16 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         throws IgniteCheckedException {
 
         String cacheName = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
-            cfg.getBackups() + (shared ? "" : "_" + dsName ) + "@" + grpName;
+            cfg.getBackups() + "@" + grpName;
 
         IgniteInternalCache cache = ctx.cache().cache(cacheName);
+
+        if (!shared && (cache == null || cache.get(new GridCacheSetHeaderKey(dsName)) == null)) {
+            cacheName = DS_CACHE_NAME_PREFIX + cfg.getAtomicityMode() + "_" + cfg.getCacheMode() + "_" +
+                cfg.getBackups() + "_" + dsName + "@" + grpName;
+
+            cache = ctx.cache().cache(cacheName);
+        }
 
         if (cache == null) {
             ctx.cache().dynamicStartCache(cacheConfiguration(cfg, cacheName, grpName),
@@ -939,6 +946,9 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 true).get();
         }
         else {
+//            if (!shared && cache.get(new GridCacheSetHeaderKey(dsName)) == null)
+                //throw new IgniteCheckedException("Unable to add Set because previous version exists.");
+
             IgnitePredicate<ClusterNode> cacheNodeFilter = cache.context().group().nodeFilter();
 
             String clsName1 = cacheNodeFilter != null ? cacheNodeFilter.getClass().getName() :
@@ -1552,18 +1562,14 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
         assert name != null;
         assert cctx != null;
 
-        CIX1<GridCacheSetHeader> afterRmv = null;
+        CIX1<GridCacheSetHeader> afterRmv = new CIX1<GridCacheSetHeader>() {
+            @Override public void applyx(GridCacheSetHeader hdr) throws IgniteCheckedException {
+                hdr = (GridCacheSetHeader)cctx.cache().withNoRetries().getAndRemove(new GridCacheSetHeaderKey(name));
 
-        // For non collocated set remove only data from meta cache.
-        if (collocated)
-            afterRmv = new CIX1<GridCacheSetHeader>() {
-                @Override public void applyx(GridCacheSetHeader hdr) throws IgniteCheckedException {
-                    hdr = (GridCacheSetHeader)cctx.cache().withNoRetries().getAndRemove(new GridCacheSetHeaderKey(name));
-
-                    if (hdr != null)
-                        cctx.dataStructures().removeSetData(hdr.id());
-                }
-            };
+                if (hdr != null)
+                    cctx.dataStructures().removeSetData(hdr.id());
+            }
+        };
 
         removeDataStructure(null, name, cctx.group().name(), SET, afterRmv);
     }

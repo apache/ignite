@@ -35,11 +35,9 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSet;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
-import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CacheWeakQueryIteratorsHolder;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
@@ -68,10 +66,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     private static final int BATCH_SIZE = 100;
 
     /** Cache context. */
-    private final GridCacheContext ctx;
-
-    /** Cache. */
-    private final IgniteInternalCache<SetItemKey, Boolean> cache;
+    protected final GridCacheContext ctx;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -90,6 +85,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
     /** Set header key. */
     protected final GridCacheSetHeaderKey setKey;
+
+    /** Cache. */
+    protected final IgniteInternalCache<SetItemKey, Boolean> cache;
 
     /** Removed flag. */
     private volatile boolean rmvd;
@@ -157,9 +155,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         try {
             onAccess();
 
-            if (!collocated)
-                return cache.sizeAsync(new CachePeekMode[] {CachePeekMode.PRIMARY}).get();
-
             if (ctx.isLocal() || ctx.isReplicated()) {
                 GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
 
@@ -167,7 +162,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             }
 
             CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-                new GridSetQueryPredicate<>(id), null, false, false);
+                new GridSetQueryPredicate<>(id, collocated), null, false, false);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -414,20 +409,10 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /**
      * @return Closeable iterator.
      */
-    private GridCloseableIterator<T> closeableIterator() {
-        return collocated ? iteratorCollocated() : iterator0();
-    }
-
-    /**
-     * Get iterator for collocated igniteSet.
-     *
-     * @return iterator for collocated igniteSet.
-     */
-    @SuppressWarnings("unchecked")
-    private GridCloseableIterator<T> iteratorCollocated() {
+    protected GridCloseableIterator<T> closeableIterator() {
         try {
             CacheQuery qry = new GridCacheQueryAdapter<>(ctx, SET, null, null,
-                new GridSetQueryPredicate<>(id), null, false, false);
+                new GridSetQueryPredicate<>(id, collocated), null, false, false);
 
             Collection<ClusterNode> nodes = dataNodes(ctx.affinity().affinityTopologyVersion());
 
@@ -453,50 +438,6 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             }
 
             return it;
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-    }
-
-    /**
-     * Get iterator for non-collocated igniteSet.
-     *
-     * @return iterator for non-collocated igniteSet.
-     */
-    @SuppressWarnings("unchecked")
-    private GridCloseableIterator<T> iterator0() {
-        GridCacheContext ctx0 = ctx.isNear() ? ctx.near().dht().context() : ctx;
-
-        CacheOperationContext opCtx = ctx.operationContextPerCall();
-
-        try {
-            GridCloseableIterator<Map.Entry<T, Object>> iter = ctx0.queries()
-                .createScanQuery(null, null, true)
-                .keepAll(false)
-                .executeScanQuery();
-
-            return ctx.itHolder().iterator(iter, new CacheIteratorConverter<T, Map.Entry<T, Object>>() {
-                @Override protected T convert(Map.Entry<T, Object> e) {
-                    // Actually Scan Query returns Iterator<CacheQueryEntry> by default,
-                    // CacheQueryEntry implements both Map.Entry and Cache.Entry interfaces.
-                    return (T)((SetItemKey)e.getKey()).item();
-                }
-
-                @Override protected void remove(T item) {
-                    CacheOperationContext prev = ctx.gate().enter(opCtx);
-
-                    try {
-                        cache.remove(itemKey(item));
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw U.convertException(e);
-                    }
-                    finally {
-                        ctx.gate().leave(prev);
-                    }
-                }
-            });
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -593,7 +534,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /**
      * Checks if set was removed and handles iterators weak reference queue.
      */
-    private void onAccess() {
+    protected void onAccess() {
         ctx.itHolder().checkWeakQueue();
 
         checkRemoved();
@@ -617,8 +558,8 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      * @param item Set item.
      * @return Item key.
      */
-    private SetItemKey itemKey(Object item) {
-        return collocated ? new CollocatedSetItemKey(name, id, item) : new GridCacheSetItemKey(item);
+    protected SetItemKey itemKey(Object item) {
+        return collocated ? new CollocatedSetItemKey(name, id, item) : new GridCacheSetItemKey(id, item);
     }
 
     /** {@inheritDoc} */

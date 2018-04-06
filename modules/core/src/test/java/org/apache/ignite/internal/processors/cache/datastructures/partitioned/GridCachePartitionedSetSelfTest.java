@@ -44,4 +44,9 @@ public class GridCachePartitionedSetSelfTest extends GridCacheSetAbstractSelfTes
 
         super.testCleanup();
     }
+
+    /** {@inheritDoc} */
+    @Override public void testApi() throws Exception {
+        super.testApi();
+    }
 }

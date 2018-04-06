@@ -748,7 +748,11 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Cache set items iterator.
      */
     private GridCloseableIterator<IgniteBiTuple<K, V>> setIterator(GridCacheQueryAdapter<?> qry) {
-        IgniteUuid id = ((GridSetQueryPredicate)qry.scanFilter()).setId();
+        final GridSetQueryPredicate filter = (GridSetQueryPredicate)qry.scanFilter();
+
+        filter.init(cctx);
+
+        IgniteUuid id = filter.setId();
 
         Collection<SetItemKey> data = cctx.dataStructures().setData(id);
 
@@ -762,7 +766,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     return new IgniteBiTuple<>((K)e.item(), (V)Boolean.TRUE);
                 }
             },
-            true);
+            true,
+            new P1<SetItemKey>() {
+                @Override public boolean apply(SetItemKey e) {
+                    return filter.apply(e, null);
+                }
+            });
 
         return new GridCloseableIteratorAdapter<IgniteBiTuple<K, V>>() {
             @Override protected boolean onHasNext() {

@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,12 +50,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheGateway;
 import org.apache.ignite.internal.processors.cache.GridCacheManagerAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.datastructures.GridAtomicCacheQueueImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeader;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeaderKey;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueProxy;
+import org.apache.ignite.internal.processors.datastructures.GridCacheSetExImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeader;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeaderKey;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetImpl;
@@ -71,7 +72,6 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.internal.GridClosureCallMode.BROADCAST;
@@ -362,8 +362,12 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
         Object key0 = cctx.cacheObjectContext().unwrapBinaryIfNeeded(key, keepBinary, false);
 
-        if (key0 instanceof CollocatedSetItemKey)
-            onSetItemUpdated((CollocatedSetItemKey)key0, rmv);
+        if (key0 instanceof SetItemKey) {
+            SetItemKey setKey = (SetItemKey)key0;
+
+            if (setKey.setId() != null)
+                onSetItemUpdated(setKey, rmv);
+        }
     }
 
     /**
@@ -422,12 +426,23 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
         try {
             GridCacheSetHeaderKey key = new GridCacheSetHeaderKey(name);
 
-            GridCacheSetHeader hdr;
+            boolean oldVer = true;
+
+            GridCacheSetHeader hdr = null;
 
             IgniteInternalCache cache = cctx.cache().withNoRetries();
 
-            if (!collocated)
-                hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), false);
+            if (!collocated) {
+                // First search for old version.
+                hdr = (GridCacheSetHeader)cache.get(key);
+
+                // If old version was not found than create new header but don't put it into cache.
+                if (hdr == null) {
+                    hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), false);
+
+                    oldVer = false;
+                }
+            }
             else {
                 if (create) {
                     hdr = new GridCacheSetHeader(IgniteUuid.randomUuid(), collocated);
@@ -449,7 +464,8 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
 
             if (set == null) {
                 GridCacheSetProxy<T> old = setsMap.putIfAbsent(hdr.id(),
-                    set = new GridCacheSetProxy<>(cctx, new GridCacheSetImpl<T>(cctx, name, hdr)));
+                    set = new GridCacheSetProxy<>(cctx,
+                        oldVer ? new GridCacheSetImpl<T>(cctx, name, hdr) : new GridCacheSetExImpl<T>(cctx, name, hdr)));
 
                 if (old != null)
                     set = old;
@@ -616,7 +632,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
      * @param key Set item key.
      * @param rmv {@code True} if item was removed.
      */
-    private void onSetItemUpdated(CollocatedSetItemKey key, boolean rmv) {
+    private void onSetItemUpdated(SetItemKey key, boolean rmv) {
         GridConcurrentHashSet<SetItemKey> set = setDataMap.get(key.setId());
 
         if (set == null) {
