@@ -40,6 +40,7 @@ import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
 import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
+import org.apache.ignite.internal.pagemem.wal.record.PageSnapshot;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageInitRecord;
 import org.apache.ignite.internal.pagemem.wal.record.delta.MetaPageUpdateNextSnapshotId;
@@ -1343,15 +1344,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                             io.setPendingTreeRoot(pageAddr, pendingTreeRoot);
 
                             if (PageHandler.isWalDeltaRecordNeeded(pageMem, grpId, partMetaId, partMetaPage, wal, null))
-                                wal.log(new MetaPageInitRecord(
-                                    grpId,
-                                    partMetaId,
-                                    io.getType(),
-                                    io.getVersion(),
-                                    treeRoot,
-                                    reuseListRoot,
-                                    pendingTreeRoot
-                                ));
+                                wal.log(new PageSnapshot(new FullPageId(partMetaId, grpId), partMetaPage, pageMem.pageSize()));
 
                             pendingTreeAllocated = true;
                         }
@@ -1709,6 +1702,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                     //TODO: IGNITE-5874: why don't we get this.partId here?
                     if (row.key.partition() == -1)
                         row.key.partition(cctx.affinity().partition(row.key));
+
+                    assert row.key.partition() == partId;
 
                     if (pendingTree.removex(row)) {
                         if (obsoleteVer == null)

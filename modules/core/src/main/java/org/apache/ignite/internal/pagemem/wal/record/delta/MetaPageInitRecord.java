@@ -96,8 +96,7 @@ public class MetaPageInitRecord extends InitNewPageRecord {
         io.setTreeRoot(pageAddr, treeRoot);
         io.setReuseListRoot(pageAddr, reuseListRoot);
 
-        //TODO: IGNITE-5874 replace version check with smth reliable.
-        if (ioType == PageIO.T_PART_META)
+        if (ioType == PageIO.T_PART_META && ioVer > 1)
             ((PagePartitionMetaIO)io).setPendingTreeRoot(pageAddr, pendingTreeRoot);
     }
 

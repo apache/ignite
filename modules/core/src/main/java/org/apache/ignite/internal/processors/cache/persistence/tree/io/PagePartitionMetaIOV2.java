@@ -60,7 +60,6 @@ public class PagePartitionMetaIOV2 extends PagePartitionMetaIO {
         PageUtils.putLong(pageAddr, PENDING_TREE_ROOT_OFF, treeRoot);
     }
 
-
     /** {@inheritDoc} */
     @Override protected void printPage(long pageAddr, int pageSize, GridStringBuilder sb) throws IgniteCheckedException {
         byte state = getPartitionState(pageAddr);

@@ -41,7 +41,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 /**
  * Test TTL worker with persistence enabled
  */
-public class IgnitePdsWithTtlTest extends PdsAbstractTest {
+public class IgnitePdsWithTtlTest extends IgnitePdsAbstractTest {
     /** */
     public static final String CACHE = "expirableCache";
 
@@ -101,7 +101,7 @@ public class IgnitePdsWithTtlTest extends PdsAbstractTest {
      */
     private void loadAndWaitForCleanup(boolean restartGrid) throws Exception {
         IgniteEx srv = startGrid(0);
-        srv.active(true);
+        srv.cluster().active(true);
 
         fillCache(srv.cache(CACHE));
 
@@ -125,7 +125,7 @@ public class IgnitePdsWithTtlTest extends PdsAbstractTest {
      */
     public void testRebalancingWithTtlExpirable() throws Exception {
         IgniteEx srv = startGrid(0);
-        srv.active(true);
+        srv.cluster().active(true);
 
         fillCache(srv.cache(CACHE));
 
