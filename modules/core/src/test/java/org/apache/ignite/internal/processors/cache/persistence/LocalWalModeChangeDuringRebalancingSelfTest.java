@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.persistence.file.FileIO;
 import org.apache.ignite.internal.processors.cache.persistence.file.FileIOFactory;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.CU;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
@@ -199,6 +200,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
 
         IgniteEx newIgnite = startGrid(3);
 
+        U.sleep(10); // To ensure timestamp granularity.
+
         long newIgniteStartedTimestamp = System.currentTimeMillis();
 
         ignite.cluster().setBaselineTopology(4);
@@ -206,6 +209,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         CacheGroupContext grpCtx = newIgnite.cachex(DEFAULT_CACHE_NAME).context().group();
 
         assertEquals(!disableWalDuringRebalancing, grpCtx.walEnabled());
+
+        U.sleep(10); // To ensure timestamp granularity.
 
         long rebalanceStartedTimestamp = System.currentTimeMillis();
 
@@ -215,6 +220,8 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         awaitPartitionMapExchange();
 
         assertTrue(grpCtx.walEnabled());
+
+        U.sleep(10); // To ensure timestamp granularity.
 
         long rebalanceFinishedTimestamp = System.currentTimeMillis();
 
