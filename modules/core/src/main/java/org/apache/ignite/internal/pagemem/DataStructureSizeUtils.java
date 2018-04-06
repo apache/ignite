@@ -1,12 +1,16 @@
 package org.apache.ignite.internal.pagemem;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.pagemem.wal.DataStructureSizeAdapter;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
+
+import static java.util.Arrays.asList;
 
 public abstract class DataStructureSizeUtils {
     /** */
@@ -47,6 +51,9 @@ public abstract class DataStructureSizeUtils {
 
     /** */
     public static final String INTERNAL = "internal";
+
+    public static final List<String> METRICS = asList(
+        TOTAL, INDEX, INDEX_TREE, INDEX_REUSE_LIST, PARTITION, PK_INDEX, REUSE_LIST, DATA, PURE_DATA, INTERNAL);
 
     private DataStructureSizeUtils(){
 

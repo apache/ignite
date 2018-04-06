@@ -1,11 +1,14 @@
 package org.apache.ignite.internal.pagemem;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.internal.pagemem.wal.DataStructureSizeAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.jsr166.ConcurrentLinkedHashMap;
+
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.METRICS;
 
 public class DataStructureSizeNodeRootLevel implements DataStructureSizeNode<DataRegion, DataStructureSizeNodeRegionLevel> {
     private final Map<String, DataStructureSizeNode> regions = new ConcurrentLinkedHashMap<>();
@@ -29,7 +32,26 @@ public class DataStructureSizeNodeRootLevel implements DataStructureSizeNode<Dat
     }
 
     @Override public Collection<DataStructureSize> structures() {
-        return Collections.emptyList();
+        Collection<DataStructureSize> sizes = new ArrayList<>();
+
+        for (String metricName : METRICS) {
+            sizes.add(new DataStructureSizeAdapter() {
+                @Override public long size() {
+                    long size = 0;
+
+                    for (DataStructureSizeNode region : regions.values())
+                        size += region.sizeOf(metricName).size();
+
+                    return size;
+                }
+
+                @Override public String name() {
+                    return metricName;
+                }
+            });
+        }
+
+        return sizes;
     }
 
     @Override public DataStructureSize sizeOf(String name) {

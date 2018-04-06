@@ -41,7 +41,7 @@ public class DataStructureSizeNodePartitionLevel implements DataStructureSizeNod
 
         DataStructureSize partitionPages = doubleSizeUpdate(partitionSize, grpLevel.sizeOf(PARTITION));
 
-        structures.put(pkIndexPages.name(), partitionPages);
+        structures.put(pkIndexPages.name(), pkIndexPages);
         structures.put(reuseListPages.name(), reuseListPages);
         structures.put(dataPages.name(), dataPages);
         structures.put(pureDataSize.name(), pureDataSize);

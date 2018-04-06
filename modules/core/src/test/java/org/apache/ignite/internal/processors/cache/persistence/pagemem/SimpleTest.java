@@ -1,19 +1,25 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import org.apache.ignite.Ignite;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.pagemem.DataStructureSize;
 import org.apache.ignite.internal.pagemem.DataStructureSizeNode;
 import org.apache.ignite.internal.pagemem.DataStructureSizeNodeRootLevel;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -111,7 +117,7 @@ public class SimpleTest extends GridCommonAbstractTest {
     }
 
     public void test() throws Exception {
-        Ignite ig = startGrid();
+        IgniteEx ig = (IgniteEx)startGrid();
 
         ig.cluster().active(true);
 
@@ -123,14 +129,14 @@ public class SimpleTest extends GridCommonAbstractTest {
 
         System.out.println("Before put");
 
-        printSizes(groupContext);
+        printSizes(ig.context().cache().context());
 
         for (int i = 0; i < 1_000_000; i++)
             cache.put(i, i);
 
         System.out.println("After put");
 
-        printSizes(groupContext);
+        printSizes(ig.context().cache().context());
 
         GridCacheDatabaseSharedManager db =
             (GridCacheDatabaseSharedManager)cacheProxy.context().kernalContext().cache().context().database();
@@ -142,36 +148,51 @@ public class SimpleTest extends GridCommonAbstractTest {
 
         System.out.println("After remove");
 
-        printSizes(groupContext);
+        printSizes(ig.context().cache().context());
 
         ig.cluster().active(false);
     }
 
-    private void printSizes(CacheGroupContext groupContext) {
-        String leftAlignFormat = "| %-7s | %-9d | %-6d | %-6d | %-28s |%n";
+    private void printSizes(GridCacheSharedContext ctx) {
+        DataStructureSizeNodeRootLevel nodeLevel = ctx.database().dataStructureSize();
 
-        System.out.format("+---------+-----------+--------+--------+------------------------------+%n");
-        System.out.format("|  pages  |   bytes   |   kb   |   mb   |       name                   |%n");
-        System.out.format("+---------+-----------+--------+--------+------------------------------+%n");
+        print(nodeLevel.structures(), "NODE [" + ctx.localNode().consistentId() + "]");
 
-        DataStructureSizeNodeRootLevel dsSize = groupContext.shared().database().dataStructureSize();
+        List<DataStructureSize> regions = new ArrayList<>();
 
-        DataStructureSizeNode group = null;
+        List<DataStructureSizeNode> groups = new ArrayList<>();
 
-        for (DataStructureSizeNode ds : dsSize.childes()) {
-            Collection<DataStructureSizeNode> childes = ds.childes();
+        List<DataStructureSize> groupsSize = new ArrayList<>();
 
-            for (DataStructureSizeNode ds1 : childes) {
-                if (ds1.name().equals(groupContext.cacheOrGroupName())) {
-                    group = ds1;
-                    break;
-                }
-            }
+        for (DataStructureSizeNode region : nodeLevel.childes()) {
+            regions.addAll(region.structures());
+
+            groups.addAll(region.childes());
         }
 
-        Collection<DataStructureSize> structures = group.structures();
+        print(regions, "REGION");
 
-        structures.forEach((ds) -> {
+        for (DataStructureSizeNode group : groups)
+            groupsSize.addAll(group.structures());
+
+        print(groupsSize, "GROUP");
+    }
+
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        cleanPersistenceDir();
+    }
+
+    private void print(Collection<DataStructureSize> sizes, String msg) {
+        String leftAlignFormat = "| %-7s | %-9d | %-6d | %-6d | %-28s |%n";
+
+        System.err.println(msg);
+        System.err.format("+---------+-----------+--------+--------+------------------------------+%n");
+        System.err.format("|  pages  |   bytes   |   kb   |   mb   |       name                   |%n");
+        System.err.format("+---------+-----------+--------+--------+------------------------------+%n");
+
+        sizes.forEach((ds) -> {
             String name = ds.name();
 
             long size = ds.size();
@@ -185,18 +206,12 @@ public class SimpleTest extends GridCommonAbstractTest {
                 System.out.println("\t[" + size + " b | " + size / 1024 + " kb]" + "  " + k);*/
 
             if (!name.contains(PURE_DATA) && !name.contains(INTERNAL) && !name.contains(TOTAL))
-                System.out.format(leftAlignFormat, String.valueOf(size), byteSize, kbSize, mbSize, name);
+                System.err.format(leftAlignFormat, String.valueOf(size), byteSize, kbSize, mbSize, name);
             else
-                System.out.format(leftAlignFormat, "N/A", size, size / 1024, (size / 1024) / 1024, name);
+                System.err.format(leftAlignFormat, "N/A", size, size / 1024, (size / 1024) / 1024, name);
 
         });
 
-        System.out.format("+---------+-----------+--------+--------+------------------------------+%n");
-    }
-
-    @Override protected void beforeTestsStarted() throws Exception {
-        super.beforeTestsStarted();
-
-        cleanPersistenceDir();
+        System.err.format("+---------+-----------+--------+--------+------------------------------+%n\n");
     }
 }
