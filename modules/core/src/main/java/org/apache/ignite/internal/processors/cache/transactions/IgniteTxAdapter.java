@@ -1099,11 +1099,9 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                 if (state != ACTIVE && state != SUSPENDED)
                     seal();
 
-                if (cctx.wal() != null && cctx.tm().logTxRecords()) {
+                if (cctx.wal() != null && cctx.tm().logTxRecords() && txNodes != null) {
                     // Log tx state change to WAL.
                     if (state == PREPARED || state == COMMITTED || state == ROLLED_BACK) {
-                        assert txNodes != null || state == ROLLED_BACK : "txNodes=" + txNodes + " state=" + state;
-
                         BaselineTopology baselineTop = cctx.kernalContext().state().clusterState().baselineTopology();
 
                         Map<Short, Collection<Short>> participatingNodes = consistentIdMapper
