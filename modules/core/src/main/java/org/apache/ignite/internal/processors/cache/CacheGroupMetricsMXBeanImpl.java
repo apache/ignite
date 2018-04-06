@@ -35,16 +35,16 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.DATA;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.INDEX;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.INDEX_REUSE_LIST;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.INDEX_TREE;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.INTERNAL;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PARTITION;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PK_INDEX;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PURE_DATA;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.REUSE_LIST;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.TOTAL;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.DATA;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.INDEX;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.INDEX_REUSE_LIST;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.INDEX_TREE;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.INTERNAL;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.PARTITION;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.PK_INDEX;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.PURE_DATA;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.REUSE_LIST;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.TOTAL;
 
 /**
  * Management bean that provides access to {@link CacheGroupContext}.
@@ -271,51 +271,51 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
 
     /** {@inheritDoc} */
     @Override public long getIndexesSize() {
-        return ctx.sizeOf(INDEX).size() * pageSize;
+        return ctx.dataStructureSize().sizeOf(INDEX).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getIndexesTreeSize() {
-        return ctx.sizeOf(INDEX_TREE).size() * pageSize;
+        return ctx.dataStructureSize().sizeOf(INDEX_TREE).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getIndexesReuseListSize() {
-        return ctx.sizeOf(INDEX_REUSE_LIST).size() * pageSize;
+        return ctx.dataStructureSize().sizeOf(INDEX_REUSE_LIST).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getPKIndexesSize() {
-        return ctx.sizeOf(PK_INDEX).size() * pageSize;
+        return ctx.dataStructureSize().sizeOf(PK_INDEX).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getReuseListSize() {
-        return ctx.sizeOf(REUSE_LIST).size() * pageSize;
+        return ctx.dataStructureSize().sizeOf(REUSE_LIST).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getPureDataSize() {
-        return ctx.sizeOf(PURE_DATA).size();
+        return ctx.dataStructureSize().sizeOf(PURE_DATA).size();
     }
 
     /** {@inheritDoc} */
     @Override public long getDataSize() {
-        return ctx.sizeOf(DATA).size() * pageSize;
+        return ctx.dataStructureSize().sizeOf(DATA).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getInternalSize() {
-        return ctx.sizeOf(INTERNAL).size();
+        return ctx.dataStructureSize().sizeOf(INTERNAL).size();
     }
 
     @Override public long getPartitionSize() {
-        return ctx.sizeOf(PARTITION).size() * pageSize;
+        return ctx.dataStructureSize().sizeOf(PARTITION).size() * pageSize;
     }
 
     /** {@inheritDoc} */
     @Override public long getTotalSize() {
-        return ctx.sizeOf(TOTAL).size() * pageSize;
+        return ctx.dataStructureSize().sizeOf(TOTAL).size() * pageSize;
     }
 
     /** {@inheritDoc} */

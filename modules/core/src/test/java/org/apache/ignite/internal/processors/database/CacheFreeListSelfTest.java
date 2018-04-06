@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
+import org.apache.ignite.internal.pagemem.DataStructureSizeNodeRootLevel;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -345,7 +346,8 @@ public class CacheFreeListSelfTest extends GridCommonAbstractTest {
 
         DataRegionMetricsImpl regionMetrics = new DataRegionMetricsImpl(plcCfg);
 
-        DataRegion dataRegion = new DataRegion(pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker());
+        DataRegion dataRegion = new DataRegion(
+            pageMem, plcCfg, regionMetrics, new NoOpPageEvictionTracker(), new DataStructureSizeNodeRootLevel());
 
         return new CacheFreeList(
             1,

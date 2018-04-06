@@ -1,5 +1,6 @@
 package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 
+import java.util.Collection;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -7,7 +8,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.pagemem.DataStructureSizeManager;
+import org.apache.ignite.internal.pagemem.DataStructureSize;
+import org.apache.ignite.internal.pagemem.DataStructureSizeNode;
+import org.apache.ignite.internal.pagemem.DataStructureSizeNodeRootLevel;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
@@ -15,10 +18,9 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.GROUP;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.INTERNAL;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.PURE_DATA;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.TOTAL;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.INTERNAL;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.PURE_DATA;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.TOTAL;
 
 public class SimpleTest extends GridCommonAbstractTest {
     /** */
@@ -58,7 +60,6 @@ public class SimpleTest extends GridCommonAbstractTest {
     /** */
     private static final String NODE_CONST_ID = "NODE";
 
-
     @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(name);
 
@@ -70,7 +71,7 @@ public class SimpleTest extends GridCommonAbstractTest {
         );
 
         cfg.setCacheConfiguration(
-            new CacheConfiguration(IN_MEMORY_CACHE)
+         /*   new CacheConfiguration(IN_MEMORY_CACHE)
                 .setDataRegionName(IN_MEMORY_REGION)
                 .setAffinity(new RendezvousAffinityFunction(false, 1)),
             new CacheConfiguration(IN_MEMORY_CACHE_1_GROUP)
@@ -80,20 +81,20 @@ public class SimpleTest extends GridCommonAbstractTest {
             new CacheConfiguration(IN_MEMORY_CACHE_2_GROUP)
                 .setDataRegionName(IN_MEMORY_REGION)
                 .setGroupName(IN_MEMORY_GROUP_NAME)
-                .setAffinity(new RendezvousAffinityFunction(false, 1)),
+                .setAffinity(new RendezvousAffinityFunction(false, 1)),*/
             //------------------------------------------------
             new CacheConfiguration(PERSISTENT_CACHE)
                 .setDataRegionName(PERSISTENT_REGION)
-                .setAffinity(new RendezvousAffinityFunction(false, 1)),
-            new CacheConfiguration(PERSISTENT_CACHE_1_GROUP)
+                .setAffinity(new RendezvousAffinityFunction(false, 1))
+       /*     new CacheConfiguration(PERSISTENT_CACHE_1_GROUP)
                 .setDataRegionName(PERSISTENT_REGION)
                 .setGroupName(PERSISTENT_GROUP_NAME)
                 .setAffinity(new RendezvousAffinityFunction(false, 1)),
             new CacheConfiguration(PERSISTENT_CACHE_2_GROUP)
                 .setDataRegionName(PERSISTENT_REGION)
                 .setGroupName(PERSISTENT_GROUP_NAME)
-                .setAffinity(new RendezvousAffinityFunction(false, 1))
-            );
+                .setAffinity(new RendezvousAffinityFunction(false, 1))*/
+        );
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
@@ -114,7 +115,7 @@ public class SimpleTest extends GridCommonAbstractTest {
 
         ig.cluster().active(true);
 
-        IgniteCache<Integer, Integer> cache = ig.cache("myCache");
+        IgniteCache<Integer, Integer> cache = ig.cache(PERSISTENT_CACHE);
 
         GatewayProtectedCacheProxy<Integer, Integer> cacheProxy = (GatewayProtectedCacheProxy<Integer, Integer>)cache;
 
@@ -153,10 +154,27 @@ public class SimpleTest extends GridCommonAbstractTest {
         System.out.format("|  pages  |   bytes   |   kb   |   mb   |       name                   |%n");
         System.out.format("+---------+-----------+--------+--------+------------------------------+%n");
 
-        DataStructureSizeManager dsSize = groupContext.shared().database().dataStructureSizeManager();
+        DataStructureSizeNodeRootLevel dsSize = groupContext.shared().database().dataStructureSize();
 
-        dsSize.structureSizes(GROUP + "-" + groupContext.cacheOrGroupName()).forEach((k, v) -> {
-            long size = v.size();
+        DataStructureSizeNode group = null;
+
+        for (DataStructureSizeNode ds : dsSize.childes()) {
+            Collection<DataStructureSizeNode> childes = ds.childes();
+
+            for (DataStructureSizeNode ds1 : childes) {
+                if (ds1.name().equals(groupContext.cacheOrGroupName())) {
+                    group = ds1;
+                    break;
+                }
+            }
+        }
+
+        Collection<DataStructureSize> structures = group.structures();
+
+        structures.forEach((ds) -> {
+            String name = ds.name();
+
+            long size = ds.size();
             long byteSize = size * 4096;
             long kbSize = byteSize / 1024;
             long mbSize = kbSize / 1024;
@@ -166,10 +184,10 @@ public class SimpleTest extends GridCommonAbstractTest {
             else
                 System.out.println("\t[" + size + " b | " + size / 1024 + " kb]" + "  " + k);*/
 
-            if (!k.contains(PURE_DATA) && !k.contains(INTERNAL) && !k.contains(TOTAL))
-                System.out.format(leftAlignFormat, String.valueOf(v.size()), byteSize, kbSize, mbSize, k);
+            if (!name.contains(PURE_DATA) && !name.contains(INTERNAL) && !name.contains(TOTAL))
+                System.out.format(leftAlignFormat, String.valueOf(size), byteSize, kbSize, mbSize, name);
             else
-                System.out.format(leftAlignFormat, "N/A", v.size(), v.size() / 1024, (v.size() / 1024) / 1024, k);
+                System.out.format(leftAlignFormat, "N/A", size, size / 1024, (size / 1024) / 1024, name);
 
         });
 

@@ -21,9 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
@@ -36,8 +34,7 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.pagemem.DataStructureSize;
-import org.apache.ignite.internal.pagemem.DataStructureSizeManager;
+import org.apache.ignite.internal.pagemem.DataStructureSizeNodeGroupLevel;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -68,7 +65,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_UNLOADED;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.AFFINITY_POOL;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeManager.GROUP;
 
 /**
  *
@@ -159,7 +155,7 @@ public class CacheGroupContext {
     private volatile boolean walEnabled;
 
     /** */
-    private final DataStructureSizeManager dsMgr;
+    private final DataStructureSizeNodeGroupLevel groupSize;
 
     /**
      * @param grpId Group ID.
@@ -187,8 +183,7 @@ public class CacheGroupContext {
         FreeList freeList,
         ReuseList reuseList,
         AffinityTopologyVersion locStartVer,
-        boolean walEnabled,
-        DataStructureSizeManager dsSizeMgr
+        boolean walEnabled
     ) {
         assert ccfg != null;
         assert dataRegion != null || !affNode;
@@ -219,17 +214,13 @@ public class CacheGroupContext {
 
         caches = new ArrayList<>();
 
+        groupSize = dataRegion.dataStructureSize().createChild(this);
+
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
-
-        dsMgr = dsSizeMgr;
-
-        dsMgr.onCacheGroupCreated(this);
     }
 
-    public DataStructureSize sizeOf(String name) {
-        String grpName = cacheOrGroupName();
-
-        return dsMgr.structureSizes(GROUP + "-" + grpName).get(grpName + "-" + name);
+    public DataStructureSizeNodeGroupLevel dataStructureSize() {
+        return groupSize;
     }
 
     /**

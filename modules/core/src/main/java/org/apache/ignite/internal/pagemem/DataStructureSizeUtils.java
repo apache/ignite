@@ -8,7 +8,7 @@ import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 
-public class DataStructureSizeManager {
+public abstract class DataStructureSizeUtils {
     /** */
     public static final String GROUP = "group";
 
@@ -48,24 +48,11 @@ public class DataStructureSizeManager {
     /** */
     public static final String INTERNAL = "internal";
 
-    /** */
-    private final Map<String, DataStructureHolder> sizes = new LinkedHashMap<>();
-
-    public void onCacheGroupCreated(CacheGroupContext grpCtx){
-        String cacheOrGroupName = grpCtx.cacheOrGroupName();
-
-        sizes.put(GROUP + "-" + cacheOrGroupName, new DataStructureHolder(cacheOrGroupName, grpCtx.dataRegion().pageMemory().pageSize()));
-    }
-
-    public void onRegionCreated(DataRegion dataRegion){
+    private DataStructureSizeUtils(){
 
     }
 
-    public Map<String, DataStructureSize> structureSizes(String structureName) {
-        return sizes.get(structureName).sizes;
-    }
-
-    public static DataStructureSize sizeCounterWithTrackingPages(
+    public static DataStructureSize sizeWithTrackingPages(
         String name,
         DataStructureSize internalSize,
         int pageSize
@@ -82,7 +69,7 @@ public class DataStructureSizeManager {
             }
 
             @Override public void dec() {
-                throw new UnsupportedOperationException();
+//                throw new UnsupportedOperationException();
             }
 
             @Override public void add(long val) {
@@ -154,7 +141,7 @@ public class DataStructureSizeManager {
         };
     }
 
-    public static DataStructureSize mergeSizeCounters(DataStructureSize first, DataStructureSize second) {
+    public static DataStructureSize doubleSizeUpdate(DataStructureSize first, DataStructureSize second) {
         return new DataStructureSize() {
 
             @Override public void inc() {
@@ -193,7 +180,7 @@ public class DataStructureSizeManager {
         };
     }
 
-    public static DataStructureSize sizeCounter(String name, DataStructureSize delegate) {
+    public static DataStructureSize sizeAndParentUpdate(String name, DataStructureSize delegate) {
         return new DataStructureSize() {
             private final AtomicLong size = new AtomicLong();
 
@@ -279,7 +266,7 @@ public class DataStructureSizeManager {
             // Index size.
             String indexesTotal = name + "-" + INDEX;
 
-            DataStructureSize indexTotalPages = sizeCounterWithTrackingPages(indexesTotal, internalSize, pageSize);
+            DataStructureSize indexTotalPages = sizeWithTrackingPages(indexesTotal, internalSize, pageSize);
 
             sizes.put(indexesTotal, indexTotalPages);
 

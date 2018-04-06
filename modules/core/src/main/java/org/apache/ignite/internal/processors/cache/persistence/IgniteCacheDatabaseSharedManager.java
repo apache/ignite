@@ -39,7 +39,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
-import org.apache.ignite.internal.pagemem.DataStructureSizeManager;
+import org.apache.ignite.internal.pagemem.DataStructureSizeNodeRootLevel;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -84,8 +84,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** Maximum initial size on 32-bit JVM */
     private static final long MAX_PAGE_MEMORY_INIT_SIZE_32_BIT = 2L * 1024 * 1024 * 1024;
 
-    private DataStructureSizeManager dsSizeMgr;
-
     /** */
     protected volatile Map<String, DataRegion> dataRegionMap;
 
@@ -106,6 +104,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
     /** Page size from memory configuration, may be set only for fake(standalone) IgniteCacheDataBaseSharedManager */
     private int pageSize;
+
+    /** */
+    protected final DataStructureSizeNodeRootLevel nodeSize = new DataStructureSizeNodeRootLevel();
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -181,7 +182,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             boolean persistenceEnabled = memPlcCfg.isPersistenceEnabled();
 
-            //TODO need refactoring, artifacts!!!
             CacheFreeList freeList = new CacheFreeList(
                 0,
                 cctx.igniteInstanceName(),
@@ -290,8 +290,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         else if (dataRegionName.equals(DFLT_DATA_REG_DEFAULT_NAME))
             U.warn(log, "Data Region with name 'default' isn't used as a default. " +
                     "Please check Memory Policies configuration.");
-
-        dsSizeMgr.onRegionCreated(memPlc);
     }
 
     /**
@@ -899,7 +897,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         PageMemory pageMem = createPageMemory(memProvider, memCfg, plcCfg, memMetrics, trackable);
 
-        return new DataRegion(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem));
+        return new DataRegion(pageMem, plcCfg, memMetrics, createPageEvictionTracker(plcCfg, pageMem), nodeSize);
     }
 
     /**
@@ -1014,8 +1012,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         startMemoryPolicies();
 
         initPageMemoryDataStructures(memCfg);
-
-        dsSizeMgr = new DataStructureSizeManager();
     }
 
     /** {@inheritDoc} */
@@ -1063,7 +1059,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         // No-op.
     }
 
-    public DataStructureSizeManager dataStructureSizeManager() {
-        return dsSizeMgr;
+    public DataStructureSizeNodeRootLevel dataStructureSize() {
+        return nodeSize;
     }
 }
