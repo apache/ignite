@@ -287,7 +287,8 @@ public class GridDhtPartitionDemander {
             if (!grp.localWalEnabled())
                 fut.listen(new IgniteInClosureX<IgniteInternalFuture<Boolean>>() {
                     @Override public void applyx(IgniteInternalFuture<Boolean> future) throws IgniteCheckedException {
-                        ctx.walState().onGroupRebalanceFinished(grp.groupId(), assignments.topologyVersion());
+                        if (future.get())
+                            ctx.walState().onGroupRebalanceFinished(grp.groupId(), assignments.topologyVersion());
                     }
                 });
 
