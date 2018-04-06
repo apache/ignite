@@ -539,9 +539,8 @@ public class DataStorageConfiguration implements Serializable {
      * @return {@code This} for chaining.
      */
     public DataStorageConfiguration setWalSegmentSize(int walSegmentSize) {
-        if(walSegmentSize != 0){
+        if(walSegmentSize != 0)
             A.ensure(walSegmentSize >= 512 * 1024, "WAL segment size must be between 512Kb and 2Gb.");
-        }
 
         this.walSegmentSize = walSegmentSize;
 
