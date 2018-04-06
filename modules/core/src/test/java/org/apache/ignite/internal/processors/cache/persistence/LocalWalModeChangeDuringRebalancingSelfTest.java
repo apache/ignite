@@ -515,6 +515,10 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
             delegate.force();
         }
 
+        @Override public void force(boolean withMetadata) throws IOException {
+            delegate.force(withMetadata);
+        }
+
         @Override public long size() throws IOException {
             return delegate.size();
         }
