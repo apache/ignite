@@ -21,13 +21,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasure;
 import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasureCalculator;
+import org.apache.ignite.ml.tree.impurity.util.StepFunctionCompressor;
 
 /**
  * Decision tree classifier based on distributed decision tree trainer that allows to fit trees using row-partitioned
@@ -35,18 +35,28 @@ import org.apache.ignite.ml.tree.impurity.gini.GiniImpurityMeasureCalculator;
  */
 public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurityMeasure> {
     /**
-     * Constructs a new instance of decision tree classifier.
+     * Constructs a new decision tree classifier with default impurity function compressor.
      *
      * @param maxDeep Max tree deep.
      * @param minImpurityDecrease Min impurity decrease.
      */
     public DecisionTreeClassificationTrainer(int maxDeep, double minImpurityDecrease) {
-        super(maxDeep, minImpurityDecrease);
+        this(maxDeep, minImpurityDecrease, null);
+    }
+
+    /**
+     * Constructs a new instance of decision tree classifier.
+     *
+     * @param maxDeep Max tree deep.
+     * @param minImpurityDecrease Min impurity decrease.
+     */
+    public DecisionTreeClassificationTrainer(int maxDeep, double minImpurityDecrease,
+        StepFunctionCompressor<GiniImpurityMeasure> compressor) {
+        super(maxDeep, minImpurityDecrease, compressor);
     }
 
     /** {@inheritDoc} */
-    @Override DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset,
-        Predicate<double[]> pred) {
+    @Override DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset, TreeFilter pred) {
         Map<Double, Integer> cnt = dataset.compute(part -> {
 
             if (part.getFeatures() != null) {
@@ -83,7 +93,8 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
     }
 
     /** {@inheritDoc} */
-    @Override ImpurityMeasureCalculator<GiniImpurityMeasure> getImpurityMeasureCalculator(Dataset<EmptyContext, DecisionTreeData> dataset) {
+    @Override ImpurityMeasureCalculator<GiniImpurityMeasure> getImpurityMeasureCalculator(
+        Dataset<EmptyContext, DecisionTreeData> dataset) {
         Set<Double> labels = dataset.compute(part -> {
 
             if (part.getLabels() != null) {
@@ -116,6 +127,7 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
         return new GiniImpurityMeasureCalculator(encoder);
     }
 
+    /** */
     private Map<Double, Integer> reduce(Map<Double, Integer> a, Map<Double, Integer> b) {
         if (a == null)
             return b;

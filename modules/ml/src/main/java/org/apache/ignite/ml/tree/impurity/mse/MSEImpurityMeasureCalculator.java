@@ -19,9 +19,7 @@ package org.apache.ignite.ml.tree.impurity.mse;
 
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
-import org.apache.ignite.ml.tree.impurity.util.SimpleStepFunctionCompressor;
 import org.apache.ignite.ml.tree.impurity.util.StepFunction;
-import org.apache.ignite.ml.tree.impurity.util.StepFunctionCompressor;
 
 /**
  * Meas squared error (variance) impurity measure calculator.
@@ -29,25 +27,6 @@ import org.apache.ignite.ml.tree.impurity.util.StepFunctionCompressor;
 public class MSEImpurityMeasureCalculator implements ImpurityMeasureCalculator<MSEImpurityMeasure> {
     /** */
     private static final long serialVersionUID = 288747414953756824L;
-
-    /** Step function compressor. */
-    private final StepFunctionCompressor<MSEImpurityMeasure> compressor;
-
-    /**
-     * Constructs a new instance of MSE impurity measure calculator.
-     */
-    public MSEImpurityMeasureCalculator() {
-        this(new SimpleStepFunctionCompressor<>());
-    }
-
-    /**
-     * Constructs a new instance of MSE impurity measure calculator.
-     *
-     * @param compressor Step function compressor.
-     */
-    public MSEImpurityMeasureCalculator(StepFunctionCompressor<MSEImpurityMeasure> compressor) {
-        this.compressor = compressor;
-    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -85,7 +64,7 @@ public class MSEImpurityMeasureCalculator implements ImpurityMeasureCalculator<M
                     y[leftSize] = new MSEImpurityMeasure(leftY, leftY2, leftSize, rightY, rightY2, data.getFeatures().length - leftSize);
                 }
 
-                res[col] = compressor.compress(new StepFunction<>(x, y));
+                res[col] = new StepFunction<>(x, y);
             }
 
             return res;

@@ -24,6 +24,7 @@ import org.apache.ignite.ml.dataset.impl.local.LocalDatasetBuilder;
 import org.apache.ignite.ml.nn.performance.MnistMLPTestUtil;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.ignite.ml.tree.impurity.util.SimpleStepFunctionCompressor;
 import org.apache.ignite.ml.util.MnistUtils;
 
 import static junit.framework.TestCase.assertTrue;
@@ -32,7 +33,7 @@ import static junit.framework.TestCase.assertTrue;
  * Tests {@link DecisionTreeClassificationTrainer} on the MNIST dataset using locally stored data. For manual run.
  */
 public class DecisionTreeMNISTTest {
-    /** */
+    /** Tests on the MNIST dataset. For manual run. */
 //    @Test
     public void testMNIST() throws IOException {
         Map<Integer, MnistUtils.MnistLabeledImage> trainingSet = new HashMap<>();
@@ -42,7 +43,10 @@ public class DecisionTreeMNISTTest {
             trainingSet.put(i++, e);
 
 
-        DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(8, 0);
+        DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(
+            8,
+            0,
+            new SimpleStepFunctionCompressor<>());
 
         DecisionTreeNode mdl = trainer.fit(
             new LocalDatasetBuilder<>(trainingSet, 10),

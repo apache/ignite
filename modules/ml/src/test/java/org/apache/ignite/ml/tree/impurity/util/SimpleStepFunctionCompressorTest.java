@@ -19,13 +19,57 @@ package org.apache.ignite.ml.tree.impurity.util;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertArrayEquals;
+
 /**
  * Tests for {@link SimpleStepFunctionCompressor}.
  */
 public class SimpleStepFunctionCompressorTest {
     /** */
     @Test
-    public void testCompress() {
+    public void testCompressSmallFunction() {
+        StepFunction<TestImpurityMeasure> function = new StepFunction<>(
+            new double[]{1, 2, 3, 4},
+            TestImpurityMeasure.asTestImpurityMeasures(1, 2, 3, 4)
+        );
 
+        SimpleStepFunctionCompressor<TestImpurityMeasure> compressor = new SimpleStepFunctionCompressor<>(5, 0, 0);
+
+        StepFunction<TestImpurityMeasure> resFunction = compressor.compress(function);
+
+        assertArrayEquals(new double[]{1, 2, 3, 4}, resFunction.getX(), 1e-10);
+        assertArrayEquals(TestImpurityMeasure.asTestImpurityMeasures(1, 2, 3, 4), resFunction.getY());
+    }
+
+    /** */
+    @Test
+    public void testCompressIncreasingFunction() {
+        StepFunction<TestImpurityMeasure> function = new StepFunction<>(
+            new double[]{1, 2, 3, 4, 5},
+            TestImpurityMeasure.asTestImpurityMeasures(1, 2, 3, 4, 5)
+        );
+
+        SimpleStepFunctionCompressor<TestImpurityMeasure> compressor = new SimpleStepFunctionCompressor<>(1, 0.4, 0);
+
+        StepFunction<TestImpurityMeasure> resFunction = compressor.compress(function);
+
+        assertArrayEquals(new double[]{1, 3, 5}, resFunction.getX(), 1e-10);
+        assertArrayEquals(TestImpurityMeasure.asTestImpurityMeasures(1, 3, 5), resFunction.getY());
+    }
+
+    /** */
+    @Test
+    public void testCompressDecreasingFunction() {
+        StepFunction<TestImpurityMeasure> function = new StepFunction<>(
+            new double[]{1, 2, 3, 4, 5},
+            TestImpurityMeasure.asTestImpurityMeasures(5, 4, 3, 2, 1)
+        );
+
+        SimpleStepFunctionCompressor<TestImpurityMeasure> compressor = new SimpleStepFunctionCompressor<>(1, 0, 0.4);
+
+        StepFunction<TestImpurityMeasure> resFunction = compressor.compress(function);
+
+        assertArrayEquals(new double[]{1, 3, 5}, resFunction.getX(), 1e-10);
+        assertArrayEquals(TestImpurityMeasure.asTestImpurityMeasures(5, 3, 1), resFunction.getY());
     }
 }

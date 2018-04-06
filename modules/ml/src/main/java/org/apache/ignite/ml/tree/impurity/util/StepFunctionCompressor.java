@@ -42,6 +42,9 @@ public interface StepFunctionCompressor<T extends ImpurityMeasure<T>> extends Se
      * @return Arrays of compressed step function.
      */
     default public StepFunction<T>[] compress(StepFunction<T>[] functions) {
+        if (functions == null)
+            return null;
+
         StepFunction<T>[] res = Arrays.copyOf(functions, functions.length);
 
         for (int i = 0; i < res.length; i++)

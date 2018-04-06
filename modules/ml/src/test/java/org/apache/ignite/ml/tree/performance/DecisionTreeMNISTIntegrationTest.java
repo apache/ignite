@@ -27,6 +27,7 @@ import org.apache.ignite.ml.dataset.impl.cache.CacheBasedDatasetBuilder;
 import org.apache.ignite.ml.nn.performance.MnistMLPTestUtil;
 import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
+import org.apache.ignite.ml.tree.impurity.util.SimpleStepFunctionCompressor;
 import org.apache.ignite.ml.util.MnistUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -62,7 +63,7 @@ public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());
     }
 
-    /** Tests on the MNIST dataset. */
+    /** Tests on the MNIST dataset. For manual run. */
     public void tstMNIST() throws IOException {
         CacheConfiguration<Integer, MnistUtils.MnistLabeledImage> trainingSetCacheCfg = new CacheConfiguration<>();
         trainingSetCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
@@ -73,18 +74,16 @@ public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
         for (MnistUtils.MnistLabeledImage e : MnistMLPTestUtil.loadTrainingSet(60_000))
             trainingSet.put(i++, e);
 
-        DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(10, 0);
+        DecisionTreeClassificationTrainer trainer = new DecisionTreeClassificationTrainer(
+            8,
+            0,
+            new SimpleStepFunctionCompressor<>());
 
-        System.out.println("Training started...");
-        long t1 = System.currentTimeMillis();
         DecisionTreeNode mdl = trainer.fit(
             new CacheBasedDatasetBuilder<>(ignite, trainingSet),
             (k, v) -> v.getPixels(),
             (k, v) -> (double) v.getLabel()
         );
-        long t2 = System.currentTimeMillis();
-
-        System.out.println("Training completed in " + (t2 - t1) / 1000.0 + "s");
 
         int correctAnswers = 0;
         int incorrectAnswers = 0;
@@ -99,8 +98,6 @@ public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
         }
 
         double accuracy = 1.0 * correctAnswers / (correctAnswers + incorrectAnswers);
-
-        System.out.println("Accuracy : " + accuracy);
 
         assertTrue(accuracy > 0.8);
     }

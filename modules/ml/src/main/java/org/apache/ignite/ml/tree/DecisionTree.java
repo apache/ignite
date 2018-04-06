@@ -19,7 +19,6 @@ package org.apache.ignite.ml.tree;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.function.Predicate;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.primitive.builder.context.EmptyContextBuilder;
@@ -31,6 +30,7 @@ import org.apache.ignite.ml.tree.data.DecisionTreeDataBuilder;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasure;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.util.StepFunction;
+import org.apache.ignite.ml.tree.impurity.util.StepFunctionCompressor;
 
 /**
  * Distributed decision tree trainer that allows to fit trees using row-partitioned dataset.
@@ -44,15 +44,20 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
     /** Min impurity decrease. */
     private final double minImpurityDecrease;
 
+    /** Step function compressor. */
+    private final StepFunctionCompressor<T> compressor;
+
     /**
      * Constructs a new distributed decision tree trainer.
      *
      * @param maxDeep Max tree deep.
      * @param minImpurityDecrease Min impurity decrease.
+     * @param compressor Impurity function compressor.
      */
-    DecisionTree(int maxDeep, double minImpurityDecrease) {
+    DecisionTree(int maxDeep, double minImpurityDecrease, StepFunctionCompressor<T> compressor) {
         this.maxDeep = maxDeep;
         this.minImpurityDecrease = minImpurityDecrease;
+        this.compressor = compressor;
     }
 
     /** {@inheritDoc} */
@@ -76,8 +81,7 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
      * @param pred Decision tree node predicate.
      * @return Leaf node.
      */
-    abstract DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset,
-        Predicate<double[]> pred);
+    abstract DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset, TreeFilter pred);
 
     /**
      * Returns impurity measure calculator.
@@ -130,14 +134,19 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
     private StepFunction<T>[] calculateImpurityForAllColumns(Dataset<EmptyContext, DecisionTreeData> dataset,
         TreeFilter filter, ImpurityMeasureCalculator<T> impurityCalc) {
         return dataset.compute(
-            part -> impurityCalc.calculate(part.filter(filter)), this::reduce
+            part -> {
+                if (compressor != null)
+                    return compressor.compress(impurityCalc.calculate(part.filter(filter)));
+                else
+                    return impurityCalc.calculate(part.filter(filter));
+            }, this::reduce
         );
     }
 
     /**
      * Calculates best split point.
      *
-     * @param criterionFunctions  Array of impurity measure functions for all columns.
+     * @param criterionFunctions Array of impurity measure functions for all columns.
      * @return Best split point.
      */
     private SplitPoint calculateBestSplitPoint(StepFunction<T>[] criterionFunctions) {

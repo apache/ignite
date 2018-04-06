@@ -17,13 +17,13 @@
 
 package org.apache.ignite.ml.tree;
 
-import java.util.function.Predicate;
 import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.primitive.context.EmptyContext;
 import org.apache.ignite.ml.tree.data.DecisionTreeData;
 import org.apache.ignite.ml.tree.impurity.ImpurityMeasureCalculator;
 import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasure;
 import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasureCalculator;
+import org.apache.ignite.ml.tree.impurity.util.StepFunctionCompressor;
 
 /**
  * Decision tree regressor based on distributed decision tree trainer that allows to fit trees using row-partitioned
@@ -31,18 +31,28 @@ import org.apache.ignite.ml.tree.impurity.mse.MSEImpurityMeasureCalculator;
  */
 public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasure> {
     /**
-     * Constructs a new decision tree regressor.
+     * Constructs a new decision tree regressor with default impurity function compressor.
      *
      * @param maxDeep Max tree deep.
      * @param minImpurityDecrease Min impurity decrease.
      */
     public DecisionTreeRegressionTrainer(int maxDeep, double minImpurityDecrease) {
-        super(maxDeep, minImpurityDecrease);
+        this(maxDeep, minImpurityDecrease, null);
+    }
+
+    /**
+     * Constructs a new decision tree regressor.
+     *
+     * @param maxDeep Max tree deep.
+     * @param minImpurityDecrease Min impurity decrease.
+     */
+    public DecisionTreeRegressionTrainer(int maxDeep, double minImpurityDecrease,
+        StepFunctionCompressor<MSEImpurityMeasure> compressor) {
+        super(maxDeep, minImpurityDecrease, compressor);
     }
 
     /** {@inheritDoc} */
-    @Override DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset,
-        Predicate<double[]> pred) {
+    @Override DecisionTreeLeafNode createLeafNode(Dataset<EmptyContext, DecisionTreeData> dataset, TreeFilter pred) {
         double[] aa = dataset.compute(part -> {
             double mean = 0;
             int cnt = 0;
@@ -56,7 +66,7 @@ public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasu
 
             if (cnt != 0) {
                 mean = mean / cnt;
-                return new double[]{mean, cnt};
+                return new double[] {mean, cnt};
             }
 
             return null;
@@ -66,10 +76,12 @@ public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasu
     }
 
     /** {@inheritDoc} */
-    @Override ImpurityMeasureCalculator<MSEImpurityMeasure> getImpurityMeasureCalculator(Dataset<EmptyContext, DecisionTreeData> dataset) {
+    @Override ImpurityMeasureCalculator<MSEImpurityMeasure> getImpurityMeasureCalculator(
+        Dataset<EmptyContext, DecisionTreeData> dataset) {
         return new MSEImpurityMeasureCalculator();
     }
 
+    /** */
     private double[] reduce(double[] a, double[] b) {
         if (a == null)
             return b;
@@ -83,7 +95,7 @@ public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasu
 
             double mean = (aMean * aCnt + bMean * bCnt) / (aCnt + bCnt);
 
-            return new double[]{mean, aCnt + bCnt};
+            return new double[] {mean, aCnt + bCnt};
         }
     }
 }
