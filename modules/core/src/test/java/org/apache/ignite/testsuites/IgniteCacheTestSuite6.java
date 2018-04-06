@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.ReplicatedTransactionalPessim
 import org.apache.ignite.internal.processors.cache.WalModeChangeAdvancedSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeCoordinatorNotAffinityNodeSelfTest;
 import org.apache.ignite.internal.processors.cache.WalModeChangeSelfTest;
+import org.apache.ignite.internal.processors.cache.datastructures.IgniteLatchManagerCoordinatorFailTest;
 import org.apache.ignite.internal.processors.cache.distributed.CacheExchangeMergeTest;
 import org.apache.ignite.internal.processors.cache.distributed.CachePartitionStateTest;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePartitionEvictionDuringReadThroughSelfTest;
@@ -92,6 +93,8 @@ public class IgniteCacheTestSuite6 extends TestSuite {
         suite.addTestSuite(PartitionedAtomicCacheGetsDistributionTest.class);
         suite.addTestSuite(PartitionedTransactionalOptimisticCacheGetsDistributionTest.class);
         suite.addTestSuite(PartitionedTransactionalPessimisticCacheGetsDistributionTest.class);
+
+        suite.addTestSuite(IgniteLatchManagerCoordinatorFailTest.class);
 
         return suite;
     }
