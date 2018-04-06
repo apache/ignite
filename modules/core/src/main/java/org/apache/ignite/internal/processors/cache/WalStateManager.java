@@ -346,6 +346,8 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
      * @param topVer Topology version.
      */
     public void changeLocalStatesOnExchangeDone(AffinityTopologyVersion topVer) {
+        assert !cctx.database().checkpointLockIsHeldByThread(); // Avoid deadlock
+
         if (!IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_DISABLE_WAL_DURING_REBALANCING, false))
             return;
 
