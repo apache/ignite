@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.db;
 import com.google.common.base.Strings;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
+import javax.cache.expiry.AccessedExpiryPolicy;
 import javax.cache.expiry.CreatedExpiryPolicy;
 import javax.cache.expiry.Duration;
 import org.apache.ignite.IgniteCache;
@@ -65,7 +66,7 @@ public class IgnitePdsWithTtlTest extends IgnitePdsAbstractTest {
 
         final CacheConfiguration ccfg = new CacheConfiguration();
         ccfg.setName(CACHE);
-        ccfg.setExpiryPolicyFactory(CreatedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, EXPIRATION_TIMEOUT)));
+        ccfg.setExpiryPolicyFactory(AccessedExpiryPolicy.factoryOf(new Duration(TimeUnit.SECONDS, EXPIRATION_TIMEOUT)));
         ccfg.setEagerTtl(true);
         ccfg.setGroupName("group1");
 
@@ -106,7 +107,7 @@ public class IgnitePdsWithTtlTest extends IgnitePdsAbstractTest {
         fillCache(srv.cache(CACHE));
 
         if (restartGrid) {
-            Ignition.stop(srv.name(), false);
+            stopGrid(0);
             srv = startGrid(0);
             srv.active(true);
         }
@@ -156,7 +157,7 @@ public class IgnitePdsWithTtlTest extends IgnitePdsAbstractTest {
     }
 
     /** */
-    protected void waitAndCheckExpired(IgniteCache<Integer, String> cache) throws IgniteInterruptedCheckedException {
+    protected void waitAndCheckExpired(final IgniteCache<Integer, String> cache) throws IgniteInterruptedCheckedException {
         GridTestUtils.waitForCondition(new PA() {
             @Override public boolean apply() {
                 return cache.size() == 0 && cache.localPeek(0) == null ;

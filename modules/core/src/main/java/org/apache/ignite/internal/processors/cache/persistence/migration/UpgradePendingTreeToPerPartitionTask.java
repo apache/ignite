@@ -16,7 +16,6 @@
  */
 
 package org.apache.ignite.internal.processors.cache.persistence.migration;
-
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -197,7 +196,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
                     if (!cacheIds.contains(row.cacheId)) {
                         skippedEntries++;
 
-                        oldPendingEntries.remove(row);
+                        oldPendingEntries.removex(row);
 
                         continue;
                     }
@@ -207,7 +206,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
                     if (entry == null) {
                         skippedEntries++;
 
-                        oldPendingEntries.remove(row);
+                        oldPendingEntries.removex(row);
 
                         continue;
                     }
@@ -221,7 +220,7 @@ public class UpgradePendingTreeToPerPartitionTask implements IgniteCallable<Bool
                         entry.unlockEntry();
                     }
 
-                    oldPendingEntries.remove(row);
+                    oldPendingEntries.removex(row);
                 }
 
                 processedEntriesCnt += cnt;
