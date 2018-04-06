@@ -850,6 +850,37 @@ public class TxRollbackAsyncTest extends GridCommonAbstractTest {
         }
     }
 
+    public void testChainedUnlock() throws Exception {
+        final Ignite client = startClient();
+
+        testChainedUnlock0(grid(0), grid(0), grid(0));
+    }
+
+    public void testChainedUnlock0(IgniteEx g0, IgniteEx g1, IgniteEx g2) throws Exception {
+        g0.cache(CACHE_NAME).put(1, 1);
+        g0.cache(CACHE_NAME).put(2, 2);
+
+        IgniteInternalFuture<?> fut1 = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+                try(Transaction tx = g0.transactions().txStart()) {
+                    Integer val = (Integer)g0.cache(CACHE_NAME).get(0);
+                }
+            }
+        }, 1, "tx-lock-1");
+
+        IgniteInternalFuture<?> fut2 = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+
+            }
+        }, 1, "tx-lock-2");
+
+        IgniteInternalFuture<?> fut3 = multithreadedAsync(new Runnable() {
+            @Override public void run() {
+
+            }
+        }, 1, "tx-lock-2");
+    }
+
     /**
      * Locks entry in tx and delays commit until signalled.
      *
