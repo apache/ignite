@@ -74,7 +74,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
                 )
                 // Test verifies checkpoint count, so it is essencial that no checkpoint is triggered by timeout
                 .setCheckpointFrequency(999_999_999_999L)
-//                .setFileIOFactory(new TestFileIOFactory(new DataStorageConfiguration().getFileIOFactory()))
+                .setFileIOFactory(new TestFileIOFactory(new DataStorageConfiguration().getFileIOFactory()))
         );
 
         cfg.setCacheConfiguration(
