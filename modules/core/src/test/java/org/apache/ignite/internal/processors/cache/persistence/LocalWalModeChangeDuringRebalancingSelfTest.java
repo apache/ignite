@@ -24,6 +24,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -353,7 +354,40 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
     }
 
     public void testWalNotDisabledAfterShrinkingBaselineTopology() throws Exception {
-        throw new UnsupportedOperationException("Not implemented");
+        Ignite ignite = startGrids(4);
+
+        ignite.cluster().active(true);
+
+        IgniteCache<Integer, Integer> cache = ignite.cache(DEFAULT_CACHE_NAME);
+
+        for (int k = 0; k < 10_000; k++)
+            cache.put(k, k);
+
+        for (Ignite g : G.allGrids()) {
+            CacheGroupContext grpCtx = ((IgniteEx)g).cachex(DEFAULT_CACHE_NAME).context().group();
+
+            assertTrue(grpCtx.walEnabled());
+        }
+
+        stopGrid(2);
+
+        ignite.cluster().setBaselineTopology(5);
+
+        for (Ignite g : G.allGrids()) {
+            CacheGroupContext grpCtx = ((IgniteEx)g).cachex(DEFAULT_CACHE_NAME).context().group();
+
+            assertTrue(grpCtx.walEnabled());
+
+            g.cache(DEFAULT_CACHE_NAME).rebalance();
+        }
+
+        awaitPartitionMapExchange();
+
+        for (Ignite g : G.allGrids()) {
+            CacheGroupContext grpCtx = ((IgniteEx)g).cachex(DEFAULT_CACHE_NAME).context().group();
+
+            assertTrue(grpCtx.walEnabled());
+        }
     }
 
     private static class TestFileIOFactory implements FileIOFactory {
