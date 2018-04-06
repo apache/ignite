@@ -31,37 +31,42 @@ public class MSEImpurityMeasureCalculator implements ImpurityMeasureCalculator<M
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public StepFunction<MSEImpurityMeasure>[] calculate(DecisionTreeData data) {
-        if (data.getFeatures().length > 0) {
-            StepFunction<MSEImpurityMeasure>[] res = new StepFunction[data.getFeatures()[0].length];
+        double[][] features = data.getFeatures();
+        double[] labels = data.getLabels();
+
+        if (features.length > 0) {
+            StepFunction<MSEImpurityMeasure>[] res = new StepFunction[features[0].length];
 
             for (int col = 0; col < res.length; col++) {
                 data.sort(col);
 
-                double[] x = new double[data.getFeatures().length + 1];
-                MSEImpurityMeasure[] y = new MSEImpurityMeasure[data.getFeatures().length + 1];
+                double[] x = new double[features.length + 1];
+                MSEImpurityMeasure[] y = new MSEImpurityMeasure[features.length + 1];
 
                 x[0] = Double.NEGATIVE_INFINITY;
 
-                for (int leftSize = 0; leftSize <= data.getFeatures().length; leftSize++) {
+                for (int leftSize = 0; leftSize <= features.length; leftSize++) {
                     double leftY = 0;
                     double leftY2 = 0;
                     double rightY = 0;
                     double rightY2 = 0;
 
                     for (int i = 0; i < leftSize; i++) {
-                        leftY += data.getLabels()[i];
-                        leftY2 += Math.pow(data.getLabels()[i], 2);
+                        leftY += labels[i];
+                        leftY2 += Math.pow(labels[i], 2);
                     }
 
-                    for (int i = leftSize; i < data.getFeatures().length; i++) {
-                        rightY += data.getLabels()[i];
-                        rightY2 += Math.pow(data.getLabels()[i], 2);
+                    for (int i = leftSize; i < features.length; i++) {
+                        rightY += labels[i];
+                        rightY2 += Math.pow(labels[i], 2);
                     }
 
-                    if (leftSize < data.getFeatures().length)
-                        x[leftSize + 1] = data.getFeatures()[leftSize][col];
+                    if (leftSize < features.length)
+                        x[leftSize + 1] = features[leftSize][col];
 
-                    y[leftSize] = new MSEImpurityMeasure(leftY, leftY2, leftSize, rightY, rightY2, data.getFeatures().length - leftSize);
+                    y[leftSize] = new MSEImpurityMeasure(
+                        leftY, leftY2, leftSize, rightY, rightY2, features.length - leftSize
+                    );
                 }
 
                 res[col] = new StepFunction<>(x, y);

@@ -66,6 +66,7 @@ public class DecisionTreeRegressionTrainer extends DecisionTree<MSEImpurityMeasu
 
             if (cnt != 0) {
                 mean = mean / cnt;
+
                 return new double[] {mean, cnt};
             }
 

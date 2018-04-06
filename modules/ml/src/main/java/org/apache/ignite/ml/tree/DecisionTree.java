@@ -182,8 +182,10 @@ abstract class DecisionTree<T extends ImpurityMeasure<T>> implements DatasetTrai
             return a;
         else {
             StepFunction<T>[] res = Arrays.copyOf(a, a.length);
+
             for (int i = 0; i < res.length; i++)
                 res[i] = res[i].add(b[i]);
+
             return res;
         }
     }

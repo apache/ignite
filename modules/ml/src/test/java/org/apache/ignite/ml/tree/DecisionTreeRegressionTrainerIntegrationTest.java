@@ -65,6 +65,7 @@ public class DecisionTreeRegressionTrainerIntegrationTest extends GridCommonAbst
         CacheConfiguration<Integer, double[]> trainingSetCacheCfg = new CacheConfiguration<>();
         trainingSetCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
         trainingSetCacheCfg.setName("TRAINING_SET");
+
         IgniteCache<Integer, double[]> data = ignite.createCache(trainingSetCacheCfg);
 
         Random rnd = new Random(0);

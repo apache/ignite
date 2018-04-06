@@ -59,10 +59,12 @@ public class DecisionTreeData implements AutoCloseable {
         double[] newLabels = new double[size];
 
         int ptr = 0;
+
         for (int i = 0; i < features.length; i++) {
             if (filter.test(features[i])) {
                 newFeatures[ptr] = features[i];
                 newLabels[ptr] = labels[i];
+
                 ptr++;
             }
         }
@@ -83,21 +85,27 @@ public class DecisionTreeData implements AutoCloseable {
     private void sort(int col, int from, int to) {
         if (from < to) {
             double pivot = features[(from + to) / 2][col];
+
             int i = from, j = to;
+
             while (i <= j) {
                 while (features[i][col] < pivot) i++;
                 while (features[j][col] > pivot) j--;
+
                 if (i <= j) {
                     double[] tmpFeature = features[i];
                     features[i] = features[j];
                     features[j] = tmpFeature;
+
                     double tmpLb = labels[i];
                     labels[i] = labels[j];
                     labels[j] = tmpLb;
+
                     i++;
                     j--;
                 }
             }
+
             sort(col, from, j);
             sort(col, i, to);
         }

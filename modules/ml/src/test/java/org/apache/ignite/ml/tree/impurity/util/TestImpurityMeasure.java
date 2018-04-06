@@ -35,7 +35,7 @@ class TestImpurityMeasure implements ImpurityMeasure<TestImpurityMeasure> {
      *
      * @param impurity Impurity.
      */
-    TestImpurityMeasure(double impurity) {
+    private TestImpurityMeasure(double impurity) {
         this.impurity = impurity;
     }
 

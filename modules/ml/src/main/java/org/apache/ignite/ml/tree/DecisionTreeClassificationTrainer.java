@@ -65,6 +65,7 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
                 for (int i = 0; i < part.getFeatures().length; i++) {
                     if (pred.test(part.getFeatures()[i])) {
                         double lb = part.getLabels()[i];
+
                         if (map.containsKey(lb))
                             map.put(lb, map.get(lb) + 1);
                         else
@@ -76,7 +77,6 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
             }
 
             return null;
-
         }, this::reduce);
 
         double bestVal = 0;
@@ -107,7 +107,6 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
             }
 
             return null;
-
         }, (a, b) -> {
             if (a == null)
                 return b;
@@ -120,6 +119,7 @@ public class DecisionTreeClassificationTrainer extends DecisionTree<GiniImpurity
         });
 
         Map<Double, Integer> encoder = new HashMap<>();
+
         int idx = 0;
         for (Double lb : labels)
             encoder.put(lb, idx++);

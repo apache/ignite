@@ -21,8 +21,16 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.function.Predicate;
 
+/**
+ * Predicate used to define objects that placed in decision tree node.
+ */
 public interface TreeFilter extends Predicate<double[]>, Serializable {
-
+    /**
+     * Returns a composed predicate.
+     *
+     * @param other Predicate that will be logically-ANDed with this predicate.
+     * @return Returns a composed predicate
+     */
     default TreeFilter and(TreeFilter other) {
         Objects.requireNonNull(other);
         return (t) -> test(t) && other.test(t);

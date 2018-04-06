@@ -64,10 +64,11 @@ public class DecisionTreeMNISTIntegrationTest extends GridCommonAbstractTest {
     }
 
     /** Tests on the MNIST dataset. For manual run. */
-    public void tstMNIST() throws IOException {
+    public void testMNIST() throws IOException {
         CacheConfiguration<Integer, MnistUtils.MnistLabeledImage> trainingSetCacheCfg = new CacheConfiguration<>();
         trainingSetCacheCfg.setAffinity(new RendezvousAffinityFunction(false, 10));
         trainingSetCacheCfg.setName("MNIST_TRAINING_SET");
+
         IgniteCache<Integer, MnistUtils.MnistLabeledImage> trainingSet = ignite.createCache(trainingSetCacheCfg);
 
         int i = 0;

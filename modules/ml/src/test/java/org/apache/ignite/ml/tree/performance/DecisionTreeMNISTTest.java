@@ -26,6 +26,7 @@ import org.apache.ignite.ml.tree.DecisionTreeClassificationTrainer;
 import org.apache.ignite.ml.tree.DecisionTreeNode;
 import org.apache.ignite.ml.tree.impurity.util.SimpleStepFunctionCompressor;
 import org.apache.ignite.ml.util.MnistUtils;
+import org.junit.Test;
 
 import static junit.framework.TestCase.assertTrue;
 
@@ -34,7 +35,7 @@ import static junit.framework.TestCase.assertTrue;
  */
 public class DecisionTreeMNISTTest {
     /** Tests on the MNIST dataset. For manual run. */
-//    @Test
+    @Test
     public void testMNIST() throws IOException {
         Map<Integer, MnistUtils.MnistLabeledImage> trainingSet = new HashMap<>();
 

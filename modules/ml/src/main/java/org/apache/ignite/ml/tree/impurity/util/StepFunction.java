@@ -23,7 +23,7 @@ import org.apache.ignite.ml.tree.impurity.ImpurityMeasure;
 /**
  * Step function described by {@code x} and {@code y} points.
  *
- * @param <T>
+ * @param <T> Type of function values.
  */
 public class StepFunction<T extends ImpurityMeasure<T>> {
     /** Argument of every steps start. Should be ascendingly sorted all the time. */
@@ -44,7 +44,7 @@ public class StepFunction<T extends ImpurityMeasure<T>> {
         this.x = x;
         this.y = y;
 
-        quickSort(x, y, 0, x.length - 1);
+        sort(x, y, 0, x.length - 1);
     }
 
     /**
@@ -96,6 +96,7 @@ public class StepFunction<T extends ImpurityMeasure<T>> {
 
                 resX[target] = x[leftPtr];
                 i = target;
+
                 leftPtr++;
             }
             else {
@@ -112,6 +113,7 @@ public class StepFunction<T extends ImpurityMeasure<T>> {
 
                 resX[target] = b.x[rightPtr];
                 i = target;
+
                 rightPtr++;
             }
         }
@@ -120,26 +122,31 @@ public class StepFunction<T extends ImpurityMeasure<T>> {
     }
 
     /** */
-    private void quickSort(double[] x, T[] y, int from, int to) {
+    private void sort(double[] x, T[] y, int from, int to) {
         if (from < to) {
             double pivot = x[(from + to) / 2];
+
             int i = from, j = to;
             while (i <= j) {
                 while (x[i] < pivot) i++;
                 while (x[j] > pivot) j--;
+
                 if (i <= j) {
                     double tmpX = x[i];
                     x[i] = x[j];
                     x[j] = tmpX;
+
                     T tmpY = y[i];
                     y[i] = y[j];
                     y[j] = tmpY;
+
                     i++;
                     j--;
                 }
             }
-            quickSort(x, y, from, j);
-            quickSort(x, y, i, to);
+
+            sort(x, y, from, j);
+            sort(x, y, i, to);
         }
     }
 

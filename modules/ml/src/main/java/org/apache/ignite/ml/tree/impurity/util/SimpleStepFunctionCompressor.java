@@ -101,6 +101,7 @@ public class SimpleStepFunctionCompressor<T extends ImpurityMeasure<T>> implemen
         double minImpurity = Double.MAX_VALUE, maxImpurity = Double.MIN_VALUE;
         for (int i = 0; i < points.size(); i++) {
             StepFunctionPoint pnt = points.get(i);
+
             double impurity = pnt.y.impurity();
 
             if (impurity > maxImpurity)
