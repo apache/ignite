@@ -230,6 +230,26 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
+    public void testRetries() throws IgniteCheckedException {
+        TestTree tree = createTestTree(true);
+
+        tree.numRetries = 1;
+
+        long size = CNT * CNT;
+
+        try {
+            for (long i = 1; i <= size; i++)
+                tree.put(i);
+
+            fail();
+        }
+        catch (IgniteCheckedException ignored) {
+        }
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
     public void _testBenchInvoke() throws IgniteCheckedException {
         MAX_PER_PAGE = 10;
 
@@ -2349,6 +2369,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         /** */
         private static ConcurrentMap<Object, Map<Long, Long>> writeLocks = new ConcurrentHashMap8<>();
 
+        /** Number of retries. */
+        private int numRetries = super.getLockRetries();
+
         /**
          * @param reuseList Reuse list.
          * @param canGetRow Can get row from inner page.
@@ -2535,6 +2558,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             printLocks(b, writeLocks, beforeWriteLock);
 
             return b.toString();
+        }
+
+        /** {@inheritDoc} */
+        @Override
+        protected int getLockRetries() {
+            return numRetries;
         }
     }
 
