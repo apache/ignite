@@ -24,7 +24,6 @@ import java.nio.MappedByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
@@ -309,6 +308,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         doTestParallelExchange(fileIOLatch);
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     private void doTestParallelExchange(AtomicReference<CountDownLatch> latchRef) throws Exception {
         Ignite ignite = startGrids(3);
 
@@ -351,6 +353,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         assertTrue(grpCtx.walEnabled());
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testDataClearedAfterRestartWithDisabledWal() throws Exception {
         Ignite ignite = startGrid(0);
 
@@ -384,6 +389,9 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
             assertFalse("k=" + k +", v=" + cache.get(k), cache.containsKey(k));
     }
 
+    /**
+     * @throws Exception If failed.
+     */
     public void testWalNotDisabledAfterShrinkingBaselineTopology() throws Exception {
         Ignite ignite = startGrids(4);
 
@@ -421,50 +429,71 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
         }
     }
 
+    /**
+     *
+     */
     private static class TestFileIOFactory implements FileIOFactory {
-
+        /** */
         private final FileIOFactory delegate;
 
-        public TestFileIOFactory(FileIOFactory delegate) {
+        /**
+         * @param delegate Delegate.
+         */
+        TestFileIOFactory(FileIOFactory delegate) {
             this.delegate = delegate;
         }
 
+        /** {@inheritDoc} */
         @Override public FileIO create(File file) throws IOException {
             return new TestFileIO(delegate.create(file));
         }
 
+        /** {@inheritDoc} */
         @Override public FileIO create(File file, OpenOption... modes) throws IOException {
             return new TestFileIO(delegate.create(file, modes));
         }
     }
 
+    /**
+     *
+     */
     private static class TestFileIO implements FileIO {
+        /** */
         private final FileIO delegate;
 
-        public TestFileIO(FileIO delegate) {
+        /**
+         * @param delegate Delegate.
+         */
+        TestFileIO(FileIO delegate) {
             this.delegate = delegate;
         }
 
+        /** {@inheritDoc} */
         @Override public long position() throws IOException {
             return delegate.position();
         }
 
+        /** {@inheritDoc} */
         @Override public void position(long newPosition) throws IOException {
             delegate.position(newPosition);
         }
 
+        /** {@inheritDoc} */
         @Override public int read(ByteBuffer destBuf) throws IOException {
             return delegate.read(destBuf);
         }
 
+        /** {@inheritDoc} */
         @Override public int read(ByteBuffer destBuf, long position) throws IOException {
             return delegate.read(destBuf, position);
         }
 
+        /** {@inheritDoc} */
         @Override public int read(byte[] buf, int off, int len) throws IOException {
             return delegate.read(buf, off, len);
         }
 
+        /** {@inheritDoc} */
         @Override public int write(ByteBuffer srcBuf) throws IOException {
             CountDownLatch latch = fileIOLatch.get();
 
@@ -479,6 +508,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
             return delegate.write(srcBuf);
         }
 
+        /** {@inheritDoc} */
         @Override public int write(ByteBuffer srcBuf, long position) throws IOException {
             CountDownLatch latch = fileIOLatch.get();
 
@@ -493,6 +523,7 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
             return delegate.write(srcBuf, position);
         }
 
+        /** {@inheritDoc} */
         @Override public void write(byte[] buf, int off, int len) throws IOException {
             CountDownLatch latch = fileIOLatch.get();
 
@@ -507,26 +538,32 @@ public class LocalWalModeChangeDuringRebalancingSelfTest extends GridCommonAbstr
             delegate.write(buf, off, len);
         }
 
+        /** {@inheritDoc} */
         @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
             return delegate.map(maxWalSegmentSize);
         }
 
+        /** {@inheritDoc} */
         @Override public void force() throws IOException {
             delegate.force();
         }
 
+        /** {@inheritDoc} */
         @Override public void force(boolean withMetadata) throws IOException {
             delegate.force(withMetadata);
         }
 
+        /** {@inheritDoc} */
         @Override public long size() throws IOException {
             return delegate.size();
         }
 
+        /** {@inheritDoc} */
         @Override public void clear() throws IOException {
             delegate.clear();
         }
 
+        /** {@inheritDoc} */
         @Override public void close() throws IOException {
             delegate.close();
         }
