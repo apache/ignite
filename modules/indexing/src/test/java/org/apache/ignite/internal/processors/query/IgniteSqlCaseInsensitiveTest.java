@@ -39,30 +39,29 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
 public class IgniteSqlCaseInsensitiveTest extends GridCommonAbstractTest {
-
     /** IP finder. */
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Name of client node. */
-    private static String NODE_CLIENT = "client";
+    private static final String NODE_CLIENT = "client";
 
     /** Number of server nodes. */
-    private static int NODE_COUNT = 2;
+    private static final int NODE_COUNT = 2;
 
     /** Cache prefix. */
-    private static String CACHE_PREFIX = "person1";
+    private static final String CACHE_PREFIX = "person1";
 
     /** Template of cache with read-through setting. */
-    private static String CACHE_READ_THROUGH = "cacheReadThrough";
+    private static final String CACHE_READ_THROUGH = "cacheReadThrough";
 
     /** Template of cache with interceptor setting. */
-    private static String CACHE_INTERCEPTOR = "cacheInterceptor";
+    private static final String CACHE_INTERCEPTOR = "cacheInterceptor";
 
     /** Name of the node which configuration includes restricted cache config. */
-    private static String READ_THROUGH_CFG_NODE_NAME = "nodeCacheReadThrough";
+    private static final String READ_THROUGH_CFG_NODE_NAME = "nodeCacheReadThrough";
 
     /** Name of the node which configuration includes restricted cache config. */
-    private static String INTERCEPTOR_CFG_NODE_NAME = "nodeCacheInterceptor";
+    private static final String INTERCEPTOR_CFG_NODE_NAME = "nodeCacheInterceptor";
 
     /** */
     private final int key1 = 1;
@@ -216,25 +215,27 @@ public class IgniteSqlCaseInsensitiveTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        cleanup();
-    }
+        for (CacheConfiguration ccfg : cacheConfigurations()) {
+            String cacheName = ccfg.getName();
 
+            if (ccfg.getCacheMode() == CacheMode.LOCAL) {
+                grid(NODE_CLIENT).cache(cacheName).clear();
 
-    /** */
-    public void testQueryEntityGetSetCaseInsensitiveFields() throws Exception {
-        QueryEntity qe = new QueryEntity();
+                for (int node = 0; node < NODE_COUNT; node++)
+                    grid(node).cache(cacheName).clear();
+            }
+            else {
+                if (ccfg.getCacheMode() == CacheMode.PARTITIONED && ccfg.getNearConfiguration() != null) {
+                    IgniteCache cache = grid(NODE_CLIENT).getOrCreateNearCache(cacheName, ccfg.getNearConfiguration());
 
-        assertNull(qe.getCaseInsensitiveFields());
+                    cache.clear();
+                }
 
-        Set<String> val = Collections.singleton("test");
+                grid(NODE_CLIENT).cache(cacheName).clear();
+            }
+        }
 
-        qe.setCaseInsensitiveFields(val);
-
-        assertEquals(val, Collections.singleton("test"));
-
-        qe.setCaseInsensitiveFields(null);
-
-        assertNull(qe.getCaseInsensitiveFields());
+        executeSql("DROP TABLE test IF EXISTS");
     }
 
     /** */
@@ -487,7 +488,6 @@ public class IgniteSqlCaseInsensitiveTest extends GridCommonAbstractTest {
     public void testTxInvokeAll() throws Exception {
         executeWithAllTxCaches(new TestClosure() {
             @Override public void run() throws Exception {
-
                 try (Transaction tx = ignite.transactions().txStart(concurrency, isolation)) {
                     final Map<Integer, EntryProcessorResult<Object>> r = cache.invokeAll(F.asMap(
                         key1, new TestEntryProcessor(person1),
@@ -617,31 +617,6 @@ public class IgniteSqlCaseInsensitiveTest extends GridCommonAbstractTest {
     /** */
     private List<List<?>> getDoe(IgniteCache cache) throws Exception {
         return cache.query(new SqlFieldsQuery("select * from Person where lastName = ?").setArgs("doe")).getAll();
-    }
-
-    /** */
-    private void cleanup() throws Exception {
-        for (CacheConfiguration ccfg : cacheConfigurations()) {
-            String cacheName = ccfg.getName();
-
-            if (ccfg.getCacheMode() == CacheMode.LOCAL) {
-                grid(NODE_CLIENT).cache(cacheName).clear();
-
-                for (int node = 0; node < NODE_COUNT; node++)
-                    grid(node).cache(cacheName).clear();
-            }
-            else {
-                if (ccfg.getCacheMode() == CacheMode.PARTITIONED && ccfg.getNearConfiguration() != null) {
-                    IgniteCache cache = grid(NODE_CLIENT).getOrCreateNearCache(cacheName, ccfg.getNearConfiguration());
-
-                    cache.clear();
-                }
-
-                grid(NODE_CLIENT).cache(cacheName).clear();
-            }
-        }
-
-        executeSql("DROP TABLE test IF EXISTS");
     }
 
     /** */

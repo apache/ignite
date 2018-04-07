@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.persistence.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.query.QueryTable;
 import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryField;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.internal.processors.query.h2.database.H2TreeIndex;
 import org.apache.ignite.internal.util.typedef.F;
@@ -917,15 +918,7 @@ public class GridH2Table extends TableBase {
                 }
 
                 try {
-                    Class<?> cls = Class.forName(col.typeName());
-                    int fieldType = cls == String.class && col.isCaseInsensitive() ?
-                        Value.STRING_IGNORECASE : DataType.getTypeFromClass(cls);
-
-                    Column c = new Column(col.name(), fieldType);
-
-                    c.setNullable(col.isNullable());
-
-                    newCols[pos++] = c;
+                    newCols[pos++] = H2Utils.columnFromQueryField(col);
                 }
                 catch (ClassNotFoundException e) {
                     throw new IgniteSQLException("H2 data type not found for class: " + col.typeName(), e);

@@ -2219,9 +2219,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         sql.a(',').a(VER_FIELD_NAME).a(" OTHER INVISIBLE");
 
         for (Map.Entry<String, Class<?>> e : tbl.type().fields().entrySet())
-            sql.a(',').a(H2Utils.withQuotes(e.getKey())).a(' ')
-            .a(dbTypeFromClass(e.getValue(), tbl.type().property(e.getKey()).caseInsensitive()))
-            .a(tbl.type().property(e.getKey()).notNull()? " NOT NULL" : "");
+            sql.a(',').a(H2Utils.columnFromPropSql(e.getKey(), tbl.type().property(e.getKey())));
 
         sql.a(')');
 
@@ -2296,18 +2294,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return DB type name.
      */
     private String dbTypeFromClass(Class<?> cls) {
-        return dbTypeFromClass(cls, false);
-    }
-
-    /**
-     * Gets corresponding DB type from java class.
-     *
-     * @param cls Java class.
-     * @param caseInsensitive is field case insensitive
-     * @return DB type name.
-     */
-    private String dbTypeFromClass(Class<?> cls, boolean caseInsensitive) {
-        return H2DatabaseType.fromClass(cls, caseInsensitive).dBTypeAsString();
+        return H2DatabaseType.fromClass(cls).dBTypeAsString();
     }
 
     /**

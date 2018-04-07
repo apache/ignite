@@ -28,6 +28,8 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
+import org.apache.ignite.internal.processors.query.GridQueryProperty;
+import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2RowDescriptor;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
@@ -37,6 +39,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.h2.engine.Session;
 import org.h2.jdbc.JdbcConnection;
 import org.h2.result.SortOrder;
+import org.h2.table.Column;
 import org.h2.table.IndexColumn;
 import org.h2.value.DataType;
 import org.h2.value.Value;
@@ -91,6 +94,40 @@ public class H2Utils {
         }
 
         return false;
+    }
+
+    /**
+     * Returns string representation of SQL column.
+     *
+     * @param name Column name.
+     * @param property Column property.
+     * @return String representation of SQL column.
+     */
+    public static String columnFromPropSql(String name, GridQueryProperty property) {
+        Class<?> cls = property.type();
+        String dbType = (cls == String.class && property.caseInsensitive() ?
+            H2DatabaseType.VARCHAR_IGNORECASE : H2DatabaseType.fromClass(cls)).dBTypeAsString();
+
+        return new SB().a(withQuotes(name)).a(' ').a(dbType)
+            .a(property.notNull()? " NOT NULL" : "").toString();
+    }
+
+    /**
+     * Returns column from query field
+     *
+     * @param qryField Query field to convert
+     * @return Column from query field
+     * @throws ClassNotFoundException If no class found.
+     */
+    public static Column columnFromQueryField(QueryField qryField) throws ClassNotFoundException {
+        Class<?> cls = Class.forName(qryField.typeName());
+        int fieldType = cls == String.class && qryField.isCaseInsensitive() ?
+            Value.STRING_IGNORECASE : DataType.getTypeFromClass(cls);
+
+        Column c = new Column(qryField.name(), fieldType);
+        c.setNullable(qryField.isNullable());
+
+        return c;
     }
 
     /**

@@ -193,8 +193,10 @@ public class QuerySchema implements Serializable {
 
                         notNullFields.add(field.name());
                     }
+
                     if (field.isCaseInsensitive()) {
                         Set<String> caseInsensitiveFields = target.getCaseInsensitiveFields();
+
                         if (caseInsensitiveFields == null) {
                             caseInsensitiveFields = new HashSet<>();
                             target.setCaseInsensitiveFields(caseInsensitiveFields);
