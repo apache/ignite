@@ -2603,11 +2603,8 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter implements Communicati
             log.trace("Sending message with ack to node [node=" + node + ", msg=" + msg + ']');
 
         if (isLocalNodeDisconnected()) {
-            if (log.isDebugEnabled())
-                log.debug("Sending a message is canceled due to local node disconnecting." +
-                    "[node=" + node + ", msg=" + msg + ']');
-
-            return;
+            throw new IgniteSpiException("Sending a message is canceled due to local node disconnecting." +
+                "[node=" + node + ", msg=" + msg + "]");
         }
 
         ClusterNode locNode = getLocalNode();
