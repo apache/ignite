@@ -102,7 +102,7 @@ public class GAGrid {
      * @param chromosomeKeys List of chromosome primary keys
      */
     private void calculateFitness(List<Long> chromosomeKeys) {
-        Boolean boolValue = this.ignite.compute().execute(new FitnessTask(this.config), chromosomeKeys);
+       this.ignite.compute().execute(new FitnessTask(this.config), chromosomeKeys);
     }
 
     /**
@@ -120,9 +120,9 @@ public class GAGrid {
         int numberOfCopies = selectedKeys.size() / truncateCount;
 
         Boolean boolValue = this.ignite.compute()
-            .execute(new TruncateSelectionTask(this.config, fittestKeys, numberOfCopies), selectedKeys);
+            .execute(new TruncateSelectionTask(fittestKeys, numberOfCopies), selectedKeys);
 
-        return Boolean.TRUE;
+        return boolValue;
 
     }
 
@@ -155,7 +155,7 @@ public class GAGrid {
      * @param leastFitKeys List of primary keys for Chromsomes that are considered 'least fit'
      */
     private void crossover(List<Long> leastFitKeys) {
-        Boolean boolValue = this.ignite.compute().execute(new CrossOverTask(this.config), leastFitKeys);
+        this.ignite.compute().execute(new CrossOverTask(this.config), leastFitKeys);
     }
 
     /**
@@ -307,7 +307,7 @@ public class GAGrid {
      * @param leastFitKeys List of primary keys for Chromosomes that are considered 'least fit'.
      */
     private void mutation(List<Long> leastFitKeys) {
-        Boolean boolValue = this.ignite.compute().execute(new MutateTask(this.config), leastFitKeys);
+         this.ignite.compute().execute(new MutateTask(this.config), leastFitKeys);
     }
 
     /**
@@ -358,12 +358,10 @@ public class GAGrid {
      * @return Primary key of respective Gene chosen
      */
     private long selectGene(int k) {
-        if (config.getChromosomeCriteria() == null) {
+        if (config.getChromosomeCriteria() == null)
             return (selectAnyGene());
-        }
-        else {
+        else 
             return (selectGeneByChromsomeCriteria(k));
-        }
     }
 
     /**
@@ -425,7 +423,7 @@ public class GAGrid {
 
                 List<Long> fittestKeys = getFittestKeysForTruncation(chromosomeKeys);
 
-                Boolean boolValue = copyFitterChromosomesToPopulation(fittestKeys, selectedKeys);
+                copyFitterChromosomesToPopulation(fittestKeys, selectedKeys);
 
                 // copy more fit keys to rest of population
                 break;

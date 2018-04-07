@@ -71,10 +71,9 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
         List<Long> mutatedGenes = new ArrayList<Long>();
         config.getChromosomeLength();
 
-        for (int i = 0; i < config.getChromosomeLength(); i++) {
+        for (int i = 0; i < config.getChromosomeLength(); i++) 
             mutatedGenes.add(selectGene(i));
-        }
-
+      
         return mutatedGenes;
     }
 
@@ -139,12 +138,10 @@ public class MutateTask extends ComputeTaskAdapter<List<Long>, Boolean> {
      * @return Primary key of Gene
      */
     private long selectGene(int k) {
-        if (config.getChromosomeCriteria() == null) {
+        if (config.getChromosomeCriteria() == null) 
             return (selectAnyGene());
-        }
-        else {
+        else 
             return (selectGeneByChromsomeCriteria(k));
-        }
     }
 
     /**

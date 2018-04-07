@@ -84,7 +84,6 @@ public class CrossOverJob extends ComputeJobAdapter {
      * @param genekeys Original gene Keys for a chromosome
      * @return New Gene keys
      */
-
     private long[] crossOver(long[] newKeySwapArrayForChrome, int updateIdx, long[] genekeys) {
         long[] newGeneKeys = genekeys.clone();
 

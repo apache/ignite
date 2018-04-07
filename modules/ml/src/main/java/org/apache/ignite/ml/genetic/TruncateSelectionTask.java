@@ -36,8 +36,6 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.resources.IgniteInstanceResource;
-
-import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 
 /**
@@ -47,9 +45,6 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
     /** Ignite resource */
     @IgniteInstanceResource
     private Ignite ignite = null;
-
-    /** GAConfiguraiton */
-    private GAConfiguration config = null;
 
     /** fittest keys */
     private List<Long> fittestKeys = null;
@@ -62,8 +57,7 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
      * @param fittestKeys List of long
      * @param numberOfCopies Number of Copies
      */
-    public TruncateSelectionTask(GAConfiguration config, List<Long> fittestKeys, int numberOfCopies) {
-        this.config = config;
+    public TruncateSelectionTask(List<Long> fittestKeys, int numberOfCopies) {
         this.fittestKeys = fittestKeys;
         this.numberOfCopies = numberOfCopies;
     }

@@ -31,7 +31,6 @@ import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.cache.PopulationCacheConfig;
-import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 
 /**
