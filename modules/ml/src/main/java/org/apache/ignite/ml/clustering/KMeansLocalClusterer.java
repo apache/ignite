@@ -38,7 +38,7 @@ import static org.apache.ignite.ml.math.util.MatrixUtil.localCopyOf;
  * This class is based on Apache Spark class with corresponding functionality.
  */
 public class KMeansLocalClusterer extends BaseKMeansClusterer<DenseLocalOnHeapMatrix> implements
-    WeightedClusterer<DenseLocalOnHeapMatrix, KMeansModel> {
+    WeightedClusterer<DenseLocalOnHeapMatrix, org.apache.ignite.ml.clustering.KMeansModel> {
     /** */
     private int maxIterations;
 
@@ -59,15 +59,15 @@ public class KMeansLocalClusterer extends BaseKMeansClusterer<DenseLocalOnHeapMa
     }
 
     /** {@inheritDoc} */
-    @Override public KMeansModel cluster(
+    @Override public org.apache.ignite.ml.clustering.KMeansModel cluster(
         DenseLocalOnHeapMatrix points, int k) throws MathIllegalArgumentException, ConvergenceException {
         List<Double> ones = new ArrayList<>(Collections.nCopies(points.rowSize(), 1.0));
         return cluster(points, k, ones);
     }
 
     /** {@inheritDoc} */
-    @Override public KMeansModel cluster(DenseLocalOnHeapMatrix points, int k,
-        List<Double> weights) throws MathIllegalArgumentException, ConvergenceException {
+    @Override public org.apache.ignite.ml.clustering.KMeansModel cluster(DenseLocalOnHeapMatrix points, int k,
+                                                                          List<Double> weights) throws MathIllegalArgumentException, ConvergenceException {
 
         GridArgumentCheck.notNull(points, "points");
 
@@ -147,7 +147,7 @@ public class KMeansLocalClusterer extends BaseKMeansClusterer<DenseLocalOnHeapMa
             iter++;
         }
 
-        return new KMeansModel(centers, getDistanceMeasure());
+        return new org.apache.ignite.ml.clustering.KMeansModel(centers, getDistanceMeasure());
     }
 
     /** Pick a random vector with a probability proportional to the corresponding weight. */

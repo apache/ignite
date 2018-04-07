@@ -15,19 +15,20 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.ml.clustering;
+package org.apache.ignite.ml.partitionedClustering.kmeans;
 
 import java.util.Arrays;
 import org.apache.ignite.ml.Exportable;
 import org.apache.ignite.ml.Exporter;
 import org.apache.ignite.ml.KMeansModelFormat;
+import org.apache.ignite.ml.clustering.ClusterizationModel;
 import org.apache.ignite.ml.math.Vector;
 import org.apache.ignite.ml.math.distances.DistanceMeasure;
 
 /**
  * This class encapsulates result of clusterization.
  */
-public class KMeansModel implements ClusterizationModel<Vector, Integer>, Exportable<KMeansModelFormat> {
+public class KMeansModel2 implements ClusterizationModel<Vector, Integer>, Exportable<KMeansModelFormat> {
     /** Centers of clusters. */
     private final Vector[] centers;
 
@@ -40,7 +41,7 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
      * @param centers Centers.
      * @param distance Distance measure.
      */
-    public KMeansModel(Vector[] centers, DistanceMeasure distance) {
+    public KMeansModel2(Vector[] centers, DistanceMeasure distance) {
         this.centers = centers;
         this.distance = distance;
     }
@@ -105,7 +106,7 @@ public class KMeansModel implements ClusterizationModel<Vector, Integer>, Export
         if (obj == null || getClass() != obj.getClass())
             return false;
 
-        org.apache.ignite.ml.clustering.KMeansModel that = (org.apache.ignite.ml.clustering.KMeansModel)obj;
+        KMeansModel2 that = (KMeansModel2)obj;
 
         return distance.equals(that.distance) && Arrays.deepEquals(centers, that.centers);
     }
