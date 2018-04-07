@@ -1142,7 +1142,7 @@ public class GridDhtLocalPartition extends GridCacheConcurrentMapImpl implements
     }
 
     /** {@inheritDoc} */
-    @Override public long publicSize(int cacheId) {
+    @Override public int publicSize(int cacheId) {
         if (grp.sharedGroup()) {
             CacheMapHolder hld = cacheMaps.get(cacheId);
 

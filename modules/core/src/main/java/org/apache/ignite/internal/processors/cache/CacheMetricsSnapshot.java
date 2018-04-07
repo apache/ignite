@@ -110,13 +110,13 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
     /** Number of non-{@code null} values in the cache. */
     private int size;
 
-    /** Number of non-{@code null} values in the cache. */
+    /** Number of non-{@code null} values in the cache as long value as a long value. */
     private long sizeLong;
 
     /** Number of keys in the cache, possibly with {@code null} values. */
     private int keySize;
 
-    /** Number of keys in the cache, possibly with {@code null} values. */
+    /** Number of keys in the cache, possibly with {@code null} values as a long value. */
     private long keySizeLong;
 
     /** Cache is empty. */

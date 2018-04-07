@@ -55,10 +55,10 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     /** Gets number of keys in the cache, possibly with {@code null} values. */
     private int keySize;
 
-    /** Number of non-{@code null} values in the cache. */
+    /** Number of non-{@code null} values in the cache as a long value. */
     private long sizeLong;
 
-    /** Gets number of keys in the cache, possibly with {@code null} values. */
+    /** Gets number of keys in the cache, possibly with {@code null} values as a long value. */
     private long keySizeLong;
 
     /** Total number of reads of the owning entity (either cache or entry). */
@@ -466,14 +466,14 @@ public class VisorCacheMetrics extends VisorDataTransferObject {
     }
 
     /**
-     * @return Number of non-{@code null} values in the cache.
+     * @return Number of non-{@code null} values in the cache as a long value.
      */
     public long getSizeLong() {
         return sizeLong;
     }
 
     /**
-     * @return Gets number of keys in the cache, possibly with {@code null} values.
+     * @return Gets number of keys in the cache, possibly with {@code null} values as a long value.
      */
     public long getKeySizeLong() {
         return keySizeLong;

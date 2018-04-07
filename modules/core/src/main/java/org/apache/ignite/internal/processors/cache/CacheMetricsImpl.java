@@ -815,10 +815,10 @@ public class CacheMetricsImpl implements CacheMetrics {
                         offHeapBackupEntriesCnt += cacheSize;
 
                     size = (int)offHeapEntriesCnt;
-                    sizeLong = offHeapEntriesCnt;
 
                     heapEntriesCnt += part.publicSize(cctx.cacheId());
                 }
+                sizeLong = offHeapEntriesCnt;
             }
         }
         catch (Exception e) {

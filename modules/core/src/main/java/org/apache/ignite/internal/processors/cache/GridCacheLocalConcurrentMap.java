@@ -60,7 +60,7 @@ public class GridCacheLocalConcurrentMap extends GridCacheConcurrentMapImpl {
     }
 
     /** {@inheritDoc} */
-    @Override public long publicSize(int cacheId) {
+    @Override public int publicSize(int cacheId) {
         assert this.cacheId == cacheId;
 
         return entryMap.size.get();

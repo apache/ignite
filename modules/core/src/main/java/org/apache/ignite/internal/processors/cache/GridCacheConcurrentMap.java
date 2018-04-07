@@ -79,7 +79,7 @@ public interface GridCacheConcurrentMap {
      * @param cacheId Cache ID.
      * @return the number of publicly available key-value mappings in this map.
      */
-    public long publicSize(int cacheId);
+    public int publicSize(int cacheId);
 
     /**
      * Increments public size.

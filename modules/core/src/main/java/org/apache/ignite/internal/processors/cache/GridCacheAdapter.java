@@ -3832,7 +3832,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return (int) map.publicSize(ctx.cacheId());
+        return map.publicSize(ctx.cacheId());
     }
 
     /** {@inheritDoc} */
@@ -3847,7 +3847,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public int primarySize() {
-        return (int) map.publicSize(ctx.cacheId());
+        return map.publicSize(ctx.cacheId());
     }
 
     /** {@inheritDoc} */

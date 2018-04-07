@@ -686,7 +686,7 @@ public abstract class GridCacheAbstractMetricsSelfTest extends GridCacheAbstract
         assertEquals(0, cache.metrics().getSize());
         assertEquals(0L, cache.metrics().getSizeLong());
 
-        // Metrics works strange with the LOCAL cache mode.
+        // Metrics work differently with the LOCAL cache mode.
         boolean isLocal = cache.getConfiguration(CacheConfiguration.class).getCacheMode() == CacheMode.LOCAL;
 
         boolean isTransactional = cache.getConfiguration(CacheConfiguration.class)
