@@ -33,6 +33,9 @@ public class VacuumScheduler extends GridWorker {
     /** */
     private final GridKernalContext ctx;
 
+    /** */
+    private final long interval;
+
     /**
      * @param ctx Kernal context.
      * @param log Logger.
@@ -41,33 +44,35 @@ public class VacuumScheduler extends GridWorker {
         super(ctx.igniteInstanceName(), "vacuum-scheduler", log);
 
         this.ctx = ctx;
+        this.interval = ctx.config().getMvccVacuumTimeInterval();
     }
 
     /** {@inheritDoc} */
     @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-        if (isCancelled())
-            return;
-
         try {
-            if (log.isDebugEnabled())
-                log.debug("Vacuum started by scheduler.");
+            U.sleep(interval); // initial delay
 
-            IgniteInternalFuture<VacuumMetrics> res = ctx.coordinators().runVacuum();
+            while (!isCancelled()) {
+                long nextScheduledTime = U.currentTimeMillis() + interval;
 
-            res.get();
+                if (log.isDebugEnabled())
+                    log.debug("Vacuum started by scheduler.");
+
+                ctx.coordinators().runVacuum().get();
+
+                long delay = nextScheduledTime - U.currentTimeMillis();
+
+                if (delay > 0)
+                    U.sleep(delay);
+            }
         }
         catch (IgniteInterruptedCheckedException e) {
-            throw new IgniteException(e);
+            throw e;
         }
         catch (IgniteCheckedException e) {
             U.error(log, "Error occurred during scheduled vacuum process.", e);
 
             ctx.coordinators().setVacuumError(e);
-        }
-        catch (Throwable e) {
-            ctx.coordinators().setVacuumError(e);
-
-            throw e;
         }
     }
 }

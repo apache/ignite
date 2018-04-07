@@ -19,32 +19,27 @@ package org.apache.ignite.internal.processors.cache.mvcc;
 
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Task for cleaning sing partition.
  */
-public class VacuumTask {
+public class VacuumTask extends GridFutureAdapter<VacuumMetrics> {
     /** */
     private final MvccVersion cleanupVer;
 
     /** */
+    @GridToStringExclude
     private final GridDhtLocalPartition part;
-
-    /** */
-    private final GridFutureAdapter<VacuumMetrics> fut;
 
     /**
      * @param cleanupVer Cleanup version.
      * @param part Partition to cleanup.
-     * @param fut Vacuum future.
      */
-    VacuumTask(MvccVersion cleanupVer,
-        GridDhtLocalPartition part,
-        GridFutureAdapter<VacuumMetrics> fut) {
+    VacuumTask(MvccVersion cleanupVer, GridDhtLocalPartition part) {
         this.cleanupVer = cleanupVer;
         this.part = part;
-        this.fut = fut;
     }
 
     /**
@@ -61,15 +56,8 @@ public class VacuumTask {
         return part;
     }
 
-    /**
-     * @return Vacuum future.
-     */
-    public GridFutureAdapter<VacuumMetrics> future() {
-        return fut;
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(VacuumTask.class, this);
+        return S.toString(VacuumTask.class, this, "partId", part.id());
     }
 }

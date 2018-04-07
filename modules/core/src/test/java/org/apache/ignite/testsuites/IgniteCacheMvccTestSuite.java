@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccProcessorTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccScanQueryWithConcurrentTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccSizeWithConcurrentTransactionTest;
 import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccTransactionsTest;
+import org.apache.ignite.internal.processors.cache.mvcc.CacheMvccVacuumTest;
 
 /**
  *
@@ -47,6 +48,7 @@ public class IgniteCacheMvccTestSuite extends TestSuite {
         suite.addTestSuite(CacheMvccLocalEntriesWithConcurrentTransactionTest.class);
         suite.addTestSuite(CacheMvccScanQueryWithConcurrentTransactionTest.class);
         suite.addTestSuite(CacheMvccSizeWithConcurrentTransactionTest.class);
+        suite.addTestSuite(CacheMvccVacuumTest.class);
 
         return suite;
     }
