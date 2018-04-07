@@ -17,6 +17,7 @@
 
 package org.apache.ignite.ml.trainers.group;
 
+import java.io.Serializable;
 import java.util.List;
 import org.apache.ignite.ml.math.functions.IgniteFunction;
 import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalculator;
@@ -27,7 +28,7 @@ import org.apache.ignite.ml.optimization.updatecalculators.ParameterUpdateCalcul
  * @param <M> Type of model to be optimized.
  * @param <U> Type of update.
  */
-public class UpdatesStrategy<M, U> {
+public class UpdatesStrategy<M, U extends Serializable> {
     /**
      * {@link ParameterUpdateCalculator}.
      */

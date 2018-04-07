@@ -54,7 +54,8 @@ namespace ignite
                     ssl::SSL_CTX_free(reinterpret_cast<SSL_CTX*>(context));
             }
 
-            bool SecureSocketClient::Connect(const char* hostname, uint16_t port, diagnostic::Diagnosable& diag)
+            bool SecureSocketClient::Connect(const char* hostname, uint16_t port, int32_t,
+                diagnostic::Diagnosable& diag)
             {
                 assert(SslGateway::GetInstance().Loaded());
 

@@ -20,33 +20,38 @@ include /app/helpers/jade/mixins
 -var model = 'backupItem'
 -var generatePojo = `${model}.generatePojo`
 
-.panel.panel-default(ng-form=form novalidate)
-    .panel-heading(bs-collapse-toggle)
-        ignite-form-panel-chevron
-        label General
-        ignite-form-field-tooltip.tipLabel
-            | Domain model properties common for Query and Store#[br]
-            | #[a(href="https://apacheignite.readme.io/docs/cache-queries" target="_blank") More info about query configuration]#[br]
-            | #[a(href="https://apacheignite.readme.io/docs/3rd-party-store" target="_blank") More info about store]
-        ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .panel-body
-            .col-sm-6
-                .settings-row
-                    +checkbox('Generate POJO classes', generatePojo, '"generatePojo"', 'If selected then POJO classes will be generated from database tables')
-                .settings-row
-                    +caches(model, 'Select caches to associate domain model with cache')
-                .settings-row
-                    +dropdown-required('Query metadata:', `${model}.queryMetadata`, '"queryMetadata"', 'true', 'true', '', 'queryMetadataVariants',
-                        'Query metadata configured with:\
-                        <ul>\
-                            <li>Java annotations like @QuerySqlField</li>\
-                            <li>Configuration via QueryEntity class</li>\
-                        </ul>')
-                .settings-row
-                    +java-class-typeahead('Key type:', `${model}.keyType`, '"keyType"', 'javaBuiltInClassesBase', 'true', 'true', '{{ ' + generatePojo + ' ? "Full class name for Key" : "Key type name" }}', 'Key class used to store key in cache', generatePojo)
-                .settings-row
-                    +java-class-autofocus-placholder('Value type:', `${model}.valueType`, '"valueType"', 'true', 'true', 'false', '{{ ' + generatePojo +' ? "Enter fully qualified class name" : "Value type name" }}', 'Value class used to store value in cache', generatePojo)
+panel-collapsible(opened=`::true` ng-form=form)
+    panel-title General
+    panel-description
+        | Domain model properties common for Query and Store. 
+        a.link-success(href="https://apacheignite.readme.io/docs/cache-queries" target="_blank") More info about query configuration. 
+        a.link-success(href="https://apacheignite.readme.io/docs/3rd-party-store" target="_blank") More info about store.
+    panel-content.pca-form-row
+        .pca-form-column-6.pc-form-grid-row
+            .pc-form-grid-col-60
+                +checkbox('Generate POJO classes', generatePojo, '"generatePojo"', 'If selected then POJO classes will be generated from database tables')
+            .pc-form-grid-col-30
+                +sane-ignite-form-field-dropdown({
+                    label: 'Caches:',
+                    model: `${model}.caches`,
+                    name: '"caches"',
+                    multiple: true,
+                    placeholder: 'Choose caches',
+                    placeholderEmpty: 'No valid caches configured',
+                    options: '$ctrl.cachesMenu',
+                    tip: 'Select caches to describe types in cache'
+                })
+            .pc-form-grid-col-30
+                +dropdown-required('Query metadata:', `${model}.queryMetadata`, '"queryMetadata"', 'true', 'true', '', '::$ctrl.Models.queryMetadata.values',
+                    'Query metadata configured with:\
+                    <ul>\
+                        <li>Java annotations like @QuerySqlField</li>\
+                        <li>Configuration via QueryEntity class</li>\
+                    </ul>')
+            .pc-form-grid-col-60
+                +java-class-typeahead('Key type:', `${model}.keyType`, '"keyType"', '$ctrl.javaBuiltInClassesBase', 'true', 'true', '{{ ' + generatePojo + ' ? "Full class name for Key" : "Key type name" }}', 'Key class used to store key in cache', generatePojo)
+            .pc-form-grid-col-60
+                +java-class-autofocus-placholder('Value type:', `${model}.valueType`, '"valueType"', 'true', 'true', 'false', '{{ ' + generatePojo +' ? "Enter fully qualified class name" : "Value type name" }}', 'Value class used to store value in cache', generatePojo)
 
-            .col-sm-6
-                +preview-xml-java(model, 'domainModelGeneral')
+        .pca-form-column-6
+            +preview-xml-java(model, 'domainModelGeneral')

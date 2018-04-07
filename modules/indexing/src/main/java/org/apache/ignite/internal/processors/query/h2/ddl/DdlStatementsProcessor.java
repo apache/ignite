@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.query.IgniteSQLException;
 import org.apache.ignite.internal.processors.query.QueryEntityEx;
 import org.apache.ignite.internal.processors.query.QueryField;
 import org.apache.ignite.internal.processors.query.QueryUtils;
+import org.apache.ignite.internal.processors.query.h2.H2Utils;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlAlterTableAddColumn;
@@ -56,9 +57,12 @@ import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQueryParser;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlStatement;
 import org.apache.ignite.internal.processors.query.schema.SchemaOperationException;
 import org.apache.ignite.internal.sql.command.SqlAlterTableCommand;
+import org.apache.ignite.internal.sql.command.SqlAlterUserCommand;
 import org.apache.ignite.internal.sql.command.SqlCommand;
 import org.apache.ignite.internal.sql.command.SqlCreateIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlCreateUserCommand;
 import org.apache.ignite.internal.sql.command.SqlDropIndexCommand;
+import org.apache.ignite.internal.sql.command.SqlDropUserCommand;
 import org.apache.ignite.internal.sql.command.SqlIndexColumn;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.F;
@@ -106,8 +110,8 @@ public class DdlStatementsProcessor {
      * @throws IgniteCheckedException On error.
      */
     @SuppressWarnings("unchecked")
-    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, SqlCommand cmd) throws IgniteCheckedException{
-        IgniteInternalFuture fut;
+    public FieldsQueryCursor<List<?>> runDdlStatement(String sql, SqlCommand cmd) throws IgniteCheckedException {
+        IgniteInternalFuture fut = null;
 
         try {
             if (cmd instanceof SqlCreateIndexCommand) {
@@ -204,6 +208,21 @@ public class DdlStatementsProcessor {
 
                 fut = new GridFinishedFuture();
             }
+            else if (cmd instanceof SqlCreateUserCommand) {
+                SqlCreateUserCommand addCmd = (SqlCreateUserCommand)cmd;
+
+                ctx.authentication().addUser(addCmd.userName(), addCmd.password());
+            }
+            else if (cmd instanceof SqlAlterUserCommand) {
+                SqlAlterUserCommand altCmd = (SqlAlterUserCommand)cmd;
+
+                ctx.authentication().updateUser(altCmd.userName(), altCmd.password());
+            }
+            else if (cmd instanceof SqlDropUserCommand) {
+                SqlDropUserCommand dropCmd = (SqlDropUserCommand)cmd;
+
+                ctx.authentication().removeUser(dropCmd.userName());
+            }
             else
                 throw new IgniteSQLException("Unsupported DDL operation: " + sql,
                     IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
@@ -211,12 +230,7 @@ public class DdlStatementsProcessor {
             if (fut != null)
                 fut.get();
 
-            QueryCursorImpl<List<?>> resCur = (QueryCursorImpl<List<?>>)new QueryCursorImpl(Collections.singletonList
-                (Collections.singletonList(0L)), null, false);
-
-            resCur.fieldsMeta(UPDATE_RESULT_META);
-
-            return resCur;
+            return H2Utils.zeroCursor();
         }
         catch (SchemaOperationException e) {
             throw convert(e);

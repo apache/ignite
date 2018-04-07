@@ -45,8 +45,8 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * -DAMOUNTCHANGE=75
  *
  * <p> Remote nodes should always be started with special configuration file which enables P2P class loading: {@code
- * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p> <p> Alternatively you can run ExampleNodeStartup
- * in another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
+ * 'ignite.{sh|bat} examples/config/example-ignite.xml'}.</p> <p> Alternatively you can run ExampleNodeStartup in
+ * another JVM which will start node with {@code examples/config/example-ignite.xml} configuration.</p>
  */
 
 public class OptimizeMakeChangeGAExample {
@@ -68,17 +68,21 @@ public class OptimizeMakeChangeGAExample {
     public static void main(String args[]) {
         System.setProperty("IGNITE_QUIET", "false");
 
-        sAmountChange = System.getProperty("AMOUNTCHANGE");
+        sAmountChange = "75";
 
         StringBuffer sbErrorMessage = new StringBuffer();
         sbErrorMessage.append("AMOUNTCHANGE System property not set. Please provide a valid value between 1 and 99. ");
         sbErrorMessage.append(" ");
         sbErrorMessage.append("IE: -DAMOUNTCHANGE=75");
+        sbErrorMessage.append("\n");
+        sbErrorMessage.append("Using default value: 75");
 
         //Check if -DAMOUNTCHANGE JVM system variable is provided
-        if (sAmountChange == null) {
+        if (System.getProperty("AMOUNTCHANGE") == null) {
             System.out.println(sbErrorMessage);
-            System.exit(1);
+        }
+        else {
+            sAmountChange = System.getProperty("AMOUNTCHANGE");
         }
 
         try {
@@ -149,6 +153,7 @@ public class OptimizeMakeChangeGAExample {
             Chromosome fittestChromosome = gaGrid.evolve();
 
             Ignition.stop(true);
+
             ignite = null;
 
         }
