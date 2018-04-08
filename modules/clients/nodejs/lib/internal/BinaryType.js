@@ -85,7 +85,8 @@ class BinaryType {
         for (let fieldName in objectTemplate) {
             fieldValue = objectTemplate[fieldName];
             fieldType = complexObjectType._getFieldType(fieldName);
-            if (!fieldType && BinaryUtils.calcObjectTypeCode(fieldValue) === BinaryUtils.TYPE_CODE.COMPLEX_OBJECT) {
+            if (!fieldType &&
+                BinaryUtils.getTypeCode(BinaryUtils.calcObjectType(fieldValue)) === BinaryUtils.TYPE_CODE.COMPLEX_OBJECT) {
                 fieldType = new ComplexObjectType(fieldValue);
             }
             this._addField(schema, fieldName, fieldType);

@@ -17,7 +17,7 @@
 
 'use strict';
 
-const BinaryObject = require('../BinaryObject');
+const BinaryObject = require('./BinaryObject');
 const Errors = require('../Errors');
 const BinaryUtils = require('./BinaryUtils');
 
@@ -27,6 +27,10 @@ class BinaryReader {
         const typeCode = buffer.readByte();
         BinaryUtils.checkTypesComatibility(expectedType, typeCode);
         return BinaryReader._readTypedObject(buffer, typeCode, expectedType);
+    }
+
+    static readString(buffer) {
+        return BinaryReader._readTypedObject(buffer, BinaryUtils.TYPE_CODE.STRING);
     }
 
     static readStringArray(buffer) {
@@ -61,7 +65,8 @@ class BinaryReader {
             case BinaryUtils.TYPE_CODE.BOOLEAN_ARRAY:
             case BinaryUtils.TYPE_CODE.STRING_ARRAY:
             case BinaryUtils.TYPE_CODE.DATE_ARRAY:
-                return BinaryReader._readArray(buffer, objectTypeCode);
+            case BinaryUtils.TYPE_CODE.OBJECT_ARRAY:
+                return BinaryReader._readArray(buffer, objectTypeCode, expectedType);
             case BinaryUtils.TYPE_CODE.MAP:
                 return BinaryReader._readMap(buffer, expectedType);
             case BinaryUtils.TYPE_CODE.BINARY_OBJECT:
@@ -75,15 +80,18 @@ class BinaryReader {
         }
     }
 
-    static _readArray(buffer, arrayTypeCode) {
+    static _readArray(buffer, arrayTypeCode, arrayType) {
+        if (arrayTypeCode === BinaryUtils.TYPE_CODE.OBJECT_ARRAY) {
+            buffer.readInteger();
+        }
         const length = buffer.readInteger();
-        const elementTypeCode = BinaryUtils.getArrayElementTypeCode(arrayTypeCode);
+        const elementType = BinaryUtils.getArrayElementType(arrayType ? arrayType : arrayTypeCode);
         const keepElementType = BinaryUtils.keepArrayElementType(arrayTypeCode);
         const result = new Array(length);
         for (let i = 0; i < length; i++) {
             result[i] = keepElementType ?
-                BinaryReader.readObject(buffer, elementTypeCode) :
-                BinaryReader._readTypedObject(buffer, elementTypeCode);
+                BinaryReader.readObject(buffer, elementType) :
+                BinaryReader._readTypedObject(buffer, elementType);
         }
         return result;
     }

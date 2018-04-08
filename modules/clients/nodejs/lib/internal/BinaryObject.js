@@ -18,15 +18,15 @@
 'use strict';
 
 const Util = require('util');
-const ObjectType = require('./ObjectType').ObjectType;
-const ComplexObjectType = require('./ObjectType').ComplexObjectType;
-const Errors = require('./Errors');
-const BinaryUtils = require('./internal/BinaryUtils');
-const BinaryType = require('./internal/BinaryType');
-const BinaryField = require('./internal/BinaryField');
-const BinarySchema = require('./internal/BinarySchema');
-const ArgumentChecker = require('./internal/ArgumentChecker');
-const Logger = require('./internal/Logger');
+const ObjectType = require('../ObjectType').ObjectType;
+const ComplexObjectType = require('../ObjectType').ComplexObjectType;
+const Errors = require('../Errors');
+const BinaryUtils = require('./BinaryUtils');
+const BinaryType = require('./BinaryType');
+const BinaryField = require('./BinaryField');
+const BinarySchema = require('./BinarySchema');
+const ArgumentChecker = require('./ArgumentChecker');
+const Logger = require('./Logger');
 
 const HEADER_LENGTH = 24;
 const VERSION = 1;
@@ -296,7 +296,7 @@ class BinaryObjectField {
     get value() {
         if (this._value === undefined) {
             this._buffer.position = this._offset;
-            const BinaryReader = require('./internal/BinaryReader');
+            const BinaryReader = require('./BinaryReader');
             this._value = BinaryReader.readObject(this._buffer, this._type);
         }
         return this._value;
@@ -327,7 +327,7 @@ class BinaryObjectField {
             buffer._writeBuffer(this._buffer.getSlice(this._offset, this._offset + this._length));
         }
         else {
-            const BinaryWriter = require('./internal/BinaryWriter');
+            const BinaryWriter = require('./BinaryWriter');
             BinaryWriter.writeObject(buffer, this._value, this._type ? this._type : null);
         }
         this._buffer = buffer;

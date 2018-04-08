@@ -21,6 +21,7 @@ const ObjectType = require('../ObjectType').ObjectType;
 const CompositeType = require('../ObjectType').CompositeType;
 const MapObjectType = require('../ObjectType').MapObjectType;
 const ComplexObjectType = require('../ObjectType').ComplexObjectType;
+const ObjectArrayType = require('../ObjectType').ObjectArrayType;
 const Errors = require('../Errors');
 const ArgumentChecker = require('./ArgumentChecker');
 
@@ -166,6 +167,12 @@ const TYPE_INFO = Object.freeze({
         KEEP_ELEMENT_TYPE : true,
         NULLABLE : true
     },
+    [TYPE_CODE.OBJECT_ARRAY] : {
+        NAME : 'object array',
+        ELEMENT_TYPE : TYPE_CODE.COMPLEX_OBJECT,
+        KEEP_ELEMENT_TYPE : true,
+        NULLABLE : true
+    },
     [TYPE_CODE.MAP] : {
         NAME : 'map',
         NULLABLE : true
@@ -224,27 +231,15 @@ class BinaryUtils {
         return type instanceof CompositeType ? type._typeCode : type;
     }
 
-    static getObjectType(type, argName, checkType = true) {
+    static checkObjectType(type, argName) {
         if (type === null || type instanceof CompositeType) {
-            return type;
+            return;
         }
-        else {
-            if (checkType) {
-                ArgumentChecker.hasValueFrom(type, argName, false, ObjectType.PRIMITIVE_TYPE);
-            }
-            switch (type) {
-                case BinaryUtils.TYPE_CODE.MAP:
-                    return new MapObjectType();
-                case BinaryUtils.TYPE_CODE.COMPLEX_OBJECT:
-                    return new ComplexObjectType();
-                default:
-                    return type;
-            }
-        }
+        ArgumentChecker.hasValueFrom(type, argName, false, ObjectType.PRIMITIVE_TYPE);
     }
 
-    static calcObjectTypeCode(object) {
-        const BinaryObject = require('../BinaryObject');
+    static calcObjectType(object) {
+        const BinaryObject = require('./BinaryObject');
         const objectType = typeof object;
         if (object === null) {
             return BinaryUtils.TYPE_CODE.NULL;
@@ -263,17 +258,17 @@ class BinaryUtils {
         }
         else if (object instanceof Array) {
             if (object.length > 0 && object[0] !== null) {
-                return BinaryUtils.getArrayTypeCode(BinaryUtils.calcObjectTypeCode(object[0]));
+                return BinaryUtils.getArrayType(BinaryUtils.calcObjectType(object[0]));
             }
         }
         else if (object instanceof Map) {
-            return BinaryUtils.TYPE_CODE.MAP;
+            return new MapObjectType();
         }
         else if (object instanceof BinaryObject) {
-            return BinaryUtils.TYPE_CODE.BINARY_OBJECT;
+            return new BinaryObjectType();
         }
         else if (objectType === 'object') {
-            return BinaryUtils.TYPE_CODE.COMPLEX_OBJECT;
+            return new ComplexObjectType();
         }
         throw Errors.IgniteClientError.unsupportedTypeError(objectType);
     }
@@ -290,7 +285,7 @@ class BinaryUtils {
             BinaryUtils.checkStandardTypeCompatibility(value, typeCode);
             return;
         }
-        const valueTypeCode = BinaryUtils.calcObjectTypeCode(value);
+        const valueTypeCode = BinaryUtils.getTypeCode(BinaryUtils.calcObjectType(value));
         if (typeCode === BinaryUtils.TYPE_CODE.BINARY_OBJECT &&
             valueTypeCode === BinaryUtils.TYPE_CODE.COMPLEX_OBJECT ||
             typeCode !== BinaryUtils.TYPE_CODE.BINARY_OBJECT &&
@@ -316,6 +311,7 @@ class BinaryUtils {
             case BinaryUtils.TYPE_CODE.BOOLEAN_ARRAY:
             case BinaryUtils.TYPE_CODE.STRING_ARRAY:
             case BinaryUtils.TYPE_CODE.DATE_ARRAY:
+            case BinaryUtils.TYPE_CODE.OBJECT_ARRAY:
                 if (!value instanceof Array) {
                     throw Errors.IgniteClientError.typeCastError('not Array', typeCode);
                 }
@@ -331,7 +327,7 @@ class BinaryUtils {
                 }
                 return;
             default:
-                const valueTypeCode = BinaryUtils.calcObjectTypeCode(value);
+                const valueTypeCode = BinaryUtils.getTypeCode(BinaryUtils.calcObjectType(value));
                 if (valueTypeCode === BinaryUtils.TYPE_CODE.BINARY_OBJECT) {
                     throw Errors.IgniteClientError.typeCastError(valueTypeCode, typeCode);
                 }
@@ -359,16 +355,25 @@ class BinaryUtils {
         }
     }
 
-    static getArrayElementTypeCode(arrayTypeCode) {
-        const elementTypeCode = TYPE_INFO[arrayTypeCode].ELEMENT_TYPE;
+    static getArrayElementType(arrayType) {
+        if (arrayType instanceof ObjectArrayType) {
+            return arrayType._elementType;
+        }
+        else if (arrayType === BinaryUtils.TYPE_CODE.OBJECT_ARRAY) {
+            return new ComplexObjectType();
+        }
+        const elementTypeCode = TYPE_INFO[arrayType].ELEMENT_TYPE;
         if (!elementTypeCode) {
             throw Errors.IgniteClientError.internalError();
         }
         return elementTypeCode;
     }
 
-    static getArrayTypeCode(elementTypeCode) {
-        switch (elementTypeCode) {
+    static getArrayType(elementType) {
+        if (elementType instanceof CompositeType) {
+            return new ObjectArrayType(elementType);
+        }
+        switch (BinaryUtils.getTypeCode(elementType)) {
             case BinaryUtils.TYPE_CODE.BYTE:
                 return BinaryUtils.TYPE_CODE.BYTE_ARRAY;
             case BinaryUtils.TYPE_CODE.SHORT:

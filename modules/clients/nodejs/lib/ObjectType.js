@@ -210,8 +210,10 @@ class MapObjectType extends CompositeType {
         const BinaryUtils = require('./internal/BinaryUtils');
         ArgumentChecker.hasValueFrom(mapSubType, 'mapSubType', false, MapObjectType.MAP_SUBTYPE);
         this._mapSubType = mapSubType;
-        this._keyType = BinaryUtils.getObjectType(keyType, 'keyType');
-        this._valueType = BinaryUtils.getObjectType(valueType, 'valueType');
+        BinaryUtils.checkObjectType(keyType, 'keyType');
+        BinaryUtils.checkObjectType(valueType, 'valueType');
+        this._keyType = keyType;
+        this._valueType = valueType;
     }
 }
 
@@ -283,7 +285,8 @@ class ComplexObjectType extends CompositeType {
      */
     setFieldType(fieldName, fieldType) {
         const BinaryUtils = require('./internal/BinaryUtils');
-        this._fields.set(fieldName, BinaryUtils.getObjectType(fieldType, 'fieldType'));
+        BinaryUtils.checkObjectType(fieldType, 'fieldType');
+        this._fields.set(fieldName, fieldType);
         return this;
     }
 
@@ -304,7 +307,33 @@ class ComplexObjectType extends CompositeType {
     }
 }
 
+/**
+ * ???
+ *
+ * @extends CompositeType
+ */
+class ObjectArrayType extends CompositeType {
+
+    /**
+     * Public constructor.
+     *
+     * ???
+     * 
+     * @param {ComplexObjectType} elementType - ???
+     *
+     * @return {ObjectArrayType} - new ObjectArrayType instance
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    constructor(elementType) {
+        super(COMPOSITE_TYPE.OBJECT_ARRAY);
+        ArgumentChecker.hasType(elementType, 'elementType', false, ComplexObjectType);
+        this._elementType = elementType;
+    }
+}
+
 module.exports.ObjectType = ObjectType;
 module.exports.CompositeType = CompositeType;
 module.exports.MapObjectType = MapObjectType;
 module.exports.ComplexObjectType = ComplexObjectType;
+module.exports.ObjectArrayType = ObjectArrayType;

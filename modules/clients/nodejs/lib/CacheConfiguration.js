@@ -17,11 +17,229 @@
 
 'use strict';
 
+const ComplexObjectType = require('./ObjectType').ComplexObjectType;
+const ObjectArrayType = require('./ObjectType').ObjectArrayType;
 const BinaryUtils = require('./internal/BinaryUtils');
 const BinaryReader = require('./internal/BinaryReader');
 const BinaryWriter = require('./internal/BinaryWriter');
 const ArgumentChecker = require('./internal/ArgumentChecker');
 const Errors = require('./Errors');
+
+
+class CacheKeyConfiguration {
+    constructor() {
+        this._typeName = null;
+        this._affinityKeyFieldName = null;
+    }
+
+    setTypeName(typeName) {
+        this._typeName = typeName;
+        return this;
+    }
+
+    getTypeName() {
+        return this._typeName;
+    }
+
+    setAffinityKeyFieldName(affinityKeyFieldName) {
+        this._affinityKeyFieldName = affinityKeyFieldName;
+        return this;
+    }
+
+    getAffinityKeyFieldName() {
+        return this._affinityKeyFieldName;
+    }
+
+    /** Private methods */
+
+    _write(buffer) {
+        BinaryWriter.writeString(buffer, this._typeName);
+        BinaryWriter.writeString(buffer, this._affinityKeyFieldName);
+    }
+
+    _read(buffer) {
+        this._typeName = BinaryReader.readString(buffer);
+        this._affinityKeyFieldName = BinaryReader.readString(buffer);
+    }
+}
+
+class QueryEntity {
+
+    constructor() {
+        this._keyTypeName = null;
+        this._valueTypeName = null;
+        this._tableName = null;
+        this._keyFieldName = null;
+        this._valueFieldName = null;
+        this._fields = null;
+        this._aliases = null;
+        this._indexes = null;
+    }
+
+    setKeyTypeName(keyTypeName) {
+        this._keyTypeName = keyTypeName;
+        return this;
+    }
+
+    setValueTypeName(valueTypeName) {
+        this._valueTypeName = valueTypeName;
+        return this;
+    }
+
+    setTableName(tableName) {
+        this._tableName = tableName;
+        return this;
+    }
+
+    setKeyFieldName(keyFieldName) {
+        this._keyFieldName = keyFieldName;
+        return this;
+    }
+
+    setValueFieldName(valueFieldName) {
+        this._valueFieldName = valueFieldName;
+        return this;
+    }
+
+    /**
+     * ???
+     *
+     * @param {Array<QueryField>} fields - ???
+     */
+    setFields(fields) {
+        this._fields = fields;
+        return this;
+    }
+
+    /**
+     * ???
+     *
+     * @param {Map<String, String>} aliases - ???
+     */
+    setAliases(aliases) {
+        this._aliases = aliases;
+        return this;
+    }
+
+    setIndexes(indexes) {
+        this._indexes = indexes;
+        return this;
+    }
+
+    /** Private methods */
+
+    _write(buffer) {
+        BinaryWriter.writeString(buffer, this._keyTypeName);
+        BinaryWriter.writeString(buffer, this._valueTypeName);
+        BinaryWriter.writeString(buffer, this._tableName);
+        BinaryWriter.writeString(buffer, this._keyFieldName);
+        BinaryWriter.writeString(buffer, this._valueFieldName);
+        this._writeSubEntities(buffer, this._fields);
+        this._writeAliases(buffer);
+        this._writeSubEntities(buffer, this._indexes);
+    }
+
+    _writeAliases(buffer) {
+        const length = this._aliases ? this._aliases.size : 0;
+        buffer.writeInteger(length);
+        if (length > 0) {
+            this._aliases.forEach((value, key) => {
+                BinaryWriter.writeString(buffer, key);
+                BinaryWriter.writeString(buffer, value);
+            });
+        }
+    }
+
+    _writeSubEntities(buffer, entities) {
+        const length = entities ? entities.length : 0;
+        buffer.writeInteger(length);
+        if (length > 0) {
+            for (let entity of entities) {
+                entity._write(buffer);
+            }
+        }
+    }
+
+    _read(buffer) {
+        this._keyTypeName = BinaryReader.readString(buffer);
+        this._valueTypeName = BinaryReader.readString(buffer);
+        this._tableName = BinaryReader.readString(buffer);
+        this._keyFieldName = BinaryReader.readString(buffer);
+        this._valueFieldName = BinaryReader.readString(buffer);
+        this._fields = this._readSubEntities(buffer, QueryField);
+        this._readAliases(buffer);
+        this._indexes = this._readSubEntities(buffer/*, ???!!!*/);
+    }
+
+    _readSubEntities(buffer, objectConstructor) {
+        const length = buffer.readInteger(buffer);
+        const result = new Array(length);
+        if (length > 0) {
+            let res;
+            for (let i = 0; i < length; i++) {
+                res = new objectConstructor();
+                res._read(buffer);
+                result[i] = res;
+            }
+        }
+        return result;
+    }
+
+    _readAliases(buffer) {
+        const length = buffer.readInteger(buffer);
+        this._aliases = new Map();
+        if (length > 0) {
+            let res;
+            for (let i = 0; i < length; i++) {
+                this._aliases.set(BinaryReader.readString(buffer), BinaryReader.readString(buffer));
+            }
+        }
+    }
+}
+
+class QueryField {
+    constructor(name, typeName) {
+        this._name = name;
+        this._typeName = typeName;
+        this._isKeyField = false;
+        this._isNotNull = false;
+        this._defaultValue = null;
+        this._valueType = null;
+    }
+
+    setIsKeyField(isKeyField) {
+        this._isKeyField = isKeyField;
+        return this;
+    }
+
+    setIsNotNull(isNotNull) {
+        this._isNotNull = isNotNull;
+        return this;
+    }
+
+    setDefaultValue(defaultValue, valueType = null) {
+        this._defaultValue = defaultValue;
+        this._valueType = valueType;
+    }
+
+    /** Private methods */
+
+    _write(buffer) {
+        BinaryWriter.writeString(buffer, this._name);
+        BinaryWriter.writeString(buffer, this._typeName);
+        buffer.writeBoolean(this._isKeyField);
+        buffer.writeBoolean(this._isNotNull);
+        BinaryWriter.writeObject(buffer, this._defaultValue, this._valueType);
+    }
+
+    _read(buffer) {
+        this._name = BinaryReader.readString(buffer);
+        this._typeName = BinaryReader.readString(buffer);
+        this._isKeyField = buffer.readBoolean();
+        this._isNotNull = buffer.readBoolean();
+        this._defaultValue = BinaryReader.readObject(buffer, this._valueType);
+    }
+}
 
 const PROP_NAME = 0;
 const PROP_CACHE_MODE = 1;
@@ -64,7 +282,7 @@ const PROP_TYPES = Object.freeze({
     [PROP_READ_FROM_BACKUP] : BinaryUtils.TYPE_CODE.BOOLEAN,
     [PROP_DATA_REGION_NAME] : BinaryUtils.TYPE_CODE.STRING,
     [PROP_IS_ONHEAP_CACHE_ENABLED] : BinaryUtils.TYPE_CODE.BOOLEAN,
-    [PROP_QUERY_ENTITY] : BinaryUtils.TYPE_CODE.OBJECT_ARRAY,
+    [PROP_QUERY_ENTITY] : new ObjectArrayType(new ComplexObjectType(new QueryEntity())),
     [PROP_QUERY_PARALLELISM] : BinaryUtils.TYPE_CODE.INTEGER,
     [PROP_QUERY_DETAIL_METRICS_SIZE] : BinaryUtils.TYPE_CODE.INTEGER,
     [PROP_SQL_SCHEMA] : BinaryUtils.TYPE_CODE.STRING,
@@ -79,7 +297,7 @@ const PROP_TYPES = Object.freeze({
     [PROP_REBALANCE_ORDER] : BinaryUtils.TYPE_CODE.INTEGER,
     [PROP_REBALANCE_THROTTLE] : BinaryUtils.TYPE_CODE.LONG,
     [PROP_GROUP_NAME] : BinaryUtils.TYPE_CODE.STRING,
-    [PROP_CACHE_KEY_CONFIGURATION] : BinaryUtils.TYPE_CODE.OBJECT_ARRAY,
+    [PROP_CACHE_KEY_CONFIGURATION] : new ObjectArrayType(new ComplexObjectType(new CacheKeyConfiguration())),
     [PROP_DEFAULT_LOCK_TIMEOUT] : BinaryUtils.TYPE_CODE.LONG,
     [PROP_MAX_CONCURRENT_ASYNC_OPS] : BinaryUtils.TYPE_CODE.INTEGER,
     [PROP_PARTITION_LOSS_POLICY] : BinaryUtils.TYPE_CODE.INTEGER,
@@ -449,7 +667,7 @@ class CacheConfiguration {
     _writeProperty(buffer, propertyCode, property) {
         buffer.writeShort(propertyCode);
         const propertyType = PROP_TYPES[propertyCode];
-        switch (propertyType) {
+        switch (BinaryUtils.getTypeCode(propertyType)) {
             case BinaryUtils.TYPE_CODE.INTEGER:
             case BinaryUtils.TYPE_CODE.LONG:
             case BinaryUtils.TYPE_CODE.BOOLEAN:
@@ -513,7 +731,7 @@ class CacheConfiguration {
      */
     _readProperty(buffer, propertyCode) {
         const propertyType = PROP_TYPES[propertyCode];
-        switch (propertyType) {
+        switch (BinaryUtils.getTypeCode(propertyType)) {
             case BinaryUtils.TYPE_CODE.INTEGER:
             case BinaryUtils.TYPE_CODE.LONG:
             case BinaryUtils.TYPE_CODE.BOOLEAN:
@@ -527,7 +745,7 @@ class CacheConfiguration {
                 if (length > 0) {
                     const properties = new Array(length);
                     for (let i = 0; i < length; i++) {
-                        const property = new XXX();//???!!!
+                        const property = new propertyType._elementType._objectConstructor();
                         property._read(buffer);
                         properties[i] = property;
                     }
@@ -537,154 +755,6 @@ class CacheConfiguration {
             default:
                 throw Errors.IgniteClientError.internalError();
         }
-    }
-}
-
-class CacheKeyConfiguration {
-    constructor() {
-        this._typeName = null;
-        this._affinityKeyFieldName = null;
-    }
-
-    setTypeName(typeName) {
-        this._typeName = typeName;
-        return this;
-    }
-
-    setAffinityKeyFieldName(affinityKeyFieldName) {
-        this._affinityKeyFieldName = affinityKeyFieldName;
-        return this;
-    }
-
-    /** Private methods */
-
-    _write(buffer) {
-        BinaryWriter.writeString(buffer, this._typeName);
-        BinaryWriter.writeString(buffer, this._affinityKeyFieldName);
-    }
-}
-
-class QueryEntity {
-
-    constructor() {
-        this._keyTypeName = null;
-        this._valueTypeName = null;
-        this._tableName = null;
-        this._keyFieldName = null;
-        this._valueFieldName = null;
-        this._fields = null;
-        this._aliases = null;
-        this._indexes = null;
-    }
-
-    setKeyTypeName(keyTypeName) {
-        this._keyTypeName = keyTypeName;
-        return this;
-    }
-
-    setValueTypeName(valueTypeName) {
-        this._valueTypeName = valueTypeName;
-        return this;
-    }
-
-    setTableName(tableName) {
-        this._tableName = tableName;
-        return this;
-    }
-
-    setKeyFieldName(keyFieldName) {
-        this._keyFieldName = keyFieldName;
-        return this;
-    }
-
-    setValueFieldName(valueFieldName) {
-        this._valueFieldName = valueFieldName;
-        return this;
-    }
-
-    setFields(fields) {
-        this._fields = fields;
-        return this;
-    }
-
-    setAliases(aliases) {
-        this._aliases = aliases;
-        return this;
-    }
-
-    setIndexes(indexes) {
-        this._indexes = indexes;
-        return this;
-    }
-
-    /** Private methods */
-
-    _write(buffer) {
-        BinaryWriter.writeString(buffer, this._keyTypeName);
-        BinaryWriter.writeString(buffer, this._valueTypeName);
-        BinaryWriter.writeString(buffer, this._tableName);
-        BinaryWriter.writeString(buffer, this._keyFieldName);
-        BinaryWriter.writeString(buffer, this._valueFieldName);
-        this._writeSubEntities(buffer, this._fields);
-        this._writeAliases(buffer);
-        this._writeSubEntities(buffer, this._indexes);
-    }
-
-    _writeAliases(buffer) {
-        const length = this._aliases ? this._aliases.size : 0;
-        buffer.writeInteger(length);
-        if (length > 0) {
-            this._aliases.forEach((value, key) => {
-                BinaryWriter.writeString(buffer, key);
-                BinaryWriter.writeString(buffer, value);
-            });
-        }
-    }
-
-    _writeSubEntities(buffer, entities) {
-        const length = entities ? entities.length : 0;
-        buffer.writeInteger(length);
-        if (length > 0) {
-            for (let entity of entities) {
-                entity._write(buffer);
-            }
-        }
-    }
-}
-
-class QueryField {
-    constructor(name, typeName) {
-        this._name = name;
-        this._typeName = typeName;
-        this._isKeyField = false;
-        this._isNotNull = false;
-        this._defaultValue = null;
-        this._valueType = null;
-    }
-
-    setIsKeyField(isKeyField) {
-        this._isKeyField = isKeyField;
-        return this;
-    }
-
-    setIsNotNull(isNotNull) {
-        this._isNotNull = isNotNull;
-        return this;
-    }
-
-    setDefaultValue(defaultValue, valueType = null) {
-        this._defaultValue = defaultValue;
-        this._valueType = valueType;
-    }
-
-    /** Private methods */
-
-    _write(buffer) {
-        BinaryWriter.writeString(buffer, this._name);
-        BinaryWriter.writeString(buffer, this._typeName);
-        buffer.writeBoolean(this._isKeyField);
-        buffer.writeBoolean(this._isNotNull);
-        BinaryWriter.writeObject(buffer, this._defaultValue, this._valueType);
     }
 }
 

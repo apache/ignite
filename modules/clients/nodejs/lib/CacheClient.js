@@ -88,8 +88,8 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     setKeyType(type) {
-        this._keyType = BinaryUtils.getObjectType(type, 'type');
-        this._binaryModeKeyType = new BinaryUtils.BinaryObjectType(this._keyType);
+        BinaryUtils.checkObjectType(type, 'type');
+        this._keyType = type;
         return this;
     }
 
@@ -117,8 +117,8 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     setValueType(type) {
-        this._valueType = BinaryUtils.getObjectType(type, 'type');
-        this._binaryModeValueType = new BinaryUtils.BinaryObjectType(this._valueType);
+        BinaryUtils.checkObjectType(type, 'type');
+        this._valueType = type;
         return this;
     }
 
@@ -553,8 +553,6 @@ class CacheClient {
         this._config = config;
         this._keyType = null;
         this._valueType = null;
-        this._binaryModeKeyType = new BinaryUtils.BinaryObjectType();
-        this._binaryModeValueType = new BinaryUtils.BinaryObjectType();
         this._binaryMode = false;
         this._socket = socket;
     }
@@ -596,14 +594,14 @@ class CacheClient {
      * @ignore
      */
     _getKeyType() {
-        return this._binaryMode ? this._binaryModeKeyType : this._keyType;
+        return this._keyType;
     }
 
     /**
      * @ignore
      */
     _getValueType() {
-        return this._binaryMode ? this._binaryModeValueType : this._valueType;
+        return this._valueType;
     }
 
     /**
@@ -625,20 +623,20 @@ class CacheClient {
      * @ignore
      */
     async _putKeyValueGetValue(operation, key, value) {
-        let value = null;
+        let result = null;
         await this._putKeyValue(
             operation, key, value,
             (payload) => {
-                value = BinaryReader.readObject(payload, this._getValueType());
+                result = BinaryReader.readObject(payload, this._getValueType());
             });
-        return value;
+        return result;
     }
 
     /**
      * @ignore
      */
     async _putKeyValueGetBoolean(operation, key, value) {
-        let result;
+        let result = false;
         await this._putKeyValue(
             operation, key, value,
             (payload) => {
@@ -678,7 +676,7 @@ class CacheClient {
      * @ignore
      */
     async _putKeyGetBoolean(operation, key) {
-        let result;
+        let result = false;
         await this._putKey(
             operation, key,
             (payload) => {
@@ -705,7 +703,7 @@ class CacheClient {
      * @ignore
      */
     async _putKeysGetBoolean(operation, keys) {
-        let result;
+        let result = false;
         await this._putKeys(
             operation, keys,
             (payload) => {

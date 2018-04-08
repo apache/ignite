@@ -17,9 +17,11 @@
 
 'use strict';
 
-const BinaryObject = require('../BinaryObject');
+const BinaryObject = require('./BinaryObject');
 const Errors = require('../Errors');
+const ComplexObjectType = require('../ObjectType').ComplexObjectType;
 const BinaryUtils = require('./BinaryUtils');
+const BinaryType = require('./BinaryType');
 
 class BinaryWriter {
 
@@ -34,7 +36,7 @@ class BinaryWriter {
             return;
         }
 
-        objectType = BinaryWriter._getObjectType(object, objectType);
+        objectType =  objectType ? objectType : BinaryUtils.calcObjectType(object);
         const objectTypeCode = BinaryUtils.getTypeCode(objectType);
 
         if (writeObjectType) {
@@ -73,7 +75,8 @@ class BinaryWriter {
             case BinaryUtils.TYPE_CODE.BOOLEAN_ARRAY:
             case BinaryUtils.TYPE_CODE.STRING_ARRAY:
             case BinaryUtils.TYPE_CODE.DATE_ARRAY:
-                BinaryWriter._writeArray(buffer, object, objectTypeCode);
+            case BinaryUtils.TYPE_CODE.OBJECT_ARRAY:
+                BinaryWriter._writeArray(buffer, object, objectType, objectTypeCode);
                 break;
             case BinaryUtils.TYPE_CODE.MAP:
                 BinaryWriter._writeMap(buffer, object, objectType);
@@ -89,19 +92,20 @@ class BinaryWriter {
         }
     }
 
-    static _getObjectType(object, objectType = null) {
-        if (objectType === null) {
-            objectType = BinaryUtils.calcObjectTypeCode(object);
-        }
-        return BinaryUtils.getObjectType(objectType, null, false);
-    }
-
-    static _writeArray(buffer, array, arrayTypeCode) {
-        const elementTypeCode = BinaryUtils.getArrayElementTypeCode(arrayTypeCode);
+    static _writeArray(buffer, array, arrayType, arrayTypeCode) {
+        const elementType = BinaryUtils.getArrayElementType(arrayType);
         const keepElementType = BinaryUtils.keepArrayElementType(arrayTypeCode);
+        if (arrayTypeCode === BinaryUtils.TYPE_CODE.OBJECT_ARRAY) {
+            if (elementType instanceof ComplexObjectType) {
+                buffer.writeInteger(BinaryType._calculateId(elementType._typeName));
+            }
+            else {
+                throw Errors.IgniteClientError.unsupportedTypeError(arrayType);
+            }
+        }
         buffer.writeInteger(array.length);
         for (let elem of array) {
-            BinaryWriter.writeObject(buffer, elem, elementTypeCode, keepElementType);
+            BinaryWriter.writeObject(buffer, elem, elementType, keepElementType);
         }
     }
 

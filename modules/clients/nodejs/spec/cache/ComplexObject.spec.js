@@ -248,16 +248,16 @@ describe('complex object test suite >', () => {
                 await putGetComplexObjects({}, {},
                     new ComplexObjectType(), new ComplexObjectType(), false, {});
 
-                let binaryKey = BinaryObject.fromObject(value1, valueType1);
-                let binaryValue = BinaryObject.fromObject(value2, valueType2);
-                await putGetComplexObjects(binaryKey, binaryValue,
-                    valueType1, valueType2,
-                    true, value2);
+                // let binaryKey = BinaryObject.fromObject(value1, valueType1);
+                // let binaryValue = BinaryObject.fromObject(value2, valueType2);
+                // await putGetComplexObjects(binaryKey, binaryValue,
+                //     valueType1, valueType2,
+                //     true, value2);
 
-                binaryKey = BinaryObject.fromObject({});
-                binaryValue = BinaryObject.fromObject({});
-                await putGetComplexObjects(binaryKey, binaryValue,
-                    new ComplexObjectType(), new ComplexObjectType(), true, {});
+                // binaryKey = BinaryObject.fromObject({});
+                // binaryValue = BinaryObject.fromObject({});
+                // await putGetComplexObjects(binaryKey, binaryValue,
+                //     new ComplexObjectType(), new ComplexObjectType(), true, {});
             }).
             then(done).
             catch(error => done.fail(error));
@@ -365,67 +365,67 @@ describe('complex object test suite >', () => {
             catch(error => done.fail(error));
     });
 
-    it('put get binary objects', (done) => {
-        Promise.resolve().
-            then(async () => {
-                const value1 = new Class1();
-                value1.field_1_1 = 'abc';
-                value1.field_1_2.field_2_1 = 12345;
-                value1.field_1_2.field_2_2 = true;
-                value1.field_1_3 = ['a', 'bb', 'ccc'];
+    // it('put get binary objects', (done) => {
+    //     Promise.resolve().
+    //         then(async () => {
+    //             const value1 = new Class1();
+    //             value1.field_1_1 = 'abc';
+    //             value1.field_1_2.field_2_1 = 12345;
+    //             value1.field_1_2.field_2_2 = true;
+    //             value1.field_1_3 = ['a', 'bb', 'ccc'];
 
-                const value2 = new Class1();
-                value2.field_1_1 = 'def';
-                value2.field_1_2.field_2_1 = 54321;
-                value2.field_1_2.field_2_2 = false;
-                value2.field_1_3 = ['a', 'bb', 'ccc', 'dddd'];
+    //             const value2 = new Class1();
+    //             value2.field_1_1 = 'def';
+    //             value2.field_1_2.field_2_1 = 54321;
+    //             value2.field_1_2.field_2_2 = false;
+    //             value2.field_1_3 = ['a', 'bb', 'ccc', 'dddd'];
 
-                const value3 = new Class1();
-                value3.field_1_1 = 'defdef';
-                value3.field_1_2.field_2_1 = 543;
-                value3.field_1_2.field_2_2 = false;
-                value3.field_1_3 = ['a', 'bb', 'ccc', 'dddd', 'eeeee'];
+    //             const value3 = new Class1();
+    //             value3.field_1_1 = 'defdef';
+    //             value3.field_1_2.field_2_1 = 543;
+    //             value3.field_1_2.field_2_2 = false;
+    //             value3.field_1_3 = ['a', 'bb', 'ccc', 'dddd', 'eeeee'];
 
-                const binaryValue1 = BinaryObject.fromObject(value1);
+    //             const binaryValue1 = BinaryObject.fromObject(value1);
 
-                const binaryValue2 = BinaryObject.fromObject(value2);
+    //             const binaryValue2 = BinaryObject.fromObject(value2);
 
-                const cache = igniteClient.getCache(CACHE_NAME).
-                    setKeyType(new ComplexObjectType(value1)).
-                    setValueType(new ComplexObjectType(value2));
-                try {
-                    cache.setBinaryMode(true);
+    //             const cache = igniteClient.getCache(CACHE_NAME).
+    //                 setKeyType(new ComplexObjectType(value1)).
+    //                 setValueType(new ComplexObjectType(value2));
+    //             try {
+    //                 cache.setBinaryMode(true);
 
-                    await cache.put(binaryValue1, binaryValue2);
-                    let result = await cache.get(binaryValue1);
-                    binaryObjectEquals(result, value2);
+    //                 await cache.put(binaryValue1, binaryValue2);
+    //                 let result = await cache.get(binaryValue1);
+    //                 binaryObjectEquals(result, value2);
 
-                    binaryValue1.setField('field_1_1', 'abcde');
-                    result = await cache.get(binaryValue1);
-                    expect(result === null).toBe(true);
+    //                 binaryValue1.setField('field_1_1', 'abcde');
+    //                 result = await cache.get(binaryValue1);
+    //                 expect(result === null).toBe(true);
 
-                    binaryValue2.setField('field_1_1', value3.field_1_1);
-                    binaryValue2.setField('field_1_2', value3.field_1_2);
-                    binaryValue2.setField('field_1_3', value3.field_1_3);
-                    await cache.put(binaryValue1, binaryValue2);
-                    result = await cache.get(binaryValue1);
-                    binaryObjectEquals(result, value3);
+    //                 binaryValue2.setField('field_1_1', value3.field_1_1);
+    //                 binaryValue2.setField('field_1_2', value3.field_1_2);
+    //                 binaryValue2.setField('field_1_3', value3.field_1_3);
+    //                 await cache.put(binaryValue1, binaryValue2);
+    //                 result = await cache.get(binaryValue1);
+    //                 binaryObjectEquals(result, value3);
 
-                    binaryValue1.setField('field_1_1', 'abc');
-                    binaryValue1.setField('field_1_3', binaryValue1.getField('field_1_3'));
-                    result = await cache.get(binaryValue1);
-                    binaryObjectEquals(result, value2);
+    //                 binaryValue1.setField('field_1_1', 'abc');
+    //                 binaryValue1.setField('field_1_3', binaryValue1.getField('field_1_3'));
+    //                 result = await cache.get(binaryValue1);
+    //                 binaryObjectEquals(result, value2);
 
-                    result = await cache.get(binaryValue1);
-                    binaryObjectEquals(result, value2);
-                }
-                finally {
-                    await cache.removeAll();
-                }
-            }).
-            then(done).
-            catch(error => done.fail(error));
-    });
+    //                 result = await cache.get(binaryValue1);
+    //                 binaryObjectEquals(result, value2);
+    //             }
+    //             finally {
+    //                 await cache.removeAll();
+    //             }
+    //         }).
+    //         then(done).
+    //         catch(error => done.fail(error));
+    // });
 
     const primitiveValues = {
         [ObjectType.PRIMITIVE_TYPE.BYTE] : { 
@@ -487,7 +487,7 @@ describe('complex object test suite >', () => {
     async function putGetComplexObjects(key, value, keyType, valueType, binaryMode, valuePattern) {
         const cache = igniteClient.getCache(CACHE_NAME).setKeyType(keyType).setValueType(valueType);
         try {
-            cache.setBinaryMode(binaryMode);
+//            cache.setBinaryMode(binaryMode);
             await cache.put(key, value);
             const result = await cache.get(key);
             if (binaryMode) {
@@ -525,31 +525,31 @@ describe('complex object test suite >', () => {
             await putGetComplexObjects(new keyClass(), new valueClass(), keyType, valueType, false, new valueClass());
         }
 
-        let binaryKey = BinaryObject.fromObject(key);
-        let binaryValue = BinaryObject.fromObject(value);
-        await putGetComplexObjects(binaryKey, binaryValue,
-            new ComplexObjectType(new keyClass()), new ComplexObjectType(new valueClass()),
-            true, value);
+        // let binaryKey = BinaryObject.fromObject(key);
+        // let binaryValue = BinaryObject.fromObject(value);
+        // await putGetComplexObjects(binaryKey, binaryValue,
+        //     new ComplexObjectType(new keyClass()), new ComplexObjectType(new valueClass()),
+        //     true, value);
 
-        binaryKey = BinaryObject.fromObject(key, new ComplexObjectType(new keyClass()));
-        binaryValue = BinaryObject.fromObject(value, new ComplexObjectType(new valueClass()));
-        await putGetComplexObjects(binaryKey, binaryValue,
-            new ComplexObjectType(new keyClass()), new ComplexObjectType(new valueClass()), true, value);
+        // binaryKey = BinaryObject.fromObject(key, new ComplexObjectType(new keyClass()));
+        // binaryValue = BinaryObject.fromObject(value, new ComplexObjectType(new valueClass()));
+        // await putGetComplexObjects(binaryKey, binaryValue,
+        //     new ComplexObjectType(new keyClass()), new ComplexObjectType(new valueClass()), true, value);
 
-        binaryKey = BinaryObject.fromObject(key, new ComplexObjectType(key));
-        binaryValue = BinaryObject.fromObject(value, new ComplexObjectType(value));
-        await putGetComplexObjects(binaryKey, binaryValue,
-            new ComplexObjectType(key), new ComplexObjectType(value), true, value);
+        // binaryKey = BinaryObject.fromObject(key, new ComplexObjectType(key));
+        // binaryValue = BinaryObject.fromObject(value, new ComplexObjectType(value));
+        // await putGetComplexObjects(binaryKey, binaryValue,
+        //     new ComplexObjectType(key), new ComplexObjectType(value), true, value);
 
-        binaryKey = BinaryObject.fromObject(key, keyType);
-        binaryValue = BinaryObject.fromObject(value, valueType);
-        await putGetComplexObjects(binaryKey, binaryValue, keyType, valueType, true, value);
+        // binaryKey = BinaryObject.fromObject(key, keyType);
+        // binaryValue = BinaryObject.fromObject(value, valueType);
+        // await putGetComplexObjects(binaryKey, binaryValue, keyType, valueType, true, value);
 
-        if (isNullable) {
-            binaryKey = BinaryObject.fromObject(new keyClass());
-            binaryValue = BinaryObject.fromObject(new valueClass());
-            await putGetComplexObjects(binaryKey, binaryValue, keyType, valueType, true, new valueClass());
-        }
+        // if (isNullable) {
+        //     binaryKey = BinaryObject.fromObject(new keyClass());
+        //     binaryValue = BinaryObject.fromObject(new valueClass());
+        //     await putGetComplexObjects(binaryKey, binaryValue, keyType, valueType, true, new valueClass());
+        // }
     }
 
     function getPrimitiveValue(typeCode) {
