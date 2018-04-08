@@ -49,12 +49,10 @@ const PEEK_MODE = Object.freeze({
  * One instance of this class provides access to one Ignite cache which is specified
  * during the instance obtaining and cannot be changed after that.
  *
- * There are two groups of methods in the cache client:
- *
- *   - methods to configure a cache client
- *   - methods to operate with the cache itself
- *
- * The cache client can operate in two modes - "non-binary" (default) and "binary" - TBD.
+ * There are three groups of methods in the cache client:
+ *   - methods to configure the cache client
+ *   - methods to operate with the cache using Key-Value Queries
+ *   - methods to operate with the cache using SQL and Scan Queries
  *
  * @hideconstructor
  */
@@ -64,7 +62,7 @@ class CacheClient {
         return PEEK_MODE;
     }
 
-    /* Methods to configure a cache client */
+    /* Methods to configure the cache client */
 
     /**
      * Specifies a type of the cache key.
@@ -124,35 +122,16 @@ class CacheClient {
         return this;
     }
 
-    /**
-     * Switches between "non-binary" and "binary" modes of the cache client.
-     *
-     * Does nothing if already in the requested mode.
-     *
-     * TBD
-     *
-     * @param {boolean} [on=true] - If true or not specified: switch on "binary" mode.
-     *   If false: switch off "binary" mode.
-     *
-     * @return {CacheClient} - the same instance of the cache client.
-     *
-     * @throws {IgniteClientError} if other error. TBD
-     */
-    setBinaryMode(on = true) {
-        this._binaryMode = on;
-        return this;
-    }
-
-    /* Methods to operate with the cache */
+    /* Methods to operate with the cache using Key-Value Queries */
 
     /**
-     * Retrieves a value mapped to the specified key from the cache.
+     * Retrieves a value associated with the specified key from the cache.
      *
      * @async
      *
-     * @param {*} key - the cache key.
+     * @param {*} key - key.
      *
-     * @return {Promise<*>} - the value associated with the specified key, or null, if it does not exist.
+     * @return {Promise<*>} - value associated with the specified key, or null if it does not exist.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -161,29 +140,14 @@ class CacheClient {
     }
 
     /**
-     * Associates the specified value with the specified key in the cache.
-     *
-     * Overwrites the existing value, if any.
+     * Retrieves entries associated with the specified keys from the cache.
      *
      * @async
      *
-     * @param {*} key - the cache key.
-     * @param {*} value - value to be associated with the specified key.
+     * @param {Array<*>} keys - keys.
      *
-     * @throws {IgniteClientError} if error.
-     */
-    async put(key, value) {
-        await this._putKeyValue(BinaryUtils.OPERATION.CACHE_PUT, key, value);
-    }
-
-    /**
-     * ???
-     *
-     * @async
-     *
-     * @param {Array<*>} keys - the cache keys.
-     *
-     * @return {Promise<Array<CacheEntry>>} - ???
+     * @return {Promise<Array<CacheEntry>>} - the retrieved entries (key-value pairs).
+     *   Entries with the keys which do not exist in the cache are not included into the array.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -209,11 +173,31 @@ class CacheClient {
     }
 
     /**
-     * ???
+     * Associates the specified value with the specified key in the cache.
+     *
+     * Overwrites the previous value if the key exists in the cache,
+     * otherwise creates new entry (key-value pair).
      *
      * @async
      *
-     * @param {Array<CacheEntry>} entries - ???
+     * @param {*} key - key.
+     * @param {*} value - value to be associated with the specified key.
+     *
+     * @throws {IgniteClientError} if error.
+     */
+    async put(key, value) {
+        await this._putKeyValue(BinaryUtils.OPERATION.CACHE_PUT, key, value);
+    }
+
+    /**
+     * Associates the specified values with the specified keys in the cache.
+     *
+     * Overwrites the previous value if a key exists in the cache,
+     * otherwise creates new entry (key-value pair).
+     *
+     * @async
+     *
+     * @param {Array<CacheEntry>} entries - entries (key-value pairs) to be put into the cache.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -232,13 +216,13 @@ class CacheClient {
     }
 
     /**
-     * ???
+     * Checks if the specified key exists in the cache.
      *
      * @async
      *
-     * @param {*} key - ???
+     * @param {*} key - key to check.
      *
-     * @return {Promise<boolean>} - ???
+     * @return {Promise<boolean>} - true if the key exists, false otherwise.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -247,13 +231,14 @@ class CacheClient {
     }
 
     /**
-     * ???
+     * Checks if all the specified keys exist in the cache.
      *
      * @async
      *
-     * @param {Array<*>} keys - ???
+     * @param {Array<*>} keys - keys to check.
      *
-     * @return {Promise<boolean>} - ???
+     * @return {Promise<boolean>} - true if all the keys exist,
+     *   false if at least one of the keys does not exist in the cache.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -262,14 +247,18 @@ class CacheClient {
     }
 
     /**
-     * ???
+     * Associates the specified value with the specified key in the cache
+     * and returns the previous associated value, if any.
+     *
+     * Overwrites the previous value if the key exists in the cache,
+     * otherwise creates new entry (key-value pair).
      *
      * @async
      *
-     * @param {*} key - ???
-     * @param {*} value - ???
+     * @param {*} key - key.
+     * @param {*} value - value to be associated with the specified key.
      *
-     * @return {Promise<*>} - ???
+     * @return {Promise<*>} - the previous value associated with the specified key, or null if it did not exist.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -278,14 +267,16 @@ class CacheClient {
     }
 
     /**
-     * ???
+     * Associates the specified value with the specified key in the cache
+     * and returns the previous associated value, if and only if the key exists in the cache.
+     * Otherwise does nothing and returns null.
      *
      * @async
      *
-     * @param {*} key - ???
-     * @param {*} value - ???
+     * @param {*} key - key.
+     * @param {*} value - value to be associated with the specified key.
      *
-     * @return {Promise<*>} - ???
+     * @return {Promise<*>} - the previous value associated with the specified key, or null if it did not exist.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -294,13 +285,14 @@ class CacheClient {
     }
 
     /**
-     * ???
+     * Removes the cache entry with the specified key
+     * and returns the last associated value, if any.
      *
      * @async
      *
-     * @param {*} key - ???
+     * @param {*} key - key of the entry to be removed.
      *
-     * @return {Promise<*>} - ???
+     * @return {Promise<*>} - the last value associated with the specified key, or null if it did not exist.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -309,14 +301,16 @@ class CacheClient {
     }
 
     /**
-     * ???
+     * Creates new entry (key-value pair) if the specified key does not exist in the cache.
+     * Otherwise does nothing.
      *
      * @async
      *
-     * @param {*} key - ???
-     * @param {*} value - ???
+     * @param {*} key - key.
+     * @param {*} value - value to be associated with the specified key.
      *
-     * @return {Promise<boolean>} - ???
+     * @return {Promise<boolean>} - true if the new entry is created,
+     *   false if the specified key already exists in the cache.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -325,14 +319,16 @@ class CacheClient {
     }
 
     /**
-     * ???
+     * Creates new entry (key-value pair) if the specified key does not exist in the cache.
+     * Otherwise returns the current value associated with the existing key.
      *
      * @async
      *
-     * @param {*} key - ???
-     * @param {*} value - ???
+     * @param {*} key - key.
+     * @param {*} value - value to be associated with the specified key.
      *
-     * @return {Promise<*>} - ???
+     * @return {Promise<*>} - the current value associated with the key if it already exists in the cache,
+     *   null if the new entry is created.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -515,6 +511,8 @@ class CacheClient {
             });
         return result;
     }
+
+    /* Methods to operate with the cache using SQL and Scan Queries */
 
     /**
      * ???
@@ -723,7 +721,12 @@ class CacheClient {
 class CacheEntry {
 
     /**
-     * ???
+     * Public constructor.
+     *
+     * @param {*} key - key corresponding to this entry.
+     * @param {*} value - value associated with the key.
+     *
+     * @return {ComplexObjectType} - new CacheEntry instance     
      */
     constructor(key, value) {
         this._key = key;
