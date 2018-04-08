@@ -106,18 +106,18 @@ const COMPOSITE_TYPE = Object.freeze({
  * In this case the Ignite client tries to make automatic mapping between JavaScript types
  * and Ignite object types according to the following mapping table:
  * <pre>
- *      JavaScript type         : type code ({@link ObjectType.PRIMITIVE_TYPE} and {@link ObjectType.COMPOSITE_TYPE})
- *      null                    : NULL
- *      number                  : DOUBLE
- *      Array of number         : DOUBLE_ARRAY
- *      string                  : STRING
- *      Array of string         : STRING_ARRAY
- *      boolean                 : BOOLEAN
- *      Array of boolean        : BOOLEAN_ARRAY
- *      Date                    : DATE
- *      Array of Date           : DATE_ARRAY
- *      Map                     : MAP (HASH_MAP)
- *      any other Object        : COMPLEX_OBJECT
+ *      JavaScript type         to / from        type code ({@link ObjectType.PRIMITIVE_TYPE} and {@link ObjectType.COMPOSITE_TYPE})
+ *      null                    to / from        NULL
+ *      number                  to / from        DOUBLE
+ *      Array of number         to / from        DOUBLE_ARRAY
+ *      string                  to / from        STRING
+ *      Array of string         to / from        STRING_ARRAY
+ *      boolean                 to / from        BOOLEAN
+ *      Array of boolean        to / from        BOOLEAN_ARRAY
+ *      Date                    to / from        DATE
+ *      Array of Date           to / from        DATE_ARRAY
+ *      Map                     to / from        MAP (HASH_MAP)
+ *      any other Object        to /  -          COMPLEX_OBJECT
  * </pre>
  * Note: type of an array content is determined by the type of the first element of the array
  * (empty array has no automatic mapping).
@@ -231,7 +231,8 @@ class ComplexObjectType extends CompositeType {
      * Specifies a JavaScript class which will be mapped to/from the complex type.
      * This specification is done using an instance of the JavaScript Object.
      *
-     * The JavaScript Object must have a constructor without parameters or with optional parameters only.
+     * If an object of the complex type is going to be received (deserialized),
+     * the JavaScript Object must have a constructor without parameters or with optional parameters only.
      *
      * The JavaScript Object defines a set of fields of the complex type.
      *
