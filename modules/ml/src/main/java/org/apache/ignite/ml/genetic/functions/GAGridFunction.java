@@ -35,15 +35,10 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
  * Responsible for providing custom SQL functions to retrieve optimization results
  */
 public class GAGridFunction {
-
-    /** GAConfiguration **/
-    private GAConfiguration config = null;
-
-    /**
+     /**
      * @param config GA Configuration
      */
-    public GAGridFunction(GAConfiguration config) {
-        this.config = config;
+    public GAGridFunction() {
     }
 
     /**
