@@ -122,6 +122,8 @@ const WRITE_SYNCHRONIZATION_MODE = Object.freeze({
  * Class representing Ignite cache configuration on a server.
  *
  * All configuration settings are optional and have defaults which are defined on a server side.
+ *
+ * See Apache Ignite documentation for details of every configuration setting. 
  */
 class CacheConfiguration {
 
