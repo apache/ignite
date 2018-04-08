@@ -35,7 +35,7 @@ import org.apache.ignite.cache.query.annotations.QuerySqlField;
  * </p>
  */
 public class Gene {
-
+    /** primary key of Gene */
     private static final AtomicLong ID_GEN = new AtomicLong();
 
     /** Id (indexed). */
@@ -78,8 +78,8 @@ public class Gene {
         return id;
     }
 
-    @Override
-    public String toString() {
+    /** {@inheritDoc} */
+    @Override public String toString() {
         return "Gene [id=" + id + ", value=" + value + "]";
     }
 
