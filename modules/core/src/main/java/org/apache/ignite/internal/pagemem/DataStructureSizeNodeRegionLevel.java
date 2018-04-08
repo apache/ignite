@@ -17,9 +17,12 @@ public class DataStructureSizeNodeRegionLevel implements DataStructureSizeNode<C
 
     private final Map<String, DataStructureSizeNode> groups = new ConcurrentLinkedHashMap<>();
 
-    public DataStructureSizeNodeRegionLevel(DataStructureSizeNode parent, String name) {
+    private final int pageSize;
+
+    public DataStructureSizeNodeRegionLevel(DataStructureSizeNode parent, String name, int pageSize) {
         this.parent = parent;
         this.name = name;
+        this.pageSize = pageSize;
     }
 
     @Override public DataStructureSizeNode parent() {
@@ -33,7 +36,7 @@ public class DataStructureSizeNodeRegionLevel implements DataStructureSizeNode<C
     @Override public DataStructureSizeNodeGroupLevel createChild(CacheGroupContext context) {
         String name = context.cacheOrGroupName();
 
-        DataStructureSizeNodeGroupLevel grp = new DataStructureSizeNodeGroupLevel(this, name);
+        DataStructureSizeNodeGroupLevel grp = new DataStructureSizeNodeGroupLevel(this, name, pageSize);
 
         groups.put(name, grp);
 

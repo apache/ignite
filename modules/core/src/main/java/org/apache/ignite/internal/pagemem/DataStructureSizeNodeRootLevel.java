@@ -24,7 +24,8 @@ public class DataStructureSizeNodeRootLevel implements DataStructureSizeNode<Dat
     @Override public DataStructureSizeNodeRegionLevel createChild(DataRegion region) {
         String regionName = region.config().getName();
 
-        DataStructureSizeNodeRegionLevel node = new DataStructureSizeNodeRegionLevel(this, regionName);
+        DataStructureSizeNodeRegionLevel node = new DataStructureSizeNodeRegionLevel(
+            this, regionName, region.pageMemory().pageSize());
 
         regions.put(regionName, node);
 

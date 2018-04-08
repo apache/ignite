@@ -27,9 +27,10 @@ public class DataStructureSizeNodeGroupLevel implements DataStructureSizeNode<St
 
     private final Map<String, DataStructureSize> structures = new ConcurrentLinkedHashMap<>();
 
-    private final int pageSize = 0;
+    private final int pageSize;
 
-    public DataStructureSizeNodeGroupLevel(DataStructureSizeNode parent, String name) {
+    public DataStructureSizeNodeGroupLevel(DataStructureSizeNode parent, String name, int pageSize) {
+        this.pageSize = pageSize;
         this.parent = parent;
         this.name = name;
 
@@ -91,7 +92,7 @@ public class DataStructureSizeNodeGroupLevel implements DataStructureSizeNode<St
     }
 
     @Override public DataStructureSizeNodePartitionLevel createChild(String part) {
-        DataStructureSizeNodePartitionLevel partLevel = new DataStructureSizeNodePartitionLevel(this, part);
+        DataStructureSizeNodePartitionLevel partLevel = new DataStructureSizeNodePartitionLevel(this, part, pageSize);
 
         parts.put(partLevel.name(), partLevel);
 

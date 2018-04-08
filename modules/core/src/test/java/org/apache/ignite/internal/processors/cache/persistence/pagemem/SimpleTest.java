@@ -105,8 +105,8 @@ public class SimpleTest extends GridCommonAbstractTest {
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setDataRegionConfigurations(
-                    new DataRegionConfiguration()
-                        .setName(IN_MEMORY_REGION),
+                   /* new DataRegionConfiguration()
+                        .setName(IN_MEMORY_REGION),*/
                     new DataRegionConfiguration()
                         .setName(PERSISTENT_REGION)
                         .setPersistenceEnabled(true)
@@ -131,7 +131,7 @@ public class SimpleTest extends GridCommonAbstractTest {
 
         printSizes(ig.context().cache().context());
 
-        for (int i = 0; i < 1_000_000; i++)
+        for (int i = 0; i < 1; i++)
             cache.put(i, i);
 
         System.out.println("After put");
@@ -143,7 +143,7 @@ public class SimpleTest extends GridCommonAbstractTest {
 
         db.waitForCheckpoint(null);
 
-        for (int i = 0; i < 1_000_000; i++)
+        for (int i = 0; i < 1; i++)
             cache.remove(i);
 
         System.out.println("After remove");

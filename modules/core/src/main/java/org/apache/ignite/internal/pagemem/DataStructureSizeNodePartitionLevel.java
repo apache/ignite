@@ -21,11 +21,12 @@ public class DataStructureSizeNodePartitionLevel implements DataStructureSizeNod
 
     private final Map<String, DataStructureSize> structures = new ConcurrentLinkedHashMap<>();
 
-    private final int pageSize = 0;
+    private final int pageSize;
 
-    public DataStructureSizeNodePartitionLevel(DataStructureSizeNodeGroupLevel grpLevel, String name) {
+    public DataStructureSizeNodePartitionLevel(DataStructureSizeNodeGroupLevel grpLevel, String name, int pageSize) {
         this.groupLevel = grpLevel;
         this.name = name;
+        this.pageSize = pageSize;
 
         DataStructureSize pkIndexPages = sizeAndParentUpdate(name + "-" + PK_INDEX, groupLevel.sizeOf(PK_INDEX));
 
