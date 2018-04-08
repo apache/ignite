@@ -73,11 +73,13 @@ const PRIMITIVE_TYPE = Object.freeze({
  * @typedef ObjectType.COMPOSITE_TYPE
  * @enum
  * @readonly
+ * @property OBJECT_ARRAY 23
  * @property MAP 25
  * @property NULL 101
  * @property COMPLEX_OBJECT 103
  */
 const COMPOSITE_TYPE = Object.freeze({
+    OBJECT_ARRAY : 23,
     MAP : 25,
     NULL : 101,
     COMPLEX_OBJECT : 103
@@ -206,7 +208,7 @@ class MapObjectType extends CompositeType {
     constructor(mapSubType = MapObjectType.MAP_SUBTYPE.HASH_MAP, keyType = null, valueType = null) {
         super(COMPOSITE_TYPE.MAP);
         const BinaryUtils = require('./internal/BinaryUtils');
-        ArgumentChecker.hasValueFrom(mapSubType, 'mapSubType', MapObjectType.MAP_SUBTYPE);
+        ArgumentChecker.hasValueFrom(mapSubType, 'mapSubType', false, MapObjectType.MAP_SUBTYPE);
         this._mapSubType = mapSubType;
         this._keyType = BinaryUtils.getObjectType(keyType, 'keyType');
         this._valueType = BinaryUtils.getObjectType(valueType, 'valueType');
@@ -251,13 +253,13 @@ class ComplexObjectType extends CompositeType {
      */
     constructor(jsObject, typeName = null) {
         super(COMPOSITE_TYPE.COMPLEX_OBJECT);
-        this._template = template;
-        this._objectConstructor = template && template.constructor ?
-            template.constructor : Object;
-        if (!name) {
-            name = this._objectConstructor.name;
+        this._template = jsObject;
+        this._objectConstructor = jsObject && jsObject.constructor ?
+            jsObject.constructor : Object;
+        if (!typeName) {
+            typeName = this._objectConstructor.name;
         }
-        this._typeName = name;
+        this._typeName = typeName;
         this._fields = new Map();
     }
 

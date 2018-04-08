@@ -167,11 +167,11 @@ describe('complex object test suite >', () => {
                 value1.field_1_3 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.LONG);
 
                 const valueType1 = new ComplexObjectType(new Class1()).
-                    setField('field_1_1', ObjectType.PRIMITIVE_TYPE.BYTE).
-                    setField('field_1_2', new ComplexObjectType(new Class2()).
-                        setField('field_2_1', ObjectType.PRIMITIVE_TYPE.SHORT).
-                        setField('field_2_2', ObjectType.PRIMITIVE_TYPE.INTEGER)).
-                    setField('field_1_3', ObjectType.PRIMITIVE_TYPE.LONG);
+                    setFieldType('field_1_1', ObjectType.PRIMITIVE_TYPE.BYTE).
+                    setFieldType('field_1_2', new ComplexObjectType(new Class2()).
+                        setFieldType('field_2_1', ObjectType.PRIMITIVE_TYPE.SHORT).
+                        setFieldType('field_2_2', ObjectType.PRIMITIVE_TYPE.INTEGER)).
+                    setFieldType('field_1_3', ObjectType.PRIMITIVE_TYPE.LONG);
 
                 const value2 = new SubClass1();
                 value2.field_1_1 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.FLOAT);
@@ -184,16 +184,16 @@ describe('complex object test suite >', () => {
                 value2.field_1_6 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.INTEGER);
 
                 const valueType2 = new ComplexObjectType(new SubClass1()).
-                    setField('field_1_1', ObjectType.PRIMITIVE_TYPE.FLOAT).
-                    setField('field_1_2', new ComplexObjectType(new Class2()).
-                        setField('field_2_1', ObjectType.PRIMITIVE_TYPE.DOUBLE).
-                        setField('field_2_2', ObjectType.PRIMITIVE_TYPE.CHAR)).
-                    setField('field_1_3', ObjectType.PRIMITIVE_TYPE.BOOLEAN).
-                    setField('field_1_4', ObjectType.PRIMITIVE_TYPE.STRING).
-                    setField('field_1_5', new ComplexObjectType(new Class3()).
-                        setField('field_3_1', ObjectType.PRIMITIVE_TYPE.DATE).
-                        setField('field_3_2', ObjectType.PRIMITIVE_TYPE.SHORT)).
-                    setField('field_1_6', ObjectType.PRIMITIVE_TYPE.INTEGER);
+                    setFieldType('field_1_1', ObjectType.PRIMITIVE_TYPE.FLOAT).
+                    setFieldType('field_1_2', new ComplexObjectType(new Class2()).
+                        setFieldType('field_2_1', ObjectType.PRIMITIVE_TYPE.DOUBLE).
+                        setFieldType('field_2_2', ObjectType.PRIMITIVE_TYPE.CHAR)).
+                    setFieldType('field_1_3', ObjectType.PRIMITIVE_TYPE.BOOLEAN).
+                    setFieldType('field_1_4', ObjectType.PRIMITIVE_TYPE.STRING).
+                    setFieldType('field_1_5', new ComplexObjectType(new Class3()).
+                        setFieldType('field_3_1', ObjectType.PRIMITIVE_TYPE.DATE).
+                        setFieldType('field_3_2', ObjectType.PRIMITIVE_TYPE.SHORT)).
+                    setFieldType('field_1_6', ObjectType.PRIMITIVE_TYPE.INTEGER);
 
                 await putGetComplexObjectsWithDifferentTypes(
                     value1, value2, valueType1, valueType2, Class1, SubClass1);
@@ -213,11 +213,11 @@ describe('complex object test suite >', () => {
                 value1.field_1_3 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.LONG);
 
                 const valueType1 = new ComplexObjectType({}).
-                    setField('field_1_1', ObjectType.PRIMITIVE_TYPE.BYTE).
-                    setField('field_1_2', new ComplexObjectType({}).
-                        setField('field_2_1', ObjectType.PRIMITIVE_TYPE.SHORT).
-                        setField('field_2_2', ObjectType.PRIMITIVE_TYPE.INTEGER)).
-                    setField('field_1_3', ObjectType.PRIMITIVE_TYPE.LONG);
+                    setFieldType('field_1_1', ObjectType.PRIMITIVE_TYPE.BYTE).
+                    setFieldType('field_1_2', new ComplexObjectType({}).
+                        setFieldType('field_2_1', ObjectType.PRIMITIVE_TYPE.SHORT).
+                        setFieldType('field_2_2', ObjectType.PRIMITIVE_TYPE.INTEGER)).
+                    setFieldType('field_1_3', ObjectType.PRIMITIVE_TYPE.LONG);
 
                 const value2 = {};
                 value2.field_1_1 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.FLOAT);
@@ -230,14 +230,14 @@ describe('complex object test suite >', () => {
                 value2.field_1_4 = getPrimitiveValue(ObjectType.PRIMITIVE_TYPE.DATE);
 
                 const valueType2 = new ComplexObjectType({}).
-                    setField('field_1_1', ObjectType.PRIMITIVE_TYPE.FLOAT).
-                    setField('field_1_2', new ComplexObjectType({}).
-                        setField('field_2_1', ObjectType.PRIMITIVE_TYPE.DOUBLE).
-                        setField('field_2_2', new ComplexObjectType({}).
-                            setField('field_3_1', ObjectType.PRIMITIVE_TYPE.CHAR).
-                            setField('field_3_2', ObjectType.PRIMITIVE_TYPE.BOOLEAN))).
-                    setField('field_1_3', ObjectType.PRIMITIVE_TYPE.STRING).
-                    setField('field_1_4', ObjectType.PRIMITIVE_TYPE.DATE);
+                    setFieldType('field_1_1', ObjectType.PRIMITIVE_TYPE.FLOAT).
+                    setFieldType('field_1_2', new ComplexObjectType({}).
+                        setFieldType('field_2_1', ObjectType.PRIMITIVE_TYPE.DOUBLE).
+                        setFieldType('field_2_2', new ComplexObjectType({}).
+                            setFieldType('field_3_1', ObjectType.PRIMITIVE_TYPE.CHAR).
+                            setFieldType('field_3_2', ObjectType.PRIMITIVE_TYPE.BOOLEAN))).
+                    setFieldType('field_1_3', ObjectType.PRIMITIVE_TYPE.STRING).
+                    setFieldType('field_1_4', ObjectType.PRIMITIVE_TYPE.DATE);
 
                 await putGetComplexObjects(value1, value2,
                     valueType1, valueType2, false, value2);
@@ -273,11 +273,11 @@ describe('complex object test suite >', () => {
                 value1.field_1_3 = getArrayValues(ObjectType.PRIMITIVE_TYPE.LONG_ARRAY);
 
                 const valueType1 = new ComplexObjectType(new Class1()).
-                    setField('field_1_1', ObjectType.PRIMITIVE_TYPE.BYTE_ARRAY).
-                    setField('field_1_2', new ComplexObjectType(new Class2()).
-                        setField('field_2_1', ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY).
-                        setField('field_2_2', ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY)).
-                    setField('field_1_3', ObjectType.PRIMITIVE_TYPE.LONG_ARRAY);
+                    setFieldType('field_1_1', ObjectType.PRIMITIVE_TYPE.BYTE_ARRAY).
+                    setFieldType('field_1_2', new ComplexObjectType(new Class2()).
+                        setFieldType('field_2_1', ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY).
+                        setFieldType('field_2_2', ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY)).
+                    setFieldType('field_1_3', ObjectType.PRIMITIVE_TYPE.LONG_ARRAY);
 
                 const value2 = new SubClass1();
                 value2.field_1_1 = getArrayValues(ObjectType.PRIMITIVE_TYPE.FLOAT_ARRAY);
@@ -290,16 +290,16 @@ describe('complex object test suite >', () => {
                 value2.field_1_6 = getArrayValues(ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY);
 
                 const valueType2 = new ComplexObjectType(new SubClass1()).
-                    setField('field_1_1', ObjectType.PRIMITIVE_TYPE.FLOAT_ARRAY).
-                    setField('field_1_2', new ComplexObjectType(new Class2()).
-                        setField('field_2_1', ObjectType.PRIMITIVE_TYPE.DOUBLE_ARRAY).
-                        setField('field_2_2', ObjectType.PRIMITIVE_TYPE.CHAR_ARRAY)).
-                    setField('field_1_3', ObjectType.PRIMITIVE_TYPE.BOOLEAN_ARRAY).
-                    setField('field_1_4', ObjectType.PRIMITIVE_TYPE.STRING_ARRAY).
-                    setField('field_1_5', new ComplexObjectType(new Class3()).
-                        setField('field_3_1', ObjectType.PRIMITIVE_TYPE.DATE_ARRAY).
-                        setField('field_3_2', ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY)).
-                    setField('field_1_6', ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY);
+                    setFieldType('field_1_1', ObjectType.PRIMITIVE_TYPE.FLOAT_ARRAY).
+                    setFieldType('field_1_2', new ComplexObjectType(new Class2()).
+                        setFieldType('field_2_1', ObjectType.PRIMITIVE_TYPE.DOUBLE_ARRAY).
+                        setFieldType('field_2_2', ObjectType.PRIMITIVE_TYPE.CHAR_ARRAY)).
+                    setFieldType('field_1_3', ObjectType.PRIMITIVE_TYPE.BOOLEAN_ARRAY).
+                    setFieldType('field_1_4', ObjectType.PRIMITIVE_TYPE.STRING_ARRAY).
+                    setFieldType('field_1_5', new ComplexObjectType(new Class3()).
+                        setFieldType('field_3_1', ObjectType.PRIMITIVE_TYPE.DATE_ARRAY).
+                        setFieldType('field_3_2', ObjectType.PRIMITIVE_TYPE.SHORT_ARRAY)).
+                    setFieldType('field_1_6', ObjectType.PRIMITIVE_TYPE.INTEGER_ARRAY);
 
                 await putGetComplexObjectsWithDifferentTypes(
                     value1, value2, valueType1, valueType2, Class1, SubClass1, true);
@@ -318,14 +318,14 @@ describe('complex object test suite >', () => {
                 value1.field_1_3 = getMapValue(ObjectType.PRIMITIVE_TYPE.LONG);
 
                 const valueType1 = new ComplexObjectType(new Class1()).
-                    setField('field_1_1', new MapObjectType(
+                    setFieldType('field_1_1', new MapObjectType(
                         MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.BYTE, ObjectType.PRIMITIVE_TYPE.BYTE)).
-                    setField('field_1_2', new ComplexObjectType(new Class2()).
-                        setField('field_2_1', new MapObjectType(
+                    setFieldType('field_1_2', new ComplexObjectType(new Class2()).
+                        setFieldType('field_2_1', new MapObjectType(
                             MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.SHORT, ObjectType.PRIMITIVE_TYPE.SHORT)).
-                        setField('field_2_2', new MapObjectType(
+                        setFieldType('field_2_2', new MapObjectType(
                             MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.INTEGER, ObjectType.PRIMITIVE_TYPE.INTEGER))).
-                    setField('field_1_3', new MapObjectType(
+                    setFieldType('field_1_3', new MapObjectType(
                         MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.LONG, ObjectType.PRIMITIVE_TYPE.LONG));
 
                 const value2 = new SubClass1();
@@ -339,23 +339,23 @@ describe('complex object test suite >', () => {
                 value2.field_1_6 = getMapValue(ObjectType.PRIMITIVE_TYPE.INTEGER);
 
                 const valueType2 = new ComplexObjectType(new SubClass1()).
-                    setField('field_1_1', new MapObjectType(
+                    setFieldType('field_1_1', new MapObjectType(
                         MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.LONG, ObjectType.PRIMITIVE_TYPE.FLOAT)).
-                    setField('field_1_2', new ComplexObjectType(new Class2()).
-                        setField('field_2_1', new MapObjectType(
+                    setFieldType('field_1_2', new ComplexObjectType(new Class2()).
+                        setFieldType('field_2_1', new MapObjectType(
                             MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.LONG, ObjectType.PRIMITIVE_TYPE.DOUBLE)).
-                        setField('field_2_2', new MapObjectType(
+                        setFieldType('field_2_2', new MapObjectType(
                             MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.CHAR, ObjectType.PRIMITIVE_TYPE.CHAR))).
-                    setField('field_1_3', new MapObjectType(
+                    setFieldType('field_1_3', new MapObjectType(
                         MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.BOOLEAN, ObjectType.PRIMITIVE_TYPE.BOOLEAN)).
-                    setField('field_1_4', new MapObjectType(
+                    setFieldType('field_1_4', new MapObjectType(
                         MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.STRING, ObjectType.PRIMITIVE_TYPE.STRING)).
-                    setField('field_1_5', new ComplexObjectType(new Class3()).
-                        setField('field_3_1', new MapObjectType(
+                    setFieldType('field_1_5', new ComplexObjectType(new Class3()).
+                        setFieldType('field_3_1', new MapObjectType(
                             MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.LONG, ObjectType.PRIMITIVE_TYPE.DATE)).
-                        setField('field_3_2', new MapObjectType(
+                        setFieldType('field_3_2', new MapObjectType(
                             MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.SHORT, ObjectType.PRIMITIVE_TYPE.SHORT))).
-                    setField('field_1_6', new MapObjectType(
+                    setFieldType('field_1_6', new MapObjectType(
                         MapObjectType.MAP_SUBTYPE.HASH_MAP, ObjectType.PRIMITIVE_TYPE.INTEGER, ObjectType.PRIMITIVE_TYPE.INTEGER));
 
                 await putGetComplexObjectsWithDifferentTypes(

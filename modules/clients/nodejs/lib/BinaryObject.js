@@ -46,7 +46,7 @@ class BinaryObject {
      * @return {BinaryObject} - 
      */
     constructor(complexObjectType) {
-        ArgumentChecker.hasType(complexObjectType, 'complexObjectType', ComplexObjectType);
+        ArgumentChecker.hasType(complexObjectType, 'complexObjectType', false, ComplexObjectType);
         this._buffer = null;
         this._fields = new Map();
         this._setType(BinaryType._fromObjectType(complexObjectType));

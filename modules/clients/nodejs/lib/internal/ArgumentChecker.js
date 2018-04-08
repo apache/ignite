@@ -34,21 +34,42 @@ class ArgumentChecker {
         }
     }
 
-    static hasType(arg, argName, ...types) {
+    static hasType(arg, argName, isArray, ...types) {
         if (arg === null) {
             return;
         }
-        for (let type of types) {
-            if (typeof type !== 'string' && arg instanceof type || typeof arg === type) {
-                return;
+        if (isArray && arg instanceof Array) {
+            for (let a of arg) {
+                ArgumentChecker.hasType(a, argName, false, ...types);
             }
         }
-        throw Errors.IgniteClientError.illegalArgumentError(Util.format('"%s" argument has incorrect type', argName));
+        else {
+            for (let type of types) {
+                if (arg instanceof type) {
+                    return;
+                }
+            }
+            throw Errors.IgniteClientError.illegalArgumentError(Util.format('"%s" argument has incorrect type', argName));
+        }
     }
 
-    static hasValueFrom(arg, argName, values) {
-        if (!Object.values(values).includes(arg)) {
-            throw Errors.IgniteClientError.illegalArgumentError(Util.format('"%s" argument has incorrect value', argName));
+    static hasValueFrom(arg, argName, isArray, values) {
+        if (isArray && arg instanceof Array) {
+            for (let a of arg) {
+                ArgumentChecker.hasValueFrom(a, argName, false, values);
+            }
+        }
+        else {
+            if (!Object.values(values).includes(arg)) {
+                throw Errors.IgniteClientError.illegalArgumentError(Util.format('"%s" argument has incorrect value', argName));
+            }
+        }
+    }
+
+    static invalidArgument(arg, argName, type) {
+        if (arg !== null && arg !== undefined) {
+            throw Errors.IgniteClientError.illegalArgumentError(
+                Util.format('"%s" argument is invalid for %s', argName, type.constructor.name));
         }
     }
 }

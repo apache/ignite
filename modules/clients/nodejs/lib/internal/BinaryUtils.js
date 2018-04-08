@@ -26,6 +26,7 @@ const ArgumentChecker = require('./ArgumentChecker');
 
 // Operation codes
 const OPERATION = Object.freeze({
+    // Key-Value Queries
     CACHE_GET : 1000,
     CACHE_PUT : 1001,
     CACHE_PUT_IF_ABSENT : 1002,
@@ -53,7 +54,15 @@ const OPERATION = Object.freeze({
     CACHE_CREATE_WITH_CONFIGURATION : 1053,
     CACHE_GET_OR_CREATE_WITH_CONFIGURATION : 1054,
     CACHE_GET_CONFIGURATION : 1055,
-    CACHE_DESTROY : 1056
+    CACHE_DESTROY : 1056,
+    // SQL and Scan Queries
+    QUERY_SCAN : 2000,
+    QUERY_SCAN_CURSOR_GET_PAGE : 2001,
+    QUERY_SQL : 2002,
+    QUERY_SQL_CURSOR_GET_PAGE : 2003,
+    QUERY_SQL_FIELDS : 2004,
+    QUERY_SQL_FIELDS_CURSOR_GET_PAGE : 2005,
+    RESOURCE_CLOSE : 0    
 });
 
 const TYPE_CODE = Object.assign({
@@ -221,7 +230,7 @@ class BinaryUtils {
         }
         else {
             if (checkType) {
-                ArgumentChecker.hasValueFrom(type, argName, ObjectType.PRIMITIVE_TYPE);
+                ArgumentChecker.hasValueFrom(type, argName, false, ObjectType.PRIMITIVE_TYPE);
             }
             switch (type) {
                 case BinaryUtils.TYPE_CODE.MAP:

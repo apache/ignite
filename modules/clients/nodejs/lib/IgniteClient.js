@@ -97,7 +97,7 @@ class IgniteClient {
      */
     async connect(config) {
         ArgumentChecker.notEmpty(config, 'config');
-        ArgumentChecker.hasType(config, 'config', IgniteClientConfiguration);
+        ArgumentChecker.hasType(config, 'config', false, IgniteClientConfiguration);
         await this._socket.connect(config);
     }
 
@@ -129,12 +129,14 @@ class IgniteClient {
      */
     async createCache(name, cacheConfig = null) {
         ArgumentChecker.notEmpty(name, 'name');
-        ArgumentChecker.hasType(cacheConfig, 'cacheConfig', CacheConfiguration);
+        ArgumentChecker.hasType(cacheConfig, 'cacheConfig', false, CacheConfiguration);
 
         await this._socket.send(
-            BinaryUtils.OPERATION.CACHE_CREATE_WITH_NAME,
+            cacheConfig ?
+                BinaryUtils.OPERATION.CACHE_CREATE_WITH_CONFIGURATION :
+                BinaryUtils.OPERATION.CACHE_CREATE_WITH_NAME,
             (payload) => {
-                BinaryWriter.writeString(payload, name);
+                this._writeCacheNameOrConfig(payload, name, cacheConfig);
             });
         return this._getCache(name, cacheConfig);
     }
@@ -156,12 +158,13 @@ class IgniteClient {
      */
     async getOrCreateCache(name, cacheConfig = null) {
         ArgumentChecker.notEmpty(name, 'name');
-        ArgumentChecker.hasType(cacheConfig, 'cacheConfig', CacheConfiguration);
-
+        ArgumentChecker.hasType(cacheConfig, 'cacheConfig', false, CacheConfiguration);
         await this._socket.send(
-            BinaryUtils.OPERATION.CACHE_GET_OR_CREATE_WITH_NAME,
+            cacheConfig ?
+                BinaryUtils.OPERATION.CACHE_GET_OR_CREATE_WITH_CONFIGURATION :
+                BinaryUtils.OPERATION.CACHE_GET_OR_CREATE_WITH_NAME,
             (payload) => {
-                BinaryWriter.writeString(payload, name);
+                this._writeCacheNameOrConfig(payload, name, cacheConfig);
             });
         return this._getCache(name, cacheConfig);
     }
@@ -202,11 +205,40 @@ class IgniteClient {
     }
 
     /**
+     * ???
+     *
+     * @async
+     *
+     * @param {string} name - cache name.
+     *
+     * @return {CacheConfiguration} - ???
+     *
+     * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
+     * @throws {OperationError} if cache with the provided name does not exist.
+     * @throws {IgniteClientError} if other error.
+     */
+    async getCacheConfiguration(name) {
+        ArgumentChecker.notEmpty(name, 'name');
+        let config;
+        await this._socket.send(
+            BinaryUtils.OPERATION.CACHE_GET_CONFIGURATION,
+            (payload) => {
+                payload.writeInteger(CacheClient._calculateId(name));
+                payload.writeByte(0);
+            },
+            (payload) => {
+                config = new CacheConfiguration();
+                config._read(payload);
+            });
+        return config;
+    }
+
+    /**
      * Gets existing cache names.
      *
      * @async
      *
-     * @return {Array<string>} - array with the existing cache names.
+     * @return {Promise<Array<string>>} - array with the existing cache names.
      *     The array is empty if no caches exist.
      *
      * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
@@ -240,6 +272,18 @@ class IgniteClient {
      */
     _getCache(name, cacheConfig = null) {
         return new CacheClient(name, cacheConfig, this._socket);
+    }
+
+    /**
+     * @ignore
+     */
+    _writeCacheNameOrConfig(buffer, name, cacheConfig) {
+        if (cacheConfig) {
+            cacheConfig._write(buffer, name);
+        }
+        else {
+            BinaryWriter.writeString(buffer, name);
+        }
     }
 }
 
