@@ -32,16 +32,16 @@ const Logger = require('./internal/Logger');
  * @typedef IgniteClient.STATE
  * @enum
  * @readonly
- * @property DISCONNECTED the client is not connected to any Ignite node,
+ * @property DISCONNECTED The client is not connected to any Ignite node,
  *     operations with the Ignite server are not allowed.
  *     This is initial state after a client instance creation.
  *     If connect() method is called, the client moves to CONNECTING state.
- * @property CONNECTING the client tries to connect to an Ignite node,
+ * @property CONNECTING The client tries to connect to an Ignite node,
  *     operations with the Ignite server are not allowed.
  *     If disconnect() method is called, the client moves to DISCONNECTED state.
  *     If not possible to connect to any Ignite node, the client moves to DISCONNECTED state.
  *     If connection to an Ignite node is successful, the client moves to CONNECTED state.
- * @property CONNECTED the client is connected to an Ignite node,
+ * @property CONNECTED The client is connected to an Ignite node,
  *     all operations with the Ignite server are allowed.
  *     If connection with the Ignite node is lost, the client moves to CONNECTING state.
  *     If disconnect() method is called, the client moves to DISCONNECTED state.
@@ -119,7 +119,7 @@ class IgniteClient {
      * @async
      *
      * @param {string} name - cache name.
-     * @param {CacheConfiguration} [cacheConfig] - optional cache configuration.
+     * @param {CacheConfiguration} [cacheConfig] - cache configuration.
      *
      * @return {Promise<CacheClient>} - new cache client instance for the created cache.
      *
@@ -148,7 +148,7 @@ class IgniteClient {
      * @async
      *
      * @param {string} name - cache name.
-     * @param {CacheConfiguration} [cacheConfig] - optional cache configuration (ignored if cache
+     * @param {CacheConfiguration} [cacheConfig] - cache configuration (ignored if cache
      *   with the provided name already exists).
      *
      * @return {Promise<CacheClient>} - new cache client instance for the existing or created cache.
@@ -205,13 +205,13 @@ class IgniteClient {
     }
 
     /**
-     * ???
+     * Returns configuration of cache with the provided name.
      *
      * @async
      *
      * @param {string} name - cache name.
      *
-     * @return {CacheConfiguration} - ???
+     * @return {CacheConfiguration} - cache configuration
      *
      * @throws {IllegalStateError} if the client is not in CONNECTED {@link IgniteClient.STATE}.
      * @throws {OperationError} if cache with the provided name does not exist.
