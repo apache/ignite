@@ -1,4 +1,4 @@
-package org.apache.ignite.internal.pagemem;
+package org.apache.ignite.internal.pagemem.size;
 
 public interface DataStructureSize {
 

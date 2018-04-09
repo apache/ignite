@@ -1,41 +1,44 @@
-package org.apache.ignite.internal.pagemem;
+package org.apache.ignite.internal.pagemem.size.region;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.pagemem.size.DataStructureSize;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeContext;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeGroup;
 import org.apache.ignite.internal.pagemem.wal.DataStructureSizeAdapter;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.jsr166.ConcurrentLinkedHashMap;
 
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.METRICS;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.METRICS;
 
-public class DataStructureSizeNodeRegionLevel implements DataStructureSizeNode<CacheGroupContext, DataStructureSizeGroupLevel> {
-    private final DataStructureSizeNode parent;
+public class DataStructureSizePersistentRegion implements DataStructureSizeContext<CacheGroupContext, DataStructureSizeGroup> {
+    private final DataStructureSizeContext parent;
 
     private final String name;
 
-    private final Map<String, DataStructureSizeNode> groups = new ConcurrentLinkedHashMap<>();
+    private final Map<String, DataStructureSizeContext> groups = new ConcurrentLinkedHashMap<>();
 
     private final int pageSize;
 
-    public DataStructureSizeNodeRegionLevel(DataStructureSizeNode parent, String name, int pageSize) {
+    public DataStructureSizePersistentRegion(DataStructureSizeContext parent, String name, int pageSize) {
         this.parent = parent;
         this.name = name;
         this.pageSize = pageSize;
     }
 
-    @Override public DataStructureSizeNode parent() {
+    @Override public DataStructureSizeContext parent() {
         return parent;
     }
 
-    @Override public Collection<DataStructureSizeNode> childes() {
+    @Override public Collection<DataStructureSizeContext> childes() {
         return groups.values();
     }
 
-    @Override public DataStructureSizeGroupLevel createChild(CacheGroupContext context) {
+    @Override public DataStructureSizeGroup createChild(CacheGroupContext context) {
         String name = context.cacheOrGroupName();
 
-        DataStructureSizeGroupLevel grp = new DataStructureSizeGroupLevel(this, name, pageSize);
+        DataStructureSizeGroup grp = new DataStructureSizeGroup(this, name, pageSize);
 
         groups.put(name, grp);
 
@@ -52,7 +55,7 @@ public class DataStructureSizeNodeRegionLevel implements DataStructureSizeNode<C
                 @Override public long size() {
                     long size = 0;
 
-                    for (DataStructureSizeNode region : groups.values())
+                    for (DataStructureSizeContext region : groups.values())
                         size += region.sizeOf(name).size();
 
                     return size;
@@ -72,7 +75,7 @@ public class DataStructureSizeNodeRegionLevel implements DataStructureSizeNode<C
             @Override public long size() {
                 long size = 0;
 
-                for (DataStructureSizeNode region : childes())
+                for (DataStructureSizeContext region : childes())
                     size += region.sizeOf(name).size();
 
                 return size;

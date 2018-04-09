@@ -3,8 +3,6 @@ package org.apache.ignite.internal.processors.cache.persistence.pagemem;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -12,21 +10,17 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.pagemem.DataStructureSize;
-import org.apache.ignite.internal.pagemem.DataStructureSizeNode;
-import org.apache.ignite.internal.pagemem.DataStructureSizeNodeRootLevel;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.GatewayProtectedCacheProxy;
+import org.apache.ignite.internal.pagemem.size.DataStructureSize;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeContext;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeNode;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.persistence.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.INTERNAL;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.PURE_DATA;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.TOTAL;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.INTERNAL;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PURE_DATA;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.TOTAL;
 
 public class SimpleTest extends GridCommonAbstractTest {
     /** */
@@ -77,10 +71,10 @@ public class SimpleTest extends GridCommonAbstractTest {
         );
 
         cfg.setCacheConfiguration(
-         /*   new CacheConfiguration(IN_MEMORY_CACHE)
+            new CacheConfiguration(IN_MEMORY_CACHE)
                 .setDataRegionName(IN_MEMORY_REGION)
-                .setAffinity(new RendezvousAffinityFunction(false, 1)),
-            new CacheConfiguration(IN_MEMORY_CACHE_1_GROUP)
+                .setAffinity(new RendezvousAffinityFunction(false, 1))
+            /*   new CacheConfiguration(IN_MEMORY_CACHE_1_GROUP)
                 .setDataRegionName(IN_MEMORY_REGION)
                 .setGroupName(IN_MEMORY_GROUP_NAME)
                 .setAffinity(new RendezvousAffinityFunction(false, 1)),
@@ -89,27 +83,27 @@ public class SimpleTest extends GridCommonAbstractTest {
                 .setGroupName(IN_MEMORY_GROUP_NAME)
                 .setAffinity(new RendezvousAffinityFunction(false, 1)),*/
             //------------------------------------------------
-            new CacheConfiguration(PERSISTENT_CACHE)
+           /* new CacheConfiguration(PERSISTENT_CACHE)
                 .setDataRegionName(PERSISTENT_REGION),
-               // .setAffinity(new RendezvousAffinityFunction(false, 1)),
+            // .setAffinity(new RendezvousAffinityFunction(false, 1)),
             new CacheConfiguration(PERSISTENT_CACHE_1_GROUP)
                 .setDataRegionName(PERSISTENT_REGION)
                 .setGroupName(PERSISTENT_GROUP_NAME),
-               // .setAffinity(new RendezvousAffinityFunction(false, 1)),
+            // .setAffinity(new RendezvousAffinityFunction(false, 1)),
             new CacheConfiguration(PERSISTENT_CACHE_2_GROUP)
                 .setDataRegionName(PERSISTENT_REGION)
                 .setGroupName(PERSISTENT_GROUP_NAME)
-               // .setAffinity(new RendezvousAffinityFunction(false, 1))
+               // .setAffinity(new RendezvousAffinityFunction(false, 1))*/
         );
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setDataRegionConfigurations(
-                   /* new DataRegionConfiguration()
-                        .setName(IN_MEMORY_REGION),*/
                     new DataRegionConfiguration()
+                        .setName(IN_MEMORY_REGION)
+                 /*   new DataRegionConfiguration()
                         .setName(PERSISTENT_REGION)
-                        .setPersistenceEnabled(true)
+                        .setPersistenceEnabled(true)*/
                 )
         );
 
@@ -121,28 +115,28 @@ public class SimpleTest extends GridCommonAbstractTest {
 
         ig.cluster().active(true);
 
-        IgniteCache<Integer, Integer> cache1 = ig.cache(PERSISTENT_CACHE);
-        IgniteCache<Integer, Integer> cache2 = ig.cache(PERSISTENT_CACHE_1_GROUP);
-        IgniteCache<Integer, Integer> cache3 = ig.cache(PERSISTENT_CACHE_2_GROUP);
+        IgniteCache<Integer, Integer> cache1 = ig.cache(IN_MEMORY_CACHE);
+        /*IgniteCache<Integer, Integer> cache2 = ig.cache(PERSISTENT_CACHE_1_GROUP);
+        IgniteCache<Integer, Integer> cache3 = ig.cache(PERSISTENT_CACHE_2_GROUP);*/
 
         System.out.println("Before put");
 
         printSizes(ig.context().cache().context());
 
-        for (int i = 0; i < 10_000; i++){
+        for (int i = 0; i < 1; i++){
             cache1.put(i, i);
-            cache2.put(i, i);
-            cache3.put(i, i);
+  /*          cache2.put(i, i);
+            cache3.put(i, i);*/
         }
 
         System.out.println("After put");
 
         printSizes(ig.context().cache().context());
 
-        for (int i = 0; i < 10_000; i++){
+        for (int i = 0; i < 1; i++){
             cache1.remove(i);
-            cache2.remove(i);
-            cache3.remove(i);
+         /*   cache2.remove(i);
+            cache3.remove(i);*/
         }
 
         System.out.println("After remove");
@@ -153,17 +147,17 @@ public class SimpleTest extends GridCommonAbstractTest {
     }
 
     private void printSizes(GridCacheSharedContext ctx) {
-        DataStructureSizeNodeRootLevel nodeLevel = ctx.database().dataStructureSize();
+        DataStructureSizeNode nodeLevel = ctx.database().dataStructureSize();
 
         //print(nodeLevel.structures(), "NODE [" + ctx.localNode().consistentId() + "]");
 
         List<DataStructureSize> regions = new ArrayList<>();
 
-        List<DataStructureSizeNode> groups = new ArrayList<>();
+        List<DataStructureSizeContext> groups = new ArrayList<>();
 
         List<DataStructureSize> groupsSize = new ArrayList<>();
 
-        for (DataStructureSizeNode region : nodeLevel.childes()) {
+        for (DataStructureSizeContext region : nodeLevel.childes()) {
             regions.addAll(region.structures());
 
             groups.addAll(region.childes());
@@ -171,7 +165,7 @@ public class SimpleTest extends GridCommonAbstractTest {
 
         print(regions, "REGION");
 
-        for (DataStructureSizeNode group : groups)
+        for (DataStructureSizeContext group : groups)
             groupsSize.addAll(group.structures());
 
         print(groupsSize, "GROUP");

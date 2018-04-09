@@ -39,7 +39,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
-import org.apache.ignite.internal.pagemem.DataStructureSizeNodeRootLevel;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeNode;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -69,6 +69,10 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_DATA_REG_DEFAULT_NAME;
 import static org.apache.ignite.configuration.DataStorageConfiguration.DFLT_PAGE_SIZE;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.DATA;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PURE_DATA;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.REUSE_LIST;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.TOTAL;
 
 /**
  *
@@ -106,7 +110,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private int pageSize;
 
     /** */
-    protected final DataStructureSizeNodeRootLevel nodeSize = new DataStructureSizeNodeRootLevel();
+    protected final DataStructureSizeNode nodeSize = new DataStructureSizeNode();
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -191,10 +195,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 persistenceEnabled ? cctx.wal() : null,
                 0L,
                 true,
-                null,
-                null,
-                null,
-                null
+                memPlc.dataStructureSize().sizeOf(REUSE_LIST),
+                memPlc.dataStructureSize().sizeOf(PURE_DATA),
+                memPlc.dataStructureSize().sizeOf(DATA),
+                memPlc.dataStructureSize().sizeOf(TOTAL)
             );
 
             freeListMap.put(memPlcCfg.getName(), freeList);
@@ -1059,7 +1063,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         // No-op.
     }
 
-    public DataStructureSizeNodeRootLevel dataStructureSize() {
+    public DataStructureSizeNode dataStructureSize() {
         return nodeSize;
     }
 }

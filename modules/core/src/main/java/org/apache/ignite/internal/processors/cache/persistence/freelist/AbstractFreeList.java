@@ -20,7 +20,7 @@ package org.apache.ignite.internal.processors.cache.persistence.freelist;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.pagemem.DataStructureSize;
+import org.apache.ignite.internal.pagemem.size.DataStructureSize;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
@@ -482,6 +482,16 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             bucket--;
 
         return bucket;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+        long page = super.allocatePageNoReuse();
+
+        if (totalSize != null)
+            totalSize.inc();
+
+        return page;
     }
 
     /**

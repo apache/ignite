@@ -17,8 +17,9 @@
 package org.apache.ignite.internal.processors.cache.persistence;
 
 import org.apache.ignite.configuration.DataRegionConfiguration;
-import org.apache.ignite.internal.pagemem.DataStructureSizeNodeRegionLevel;
-import org.apache.ignite.internal.pagemem.DataStructureSizeNodeRootLevel;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeContext;
+import org.apache.ignite.internal.pagemem.size.region.DataStructureSizePersistentRegion;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeNode;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.persistence.evict.PageEvictionTracker;
 
@@ -39,7 +40,7 @@ public class DataRegion {
     private final PageEvictionTracker evictionTracker;
 
     /** */
-    private final DataStructureSizeNodeRegionLevel regionDataStructureSize;
+    private final DataStructureSizeContext regionDataStructureSize;
 
     /**
      * @param pageMem PageMemory instance.
@@ -52,7 +53,7 @@ public class DataRegion {
         DataRegionConfiguration cfg,
         DataRegionMetricsImpl memMetrics,
         PageEvictionTracker evictionTracker,
-        DataStructureSizeNodeRootLevel nodeDataStructureSize
+        DataStructureSizeNode nodeDataStructureSize
     ) {
         this.pageMem = pageMem;
         this.memMetrics = memMetrics;
@@ -92,7 +93,7 @@ public class DataRegion {
     /**
      *
      */
-    public DataStructureSizeNodeRegionLevel dataStructureSize() {
+    public DataStructureSizeContext dataStructureSize() {
         return regionDataStructureSize;
     }
 }

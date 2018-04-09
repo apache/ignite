@@ -34,7 +34,8 @@ import org.apache.ignite.configuration.TopologyValidator;
 import org.apache.ignite.events.CacheRebalancingEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.pagemem.DataStructureSizeGroupLevel;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeContext;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeGroup;
 import org.apache.ignite.internal.processors.affinity.AffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -155,7 +156,7 @@ public class CacheGroupContext {
     private volatile boolean walEnabled;
 
     /** */
-    private final DataStructureSizeGroupLevel groupSize;
+    private final DataStructureSizeContext groupSize;
 
     /**
      * @param grpId Group ID.
@@ -219,7 +220,7 @@ public class CacheGroupContext {
         mxBean = new CacheGroupMetricsMXBeanImpl(this);
     }
 
-    public DataStructureSizeGroupLevel dataStructureSize() {
+    public DataStructureSizeContext dataStructureSize() {
         return groupSize;
     }
 

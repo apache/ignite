@@ -1,13 +1,10 @@
-package org.apache.ignite.internal.pagemem;
+package org.apache.ignite.internal.pagemem.size;
 
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.pagemem.wal.DataStructureSizeAdapter;
-import org.apache.ignite.internal.processors.cache.CacheGroupContext;
-import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.apache.ignite.internal.processors.cache.persistence.tree.io.TrackingPageIO;
 
 import static java.util.Arrays.asList;

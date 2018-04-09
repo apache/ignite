@@ -1,6 +1,6 @@
 package org.apache.ignite.internal.pagemem.wal;
 
-import org.apache.ignite.internal.pagemem.DataStructureSize;
+import org.apache.ignite.internal.pagemem.size.DataStructureSize;
 
 public abstract class DataStructureSizeAdapter implements DataStructureSize {
     @Override public void inc() {

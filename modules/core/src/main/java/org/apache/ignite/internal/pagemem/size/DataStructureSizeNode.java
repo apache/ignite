@@ -1,35 +1,44 @@
-package org.apache.ignite.internal.pagemem;
+package org.apache.ignite.internal.pagemem.size;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
+import org.apache.ignite.internal.pagemem.size.region.DataStructureSizeInMemoryRegion;
+import org.apache.ignite.internal.pagemem.size.region.DataStructureSizePersistentRegion;
 import org.apache.ignite.internal.pagemem.wal.DataStructureSizeAdapter;
 import org.apache.ignite.internal.processors.cache.persistence.DataRegion;
 import org.jsr166.ConcurrentLinkedHashMap;
 
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.METRICS;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.METRICS;
 
-public class DataStructureSizeNodeRootLevel implements DataStructureSizeNode<DataRegion, DataStructureSizeNodeRegionLevel> {
-    private final Map<String, DataStructureSizeNode> regions = new ConcurrentLinkedHashMap<>();
+public class DataStructureSizeNode implements DataStructureSizeContext<DataRegion, DataStructureSizeContext> {
+    private static final String NAME = "NODE";
 
-    @Override public DataStructureSizeNode parent() {
+    private final Map<String, DataStructureSizeContext> regions = new ConcurrentLinkedHashMap<>();
+
+    @Override public DataStructureSizeContext parent() {
         return null;
     }
 
-    @Override public Collection<DataStructureSizeNode> childes() {
+    @Override public Collection<DataStructureSizeContext> childes() {
         return regions.values();
     }
 
-    @Override public DataStructureSizeNodeRegionLevel createChild(DataRegion region) {
+    @Override public DataStructureSizeContext createChild(DataRegion region) {
         String regionName = region.config().getName();
 
-        DataStructureSizeNodeRegionLevel node = new DataStructureSizeNodeRegionLevel(
-            this, regionName, region.pageMemory().pageSize());
+        int pageSize = region.pageMemory().pageSize();
 
-        regions.put(regionName, node);
+        DataStructureSizeContext regionSize;
 
-        return node;
+        if (region.config().isPersistenceEnabled())
+            regionSize = new DataStructureSizePersistentRegion(this, regionName, pageSize);
+        else
+            regionSize = new DataStructureSizeInMemoryRegion(this, regionName, pageSize);
+
+        regions.put(regionName, regionSize);
+
+        return regionSize;
     }
 
     @Override public Collection<DataStructureSize> structures() {
@@ -40,7 +49,7 @@ public class DataStructureSizeNodeRootLevel implements DataStructureSizeNode<Dat
                 @Override public long size() {
                     long size = 0;
 
-                    for (DataStructureSizeNode region : regions.values())
+                    for (DataStructureSizeContext region : regions.values())
                         size += region.sizeOf(metricName).size();
 
                     return size;
@@ -60,19 +69,19 @@ public class DataStructureSizeNodeRootLevel implements DataStructureSizeNode<Dat
             @Override public long size() {
                 long size = 0;
 
-                for (DataStructureSizeNode region : childes())
+                for (DataStructureSizeContext region : childes())
                     size += region.sizeOf(name).size();
 
                 return size;
             }
 
             @Override public String name() {
-                return "NODE" + "-" + name;
+                return NAME + "-" + name;
             }
         };
     }
 
     @Override public String name() {
-        return "NODE";
+        return NAME;
     }
 }

@@ -1,21 +1,21 @@
-package org.apache.ignite.internal.pagemem;
+package org.apache.ignite.internal.pagemem.size;
 
 import java.util.Collection;
 import java.util.Map;
 import org.jsr166.ConcurrentLinkedHashMap;
 
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.DATA;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.INTERNAL;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.PARTITION;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.PK_INDEX;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.PURE_DATA;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.REUSE_LIST;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.doubleSizeUpdate;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.sizeAndParentUpdate;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.sizeWithTrackingPages;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.DATA;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.INTERNAL;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PARTITION;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PK_INDEX;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PURE_DATA;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.REUSE_LIST;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.doubleSizeUpdate;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.sizeAndParentUpdate;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.sizeWithTrackingPages;
 
-public class DataStructureSizeNodePartitionLevel implements DataStructureSizeNode<Void, DataStructureSizeNode> {
-    private final DataStructureSizeGroupLevel groupLevel;
+public class DataStructureSizePartition implements DataStructureSizeContext<Void, DataStructureSizeContext> {
+    private final DataStructureSizeGroup groupLevel;
 
     private final String name;
 
@@ -23,7 +23,7 @@ public class DataStructureSizeNodePartitionLevel implements DataStructureSizeNod
 
     private final int pageSize;
 
-    public DataStructureSizeNodePartitionLevel(DataStructureSizeGroupLevel grpLevel, String name, int pageSize) {
+    public DataStructureSizePartition(DataStructureSizeGroup grpLevel, String name, int pageSize) {
         this.groupLevel = grpLevel;
         this.name = name;
         this.pageSize = pageSize;
@@ -51,15 +51,15 @@ public class DataStructureSizeNodePartitionLevel implements DataStructureSizeNod
 
     }
 
-    @Override public DataStructureSizeNode parent() {
+    @Override public DataStructureSizeContext parent() {
         return groupLevel;
     }
 
-    @Override public Collection<DataStructureSizeNode> childes() {
+    @Override public Collection<DataStructureSizeContext> childes() {
         throw new UnsupportedOperationException();
     }
 
-    @Override public DataStructureSizeNode createChild(Void context) {
+    @Override public DataStructureSizeContext createChild(Void context) {
         throw new UnsupportedOperationException();
     }
 

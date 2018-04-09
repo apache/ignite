@@ -29,9 +29,9 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
-import org.apache.ignite.internal.pagemem.DataStructureSize;
-import org.apache.ignite.internal.pagemem.DataStructureSizeNode;
-import org.apache.ignite.internal.pagemem.DataStructureSizeGroupLevel;
+import org.apache.ignite.internal.pagemem.size.DataStructureSize;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeContext;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeGroup;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -84,16 +84,16 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.DATA;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.INDEX;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.INDEX_REUSE_LIST;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.INDEX_TREE;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.INTERNAL;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.PARTITION;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.PK_INDEX;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.PURE_DATA;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.REUSE_LIST;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.doubleSizeUpdate;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.DATA;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.INDEX;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.INDEX_REUSE_LIST;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.INDEX_TREE;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.INTERNAL;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PARTITION;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PK_INDEX;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PURE_DATA;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.REUSE_LIST;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.doubleSizeUpdate;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
@@ -1132,14 +1132,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private final CountDownLatch latch = new CountDownLatch(1);
 
         /** */
-        private final DataStructureSizeGroupLevel groupSize;
+        private final DataStructureSizeContext groupSize;
 
         /**
          * @param partId Partition.
          * @param exists {@code True} if store for this index exists.
          * @param groupSize .
          */
-        private GridCacheDataStore(int partId, boolean exists, DataStructureSizeGroupLevel groupSize) {
+        private GridCacheDataStore(int partId, boolean exists, DataStructureSizeContext groupSize) {
             this.partId = partId;
             this.exists = exists;
             this.groupSize = groupSize;
@@ -1174,7 +1174,7 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
 
                     String partName = grp.cacheOrGroupName() + "-" + partId;
 
-                    DataStructureSizeNode partSize = groupSize.createChild(partName);
+                    DataStructureSizeContext partSize = groupSize.createChild(partName);
 
                     DataStructureSize partitionSize = partSize.sizeOf(PARTITION);
 

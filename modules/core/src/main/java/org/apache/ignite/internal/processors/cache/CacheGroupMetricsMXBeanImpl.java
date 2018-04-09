@@ -35,16 +35,16 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.mxbean.CacheGroupMetricsMXBean;
 
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.DATA;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.INDEX;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.INDEX_REUSE_LIST;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.INDEX_TREE;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.INTERNAL;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.PARTITION;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.PK_INDEX;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.PURE_DATA;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.REUSE_LIST;
-import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.TOTAL;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.DATA;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.INDEX;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.INDEX_REUSE_LIST;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.INDEX_TREE;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.INTERNAL;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PARTITION;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PK_INDEX;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PURE_DATA;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.REUSE_LIST;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.TOTAL;
 
 /**
  * Management bean that provides access to {@link CacheGroupContext}.
