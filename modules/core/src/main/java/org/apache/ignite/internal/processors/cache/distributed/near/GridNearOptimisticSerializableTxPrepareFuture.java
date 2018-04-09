@@ -101,7 +101,8 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         if (tx.remainingTime() == -1) {
             if (keyLockFut != null)
-                keyLockFut.onDone((GridNearTxPrepareResponse)null);
+                keyLockFut.onDone(new IgniteTxTimeoutCheckedException(
+                    "Failed to lock keys: TX timeout has been reached"));
 
             return false;
         }
