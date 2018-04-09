@@ -223,11 +223,11 @@ public class TransactionConfiguration implements Serializable {
     /**
      * Sets the transaction timeout that will be enforced if the partition map exchange process starts.
      *
-     * @param txTimeoutOnPartMapSync Transaction timeout value in milliseconds.
+     * @param txTimeoutOnPartitionMapExchange Transaction timeout value in milliseconds.
      * @return {@code this} for chaining.
      */
-    public TransactionConfiguration setTxTimeoutOnPartitionMapExchange(long txTimeoutOnPartMapSync) {
-        this.txTimeoutOnPartitionMapExchange = txTimeoutOnPartMapSync;
+    public TransactionConfiguration setTxTimeoutOnPartitionMapExchange(long txTimeoutOnPartitionMapExchange) {
+        this.txTimeoutOnPartitionMapExchange = txTimeoutOnPartitionMapExchange;
 
         return this;
     }
