@@ -71,7 +71,7 @@ public class SimpleTest extends GridCommonAbstractTest {
         );
 
         cfg.setCacheConfiguration(
-            new CacheConfiguration(IN_MEMORY_CACHE)
+           /* new CacheConfiguration(IN_MEMORY_CACHE)
                 .setDataRegionName(IN_MEMORY_REGION)
                 .setAffinity(new RendezvousAffinityFunction(false, 1)),
             new CacheConfiguration(IN_MEMORY_CACHE_1_GROUP)
@@ -81,19 +81,19 @@ public class SimpleTest extends GridCommonAbstractTest {
             new CacheConfiguration(IN_MEMORY_CACHE_2_GROUP)
                 .setDataRegionName(IN_MEMORY_REGION)
                 .setGroupName(IN_MEMORY_GROUP_NAME)
-                .setAffinity(new RendezvousAffinityFunction(false, 1)),
+                .setAffinity(new RendezvousAffinityFunction(false, 1)),*/
             //------------------------------------------------
             new CacheConfiguration(PERSISTENT_CACHE)
                 .setDataRegionName(PERSISTENT_REGION)
-                .setAffinity(new RendezvousAffinityFunction(false, 1)),
-            new CacheConfiguration(PERSISTENT_CACHE_1_GROUP)
+                .setAffinity(new RendezvousAffinityFunction(false, 1))
+          /*  new CacheConfiguration(PERSISTENT_CACHE_1_GROUP)
                 .setDataRegionName(PERSISTENT_REGION)
                 .setGroupName(PERSISTENT_GROUP_NAME)
                 .setAffinity(new RendezvousAffinityFunction(false, 1)),
             new CacheConfiguration(PERSISTENT_CACHE_2_GROUP)
                 .setDataRegionName(PERSISTENT_REGION)
                 .setGroupName(PERSISTENT_GROUP_NAME)
-                .setAffinity(new RendezvousAffinityFunction(false, 1))
+                .setAffinity(new RendezvousAffinityFunction(false, 1))*/
         );
 
         cfg.setDataStorageConfiguration(
@@ -110,8 +110,39 @@ public class SimpleTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    public void testRestart() throws Exception {
+        IgniteEx ig = (IgniteEx)startGrid();
+
+        ig.cluster().active(true);
+
+        printSizes(ig.context().cache().context());
+
+        Collection<String> cacheNames = ig.cacheNames();
+
+        for (int i = 0; i < 1; i++) {
+            for (String name : cacheNames)
+                ig.cache(name).put(i, i);
+        }
+
+        System.out.println(">>>> PUT");
+
+        printSizes(ig.context().cache().context());
+
+        ig.cluster().active(false);
+
+        stopGrid();
+
+        System.out.println(">>>> RESTART");
+
+        ig = (IgniteEx)startGrid();
+
+        ig.cluster().active(true);
+
+        printSizes(ig.context().cache().context());
+    }
+
     public void test() throws Exception {
-        foo(1000);
+        foo(1);
     }
 
     public void foo(int entries) throws Exception {
@@ -163,7 +194,7 @@ public class SimpleTest extends GridCommonAbstractTest {
             groups.addAll(region.childes());
         }
 
-        print(regions, "REGION");
+        //print(regions, "REGION");
 
         for (DataStructureSizeContext group : groups)
             groupsSize.addAll(group.structures());
