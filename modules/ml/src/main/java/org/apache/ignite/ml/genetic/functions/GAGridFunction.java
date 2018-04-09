@@ -32,20 +32,18 @@ import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.utils.GAGridUtils;
 
 /**
- * Responsible for providing custom SQL functions to retrieve optimization results
+ * Responsible for providing custom SQL functions to retrieve optimization results.
  */
 public class GAGridFunction {
-     /**
-     * @param config GA Configuration
-     */
+     /** */
     public GAGridFunction() {
     }
 
     /**
-     * Retrieve solutions in descending order based on fitness score
+     * Retrieve solutions in descending order based on fitness score.
      *
-     * @return Result set
-     * @throws SQLException
+     * @return Result set.
+     * @throws SQLException If failed.
      */
     @QuerySqlFunction
     public static SimpleResultSet getSolutionsDesc() {
@@ -53,10 +51,10 @@ public class GAGridFunction {
     }
 
     /**
-     * Retrieve solutions in ascending order based on fitness score
+     * Retrieve solutions in ascending order based on fitness score.
      *
      * @return Result set
-     * @throws SQLException
+     * @throws SQLException If failed.
      */
     @QuerySqlFunction
     public static SimpleResultSet getSolutionsAsc() throws SQLException {
@@ -64,11 +62,11 @@ public class GAGridFunction {
     }
 
     /**
-     * Retrieve and individual solution by Chromosome key
+     * Retrieve and individual solution by Chromosome key.
      *
-     * @param key Primary key of Chromosome
-     * @return SimpleResultSet
-     * @throws SQLException
+     * @param key Primary key of Chromosome.
+     * @return SimpleResultSet.
+     * @throws SQLException If failed.
      */
     @QuerySqlFunction
     public static SimpleResultSet getSolutionById(int key) throws SQLException {
@@ -81,7 +79,7 @@ public class GAGridFunction {
     }
 
     /**
-     * Helper routine to return 'pivoted' results using the provided query param
+     * Helper routine to return 'pivoted' results using the provided query param.
      *
      * @param query Sql
      * @return Result set
