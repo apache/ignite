@@ -199,7 +199,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
     private IgniteConfiguration getConfig(boolean clientMode) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setIgniteInstanceName(clientMode ? "client-node" : "server-node");
+        cfg.setGridName(clientMode ? "client-node" : "server-node");
 
         cfg.setClientMode(clientMode);
 
@@ -292,7 +292,7 @@ public class TcpCommunicationSpiSkipMessageSendTest extends GridCommonAbstractTe
                 log.info(String.format("CustomCommunicationSpi.createTcpClient [networkDisabled=%s, node=%s]", networkDisabled, node));
 
             if (networkDisabled) {
-                IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this, !node.isClient());
+                IgniteSpiOperationTimeoutHelper timeoutHelper = new IgniteSpiOperationTimeoutHelper(this);
 
                 long timeout = timeoutHelper.nextTimeoutChunk(getConnectTimeout());
 

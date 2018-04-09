@@ -113,8 +113,9 @@ public class IgniteComputeResultExceptionTest extends GridCommonAbstractTest {
     /** */
     private void checkExecuteAsyncException(IgniteException resE) throws Exception {
         try (Ignite ignite = startGrid()) {
-            IgniteCompute compute = ignite.compute();
-            ComputeTaskFuture<Object> fut = compute.executeAsync(new ResultExceptionTask(resE), null);
+            IgniteCompute compute = ignite.compute().withAsync();
+            compute.execute(new ResultExceptionTask(resE), null);
+            ComputeTaskFuture<Object> fut = compute.future();
             try {
                 fut.get();
             } catch (IgniteException e) {
