@@ -46,6 +46,7 @@ import org.apache.ignite.internal.processors.odbc.jdbc.JdbcTableMeta;
 import org.apache.ignite.internal.util.typedef.F;
 
 import static java.sql.Connection.TRANSACTION_NONE;
+import static java.sql.Connection.TRANSACTION_REPEATABLE_READ;
 import static java.sql.ResultSet.CONCUR_READ_ONLY;
 import static java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
 import static java.sql.ResultSet.TYPE_FORWARD_ONLY;
@@ -630,17 +631,19 @@ public class JdbcThinDatabaseMetadata implements DatabaseMetaData {
 
     /** {@inheritDoc} */
     @Override public int getDefaultTransactionIsolation() throws SQLException {
-        return TRANSACTION_NONE;
+        return conn.igniteVersion().greaterThanEqual(2, 5, 0) ? TRANSACTION_REPEATABLE_READ :
+            TRANSACTION_NONE;
     }
 
     /** {@inheritDoc} */
     @Override public boolean supportsTransactions() throws SQLException {
-        return false;
+        return conn.igniteVersion().greaterThanEqual(2, 5, 0);
     }
 
     /** {@inheritDoc} */
     @Override public boolean supportsTransactionIsolationLevel(int level) throws SQLException {
-        return false;
+        return conn.igniteVersion().greaterThanEqual(2, 5, 0) &&
+            TRANSACTION_REPEATABLE_READ == level;
     }
 
     /** {@inheritDoc} */

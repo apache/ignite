@@ -36,9 +36,7 @@ import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.ClientConnectorConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.jdbc.thin.ConnectionProperties;
@@ -849,11 +847,18 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
         try (Connection conn = DriverManager.getConnection(URL)) {
             assertTrue(conn.getAutoCommit());
 
-            conn.setAutoCommit(false);
+            // Cannot disable autocommit when MVCC is disabled.
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setAutoCommit(false);
 
-            assertFalse(conn.getAutoCommit());
-
-            conn.setAutoCommit(true);
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
+            );
 
             assertTrue(conn.getAutoCommit());
 
@@ -873,8 +878,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testCommit() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            assert !conn.getMetaData().supportsTransactions();
-
             // Should not be called in auto-commit mode
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -888,9 +891,33 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Transaction cannot be committed explicitly in auto-commit mode"
             );
 
-            conn.setAutoCommit(false);
+            // Cannot disable autocommit when MVCC is disabled.
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setAutoCommit(false);
 
-            conn.commit();
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
+            );
+
+            assertTrue(conn.getAutoCommit());
+
+            // Should not be called in auto-commit mode
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.commit();
+
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "Transaction cannot be committed explicitly in auto-commit mode."
+            );
 
             conn.close();
 
@@ -908,8 +935,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testRollback() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            assert !conn.getMetaData().supportsTransactions();
-
             // Should not be called in auto-commit mode
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -923,9 +948,20 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Transaction cannot be rolled back explicitly in auto-commit mode."
             );
 
-            conn.setAutoCommit(false);
+            // Cannot disable autocommit when MVCC is disabled.
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setAutoCommit(false);
 
-            conn.rollback();
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
+            );
+
+            assertTrue(conn.getAutoCommit());
 
             conn.close();
 
@@ -1017,8 +1053,6 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
      */
     public void testGetSetTransactionIsolation() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL)) {
-            assert !conn.getMetaData().supportsTransactions();
-
             // Invalid parameter value
             GridTestUtils.assertThrows(log,
                 new Callable<Object>() {
@@ -1225,14 +1259,20 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Savepoint cannot be set in auto-commit mode"
             );
 
-            conn.setAutoCommit(false);
+            // Cannot disable autocommit when MVCC is disabled.
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setAutoCommit(false);
 
-            // Unsupported
-            checkNotSupported(new RunnableX() {
-                @Override public void run() throws Exception {
-                    conn.setSavepoint();
-                }
-            });
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
+            );
+
+            assertTrue(conn.getAutoCommit());
 
             conn.close();
 
@@ -1279,14 +1319,20 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Savepoint cannot be set in auto-commit mode"
             );
 
-            conn.setAutoCommit(false);
+            // Cannot disable autocommit when MVCC is disabled.
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setAutoCommit(false);
 
-            // Unsupported
-            checkNotSupported(new RunnableX() {
-                @Override public void run() throws Exception {
-                    conn.setSavepoint(name);
-                }
-            });
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
+            );
+
+            assertTrue(conn.getAutoCommit());
 
             conn.close();
 
@@ -1333,14 +1379,20 @@ public class JdbcThinConnectionSelfTest extends JdbcThinAbstractSelfTest {
                 "Auto-commit mode"
             );
 
-            conn.setAutoCommit(false);
+            // Cannot disable autocommit when MVCC is disabled.
+            GridTestUtils.assertThrows(log,
+                new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        conn.setAutoCommit(false);
 
-            // Unsupported
-            checkNotSupported(new RunnableX() {
-                @Override public void run() throws Exception {
-                    conn.rollback(savepoint);
-                }
-            });
+                        return null;
+                    }
+                },
+                SQLException.class,
+                "MVCC must be enabled in order to invoke transactional operation: COMMIT"
+            );
+
+            assertTrue(conn.getAutoCommit());
 
             conn.close();
 
