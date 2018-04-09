@@ -49,8 +49,7 @@ public abstract class DataStructureSizeUtils {
     /** */
     public static final String INTERNAL = "internal";
 
-    public static final List<String> METRICS = asList(
-        TOTAL, INDEX, INDEX_TREE, INDEX_REUSE_LIST, PARTITION, PK_INDEX, REUSE_LIST, DATA, PURE_DATA, INTERNAL);
+    public static final List<String> METRICS = asList(TOTAL, INDEX, INDEX_TREE, INDEX_REUSE_LIST, PARTITION, PK_INDEX, REUSE_LIST, DATA, PURE_DATA, INTERNAL);
 
     private DataStructureSizeUtils(){
 
@@ -99,19 +98,6 @@ public abstract class DataStructureSizeUtils {
 
             @Override public void inc() {
                 size.incrementAndGet();
-
-               /* try {
-                    PrintStream ps = System.err;
-
-                    String msg = name + " " + size.get() + "\n";
-
-                    ps.write(msg.getBytes());
-
-                    new Exception().printStackTrace(ps);
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                }*/
             }
 
             @Override public void dec() {
@@ -120,19 +106,6 @@ public abstract class DataStructureSizeUtils {
 
             @Override public void add(long val) {
                 size.addAndGet(val);
-
-           /*     try {
-                    PrintStream ps = System.err;
-
-                    String msg = name + " " + size.get() + " " + val + "\n";
-
-                    ps.write(msg.getBytes());
-
-                    new Exception().printStackTrace(ps);
-                }
-                catch (IOException e) {
-                    e.printStackTrace();
-                }*/
             }
 
             @Override public long size() {
@@ -145,7 +118,10 @@ public abstract class DataStructureSizeUtils {
         };
     }
 
-    public static DataStructureSize doubleSizeUpdate(DataStructureSize first, DataStructureSize second) {
+    public static DataStructureSize doubleSizeUpdate(
+        DataStructureSize first,
+        DataStructureSize second
+    ) {
         return new DataStructureSize() {
 
             @Override public void inc() {

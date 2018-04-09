@@ -1,11 +1,11 @@
 package org.apache.ignite.internal.pagemem.size.region;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.pagemem.size.DataStructureSize;
 import org.apache.ignite.internal.pagemem.size.DataStructureSizeContext;
+import org.apache.ignite.internal.pagemem.size.group.DataStructureSizeInMemoryGroup;
 import org.apache.ignite.internal.pagemem.wal.DataStructureSizeAdapter;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.jsr166.ConcurrentLinkedHashMap;
@@ -82,10 +82,16 @@ public class DataStructureSizeInMemoryRegion implements DataStructureSizeContext
     }
 
     @Override public Collection<DataStructureSizeContext> childes() {
-        return Collections.singletonList(this);
+        return groups.values();
     }
 
     @Override public DataStructureSizeContext createChild(CacheGroupContext context) {
+        String cacheOrGroupName = context.cacheOrGroupName();
+
+        DataStructureSizeInMemoryGroup inMemoryGroup = new DataStructureSizeInMemoryGroup(this, cacheOrGroupName);
+
+        groups.put(cacheOrGroupName, inMemoryGroup);
+
         return this;
     }
 

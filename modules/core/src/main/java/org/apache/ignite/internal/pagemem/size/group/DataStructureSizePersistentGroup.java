@@ -1,7 +1,10 @@
-package org.apache.ignite.internal.pagemem.size;
+package org.apache.ignite.internal.pagemem.size.group;
 
 import java.util.Collection;
 import java.util.Map;
+import org.apache.ignite.internal.pagemem.size.DataStructureSize;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizeContext;
+import org.apache.ignite.internal.pagemem.size.DataStructureSizePartition;
 import org.apache.ignite.internal.pagemem.wal.DataStructureSizeAdapter;
 import org.jsr166.ConcurrentLinkedHashMap;
 
@@ -18,7 +21,7 @@ import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.TOT
 import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.simpleTracker;
 import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.sizeWithTrackingPages;
 
-public class DataStructureSizeGroup implements DataStructureSizeContext<String, DataStructureSizePartition> {
+public class DataStructureSizePersistentGroup implements DataStructureSizeContext<String, DataStructureSizePartition> {
     private final DataStructureSizeContext parent;
 
     private final String name;
@@ -29,7 +32,7 @@ public class DataStructureSizeGroup implements DataStructureSizeContext<String, 
 
     private final int pageSize;
 
-    public DataStructureSizeGroup(DataStructureSizeContext parent, String name, int pageSize) {
+    public DataStructureSizePersistentGroup(DataStructureSizeContext parent, String name, int pageSize) {
         this.pageSize = pageSize;
         this.parent = parent;
         this.name = name;

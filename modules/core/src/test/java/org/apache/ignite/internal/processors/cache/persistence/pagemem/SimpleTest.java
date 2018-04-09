@@ -73,37 +73,37 @@ public class SimpleTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration(
             new CacheConfiguration(IN_MEMORY_CACHE)
                 .setDataRegionName(IN_MEMORY_REGION)
-                .setAffinity(new RendezvousAffinityFunction(false, 1))
-            /*   new CacheConfiguration(IN_MEMORY_CACHE_1_GROUP)
+                .setAffinity(new RendezvousAffinityFunction(false, 1)),
+            new CacheConfiguration(IN_MEMORY_CACHE_1_GROUP)
                 .setDataRegionName(IN_MEMORY_REGION)
                 .setGroupName(IN_MEMORY_GROUP_NAME)
                 .setAffinity(new RendezvousAffinityFunction(false, 1)),
             new CacheConfiguration(IN_MEMORY_CACHE_2_GROUP)
                 .setDataRegionName(IN_MEMORY_REGION)
                 .setGroupName(IN_MEMORY_GROUP_NAME)
-                .setAffinity(new RendezvousAffinityFunction(false, 1)),*/
+                .setAffinity(new RendezvousAffinityFunction(false, 1)),
             //------------------------------------------------
-           /* new CacheConfiguration(PERSISTENT_CACHE)
-                .setDataRegionName(PERSISTENT_REGION),
-            // .setAffinity(new RendezvousAffinityFunction(false, 1)),
+            new CacheConfiguration(PERSISTENT_CACHE)
+                .setDataRegionName(PERSISTENT_REGION)
+                .setAffinity(new RendezvousAffinityFunction(false, 1)),
             new CacheConfiguration(PERSISTENT_CACHE_1_GROUP)
                 .setDataRegionName(PERSISTENT_REGION)
-                .setGroupName(PERSISTENT_GROUP_NAME),
-            // .setAffinity(new RendezvousAffinityFunction(false, 1)),
+                .setGroupName(PERSISTENT_GROUP_NAME)
+                .setAffinity(new RendezvousAffinityFunction(false, 1)),
             new CacheConfiguration(PERSISTENT_CACHE_2_GROUP)
                 .setDataRegionName(PERSISTENT_REGION)
                 .setGroupName(PERSISTENT_GROUP_NAME)
-               // .setAffinity(new RendezvousAffinityFunction(false, 1))*/
+                .setAffinity(new RendezvousAffinityFunction(false, 1))
         );
 
         cfg.setDataStorageConfiguration(
             new DataStorageConfiguration()
                 .setDataRegionConfigurations(
                     new DataRegionConfiguration()
-                        .setName(IN_MEMORY_REGION)
-                 /*   new DataRegionConfiguration()
+                        .setName(IN_MEMORY_REGION),
+                    new DataRegionConfiguration()
                         .setName(PERSISTENT_REGION)
-                        .setPersistenceEnabled(true)*/
+                        .setPersistenceEnabled(true)
                 )
         );
 
@@ -111,32 +111,32 @@ public class SimpleTest extends GridCommonAbstractTest {
     }
 
     public void test() throws Exception {
+        foo(1000);
+    }
+
+    public void foo(int entries) throws Exception {
         IgniteEx ig = (IgniteEx)startGrid();
 
         ig.cluster().active(true);
-
-        IgniteCache<Integer, Integer> cache1 = ig.cache(IN_MEMORY_CACHE);
-        /*IgniteCache<Integer, Integer> cache2 = ig.cache(PERSISTENT_CACHE_1_GROUP);
-        IgniteCache<Integer, Integer> cache3 = ig.cache(PERSISTENT_CACHE_2_GROUP);*/
 
         System.out.println("Before put");
 
         printSizes(ig.context().cache().context());
 
-        for (int i = 0; i < 1; i++){
-            cache1.put(i, i);
-  /*          cache2.put(i, i);
-            cache3.put(i, i);*/
+        Collection<String> cacheNames = ig.cacheNames();
+
+        for (int i = 0; i < entries; i++) {
+            for (String name : cacheNames)
+                ig.cache(name).put(i, i);
         }
 
         System.out.println("After put");
 
         printSizes(ig.context().cache().context());
 
-        for (int i = 0; i < 1; i++){
-            cache1.remove(i);
-         /*   cache2.remove(i);
-            cache3.remove(i);*/
+        for (int i = 0; i < entries; i++) {
+            for (String name : cacheNames)
+                ig.cache(name).remove(i);
         }
 
         System.out.println("After remove");
@@ -188,20 +188,21 @@ public class SimpleTest extends GridCommonAbstractTest {
         sizes.forEach((ds) -> {
             String name = ds.name();
 
-            long size = ds.size();
-            long byteSize = size * 4096;
-            long kbSize = byteSize / 1024;
-            long mbSize = kbSize / 1024;
+            if (!name.contains(PURE_DATA) && !name.contains(INTERNAL) && !name.contains(TOTAL)) {
+                long size = ds.size();
+                long byteSize = size * 4096;
+                long kbSize = byteSize / 1024;
+                long mbSize = kbSize / 1024;
 
-          /*  if (!k.contains("pure") && !k.contains("internal"))
-                System.out.println("\t[" + v.size() + " pages | " + byteSize + " b | " + kbSize + " kb]" + "  " + k);
-            else
-                System.out.println("\t[" + size + " b | " + size / 1024 + " kb]" + "  " + k);*/
-
-            if (!name.contains(PURE_DATA) && !name.contains(INTERNAL) && !name.contains(TOTAL))
                 System.out.format(leftAlignFormat, String.valueOf(size), byteSize, kbSize, mbSize, name);
-            else
-                System.out.format(leftAlignFormat, "N/A", size, size / 1024, (size / 1024) / 1024, name);
+            }
+            else {
+                long size = ds.size();
+                long kbSize = size / 1024;
+                long mbSize = kbSize / 1024;
+
+                System.out.format(leftAlignFormat, "N/A", size, kbSize, mbSize, name);
+            }
 
         });
 

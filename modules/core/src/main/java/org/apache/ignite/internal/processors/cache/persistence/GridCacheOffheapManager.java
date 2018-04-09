@@ -31,7 +31,6 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.pagemem.size.DataStructureSize;
 import org.apache.ignite.internal.pagemem.size.DataStructureSizeContext;
-import org.apache.ignite.internal.pagemem.size.DataStructureSizeGroup;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;

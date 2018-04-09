@@ -5,14 +5,14 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.internal.pagemem.size.DataStructureSize;
 import org.apache.ignite.internal.pagemem.size.DataStructureSizeContext;
-import org.apache.ignite.internal.pagemem.size.DataStructureSizeGroup;
+import org.apache.ignite.internal.pagemem.size.group.DataStructureSizePersistentGroup;
 import org.apache.ignite.internal.pagemem.wal.DataStructureSizeAdapter;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.METRICS;
 
-public class DataStructureSizePersistentRegion implements DataStructureSizeContext<CacheGroupContext, DataStructureSizeGroup> {
+public class DataStructureSizePersistentRegion implements DataStructureSizeContext<CacheGroupContext, DataStructureSizePersistentGroup> {
     private final DataStructureSizeContext parent;
 
     private final String name;
@@ -35,10 +35,10 @@ public class DataStructureSizePersistentRegion implements DataStructureSizeConte
         return groups.values();
     }
 
-    @Override public DataStructureSizeGroup createChild(CacheGroupContext context) {
+    @Override public DataStructureSizePersistentGroup createChild(CacheGroupContext context) {
         String name = context.cacheOrGroupName();
 
-        DataStructureSizeGroup grp = new DataStructureSizeGroup(this, name, pageSize);
+        DataStructureSizePersistentGroup grp = new DataStructureSizePersistentGroup(this, name, pageSize);
 
         groups.put(name, grp);
 
