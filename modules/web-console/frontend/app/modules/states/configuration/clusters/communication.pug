@@ -94,6 +94,7 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                     tip: 'Message queue limit for incoming and outgoing messages'
                 })
             .pc-form-grid-col-30
+                //- allowInvalid: true prevents from infinite digest loop when old value was 0 and becomes less than allowed minimum
                 +sane-ignite-form-field-number({
                     label: 'Unacknowledged messages:',
                     model: `${communication}.unacknowledgedMessagesBufferSize`,
@@ -111,7 +112,6 @@ panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
                         <li>At least message queue limit * {{ ::$ctrl.Clusters.unacknowledgedMessagesBufferSize.validRatio }}</li>
                     </ul>`
                 })(
-                    //- allowInvalid: true prevents from infinite digest loop when old value was 0 and becomes less than allowed minimum
                     ng-model-options=`{
                         allowInvalid: true
                     }`
