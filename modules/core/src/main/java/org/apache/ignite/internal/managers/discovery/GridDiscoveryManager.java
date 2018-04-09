@@ -58,6 +58,10 @@ import org.apache.ignite.configuration.DataRegionConfiguration;
 import org.apache.ignite.configuration.DataStorageConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
+import org.apache.ignite.failure.RestartProcessFailureHandler;
+import org.apache.ignite.failure.StopNodeFailureHandler;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -75,7 +79,6 @@ import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.persistence.GridCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cluster.BaselineTopology;
 import org.apache.ignite.internal.processors.cluster.ChangeGlobalStateFinishMessage;
@@ -93,7 +96,6 @@ import org.apache.ignite.internal.util.lang.GridTuple6;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -2380,32 +2382,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         cacheNodes.add(rich);
     }
 
-    /** Stops local node. */
-    private void stopNode() {
-        new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    ctx.markSegmented();
-
-                    G.stop(ctx.igniteInstanceName(), true);
-                }
-            }
-        ).start();
-    }
-
-    /** Restarts JVM. */
-    private void restartJvm() {
-        new Thread(
-            new Runnable() {
-                @Override public void run() {
-                    ctx.markSegmented();
-
-                    G.restart(true);
-                }
-            }
-        ).start();
-    }
-
     /** Worker for network segment checks. */
     private class SegmentCheckWorker extends GridWorker {
         /** */
@@ -2499,6 +2475,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         /** Event queue. */
         private final BlockingQueue<GridTuple6<Integer, AffinityTopologyVersion, ClusterNode,
             DiscoCache, Collection<ClusterNode>, DiscoveryCustomMessage>> evts = new LinkedBlockingQueue<>();
+
+        /** Restart process handler. */
+        private final RestartProcessFailureHandler restartProcHnd = new RestartProcessFailureHandler();
+
+        /** Stop node handler. */
+        private final StopNodeFailureHandler stopNodeHnd = new StopNodeFailureHandler();
 
         /** Node segmented event fired flag. */
         private boolean nodeSegFired;
@@ -2783,16 +2765,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             switch (segPlc) {
                 case RESTART_JVM:
-                    U.warn(log, "Restarting JVM according to configured segmentation policy.");
-
-                    restartJvm();
+                    ctx.failure().process(new FailureContext(FailureType.SEGMENTATION, null), restartProcHnd);
 
                     break;
 
                 case STOP:
-                    U.warn(log, "Stopping local node according to configured segmentation policy.");
-
-                    stopNode();
+                    ctx.failure().process(new FailureContext(FailureType.SEGMENTATION, null), stopNodeHnd);
 
                     break;
 

@@ -46,7 +46,7 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * </p>
  */
 public class CrossOverTask extends ComputeTaskAdapter<List<Long>, Boolean> {
-
+    /** Ignite instance */
     @IgniteInstanceResource
     private Ignite ignite = null;
 
@@ -117,7 +117,6 @@ public class CrossOverTask extends ComputeTaskAdapter<List<Long>, Boolean> {
      * @param map Nodes where jobs will be sent
      * @return A map of ComputeJob/ClusterNode's
      */
-
     private Map<ComputeJob, ClusterNode> setupCrossOver(ClusterNode clusterNode, List<Long> keys,
         Map<ComputeJob, ClusterNode> map) {
         // Calculate number of Jobs = keys / 2

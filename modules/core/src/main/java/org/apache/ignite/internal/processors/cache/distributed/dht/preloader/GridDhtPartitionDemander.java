@@ -682,73 +682,80 @@ public class GridDhtPartitionDemander {
 
             GridCacheContext cctx = grp.sharedGroup() ? null : grp.singleCacheContext();
 
-            // Preload.
-            for (Map.Entry<Integer, CacheEntryInfoCollection> e : supply.infos().entrySet()) {
-                int p = e.getKey();
+            ctx.database().checkpointReadLock();
 
-                if (aff.get(p).contains(ctx.localNode())) {
-                    GridDhtLocalPartition part = top.localPartition(p, topVer, true);
+            try {
+                // Preload.
+                for (Map.Entry<Integer, CacheEntryInfoCollection> e : supply.infos().entrySet()) {
+                    int p = e.getKey();
 
-                    assert part != null;
+                    if (aff.get(p).contains(ctx.localNode())) {
+                        GridDhtLocalPartition part = top.localPartition(p, topVer, true);
 
-                    boolean last = supply.last().containsKey(p);
+                        assert part != null;
 
-                    if (part.state() == MOVING) {
-                        boolean reserved = part.reserve();
+                        boolean last = supply.last().containsKey(p);
 
-                        assert reserved : "Failed to reserve partition [igniteInstanceName=" +
-                            ctx.igniteInstanceName() + ", grp=" + grp.cacheOrGroupName() + ", part=" + part + ']';
+                        if (part.state() == MOVING) {
+                            boolean reserved = part.reserve();
 
-                        part.lock();
+                            assert reserved : "Failed to reserve partition [igniteInstanceName=" +
+                                ctx.igniteInstanceName() + ", grp=" + grp.cacheOrGroupName() + ", part=" + part + ']';
 
-                        try {
-                            // Loop through all received entries and try to preload them.
-                            for (GridCacheEntryInfo entry : e.getValue().infos()) {
-                                if (!preloadEntry(node, p, entry, topVer)) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Got entries for invalid partition during " +
-                                            "preloading (will skip) [p=" + p + ", entry=" + entry + ']');
+                            part.lock();
 
-                                    break;
+                            try {
+                                // Loop through all received entries and try to preload them.
+                                for (GridCacheEntryInfo entry : e.getValue().infos()) {
+                                    if (!preloadEntry(node, p, entry, topVer)) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Got entries for invalid partition during " +
+                                                "preloading (will skip) [p=" + p + ", entry=" + entry + ']');
+
+                                        break;
+                                    }
+
+                                    if (grp.sharedGroup() && (cctx == null || cctx.cacheId() != entry.cacheId()))
+                                        cctx = ctx.cacheContext(entry.cacheId());
+
+                                    if (cctx != null && cctx.statisticsEnabled())
+                                        cctx.cache().metrics0().onRebalanceKeyReceived();
                                 }
 
-                                if (grp.sharedGroup() && (cctx == null || cctx.cacheId() != entry.cacheId()))
-                                    cctx = ctx.cacheContext(entry.cacheId());
+                                // If message was last for this partition,
+                                // then we take ownership.
+                                if (last) {
+                                    top.own(part);
 
-                                if (cctx != null && cctx.statisticsEnabled())
-                                    cctx.cache().metrics0().onRebalanceKeyReceived();
+                                    fut.partitionDone(nodeId, p);
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Finished rebalancing partition: " + part);
+                                }
                             }
-
-                            // If message was last for this partition,
-                            // then we take ownership.
-                            if (last) {
-                                top.own(part);
-
-                                fut.partitionDone(nodeId, p);
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Finished rebalancing partition: " + part);
+                            finally {
+                                part.unlock();
+                                part.release();
                             }
                         }
-                        finally {
-                            part.unlock();
-                            part.release();
+                        else {
+                            if (last)
+                                fut.partitionDone(nodeId, p);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Skipping rebalancing partition (state is not MOVING): " + part);
                         }
                     }
                     else {
-                        if (last)
-                            fut.partitionDone(nodeId, p);
+                        fut.partitionDone(nodeId, p);
 
                         if (log.isDebugEnabled())
-                            log.debug("Skipping rebalancing partition (state is not MOVING): " + part);
+                            log.debug("Skipping rebalancing partition (it does not belong on current node): " + p);
                     }
                 }
-                else {
-                    fut.partitionDone(nodeId, p);
-
-                    if (log.isDebugEnabled())
-                        log.debug("Skipping rebalancing partition (it does not belong on current node): " + p);
-                }
+            }
+            finally {
+                ctx.database().checkpointReadUnlock();
             }
 
             // Only request partitions based on latest topology version.
@@ -795,7 +802,7 @@ public class GridDhtPartitionDemander {
      *
      * @param from Node which sent entry.
      * @param p Partition id.
-     * @param info Preloaded entry.
+     * @param entry Preloaded entry.
      * @param topVer Topology version.
      * @return {@code False} if partition has become invalid during preloading.
      * @throws IgniteInterruptedCheckedException If interrupted.
@@ -803,59 +810,52 @@ public class GridDhtPartitionDemander {
     private boolean preloadEntry(
         ClusterNode from,
         int p,
-        GridCacheEntryInfo info,
+        GridCacheEntryInfo entry,
         AffinityTopologyVersion topVer
     ) throws IgniteCheckedException {
-        ctx.database().checkpointReadLock();
+        assert ctx.database().checkpointLockIsHeldByThread();
 
         try {
             GridCacheEntryEx cached = null;
 
             try {
-                GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(info.cacheId()) : grp.singleCacheContext();
+                GridCacheContext cctx = grp.sharedGroup() ? ctx.cacheContext(entry.cacheId()) : grp.singleCacheContext();
 
-                cached = cctx.dhtCache().entryEx(info.key());
+                cached = cctx.dhtCache().entryEx(entry.key());
 
                 if (log.isDebugEnabled())
-                    log.debug("Rebalancing key [key=" + info.key() + ", part=" + p + ", node=" + from.id() + ']');
+                    log.debug("Rebalancing key [key=" + entry.key() + ", part=" + p + ", node=" + from.id() + ']');
 
-                cctx.shared().database().checkpointReadLock();
+                if (preloadPred == null || preloadPred.apply(entry)) {
+                    if (cached.initialValue(
+                        entry.value(),
+                        entry.version(),
+                        cctx.mvccEnabled() ? ((MvccVersionAware)entry).mvccVersion() : null,
+                        cctx.mvccEnabled() ? ((MvccUpdateVersionAware)entry).newMvccVersion() : null,
+                        entry.ttl(),
+                        entry.expireTime(),
+                        true,
+                        topVer,
+                        cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
+                        false
+                    )) {
+                        cctx.evicts().touch(cached, topVer); // Start tracking.
 
-                try {
-                    if (preloadPred == null || preloadPred.apply(info)) {
-                        if (cached.initialValue(
-                            info.value(),
-                            info.version(),
-                            cctx.mvccEnabled() ? ((MvccVersionAware)info).mvccVersion() : null,
-                            cctx.mvccEnabled() ? ((MvccUpdateVersionAware)info).newMvccVersion() : null,
-                            info.ttl(),
-                            info.expireTime(),
-                            true,
-                            topVer,
-                            cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
-                            false
-                        )) {
-                            cctx.evicts().touch(cached, topVer); // Start tracking.
-
-                            if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
-                                cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(),
-                                    (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
-                                    false, null, null, null, true);
-                        }
-                        else {
-                            cctx.evicts().touch(cached, topVer); // Start tracking.
-
-                            if (log.isDebugEnabled())
-                                log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
-                                    ", part=" + p + ']');
-                        }
+                        if (cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_LOADED) && !cached.isInternal())
+                            cctx.events().addEvent(cached.partition(), cached.key(), cctx.localNodeId(),
+                                (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, entry.value(), true, null,
+                                false, null, null, null, true);
                     }
-                    else if (log.isDebugEnabled())
-                        log.debug("Rebalance predicate evaluated to false for entry (will ignore): " + info);
+                    else {
+                        cctx.evicts().touch(cached, topVer); // Start tracking.
+
+                        if (log.isDebugEnabled())
+                            log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +
+                                ", part=" + p + ']');
+                    }
                 }
-                finally {
-                    cctx.shared().database().checkpointReadUnlock();
-                }
+                else if (log.isDebugEnabled())
+                    log.debug("Rebalance predicate evaluated to false for entry (will ignore): " + entry);
             }
             catch (GridCacheEntryRemovedException ignored) {
                 if (log.isDebugEnabled())
@@ -874,10 +874,7 @@ public class GridDhtPartitionDemander {
         }
         catch (IgniteCheckedException e) {
             throw new IgniteCheckedException("Failed to cache rebalanced entry (will stop rebalancing) [local=" +
-                ctx.localNode() + ", node=" + from.id() + ", key=" + info.key() + ", part=" + p + ']', e);
-        }
-        finally {
-            ctx.database().checkpointReadUnlock();
+                ctx.localNode() + ", node=" + from.id() + ", key=" + entry.key() + ", part=" + p + ']', e);
         }
 
         return true;

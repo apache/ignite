@@ -186,6 +186,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends GridCacheIdMe
 
     /**
      * @return iterator.
+     * @throws IgniteCheckedException If failed.
      */
     protected abstract UpdateSourceIterator<?> createIterator() throws IgniteCheckedException;
 
@@ -244,7 +245,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends GridCacheIdMe
             while (true) {
                 if (!it.hasNext()) {
                     if (ptr != null && !cctx.tm().logTxRecords())
-                        cctx.shared().wal().fsync(ptr);
+                        cctx.shared().wal().flush(ptr, true);
 
                     onDone(createResponse(cnt, false));
 
@@ -314,7 +315,6 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends GridCacheIdMe
                 IgniteInternalFuture<GridCacheUpdateTxResult> updateFuture = res.updateFuture();
 
                 if (updateFuture != null) {
-                    GridCacheOperation finalOp = op;
                     CacheObject finalVal = val;
                     GridDhtCacheEntry finalEntry = entry;
 
@@ -334,7 +334,7 @@ public abstract class GridDhtTxQueryEnlistAbstractFuture<T extends GridCacheIdMe
                                         "Operation is unsupported at the moment.", IgniteQueryErrorCode.UNSUPPORTED_OPERATION);
                                 }
 
-                                txEntry = tx.addEntry(finalOp,
+                                txEntry = tx.addEntry(op,
                                     finalVal,
                                     null,
                                     null,

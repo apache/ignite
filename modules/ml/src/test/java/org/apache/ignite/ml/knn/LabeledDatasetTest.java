@@ -50,7 +50,6 @@ public class LabeledDatasetTest extends BaseKNNTest implements ExternalizableTes
     /** */
     private static final String IRIS_MISSED_DATA = "datasets/knn/missed_data.txt";
 
-
     /** */
     public void testFeatureNames() {
         IgniteUtils.setCurrentIgniteName(ignite.configuration().getIgniteInstanceName());

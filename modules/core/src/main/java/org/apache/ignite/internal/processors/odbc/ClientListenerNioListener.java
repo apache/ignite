@@ -33,6 +33,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.nio.GridNioServerListenerAdapter;
 import org.apache.ignite.internal.util.nio.GridNioSession;
 import org.apache.ignite.internal.util.nio.GridNioSessionMetaKey;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -87,6 +88,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         this.busyLock = busyLock;
         this.maxCursors = cliConnCfg.getMaxOpenCursorsPerConnection();
         this.cliConnCfg = cliConnCfg;
+
         log = ctx.log(getClass());
     }
 
@@ -134,7 +136,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             req = parser.decode(msg);
         }
         catch (Exception e) {
-            log.error("Failed to parse client request.", e);
+            U.error(log, "Failed to parse client request.", e);
 
             ses.close();
 
@@ -167,7 +169,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
             ses.send(outMsg);
         }
         catch (Exception e) {
-            log.error("Failed to process client request [req=" + req + ']', e);
+            U.error(log, "Failed to process client request [req=" + req + ']', e);
 
             ses.send(parser.encode(handler.handleException(e, req)));
         }
@@ -192,7 +194,7 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
         byte cmd = reader.readByte();
 
         if (cmd != ClientListenerRequest.HANDSHAKE) {
-            log.error("Unexpected client request (will close session): " + ses.remoteAddress());
+            U.warn(log, "Unexpected client request (will close session): " + ses.remoteAddress());
 
             ses.close();
 
@@ -221,16 +223,13 @@ public class ClientListenerNioListener extends GridNioServerListenerAdapter<byte
 
                 ses.addMeta(CONN_CTX_META_KEY, connCtx);
             }
-            else {
-                log.warning("Unsupported version: " + ver.toString());
-
+            else
                 throw new IgniteCheckedException("Unsupported version.");
-            }
 
             connCtx.handler().writeHandshake(writer);
         }
         catch (Exception e) {
-            log.error("Error on handshake. " + e.getMessage(), e);
+            U.warn(log, "Error during handshake [rmtAddr=" + ses.remoteAddress() + ", msg=" + e.getMessage() + ']');
 
             ClientListenerProtocolVersion currVer;
 

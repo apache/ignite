@@ -57,6 +57,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.failure.FailureHandler;
+import org.apache.ignite.failure.NoOpFailureHandler;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -99,6 +101,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.eventstorage.memory.MemoryEventStorageSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
+import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.logger.GridTestLog4jLogger;
 import org.apache.ignite.testframework.junits.multijvm.IgniteCacheProcessProxy;
 import org.apache.ignite.testframework.junits.multijvm.IgniteNodeRunner;
@@ -583,6 +586,9 @@ public abstract class GridAbstractTest extends TestCase {
 
         if (isFirstTest()) {
             info(">>> Starting test class: " + testClassDescription() + " <<<");
+
+            if(isSafeTopology())
+                assert G.allGrids().isEmpty() : "Not all Ignite instances stopped before tests execution";
 
             if (startGrid) {
                 IgniteConfiguration cfg = optimize(getConfiguration());
@@ -1292,30 +1298,13 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
+     * Stop Ignite instance using index.
+     *
      * @param idx Grid index.
      * @param cancel Cancel flag.
      */
-    @SuppressWarnings("deprecation")
     protected void stopGrid(int idx, boolean cancel) {
-        String igniteInstanceName = getTestIgniteInstanceName(idx);
-
-        try {
-            Ignite ignite = G.ignite(igniteInstanceName);
-
-            assert ignite != null : "Ignite returned null grid for name: " + igniteInstanceName;
-
-            info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
-
-            G.stop(igniteInstanceName, cancel);
-        }
-        catch (IllegalStateException ignored) {
-            // Ignore error if grid already stopped.
-        }
-        catch (Throwable e) {
-            error("Failed to stop grid [igniteInstanceName=" + igniteInstanceName + ", cancel=" + cancel + ']', e);
-
-            stopGridErr = true;
-        }
+        stopGrid(getTestIgniteInstanceName(idx), cancel, false);
     }
 
     /**
@@ -1583,7 +1572,19 @@ public abstract class GridAbstractTest extends TestCase {
 
         cfg.setIncludeEventTypes(EventType.EVTS_ALL);
 
+        cfg.setFailureHandler(getFailureHandler(igniteInstanceName));
+
         return cfg;
+    }
+
+    /**
+     * This method should be overridden by subclasses to change failure handler implementation.
+     *
+     * @param igniteInstanceName Ignite instance name.
+     * @return Failure handler implementation.
+     */
+    protected FailureHandler getFailureHandler(String igniteInstanceName) {
+        return new NoOpFailureHandler();
     }
 
     /**
@@ -1650,8 +1651,8 @@ public abstract class GridAbstractTest extends TestCase {
 
                 afterTestsStopped();
 
-                if (startGrid)
-                    G.stop(getTestIgniteInstanceName(), true);
+                if(isSafeTopology())
+                    stopAllGrids(false);
 
                 // Remove counters.
                 tests.remove(getClass());
@@ -1668,6 +1669,9 @@ public abstract class GridAbstractTest extends TestCase {
             clsLdr = null;
 
             cleanReferences();
+
+           if (isLastTest() && isSafeTopology() && stopGridErr)
+               throw new RuntimeException("Not all Ignite instances has been stopped. Please, see log for details.");
         }
     }
 
@@ -1730,6 +1734,18 @@ public abstract class GridAbstractTest extends TestCase {
      */
     protected boolean isMultiJvm() {
         return false;
+    }
+
+    /**
+     * By default, test would started only if there is no alive Ignite instances and after {@link #afterTestsStopped()}
+     * all started Ignite instances would be stopped. Should return <code>false</code> if alive Ingite instances
+     * after test execution is correct behavior.
+     *
+     * @return <code>True</code> by default.
+     * @see VariationsTestsConfig#isStopNodes() Example of why instances should not be stopped.
+     */
+    protected boolean isSafeTopology() {
+        return true;
     }
 
     /**

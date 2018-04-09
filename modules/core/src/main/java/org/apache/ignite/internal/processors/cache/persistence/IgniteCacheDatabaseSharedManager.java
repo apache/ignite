@@ -402,6 +402,8 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         checkMetricsProperties(regCfg);
 
         checkRegionEvictionProperties(regCfg, memCfg);
+
+        checkRegionMemoryStorageType(regCfg);
     }
 
     /**
@@ -502,6 +504,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 "DataRegionConfiguration.initialSize property to set correct size in bytes or use 64-bit JVM) " +
                 "[name=" + regCfg.getName() +
                 ", size=" + U.readableSize(regCfg.getInitialSize(), true) + "]");
+    }
+
+    /**
+     * @param regCfg DataRegionConfiguration to validate.
+     * @throws IgniteCheckedException If config is invalid.
+     */
+    private void checkRegionMemoryStorageType(DataRegionConfiguration regCfg) throws IgniteCheckedException {
+        if (regCfg.isPersistenceEnabled() && regCfg.getSwapPath() != null)
+            throw new IgniteCheckedException("DataRegionConfiguration must not have both persistence " +
+                "storage and swap space enabled at the same time (Use DataRegionConfiguration.setSwapPath(null)  " +
+                "to disable the swap space usage or DataRegionConfiguration.setPersistenceEnabled(false) " +
+                "to disable the persistence) [name=" + regCfg.getName() + ", swapPath=" + regCfg.getSwapPath() +
+                ", persistenceEnabled=" + regCfg.isPersistenceEnabled() + "]"
+            );
     }
 
     /**

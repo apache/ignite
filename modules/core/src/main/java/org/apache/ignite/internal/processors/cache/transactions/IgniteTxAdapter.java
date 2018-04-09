@@ -1189,7 +1189,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         if (valid) {
             if (ptr != null && (state == COMMITTED || state == ROLLED_BACK))
                 try {
-                    cctx.wal().fsync(ptr);
+                    cctx.wal().flush(ptr, false);
                 }
                 catch (IgniteCheckedException e) {
                     String msg = "Failed to fsync ptr: " + ptr;

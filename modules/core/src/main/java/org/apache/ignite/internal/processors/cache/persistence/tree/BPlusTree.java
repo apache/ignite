@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
@@ -85,6 +86,13 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
     /** */
     private static volatile boolean interrupted;
+
+    /** */
+    private static final int IGNITE_BPLUS_TREE_LOCK_RETRIES_DEFAULT = 1000;
+
+    /** */
+    private static final int LOCK_RETRIES = IgniteSystemProperties.getInteger(
+        IgniteSystemProperties.IGNITE_BPLUS_TREE_LOCK_RETRIES, IGNITE_BPLUS_TREE_LOCK_RETRIES_DEFAULT);
 
     /** */
     private final AtomicBoolean destroyed = new AtomicBoolean(false);
@@ -1265,6 +1273,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         try {
             for (;;) {
+                g.checkLockRetry();
+
                 // Init args.
                 g.pageId = pageId;
                 g.fwdId = fwdId;
@@ -1799,13 +1809,18 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         long page = acquirePage(pageId);
 
         try {
+            Result res = RETRY;
+
             for (;;) {
+                if (res == RETRY)
+                    x.checkLockRetry();
+
                 // Init args.
                 x.pageId(pageId);
                 x.fwdId(fwdId);
                 x.backId(backId);
 
-                Result res = read(pageId, page, search, x, lvl, RETRY);
+                res = read(pageId, page, search, x, lvl, RETRY);
 
                 switch (res) {
                     case GO_DOWN_X:
@@ -1955,6 +1970,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         try {
             for (;;) {
+                r.checkLockRetry();
+
                 // Init args.
                 r.pageId = pageId;
                 r.fwdId = fwdId;
@@ -2452,6 +2469,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         try {
             for (;;) {
+                p.checkLockRetry();
+
                 // Init args.
                 p.pageId = pageId;
                 p.fwdId = fwdId;
@@ -2644,6 +2663,9 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
         /** Ignore row passed, find last row */
         boolean findLast;
 
+        /** Number of repetitions to capture a lock in the B+Tree (countdown). */
+        int lockRetriesCnt = getLockRetries();
+
         /**
          * @param row Row.
          * @param findLast find last row.
@@ -2755,6 +2777,16 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          */
         boolean isFinished() {
             throw new IllegalStateException();
+        }
+
+        /**
+         * @throws IgniteCheckedException If the operation can not be retried.
+         */
+        final void checkLockRetry() throws IgniteCheckedException {
+            if (lockRetriesCnt == 0)
+                throw new IgniteCheckedException("Maximum of retries " + getLockRetries() + " reached.");
+
+            lockRetriesCnt--;
         }
     }
 
@@ -5680,5 +5712,12 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
          * @return state bitset.
          */
         public int state();
+    }
+
+    /**
+     * @return Return number of retries.
+     */
+    protected int getLockRetries() {
+        return LOCK_RETRIES;
     }
 }

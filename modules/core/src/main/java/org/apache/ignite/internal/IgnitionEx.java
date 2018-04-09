@@ -35,6 +35,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -70,6 +71,8 @@ import org.apache.ignite.configuration.MemoryConfiguration;
 import org.apache.ignite.configuration.MemoryPolicyConfiguration;
 import org.apache.ignite.configuration.PersistentStoreConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
+import org.apache.ignite.failure.FailureContext;
+import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
@@ -113,10 +116,10 @@ import org.apache.ignite.thread.IgniteStripedThreadPoolExecutor;
 import org.apache.ignite.thread.IgniteThread;
 import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.IgniteState.STOPPED;
+import static org.apache.ignite.IgniteState.STOPPED_ON_FAILURE;
 import static org.apache.ignite.IgniteState.STOPPED_ON_SEGMENTATION;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_CLIENT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CONFIG_URL;
@@ -407,7 +410,7 @@ public class IgnitionEx {
                             " milliseconds. Killing node...");
 
                     // We are not able to kill only one grid so whole JVM will be stopped.
-                    System.exit(Ignition.KILL_EXIT_CODE);
+                    Runtime.getRuntime().halt(Ignition.KILL_EXIT_CODE);
                 }
             }
         }, timeoutMs, TimeUnit.MILLISECONDS);
@@ -2550,7 +2553,15 @@ public class IgnitionEx {
                     throw e;
             }
             finally {
-                state = grid0.context().segmented() ? STOPPED_ON_SEGMENTATION : STOPPED;
+                if (!grid0.context().invalid())
+                    state = STOPPED;
+                else {
+                    FailureContext failure = grid0.context().failure().failureContext();
+
+                    state = failure.type() == FailureType.SEGMENTATION ?
+                        STOPPED_ON_SEGMENTATION :
+                        STOPPED_ON_FAILURE;
+                }
 
                 grid = null;
 
