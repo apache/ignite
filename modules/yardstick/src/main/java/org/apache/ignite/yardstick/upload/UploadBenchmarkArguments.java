@@ -74,7 +74,7 @@ public class UploadBenchmarkArguments implements StreamerParams {
         description = "Streamer benchmarks only: set allowOverwrite streamer parameter.")
     private Boolean streamerAllowOverwrite = null;
 
-    @Parameter(names = {"--streamer-ordered"},
+    @Parameter(names = {"--streamer-ordered"}, arity = 1,
         description = "Streamer benchmarks only: set streamer ordered flag.")
     private boolean streamerOrdered = true;
 
