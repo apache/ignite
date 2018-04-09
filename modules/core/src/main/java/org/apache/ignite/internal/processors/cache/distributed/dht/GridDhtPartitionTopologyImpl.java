@@ -1315,6 +1315,8 @@ public class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                             if (updCntr != 0 && updCntr > part.updateCounter())
                                 part.updateCounter(updCntr);
                         }
+
+                        cntrMap.updateCounter(i, incomeCntrMap.updateCounter(part.id()));
                     }
                 }
 

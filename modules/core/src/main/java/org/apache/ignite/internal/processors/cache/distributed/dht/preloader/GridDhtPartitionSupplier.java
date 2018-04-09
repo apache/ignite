@@ -361,9 +361,6 @@ class GridDhtPartitionSupplier {
 
                     remainingParts.remove(part);
                 }
-
-                // Need to manually prepare cache message.
-                // TODO GG-11141.
             }
 
             Iterator<Integer> remainingIter = remainingParts.iterator();
@@ -387,7 +384,8 @@ class GridDhtPartitionSupplier {
                 }
             }
 
-            assert remainingParts.isEmpty();
+            assert remainingParts.isEmpty()
+                : "Partitions after rebalance should be either done or missing: " + remainingParts;
 
             if (sctx != null)
                 clearContext(sctx, log);
