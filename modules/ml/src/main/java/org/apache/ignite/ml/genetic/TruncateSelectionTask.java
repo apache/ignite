@@ -18,7 +18,6 @@
 package org.apache.ignite.ml.genetic;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,21 +36,15 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.resources.IgniteInstanceResource;
-
-import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 
 /**
  * Responsible for performing truncate selection.
  */
-
 public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolean> {
-
+    /** Ignite resource */
     @IgniteInstanceResource
     private Ignite ignite = null;
-
-    /** GAConfiguraiton */
-    private GAConfiguration config = null;
 
     /** fittest keys */
     private List<Long> fittestKeys = null;
@@ -64,8 +57,7 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
      * @param fittestKeys List of long
      * @param numberOfCopies Number of Copies
      */
-    public TruncateSelectionTask(GAConfiguration config, List<Long> fittestKeys, int numberOfCopies) {
-        this.config = config;
+    public TruncateSelectionTask(List<Long> fittestKeys, int numberOfCopies) {
         this.fittestKeys = fittestKeys;
         this.numberOfCopies = numberOfCopies;
     }
@@ -103,13 +95,13 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
      * @return List of lists containing keys
      */
     private List<List<Long>> getEnhancedPopulation() {
-        List<List<Long>> list = new ArrayList();
+        List<List<Long>> list = new ArrayList<List<Long>>();
 
         for (Long key : fittestKeys) {
             Chromosome copy = getChromosome(key);
             for (int i = 0; i < numberOfCopies; i++) {
                 long[] thegenes = copy.getGenes();
-                List<Long> geneList = new ArrayList();
+                List<Long> geneList = new ArrayList<Long>();
                 for (int k = 0; k < copy.getGenes().length; k++) {
                     geneList.add(thegenes[k]);
                 }
@@ -150,7 +142,6 @@ public class TruncateSelectionTask extends ComputeTaskAdapter<List<Long>, Boolea
      * @return Boolean value
      */
     public Boolean reduce(List<ComputeJobResult> list) throws IgniteException {
-        // TODO Auto-generated method stub
         return Boolean.TRUE;
     }
 
