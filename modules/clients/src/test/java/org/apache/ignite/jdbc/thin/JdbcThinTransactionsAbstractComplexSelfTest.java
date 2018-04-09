@@ -32,6 +32,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -281,12 +282,13 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
                 return null;
             }
-        }, IgniteException.class, "Failed to INSERT some keys because they are already in cache [keys=[6]]");
+        }, IgniteException.class, "Duplicate key during INSERT [key=KeyCacheObjectImpl " +
+            "[part=6, val=6, hasValBytes=true]]");
 
         assertTrue(e.getCause() instanceof BatchUpdateException);
 
-        assertTrue(e.getCause().getMessage().contains("Failed to INSERT some keys " +
-            "because they are already in cache [keys=[6]]"));
+        assertTrue(e.getCause().getMessage().contains("Duplicate key during INSERT [key=KeyCacheObjectImpl " +
+            "[part=6, val=6, hasValBytes=true]]"));
 
         // First we insert id 7, then 6. Still, 7 is not in the cache as long as the whole batch has failed inside tx.
         assertEquals(Collections.emptyList(), execute("SELECT * FROM \"Person\".Person where id > 6 order by id"));
@@ -427,7 +429,8 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
         }
 
         // Connection has not hung on close and update has not been applied.
-        assertNull(personCache().get(6));
+        assertTrue(personCache().query(new SqlFieldsQuery("SELECT * FROM \"Person\".Person WHERE id = 6"))
+            .getAll().isEmpty());
     }
 
     /**
@@ -753,11 +756,11 @@ public abstract class JdbcThinTransactionsAbstractComplexSelfTest extends JdbcTh
 
                     return null;
                 }
-            }, IgniteCheckedException.class, "Failed to run update. Mvcc version mismatch.");
+            }, IgniteCheckedException.class, "Mvcc version mismatch.");
 
             assertTrue(ex.getCause() instanceof SQLException);
 
-            assertTrue(ex.getCause().getMessage().contains("Failed to run update. Mvcc version mismatch."));
+            assertTrue(ex.getCause().getMessage().contains("Mvcc version mismatch."));
         }
         else
             readFut.get();
