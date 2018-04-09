@@ -361,7 +361,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends IgniteCacheLockPa
      * @throws Exception If failed.
      */
     public void testCheckReservePartitionException() throws Exception {
-        int orgId = primaryKey(grid(1).cache(Organization.class.getSimpleName()));
+        final int orgId = primaryKey(grid(1).cache(Organization.class.getSimpleName()));
 
         GridTestUtils.assertThrowsAnyCause(log, new Callable<Void>() {
             @Override public Void call() throws Exception {
