@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -113,9 +114,6 @@ public class GridAffinityAssignmentCache {
 
     /** Node stop flag. */
     private volatile IgniteCheckedException stopErr;
-
-    /** History size ignoring client events changes. */
-    private final AtomicInteger histSize = new AtomicInteger();
 
     /** Full history size. */
     private final AtomicInteger fullHistSize = new AtomicInteger();
@@ -727,24 +725,16 @@ public class GridAffinityAssignmentCache {
      * @param aff Added affinity assignment.
      */
     private void onHistoryAdded(GridAffinityAssignment aff) {
-        int fullSize = fullHistSize.incrementAndGet();
+        int size = fullHistSize.incrementAndGet();
 
-        int size;
+        int rmvCnt = 0;
 
-        if (aff.clientEventChange())
-            size = histSize.get();
-        else
-            size = histSize.incrementAndGet();
-
-        int rmvCnt = size - MAX_HIST_SIZE;
-
-        if (rmvCnt <= 0) {
-            if (fullSize > MAX_HIST_SIZE * 2)
-                rmvCnt = MAX_HIST_SIZE;
-        }
+        if (size > MAX_HIST_SIZE * 2)
+            rmvCnt = MAX_HIST_SIZE;
 
         if (rmvCnt > 0) {
             Iterator<HistoryAffinityAssignment> it = affCache.values().iterator();
+            Collection<AffinityTopologyVersion> topVerRmv = new HashSet<>();
 
             while (it.hasNext() && rmvCnt > 0) {
                 AffinityAssignment aff0 = it.next();
@@ -753,11 +743,12 @@ public class GridAffinityAssignmentCache {
 
                 rmvCnt--;
 
-                if (!aff0.clientEventChange())
-                    histSize.decrementAndGet();
-
                 fullHistSize.decrementAndGet();
+
+                topVerRmv.add(aff0.topologyVersion());
             }
+
+            ctx.affinity().removeCachedAffinity(topVerRmv);
         }
     }
 

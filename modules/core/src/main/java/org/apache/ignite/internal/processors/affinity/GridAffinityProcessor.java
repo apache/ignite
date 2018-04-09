@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -86,6 +87,9 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     /** Time to wait between errors (in milliseconds). */
     private static final long ERROR_WAIT = 500;
 
+    /** Log. */
+    private final IgniteLogger log;
+
     /** Affinity map. */
     private final ConcurrentMap<AffinityAssignmentKey, IgniteInternalFuture<AffinityInfo>> affMap = new ConcurrentHashMap<>();
 
@@ -131,6 +135,8 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
      */
     public GridAffinityProcessor(GridKernalContext ctx) {
         super(ctx);
+
+        log = ctx.log(GridAffinityProcessor.class);
     }
 
     /** {@inheritDoc} */
@@ -210,6 +216,34 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         AffinityInfo affInfo = affinityCache(cacheName, topVer);
 
         return affInfo != null ? F.first(affInfo.assignment().get(partId)) : null;
+    }
+
+    /**
+     * USED ONLY FOR TESTING.
+     */
+    /*@java.test.only*/
+    public int getAffinityMapSize() {
+        assert affMap != null;
+
+        return affMap.size();
+    }
+
+    /**
+     * @param topVerRmv Collection with affinity topology versions for removing.
+     * @return <tt>true</tt> if this set changed as a result of the call.
+     */
+    public boolean removeCachedAffinity(Collection<AffinityTopologyVersion> topVerRmv) {
+        assert topVerRmv != null;
+
+        Collection<String> caches = ctx.cache().cacheNames();
+        Collection<AffinityAssignmentKey> rmv = new HashSet<>();
+
+        for (AffinityAssignmentKey key : affMap.keySet()) {
+            if (!caches.contains(key.cacheName) || topVerRmv.contains(key.topVer))
+                rmv.add(key);
+        }
+
+        return affMap.keySet().removeAll(rmv);
     }
 
 
