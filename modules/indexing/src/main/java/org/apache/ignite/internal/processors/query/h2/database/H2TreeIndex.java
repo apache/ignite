@@ -476,4 +476,19 @@ public class H2TreeIndex extends GridH2IndexBase {
     private void dropMetaPage(String name, int segIdx) throws IgniteCheckedException {
         cctx.offheap().dropRootPageForIndex(cctx.cacheId(), name + "%" + segIdx);
     }
+
+    /** {@inheritDoc} */
+    @Override public void refreshColumnIds() {
+        super.refreshColumnIds();
+
+        if (inlineIdxs == null)
+            return;
+
+        List<InlineIndexHelper> inlineHelpers = getAvailableInlineColumns(indexColumns);
+
+        assert inlineIdxs.size() == inlineHelpers.size();
+
+        for (int pos = 0; pos < inlineHelpers.size(); ++pos)
+            inlineIdxs.set(pos, inlineHelpers.get(pos));
+    }
 }
