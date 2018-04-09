@@ -238,9 +238,15 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         Collection<String> caches = ctx.cache().cacheNames();
         Collection<AffinityAssignmentKey> rmv = new HashSet<>();
 
+        int oldSize = affMap.size();
+
         for (AffinityAssignmentKey key : affMap.keySet()) {
             if (!caches.contains(key.cacheName) || topVerRmv.contains(key.topVer))
                 rmv.add(key);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("Affinity cached values were cleared: " + (oldSize - affMap.size()));
         }
 
         return affMap.keySet().removeAll(rmv);
