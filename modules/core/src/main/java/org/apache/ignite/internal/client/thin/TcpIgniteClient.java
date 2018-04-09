@@ -33,7 +33,6 @@ import org.apache.ignite.cache.query.FieldsQueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.client.ClientCache;
 import org.apache.ignite.client.ClientCacheConfiguration;
-import org.apache.ignite.client.ClientConfigurationException;
 import org.apache.ignite.client.ClientException;
 import org.apache.ignite.client.IgniteClient;
 import org.apache.ignite.configuration.ClientConfiguration;
@@ -73,7 +72,7 @@ public class TcpIgniteClient implements IgniteClient {
      * Private constructor. Use {@link TcpIgniteClient#start(ClientConfiguration)} to create an instance of
      * {@link TcpClientChannel}.
      */
-    private TcpIgniteClient(ClientConfiguration cfg) throws ClientConfigurationException {
+    private TcpIgniteClient(ClientConfiguration cfg) throws ClientException {
         Function<ClientChannelConfiguration, Result<ClientChannel>> chFactory = chCfg -> {
             try {
                 return new Result<>(new TcpClientChannel(chCfg));
@@ -189,7 +188,7 @@ public class TcpIgniteClient implements IgniteClient {
      * @param cfg Thin client configuration.
      * @return Successfully opened thin client connection.
      */
-    public static IgniteClient start(ClientConfiguration cfg) throws ClientConfigurationException {
+    public static IgniteClient start(ClientConfiguration cfg) throws ClientException {
         return new TcpIgniteClient(cfg);
     }
 

@@ -16,7 +16,7 @@
  */
 
 import { dropTestDB, resolveUrl, insertTestUser } from '../../envtools';
-import {PageSignIn} from '../../page-models/PageSignin';
+import {PageSignIn} from '../../page-models/PageSignIn';
 import {errorNotification} from '../../components/notifications';
 
 const page = new PageSignIn();
@@ -48,8 +48,8 @@ test('Unknown email', async(t) => {
         .expect(page.forgotPassword.email.getError('server').exists).ok('Marks input as server-invalid');
 });
 
-// Will fail without a local SMTP server.
-test('Successful reset', async(t) => {
+// TODO: IGNITE-8028 Implement this test as unit test.
+test.skip('Successful reset', async(t) => {
     await t
         .click(page.showForgotPasswordButton)
         .typeText(page.forgotPassword.email.control, 'a@a', {replace: true})

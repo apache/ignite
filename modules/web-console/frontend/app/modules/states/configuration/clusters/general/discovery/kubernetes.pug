@@ -16,23 +16,23 @@
 
 include /app/helpers/jade/mixins
 
-mixin discovery-kubernetes(modelAt = 'backupItem')
+mixin discovery-kubernetes(modelAt = '$ctrl.clonedCluster')
     -const discoveryKind = 'Kubernetes'
     -const model = `${modelAt}.discovery.Kubernetes`
 
-    div
-        .details-row
+    .pc-form-grid-row&attributes(attributes=attributes)
+        .pc-form-grid-col-30
             +text('Service name:', `${model}.serviceName`, `'${discoveryKind}ServiceName'`, 'false', 'ignite',
                 "The name of Kubernetes service for Ignite pods' IP addresses lookup.<br/>\
                 The name of the service must be equal to the name set in service's Kubernetes configuration.<br/>\
                 If this parameter is not changed then the name of the service has to be set to 'ignite' in the corresponding Kubernetes configuration.")
-        .details-row
+        .pc-form-grid-col-30
             +text('Namespace:', `${model}.namespace`, `'${discoveryKind}Namespace'`, 'false', 'default',
                 "The namespace the Kubernetes service belongs to.<br/>\
                 By default, it's supposed that the service is running under Kubernetes `default` namespace.")
-        .details-row
+        .pc-form-grid-col-60
             +url('Kubernetes server:', `${model}.masterUrl`, `'${discoveryKind}MasterUrl'`, 'true', 'false', 'https://kubernetes.default.svc.cluster.local:443',
                 'The host name of the Kubernetes API server')
-        .details-row
+        .pc-form-grid-col-60
             +text('Service token file:', `${model}.accountToken`, `'${discoveryKind}AccountToken'`, 'false', '/var/run/secrets/kubernetes.io/serviceaccount/token',
                 'The path to the service token file')

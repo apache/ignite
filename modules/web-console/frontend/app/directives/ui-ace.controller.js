@@ -34,23 +34,6 @@ export default class IgniteUiAceGeneratorFactory {
                 this.generate = (cluster) => this.generatorFactory.cluster(cluster, this.Version.currentSbj.getValue(), this.client === 'true');
 
                 break;
-            case 'clusterCaches':
-                this.generate = (cluster, caches) => {
-                    const clusterCaches = _.reduce(caches, (acc, cache) => {
-                        if (_.includes(cluster.caches, cache.value))
-                            acc.push(cache.cache);
-
-                        return acc;
-                    }, []);
-
-                    const cfg = this.generatorFactory.generator.clusterGeneral(cluster, available);
-
-                    this.generatorFactory.generator.clusterCaches(cluster, clusterCaches, null, available, false, cfg);
-
-                    return this.generatorFactory.toSection(cfg);
-                };
-
-                break;
             case 'cacheStore':
             case 'cacheQuery':
                 this.generate = (cache, domains) => {
@@ -79,27 +62,13 @@ export default class IgniteUiAceGeneratorFactory {
                 break;
             case 'clusterServiceConfiguration':
                 this.generate = (cluster, caches) => {
-                    const clusterCaches = _.reduce(caches, (acc, cache) => {
-                        if (_.includes(cluster.caches, cache.value))
-                            acc.push(cache.cache);
-
-                        return acc;
-                    }, []);
-
-                    return this.generatorFactory.clusterServiceConfiguration(cluster.serviceConfigurations, clusterCaches);
+                    return this.generatorFactory.clusterServiceConfiguration(cluster.serviceConfigurations, caches);
                 };
 
                 break;
             case 'clusterCheckpoint':
                 this.generate = (cluster, caches) => {
-                    const clusterCaches = _.reduce(caches, (acc, cache) => {
-                        if (_.includes(cluster.caches, cache.value))
-                            acc.push(cache.cache);
-
-                        return acc;
-                    }, []);
-
-                    return this.generatorFactory.clusterCheckpoint(cluster, available, clusterCaches);
+                    return this.generatorFactory.clusterCheckpoint(cluster, available, caches);
                 };
 
                 break;

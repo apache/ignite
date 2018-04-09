@@ -50,6 +50,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageUtils;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.pagemem.wal.WALIterator;
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.CheckpointRecord;
@@ -832,7 +833,7 @@ public class PageMemoryImpl implements PageMemoryEx {
      * this method.
      *
      * @throws IgniteCheckedException If failed to start WAL iteration, if incorrect page type observed in data, etc.
-     * @throws AssertionError if it was not possible to restore page, page not found in WAL.
+     * @throws StorageException If it was not possible to restore page, page not found in WAL.
      */
     private void tryToRestorePage(FullPageId fullId, ByteBuffer buf) throws IgniteCheckedException {
         Long tmpAddr = null;
@@ -897,7 +898,7 @@ public class PageMemoryImpl implements PageMemoryEx {
             ByteBuffer restored = curPage == null ? lastValidPage : curPage;
 
             if (restored == null)
-                throw new IllegalStateException(String.format(
+                throw new StorageException(String.format(
                     "Page is broken. Can't restore it from WAL. (grpId = %d, pageId = %X).",
                     fullId.groupId(), fullId.pageId()
                 ));

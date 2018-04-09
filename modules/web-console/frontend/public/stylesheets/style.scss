@@ -23,6 +23,16 @@
 @import "./blocks/error";
 @import "./form-field";
 
+body {
+    overflow-y: scroll !important;
+}
+
+.flex-full-height {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
+}
+
 hr {
     margin: 20px 0;
 }
@@ -82,11 +92,6 @@ hr {
 
 .theme-line button.form-control.placeholder {
     color: $input-color-placeholder;
-}
-
-.theme-line .summary-pojo-list > ul.dropdown-menu {
-    width: 100%;
-    max-width: none;
 }
 
 .tooltip {
@@ -270,7 +275,7 @@ body > .wrapper,
 body > .wrapper > ui-view {
     display: flex;
     flex-direction: column;
-    min-height: 100%;
+    min-height: 100vh;
     flex: 1 0 auto;
 
     .body-container {
@@ -692,10 +697,6 @@ button.form-control {
     padding: 20px;
 }
 
-.theme-line .main-content a.customize {
-    margin-left: 5px;
-}
-
 .theme-line .panel-collapse {
     margin: 0;
 }
@@ -841,10 +842,6 @@ button.form-control {
 
 .admin-summary {
     padding-bottom: 10px;
-}
-
-.import-domain-model-wizard-page {
-    margin: 15px;
 }
 
 .scrollable-y {
@@ -1144,45 +1141,8 @@ button.form-control {
     }
 }
 
-.theme-line .popover.summary-project-structure {
-    @extend .popover.settings;
-
-    z-index: 1030;
-    min-width: 305px;
-
-    .popover-title {
-        color: black;
-
-        line-height: 27px;
-
-        padding: 3px 5px 3px 10px;
-
-        white-space: nowrap;
-        overflow: hidden;
-        -o-text-overflow: ellipsis;
-        text-overflow: ellipsis;
-
-        .close {
-            float: right;
-            top: 0;
-            right: 0;
-            position: relative;
-            margin-left: 10px;
-            line-height: 27px;
-        }
-    }
-
-    > .popover-content {
-        overflow: auto;
-
-        white-space: nowrap;
-
-        min-height: 300px;
-        max-height: 300px;
-    }
-}
-
-.theme-line .popover.validation-error {
+.popover.validation-error {
+    font-family: Roboto;
     white-space: pre-wrap;
     width: auto !important;
     max-width: 400px !important;
@@ -1278,7 +1238,7 @@ label {
     margin-right: 5px;
 }
 
-label.required:after {
+.required:after {
     color: $brand-primary;
     content: ' *';
     display: inline;
@@ -1317,19 +1277,6 @@ label.required:after {
     .close {
         margin-right: 0;
         line-height: 19px;
-    }
-}
-
-.summary-tabs {
-    margin-top: 0.65em;
-}
-
-.summary-tab {
-    img {
-        margin-right: 5px;
-        height: 16px;
-        width: 16px;
-        float: left;
     }
 }
 
@@ -1489,16 +1436,6 @@ th[st-sort] {
     }
 }
 
-.preview-panel, .summary-tabs {
-    .ace_hidden-cursors {
-        opacity: 0;
-    }
-
-    .ace_cursor {
-        opacity: 0;
-    }
-}
-
 .preview-highlight-1 {
     position: absolute;
     background-color: #f7faff;
@@ -1561,6 +1498,7 @@ th[st-sort] {
 
 .preview-panel {
     min-height: 28px;
+    position: relative;
 
     margin-left: 20px;
 
@@ -1574,7 +1512,7 @@ th[st-sort] {
     top: -10px;
     right: 20px;
     position: absolute;
-    z-index: 900;
+    z-index: 2;
 
     a {
         color: $input-color-placeholder;
@@ -1593,7 +1531,7 @@ th[st-sort] {
 }
 
 .preview-content-empty {
-    color: $input-color-placeholder;
+    color: #757575;
     display: table;
     width: 100%;
     height: 26px;
@@ -1947,18 +1885,6 @@ treecontrol.tree-classic {
     border-bottom-width: 0;
 }
 
-.summary-tabs {
-    .nav-tabs > li:first-child,
-    .nav-tabs > li:first-child.active {
-        & > a,
-        & > a:focus,
-        & > a:hover {
-            border-left: none;
-            border-top-left-radius: 0;
-        }
-    }
-}
-
 .ribbon-wrapper {
     width: 150px;
     height: 150px;
@@ -2012,9 +1938,9 @@ treecontrol.tree-classic {
     }
 }
 
-html,body,.splash-screen {
+html, body {
     width: 100%;
-    height: 100%;
+    min-height: 100vh;
 }
 
 .splash {
@@ -2114,14 +2040,6 @@ html,body,.splash-screen {
 @media only screen and (max-width: 767px) {
     .container{
         padding: 0 $padding-small-horizontal;
-    }
-}
-
-.domains-import-dialog {
-    .modal-body {
-        height: 325px;
-        margin: 0;
-        padding: 0;
     }
 }
 

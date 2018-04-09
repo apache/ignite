@@ -156,7 +156,7 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
     public double getAverageCpuLoad();
 
     /** {@inheritDoc} */
-    @MXBeanDescription("Average time spent in CG since the last update.")
+    @MXBeanDescription("Average time spent in GC since the last update.")
     public double getCurrentGcCpuLoad();
 
     /** {@inheritDoc} */
@@ -284,7 +284,7 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
     /**
      * Get distinct attribute names for given nodes projection.
      */
-    @MXBeanDescription("Distinct attrubute names for given nodes projection.")
+    @MXBeanDescription("Distinct attribute names for given nodes projection.")
     public Set<String> attributeNames();
 
 
@@ -293,7 +293,7 @@ public interface ClusterMetricsMXBean extends ClusterMetrics {
      *
      * @param attrName Attribute name.
      */
-    @MXBeanDescription("Distinct attrubute values for given nodes projection.")
+    @MXBeanDescription("Distinct attribute values for given nodes projection.")
     @MXBeanParametersNames("attrName")
     @MXBeanParametersDescriptions("Attribute name.")
     public Set<String> attributeValues(String attrName);

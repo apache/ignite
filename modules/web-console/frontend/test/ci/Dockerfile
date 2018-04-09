@@ -17,6 +17,9 @@
 
 FROM alpine:edge
 
+RUN apk update && apk upgrade && \
+    apk add --no-cache bash git openssh
+
 RUN apk --no-cache --repository http://dl-3.alpinelinux.org/alpine/edge/testing/ add \
  nodejs nodejs-npm chromium xwininfo xvfb dbus eudev ttf-freefont fluxbox
 
