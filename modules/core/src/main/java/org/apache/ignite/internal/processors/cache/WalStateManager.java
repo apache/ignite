@@ -362,7 +362,7 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         Set<Integer> grpsWithWalDisabled = new HashSet<>();
 
         for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
-            if (grp.isLocal() || !grp.affinityNode())
+            if (grp.isLocal() || !grp.affinityNode() || !grp.persistenceEnabled())
                 continue;
 
             boolean hasOwning = false;
@@ -416,7 +416,11 @@ public class WalStateManager extends GridCacheSharedManagerAdapter {
         session0.remainingGrps.remove(grpId);
 
         if (session0.remainingGrps.isEmpty() && this.session.compareAndSet(session0, null)) {
-            triggerCheckpoint(0).finishFuture().listen(new IgniteInClosureX<IgniteInternalFuture>() {
+            CheckpointFuture cpFut = triggerCheckpoint(0);
+
+            assert cpFut != null;
+
+            cpFut.finishFuture().listen(new IgniteInClosureX<IgniteInternalFuture>() {
                 @Override public void applyx(IgniteInternalFuture future) throws IgniteCheckedException {
                     // TODO : add sync/reserve mechanics.
                     for (CacheGroupContext grp : cctx.cache().cacheGroups()) {
