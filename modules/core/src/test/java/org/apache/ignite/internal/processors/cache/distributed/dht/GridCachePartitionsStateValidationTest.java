@@ -28,6 +28,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -60,6 +61,9 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
     /** Cache name. */
     private static final String CACHE_NAME = "cache";
 
+    /** */
+    private boolean clientMode;
+
     /** {@inheritDoc */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
@@ -73,6 +77,9 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
 
         cfg.setCommunicationSpi(new SingleMessageInterceptorCommunicationSpi(2));
 
+        if (clientMode)
+            cfg.setClientMode(true);
+
         return cfg;
     }
 
@@ -84,6 +91,8 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
     /** {@inheritDoc */
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
+
+        clientMode = false;
     }
 
     /**
@@ -128,14 +137,20 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
         final String atomicCacheName = "atomic-cache";
         final String txCacheName = "tx-cache";
 
-        IgniteCache atomicCache = ignite.getOrCreateCache(new CacheConfiguration<>(atomicCacheName)
+        clientMode = true;
+
+        Ignite client = startGrid(4);
+
+        clientMode = false;
+
+        IgniteCache atomicCache = client.getOrCreateCache(new CacheConfiguration<>(atomicCacheName)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setBackups(2)
             .setAffinity(new RendezvousAffinityFunction(false, 32))
         );
 
-        IgniteCache txCache = ignite.getOrCreateCache(new CacheConfiguration<>(txCacheName)
+        IgniteCache txCache = client.getOrCreateCache(new CacheConfiguration<>(txCacheName)
             .setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setBackups(2)
@@ -163,15 +178,15 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
 
             // Run tx load.
             IgniteInternalFuture txLoadFuture = GridTestUtils.runMultiThreadedAsync(() -> {
-                final int txOps = 3;
+                final int txOps = 5;
 
                 while (!stop.get()) {
-                    List<Integer> randomKeys = Stream.generate(() -> ThreadLocalRandom.current().nextInt(3))
+                    List<Integer> randomKeys = Stream.generate(() -> ThreadLocalRandom.current().nextInt(5))
                         .limit(txOps)
                         .sorted()
                         .collect(Collectors.toList());
 
-                    try (Transaction tx = ignite.transactions().txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.SERIALIZABLE)) {
+                    try (Transaction tx = ignite.transactions().txStart(TransactionConcurrency.OPTIMISTIC, TransactionIsolation.READ_COMMITTED)) {
                         for (Integer key : randomKeys)
                             txCache.put(key, key);
 
@@ -253,7 +268,7 @@ public class GridCachePartitionsStateValidationTest extends GridCommonAbstractTe
                 GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage) ((GridIoMessage) msg).message();
 
                 // We're interesting for only exchange messages and when node is stopped.
-                if (singleMsg.exchangeId() != null && singleMsg.exchangeId().isLeft()) {
+                if (singleMsg.exchangeId() != null && singleMsg.exchangeId().isLeft() && !singleMsg.client()) {
                     messages.add(singleMsg);
 
                     if (messages.size() == singleMessagesThreshold)
