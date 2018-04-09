@@ -98,6 +98,7 @@
         <module>modules/rocketmq</module>
         <module>modules/sqlline</module>
         <module>modules/ml</module>
+        <module>modules/consul</module>
     </modules>
 
     <profiles>
