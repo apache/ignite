@@ -994,13 +994,15 @@ public abstract class AbstractDataPageIO<T extends Storable> extends PageIO {
         int payloadSize = payload != null ? payload.length :
             Math.min(rowSize - written, getFreeSpace(pageAddr));
 
-        int remain = rowSize - written - payloadSize;
-        int hdrSize = row.headerSize();
+        if (row != null) {
+            int remain = rowSize - written - payloadSize;
+            int hdrSize = row.headerSize();
 
-        // We need page header (i.e. MVCC info) is located entirely on the very first page in chain.
-        // So we force moving it to the next page if it could not fit entirely on this page.
-        if (remain > 0 && remain < hdrSize)
-            payloadSize -= hdrSize - remain;
+            // We need page header (i.e. MVCC info) is located entirely on the very first page in chain.
+            // So we force moving it to the next page if it could not fit entirely on this page.
+            if (remain > 0 && remain < hdrSize)
+                payloadSize -= hdrSize - remain;
+        }
 
         int fullEntrySize = getPageEntrySize(payloadSize, SHOW_PAYLOAD_LEN | SHOW_LINK | SHOW_ITEM);
         int dataOff = getDataOffsetForWrite(pageAddr, fullEntrySize, directCnt, indirectCnt, pageSize);
