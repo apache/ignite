@@ -16,67 +16,74 @@
 
 include /app/helpers/jade/mixins
 
--var model = 'backupItem'
+-var model = '$ctrl.clonedCluster'
 -var form = 'failoverSpi'
 -var failoverSpi = model + '.failoverSpi'
--var failoverCustom = 'model.kind === "Custom"'
+-var failoverCustom = '$item.kind === "Custom"'
 
-.panel.panel-default(ng-form=form novalidate)
-    .panel-heading(bs-collapse-toggle ng-click=`ui.loadPanel('${form}')`)
-        ignite-form-panel-chevron
-        label Failover configuration
-        ignite-form-field-tooltip.tipLabel
-            | Failover SPI provides ability to supply custom logic for handling failed execution of a grid job#[br]
-            | #[a(href="https://apacheignite.readme.io/docs/fault-tolerance" target="_blank") More info]
-        ignite-form-revert
-    .panel-collapse(role='tabpanel' bs-collapse-target id=`${form}`)
-        .panel-body(ng-if=`ui.isPanelLoaded('${form}')`)
-            .col-sm-6
-                //- Since ignite 2.0
-                div(ng-if='$ctrl.available("2.0.0")')
-                    .settings-row
-                        +number('Failure detection timeout:', model + '.failureDetectionTimeout', '"failureDetectionTimeout"', 'true',
-                            '10000', '1', 'Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before considering a remote connection failed')
-                    .settings-row
-                        +number('Client failure detection timeout:', model + '.clientFailureDetectionTimeout', '"clientFailureDetectionTimeout"', 'true',
-                            '30000', '1', 'Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before considering a remote connection failed')
+panel-collapsible(ng-form=form on-open=`ui.loadPanel('${form}')`)
+    panel-title Failover configuration
+    panel-description
+        | Failover SPI provides ability to supply custom logic for handling failed execution of a grid job. 
+        | #[a.link-success(href="https://apacheignite.readme.io/docs/fault-tolerance" target="_blank") More info]
+    panel-content.pca-form-row(ng-if=`ui.isPanelLoaded('${form}')`)
+        .pca-form-column-6.pc-form-grid-row
+            //- Since ignite 2.0
+            .pc-form-grid-col-60(ng-if-start='$ctrl.available("2.0.0")')
+                +number('Failure detection timeout:', model + '.failureDetectionTimeout', '"failureDetectionTimeout"', 'true',
+                    '10000', '1', 'Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before considering a remote connection failed')
+            .pc-form-grid-col-60(ng-if-end)
+                +number('Client failure detection timeout:', model + '.clientFailureDetectionTimeout', '"clientFailureDetectionTimeout"', 'true',
+                    '30000', '1', 'Failure detection timeout is used to determine how long the communication or discovery SPIs should wait before considering a remote connection failed')
 
-                .settings-row(ng-init='failoverSpiTbl={type: "failoverSpi", model: "failoverSpi", focusId: "kind", ui: "failover-table"}')
-                    +ignite-form-group()
-                        ignite-form-field-label
-                            | Failover SPI configurations
-                        ignite-form-group-tooltip
-                            | Failover SPI configurations
-                        ignite-form-group-add(ng-click='tableNewItem(failoverSpiTbl)')
-                            | Add failover SPI
-                        .group-content-empty(ng-if=`!(${failoverSpi} && ${failoverSpi}.length > 0)`)
-                            | Not defined
-                        .group-content(ng-show=`${failoverSpi} && ${failoverSpi}.length > 0` ng-repeat=`model in ${failoverSpi} track by $index`)
-                            hr(ng-if='$index != 0')
-                            .settings-row
-                                +dropdown-required-autofocus('Failover SPI:', 'model.kind', '"failoverKind" + $index', 'true', 'true', 'Choose Failover SPI', '[\
-                                        {value: "JobStealing", label: "Job stealing"},\
-                                        {value: "Never", label: "Never"},\
-                                        {value: "Always", label: "Always"},\
-                                        {value: "Custom", label: "Custom"}\
-                                    ]', 'Provides ability to supply custom logic for handling failed execution of a grid job\
-                                    <ul>\
-                                        <li>Job stealing - Supports job stealing from over-utilized nodes to under-utilized nodes</li>\
-                                        <li>Never - Jobs are ordered as they arrived</li>\
-                                        <li>Always - Jobs are first ordered by their priority</li>\
-                                        <li>Custom - Jobs are activated immediately on arrival to mapped node</li>\
-                                        <li>Default - Default FailoverSpi implementation</li>\
-                                    </ul>')
+            .pc-form-grid-col-60(ng-init='failoverSpiTbl={type: "failoverSpi", model: "failoverSpi", focusId: "kind", ui: "failover-table"}')
+                mixin clusters-failover-spi
+                    .ignite-form-field
+                        +ignite-form-field__label('Failover SPI configurations:', '"failoverSpi"')
+                            +tooltip(`Failover SPI configurations`)
+                        .ignite-form-field__control
+                            -let items = failoverSpi
 
-                                    +table-remove-button(failoverSpi, 'Remove Failover SPI')
-                            .settings-row(ng-show='model.kind === "JobStealing"')
-                                +number('Maximum failover attempts:', 'model.JobStealing.maximumFailoverAttempts', '"jsMaximumFailoverAttempts" + $index', 'true', '5', '0',
-                                    'Maximum number of attempts to execute a failed job on another node')
-                            .settings-row(ng-show='model.kind === "Always"')
-                                +number('Maximum failover attempts:', 'model.Always.maximumFailoverAttempts', '"alwaysMaximumFailoverAttempts" + $index', 'true', '5', '0',
-                                    'Maximum number of attempts to execute a failed job on another node')
-                            .settings-row(ng-show=failoverCustom)
-                                +java-class('SPI implementation', 'model.Custom.class', '"failoverSpiClass" + $index', 'true', failoverCustom,
-                                    'Custom FailoverSpi implementation class name.', failoverCustom)
-            .col-sm-6
-                +preview-xml-java(model, 'clusterFailover')
+                            list-editable(ng-model=items name='failoverSpi')
+                                list-editable-item-edit
+                                    - form = '$parent.form'
+                                    .settings-row
+                                        +sane-ignite-form-field-dropdown({
+                                            required: true,
+                                            label: 'Failover SPI:',
+                                            model: '$item.kind',
+                                            name: '"failoverKind"',
+                                            placeholder: 'Choose Failover SPI',
+                                            options: '::$ctrl.Clusters.failoverSpis',
+                                            tip: `
+                                            Provides ability to supply custom logic for handling failed execution of a grid job
+                                            <ul>
+                                                <li>Job stealing - Supports job stealing from over-utilized nodes to under-utilized nodes</li>
+                                                <li>Never - Jobs are ordered as they arrived</li>
+                                                <li>Always - Jobs are first ordered by their priority</li>
+                                                <li>Custom - Jobs are activated immediately on arrival to mapped node</li>
+                                                <li>Default - Default FailoverSpi implementation</li>
+                                            </ul>`
+                                        })
+
+                                    .settings-row(ng-show='$item.kind === "JobStealing"')
+                                        +number('Maximum failover attempts:', '$item.JobStealing.maximumFailoverAttempts', '"jsMaximumFailoverAttempts"', 'true', '5', '0',
+                                            'Maximum number of attempts to execute a failed job on another node')
+                                    .settings-row(ng-show='$item.kind === "Always"')
+                                        +number('Maximum failover attempts:', '$item.Always.maximumFailoverAttempts', '"alwaysMaximumFailoverAttempts"', 'true', '5', '0',
+                                            'Maximum number of attempts to execute a failed job on another node')
+                                    .settings-row(ng-show=failoverCustom)
+                                        +java-class('SPI implementation', '$item.Custom.class', '"failoverSpiClass"', 'true', failoverCustom,
+                                            'Custom FailoverSpi implementation class name.', failoverCustom)
+
+                                list-editable-no-items
+                                    list-editable-add-item-button(
+                                        add-item=`(${items} = ${items} || []).push({})`
+                                        label-single='failover SPI'
+                                        label-multiple='failover SPIs'
+                                    )
+
+                +clusters-failover-spi
+
+        .pca-form-column-6
+            +preview-xml-java(model, 'clusterFailover')

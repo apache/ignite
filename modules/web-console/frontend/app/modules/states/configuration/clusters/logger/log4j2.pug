@@ -17,23 +17,22 @@
 include /app/helpers/jade/mixins
 
 -var form = 'logger'
--var model = 'backupItem.logger.Log4j2'
--var log4j2Required = 'backupItem.logger.kind === "Log4j2"'
+-var model = '$ctrl.clonedCluster.logger.Log4j2'
+-var log4j2Required = '$ctrl.clonedCluster.logger.kind === "Log4j2"'
 
-div
-    .details-row
-        +dropdown('Level:', `${model}.level`, '"log4j2Level"', 'true', 'Default',
-            '[\
-                {value: "OFF", label: "OFF"},\
-                {value: "FATAL", label: "FATAL"},\
-                {value: "ERROR", label: "ERROR"},\
-                {value: "WARN", label: "WARN"},\
-                {value: "INFO", label: "INFO"},\
-                {value: "DEBUG", label: "DEBUG"},\
-                {value: "TRACE", label: "TRACE"},\
-                {value: "ALL", label: "ALL"},\
-                {value: null, label: "Default"}\
-            ]',
-            'Level for internal log4j2 implementation')
-    .details-row
-        +text('Path:', `${model}.path`, '"log4j2Path"', log4j2Required, 'Input path', 'Path or URI to XML configuration')
+.pc-form-grid-col-60
+    +dropdown('Level:', `${model}.level`, '"log4j2Level"', 'true', 'Default',
+        '[\
+            {value: "OFF", label: "OFF"},\
+            {value: "FATAL", label: "FATAL"},\
+            {value: "ERROR", label: "ERROR"},\
+            {value: "WARN", label: "WARN"},\
+            {value: "INFO", label: "INFO"},\
+            {value: "DEBUG", label: "DEBUG"},\
+            {value: "TRACE", label: "TRACE"},\
+            {value: "ALL", label: "ALL"},\
+            {value: null, label: "Default"}\
+        ]',
+        'Level for internal log4j2 implementation')
+.pc-form-grid-col-60
+    +text('Path:', `${model}.path`, '"log4j2Path"', log4j2Required, 'Input path', 'Path or URI to XML configuration')

@@ -1678,18 +1678,8 @@ public class GridCacheUtils {
 
         Collection<QueryEntity> entities = cfg.getQueryEntities();
 
-        if (!F.isEmpty(entities)) {
-            Collection<QueryEntity> normalEntities = new ArrayList<>(entities.size());
-
-            for (QueryEntity entity : entities) {
-                if (!F.isEmpty(entity.getNotNullFields()))
-                    QueryUtils.checkNotNullAllowed(cfg);
-
-                normalEntities.add(QueryUtils.normalizeQueryEntity(entity, cfg.isSqlEscapeAll()));
-            }
-
-            cfg.clearQueryEntities().setQueryEntities(normalEntities);
-        }
+        if (!F.isEmpty(entities))
+            cfg.clearQueryEntities().setQueryEntities(QueryUtils.normalizeQueryEntities(entities, cfg));
     }
 
     /**

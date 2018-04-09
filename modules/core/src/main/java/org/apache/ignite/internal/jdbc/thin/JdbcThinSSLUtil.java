@@ -19,6 +19,7 @@ package org.apache.ignite.internal.jdbc.thin;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.FileSystems;
@@ -70,16 +71,17 @@ public class JdbcThinSSLUtil {
     }
 
     /**
+     * @param addr Connection address.
      * @param connProps Connection properties.
      * @throws SQLException On connection error or reject.
      * @throws IOException On IO error in handshake.
      * @return SSL socket.
      */
-    public static SSLSocket createSSLSocket(ConnectionProperties connProps) throws SQLException, IOException {
+    public static SSLSocket createSSLSocket(InetSocketAddress addr, ConnectionProperties connProps) throws SQLException, IOException {
         try {
             SSLSocketFactory sslSocketFactory = getSSLSocketFactory(connProps);
 
-            SSLSocket sock = (SSLSocket)sslSocketFactory.createSocket(connProps.getHost(), connProps.getPort());
+            SSLSocket sock = (SSLSocket)sslSocketFactory.createSocket(addr.getAddress(), addr.getPort());
 
             sock.setUseClientMode(true);
 
@@ -88,8 +90,8 @@ public class JdbcThinSSLUtil {
             return sock;
         }
         catch (IOException e) {
-            throw new SQLException("Failed to SSL connect to server [host=" + connProps.getHost() +
-                ", port=" + connProps.getPort() + ']', SqlStateCode.CLIENT_CONNECTION_FAILED, e);
+            throw new SQLException("Failed to SSL connect to server [url=" + connProps.getUrl() +']',
+                SqlStateCode.CLIENT_CONNECTION_FAILED, e);
         }
     }
 

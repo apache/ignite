@@ -121,31 +121,6 @@ struct ApiRobustnessTestSuiteFixture : public odbc::OdbcTestSuite
         CheckSQLStatementDiagnosticError("HY106");
     }
 
-    void CheckSQLDiagnosticError(int16_t handleType, SQLHANDLE handle, const std::string& expectSqlState)
-    {
-        SQLCHAR state[ODBC_BUFFER_SIZE];
-        SQLINTEGER nativeError = 0;
-        SQLCHAR message[ODBC_BUFFER_SIZE];
-        SQLSMALLINT messageLen = 0;
-
-        SQLRETURN ret = SQLGetDiagRec(handleType, handle, 1, state, &nativeError, message, sizeof(message), &messageLen);
-
-        const std::string sqlState = reinterpret_cast<char*>(state);
-        BOOST_REQUIRE_EQUAL(ret, SQL_SUCCESS);
-        BOOST_REQUIRE_EQUAL(sqlState, expectSqlState);
-        BOOST_REQUIRE(messageLen > 0);
-    }
-
-    void CheckSQLStatementDiagnosticError(const std::string& expectSqlState)
-    {
-        CheckSQLDiagnosticError(SQL_HANDLE_STMT, stmt, expectSqlState);
-    }
-
-    void CheckSQLConnectionDiagnosticError(const std::string& expectSqlState)
-    {
-        CheckSQLDiagnosticError(SQL_HANDLE_DBC, dbc, expectSqlState);
-    }
-
     /**
      * Destructor.
      */

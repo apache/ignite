@@ -17,8 +17,6 @@
 
 package org.apache.ignite.ml.genetic;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,11 +38,11 @@ import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
  * Responsible for fitness operation
  */
 public class FitnessTask extends ComputeTaskAdapter<List<Long>, Boolean> {
-
+    /** Ignite instance */
     @IgniteInstanceResource
     private Ignite ignite = null;
 
-    /** GAConfiguration **/
+    /** GAConfiguration */
     private GAConfiguration config = null;
 
     /**

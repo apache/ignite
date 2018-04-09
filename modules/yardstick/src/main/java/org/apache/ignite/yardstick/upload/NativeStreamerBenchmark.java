@@ -34,17 +34,20 @@ public class NativeStreamerBenchmark extends AbstractNativeBenchmark {
      */
     @Override protected void upload(String cacheName, long insertsCnt) {
         try (IgniteDataStreamer<Long, Values10> streamer = ignite().dataStreamer(cacheName)) {
-            if (args.upload.streamerBufSize() != null)
-                streamer.perNodeBufferSize(args.upload.streamerBufSize());
+            if (args.upload.streamerPerNodeBufferSize() != null)
+                streamer.perNodeBufferSize(args.upload.streamerPerNodeBufferSize());
 
-            if (args.upload.streamerNodeParOps() != null)
-                streamer.perNodeParallelOperations(args.upload.streamerNodeParOps());
+            if (args.upload.streamerPerNodeParallelOperations() != null)
+                streamer.perNodeParallelOperations(args.upload.streamerPerNodeParallelOperations());
 
-            int batchSize = args.upload.streamerLocBatchSize();
+            if (args.upload.streamerAllowOverwrite() != null)
+                streamer.allowOverwrite(args.upload.streamerAllowOverwrite());
+
+            Integer batchSize = args.upload.streamerLocalBatchSize();
 
             // IgniteDataStreamer.addData(Object, Object) has known performance issue,
             // so we have an option to work it around.
-            if (batchSize == 1) {
+            if (batchSize == null) {
                 for (long i = 1; i <= insertsCnt; i++)
                     streamer.addData(i, new Values10());
             }

@@ -22,10 +22,10 @@ mixin ignite-form-field-datepicker(label, model, name, mindate, maxdate, minview
 
             placeholder=placeholder
             
-            data-ng-model=model
+            ng-model=model
 
-            data-ng-required=required && `${required}`
-            data-ng-disabled=disabled && `${disabled}`
+            ng-required=required && `${required}`
+            ng-disabled=disabled && `${disabled}`
 
             bs-datepicker
 
@@ -42,8 +42,6 @@ mixin ignite-form-field-datepicker(label, model, name, mindate, maxdate, minview
             tabindex='0'
 
             onkeydown='return false'
-
-            data-ignite-form-panel-field=''
         )&attributes(attributes.attributes)
 
     .datepicker--ignite.ignite-form-field

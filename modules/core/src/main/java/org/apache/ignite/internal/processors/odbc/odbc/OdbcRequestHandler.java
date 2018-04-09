@@ -35,6 +35,7 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryWriterExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.authentication.AuthorizationContext;
 import org.apache.ignite.internal.processors.cache.query.SqlFieldsQueryEx;
 import org.apache.ignite.internal.processors.cache.query.IgniteQueryErrorCode;
 import org.apache.ignite.internal.processors.odbc.ClientListenerRequest;
@@ -97,6 +98,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
     /** Update on server flag. */
     private final boolean skipReducerOnUpdate;
 
+    /** Authentication context */
+    private AuthorizationContext actx;
+
     /**
      * Constructor.
      * @param ctx Context.
@@ -108,10 +112,11 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
      * @param collocated Collocated flag.
      * @param lazy Lazy flag.
      * @param skipReducerOnUpdate Skip reducer on update flag.
+     * @param actx Authentication context.
      */
     public OdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors,
-        boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly,
-        boolean collocated, boolean lazy, boolean skipReducerOnUpdate) {
+        boolean distributedJoins, boolean enforceJoinOrder, boolean replicatedOnly, boolean collocated, boolean lazy,
+        boolean skipReducerOnUpdate, AuthorizationContext actx) {
         this.ctx = ctx;
         this.busyLock = busyLock;
         this.maxCursors = maxCursors;
@@ -121,6 +126,7 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         this.collocated = collocated;
         this.lazy = lazy;
         this.skipReducerOnUpdate = skipReducerOnUpdate;
+        this.actx = actx;
 
         log = ctx.log(getClass());
     }
@@ -134,6 +140,9 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
         if (!busyLock.enterBusy())
             return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN,
                     "Failed to handle ODBC request because node is stopping: " + req);
+
+        if (actx != null)
+            AuthorizationContext.context(actx);
 
         try {
             switch (req.command()) {
@@ -165,6 +174,8 @@ public class OdbcRequestHandler implements ClientListenerRequestHandler {
             return new OdbcResponse(IgniteQueryErrorCode.UNKNOWN, "Unsupported ODBC request: " + req);
         }
         finally {
+            AuthorizationContext.clear();
+
             busyLock.leaveBusy();
         }
     }
