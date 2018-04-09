@@ -18,7 +18,7 @@
 version: '2'
 services:
   mongodb:
-    image: 'mongo:latest'
+    image: 'mongo:3.4'
     container_name: 'mongodb'
 
   testenv:

@@ -264,7 +264,7 @@ public class IgniteWalSerializerVersionTest extends GridCommonAbstractTest {
                 p = p0;
         }
 
-        wal.fsync(null);
+        wal.flush(null, false);
 
         Iterator<Long> itToCheck = checker.getTimeStamps().iterator();
 

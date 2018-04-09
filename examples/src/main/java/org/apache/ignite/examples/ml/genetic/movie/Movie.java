@@ -22,7 +22,6 @@ import java.util.List;
 /**
  * POJO to model a movie.
  */
-
 public class Movie {
     /** name of movie */
     private String name;
@@ -125,7 +124,8 @@ public class Movie {
         this.rating = rating;
     }
 
-    public String toString() {
+    /** {@inheritDoc} */
+    @Override public String toString() {
         return "Movie [name=" + name + ", genre=" + genre + ", rating=" + rating + ", imdbRating=" + imdbRating
             + ", year=" + year + "]";
     }
