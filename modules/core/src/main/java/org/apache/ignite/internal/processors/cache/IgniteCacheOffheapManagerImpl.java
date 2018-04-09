@@ -953,7 +953,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         String idxName = treeName(p);
 
-        DataStructureSize totalSize = grp.dataStructureSize().sizeOf(TOTAL);
+        DataStructureSize totalSize = grp.dataRegion().dataStructureSize().sizeOf(TOTAL);
 
         CacheDataTree dataTree = new CacheDataTree(
             grp,
@@ -962,7 +962,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             rowStore,
             rootPage,
             true,
-            grp.dataStructureSize().sizeOf(PK_INDEX)
+            grp.dataRegion().dataStructureSize().sizeOf(PK_INDEX)
         );
 
         return new CacheDataStoreImpl(p, idxName, rowStore, dataTree);

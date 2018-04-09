@@ -42,7 +42,7 @@ public class DataStructureSizeInMemoryGroup implements DataStructureSizeContext<
     @Override public DataStructureSize sizeOf(String structure) {
         return new DataStructureSizeAdapter() {
             @Override public long size() {
-                return -1;
+                return 0;
             }
 
             @Override public String name() {

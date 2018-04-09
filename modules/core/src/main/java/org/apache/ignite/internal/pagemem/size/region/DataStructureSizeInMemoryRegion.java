@@ -92,7 +92,7 @@ public class DataStructureSizeInMemoryRegion implements DataStructureSizeContext
 
         groups.put(cacheOrGroupName, inMemoryGroup);
 
-        return this;
+        return inMemoryGroup;
     }
 
     @Override public Collection<DataStructureSize> structures() {
