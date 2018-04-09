@@ -194,12 +194,14 @@ public class GridLuceneOutputStream extends IndexOutput implements Accountable {
                 toCp = (int)numBytes;
 
             if (gridInput != null)
-                gridInput.readBytes(currBuf + bufPosition, toCp);
+                gridInput.readBytes(currBuf + bufPosition, toCp, crc);
             else {
                 byte[] buff = new byte[toCp];
 
                 input.readBytes(buff, 0, toCp, false);
-
+                
+                crc.update(buff, 0, toCp);
+                
                 mem.writeBytes(currBuf + bufPosition, buff);
             }
 

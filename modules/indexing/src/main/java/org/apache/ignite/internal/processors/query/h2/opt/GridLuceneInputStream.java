@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.query.h2.opt;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.util.zip.Checksum;
+
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.IndexInput;
@@ -198,9 +200,10 @@ public class GridLuceneInputStream extends IndexInput implements Cloneable {
      *
      * @param ptr Pointer.
      * @param len Length.
+     * @param crc Checksum.
      * @throws IOException If failed.
      */
-    void readBytes(long ptr, int len) throws IOException {
+    void readBytes(long ptr, int len, Checksum crc) throws IOException {
         while (len > 0) {
             if (bufPosition >= bufLength) {
                 currBufIdx++;
@@ -212,6 +215,12 @@ public class GridLuceneInputStream extends IndexInput implements Cloneable {
             int bytesToCp = len < remainInBuf ? len : remainInBuf;
 
             mem.copyMemory(currBuf + bufPosition, ptr, bytesToCp);
+
+            byte[] buff = new byte[bytesToCp];
+
+            mem.readBytes(currBuf + bufPosition, buff, 0, bytesToCp);
+
+            crc.update(buff, 0, bytesToCp);
 
             ptr += bytesToCp;
             len -= bytesToCp;
