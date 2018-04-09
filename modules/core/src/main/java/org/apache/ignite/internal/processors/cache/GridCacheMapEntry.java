@@ -1050,8 +1050,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             recordNodeId(affNodeId, topVer);
         }
         finally {
-            if (lockedByCurrentThread())
+            if (lockedByCurrentThread()) {
                 unlockEntry();
+
+                cctx.evicts().touch(this, AffinityTopologyVersion.NONE);
+            }
         }
 
         onUpdateFinished(updateCntr0);
@@ -1121,8 +1124,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             recordNodeId(affNodeId, topVer);
         }
         finally {
-            if (lockedByCurrentThread())
+            if (lockedByCurrentThread()) {
                 unlockEntry();
+
+                cctx.evicts().touch(this, AffinityTopologyVersion.NONE);
+            }
         }
 
         onUpdateFinished(updateCntr0);
@@ -4608,8 +4614,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 return;
             }
             finally {
-                if (entry.lockedByCurrentThread())
+                if (entry.lockedByCurrentThread()) {
                     entry.unlockEntry();
+
+                    cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
+                }
             }
 
             entry.onUpdateFinished(updateCntr0);
@@ -4777,8 +4786,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 return;
             }
             finally {
-                if (entry.lockedByCurrentThread())
+                if (entry.lockedByCurrentThread()) {
                     entry.unlockEntry();
+
+                    cctx.evicts().touch(entry, AffinityTopologyVersion.NONE);
+                }
             }
 
             entry.onUpdateFinished(updateCntr0);
