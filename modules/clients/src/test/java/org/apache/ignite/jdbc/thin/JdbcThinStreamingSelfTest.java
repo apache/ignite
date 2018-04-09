@@ -183,6 +183,7 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
                 HashMap<String, IgniteDataStreamer<?, ?>> streamers = U.field(cliCtx, "streamers");
 
+                System.out.println("+++ CHECK streams");
                 assertEquals(2, streamers.size());
 
                 assertEqualsCollections(new HashSet<>(Arrays.asList("person", "T")), streamers.keySet());
