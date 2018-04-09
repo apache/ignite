@@ -36,7 +36,7 @@ import static org.hamcrest.CoreMatchers.hasItem;
 /**
  * Regression test. Verifies that jdbc metadata contains all schemas, if driver connected to client node.
  */
-public class JdbcMetadataSchemaRegressionTest extends GridCommonAbstractTest {
+public class JdbcThinMetadataSchemaRegressionTest extends GridCommonAbstractTest {
     /** Server node */
     private static Ignite server;
 
