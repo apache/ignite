@@ -23,8 +23,8 @@ import com.google.common.collect.Lists;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.datastructures.latch.Latch;
-import org.apache.ignite.internal.processors.cache.datastructures.latch.LatchManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.Latch;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -32,9 +32,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
 /**
- * Tests for {@link LatchManager} functionality when latch coordinator is failed.
+ * Tests for {@link ExchangeLatchManager} functionality when latch coordinator is failed.
  */
-public class IgniteLatchManagerCoordinatorFailTest extends GridCommonAbstractTest {
+public class IgniteExchangeLatchManagerCoordinatorFailTest extends GridCommonAbstractTest {
     /** */
     private static final String LATCH_NAME = "test";
 
@@ -42,7 +42,7 @@ public class IgniteLatchManagerCoordinatorFailTest extends GridCommonAbstractTes
     private final AffinityTopologyVersion latchTopVer = new AffinityTopologyVersion(5, 0);
 
     /** Wait before latch creation. */
-    private final IgniteBiClosure<LatchManager, CountDownLatch, Boolean> beforeCreate = (mgr, syncLatch) -> {
+    private final IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean> beforeCreate = (mgr, syncLatch) -> {
         try {
             syncLatch.countDown();
             syncLatch.await();
@@ -62,7 +62,7 @@ public class IgniteLatchManagerCoordinatorFailTest extends GridCommonAbstractTes
     };
 
     /** Wait before latch count down. */
-    private final IgniteBiClosure<LatchManager, CountDownLatch, Boolean> beforeCountDown = (mgr, syncLatch) -> {
+    private final IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean> beforeCountDown = (mgr, syncLatch) -> {
         try {
             Latch distributedLatch = mgr.getOrCreate(LATCH_NAME, latchTopVer);
 
@@ -82,7 +82,7 @@ public class IgniteLatchManagerCoordinatorFailTest extends GridCommonAbstractTes
     };
 
     /** Wait after all operations are successful. */
-    private final IgniteBiClosure<LatchManager, CountDownLatch, Boolean> all = (mgr, syncLatch) -> {
+    private final IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean> all = (mgr, syncLatch) -> {
         try {
             Latch distributedLatch = mgr.getOrCreate(LATCH_NAME, latchTopVer);
 
@@ -142,7 +142,7 @@ public class IgniteLatchManagerCoordinatorFailTest extends GridCommonAbstractTes
      * Node 4 state -> {@link #beforeCreate}
      */
     public void testCoordinatorFail1() throws Exception {
-        List<IgniteBiClosure<LatchManager, CountDownLatch, Boolean>> nodeStates = Lists.newArrayList(
+        List<IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean>> nodeStates = Lists.newArrayList(
             beforeCreate,
             beforeCountDown,
             all,
@@ -161,7 +161,7 @@ public class IgniteLatchManagerCoordinatorFailTest extends GridCommonAbstractTes
      * Node 4 state -> {@link #beforeCreate}
      */
     public void testCoordinatorFail2() throws Exception {
-        List<IgniteBiClosure<LatchManager, CountDownLatch, Boolean>> nodeStates = Lists.newArrayList(
+        List<IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean>> nodeStates = Lists.newArrayList(
             beforeCountDown,
             beforeCountDown,
             all,
@@ -180,7 +180,7 @@ public class IgniteLatchManagerCoordinatorFailTest extends GridCommonAbstractTes
      * Node 4 state -> {@link #beforeCreate}
      */
     public void testCoordinatorFail3() throws Exception {
-        List<IgniteBiClosure<LatchManager, CountDownLatch, Boolean>> nodeStates = Lists.newArrayList(
+        List<IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean>> nodeStates = Lists.newArrayList(
             all,
             beforeCountDown,
             all,
@@ -196,7 +196,7 @@ public class IgniteLatchManagerCoordinatorFailTest extends GridCommonAbstractTes
      * @param nodeScenarios Node scenarios.
      * @throws Exception If failed.
      */
-    private void doTestCoordinatorFail(List<IgniteBiClosure<LatchManager, CountDownLatch, Boolean>> nodeScenarios) throws Exception {
+    private void doTestCoordinatorFail(List<IgniteBiClosure<ExchangeLatchManager, CountDownLatch, Boolean>> nodeScenarios) throws Exception {
         IgniteEx crd = (IgniteEx) startGridsMultiThreaded(5);
         crd.cluster().active(true);
 
@@ -209,7 +209,7 @@ public class IgniteLatchManagerCoordinatorFailTest extends GridCommonAbstractTes
 
         for (int node = 1; node < 5; node++) {
             IgniteEx grid = grid(node);
-            LatchManager latchMgr = grid.context().cache().context().exchange().latch();
+            ExchangeLatchManager latchMgr = grid.context().cache().context().exchange().latch();
             final int stateIdx = node - 1;
 
             IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(() -> {

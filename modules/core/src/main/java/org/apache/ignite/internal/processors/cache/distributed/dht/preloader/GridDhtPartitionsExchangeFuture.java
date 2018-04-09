@@ -76,7 +76,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.LocalJoinCachesContext;
 import org.apache.ignite.internal.processors.cache.StateChangeRequest;
 import org.apache.ignite.internal.processors.cache.WalStateAbstractMessage;
-import org.apache.ignite.internal.processors.cache.datastructures.latch.Latch;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.Latch;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
@@ -1219,7 +1219,11 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
      * @throws IgniteCheckedException If failed.
      */
     private void waitPartitionRelease(int phase) throws IgniteCheckedException {
-        Latch releaseLatch = cctx.exchange().latch().getOrCreate("exchange-" + phase, initialVersion());
+        Latch releaseLatch = null;
+
+        // Wait for other nodes only on first phase.
+        if (phase == 0)
+            releaseLatch = cctx.exchange().latch().getOrCreate("exchange", initialVersion());
 
         IgniteInternalFuture<?> partReleaseFut = cctx.partitionReleaseFuture(initialVersion());
 
@@ -1311,6 +1315,9 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
                 }
             }
         }
+
+        if (releaseLatch == null)
+            return;
 
         releaseLatch.countDown();
 

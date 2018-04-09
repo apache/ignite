@@ -62,7 +62,7 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryLocalJoinData;
 import org.apache.ignite.internal.managers.eventstorage.DiscoveryEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
-import org.apache.ignite.internal.processors.cache.datastructures.latch.LatchManager;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch.ExchangeLatchManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -215,7 +215,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     private volatile AffinityTopologyVersion exchMergeTestWaitVer;
 
     /** Distributed latch manager. */
-    private LatchManager latchMgr;
+    private ExchangeLatchManager latchMgr;
 
     /** Discovery listener. */
     private final DiscoveryEventListener discoLsnr = new DiscoveryEventListener() {
@@ -310,7 +310,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         exchWorker = new ExchangeWorker();
 
-        latchMgr = new LatchManager(cctx.kernalContext());
+        latchMgr = new ExchangeLatchManager(cctx.kernalContext());
 
         cctx.gridEvents().addDiscoveryEventListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED,
             EVT_DISCOVERY_CUSTOM_EVT);
@@ -1577,7 +1577,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     /**
      * @return Latch manager instance.
      */
-    public LatchManager latch() {
+    public ExchangeLatchManager latch() {
         return latchMgr;
     }
 

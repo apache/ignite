@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.datastructures.latch;
+package org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch;
 
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
@@ -23,7 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 /**
  * Simple distributed count down latch interface.
  * Latch supports count down and await logic.
- * Latch functionality is not relied on caches and has own state management {@link LatchManager}.
+ * Latch functionality is not relied on caches and has own state management {@link ExchangeLatchManager}.
  */
 public interface Latch {
     /**

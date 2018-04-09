@@ -43,7 +43,7 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
  */
 public class GridDhtPartitionsStateValidator {
     /** Version since node is able to send cache sizes in {@link GridDhtPartitionsSingleMessage}. */
-    private static final IgniteProductVersion SIZES_VALIDATION_AVAILABLE_SINCE = IgniteProductVersion.fromString("2.4.0");
+    private static final IgniteProductVersion SIZES_VALIDATION_AVAILABLE_SINCE = IgniteProductVersion.fromString("2.5.0");
 
     /** Cache shared context. */
     private final GridCacheSharedContext<?, ?> cctx;

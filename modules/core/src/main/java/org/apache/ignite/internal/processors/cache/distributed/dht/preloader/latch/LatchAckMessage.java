@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache.datastructures.latch;
+package org.apache.ignite.internal.processors.cache.distributed.dht.preloader.latch;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
