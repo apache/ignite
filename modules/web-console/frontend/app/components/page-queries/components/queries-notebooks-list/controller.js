@@ -126,7 +126,7 @@ export class NotebooksListCtrl {
 
     _checkActionsAllow() {
         // Dissallow clone and rename if more then one item is selectted.
-        const oneItemIsSelected  = this.gridApi.selection.getSelectedRows().length === 1;
+        const oneItemIsSelected  = this.gridApi.selection.legacyGetSelectedRows().length === 1;
         this.actionOptions[0].available = oneItemIsSelected;
         this.actionOptions[1].available = oneItemIsSelected;
     }
@@ -154,7 +154,7 @@ export class NotebooksListCtrl {
 
     async renameNotebok() {
         try {
-            const currentNotebook =  this.gridApi.selection.getSelectedRows()[0];
+            const currentNotebook =  this.gridApi.selection.legacyGetSelectedRows()[0];
             const newNotebookName =  await this.IgniteInput.input('Rename notebook', 'Notebook name', currentNotebook.name);
 
             if (this.getNotebooksNames().find((name) => newNotebookName === name))
@@ -174,7 +174,7 @@ export class NotebooksListCtrl {
 
     async cloneNotebook() {
         try {
-            const clonedNotebook = Object.assign({}, this.gridApi.selection.getSelectedRows()[0]);
+            const clonedNotebook = Object.assign({}, this.gridApi.selection.legacyGetSelectedRows()[0]);
             const newNotebookName = await this.IgniteInput.clone(clonedNotebook.name, this.getNotebooksNames());
 
             this.IgniteLoading.start('notebooksLoading');
@@ -201,7 +201,7 @@ export class NotebooksListCtrl {
     async deleteNotebooks() {
         try {
             this.IgniteLoading.start('notebooksLoading');
-            await this.IgniteNotebook.removeBatch(this.gridApi.selection.getSelectedRows());
+            await this.IgniteNotebook.removeBatch(this.gridApi.selection.legacyGetSelectedRows());
             await this.IgniteLoading.finish('notebooksLoading');
 
             this._loadAllNotebooks();

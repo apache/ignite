@@ -29,9 +29,9 @@ import org.apache.ignite.ml.dataset.Dataset;
 import org.apache.ignite.ml.dataset.DatasetBuilder;
 import org.apache.ignite.ml.dataset.PartitionDataBuilder;
 import org.apache.ignite.ml.math.functions.IgniteBiFunction;
-import org.apache.ignite.ml.svm.multi.LabelPartitionContext;
-import org.apache.ignite.ml.svm.multi.LabelPartitionDataBuilderOnHeap;
-import org.apache.ignite.ml.svm.multi.LabelPartitionDataOnHeap;
+import org.apache.ignite.ml.structures.partition.LabelPartitionContext;
+import org.apache.ignite.ml.structures.partition.LabelPartitionDataBuilderOnHeap;
+import org.apache.ignite.ml.structures.partition.LabelPartitionDataOnHeap;
 
 /**
  * Base class for a soft-margin SVM linear multiclass-classification trainer based on the communication-efficient

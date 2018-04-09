@@ -34,7 +34,6 @@ import org.apache.ignite.ml.genetic.cache.GeneCacheConfig;
 import org.apache.ignite.ml.genetic.cache.PopulationCacheConfig;
 import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
-import org.apache.ignite.ml.genetic.utils.GAGridUtils;
 
 /**
  * Central class responsible for orchestrating distributive Genetic Algorithm.
@@ -42,7 +41,7 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
  * This class accepts a GAConfigriation and Ignite instance.
  */
 public class GAGrid {
-
+    /** Ignite logger */
     IgniteLogger igniteLogger = null;
     /** GAConfiguraton */
     private GAConfiguration config = null;
@@ -53,7 +52,7 @@ public class GAGrid {
     /** Gene cache */
     private IgniteCache<Long, Gene> geneCache = null;
     /** population keys */
-    private List<Long> populationKeys = new ArrayList();
+    private List<Long> populationKeys = new ArrayList<Long>();
 
     /**
      * @param config GAConfiguration
@@ -79,7 +78,6 @@ public class GAGrid {
      *
      * @return Average fitness score
      */
-
     private Double calculateAverageFitness() {
 
         double avgFitnessScore = 0;
@@ -104,7 +102,7 @@ public class GAGrid {
      * @param chromosomeKeys List of chromosome primary keys
      */
     private void calculateFitness(List<Long> chromosomeKeys) {
-        Boolean boolValue = this.ignite.compute().execute(new FitnessTask(this.config), chromosomeKeys);
+       this.ignite.compute().execute(new FitnessTask(this.config), chromosomeKeys);
     }
 
     /**
@@ -122,9 +120,9 @@ public class GAGrid {
         int numberOfCopies = selectedKeys.size() / truncateCount;
 
         Boolean boolValue = this.ignite.compute()
-            .execute(new TruncateSelectionTask(this.config, fittestKeys, numberOfCopies), selectedKeys);
+            .execute(new TruncateSelectionTask(fittestKeys, numberOfCopies), selectedKeys);
 
-        return Boolean.TRUE;
+        return boolValue;
 
     }
 
@@ -136,7 +134,7 @@ public class GAGrid {
      */
     private Chromosome createChromosome(int numberOfGenes) {
         long[] genes = new long[numberOfGenes];
-        List<Long> keys = new ArrayList();
+        List<Long> keys = new ArrayList<Long>();
         int k = 0;
         while (k < numberOfGenes) {
             long key = selectGene(k);
@@ -157,7 +155,7 @@ public class GAGrid {
      * @param leastFitKeys List of primary keys for Chromsomes that are considered 'least fit'
      */
     private void crossover(List<Long> leastFitKeys) {
-        Boolean boolValue = this.ignite.compute().execute(new CrossOverTask(this.config), leastFitKeys);
+        this.ignite.compute().execute(new CrossOverTask(this.config), leastFitKeys);
     }
 
     /**
@@ -185,8 +183,6 @@ public class GAGrid {
         double averageFitnessScore = calculateAverageFitness();
 
         fittestChomosome = populationCache.get(keys.get(0));
-
-        List<Gene> genes = GAGridUtils.getGenesForChromosome(ignite, fittestChomosome);
 
         // while NOT terminateCondition met
         while (!(config.getTerminateCriteria().isTerminationConditionMet(fittestChomosome, averageFitnessScore,
@@ -227,13 +223,12 @@ public class GAGrid {
      * @return List of primary keys for chromosomes.
      */
     private List<Long> getChromosomesByFittest() {
-        List<Long> orderChromKeysByFittest = new ArrayList();
+        List<Long> orderChromKeysByFittest = new ArrayList<Long>();
         String orderDirection = "desc";
 
-        if(config.isHigherFitnessValueFitter()==false)
-         {
-                orderDirection = "asc";
-         }
+        if (!config.isHigherFitnessValueFitter())
+            orderDirection = "asc";
+
         String fittestSQL = "select _key from Chromosome order by fitnessScore " + orderDirection;
 
         // Execute query to retrieve keys for ALL Chromosomes by fittnessScore
@@ -312,7 +307,7 @@ public class GAGrid {
      * @param leastFitKeys List of primary keys for Chromosomes that are considered 'least fit'.
      */
     private void mutation(List<Long> leastFitKeys) {
-        Boolean boolValue = this.ignite.compute().execute(new MutateTask(this.config), leastFitKeys);
+         this.ignite.compute().execute(new MutateTask(this.config), leastFitKeys);
     }
 
     /**
@@ -348,7 +343,6 @@ public class GAGrid {
      * @param keys
      * @return List of keys
      */
-
     private List<Long> selectByTruncation(List<Long> keys) {
         double truncatePercentage = this.config.getTruncateRate();
 
@@ -364,12 +358,10 @@ public class GAGrid {
      * @return Primary key of respective Gene chosen
      */
     private long selectGene(int k) {
-        if (config.getChromosomeCriteria() == null) {
+        if (config.getChromosomeCriteria() == null)
             return (selectAnyGene());
-        }
-        else {
+        else 
             return (selectGeneByChromsomeCriteria(k));
-        }
     }
 
     /**
@@ -431,7 +423,7 @@ public class GAGrid {
 
                 List<Long> fittestKeys = getFittestKeysForTruncation(chromosomeKeys);
 
-                Boolean boolValue = copyFitterChromosomesToPopulation(fittestKeys, selectedKeys);
+                copyFitterChromosomesToPopulation(fittestKeys, selectedKeys);
 
                 // copy more fit keys to rest of population
                 break;
