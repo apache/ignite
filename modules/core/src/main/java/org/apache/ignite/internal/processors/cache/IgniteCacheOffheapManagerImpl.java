@@ -35,6 +35,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdAllocator;
+import org.apache.ignite.internal.pagemem.size.DataStructureSize;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -79,6 +81,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PK_INDEX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.TOTAL;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 
 /**
@@ -950,6 +953,8 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         String idxName = treeName(p);
 
+        DataStructureSize totalPages = grp.dataStructureSize().sizeOf(TOTAL);
+
         CacheDataTree dataTree = new CacheDataTree(
             grp,
             idxName,
@@ -958,7 +963,14 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             rootPage,
             true,
             grp.dataStructureSize().sizeOf(PK_INDEX)
-        );
+        ){
+            @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
+                if (totalPages != null)
+                    totalPages.inc();
+
+                return pageMem.allocatePage(grpId, PageIdAllocator.INDEX_PARTITION, FLAG_IDX);
+            }
+        };
 
         return new CacheDataStoreImpl(p, idxName, rowStore, dataTree);
     }

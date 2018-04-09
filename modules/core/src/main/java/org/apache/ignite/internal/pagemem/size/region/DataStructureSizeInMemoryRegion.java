@@ -12,6 +12,7 @@ import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.DAT
 import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PK_INDEX;
 import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PURE_DATA;
 import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.REUSE_LIST;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.TOTAL;
 import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.simpleTracker;
 
 public class DataStructureSizeInMemoryRegion implements DataStructureSizeContext<CacheGroupContext, DataStructureSizeContext> {
@@ -35,11 +36,13 @@ public class DataStructureSizeInMemoryRegion implements DataStructureSizeContext
         DataStructureSize reuseListPages = simpleTracker(name + "-" + REUSE_LIST);
         DataStructureSize dataPages = simpleTracker(name + "-" + DATA);
         DataStructureSize pureDataSize = simpleTracker(name + "-" + PURE_DATA);
+        DataStructureSize totalSize = simpleTracker(name + "-" + TOTAL);
 
         structures.put(pkIndexPages.name(), pkIndexPages);
         structures.put(reuseListPages.name(), reuseListPages);
         structures.put(dataPages.name(), dataPages);
         structures.put(pureDataSize.name(), pureDataSize);
+        structures.put(totalSize.name(), totalSize);
     }
 
     @Override public DataStructureSizeContext parent() {
