@@ -19,7 +19,9 @@ package org.apache.ignite.cache.affinity;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -227,45 +229,24 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
-            List<ClusterNode> sortedNodes = sortNodes(affCtx.currentTopologySnapshot());
-
-            List<List<ClusterNode>> res = new ArrayList<>(parts);
-
-            int backups = Math.min(affCtx.backups(), sortedNodes.size() - 1);
-
-            for (int i = 0; i < parts; i++) {
-                List<ClusterNode> nodes = new ArrayList<>(backups + 1);
-
-                nodes.add(mapPartitionToNode(i, sortedNodes));
-
-                for (int j = 1; j <= backups; j++)
-                    nodes.add(mapPartitionToNode(i + j, sortedNodes));
-
-                res.add(nodes);
-            }
-
-            return res;
-        }
-
-        /**
-         * @param part Partition number.
-         * @param sortedNodes Nodes sorted by name.
-         * @return Mapped node.
-         */
-        private ClusterNode mapPartitionToNode(int part, List<ClusterNode> sortedNodes) {
-            return sortedNodes.get(part % sortedNodes.size());
-        }
-
-        /**
-         * @param clusterNodes Nodes for sorting.
-         * @return New list which contains sorted nodes by node name.
-         */
-        private List<ClusterNode> sortNodes(List<ClusterNode> clusterNodes) {
-            List<ClusterNode> nodes = new ArrayList<>(clusterNodes);
+            List<ClusterNode> nodes = new ArrayList<>(affCtx.currentTopologySnapshot());
 
             nodes.sort(Comparator.comparing(o -> o.<String>attribute(ATTR_IGNITE_INSTANCE_NAME)));
 
-            return nodes;
+            List<List<ClusterNode>> res = new ArrayList<>(parts);
+
+            for (int i = 0; i < parts; i++) {
+                Set<ClusterNode> n0 = new LinkedHashSet<>();
+
+                n0.add(nodes.get(i % nodes.size()));
+
+                for (int j = 1; j <= affCtx.backups(); j++)
+                    n0.add(nodes.get((i + j) % nodes.size()));
+
+                res.add(new ArrayList<>(n0));
+            }
+
+            return res;
         }
 
         /** {@inheritDoc} */
