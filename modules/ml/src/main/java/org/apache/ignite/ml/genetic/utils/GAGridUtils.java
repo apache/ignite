@@ -26,20 +26,17 @@ import javax.cache.Cache.Entry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 
 import org.apache.ignite.ml.genetic.Chromosome;
 import org.apache.ignite.ml.genetic.Gene;
 import org.apache.ignite.ml.genetic.cache.PopulationCacheConfig;
-import org.apache.ignite.ml.genetic.parameter.GAConfiguration;
 import org.apache.ignite.ml.genetic.parameter.GAGridConstants;
 
 /**
  * GA Grid Helper routines
  */
 public class GAGridUtils {
-
     /**
      * Retrieve chromosomes
      *
@@ -48,7 +45,7 @@ public class GAGridUtils {
      * @return List of Chromosomes
      */
     public static List<Chromosome> getChromosomes(Ignite ignite, String query) {
-        List<Chromosome> chromosomes = new ArrayList();
+        List<Chromosome> chromosomes = new ArrayList<Chromosome>();
 
         IgniteCache<Long, Chromosome> populationCache = ignite.getOrCreateCache(PopulationCacheConfig.populationCache());
 
@@ -68,7 +65,7 @@ public class GAGridUtils {
      * @return List of Genes
      */
     public static List<Gene> getGenesForChromosome(Ignite ignite, Chromosome chromosome) {
-        List<Gene> genes = new ArrayList();
+        List<Gene> genes = new ArrayList<Gene>();
         IgniteCache<Long, Gene> cache = ignite.cache(GAGridConstants.GENE_CACHE);
         StringBuffer sbSqlClause = new StringBuffer();
         sbSqlClause.append("_key IN ");
@@ -96,9 +93,8 @@ public class GAGridUtils {
      * @param chromosome Chromosome
      * @return List of Genes
      */
-
     public static List<Gene> getGenesInOrderForChromosome(Ignite ignite, Chromosome chromosome) {
-        List<Gene> genes = new ArrayList();
+        List<Gene> genes = new ArrayList<Gene>();
         IgniteCache<Long, Gene> cache = ignite.cache(GAGridConstants.GENE_CACHE);
 
         long[] primaryKeys = chromosome.getGenes();

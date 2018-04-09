@@ -1727,6 +1727,9 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
                         ctx.name(), e);
         }
 
+        if (e instanceof IgniteException && X.hasCause(e, CacheException.class))
+            e = X.cause(e, CacheException.class);
+
         if (e instanceof IgniteCheckedException)
             return CU.convertToCacheException((IgniteCheckedException) e);
 

@@ -31,8 +31,9 @@ import org.apache.ignite.ml.genetic.utils.GAGridUtils;
  * Terminate Condition implementation for OptimizeMakeChangeGATest <br/>
  */
 public class OptimizeMakeChangeTerminateCriteria implements ITerminateCriteria {
-
+    /** Ignite logger */
     private IgniteLogger igniteLogger = null;
+    /** Ignite instance */
     private Ignite ignite = null;
 
     /**

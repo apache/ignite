@@ -77,13 +77,18 @@ public class FileIODecorator implements FileIO {
     }
 
     /** {@inheritDoc} */
-    @Override public MappedByteBuffer map(int maxWalSegmentSize) throws IOException {
-        return delegate.map(maxWalSegmentSize);
+    @Override public MappedByteBuffer map(int sizeBytes) throws IOException {
+        return delegate.map(sizeBytes);
     }
 
     /** {@inheritDoc} */
     @Override public void force() throws IOException {
         delegate.force();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void force(boolean withMetadata) throws IOException {
+        delegate.force(withMetadata);
     }
 
     /** {@inheritDoc} */

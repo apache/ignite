@@ -37,9 +37,13 @@ import org.junit.Test;
  * Calculate Fitness Test
  */
 public class GAGridCalculateFitnessTest {
-
+    /** Ignite instance */
     private Ignite ignite = null;
+
+    /** GAGrid **/
     private GAGrid gaGrid = null;
+
+    /** GAConfiguraton */
     private GAConfiguration gaConfig = null;
 
     /**
