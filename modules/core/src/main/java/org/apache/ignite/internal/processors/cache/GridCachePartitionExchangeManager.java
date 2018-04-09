@@ -2387,7 +2387,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             IgniteConfiguration cfg = cctx.gridConfig();
 
-                            long rollbackTimeout = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapSynchronization();
+                            long rollbackTimeout = cfg.getTransactionConfiguration().getTxTimeoutOnPartitionMapExchange();
 
                             final long dumpTimeout = 2 * cctx.gridConfig().getNetworkTimeout();
 

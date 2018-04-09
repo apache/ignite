@@ -77,7 +77,7 @@ public class TxRollbackOnTopologyChangeTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 
         cfg.setTransactionConfiguration(new TransactionConfiguration().
-            setTxTimeoutOnPartitionMapSynchronization(ROLLBACK_TIMEOUT));
+            setTxTimeoutOnPartitionMapExchange(ROLLBACK_TIMEOUT));
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 

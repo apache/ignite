@@ -106,7 +106,7 @@ public interface IgniteTransactions {
     public void resetMetrics();
 
     /**
-     * Returns list of active transactions started on local node.
+     * Returns a list of active transactions initiated by this node.
      * <p>
      * Note: returned transaction handle will only support getters, {@link Transaction#close()},
      * {@link Transaction#rollback()}, {@link Transaction#rollbackAsync()} methods.
@@ -117,7 +117,7 @@ public interface IgniteTransactions {
     public Collection<Transaction> localActiveTransactions();
 
     /**
-     * Returns instance of Ignite Transactions which produces transactions marked with given label.
+     * Returns instance of Ignite Transactions to mark a transaction with a special label.
      *
      * @param lb label.
      * @return {@code This} for chaining.
