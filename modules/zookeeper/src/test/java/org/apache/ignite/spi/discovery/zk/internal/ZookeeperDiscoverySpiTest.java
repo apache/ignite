@@ -419,7 +419,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
         try {
             assertFalse("Unexpected error, see log for details", err);
 
-//            checkEventsConsistency();
+            checkEventsConsistency();
 
             checkInternalStructuresCleanup();
 
