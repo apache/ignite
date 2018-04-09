@@ -181,9 +181,11 @@ public class JdbcThinStreamingSelfTest extends JdbcStreamingSelfTest {
 
                 SqlClientContext cliCtx = sqlClientContext();
 
-                HashMap<String, IgniteDataStreamer<?, ?>> streamers = U.field(cliCtx, "streamers");
+                final HashMap<String, IgniteDataStreamer<?, ?>> streamers = U.field(cliCtx, "streamers");
 
-                System.out.println("+++ CHECK streams");
+                // Wait when node process requests (because client send batch requests async).
+                GridTestUtils.waitForCondition(() -> streamers.size() == 2, 1000);
+
                 assertEquals(2, streamers.size());
 
                 assertEqualsCollections(new HashSet<>(Arrays.asList("person", "T")), streamers.keySet());

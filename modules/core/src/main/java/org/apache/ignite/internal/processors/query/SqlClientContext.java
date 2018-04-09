@@ -155,14 +155,10 @@ public class SqlClientContext implements AutoCloseable {
             if (!isStream())
                 return;
 
-            log.info("+++ CLOSE streams");
-
             Iterator<IgniteDataStreamer<?, ?>> it = streamers.values().iterator();
 
             while (it.hasNext()) {
                 IgniteDataStreamer<?, ?> streamer = it.next();
-
-                log.info("+++ CLOSE stream: " + streamer.cacheName());
 
                 U.close(streamer, log);
 
