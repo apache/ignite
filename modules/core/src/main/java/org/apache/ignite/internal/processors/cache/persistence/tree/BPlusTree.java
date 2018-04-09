@@ -2555,6 +2555,8 @@ public abstract class BPlusTree<L, T extends L> extends DataStructure implements
 
         try {
             for (;;) {
+                v.checkLockRetry();
+
                 // Init args.
                 v.pageId = pageId;
                 v.fwdId = fwdId;
