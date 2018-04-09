@@ -86,9 +86,11 @@ public class TrackingPageIO extends PageIO {
      * @param pageId Page id.
      * @param nextSnapshotTag Tag of next snapshot.
      * @param pageSize Page size.
+     *
+     * @return <code>-1</code> if everything is ok, otherwise last saved tag.
      */
-    public void markChanged(ByteBuffer buf, long pageId, long nextSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize) {
-        validateSnapshotTag(buf, nextSnapshotTag, lastSuccessfulSnapshotTag, pageSize);
+    public long markChanged(ByteBuffer buf, long pageId, long nextSnapshotTag, long lastSuccessfulSnapshotTag, int pageSize) {
+        long tag = validateSnapshotTag(buf, nextSnapshotTag, lastSuccessfulSnapshotTag, pageSize);
 
         int cntOfPage = countOfPageToTrack(pageSize);
 
@@ -105,7 +107,7 @@ public class TrackingPageIO extends PageIO {
         byte newVal =  (byte) (byteToUpdate | updateTemplate);
 
         if (byteToUpdate == newVal)
-            return;
+            return tag;
 
         buf.put(idx, newVal);
 
@@ -114,6 +116,8 @@ public class TrackingPageIO extends PageIO {
         buf.putShort(sizeOff, newSize);
 
         assert newSize == countOfChangedPage(buf, nextSnapshotTag, pageSize);
+
+        return tag;
     }
 
     /**
