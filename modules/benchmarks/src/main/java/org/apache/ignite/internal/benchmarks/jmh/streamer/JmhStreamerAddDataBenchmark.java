@@ -57,15 +57,15 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * DataStreamerImpl.addData(Collection) vs DataStreamerImpl.addData(Key, Value).
  */
 @BenchmarkMode(Mode.AverageTime)
-@Fork(value = 1, jvmArgsAppend = {"-Xms1g", "-Xmx1g", "-server", "-XX:+AggressiveOpts", "-XX:MaxMetaspaceSize=256m"})
+@Fork(value = 1, jvmArgsAppend = {"-Xms1g", "-Xmx3g", "-server", "-XX:+AggressiveOpts", "-XX:MaxMetaspaceSize=256m"})
 @Measurement(iterations = 11)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
-@Threads(3)
+@Threads(7)
 @Warmup(iterations = 21)
 public class JmhStreamerAddDataBenchmark {
     /** Data amount. */
-    private static final int DATA_AMOUNT = 7000;
+    private static final int DATA_AMOUNT = 3072;
 
     /** Ignite client instance. */
     private static final String IGNITE_CLIENT_INSTANCE_NAME = "client";
@@ -103,8 +103,6 @@ public class JmhStreamerAddDataBenchmark {
      */
     private CacheConfiguration defaultCacheConfiguration(String cacheName) {
         CacheConfiguration cfg = new CacheConfiguration(cacheName);
-
-        cfg.setAtomicityMode(atomicityMode());
 
         cfg.setWriteSynchronizationMode(writeSynchronizationMode());
 
@@ -199,13 +197,6 @@ public class JmhStreamerAddDataBenchmark {
      */
     @NotNull protected CacheWriteSynchronizationMode writeSynchronizationMode() {
         return FULL_SYNC;
-    }
-
-    /**
-     * @return Atomicity mode.
-     */
-    @NotNull protected CacheAtomicityMode atomicityMode() {
-        return TRANSACTIONAL;
     }
 
     /**

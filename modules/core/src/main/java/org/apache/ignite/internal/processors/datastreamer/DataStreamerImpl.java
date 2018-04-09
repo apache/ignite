@@ -129,9 +129,12 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
     /** Per thread buffer size. */
     private int bufLdrSizePerThread = DFLT_PER_THREAD_BUFFER_SIZE;
 
-    /** Thread buffer map. */
+    /**
+     * Thread buffer map: on each thread there are future and list of entries which will be streamed after filling
+     * thread batch.
+     */
     private final Map<Long, T2<IgniteCacheFutureImpl, List<DataStreamerEntry>>> threadBufMap =
-            new ConcurrentHashMap<>();
+        new ConcurrentHashMap<>();
 
     /** Isolated receiver. */
     private static final StreamReceiver ISOLATED_UPDATER = new IsolatedUpdater();
@@ -584,12 +587,6 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         enterBusy();
 
         try {
-            GridFutureAdapter<Object> resFut = new GridFutureAdapter<>();
-
-            resFut.listen(rmvActiveFut);
-
-            activeFuts.add(resFut);
-
             Collection<KeyCacheObjectWrapper> keys =
                 new GridConcurrentHashSet<>(entries.size());
 
@@ -604,9 +601,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                 entries0.add(new DataStreamerEntry(key, val));
             }
 
-            load0(entries0, resFut, keys, 0);
-
-            return new IgniteCacheFutureImpl<>(resFut);
+            return addDataInternal(entries0);
         }
         catch (IgniteDataStreamerTimeoutException e) {
             throw e;
@@ -638,39 +633,68 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * @return Future.
      */
     public IgniteFuture<?> addDataInternal(Collection<? extends DataStreamerEntry> entries) {
+        IgniteCacheFutureImpl threadFut = null;
+
         enterBusy();
 
-        GridFutureAdapter<Object> resFut = new GridFutureAdapter<>();
-
         try {
-            resFut.listen(rmvActiveFut);
+            long threadId = Thread.currentThread().getId();
 
-            activeFuts.add(resFut);
+            T2<IgniteCacheFutureImpl, List<DataStreamerEntry>> futEntriesPair;
 
-            Collection<KeyCacheObjectWrapper> keys = null;
+            if ((futEntriesPair = threadBufMap.remove(threadId)) == null) {
+                threadFut = new IgniteCacheFutureImpl(new GridFutureAdapter());
 
-            if (entries.size() > 1) {
-                keys = new GridConcurrentHashSet<>(entries.size());
+                threadFut.internalFuture().listen(rmvActiveFut);
 
-                for (DataStreamerEntry entry : entries)
-                    keys.add(new KeyCacheObjectWrapper(entry.getKey()));
+                activeFuts.add(threadFut.internalFuture());
+
+                futEntriesPair = new T2(threadFut, new ArrayList<>(bufLdrSizePerThread));
             }
+            else
+                threadFut = futEntriesPair.get1();
 
-            load0(entries, resFut, keys, 0);
+            for (Object entry : entries)
+                futEntriesPair.get2().add((DataStreamerEntry)entry);
 
-            return new IgniteCacheFutureImpl<>(resFut);
+            if (futEntriesPair.get2().size() >= bufLdrSizePerThread)
+                loadData(futEntriesPair.get2(), futEntriesPair.get1());
+            else
+                threadBufMap.put(threadId, futEntriesPair);
+
+            return threadFut;
         }
         catch (Throwable e) {
-            resFut.onDone(e);
+            if (threadFut == null)
+                throw e;
+
+            GridFutureAdapter internalFut = (GridFutureAdapter)threadFut.internalFuture();
+
+            internalFut.onDone(e);
 
             if (e instanceof Error || e instanceof IgniteDataStreamerTimeoutException)
                 throw e;
 
-            return new IgniteCacheFutureImpl<>(resFut);
+            return threadFut;
         }
         finally {
             leaveBusy();
         }
+    }
+
+    /**
+     * Load thread batch of DataStreamerEntry.
+     */
+    private void loadData(Collection<? extends DataStreamerEntry> entries, IgniteCacheFutureImpl future) {
+        Collection<KeyCacheObjectWrapper> keys = null;
+
+        if (entries.size() > 1) {
+            keys = new GridConcurrentHashSet<>(entries.size());
+
+            for (DataStreamerEntry e : entries)
+                keys.add(new KeyCacheObjectWrapper(e.getKey()));
+        }
+        load0(entries, (GridFutureAdapter)future.internalFuture(), keys, 0);
     }
 
     /** {@inheritDoc} */
@@ -692,68 +716,7 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
         KeyCacheObject key0 = cacheObjProc.toCacheKeyObject(cacheObjCtx, null, key, true);
         CacheObject val0 = cacheObjProc.toCacheObject(cacheObjCtx, val, true);
 
-        IgniteCacheFutureImpl futPerThread = null;
-
-        enterBusy();
-
-        try {
-            long threadId = Thread.currentThread().getId();
-
-            T2<IgniteCacheFutureImpl, List<DataStreamerEntry>> futEntriesPair;
-
-            if ((futEntriesPair = threadBufMap.remove(threadId)) == null) {
-                futPerThread = new IgniteCacheFutureImpl(new GridFutureAdapter());
-
-                futEntriesPair = new T2(futPerThread, new ArrayList<>(bufLdrSizePerThread));
-
-                futPerThread.internalFuture().listen(rmvActiveFut);
-
-                activeFuts.add(futPerThread.internalFuture());
-            }
-            else
-                futPerThread = futEntriesPair.get1();
-
-            futEntriesPair.get2().add(new DataStreamerEntry(key0, val0));
-
-            if (futEntriesPair.get2().size() == bufLdrSizePerThread)
-                loadData(futEntriesPair.get2(), futEntriesPair.get1());
-            else
-                threadBufMap.put(threadId, futEntriesPair);
-
-            return futPerThread;
-        }
-        catch (Throwable e) {
-            if (futPerThread == null)
-                throw e;
-
-            GridFutureAdapter internalFut = (GridFutureAdapter)futPerThread.internalFuture();
-
-            internalFut.onDone(e);
-
-            if (e instanceof Error || e instanceof IgniteDataStreamerTimeoutException)
-                throw e;
-
-            return futPerThread;
-        }
-        finally {
-            leaveBusy();
-        }
-    }
-
-    /**
-     * Load thread batch of DataStreamerEntry.
-     */
-    private void loadData(Collection<? extends DataStreamerEntry> entries, IgniteCacheFutureImpl future) {
-        Collection<KeyCacheObjectWrapper> keys = null;
-
-        if (entries.size() > 1) {
-            keys = new GridConcurrentHashSet<>(entries.size());
-
-            for (DataStreamerEntry e : entries)
-                keys.add(new KeyCacheObjectWrapper(e.getKey()));
-        }
-
-        load0(entries, (GridFutureAdapter)future.internalFuture(), keys, 0);
+        return addDataInternal(Collections.singleton(new DataStreamerEntry(key0, val0)));
     }
 
     /** {@inheritDoc} */
@@ -1273,12 +1236,10 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
      * Load data from buffer for each thread and clean buffers for all threads.
      */
     private void flushAllThreadsBufs() {
-        for (long threadID : threadBufMap.keySet()) {
-            T2<IgniteCacheFutureImpl, List<DataStreamerEntry>> val = threadBufMap.remove(threadID);
+        for (T2<IgniteCacheFutureImpl, List<DataStreamerEntry>> values : threadBufMap.values())
+            loadData(values.get2(), values.get1());
 
-            if (val != null)
-                loadData(val.get2(), val.get1());
-        }
+        threadBufMap.clear();
     }
 
     /**
