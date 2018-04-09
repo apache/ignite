@@ -44,10 +44,10 @@ import static org.apache.ignite.internal.commandline.CommandHandler.EXIT_CODE_UN
  */
 public class GridCommandHandlerTest extends GridCommonAbstractTest {
     /** */
-    private final ByteArrayOutputStream out = new ByteArrayOutputStream();
+    private final ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
 
     /** */
-    private final ByteArrayOutputStream err = new ByteArrayOutputStream();
+    private final ByteArrayOutputStream err = new ByteArrayOutputStream(1024);
 
     /**
      * @return Folder in work directory.
@@ -240,32 +240,25 @@ public class GridCommandHandlerTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBaselineAddOnNotActiveCluster() throws Exception {
-        try {
-            Ignite ignite = startGrid(1);
+        Ignite ignite = startGrid(1);
 
-            assertFalse(ignite.cluster().active());
+        assertFalse(ignite.cluster().active());
 
-            String consistentIDs = getTestIgniteInstanceName(1);
+        String consistentIDs = getTestIgniteInstanceName(1);
 
-            ByteArrayOutputStream out = new ByteArrayOutputStream(4096);
-            System.setOut(new PrintStream(out));
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
 
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
+        assertTrue(out.toString().contains("Changing BaselineTopology on inactive cluster is not allowed."));
 
-            assertTrue(out.toString().contains("Changing BaselineTopology on inactive cluster is not allowed."));
+        consistentIDs =
+            getTestIgniteInstanceName(1) + ", " +
+                getTestIgniteInstanceName(2) + "," +
+                getTestIgniteInstanceName(3);
 
-            consistentIDs =
-                getTestIgniteInstanceName(1) + ", " +
-                    getTestIgniteInstanceName(2) + "," +
-                    getTestIgniteInstanceName(3);
+        assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
 
-            assertEquals(EXIT_CODE_UNEXPECTED_ERROR, execute("--baseline", "add", consistentIDs));
+        assertTrue(out.toString().contains("Node not found for consistent ID: bltTest2"));
 
-            assertTrue(out.toString().contains("Node not found for consistent ID: bltTest2"));
-        }
-        finally {
-            System.setOut(System.out);
-        }
     }
 
     /**
