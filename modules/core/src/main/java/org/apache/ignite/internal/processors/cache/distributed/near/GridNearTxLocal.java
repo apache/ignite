@@ -358,10 +358,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter implements GridTimeou
         if (old == timeout)
             return old;
 
-        if (trackTimeout)
-            cctx.time().removeTimeoutObject(this);
+        if (trackTimeout) {
+            if (!cctx.time().removeTimeoutObject(this))
+                return old; // Do nothing, because transaction is started to roll back.
+        }
 
-        if (timeout() > 0 && !implicit())
+        if (timeout() > 0) // Method can be called only for explicit transactions.
             trackTimeout = cctx.time().addTimeoutObject(this);
 
         return old;
