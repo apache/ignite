@@ -1222,7 +1222,7 @@ public class GridDhtPartitionsExchangeFuture extends GridDhtTopologyFutureAdapte
         Latch releaseLatch = null;
 
         // Wait for other nodes only on first phase.
-        if (phase == 0)
+        if (phase == 1)
             releaseLatch = cctx.exchange().latch().getOrCreate("exchange", initialVersion());
 
         IgniteInternalFuture<?> partReleaseFut = cctx.partitionReleaseFuture(initialVersion());
