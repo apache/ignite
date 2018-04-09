@@ -578,7 +578,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 metricsIO.setIndexReuseListSize(metricsAddr, grp.dataStructureSize().sizeOf(INDEX_REUSE_LIST).size());
                 metricsIO.setInternalSize(metricsAddr, grp.dataStructureSize().sizeOf(INTERNAL).size());
 
-                System.out.println(PageIO.printPage(metricsAddr, pageSize));
+                if (log != null && log.isDebugEnabled())
+                    log.debug(PageIO.printPage(metricsAddr, pageSize));
             }
             finally {
                 // Write full page
@@ -620,7 +621,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 grp.dataStructureSize().sizeOf(INDEX_REUSE_LIST).add(metricsIO.getIndexReuseListSize(metricsAddr));
                 grp.dataStructureSize().sizeOf(INTERNAL).add(metricsIO.getInternalSize(metricsAddr));
 
-                System.out.println(PageIO.printPage(metricsAddr, pageSize));
+                if (log != null && log.isDebugEnabled())
+                    log.debug(PageIO.printPage(metricsAddr, pageSize));
             }
             finally {
                 // Write full page
@@ -680,7 +682,8 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 metricsIO.setDataSize(metricsAddr, partitionSize.sizeOf(DATA).size());
                 metricsIO.setPureDataSize(metricsAddr, partitionSize.sizeOf(PURE_DATA).size());
 
-                System.out.println(PageIO.printPage(metricsAddr, pageSize));
+                if (log != null && log.isDebugEnabled())
+                    log.debug(PageIO.printPage(metricsAddr, pageSize));
             }
             finally {
                 // Write full page
@@ -728,9 +731,9 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
                 partitionSize.sizeOf(REUSE_LIST).add(metricsIO.getReuseListSize(metricsAddr));
                 partitionSize.sizeOf(DATA).add(metricsIO.getDataSize(metricsAddr));
                 partitionSize.sizeOf(PURE_DATA).add(metricsIO.getPureDataSize(metricsAddr));
-                partitionSize.sizeOf(INTERNAL).add(metricsIO.getInternalSize(metricsAddr));
 
-                System.out.println(PageIO.printPage(metricsAddr, pageSize));
+                if (log != null && log.isDebugEnabled())
+                    log.debug(PageIO.printPage(metricsAddr, pageSize));
             }
             finally {
                 pageMem.readUnlock(grpId, metricsPageId, metricsPage);
