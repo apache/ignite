@@ -107,7 +107,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
      * @throws Exception In case of an error.
      */
     public void testIdealPartitionDistributionLogging2() throws Exception {
-        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "0");
+        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "0.0");
 
         String testsLog = runAndGetExchangeLog(120, 2, 3);
 
@@ -155,7 +155,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
      * @throws Exception In case of an error.
      */
     public void testNotIdealPartitionDistributionSuppressedLogging2() throws Exception {
-        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "67");
+        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "66.7");
 
         String testsLog = runAndGetExchangeLog(39, 6, 3);
 
