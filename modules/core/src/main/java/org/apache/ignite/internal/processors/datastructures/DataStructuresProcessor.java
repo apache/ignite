@@ -946,9 +946,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter implemen
                 true).get();
         }
         else {
-//            if (!shared && cache.get(new GridCacheSetHeaderKey(dsName)) == null)
-                //throw new IgniteCheckedException("Unable to add Set because previous version exists.");
-
             IgnitePredicate<ClusterNode> cacheNodeFilter = cache.context().group().nodeFilter();
 
             String clsName1 = cacheNodeFilter != null ? cacheNodeFilter.getClass().getName() :

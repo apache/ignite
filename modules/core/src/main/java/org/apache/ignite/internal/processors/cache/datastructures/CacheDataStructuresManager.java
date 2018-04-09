@@ -55,7 +55,7 @@ import org.apache.ignite.internal.processors.datastructures.GridAtomicCacheQueue
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeader;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueHeaderKey;
 import org.apache.ignite.internal.processors.datastructures.GridCacheQueueProxy;
-import org.apache.ignite.internal.processors.datastructures.GridCacheSetExImpl;
+import org.apache.ignite.internal.processors.datastructures.GridCacheSetSharedImpl;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeader;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetHeaderKey;
 import org.apache.ignite.internal.processors.datastructures.GridCacheSetImpl;
@@ -465,7 +465,7 @@ public class CacheDataStructuresManager extends GridCacheManagerAdapter {
             if (set == null) {
                 GridCacheSetProxy<T> old = setsMap.putIfAbsent(hdr.id(),
                     set = new GridCacheSetProxy<>(cctx,
-                        oldVer ? new GridCacheSetImpl<T>(cctx, name, hdr) : new GridCacheSetExImpl<T>(cctx, name, hdr)));
+                        oldVer ? new GridCacheSetSharedImpl<T>(cctx, name, hdr) : new GridCacheSetImpl<T>(cctx, name, hdr)));
 
                 if (old != null)
                     set = old;
