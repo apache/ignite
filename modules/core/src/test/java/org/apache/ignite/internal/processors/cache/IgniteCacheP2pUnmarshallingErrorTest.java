@@ -67,6 +67,17 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     }
 
     /** {@inheritDoc} */
+    @Override protected void startGrids() throws Exception {
+        int cnt = gridCount();
+
+        assert cnt >= 1 : "At least one grid must be started";
+
+        startGridsMultiThreaded(1, cnt - 1);
+
+        startGrid(0);
+    }
+
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(igniteInstanceName);
 

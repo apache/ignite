@@ -116,6 +116,8 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
                     @Nullable @Override public Object call() throws Exception {
                         IgniteConfiguration cfg = loadConfiguration("modules/core/src/test/config/spring-multicache.xml");
 
+                        cfg.setGridLogger(getTestResources().getLogger());
+
                         startGrid(Thread.currentThread().getName(), cfg);
 
                         return null;
@@ -160,6 +162,8 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String igniteInstanceName) throws Exception {
         IgniteConfiguration cfg = loadConfiguration("modules/core/src/test/config/spring-multicache.xml");
+
+        cfg.setGridLogger(getTestResources().getLogger());
 
         cfg.setIgniteInstanceName(igniteInstanceName);
 

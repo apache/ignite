@@ -32,6 +32,15 @@ public class GridTestClockTimer implements Runnable {
         }
     }
 
+    /**
+     * @return {@code True} if need start test time.
+     */
+    public static boolean startTestTimer() {
+        synchronized (IgniteUtils.mux) {
+            return IgniteUtils.gridCnt == 0;
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public void run() {
         while (true) {

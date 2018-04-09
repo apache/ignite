@@ -117,7 +117,7 @@ public class IgniteCacheDistributedQueryCancelSelfTest extends GridCommonAbstrac
                     }
 
                     for (Ignite g : G.allGrids())
-                        if (!g.configuration().getDiscoverySpi().isClientMode())
+                        if (!g.configuration().isClientMode())
                             stopGrid(g.name(), true);
                 }
             }, 1);

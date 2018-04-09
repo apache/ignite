@@ -91,12 +91,12 @@ public abstract class GridAffinityProcessorAbstractSelfTest extends GridCommonAb
     @Override protected void beforeTestsStarted() throws Exception {
         assert NODES_CNT >= 1;
 
-        withCache = false;
+        withCache = true;
 
         for (int i = 0; i < NODES_CNT; i++)
             startGrid(i);
 
-        withCache = true;
+        withCache = false;
 
         for (int i = NODES_CNT; i < 2 * NODES_CNT; i++)
             startGrid(i);

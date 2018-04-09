@@ -168,6 +168,8 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
 
         log.info("Started all clients.");
 
+        waitForTopology(CLIENTS + 1);
+
         checkNodes(CLIENTS + 1);
     }
 

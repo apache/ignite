@@ -45,7 +45,9 @@ public class IgniteCacheNearLockValueSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        startGridsMultiThreaded(2);
+        startGrid(1);
+
+        startGrid(0);
     }
 
     /** {@inheritDoc} */
