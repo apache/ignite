@@ -106,18 +106,19 @@ const COMPOSITE_TYPE = Object.freeze({
  * In this case the Ignite client tries to make automatic mapping between JavaScript types
  * and Ignite object types according to the following mapping table:
  * <pre>
- *      JavaScript type         to / from        type code ({@link ObjectType.PRIMITIVE_TYPE} and {@link ObjectType.COMPOSITE_TYPE})
- *      null                    to / from        NULL
- *      number                  to / from        DOUBLE
- *      Array of number         to / from        DOUBLE_ARRAY
- *      string                  to / from        STRING
- *      Array of string         to / from        STRING_ARRAY
- *      boolean                 to / from        BOOLEAN
- *      Array of boolean        to / from        BOOLEAN_ARRAY
- *      Date                    to / from        DATE
- *      Array of Date           to / from        DATE_ARRAY
- *      Map                     to / from        MAP (HASH_MAP)
- *      any other Object        to /  -          COMPLEX_OBJECT
+ *      JavaScript type              to / from        type code ({@link ObjectType.PRIMITIVE_TYPE} and {@link ObjectType.COMPOSITE_TYPE})
+ *      null                         to / from        NULL
+ *      number                       to / from        DOUBLE
+ *      Array of number              to / from        DOUBLE_ARRAY
+ *      string                       to / from        STRING
+ *      Array of string              to / from        STRING_ARRAY
+ *      boolean                      to / from        BOOLEAN
+ *      Array of boolean             to / from        BOOLEAN_ARRAY
+ *      Date                         to / from        DATE
+ *      Array of Date                to / from        DATE_ARRAY
+ *      Map                          to / from        MAP (HASH_MAP)
+ *      any other Object             to /  -          COMPLEX_OBJECT
+ *      Array of any other Object    to /  -          OBJECT_ARRAY
  * </pre>
  * Note: type of an array content is determined by the type of the first element of the array
  * (empty array has no automatic mapping).
@@ -308,7 +309,10 @@ class ComplexObjectType extends CompositeType {
 }
 
 /**
- * ???
+ * Class representing an array of Ignite complex type objects.
+ *
+ * It is described by COMPOSITE_TYPE.OBJECT_ARRAY {@link ObjectType.COMPOSITE_TYPE}
+ * and by a concrete {@link ComplexObjectType} instance which defines an element of the array.
  *
  * @extends CompositeType
  */
@@ -317,9 +321,7 @@ class ObjectArrayType extends CompositeType {
     /**
      * Public constructor.
      *
-     * ???
-     * 
-     * @param {ComplexObjectType} elementType - ???
+     * @param {ComplexObjectType} elementType - type of the array element
      *
      * @return {ObjectArrayType} - new ObjectArrayType instance
      *
