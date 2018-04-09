@@ -68,7 +68,7 @@ public class GridAffinityAssignmentCache {
     private final int MAX_HIST_SIZE = getInteger(IGNITE_AFFINITY_HISTORY_SIZE, 500);
 
     /** Partition distribution. */
-    private final float partDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 0.1f);
+    private final float partDistribution = getFloat(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, 10f);
 
     /** Group name if specified or cache name. */
     private final String cacheOrGrpName;
@@ -452,16 +452,15 @@ public class GridAffinityAssignmentCache {
         }
 
         float expCnt = (float)partsCnt / nodes;
-        float expPercent = expCnt / partsCnt * 100;
 
-        float deltaPrimary = Math.abs(1 - (float)locPrimaryCnt / expCnt);
-        float deltaBackup = Math.abs(1 - (float)locBackupCnt / (expCnt * backups));
+        float deltaPrimary = Math.abs(1 - (float)locPrimaryCnt / expCnt) * 100;
+        float deltaBackup = Math.abs(1 - (float)locBackupCnt / (expCnt * backups)) * 100;
 
         if (deltaPrimary > partDistribution || deltaBackup > partDistribution) {
             log.info(String.format("Local node affinity assignment distribution is not ideal " +
-                    "[cache=%s, expectedPrimary=%.2f(%.2f%%), expectedBackups=%.2f(%.2f%%), " +
+                    "[cache=%s, expectedPrimary=%.2f, expectedBackups=%.2f, " +
                     "primary=%d(%.2f%%), backups=%d(%.2f%%)]",
-                cacheOrGrpName, expCnt, expPercent, expCnt * backups, expPercent * backups,
+                cacheOrGrpName, expCnt, expCnt * backups,
                 locPrimaryCnt, (float)locPrimaryCnt / partsCnt * 100, locBackupCnt, (float)locBackupCnt / partsCnt * 100));
         }
     }

@@ -96,7 +96,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
      * @throws Exception In case of an error.
      */
     public void testIdealPartitionDistributionLogging1() throws Exception {
-        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "0.0");
+        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "0");
 
         String testsLog = runAndGetExchangeLog(2, 1, 2);
 
@@ -107,7 +107,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
      * @throws Exception In case of an error.
      */
     public void testIdealPartitionDistributionLogging2() throws Exception {
-        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "0.0");
+        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "0");
 
         String testsLog = runAndGetExchangeLog(120, 2, 3);
 
@@ -120,8 +120,8 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     public void testNotIdealPartitionDistributionLogging1() throws Exception {
         String testsLog = runAndGetExchangeLog(4, 4, 4);
 
-        String exp = String.format("%s[cache=default, expectedPrimary=%.2f(%.2f%%), expectedBackups=%.2f(%.2f%%), " +
-            "primary=%d(%.2f%%), backups=%d(%.2f%%)]", LOG_MESSAGE_PREFIX, 1F, 25F, 4F, 100F, 1, 25F, 3, 75F);
+        String exp = String.format("%s[cache=default, expectedPrimary=%.2f, expectedBackups=%.2f, " +
+            "primary=%d(%.2f%%), backups=%d(%.2f%%)]", LOG_MESSAGE_PREFIX, 1f, 4f, 1, 25f, 3, 75f);
 
         assertTrue(testsLog.contains(exp));
     }
@@ -130,7 +130,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
      * @throws Exception In case of an error.
      */
     public void testNotIdealPartitionDistributionSuppressedLogging1() throws Exception {
-        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "0.25");
+        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "25");
 
         String testsLog = runAndGetExchangeLog(4, 4, 4);
 
@@ -141,12 +141,12 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
      * @throws Exception In case of an error.
      */
     public void testNotIdealPartitionDistributionLogging2() throws Exception {
-        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "0.65");
+        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "65");
 
         String testsLog = runAndGetExchangeLog(39, 6, 3);
 
-        String exp = String.format("%s[cache=default, expectedPrimary=%.2f(%.2f%%), expectedBackups=%.2f(%.2f%%), " +
-            "primary=%d(%.2f%%), backups=%d(%.2f%%)]", LOG_MESSAGE_PREFIX, 13F, 33.33F, 78F, 200F, 13, 33.33F, 26, 66.67F);
+        String exp = String.format("%s[cache=default, expectedPrimary=%.2f, expectedBackups=%.2f, " +
+            "primary=%d(%.2f%%), backups=%d(%.2f%%)]", LOG_MESSAGE_PREFIX, 13f, 78f, 13, 33.33f, 26, 66.67f);
 
         assertTrue(testsLog.contains(exp));
     }
@@ -155,7 +155,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
      * @throws Exception In case of an error.
      */
     public void testNotIdealPartitionDistributionSuppressedLogging2() throws Exception {
-        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "0.67");
+        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "67");
 
         String testsLog = runAndGetExchangeLog(39, 6, 3);
 
