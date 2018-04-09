@@ -87,8 +87,6 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
     @Override protected void afterTest() throws Exception {
         super.afterTest();
 
-        stopAllGrids();
-
         cleanPersistenceDir();
     }
 
@@ -115,26 +113,32 @@ public class IoomFailureHandlerTest extends AbstractFailureHandlerTest {
         IgniteEx ignite0 = startGrid(0);
         IgniteEx ignite1 = startGrid(1);
 
-        if (pds)
-            ignite0.cluster().active(true);
+        try {
+            if (pds)
+                ignite0.cluster().active(true);
 
-        IgniteCache<Integer, Object> cache0 = ignite0.getOrCreateCache(DEFAULT_CACHE_NAME);
-        IgniteCache<Integer, Object> cache1 = ignite1.getOrCreateCache(DEFAULT_CACHE_NAME);
+            IgniteCache<Integer, Object> cache0 = ignite0.getOrCreateCache(DEFAULT_CACHE_NAME);
+            IgniteCache<Integer, Object> cache1 = ignite1.getOrCreateCache(DEFAULT_CACHE_NAME);
 
-        awaitPartitionMapExchange();
+            awaitPartitionMapExchange();
 
-        try (Transaction tx = ignite0.transactions().txStart()) {
-            for (Integer i : primaryKeys(cache1, ENTRIES))
-                cache0.put(i, new byte[PAGE_SIZE / 3 * 2]);
+            try (Transaction tx = ignite0.transactions().txStart()) {
+                for (Integer i : primaryKeys(cache1, ENTRIES))
+                    cache0.put(i, new byte[PAGE_SIZE / 3 * 2]);
 
-            tx.commit();
+                tx.commit();
+            }
+            catch (Throwable ignore) {
+                // Expected.
+            }
+
+            assertFalse(dummyFailureHandler(ignite0).failure());
+            assertTrue(dummyFailureHandler(ignite1).failure());
+            assertTrue(X.hasCause(dummyFailureHandler(ignite1).failureContext().error(), IgniteOutOfMemoryException.class));
         }
-        catch (Throwable ignore) {
-            // Expected.
+        finally {
+            stopGrid(1);
+            stopGrid(0);
         }
-
-        assertFalse(dummyFailureHandler(ignite0).failure());
-        assertTrue(dummyFailureHandler(ignite1).failure());
-        assertTrue(X.hasCause(dummyFailureHandler(ignite1).failureContext().error(), IgniteOutOfMemoryException.class));
     }
 }
