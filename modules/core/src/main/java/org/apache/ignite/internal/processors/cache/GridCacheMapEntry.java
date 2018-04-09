@@ -3022,11 +3022,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         storeValue(val, expTime, ver, null);
                 }
             }
-            else // Optimization to access storage only once.
-                if (cctx.mvccEnabled())
-                    update = cctx.offheap().mvccInitialValue(this, val, ver, expTime, mvccVer, newMvccVer);
+            else {
+                if (cctx.mvccEnabled()) {
+                    unswap(false);
+
+                    return initialValue(val, ver, mvccVer, newMvccVer, ttl, expireTime, preload, topVer, drType, fromStore);
+                }
                 else
-                    update = storeValue(val, expTime, ver, null);
+                    // Optimization to access storage only once.
+                    update = storeValue(val, expTime, ver, null, p);
+            }
 
             if (update) {
                 update(val, expTime, ttl, ver, true);
