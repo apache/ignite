@@ -2273,6 +2273,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             try {
                 body0();
             }
+            catch (InterruptedException | IgniteInterruptedCheckedException e) {
+                if (!stop)
+                    err = e;
+            }
             catch (Throwable e) {
                 err = e;
             }

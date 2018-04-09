@@ -2619,6 +2619,12 @@ class ServerImpl extends TcpDiscoveryImpl {
             try {
                 super.body();
             }
+            catch (InterruptedException e) {
+                if (!spi.isNodeStopping0())
+                    err = e;
+
+                throw e;
+            }
             catch (Throwable e) {
                 if (!spi.isNodeStopping0() && spiStateCopy() != DISCONNECTING) {
                     final Ignite ignite = spi.ignite();
