@@ -3263,9 +3263,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             return false;
         }
 
-        if (msg instanceof CacheAffinityChangeMessage)
-            return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
+        if (msg instanceof CacheAffinityChangeMessage) {
+            log.info("onCustomEvent msg=" + msg + ", topVer=" + topVer + ", node=" + node);
 
+            return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
+        }
         if (msg instanceof SnapshotDiscoveryMessage &&
             ((SnapshotDiscoveryMessage)msg).needExchange())
             return true;

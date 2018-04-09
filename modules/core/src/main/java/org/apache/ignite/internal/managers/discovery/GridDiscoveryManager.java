@@ -682,6 +682,31 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 ctx.cache().onDiscoveryEvent(type, customMsg, node, nextTopVer, ctx.state().clusterState());
 
+                String typeStr;
+                switch (type) {
+                    case EVT_NODE_FAILED:
+                        typeStr = "EVT_NODE_FAILED";
+                        break;
+                    case EVT_NODE_JOINED:
+                        typeStr = "EVT_NODE_JOINED";
+                        break;
+                    case EVT_NODE_LEFT:
+                        typeStr = "EVT_NODE_LEFT";
+                        break;
+                    case EVT_CLIENT_NODE_RECONNECTED:
+                        typeStr = "EVT_CLIENT_NODE_RECONNECTED";
+                        break;
+                    case EVT_DISCOVERY_CUSTOM_EVT:
+                        typeStr = "EVT_DISCOVERY_CUSTOM_EVT";
+                        break;
+                    case EVT_NODE_METRICS_UPDATED:
+                        typeStr = "EVT_NODE_METRICS_UPDATED";
+                        break;
+                    default:
+                        typeStr = String.valueOf(type);
+                }
+                log.info("onDiscoveryEvent type=" + typeStr + ", customMsg=" + customMsg + ", nextTopVer=" + nextTopVer + ", clusterState=" + ctx.state().clusterState());
+
                 if (type == EVT_DISCOVERY_CUSTOM_EVT) {
                     for (Class cls = customMsg.getClass(); cls != null; cls = cls.getSuperclass()) {
                         List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(cls);

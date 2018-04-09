@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteSystemProperties;
@@ -66,6 +67,7 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -75,11 +77,15 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Arrays.stream;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
+import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.events.EventType.EVT_NODE_METRICS_UPDATED;
+import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
 
 /**
  *
@@ -165,16 +171,51 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             lastAffVer = null;
 
         if ((state.transition() || !state.active()) &&
-            !DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg))
+            !DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg)) {
+            log.info("onDiscoveryEvent requiresCentralizedAffinityAssignment customMsg=" + customMsg);
             return;
+        }
 
-        if ((!CU.clientNode(node) && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT)) ||
+        String typeStr;
+        switch (type) {
+            case EVT_NODE_FAILED:
+                typeStr = "EVT_NODE_FAILED";
+                break;
+            case EVT_NODE_JOINED:
+                typeStr = "EVT_NODE_JOINED";
+                break;
+            case EVT_NODE_LEFT:
+                typeStr = "EVT_NODE_LEFT";
+                break;
+            case EVT_CLIENT_NODE_RECONNECTED:
+                typeStr = "EVT_CLIENT_NODE_RECONNECTED";
+                break;
+            case EVT_DISCOVERY_CUSTOM_EVT:
+                typeStr = "EVT_DISCOVERY_CUSTOM_EVT";
+                break;
+            default:
+                typeStr = String.valueOf(type);
+        }
+
+        if (type != EVT_NODE_METRICS_UPDATED)
+            log.info("onDiscoveryEvent lastAffVer=" + lastAffVer +
+                ", node=" + node +
+                ", topVer=" + topVer +
+                ", customMsg=" + customMsg +
+                ", clientNode=" + CU.clientNode(node) +
+                ", type=" + typeStr
+            );
+
+        if ((!CU.clientNode(node) && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT )) ||
             DiscoveryCustomEvent.requiresCentralizedAffinityAssignment(customMsg)) {
+            log.info("onDiscoveryEvent before mux");
             synchronized (mux) {
                 assert lastAffVer == null || topVer.compareTo(lastAffVer) > 0 :
                     "lastAffVer=" + lastAffVer + ", topVer=" + topVer + ", customMsg=" + customMsg;
 
                 lastAffVer = topVer;
+                log.info("onDiscoveryEvent updated lastAffVer=" + lastAffVer);
+
             }
         }
     }
@@ -189,7 +230,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         // Clean-up in case of client reconnect.
         caches.clear();
 
-        caches.init(cacheGroupDescriptors, cacheDescriptors);
+//        caches.init(cacheGroupDescriptors, cacheDescriptors);
+        caches.init(cctx.cache().cacheGroupDescriptors(), cctx.cache().cacheDescriptors());
+
+        StackTraceElement[] arr = Thread.currentThread().getStackTrace();
+        String msg = stream(arr).map(e -> e.getClassName() + "." + e.getMethodName() + ":" + e.getLineNumber() + "\n")
+                .collect(Collectors.joining(",", "[", "]"));
+        log.info("initCachesOnLocalJoin complete msg=" + msg + ", cacheGroupDescriptors=" + cacheGroupDescriptors +
+        ", cacheDescriptors=" + cacheDescriptors);
     }
 
     /**
@@ -212,6 +260,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         // Skip message if affinity was already recalculated.
         boolean exchangeNeeded = lastAffVer == null || lastAffVer.equals(msg.topologyVersion());
 
+        log.info("onCustomEvent lastAffVer=" + lastAffVer + ", topologyVersion=" + msg.topologyVersion());
         msg.exchangeNeeded(exchangeNeeded);
 
         if (exchangeNeeded) {
@@ -271,6 +320,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             Map<Integer, UUID> partWait = waitInfo.waitGrps.get(checkGrpId);
 
+            log.info("checkRebalanceState waitInfo=" + waitInfo);
+
             boolean rebalanced = true;
 
             if (partWait != null) {
@@ -307,8 +358,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             }
 
             try {
-                if (msg != null)
+                if (msg != null) {
+                    log.info("checkRebalanceState affinityChangeMessage=" + msg +
+                        ", top.lastTopologyChangeVersion=" + top.lastTopologyChangeVersion() +
+                        ", top.readyTopologyVersion=" + top.readyTopologyVersion() );
                     cctx.discovery().sendCustomEvent(msg);
+                }
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to send affinity change message.", e);
@@ -967,10 +1022,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
         final AffinityTopologyVersion topVer = exchFut.initialVersion();
 
-        if (log.isDebugEnabled()) {
-            log.debug("Process affinity change message [exchVer=" + topVer +
-                ", msgVer=" + msg.topologyVersion() + ']');
-        }
+        log.info("Process affinity change message [exchVer=" + topVer +
+            ", msgVer=" + msg.topologyVersion() + ']');
 
         final Map<Integer, Map<Integer, List<UUID>>> affChange = msg.assignmentChange();
 
@@ -1926,6 +1979,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 }
             });
 
+            log.info("initAffinityOnNodeJoin waitRebalanceInfo=" + waitRebalanceInfo);
+
             return waitRebalanceInfo;
         }
     }
@@ -2569,7 +2624,9 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         /** {@inheritDoc} */
         @Override public String toString() {
             return "WaitRebalanceInfo [topVer=" + topVer +
-                ", grps=" + (waitGrps != null ? waitGrps.keySet() : null) + ']';
+                ", grps=" + (waitGrps != null ? waitGrps.keySet() : null) +
+                    ", assignments=" + assignments.size() +
+                    ", deploymentIds = " + deploymentIds.size() + "]";
         }
     }
 
@@ -2635,6 +2692,12 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
           * @param descs Cache descriptor.
          */
         void initStartedCaches(Collection<DynamicCacheDescriptor> descs) {
+
+            StackTraceElement[] arr = Thread.currentThread().getStackTrace();
+            String msg = stream(arr).map(e -> e.getClassName() + "." + e.getMethodName() + ":" + e.getLineNumber() + "\n")
+                    .collect(Collectors.joining(",", "[", "]"));
+            log.info("initStartedCaches descs=" + descs + ", msg=" + msg);
+
             for (DynamicCacheDescriptor desc : descs) {
                 CacheGroupDescriptor grpDesc = desc.groupDescriptor();
 
@@ -2667,6 +2730,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
             for (ExchangeActions.CacheActionData req : exchActions.cacheStartRequests())
                 registerCache(req.descriptor());
+
+            StackTraceElement[] arr = Thread.currentThread().getStackTrace();
+            String msg = stream(arr).map(e -> e.getClassName() + "." + e.getMethodName() + ":" + e.getLineNumber() + "\n")
+                    .collect(Collectors.joining(",", "[", "]"));
+            log.info("updateCachesInfo exchActions=" + exchActions + ", msg=" + msg);
         }
 
         /**

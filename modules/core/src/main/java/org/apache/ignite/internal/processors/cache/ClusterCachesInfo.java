@@ -32,6 +32,8 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheExistsException;
@@ -62,6 +64,7 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static java.util.Arrays.stream;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -813,6 +816,8 @@ class ClusterCachesInfo {
 
         locJoinCachesCtx = null;
 
+        log.info("localJoinCachesContext locJoinCachesCtx=" + locJoinCachesCtx + ", result=" + result);
+
         return result;
     }
 
@@ -1107,6 +1112,12 @@ class ClusterCachesInfo {
     private void initStartCachesForLocalJoin(boolean firstNode, boolean reconnect) {
         assert locJoinCachesCtx == null : locJoinCachesCtx;
 
+        StackTraceElement[] arr = Thread.currentThread().getStackTrace();
+        String msg = stream(arr).map(e -> e.getClassName() + "." + e.getMethodName() + ":" + e.getLineNumber() + "\n")
+                .collect(Collectors.joining(",", "[", "]"));
+        log.info("initStartCachesForLocalJoin firstNode=" + firstNode +
+                ", reconnect=" + reconnect + ", msg=" + msg);
+
         if (ctx.state().clusterState().transition()) {
             joinOnTransition = true;
 
@@ -1164,6 +1175,9 @@ class ClusterCachesInfo {
                         locCfgsForActivation.put(desc.cacheName(), new T2<>(desc.cacheConfiguration(), nearCfg));
                 }
             }
+
+            log.info("initStartCachesForLocalJoin locJoinStartCaches=" + locJoinStartCaches +
+            ", registeredCacheGrps=" + registeredCacheGrps + ", registeredCaches=" + registeredCaches);
 
             locJoinCachesCtx = new LocalJoinCachesContext(
                 locJoinStartCaches,
@@ -1751,6 +1765,7 @@ class ClusterCachesInfo {
             }
 
             if (locJoinCachesCtx != null) {
+                log.info("onReconnected survivedCacheGrps=" + survivedCacheGrps + ", survivedCaches=" + survivedCaches);
                 locJoinCachesCtx.removeSurvivedCacheGroups(survivedCacheGrps);
                 locJoinCachesCtx.removeSurvivedCaches(survivedCaches);
 
