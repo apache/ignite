@@ -1035,6 +1035,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSegmentation3() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8183");
+
         sesTimeout = 5000;
 
         Ignite node0 = startGrid(0);
@@ -1072,6 +1074,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQuorumRestore() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8180");
+
         sesTimeout = 15_000;
 
         startGrids(3);
@@ -1828,6 +1832,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTopologyChangeMultithreaded_RestartZk() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8184");
+
         try {
             topologyChangeWithRestarts(true, false);
         }
@@ -1842,6 +1848,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTopologyChangeMultithreaded_RestartZk_CloseClients() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8184");
+
         try {
             topologyChangeWithRestarts(true, true);
         }
@@ -2039,6 +2047,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testRandomTopologyChanges_CloseClients() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8182");
+
         randomTopologyChanges(false, true);
     }
 
@@ -2734,6 +2744,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCommunicationFailureResolve_KillRandom() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8179");
+
         sesTimeout = 2000;
 
         testCommSpi = true;
@@ -3495,6 +3507,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReconnectServersRestart_1() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8178");
+
         reconnectServersRestart(1);
     }
 
@@ -3502,6 +3516,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReconnectServersRestart_2() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-8178");
+
         reconnectServersRestart(3);
     }
 
