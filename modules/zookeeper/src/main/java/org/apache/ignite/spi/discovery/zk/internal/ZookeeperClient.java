@@ -289,7 +289,7 @@ public class ZookeeperClient implements Watcher {
     void createAll(List<String> paths, CreateMode createMode)
         throws ZookeeperClientFailedException, InterruptedException, KeeperException.NodeExistsException
     {
-        // TODO ZK: need check for max size?
+        // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8188
         List<Op> ops = new ArrayList<>(paths.size());
 
         for (String path : paths)
@@ -360,7 +360,7 @@ public class ZookeeperClient implements Watcher {
     }
 
     /**
-     * TODO ZK: it seems not always precise, e.g. if ACL is used?
+     * TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8187
      * @param path Request path.
      * @return Marshalled request overhead.
      */
@@ -538,7 +538,7 @@ public class ZookeeperClient implements Watcher {
         if (paths.isEmpty())
             return;
 
-        // TODO ZK: need check for max size?
+        // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8188
         List<Op> ops = new ArrayList<>(paths.size());
 
         for (String path : paths) {

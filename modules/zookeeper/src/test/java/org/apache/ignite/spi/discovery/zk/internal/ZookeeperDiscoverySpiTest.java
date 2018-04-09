@@ -423,7 +423,8 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
 
             checkInternalStructuresCleanup();
 
-//             checkZkNodesCleanup();
+            //TODO uncomment when https://issues.apache.org/jira/browse/IGNITE-8193 is fixed
+//            checkZkNodesCleanup();
         }
         finally {
             reset();
@@ -2010,7 +2011,7 @@ public class ZookeeperDiscoverySpiTest extends GridCommonAbstractTest {
                             if (!znode.contains("/")) // Ignore roots.
                                 continue;
 
-                            // TODO ZK
+                            // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8193
                             if (znode.startsWith("jd/"))
                                 continue;
 

@@ -964,7 +964,7 @@ public class ZookeeperDiscoveryImpl {
 
             final int OVERHEAD = 5;
 
-            // TODO ZK: need clean up join data if failed before was able to create alive node.
+            // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8193
             String joinDataPath = zkPaths.joinDataDir + "/" + prefix + ":" + locNode.id();
 
             if (zkClient.needSplitNodeData(joinDataPath, joinDataBytes, OVERHEAD)) {
@@ -3646,7 +3646,7 @@ public class ZookeeperDiscoveryImpl {
         if (log.isDebugEnabled())
             log.debug("Create ack event: " + path);
 
-        // TODO ZK: delete if previous exists?
+        // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8194
         rtState.zkClient.createIfNeeded(
             path,
             ackBytes,
@@ -3766,7 +3766,7 @@ public class ZookeeperDiscoveryImpl {
                 if (evtData.resolvedMsg instanceof ZkCommunicationErrorResolveFinishMessage) {
                     UUID futId = ((ZkCommunicationErrorResolveFinishMessage)evtData.resolvedMsg).futId;
 
-                    ZkDistributedCollectDataFuture.deleteFutureData(rtState.zkClient, zkPaths, futId);
+                    ZkDistributedCollectDataFuture.deleteFutureData(rtState.zkClient, zkPaths, futId, log);
                 }
             }
 

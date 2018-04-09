@@ -137,10 +137,15 @@ class ZkDistributedCollectDataFuture extends GridFutureAdapter<Void> {
      * @param client Client.
      * @param paths Paths utils.
      * @param futId Future ID.
+     * @param log Ignite Logger.
      * @throws Exception If failed.
      */
-    static void deleteFutureData(ZookeeperClient client, ZkIgnitePaths paths, UUID futId) throws Exception {
-        // TODO ZK: use multi, better batching + max-size safe + NoNodeException safe.
+    static void deleteFutureData(ZookeeperClient client,
+        ZkIgnitePaths paths,
+        UUID futId,
+        IgniteLogger log
+    ) throws Exception {
+        // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8189
         String evtDir = paths.distributedFutureBasePath(futId);
 
         try {
@@ -149,7 +154,9 @@ class ZkDistributedCollectDataFuture extends GridFutureAdapter<Void> {
                 -1);
         }
         catch (KeeperException.NoNodeException e) {
-            // TODO ZK
+            U.log(log, "Node for deletion was not found: " + e.getPath());
+
+            // TODO ZK: https://issues.apache.org/jira/browse/IGNITE-8189
         }
 
         client.deleteIfExists(evtDir, -1);
