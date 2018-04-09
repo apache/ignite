@@ -89,6 +89,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      * Do test with MVCC enabled.
      */
     public void testMvccEnabled() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7259");
         doTest(true);
     }
 
@@ -96,6 +97,7 @@ public class GridIndexRebuildSelfTest extends DynamicIndexAbstractSelfTest {
      * Do test with MVCC disabled.
      */
     public void testMvccDisabled() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-7259");
         doTest(false);
     }
 
