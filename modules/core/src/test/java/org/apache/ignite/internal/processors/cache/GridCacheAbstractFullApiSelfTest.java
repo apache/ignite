@@ -82,6 +82,7 @@ import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PA;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -5041,12 +5042,16 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
                 checkIteratorsCleared();
             }
-            catch (AssertionFailedError e) {
+            catch (Throwable t) {
+                // If AssertionFailedError is in the chain, assume we need to wait and retry.
+                if (!X.hasCause(t, AssertionFailedError.class))
+                    throw t;
+                
                 if (i == 9) {
                     for (int j = 0; j < gridCount(); j++)
                         executeOnLocalOrRemoteJvm(j, new PrintIteratorStateTask());
 
-                    throw e;
+                    throw t;
                 }
 
                 log.info("Iterators not cleared, will wait");
