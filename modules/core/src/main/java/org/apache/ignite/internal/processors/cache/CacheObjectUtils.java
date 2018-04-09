@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.internal.binary.BinaryUtils;
-import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -85,14 +85,18 @@ public class CacheObjectUtils {
      */
     private static Collection<Object> unwrapKnownCollection(CacheObjectValueContext ctx, Collection<Object> col,
         boolean keepBinary, boolean cpy) {
-        Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
+        Collection<Object> col0 = unwrapSingletonCollection(ctx, col, keepBinary, cpy);
+        if (col0 != null)
+            return col0;
+
+        col0 = BinaryUtils.newKnownCollection(col);
 
         assert col0 != null;
 
         for (Object obj : col)
             col0.add(unwrapBinary(ctx, obj, keepBinary, cpy));
 
-        return (col0 instanceof MutableSingletonList) ? U.convertToSingletonList(col0) : col0;
+        return U.unwrapSingletonList(col0);
     }
 
     /**
@@ -185,6 +189,26 @@ public class CacheObjectUtils {
             return unwrapBinariesInArrayIfNeeded(ctx, (Object[])o, keepBinary, cpy);
 
         return o;
+    }
+
+    /**
+     * Unwraps singleton collection.
+     *
+     * @param ctx Context.
+     * @param col Collection to unwrap.
+     * @param keepBinary Keep binary flag.
+     * @param cpy Copy flag.
+     * @return unwrapped collection.
+     */
+    public static Collection<Object> unwrapSingletonCollection(CacheObjectValueContext ctx, Collection<Object> col,
+        boolean keepBinary, boolean cpy) {
+        if (BinaryUtils.SINGLETON_SET_CLS.equals(col.getClass())) {
+            Object obj = col.iterator().next();
+
+            return Collections.singleton(unwrapBinary(ctx, obj, keepBinary, cpy));
+        }
+
+        return null;
     }
 
     /**

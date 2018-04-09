@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -67,7 +68,6 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessorImpl;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.IgniteUtils;
-import org.apache.ignite.internal.util.MutableSingletonList;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -358,6 +358,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         }
 
         {
+            if (obj.getClass().equals(BinaryUtils.SINGLETON_SET_CLS))
+                return Collections.singleton(marshalToBinary(((Collection)obj).iterator().next()));
+
             Collection<Object> pCol = BinaryUtils.newKnownCollection(obj);
 
             if (pCol != null) {
@@ -366,11 +369,18 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 for (Object item : col)
                     pCol.add(marshalToBinary(item));
 
-                return (pCol instanceof MutableSingletonList) ? U.convertToSingletonList(pCol) : pCol;
+                return U.unwrapSingletonList(pCol);
             }
         }
 
         {
+            if (obj.getClass().equals(BinaryUtils.SINGLETON_MAP_CLS)) {
+                Map<Object, Object> m = (Map<Object, Object>)obj;
+                Map.Entry<Object, Object> entry = m.entrySet().iterator().next();
+
+                return Collections.singletonMap(marshalToBinary(entry.getKey()), marshalToBinary(entry.getValue()));
+            }
+
             Map<Object, Object> pMap = BinaryUtils.newKnownMap(obj);
 
             if (pMap != null) {

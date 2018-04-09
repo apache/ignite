@@ -9469,14 +9469,18 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @param col non-null collection with one element
-     * @return a SingletonList containing the element in the original collection
+     * Returns an immutable list if argument is singleton mutable collection,
+     * otherwise returns argument.
+     *
+     * @param col collection.
+     * @param <T> type of collection elements.
+     * @return argument or immutable singleton list.
      */
-    public static <T> Collection<T> convertToSingletonList(Collection<T> col) {
-        if (col.size() != 1) {
-            throw new IllegalArgumentException("Unexpected collection size for singleton list, expecting 1 but was: " + col.size());
-        }
-        return Collections.singletonList(col.iterator().next());
+    public static <T> Collection<T> unwrapSingletonList(Collection<T> col) {
+        if (col instanceof MutableSingletonList)
+            return ((MutableSingletonList<T>)col).singletonList();
+
+        return col;
     }
 
     /**

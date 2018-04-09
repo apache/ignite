@@ -102,6 +102,12 @@ public class BinaryUtils {
     /** Class for SingletonList obtained at runtime. */
     public static final Class<? extends Collection> SINGLETON_LIST_CLS = Collections.singletonList(null).getClass();
 
+    /** Class for SingletonMap obtained at runtime. */
+    public static final Class<? extends Map> SINGLETON_MAP_CLS = Collections.singletonMap(null, null).getClass();
+
+    /** Class for SingletonSet obtained at runtime. */
+    public static final Class<? extends Collection> SINGLETON_SET_CLS = Collections.singleton(null).getClass();
+
     /** Flag: user type. */
     public static final short FLAG_USR_TYP = 0x0001;
 
@@ -647,7 +653,8 @@ public class BinaryUtils {
         return cls == HashMap.class ||
             cls == LinkedHashMap.class ||
             (!wrapTrees() && cls == TreeMap.class) ||
-            cls == ConcurrentHashMap.class;
+            cls == ConcurrentHashMap.class ||
+            SINGLETON_MAP_CLS.equals(cls);
     }
 
     /**
@@ -703,7 +710,8 @@ public class BinaryUtils {
             cls == ConcurrentSkipListSet.class ||
             cls == ArrayList.class ||
             cls == LinkedList.class ||
-            cls == SINGLETON_LIST_CLS;
+            cls == SINGLETON_LIST_CLS ||
+            cls == SINGLETON_SET_CLS;
     }
 
     /**
@@ -2086,7 +2094,7 @@ public class BinaryUtils {
         for (int i = 0; i < size; i++)
             col.add(deserializeOrUnmarshal(in, ctx, ldr, handles, deserialize));
 
-        return colType == GridBinaryMarshaller.SINGLETON_LIST ? U.convertToSingletonList(col) : col;
+        return U.unwrapSingletonList(col);
     }
 
     /**

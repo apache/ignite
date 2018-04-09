@@ -19,28 +19,29 @@ package org.apache.ignite.internal.util;
 
 
 import java.util.AbstractList;
+import java.util.Collection;
+import java.util.Collections;
 
 /**
  * List that can contain maximum of one element. Does not allow null element to be added.
  */
 public class MutableSingletonList<E> extends AbstractList<E> {
-
     /** The only element of collection. */
     private E element;
 
     /** {@inheritDoc} */
-    @Override public E get(int index) {
-        if (index != 0 || element == null)
-            throw new IndexOutOfBoundsException("Index: " + index + ", Size: " + size());
+    @Override public E get(int idx) {
+        if (idx != 0 || element == null)
+            throw new IndexOutOfBoundsException("Index: " + idx + ", Size: " + size());
 
         return element;
     }
 
     /** {@inheritDoc} */
-    @Override public void add(int index, E element) {
+    @Override public void add(int idx, E element) {
         if (element == null)
             throw new IllegalArgumentException("Cannot add null element to list");
-        else if (index != 0)
+        else if (idx != 0)
             throw new IllegalStateException("Element already added to singleton list");
         else
             this.element = element;
@@ -49,5 +50,15 @@ public class MutableSingletonList<E> extends AbstractList<E> {
     /** {@inheritDoc} */
     @Override public int size() {
         return element == null ? 0 : 1;
+    }
+
+    /**
+     * Creates filled singleton list.
+     *
+     * @return singleton list.
+     */
+    @SuppressWarnings("unchecked")
+    public Collection<E> singletonList() {
+        return Collections.singletonList(element);
     }
 }
