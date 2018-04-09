@@ -268,7 +268,7 @@ class CacheClient {
 
     /**
      * Associates the specified value with the specified key in the cache
-     * and returns the previous associated value, if and only if the key exists in the cache.
+     * and returns the previous associated value, if the key exists in the cache.
      * Otherwise does nothing and returns null.
      *
      * @async
@@ -309,8 +309,7 @@ class CacheClient {
      * @param {*} key - key.
      * @param {*} value - value to be associated with the specified key.
      *
-     * @return {Promise<boolean>} - true if the new entry is created,
-     *   false if the specified key already exists in the cache.
+     * @return {Promise<boolean>} - true if the operation has been done, false otherwise.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -337,14 +336,15 @@ class CacheClient {
     }
 
     /**
-     * ???
+     * Associates the specified value with the specified key, if the key exists in the cache.
+     * Otherwise does nothing.
      *
      * @async
      *
-     * @param {*} key - ???
-     * @param {*} value - ???
+     * @param {*} key - key.
+     * @param {*} value - value to be associated with the specified key.
      *
-     * @return {Promise<boolean>} - ???
+     * @return {Promise<boolean>} - true if the operation has been done, false otherwise.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -353,15 +353,17 @@ class CacheClient {
     }
 
     /**
-     * ???
+     * Associates the new value with the specified key, if the key exists in the cache
+     * and the current value equals to the provided one.
+     * Otherwise does nothing.
      *
      * @async
      *
-     * @param {*} key - ???
-     * @param {*} value - ???
-     * @param {*} newValue - ???
+     * @param {*} key - key.
+     * @param {*} value - value to be compared with the current value associated with the specified key.
+     * @param {*} newValue - new value to be associated with the specified key.
      *
-     * @return {Promise<boolean>} - ???
+     * @return {Promise<boolean>} - true if the operation has been done, false otherwise.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -384,7 +386,7 @@ class CacheClient {
     }
 
     /**
-     * ???
+     * Removes all entries from the cache, without notifying listeners and cache writers.
      *
      * @async
      *
@@ -399,11 +401,11 @@ class CacheClient {
     }
 
     /**
-     * ???
+     * Removes entry with the specified key from the cache, without notifying listeners and cache writers.
      *
      * @async
      *
-     * @param {*} key - ???
+     * @param {*} key - key to be removed.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -412,11 +414,11 @@ class CacheClient {
     }
 
     /**
-     * ???
+     * Removes entries with the specified keys from the cache, without notifying listeners and cache writers.
      *
      * @async
      *
-     * @param {Array<*>} keys - ???
+     * @param {Array<*>} keys - keys to be removed.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -425,13 +427,13 @@ class CacheClient {
     }
 
     /**
-     * ???
+     * Removes entry with the specified key from the cache, notifying listeners and cache writers.
      *
      * @async
      *
-     * @param {*} key - ???
+     * @param {*} key - key to be removed.
      *
-     * @return {Promise<boolean>} - ???
+     * @return {Promise<boolean>} - true if the operation has been done, false otherwise.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -440,14 +442,15 @@ class CacheClient {
     }
 
     /**
-     * ???
+     * Removes entry with the specified key from the cache, if the current value equals to the provided one.
+     * Notifies listeners and cache writers.
      *
      * @async
      *
-     * @param {*} key - ???
-     * @param {*} value - ???
+     * @param {*} key - key to be removed.
+     * @param {*} value - value to be compared with the current value associated with the specified key.
      *
-     * @return {Promise<boolean>} - ???
+     * @return {Promise<boolean>} - true if the operation has been done, false otherwise.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -456,11 +459,11 @@ class CacheClient {
     }
 
     /**
-     * ???
+     * Removes entries with the specified keys from the cache, notifying listeners and cache writers.
      *
      * @async
      *
-     * @param {Array<*>} keys - ???
+     * @param {Array<*>} keys - keys to be removed.
      *
      * @throws {IgniteClientError} if error.
      */
@@ -469,7 +472,7 @@ class CacheClient {
     }
 
     /**
-     * Removes all the entities (keys and values) from the cache.
+     * Removes all entries from the cache, notifying listeners and cache writers.
      *
      * @async
      *
@@ -484,13 +487,13 @@ class CacheClient {
     }
 
     /**
-     * ???
+     * Returns the number of the entries in the cache.
      *
      * @async
      *
      * @param {...CacheClient.PEEK_MODE} [peekModes] - ???
      *
-     * @return {Promise<number>} - ???
+     * @return {Promise<number>} - the number of the entries in the cache.
      *
      * @throws {IgniteClientError} if error.
      */
