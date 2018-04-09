@@ -17,6 +17,7 @@
 
 package org.apache.ignite.cache;
 
+import javax.cache.CacheException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -31,9 +32,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.cache.CacheException;
 import org.apache.ignite.cache.query.annotations.QueryGroupIndex;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.query.annotations.QueryTextField;
@@ -153,11 +151,11 @@ public class QueryEntity implements Serializable {
     }
 
     /**
-     * Make query entity patch which allows from this entity achieve not less than target. Other words this patch using
-     * only add operations and skip remove operations.
+     * Make query entity patch. This patch can only add properties to entity and can't remove them.
+     * Other words this patch using only add operations(e.g. add column, create index)  and skip remove operations.
      *
      * @param target query entity to which this entity should be expanded.
-     * @return patch which will can be apply on current query entity to achieve target.
+     * @return patch which contains operations for expanding this entity.
      */
     @NotNull public QueryEntityPatch makePatch(QueryEntity target) {
         if (target == null)
@@ -191,22 +189,25 @@ public class QueryEntity implements Serializable {
                 true
             ));
 
-        if (!indexesToAdd.isEmpty())
-            indexesToAdd.forEach(index -> patchOperations.add(new SchemaIndexCreateOperation(
-                UUID.randomUUID(),
-                null,
-                null,
-                tableName,
-                index,
-                true,
-                0
-            )));
+        if (!indexesToAdd.isEmpty()) {
+            for (QueryIndex index : indexesToAdd) {
+                patchOperations.add(new SchemaIndexCreateOperation(
+                    UUID.randomUUID(),
+                    null,
+                    null,
+                    tableName,
+                    index,
+                    true,
+                    0
+                ));
+            }
+        }
 
         return QueryEntityPatch.patch(patchOperations);
     }
 
     /**
-     * Compare local fields with target fields.
+     * Comparing local fields and target fields.
      *
      * @param target query entity for check.
      * @param conflicts storage of conflicts.
@@ -215,8 +216,12 @@ public class QueryEntity implements Serializable {
     @NotNull private HashSet<QueryIndex> checkIndices(QueryEntity target, StringBuilder conflicts) {
         HashSet<QueryIndex> indexesToAdd = new HashSet<>();
 
-        Map<String, QueryIndex> currentIndexes = getIndexes().stream()
-            .collect(Collectors.toMap(QueryIndex::getName, Function.identity()));
+        Map<String, QueryIndex> currentIndexes = new HashMap<>();
+
+        for (QueryIndex index : getIndexes()) {
+            if (currentIndexes.put(index.getName(), index) != null)
+                throw new IllegalStateException("Duplicate key");
+        }
 
         for (QueryIndex queryIndex : target.getIndexes()) {
             if(currentIndexes.containsKey(queryIndex.getName())) {
@@ -234,7 +239,7 @@ public class QueryEntity implements Serializable {
     }
 
     /**
-     * Compare local fields with target fields.
+     * Comparing local fields and target fields.
      *
      * @param target query entity for check.
      * @param conflicts storage of conflicts.
@@ -280,7 +285,7 @@ public class QueryEntity implements Serializable {
     }
 
     /**
-     * Compare two objects and add formatted text to conflicts if needed.
+     * Comparing two objects and add formatted text to conflicts if needed.
      *
      * @param conflicts storage of conlicts.
      * @param name name of comparing object

@@ -266,7 +266,7 @@ public class IgniteClusterActivateDeactivateTestWithPersistence extends IgniteCl
         }
     }
 
-    /** get cause of throwable */
+    /** get first cause of throwable */
     private String cause(Throwable throwable) {
         return throwable.getCause() == null ? throwable.getMessage() : cause(throwable.getCause());
     }

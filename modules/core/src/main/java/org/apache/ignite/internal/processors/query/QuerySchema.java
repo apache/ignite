@@ -20,14 +20,12 @@ package org.apache.ignite.internal.processors.query;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryEntityPatch;
 import org.apache.ignite.cache.QueryIndex;
@@ -89,16 +87,20 @@ public class QuerySchema implements Serializable {
     }
 
     /**
-     * Make schema patch which allows from current schema achieve not less than target. Other words this patch using
-     * only add operations and skip remove operations.
+     * Make schema patch. This patch can only add properties to query entity and can't remove them.
+     * Other words this patch using only add operations(e.g. add column, create index, add table)  and skip remove operations.
      *
      * @param target query entity list to which current schema should be expanded.
      * @return patch which will can be apply on current schema to achieve target.
      */
     public QuerySchemaPatch makePatch(Collection<QueryEntity> target) {
         synchronized (mux) {
-            Map<String, QueryEntity> localEntities = entities.stream()
-                .collect(Collectors.toMap(QueryEntity::getTableName, Function.identity()));
+            Map<String, QueryEntity> localEntities = new HashMap<>();
+
+            for (QueryEntity entity : entities) {
+                if (localEntities.put(entity.getTableName(), entity) != null)
+                    throw new IllegalStateException("Duplicate key");
+            }
 
             Collection<SchemaAbstractOperation> patchOperations = new ArrayList<>();
             Collection<QueryEntity> entityToAdd = new ArrayList<>();
@@ -129,7 +131,7 @@ public class QuerySchema implements Serializable {
     }
 
     /**
-     * To try applying query schema patch for changing current schema.
+     * Apply query schema patch for changing this schema.
      *
      * @param patch patch to apply.
      * @return {@code True} if applying was success and {@code False} otherwise
@@ -142,7 +144,9 @@ public class QuerySchema implements Serializable {
             if (patch.isEmpty())
                 return true;
 
-            patch.getPatchOperations().forEach(this::finish);
+            for (SchemaAbstractOperation operation : patch.getPatchOperations()) {
+                finish(operation);
+            }
 
             entities.addAll(patch.getEntityToAdd());
 

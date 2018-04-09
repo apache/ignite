@@ -76,7 +76,7 @@ import static org.apache.ignite.internal.GridComponent.DiscoveryDataExchangeType
  */
 class ClusterCachesInfo {
 
-    /** Version since which merge config is support */
+    /** Version since which merge of config is supports */
     private static final IgniteProductVersion V_MERGE_CONFIG_SINCE = IgniteProductVersion.fromString("2.5.0");
 
     /** */
@@ -1096,21 +1096,26 @@ class ClusterCachesInfo {
 
         }
 
-        //skip config manipulation if least one conflict was found
+        //skip merge of config if least one conflict was found
         if (!hasSchemaPatchConflict && isMergeConfigSupports(ctx.discovery().localNode()))
-            //merged config for cluster only for inactive grid
+            //merge of config for cluster only for inactive grid
             if (!ctx.state().clusterState().active() && !patchesToApply.isEmpty()) {
-                patchesToApply.forEach((cache, patch) -> {
-                    if (cache.applySchemaPatch(patch))
-                        saveCacheConfiguration(cache);
-                });
+                for(Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry: patchesToApply.entrySet()){
+                    if (entry.getKey().applySchemaPatch(entry.getValue()))
+                        saveCacheConfiguration(entry.getKey());
+                }
 
                 cachesToSave.removeAll(patchesToApply.keySet());
 
-                cachesToSave.forEach(this::saveCacheConfiguration);
+                for (DynamicCacheDescriptor descriptor : cachesToSave) {
+                    saveCacheConfiguration(descriptor);
+                }
             }
-            else if (patchesToApply.isEmpty())
-                cachesToSave.forEach(this::saveCacheConfiguration);
+            else if (patchesToApply.isEmpty()) {
+                for (DynamicCacheDescriptor descriptor : cachesToSave) {
+                    saveCacheConfiguration(descriptor);
+                }
+            }
 
         if (!F.isEmpty(cachesData.clientNodesMap())) {
             for (Map.Entry<String, Map<UUID, Boolean>> entry : cachesData.clientNodesMap().entrySet()) {
@@ -1159,7 +1164,7 @@ class ClusterCachesInfo {
     }
 
     /**
-     * Given started node query entities by cacheName.
+     * Get started node query entities by cacheName.
      *
      * @param cacheName cache for which query entities will be returned
      * @return local query entities.
@@ -1555,12 +1560,12 @@ class ClusterCachesInfo {
             ctx.discovery().addClientNode(cfg.getName(), nodeId, cfg.getNearConfiguration() != null);
         }
 
-        //if conflict is appear we don't merge config and we leave existed config
+        //if conflict was appear we don't merge config and we leave existed config
         if (!hasSchemaPatchConflict && !patchesToApply.isEmpty())
-            patchesToApply.forEach((cache, patch) -> {
-                if (cache.applySchemaPatch(patch))
-                    saveCacheConfiguration(cache);
-            });
+            for(Map.Entry<DynamicCacheDescriptor, QuerySchemaPatch> entry: patchesToApply.entrySet()){
+                if (entry.getKey().applySchemaPatch(entry.getValue()))
+                    saveCacheConfiguration(entry.getKey());
+            }
 
         if (joinData.startCaches()) {
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
@@ -1574,7 +1579,7 @@ class ClusterCachesInfo {
     }
 
     /**
-     * @return {@code True} if grid supports merge config and {@code False} otherwise
+     * @return {@code True} if grid supports merge of config and {@code False} otherwise
      */
     public boolean isMergeConfigSupports(ClusterNode joiningNode) {
         DiscoCache discoCache = ctx.discovery().discoCache();
@@ -1587,9 +1592,14 @@ class ClusterCachesInfo {
 
         Collection<ClusterNode> nodes = discoCache.allNodes();
 
-        return nodes.stream()
-            .map(ClusterNode::version)
-            .noneMatch(version -> version.compareToIgnoreTimestamp(V_MERGE_CONFIG_SINCE) < 0);
+        for (ClusterNode node : nodes) {
+            IgniteProductVersion version = node.version();
+
+            if (version.compareToIgnoreTimestamp(V_MERGE_CONFIG_SINCE) < 0)
+                return false;
+        }
+
+        return true;
     }
 
     /**

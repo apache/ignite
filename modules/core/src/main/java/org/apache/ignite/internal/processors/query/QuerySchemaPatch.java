@@ -23,7 +23,7 @@ import org.apache.ignite.internal.processors.query.schema.operation.SchemaAbstra
 import org.jetbrains.annotations.NotNull;
 
 /**
- * Query schema patch which contain some operations for changing query entities.
+ * Query schema patch which contains some operations for changing query entities.
  */
 public class QuerySchemaPatch {
     /** Conflicts which appears during creating this patch. */
@@ -55,8 +55,6 @@ public class QuerySchemaPatch {
     }
 
     /**
-     * Can be this patch applying or not.
-     *
      * @return {@code True} if patch is empty and can't be applying.
      */
     public boolean isEmpty() {

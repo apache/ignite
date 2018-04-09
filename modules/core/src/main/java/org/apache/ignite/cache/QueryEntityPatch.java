@@ -42,7 +42,7 @@ public class QueryEntityPatch {
      * Builder method for patch with conflicts.
      *
      * @param conflict conflicts.
-     * @return build patch.
+     * @return query entity patch with conflicts.
      */
     public static QueryEntityPatch conflict(String conflict) {
         return new QueryEntityPatch(conflict, null);
@@ -51,17 +51,17 @@ public class QueryEntityPatch {
     /**
      * Builder method for empty patch.
      *
-     * @return build patch.
+     * @return query entity patch.
      */
     public static QueryEntityPatch empty() {
         return new QueryEntityPatch(null, null);
     }
 
     /**
-     * Builder method for patch with operation.
+     * Builder method for patch with operations.
      *
-     * @param patchOperations operation for modification.
-     * @return build patch.
+     * @param patchOperations operations for modification.
+     * @return Query entity patch which contain some operations for changing query entity.
      */
     public static QueryEntityPatch patch(Collection<SchemaAbstractOperation> patchOperations) {
         return new QueryEntityPatch(null, patchOperations);
@@ -77,8 +77,6 @@ public class QueryEntityPatch {
     }
 
     /**
-     * Can be this patch applying or not.
-     *
      * @return {@code True} if patch is empty and can't be applying.
      */
     public boolean isEmpty() {

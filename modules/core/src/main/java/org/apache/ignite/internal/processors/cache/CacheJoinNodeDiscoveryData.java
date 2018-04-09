@@ -120,7 +120,7 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
          * @param cacheType Cache type.
          * @param sql SQL flag - {@code true} if cache was created with {@code CREATE TABLE}.
          * @param flags Flags (for future usage).
-         * @param staticallyConfigured {@code true} if it configured by static config and {@code false} otherwise
+         * @param staticallyConfigured {@code true} if it was configured by static config and {@code false} otherwise
          */
         public CacheInfo(StoredCacheData cacheData, CacheType cacheType, boolean sql, long flags,
             boolean staticallyConfigured) {
@@ -153,7 +153,7 @@ public class CacheJoinNodeDiscoveryData implements Serializable {
         }
 
         /**
-         * @return {@code true} if it configured by static config and {@code false} otherwise
+         * @return {@code true} if it was configured by static config and {@code false} otherwise
          */
         public boolean isStaticallyConfigured() {
             return staticallyConfigured;

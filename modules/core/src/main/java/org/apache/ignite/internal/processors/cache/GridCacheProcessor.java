@@ -157,7 +157,6 @@ import org.apache.ignite.spi.discovery.DiscoveryDataBag.JoiningNodeDiscoveryData
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.stream.Collectors.toMap;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_REMOVED_ENTRIES_TTL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
@@ -751,12 +750,13 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Add stored cache data to caches.
-     *  @param caches cache storage.
+     * Add stored cache data to caches storage.
+     *
+     * @param caches cache storage.
      * @param cacheData cache data to add.
      * @param cacheName cache name.
      * @param cacheType cache type.
-     * @param isStaticalyConfigured
+     * @param isStaticalyConfigured statically configured flag
      */
     private void addStoredCache(Map<String, CacheInfo> caches, StoredCacheData cacheData, String cacheName,
         CacheType cacheType, boolean isStaticalyConfigured) {
@@ -2491,7 +2491,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
 
                 if (isGridActive && !schemaPatch.isEmpty()) {
-                    String msg = "Node join was have fail because it requires to merge config which impossible on active grid";
+                    String msg = "Node join was fail because it requires to merge of config but that impossible on active grid";
 
                     return new IgniteNodeValidationResult(node.id(), msg, msg);
                 }
