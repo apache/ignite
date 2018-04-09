@@ -22,6 +22,7 @@ import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.Ignite;
@@ -31,6 +32,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItem;
 
 /**
@@ -43,9 +45,8 @@ public class JdbcThinMetadataSchemaRegressionTest extends GridCommonAbstractTest
     /** Client node */
     private static Ignite client;
 
+    /** Name of the pre started cache. It is started statically via IgniteConfiguration. */
     private static final String PRESTARTED_CACHE_NAME = "PrestartedCache";
-
-
 
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -61,16 +62,23 @@ public class JdbcThinMetadataSchemaRegressionTest extends GridCommonAbstractTest
         client = startGrid(clConfig.getIgniteInstanceName(), optimize(clConfig), null);
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
         super.afterTestsStopped();
     }
 
+    /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
     }
 
+    /**
+     * Check that connecting to client node, we will get schema wich cache was started statically on other node.
+     *
+     * @throws SQLException on unexpected SQLException.
+     */
     public void testServerPrestartedSchemaOnClientNode() throws SQLException{
         List<String> schemas = fetchSchemasFrom(client);
 
@@ -81,6 +89,11 @@ public class JdbcThinMetadataSchemaRegressionTest extends GridCommonAbstractTest
 
     }
 
+    /**
+     * Same check as {@link #testServerPrestartedSchemaOnClientNode()}, but connect to server node.
+     *
+     * @throws SQLException on unexpected SQLException.
+     */
     public void testServerPrestartedSchemaOnServerNode() throws SQLException{
         List<String> schemas = fetchSchemasFrom(server);
 
@@ -91,12 +104,40 @@ public class JdbcThinMetadataSchemaRegressionTest extends GridCommonAbstractTest
 
     }
 
+    /**
+     * Check that returned schemas exactly matches expectations (not just contains created schemas).
+     * Verifies both content and order.
+     *
+     * @throws SQLException on unexpected SQLException.
+     */
+    public void testAllSchemas() throws SQLException {
+        List<String> expectedSchemas = new ArrayList<>(Arrays.asList("PUBLIC", PRESTARTED_CACHE_NAME));
+
+        expectedSchemas.sort(String::compareTo);
+
+        List<String> schemas = fetchSchemasFrom(client);
+
+        Assert.assertThat("Retrived schemas or order are incorrect", schemas, equalTo(expectedSchemas));
+    }
+
+    /**
+     * Check that default schema (with name "PUBLIC") is present.
+     *
+     * @throws SQLException on unexpected SQLException.
+     */
     public void testPublicSchema() throws SQLException {
         List<String> schemas = fetchSchemasFrom(client);
 
         Assert.assertThat("PUBLIC schema does NOT exist.", schemas, hasItem("PUBLIC"));
     }
 
+    /**
+     * Retrives all the schemas, defined in cluster.
+     *
+     * @param node node to connect with jdbc thin driver.
+     * @return all the schemas defined in cluster.
+     * @throws SQLException on error.
+     */
     private List<String> fetchSchemasFrom(Ignite node) throws SQLException {
         int clientPort = GridTestUtils.jdbcPortOf(node);
 
