@@ -182,14 +182,11 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * Must be called from exchange thread.
      */
-    public void initCachesOnLocalJoin(
-        Map<Integer, CacheGroupDescriptor> cacheGroupDescriptors,
-        Map<String, DynamicCacheDescriptor> cacheDescriptors
-    ) {
+    void initCachesOnLocalJoin() {
         // Clean-up in case of client reconnect.
         caches.clear();
 
-        caches.init(cacheGroupDescriptors, cacheDescriptors);
+        caches.init(cctx.cache().cacheGroupDescriptors(), cctx.cache().cacheDescriptors());
     }
 
     /**

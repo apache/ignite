@@ -1759,8 +1759,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion exchTopVer
     ) throws IgniteCheckedException {
         if (locJoinCtx != null) {
-            sharedCtx.affinity().initCachesOnLocalJoin(
-                locJoinCtx.cacheGroupDescriptors(), locJoinCtx.cacheDescriptors());
+            sharedCtx.affinity().initCachesOnLocalJoin();
 
             for (T2<DynamicCacheDescriptor, NearCacheConfiguration> t : locJoinCtx.caches()) {
                 DynamicCacheDescriptor desc = t.get1();
