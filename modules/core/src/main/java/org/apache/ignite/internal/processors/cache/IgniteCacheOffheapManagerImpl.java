@@ -953,7 +953,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         String idxName = treeName(p);
 
-        DataStructureSize totalPages = grp.dataStructureSize().sizeOf(TOTAL);
+        DataStructureSize totalSize = grp.dataStructureSize().sizeOf(TOTAL);
 
         CacheDataTree dataTree = new CacheDataTree(
             grp,
@@ -963,14 +963,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             rootPage,
             true,
             grp.dataStructureSize().sizeOf(PK_INDEX)
-        ){
-            @Override protected long allocatePageNoReuse() throws IgniteCheckedException {
-                if (totalPages != null)
-                    totalPages.inc();
-
-                return pageMem.allocatePage(grpId, PageIdAllocator.INDEX_PARTITION, FLAG_IDX);
-            }
-        };
+        );
 
         return new CacheDataStoreImpl(p, idxName, rowStore, dataTree);
     }

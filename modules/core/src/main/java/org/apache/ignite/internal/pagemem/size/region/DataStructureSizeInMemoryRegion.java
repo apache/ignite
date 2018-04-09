@@ -3,8 +3,10 @@ package org.apache.ignite.internal.pagemem.size.region;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.internal.pagemem.size.DataStructureSize;
 import org.apache.ignite.internal.pagemem.size.DataStructureSizeContext;
+import org.apache.ignite.internal.pagemem.wal.DataStructureSizeAdapter;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
 import org.jsr166.ConcurrentLinkedHashMap;
 
@@ -14,6 +16,7 @@ import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.PUR
 import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.REUSE_LIST;
 import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.TOTAL;
 import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.simpleTracker;
+import static org.apache.ignite.internal.pagemem.size.DataStructureSizeUtils.sizeAndParentUpdate;
 
 public class DataStructureSizeInMemoryRegion implements DataStructureSizeContext<CacheGroupContext, DataStructureSizeContext> {
 
@@ -32,11 +35,40 @@ public class DataStructureSizeInMemoryRegion implements DataStructureSizeContext
         this.name = name;
         this.pageSize = pageSize;
 
-        DataStructureSize pkIndexPages = simpleTracker(name + "-" + PK_INDEX);
+        DataStructureSize totalSize = new DataStructureSizeAdapter() {
+            private final AtomicLong size = new AtomicLong();
+
+            @Override public void inc() {
+                add(pageSize);
+            }
+
+            @Override public void dec() {
+
+            }
+
+            @Override public void add(long val) {
+                size.addAndGet(val);
+            }
+
+            @Override public long size() {
+                return size.get();
+            }
+
+            @Override public String name() {
+                return name + "-" + TOTAL;
+            }
+        };
+
+        DataStructureSize pkIndexPages = sizeAndParentUpdate(name + "-" + PK_INDEX,
+            new DataStructureSizeAdapter() {
+                @Override public void inc() {
+                    totalSize.add(pageSize);
+                }
+            });
+
         DataStructureSize reuseListPages = simpleTracker(name + "-" + REUSE_LIST);
         DataStructureSize dataPages = simpleTracker(name + "-" + DATA);
         DataStructureSize pureDataSize = simpleTracker(name + "-" + PURE_DATA);
-        DataStructureSize totalSize = simpleTracker(name + "-" + TOTAL);
 
         structures.put(pkIndexPages.name(), pkIndexPages);
         structures.put(reuseListPages.name(), reuseListPages);
