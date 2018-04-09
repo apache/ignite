@@ -119,8 +119,6 @@ public class SimpleTest extends GridCommonAbstractTest {
 
         ig.cluster().active(true);
 
-        System.out.println("Before put");
-
         printSizes(ig.context().cache().context());
 
         Collection<String> cacheNames = ig.cacheNames();
@@ -130,16 +128,18 @@ public class SimpleTest extends GridCommonAbstractTest {
                 ig.cache(name).put(i, i);
         }
 
-        System.out.println("After put");
+        System.out.println(">>>> PUT");
 
         printSizes(ig.context().cache().context());
+
+       // Thread.sleep(10 * 60 * 1000);
 
         for (int i = 0; i < entries; i++) {
             for (String name : cacheNames)
                 ig.cache(name).remove(i);
         }
 
-        System.out.println("After remove");
+        System.out.println(">>>>> REMOVE");
 
         printSizes(ig.context().cache().context());
 
