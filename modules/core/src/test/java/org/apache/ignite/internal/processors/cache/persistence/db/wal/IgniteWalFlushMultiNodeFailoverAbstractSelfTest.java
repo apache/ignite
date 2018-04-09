@@ -259,7 +259,7 @@ public abstract class IgniteWalFlushMultiNodeFailoverAbstractSelfTest extends Gr
 
                 /** {@inheritDoc} */
                 @Override public int write(ByteBuffer srcBuf) throws IOException {
-                    if (!Thread.currentThread().getName().contains("exchange-worker") && --writeAttempts <= 0 && fail != null && fail.get())
+                    if (--writeAttempts <= 0 && fail != null && fail.get())
                         throw new IOException("No space left on device");
 
                     return super.write(srcBuf);
