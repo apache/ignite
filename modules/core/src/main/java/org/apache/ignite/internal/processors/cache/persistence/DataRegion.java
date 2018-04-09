@@ -39,7 +39,7 @@ public class DataRegion {
     private final PageEvictionTracker evictionTracker;
 
     /** */
-    private final DataStructureSizeNodeRegionLevel regionDsSize;
+    private final DataStructureSizeNodeRegionLevel regionDataStructureSize;
 
     /**
      * @param pageMem PageMemory instance.
@@ -52,13 +52,13 @@ public class DataRegion {
         DataRegionConfiguration cfg,
         DataRegionMetricsImpl memMetrics,
         PageEvictionTracker evictionTracker,
-        DataStructureSizeNodeRootLevel rootDsSize
+        DataStructureSizeNodeRootLevel nodeDataStructureSize
     ) {
         this.pageMem = pageMem;
         this.memMetrics = memMetrics;
         this.cfg = cfg;
         this.evictionTracker = evictionTracker;
-        this.regionDsSize = rootDsSize.createChild(this);
+        this.regionDataStructureSize = nodeDataStructureSize.createChild(this);
     }
 
     /**
@@ -93,6 +93,6 @@ public class DataRegion {
      *
      */
     public DataStructureSizeNodeRegionLevel dataStructureSize() {
-        return regionDsSize;
+        return regionDataStructureSize;
     }
 }

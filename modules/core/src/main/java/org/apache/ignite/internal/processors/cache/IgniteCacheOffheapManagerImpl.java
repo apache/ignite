@@ -77,6 +77,8 @@ import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.INTERNAL;
+import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.PK_INDEX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.FLAG_IDX;
 import static org.apache.ignite.internal.pagemem.PageIdAllocator.INDEX_PARTITION;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
@@ -800,8 +802,12 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
 
         long pageId;
 
-        if (reuseList == null || (pageId = reuseList.takeRecycledPage()) == 0L)
+        if (reuseList == null || (pageId = reuseList.takeRecycledPage()) == 0L){
             pageId = grp.dataRegion().pageMemory().allocatePage(grp.groupId(), INDEX_PARTITION, FLAG_IDX);
+
+            //TODO
+            // grp.dataStructureSize().sizeOf(INTERNAL).inc();
+        }
 
         return pageId;
     }
@@ -824,8 +830,10 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
     }
 
     /** {@inheritDoc} */
-    @Override public GridCloseableIterator<CacheDataRow> reservedIterator(int part,
-        AffinityTopologyVersion topVer) throws IgniteCheckedException {
+    @Override public GridCloseableIterator<CacheDataRow> reservedIterator(
+        int part,
+        AffinityTopologyVersion topVer
+    ) throws IgniteCheckedException {
         final GridDhtLocalPartition loc = grp.topology().localPartition(part, topVer, false);
 
         if (loc == null || !loc.reserve())
@@ -951,7 +959,7 @@ public class IgniteCacheOffheapManagerImpl implements IgniteCacheOffheapManager 
             rowStore,
             rootPage,
             true,
-            null //TODO
+            grp.dataStructureSize().sizeOf(PK_INDEX)
         );
 
         return new CacheDataStoreImpl(p, idxName, rowStore, dataTree);

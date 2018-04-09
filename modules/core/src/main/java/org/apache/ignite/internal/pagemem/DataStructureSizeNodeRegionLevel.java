@@ -2,7 +2,6 @@ package org.apache.ignite.internal.pagemem;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.internal.pagemem.wal.DataStructureSizeAdapter;
 import org.apache.ignite.internal.processors.cache.CacheGroupContext;
@@ -10,7 +9,7 @@ import org.jsr166.ConcurrentLinkedHashMap;
 
 import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.METRICS;
 
-public class DataStructureSizeNodeRegionLevel implements DataStructureSizeNode<CacheGroupContext, DataStructureSizeNodeGroupLevel> {
+public class DataStructureSizeNodeRegionLevel implements DataStructureSizeNode<CacheGroupContext, DataStructureSizeGroupLevel> {
     private final DataStructureSizeNode parent;
 
     private final String name;
@@ -33,10 +32,10 @@ public class DataStructureSizeNodeRegionLevel implements DataStructureSizeNode<C
         return groups.values();
     }
 
-    @Override public DataStructureSizeNodeGroupLevel createChild(CacheGroupContext context) {
+    @Override public DataStructureSizeGroupLevel createChild(CacheGroupContext context) {
         String name = context.cacheOrGroupName();
 
-        DataStructureSizeNodeGroupLevel grp = new DataStructureSizeNodeGroupLevel(this, name, pageSize);
+        DataStructureSizeGroupLevel grp = new DataStructureSizeGroupLevel(this, name, pageSize);
 
         groups.put(name, grp);
 

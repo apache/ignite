@@ -31,7 +31,7 @@ import org.apache.ignite.failure.FailureContext;
 import org.apache.ignite.failure.FailureType;
 import org.apache.ignite.internal.pagemem.DataStructureSize;
 import org.apache.ignite.internal.pagemem.DataStructureSizeNode;
-import org.apache.ignite.internal.pagemem.DataStructureSizeNodeGroupLevel;
+import org.apache.ignite.internal.pagemem.DataStructureSizeGroupLevel;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -1132,14 +1132,14 @@ public class GridCacheOffheapManager extends IgniteCacheOffheapManagerImpl imple
         private final CountDownLatch latch = new CountDownLatch(1);
 
         /** */
-        private final DataStructureSizeNodeGroupLevel groupSize;
+        private final DataStructureSizeGroupLevel groupSize;
 
         /**
          * @param partId Partition.
          * @param exists {@code True} if store for this index exists.
          * @param groupSize .
          */
-        private GridCacheDataStore(int partId, boolean exists, DataStructureSizeNodeGroupLevel groupSize) {
+        private GridCacheDataStore(int partId, boolean exists, DataStructureSizeGroupLevel groupSize) {
             this.partId = partId;
             this.exists = exists;
             this.groupSize = groupSize;

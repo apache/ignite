@@ -179,7 +179,7 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
             if (written == rowSize)
                 evictionTracker.touchPage(pageId);
 
-            if (written == rowSize && pureDataSize != null)
+            if (pureDataSize != null && written == rowSize)
                 pureDataSize.add(rowSize);
 
             // Avoid boxing with garbage generation for usual case.
@@ -326,12 +326,11 @@ public abstract class AbstractFreeList<T extends Storable> extends PagesList imp
                 else
                     put(null, pageId, page, pageAddr, newBucket);
 
-                //todo
-                if (newBucket == emptyDataPagesBucket && dataSize != null)
-                    dataSize.dec();
-
                 if (io.isEmpty(pageAddr))
                     evictionTracker.forgetPage(pageId);
+
+                if (dataSize != null && newBucket == emptyDataPagesBucket)
+                    dataSize.dec();
             }
 
             if (pureDataSize != null)

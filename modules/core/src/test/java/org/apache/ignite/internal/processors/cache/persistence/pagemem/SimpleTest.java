@@ -90,16 +90,16 @@ public class SimpleTest extends GridCommonAbstractTest {
                 .setAffinity(new RendezvousAffinityFunction(false, 1)),*/
             //------------------------------------------------
             new CacheConfiguration(PERSISTENT_CACHE)
+                .setDataRegionName(PERSISTENT_REGION),
+               // .setAffinity(new RendezvousAffinityFunction(false, 1)),
+            new CacheConfiguration(PERSISTENT_CACHE_1_GROUP)
                 .setDataRegionName(PERSISTENT_REGION)
-                .setAffinity(new RendezvousAffinityFunction(false, 1))
-       /*     new CacheConfiguration(PERSISTENT_CACHE_1_GROUP)
-                .setDataRegionName(PERSISTENT_REGION)
-                .setGroupName(PERSISTENT_GROUP_NAME)
-                .setAffinity(new RendezvousAffinityFunction(false, 1)),
+                .setGroupName(PERSISTENT_GROUP_NAME),
+               // .setAffinity(new RendezvousAffinityFunction(false, 1)),
             new CacheConfiguration(PERSISTENT_CACHE_2_GROUP)
                 .setDataRegionName(PERSISTENT_REGION)
                 .setGroupName(PERSISTENT_GROUP_NAME)
-                .setAffinity(new RendezvousAffinityFunction(false, 1))*/
+               // .setAffinity(new RendezvousAffinityFunction(false, 1))
         );
 
         cfg.setDataStorageConfiguration(
@@ -121,30 +121,29 @@ public class SimpleTest extends GridCommonAbstractTest {
 
         ig.cluster().active(true);
 
-        IgniteCache<Integer, Integer> cache = ig.cache(PERSISTENT_CACHE);
-
-        GatewayProtectedCacheProxy<Integer, Integer> cacheProxy = (GatewayProtectedCacheProxy<Integer, Integer>)cache;
-
-        CacheGroupContext groupContext = cacheProxy.context().group();
+        IgniteCache<Integer, Integer> cache1 = ig.cache(PERSISTENT_CACHE);
+        IgniteCache<Integer, Integer> cache2 = ig.cache(PERSISTENT_CACHE_1_GROUP);
+        IgniteCache<Integer, Integer> cache3 = ig.cache(PERSISTENT_CACHE_2_GROUP);
 
         System.out.println("Before put");
 
         printSizes(ig.context().cache().context());
 
-        for (int i = 0; i < 1; i++)
-            cache.put(i, i);
+        for (int i = 0; i < 10_000; i++){
+            cache1.put(i, i);
+            cache2.put(i, i);
+            cache3.put(i, i);
+        }
 
         System.out.println("After put");
 
         printSizes(ig.context().cache().context());
 
-        GridCacheDatabaseSharedManager db =
-            (GridCacheDatabaseSharedManager)cacheProxy.context().kernalContext().cache().context().database();
-
-        db.waitForCheckpoint(null);
-
-        for (int i = 0; i < 1; i++)
-            cache.remove(i);
+        for (int i = 0; i < 10_000; i++){
+            cache1.remove(i);
+            cache2.remove(i);
+            cache3.remove(i);
+        }
 
         System.out.println("After remove");
 
@@ -156,7 +155,7 @@ public class SimpleTest extends GridCommonAbstractTest {
     private void printSizes(GridCacheSharedContext ctx) {
         DataStructureSizeNodeRootLevel nodeLevel = ctx.database().dataStructureSize();
 
-        print(nodeLevel.structures(), "NODE [" + ctx.localNode().consistentId() + "]");
+        //print(nodeLevel.structures(), "NODE [" + ctx.localNode().consistentId() + "]");
 
         List<DataStructureSize> regions = new ArrayList<>();
 
@@ -187,10 +186,10 @@ public class SimpleTest extends GridCommonAbstractTest {
     private void print(Collection<DataStructureSize> sizes, String msg) {
         String leftAlignFormat = "| %-7s | %-9d | %-6d | %-6d | %-28s |%n";
 
-        System.err.println(msg);
-        System.err.format("+---------+-----------+--------+--------+------------------------------+%n");
-        System.err.format("|  pages  |   bytes   |   kb   |   mb   |       name                   |%n");
-        System.err.format("+---------+-----------+--------+--------+------------------------------+%n");
+        System.out.println(msg);
+        System.out.format("+---------+-----------+--------+--------+------------------------------+%n");
+        System.out.format("|  pages  |   bytes   |   kb   |   mb   |       name                   |%n");
+        System.out.format("+---------+-----------+--------+--------+------------------------------+%n");
 
         sizes.forEach((ds) -> {
             String name = ds.name();
@@ -206,12 +205,12 @@ public class SimpleTest extends GridCommonAbstractTest {
                 System.out.println("\t[" + size + " b | " + size / 1024 + " kb]" + "  " + k);*/
 
             if (!name.contains(PURE_DATA) && !name.contains(INTERNAL) && !name.contains(TOTAL))
-                System.err.format(leftAlignFormat, String.valueOf(size), byteSize, kbSize, mbSize, name);
+                System.out.format(leftAlignFormat, String.valueOf(size), byteSize, kbSize, mbSize, name);
             else
-                System.err.format(leftAlignFormat, "N/A", size, size / 1024, (size / 1024) / 1024, name);
+                System.out.format(leftAlignFormat, "N/A", size, size / 1024, (size / 1024) / 1024, name);
 
         });
 
-        System.err.format("+---------+-----------+--------+--------+------------------------------+%n\n");
+        System.out.format("+---------+-----------+--------+--------+------------------------------+%n\n");
     }
 }

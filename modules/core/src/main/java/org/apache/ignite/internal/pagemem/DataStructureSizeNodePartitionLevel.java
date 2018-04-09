@@ -15,7 +15,7 @@ import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.sizeAndP
 import static org.apache.ignite.internal.pagemem.DataStructureSizeUtils.sizeWithTrackingPages;
 
 public class DataStructureSizeNodePartitionLevel implements DataStructureSizeNode<Void, DataStructureSizeNode> {
-    private final DataStructureSizeNodeGroupLevel groupLevel;
+    private final DataStructureSizeGroupLevel groupLevel;
 
     private final String name;
 
@@ -23,7 +23,7 @@ public class DataStructureSizeNodePartitionLevel implements DataStructureSizeNod
 
     private final int pageSize;
 
-    public DataStructureSizeNodePartitionLevel(DataStructureSizeNodeGroupLevel grpLevel, String name, int pageSize) {
+    public DataStructureSizeNodePartitionLevel(DataStructureSizeGroupLevel grpLevel, String name, int pageSize) {
         this.groupLevel = grpLevel;
         this.name = name;
         this.pageSize = pageSize;
