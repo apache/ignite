@@ -241,6 +241,10 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
         int oldSize = affMap.size();
 
         for (AffinityAssignmentKey key : affMap.keySet()) {
+            if (!affMap.get(key).isDone()) {
+                continue;
+            }
+
             if (!caches.contains(key.cacheName) || topVerRmv.contains(key.topVer))
                 rmv.add(key);
         }
