@@ -725,16 +725,10 @@ public class GridAffinityAssignmentCache {
      * @param aff Added affinity assignment.
      */
     private void onHistoryAdded(GridAffinityAssignment aff) {
-        int size = fullHistSize.incrementAndGet();
-
-        int rmvCnt = 0;
-
-        if (size > MAX_HIST_SIZE * 2)
-            rmvCnt = MAX_HIST_SIZE;
-
-        if (rmvCnt > 0) {
+        if (fullHistSize.incrementAndGet() > MAX_HIST_SIZE * 2) {
             Iterator<HistoryAffinityAssignment> it = affCache.values().iterator();
-            Collection<AffinityTopologyVersion> topVerRmv = new HashSet<>();
+            Collection<AffinityTopologyVersion> topVerRmv = new HashSet<>(MAX_HIST_SIZE);
+            int rmvCnt = MAX_HIST_SIZE;
 
             while (it.hasNext() && rmvCnt > 0) {
                 AffinityAssignment aff0 = it.next();

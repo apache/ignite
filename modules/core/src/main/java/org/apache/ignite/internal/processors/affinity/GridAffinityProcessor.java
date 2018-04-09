@@ -240,18 +240,18 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
 
         int oldSize = affMap.size();
 
-        for (AffinityAssignmentKey key : affMap.keySet()) {
-            if (!affMap.get(key).isDone()) {
+        for (Map.Entry<AffinityAssignmentKey, IgniteInternalFuture<AffinityInfo>> entry : affMap.entrySet()) {
+            assert entry.getValue() != null;
+
+            if (!entry.getValue().isDone())
                 continue;
-            }
 
-            if (!caches.contains(key.cacheName) || topVerRmv.contains(key.topVer))
-                rmv.add(key);
+            if (topVerRmv.contains(entry.getKey().topVer) || !caches.contains(entry.getKey().cacheName))
+                rmv.add(entry.getKey());
         }
 
-        if (log.isDebugEnabled()) {
+        if (log.isDebugEnabled())
             log.debug("Affinity cached values were cleared: " + (oldSize - affMap.size()));
-        }
 
         return affMap.keySet().removeAll(rmv);
     }
