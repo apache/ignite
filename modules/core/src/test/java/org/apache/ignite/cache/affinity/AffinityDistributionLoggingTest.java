@@ -41,6 +41,10 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGNITE_INSTAN
 
 /**
  * Tests of partitions distribution logging.
+ *
+ * Tests based on using of affinity function which provides an even distribution of partitions between nodes.
+ *
+ * @see EvenDistributionAffinityFunction
  */
 public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     /** Pattern to test. */
@@ -48,6 +52,9 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
 
     /** Partitions number. */
     private int parts = 0;
+
+    /** Nodes number. */
+    private int nodes = 0;
 
     /** Backups number. */
     private int backups = 0;
@@ -87,7 +94,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
 
         cacheCfg.setCacheMode(CacheMode.PARTITIONED);
         cacheCfg.setBackups(backups);
-        cacheCfg.setAffinity(new TestAffinityFunction(parts));
+        cacheCfg.setAffinity(new EvenDistributionAffinityFunction(parts));
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -97,10 +104,14 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of an error.
      */
-    public void testIdealPartitionDistributionLogging1() throws Exception {
+    public void test2PartitionsIdealDistributionIsNotLogged() throws Exception {
         System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "0");
 
-        String testsLog = runAndGetExchangeLog(2, 1, 2);
+        nodes = 2;
+        parts = 2;
+        backups = 1;
+
+        String testsLog = runAndGetExchangeLog();
 
         assertFalse(testsLog.contains(LOG_MESSAGE_PREFIX));
     }
@@ -108,10 +119,14 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of an error.
      */
-    public void testIdealPartitionDistributionLogging2() throws Exception {
+    public void test120PartitionsIdeadDistributionIsNotLogged() throws Exception {
         System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "0.0");
 
-        String testsLog = runAndGetExchangeLog(120, 2, 3);
+        nodes = 3;
+        parts = 120;
+        backups = 2;
+
+        String testsLog = runAndGetExchangeLog();
 
         assertFalse(testsLog.contains(LOG_MESSAGE_PREFIX));
     }
@@ -119,47 +134,27 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     /**
      * @throws Exception In case of an error.
      */
-    public void testNotIdealPartitionDistributionLogging1() throws Exception {
-        String testsLog = runAndGetExchangeLog(4, 4, 4);
+    public void test5PartitionsNotIdealDistributionIsLogged() throws Exception {
+        nodes = 4;
+        parts = 5;
+        backups = 3;
 
-        String exp = String.format("%s[cache=default, expectedPrimary=%.2f, expectedBackups=%.2f, " +
-            "primary=%d(%.2f%%), backups=%d(%.2f%%)]", LOG_MESSAGE_PREFIX, 1f, 4f, 1, 25f, 3, 75f);
+        String testsLog = runAndGetExchangeLog();
 
-        assertTrue(testsLog.contains(exp));
+        assertTrue(testsLog.contains(LOG_MESSAGE_PREFIX));
     }
 
     /**
      * @throws Exception In case of an error.
      */
-    public void testNotIdealPartitionDistributionSuppressedLogging1() throws Exception {
-        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "25");
-
-        String testsLog = runAndGetExchangeLog(4, 4, 4);
-
-        assertFalse(testsLog.contains(LOG_MESSAGE_PREFIX));
-    }
-
-    /**
-     * @throws Exception In case of an error.
-     */
-    public void testNotIdealPartitionDistributionLogging2() throws Exception {
+    public void test5PartitionsNotIdealDistributionSuppressedLogging() throws Exception {
         System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "65");
 
-        String testsLog = runAndGetExchangeLog(39, 6, 3);
+        nodes = 4;
+        parts = 5;
+        backups = 3;
 
-        String exp = String.format("%s[cache=default, expectedPrimary=%.2f, expectedBackups=%.2f, " +
-            "primary=%d(%.2f%%), backups=%d(%.2f%%)]", LOG_MESSAGE_PREFIX, 13f, 78f, 13, 33.33f, 26, 66.67f);
-
-        assertTrue(testsLog.contains(exp));
-    }
-
-    /**
-     * @throws Exception In case of an error.
-     */
-    public void testNotIdealPartitionDistributionSuppressedLogging2() throws Exception {
-        System.setProperty(IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD, "66.7");
-
-        String testsLog = runAndGetExchangeLog(39, 6, 3);
+        String testsLog = runAndGetExchangeLog();
 
         assertFalse(testsLog.contains(LOG_MESSAGE_PREFIX));
     }
@@ -167,17 +162,11 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     /**
      * Starts a specified number of Ignite nodes and log partition node exchange during a last node's startup.
      *
-     * @param parts Partitions number.
-     * @param backups Backups number.
-     * @param nodes Nodes number.
      * @return Log of latest partition map exchange.
      * @throws Exception In case of an error.
      */
-    private String runAndGetExchangeLog(int parts, int backups, int nodes) throws Exception {
+    private String runAndGetExchangeLog() throws Exception {
         assert nodes > 1;
-
-        this.parts = parts;
-        this.backups = backups;
 
         IgniteEx ignite = (IgniteEx)startGrids(nodes - 1);
 
@@ -201,9 +190,9 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test affinity function.
+     * Affinity function for a partitioned cache which provides even distribution partitions between nodes in cluster.
      */
-    private static class TestAffinityFunction implements AffinityFunction {
+    private static class EvenDistributionAffinityFunction implements AffinityFunction {
         /** */
         private static final long serialVersionUID = 0L;
 
@@ -213,7 +202,7 @@ public class AffinityDistributionLoggingTest extends GridCommonAbstractTest {
         /**
          * @param parts Number of partitions for one cache.
          */
-        private TestAffinityFunction(int parts) {
+        private EvenDistributionAffinityFunction(int parts) {
             this.parts = parts;
         }
 
