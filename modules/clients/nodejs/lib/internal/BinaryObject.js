@@ -203,7 +203,7 @@ class BinaryObject {
         // version
         this._buffer.writeByte(VERSION);
         // flags
-        this._buffer.writeShort(FLAG_HAS_SCHEMA);
+        this._buffer.writeShort(FLAG_HAS_SCHEMA | FLAG_USER_TYPE);
         // type id
         this._buffer.writeInteger(this._type.id);
         // hash code

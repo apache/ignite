@@ -136,7 +136,7 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     async get(key) {
-        return await this._putKeyGetValue(BinaryUtils.OPERATION.CACHE_GET, key);
+        return await this._writeKeyReadValueOp(BinaryUtils.OPERATION.CACHE_GET, key);
     }
 
     /**
@@ -153,6 +153,7 @@ class CacheClient {
      */
     async getAll(keys) {
         ArgumentChecker.notEmpty(keys, 'keys');
+        ArgumentChecker.hasType(keys, 'keys', false, Array);
         let result = null;
         await this._socket.send(
             BinaryUtils.OPERATION.CACHE_GET_ALL,
@@ -186,7 +187,7 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     async put(key, value) {
-        await this._putKeyValue(BinaryUtils.OPERATION.CACHE_PUT, key, value);
+        await this._writeKeyValueOp(BinaryUtils.OPERATION.CACHE_PUT, key, value);
     }
 
     /**
@@ -227,7 +228,7 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     async containsKey(key) {
-        return await this._putKeyGetBoolean(BinaryUtils.OPERATION.CACHE_CONTAINS_KEY, key);
+        return await this._writeKeyReadBooleanOp(BinaryUtils.OPERATION.CACHE_CONTAINS_KEY, key);
     }
 
     /**
@@ -243,7 +244,7 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     async containsKeys(keys) {
-        return await this._putKeysGetBoolean(BinaryUtils.OPERATION.CACHE_CONTAINS_KEYS, key);
+        return await this._writeKeysReadBooleanOp(BinaryUtils.OPERATION.CACHE_CONTAINS_KEYS, keys);
     }
 
     /**
@@ -263,7 +264,7 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     async getAndPut(key, value) {
-        return await this._putKeyValueGetValue(BinaryUtils.OPERATION.CACHE_GET_AND_PUT, key, value);
+        return await this._writeKeyValueReadValueOp(BinaryUtils.OPERATION.CACHE_GET_AND_PUT, key, value);
     }
 
     /**
@@ -281,7 +282,7 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     async getAndReplace(key, value) {
-        return await this._putKeyValueGetValue(BinaryUtils.OPERATION.CACHE_GET_AND_REPLACE, key, value);
+        return await this._writeKeyValueReadValueOp(BinaryUtils.OPERATION.CACHE_GET_AND_REPLACE, key, value);
     }
 
     /**
@@ -297,7 +298,7 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     async getAndRemove(key) {
-        return await this._putKeyGetValue(BinaryUtils.OPERATION.CACHE_GET_AND_REMOVE, key);
+        return await this._writeKeyReadValueOp(BinaryUtils.OPERATION.CACHE_GET_AND_REMOVE, key);
     }
 
     /**
@@ -314,7 +315,7 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     async putIfAbsent(key, value) {
-        return await this._putKeyValueGetBoolean(BinaryUtils.OPERATION.CACHE_PUT_IF_ABSENT, key, value);
+        return await this._writeKeyValueReadBooleanOp(BinaryUtils.OPERATION.CACHE_PUT_IF_ABSENT, key, value);
     }
 
     /**
@@ -332,7 +333,7 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     async getAndPutIfAbsent(key, value) {
-        return await this._putKeyValueGetValue(BinaryUtils.OPERATION.CACHE_GET_AND_PUT_IF_ABSENT, key, value);
+        return await this._writeKeyValueReadValueOp(BinaryUtils.OPERATION.CACHE_GET_AND_PUT_IF_ABSENT, key, value);
     }
 
     /**
@@ -349,7 +350,7 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     async replace(key, value) {
-        return await this._putKeyValueGetBoolean(BinaryUtils.OPERATION.CACHE_REPLACE, key, value);
+        return await this._writeKeyValueReadBooleanOp(BinaryUtils.OPERATION.CACHE_REPLACE, key, value);
     }
 
     /**
@@ -410,7 +411,7 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     async clearKey(key) {
-        await this._putKey(BinaryUtils.OPERATION.CACHE_CLEAR_KEY, key);
+        await this._writeKeyOp(BinaryUtils.OPERATION.CACHE_CLEAR_KEY, key);
     }
 
     /**
@@ -423,7 +424,7 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     async clearKeys(keys) {
-        await this._putKeys(BinaryUtils.OPERATION.CACHE_CLEAR_KEYS, keys);
+        await this._writeKeysOp(BinaryUtils.OPERATION.CACHE_CLEAR_KEYS, keys);
     }
 
     /**
@@ -438,7 +439,7 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     async removeKey(key) {
-        return await this._putKeyGetBoolean(BinaryUtils.OPERATION.CACHE_REMOVE_KEY, key);
+        return await this._writeKeyReadBooleanOp(BinaryUtils.OPERATION.CACHE_REMOVE_KEY, key);
     }
 
     /**
@@ -455,7 +456,7 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     async removeIfEquals(key, value) {
-        return await this._putKeyValueGetBoolean(BinaryUtils.OPERATION.CACHE_REMOVE_IF_EQUALS, key, value);
+        return await this._writeKeyValueReadBooleanOp(BinaryUtils.OPERATION.CACHE_REMOVE_IF_EQUALS, key, value);
     }
 
     /**
@@ -468,7 +469,7 @@ class CacheClient {
      * @throws {IgniteClientError} if error.
      */
     async removeKeys(keys) {
-        await this._putKeys(BinaryUtils.OPERATION.CACHE_REMOVE_KEYS, keys);
+        await this._writeKeysOp(BinaryUtils.OPERATION.CACHE_REMOVE_KEYS, keys);
     }
 
     /**
@@ -556,7 +557,6 @@ class CacheClient {
         this._config = config;
         this._keyType = null;
         this._valueType = null;
-        this._binaryMode = false;
         this._socket = socket;
     }
 
@@ -572,7 +572,7 @@ class CacheClient {
      */
     _writeCacheInfo(payload) {
         payload.writeInteger(this._cacheId);
-        payload.writeByte(this._binaryMode ? 1 : 0);
+        payload.writeByte(0);
     }
 
     /**
@@ -610,7 +610,7 @@ class CacheClient {
     /**
      * @ignore
      */
-    async _putKeyValue(operation, key, value, payloadReader = null) {
+    async _writeKeyValueOp(operation, key, value, payloadReader = null) {
         ArgumentChecker.notNull(key, 'key');
         ArgumentChecker.notNull(value, 'value');
         await this._socket.send(
@@ -625,9 +625,9 @@ class CacheClient {
     /**
      * @ignore
      */
-    async _putKeyValueGetValue(operation, key, value) {
+    async _writeKeyValueReadValueOp(operation, key, value) {
         let result = null;
-        await this._putKeyValue(
+        await this._writeKeyValueOp(
             operation, key, value,
             (payload) => {
                 result = BinaryReader.readObject(payload, this._getValueType());
@@ -638,9 +638,9 @@ class CacheClient {
     /**
      * @ignore
      */
-    async _putKeyValueGetBoolean(operation, key, value) {
+    async _writeKeyValueReadBooleanOp(operation, key, value) {
         let result = false;
-        await this._putKeyValue(
+        await this._writeKeyValueOp(
             operation, key, value,
             (payload) => {
                 result = payload.readBoolean();
@@ -651,7 +651,7 @@ class CacheClient {
     /**
      * @ignore
      */
-    async _putKey(operation, key, payloadReader = null) {
+    async _writeKeyOp(operation, key, payloadReader = null) {
         ArgumentChecker.notNull(key, 'key');
         await this._socket.send(
             operation,
@@ -665,9 +665,9 @@ class CacheClient {
     /**
      * @ignore
      */
-    async _putKeyGetValue(operation, key) {
+    async _writeKeyReadValueOp(operation, key) {
         let value = null;
-        await this._putKey(
+        await this._writeKeyOp(
             operation, key,
             (payload) => {
                 value = BinaryReader.readObject(payload, this._getValueType());
@@ -678,9 +678,9 @@ class CacheClient {
     /**
      * @ignore
      */
-    async _putKeyGetBoolean(operation, key) {
+    async _writeKeyReadBooleanOp(operation, key) {
         let result = false;
-        await this._putKey(
+        await this._writeKeyOp(
             operation, key,
             (payload) => {
                 result = payload.readBoolean();
@@ -691,8 +691,9 @@ class CacheClient {
     /**
      * @ignore
      */
-    async _putKeys(operation, keys, payloadReader = null) {
+    async _writeKeysOp(operation, keys, payloadReader = null) {
         ArgumentChecker.notEmpty(keys, 'keys');
+        ArgumentChecker.hasType(keys, 'keys', false, Array);
         await this._socket.send(
             operation,
             (payload) => {
@@ -705,9 +706,9 @@ class CacheClient {
     /**
      * @ignore
      */
-    async _putKeysGetBoolean(operation, keys) {
+    async _writeKeysReadBooleanOp(operation, keys) {
         let result = false;
-        await this._putKeys(
+        await this._writeKeysOp(
             operation, keys,
             (payload) => {
                 result = payload.readBoolean();
@@ -727,7 +728,7 @@ class CacheEntry {
      * @param {*} key - key corresponding to this entry.
      * @param {*} value - value associated with the key.
      *
-     * @return {ComplexObjectType} - new CacheEntry instance     
+     * @return {CacheEntry} - new CacheEntry instance     
      */
     constructor(key, value) {
         this._key = key;

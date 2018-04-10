@@ -114,8 +114,11 @@ class BinaryReader {
         const startPos = buffer.position;
         buffer.position = startPos + size;
         const offset = buffer.readInteger();
+        const endPos = buffer.position;
         buffer.position = startPos + offset;
-        return BinaryReader.readObject(buffer, expectedType);
+        const result = BinaryReader.readObject(buffer, expectedType);
+        buffer.position = endPos;
+        return result;
     }
 
     static _readComplexObject(buffer, expectedType) {

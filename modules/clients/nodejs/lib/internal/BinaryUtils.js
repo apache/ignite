@@ -341,9 +341,7 @@ class BinaryUtils {
         }
         const expectedTypeCode = BinaryUtils.getTypeCode(expectedType);
         if (actualTypeCode === BinaryUtils.TYPE_CODE.NULL) {
-            if (!BinaryUtils.isNullable(expectedTypeCode)) {
-                throw Errors.IgniteClientError.typeCastError(BinaryUtils.TYPE_CODE.NULL, expectedTypeCode);
-            }
+            return;
         }
         else if (expectedTypeCode === BinaryUtils.TYPE_CODE.BINARY_OBJECT ||
             actualTypeCode === BinaryUtils.TYPE_CODE.BINARY_OBJECT &&
