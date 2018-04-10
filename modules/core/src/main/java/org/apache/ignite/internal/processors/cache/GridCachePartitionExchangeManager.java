@@ -123,6 +123,7 @@ import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
+import static org.apache.ignite.failure.FailureType.CRITICAL_ERROR;
 import static org.apache.ignite.failure.FailureType.SYSTEM_WORKER_TERMINATION;
 import static org.apache.ignite.internal.GridTopic.TOPIC_CACHE;
 import static org.apache.ignite.internal.events.DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT;
@@ -2274,11 +2275,20 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             try {
                 body0();
             }
+            catch (InterruptedException | IgniteInterruptedCheckedException e) {
+                if (!stop)
+                    err = e;
+            }
             catch (Throwable e) {
                 err = e;
             }
             finally {
-                if (!stop)
+                if (err == null && !stop)
+                    err = new IllegalStateException("Thread " + name() + " is terminated unexpectedly");
+
+                if (err instanceof OutOfMemoryError)
+                    cctx.kernalContext().failure().process(new FailureContext(CRITICAL_ERROR, err));
+                else if (err != null)
                     cctx.kernalContext().failure().process(new FailureContext(SYSTEM_WORKER_TERMINATION, err));
             }
         }
