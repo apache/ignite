@@ -17,31 +17,45 @@
 
 package org.apache.ignite.internal.util;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jetbrains.annotations.NotNull;
+import java.util.concurrent.BlockingQueue;
+import org.apache.ignite.internal.managers.communication.GridIoPolicy;
+import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 
 /**
  * Wrapped striped executor which delegates all jobs to target executor service.
  * It is used instead of the striped executor when that one is disabled (striped pool size <= 0).
  */
-public class StripedExecutorProxy extends StripedExecutor {
-    /** Target executor service */
-    private volatile ExecutorService executor;
-
+public class StripedExecutorProxy extends IgniteThreadPoolExecutor implements StripedExecutor {
     /**
-     * @param executor Target executor service.
-     * @param log Logger.
+     * Creates a new service with the given initial parameters.
+     *
+     * @param threadNamePrefix Will be added at the beginning of all created threads.
+     * @param igniteInstanceName Must be the name of the grid.
+     * @param corePoolSize The number of threads to keep in the pool, even if they are idle.
+     * @param maxPoolSize The maximum number of threads to allow in the pool.
+     * @param keepAliveTime When the number of threads is greater than the core, this is the maximum time
+     *      that excess idle threads will wait for new tasks before terminating.
+     * @param workQ The queue to use for holding tasks before they are executed. This queue will hold only
+     *      runnable tasks submitted by the {@link #execute(Runnable)} method.
+     * @param plc {@link GridIoPolicy} for thread pool.
      */
-    public StripedExecutorProxy(ExecutorService executor, final IgniteLogger log) {
-        super(1, "", "", log);
-
-        this.executor = executor;
+    public StripedExecutorProxy(
+        String threadNamePrefix,
+        String igniteInstanceName,
+        int corePoolSize,
+        int maxPoolSize,
+        long keepAliveTime,
+        BlockingQueue<Runnable> workQ,
+        byte plc) {
+        super(
+            threadNamePrefix,
+            igniteInstanceName,
+            corePoolSize,
+            maxPoolSize,
+            keepAliveTime,
+            workQ,
+            plc
+        );
     }
 
     /** {@inheritDoc} */
@@ -60,91 +74,37 @@ public class StripedExecutorProxy extends StripedExecutor {
     }
 
     /** {@inheritDoc} */
-    @Override public void shutdown() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void execute(@NotNull Runnable cmd) {
-        checkExecutor();
-
-        executor.execute(cmd);
-    }
-
-    /**
-     * Check target executor is not null.
-     *
-     * @throws IgniteException If executor is null.
-     */
-    private void checkExecutor() {
-        if (executor == null)
-            throw new IgniteException("Target executor is not found.");
-    }
-
-    /** {@inheritDoc} */
-    @NotNull @Override public List<Runnable> shutdownNow() {
-        return Collections.emptyList();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean awaitTermination(
-        long timeout,
-        @NotNull TimeUnit unit
-    ) throws InterruptedException {
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isShutdown() {
-        checkExecutor();
-
-        return executor.isShutdown();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isTerminated() {
-        checkExecutor();
-
-        return executor.isTerminated();
-    }
-
-    /** {@inheritDoc} */
     @Override public void stop() {
         // No-op.
     }
 
     /** {@inheritDoc} */
     @Override public int queueSize() {
-        return 0;
+        return getQueue().size();
     }
 
     /** {@inheritDoc} */
     @Override public long completedTasks() {
-        return 0;
+        return getCompletedTaskCount();
     }
 
     /** {@inheritDoc} */
     @Override public long[] stripesCompletedTasks() {
-        return new long[] { 0L };
+        return new long[] {completedTasks()};
     }
 
     /** {@inheritDoc} */
     @Override public boolean[] stripesActiveStatuses() {
-        return new boolean[] { false };
+        return new boolean[] {getActiveCount() > 0};
     }
 
     /** {@inheritDoc} */
     @Override public int activeStripesCount() {
-        return 0;
+        return getActiveCount() > 0 ? 1 : 0;
     }
 
     /** {@inheritDoc} */
     @Override public int[] stripesQueueSizes() {
-        return new int[] { 0 };
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(StripedExecutorProxy.class, this);
+        return new int[] {queueSize()};
     }
 }

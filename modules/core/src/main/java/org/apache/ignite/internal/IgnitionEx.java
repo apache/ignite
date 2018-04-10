@@ -79,6 +79,7 @@ import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.StripedExecutor;
+import org.apache.ignite.internal.util.StripedExecutorImpl;
 import org.apache.ignite.internal.util.StripedExecutorProxy;
 import org.apache.ignite.internal.util.spring.IgniteSpringHelper;
 import org.apache.ignite.internal.util.typedef.CA;
@@ -1797,14 +1798,25 @@ public class IgnitionEx {
 
             sysExecSvc.allowCoreThreadTimeOut(true);
 
-            if (cfg.getStripedPoolSize() > 0) {
-                stripedExecSvc = new StripedExecutor(
+            validateThreadPoolSize(cfg.getStripedPoolSize(), "stripedPool");
+
+            if (IgniteSystemProperties.getBoolean(IgniteSystemProperties.IGNITE_STRIPED_POOL_DISABLED)) {
+                stripedExecSvc = new StripedExecutorProxy(
+                    "sys2",
+                    cfg.getIgniteInstanceName(),
+                    cfg.getSystemThreadPoolSize(),
+                    cfg.getSystemThreadPoolSize(),
+                    DFLT_THREAD_KEEP_ALIVE_TIME,
+                    new LinkedBlockingQueue<Runnable>(),
+                    GridIoPolicy.SYSTEM_POOL);
+            }
+            else {
+                stripedExecSvc = new StripedExecutorImpl(
                     cfg.getStripedPoolSize(),
                     cfg.getIgniteInstanceName(),
                     "sys",
                     log);
-            } else
-                stripedExecSvc = new StripedExecutorProxy(sysExecSvc, log);
+            }
 
             // Note that since we use 'LinkedBlockingQueue', number of
             // maximum threads has no effect.
@@ -1839,7 +1851,7 @@ public class IgnitionEx {
 
             p2pExecSvc.allowCoreThreadTimeOut(true);
 
-            dataStreamerExecSvc = new StripedExecutor(
+            dataStreamerExecSvc = new StripedExecutorImpl(
                 cfg.getDataStreamerThreadPoolSize(),
                 cfg.getIgniteInstanceName(),
                 "data-streamer",
