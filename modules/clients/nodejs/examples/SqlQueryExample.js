@@ -48,6 +48,11 @@ class Person {
     }
 }
 
+// This example demonstrates basic Cache, Key-Value and SQL query operations.
+// - connects to ENDPOINT node
+// - creates a cache from CacheConfiguration
+// - writes data into the cache using CacheClient.put()
+// - reads data from the cache using SQL query
 class SqlQueryExample {
     constructor() {
         this._cache = null;
