@@ -75,7 +75,7 @@ describe('cache configuration operations test suite >', () => {
         Promise.resolve().
             then(async () => {
                 try {
-                    let cache = igniteClient.getOrCreateCache(CACHE_NAME);
+                    let cache = await igniteClient.getOrCreateCache(CACHE_NAME);
                     cache = await igniteClient.createCache(CACHE_NAME);
                 }
                 catch (err) {

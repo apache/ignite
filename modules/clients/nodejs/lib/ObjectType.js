@@ -231,7 +231,7 @@ class ComplexObjectType extends CompositeType {
     /**
      * Public constructor.
      *
-     * Specifies a JavaScript class which will be mapped to/from the complex type.
+     * Specifies a JavaScript Object type which will be mapped to/from the complex type.
      * This specification is done using an instance of the JavaScript Object.
      *
      * If an object of the complex type is going to be received (deserialized),
@@ -278,7 +278,6 @@ class ComplexObjectType extends CompositeType {
      * @param {ObjectType.PRIMITIVE_TYPE | CompositeType} fieldType - type of the field:
      *   - either a type code of primitive (simple) type
      *   - or an instance of class representing non-primitive (composite) type
-     *   - or null that means the type is not specified
      *
      * @return {ComplexObjectType} - the same instance of the ComplexObjectType.
      *

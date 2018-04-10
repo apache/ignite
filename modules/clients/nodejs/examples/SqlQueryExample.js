@@ -81,8 +81,9 @@ class SqlQueryExample {
                     setArgs(900, 1600));
 
             console.log('Query results:');
-            while (sqlCursor.hasNext()) {
-                console.log(await sqlCursor.getNext());
+            console.log(await sqlCursor.getValues());
+            while (sqlCursor.hasMore()) {
+                console.log(await sqlCursor.getValues());
             }
 
             await igniteClient.destroyCache(PERSON_CACHE_NAME);

@@ -20,6 +20,8 @@
 const Errors = require('./Errors');
 const CacheEntry = require('./CacheClient').CacheEntry;
 const BinaryUtils = require('./internal/BinaryUtils');
+const BinaryObjectType = require('./internal/BinaryUtils').BinaryObjectType;
+const BinaryObject = require('./internal/BinaryObject');
 const BinaryReader = require('./internal/BinaryReader');
 const BinaryWriter = require('./internal/BinaryWriter');
 
@@ -46,13 +48,13 @@ class Cursor {
      *   returned by SQL or Scan query.
      */
     async getValues() {
-        let value = null;
-        if (!this._value && this._hasNext) {
+        let values = null;
+        if (!this._values && this._hasNext) {
             await this._getNext();
         }
-        value = this._value;
-        this._value = null;
-        return value;
+        values = this._values;
+        this._values = null;
+        return values === null ? [] : values;
     }
 
     /**
@@ -61,9 +63,6 @@ class Cursor {
      * @return {boolean} - true if more results are available, false otherwise.
      */
     hasMore() {
-        if (this._value) {
-            return true;
-        }
         return this._hasNext;
     }
 
@@ -79,9 +78,9 @@ class Cursor {
      *   returned by SQL or Scan query.
      */
     async getAll() {
-        let result = new Array();
-        while (this.hasNext()) {
-            result = result.concat(await this.getNext());
+        let result = await this.getValues();
+        while (this.hasMore()) {
+            result = result.concat(await this.getValues());
         }
         return result;
     }
@@ -117,7 +116,7 @@ class Cursor {
         this._valueType = valueType;
         this._id = null;
         this._hasNext = false;
-        this._value = null;
+        this._values = null;
     }
 
     /**
@@ -125,7 +124,7 @@ class Cursor {
      */
     async _getNext() {
         this._hasNext = false;
-        this._value = null;
+        this._values = null;
         await this._socket.send(
             this._operation,
             (payload) => {
@@ -157,10 +156,10 @@ class Cursor {
         else {
             this._id = id;
         }
-        this._rowCount = buffer.readInteger();
-        this._value = new Array(this._rowCount);
-        for (let i = 0; i < this._rowCount; i++) {
-            this._value[i] = new CacheEntry(
+        const rowCount = buffer.readInteger();
+        this._values = new Array(rowCount);
+        for (let i = 0; i < rowCount; i++) {
+            this._values[i] = new CacheEntry(
                 BinaryReader.readObject(buffer, this._keyType),
                 BinaryReader.readObject(buffer, this._valueType));
         }
@@ -192,7 +191,16 @@ class SqlFieldsCursor extends Cursor {
      *
      */
     async getValues() {
-        return await super.getValues();
+        const values = await super.getValues();
+        for (let value of values) {
+            for (let i = 0; i < value.length; i++) {
+                const fieldType = this._fieldTypes && i < this._fieldTypes.length ? this._fieldTypes[i] : null;
+                if (value[i] instanceof BinaryObject) {
+                    value[i] = value[i]._toObject(fieldType);
+                }
+            }
+        }
+        return values;
     }
 
     /**
@@ -249,10 +257,9 @@ class SqlFieldsCursor extends Cursor {
     /**
      * @ignore
      */
-    constructor(socket, fieldTypes) {
+    constructor(socket) {
         super(socket, BinaryUtils.OPERATION.QUERY_SQL_FIELDS_CURSOR_GET_PAGE);
-        this._fieldTypes = fieldTypes;
-        this._fieldNames = null;
+        this._fieldNames = [];
     }
 
     /**
@@ -263,22 +270,20 @@ class SqlFieldsCursor extends Cursor {
             this._id = buffer.readLong();
             this._fieldCount = buffer.readInteger();
             if (includeFieldNames) {
-                this._fieldNames = new Array(this._fieldCount);
                 for (let i = 0; i < this._fieldCount; i++) {
                     this._fieldNames[i] = BinaryReader.readObject(buffer);
                 }
             }
         }
-        this._rowCount = buffer.readInteger();
-        this._value = new Array(this._rowCount);
+        const rowCount = buffer.readInteger();
+        this._values = new Array(rowCount);
         let values;
-        for (let i = 0; i < this._rowCount; i++) {
+        for (let i = 0; i < rowCount; i++) {
             values = new Array(this._fieldCount);
             for (let j = 0; j < this._fieldCount; j++) {
-                const fieldType = this._fieldTypes && j < this._fieldTypes.length ? this._fieldTypes[j] : null;
-                values[j] = BinaryReader.readObject(buffer, fieldType);
+                values[j] = BinaryReader.readObject(buffer, new BinaryObjectType());
             }
-            this._value[i] = values;
+            this._values[i] = values;
         }
         this._hasNext = buffer.readBoolean();
     }

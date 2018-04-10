@@ -45,7 +45,7 @@ class BinaryObject {
      *
      * @return {BinaryObject} - 
      */
-    constructor(complexObjectType) {
+    constructor(complexObjectType = null) {
         ArgumentChecker.hasType(complexObjectType, 'complexObjectType', false, ComplexObjectType);
         this._buffer = null;
         this._fields = new Map();
@@ -140,7 +140,10 @@ class BinaryObject {
     /**
      * @ignore
      */
-    _toObject() {
+    _toObject(complexObjectType = null) {
+        if (complexObjectType) {
+            this._setType(BinaryType._fromObjectType(complexObjectType));
+        }
         const result = new (this._type._objectConstructor);
         for (let field of this._fields.values()) {
             const binaryField = this._type.getField(field.id);
