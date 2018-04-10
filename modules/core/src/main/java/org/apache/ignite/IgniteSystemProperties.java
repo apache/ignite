@@ -852,7 +852,7 @@ public final class IgniteSystemProperties {
     /**
      * The threshold of uneven distribution above which partition distribution will be logged.
      *
-     * The default is '10', that means: warn about nodes with 10+% difference.
+     * The default is '50', that means: warn about nodes with 50+% difference.
      */
     public static final String IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD = "IGNITE_PART_DISTRIBUTION_WARN_THRESHOLD";
 
