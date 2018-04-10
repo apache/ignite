@@ -209,7 +209,6 @@ public class CacheObjectUtils {
      *  and {@code SortedSet} if it was successfully sorted.
      */
     public static Collection sort(@Nullable Collection col, CacheObjectValueContext ctx) {
-        System.out.println("asd123 col sort");
         if (col == null || col.size() == 1 || col instanceof SortedSet)
             return col;
 
@@ -227,7 +226,6 @@ public class CacheObjectUtils {
      * it is already sorted, {@code new SortedMap} if it was successfully sorted.
      */
     public static Map sort(@Nullable Map map, CacheObjectValueContext ctx) {
-        System.out.println("asd123 map sort");
         if (map == null || map.size() == 1 || map instanceof SortedMap)
             return map;
 

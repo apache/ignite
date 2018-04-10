@@ -726,8 +726,6 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             invokeMap0 = invokeMap;
         }
 
-        System.out.println("asd123 keyset: "+map0.keySet());
-
         final Collection<? extends K> keys =
             map0 != null ? map0.keySet() : invokeMap0 != null ? invokeMap0.keySet() : null;
 

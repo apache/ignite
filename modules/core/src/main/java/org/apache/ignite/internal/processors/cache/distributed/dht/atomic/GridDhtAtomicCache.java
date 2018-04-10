@@ -991,7 +991,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
 
-        if (opCtx.isAutoSorting()) {
+        if (opCtx != null && opCtx.isAutoSorting()) {
             map = CacheObjectUtils.sort(map, ctx.cacheObjectContext());
             invokeMap = CacheObjectUtils.sort(invokeMap, ctx.cacheObjectContext());
             conflictPutMap = CacheObjectUtils.sort(conflictPutMap, ctx.cacheObjectContext());

@@ -61,7 +61,8 @@ class CacheLockImpl<K, V> implements Lock {
         this.gate = gate;
         this.delegate = delegate;
         this.opCtx = opCtx;
-        this.keys = opCtx.isAutoSorting() ? CacheObjectUtils.sort(keys, delegate.context().cacheObjectContext()) : keys;
+        this.keys = opCtx != null && opCtx.isAutoSorting() ?
+            CacheObjectUtils.sort(keys, delegate.context().cacheObjectContext()) : keys;
     }
 
     /** {@inheritDoc} */

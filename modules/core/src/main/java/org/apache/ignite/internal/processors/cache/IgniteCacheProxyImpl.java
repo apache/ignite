@@ -256,7 +256,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
-    @Override public <K1, V1> IgniteCache<K1, V1> withKeyAutoSorting() {
+    @Override public <K1, V1> IgniteCache<K1, V1> withAutoSorting() {
         throw new UnsupportedOperationException();
     }
 
@@ -1701,7 +1701,7 @@ public class IgniteCacheProxyImpl<K, V> extends AsyncSupportAdapter<IgniteCache<
     }
 
     /** {@inheritDoc} */
-    @Override public <K1, V1> IgniteCache<K1, V1> keyAutoSorting() {
+    @Override public <K1, V1> IgniteCache<K1, V1> autoSorting() {
         throw new UnsupportedOperationException();
     }
 

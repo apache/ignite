@@ -263,9 +263,9 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         if (opCtx != null && opCtx.isKeepBinary())
             return (GridCacheProxyImpl<K1, V1>)this;
 
-        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx,
-            (GridCacheAdapter<K1, V1>)delegate,
-            opCtx != null ? opCtx.keepBinary() : new CacheOperationContext(false, null, true, false, null, false, null, false));
+        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)delegate,
+            opCtx != null ? opCtx.keepBinary() :
+                new CacheOperationContext(false, null, true, false, null, false, null, false));
     }
 
     /** {@inheritDoc} */
@@ -274,9 +274,9 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         if (opCtx != null && opCtx.isAutoSorting())
             return (GridCacheProxyImpl<K1, V1>)this;
 
-        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx,
-            (GridCacheAdapter<K1, V1>)delegate,
-            opCtx != null ? opCtx.autoSorting() : new CacheOperationContext(false, null, false, true, null, false, null, false));
+        return new GridCacheProxyImpl<>((GridCacheContext<K1, V1>)ctx, (GridCacheAdapter<K1, V1>)delegate,
+            opCtx != null ? opCtx.autoSorting() :
+                new CacheOperationContext(false, null, false, true, null, false, null, false));
     }
 
     /** {@inheritDoc} */

@@ -24,6 +24,8 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
@@ -199,6 +201,14 @@ import org.jetbrains.annotations.Nullable;
  * GridBinaryObject po = prj.get(1);
  * </pre>
  * See {@link #keepBinary()} method JavaDoc for more details.
+ * <h1 class="header">Deadlocks</h1>
+ * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
+ * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
+ * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
+ * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
+ * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
+ * <br>
+ * You can enable automatic sorting for batch operations. See {@link #autoSorting()} method for details.
  */
 public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
@@ -269,7 +279,10 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public <K1, V1> IgniteInternalCache<K1, V1> keepBinary();
 
     /**
-     *
+     * Before apply any batch operation it will sort given keys.
+     * If keys already sorted inside {@link SortedMap} or {@link SortedSet} - additional sorting will not occur.
+     * If keys are comparable - they will be sorted in natural order.
+     * If keys are not comparable - they will be sorted by hashcode.
      *
      * @return New internal cache instance with automatic sorting keys for batch operations.
      */
@@ -423,12 +436,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <p>
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param keys Keys to get.
      * @return Map of key-value pairs.
@@ -447,12 +454,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
      * will be loaded from {@link CacheStore} persistent storage via
      * <code>CacheStore#loadAll(Transaction, Collection, org.apache.ignite.lang.IgniteBiInClosure)</code> method.
-     * <p>
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -475,12 +476,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
      * will be loaded from {@link CacheStore} persistent storage via
      * <code>CacheStore#loadAll(Transaction, Collection, org.apache.ignite.lang.IgniteBiInClosure)</code> method.
-     * <p>
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -501,12 +496,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * it's not present in swap, or if swap is disabled, and if read-through is allowed, value
      * will be loaded from {@link CacheStore} persistent storage via
      * <code>CacheStore#loadAll(Transaction, Collection, org.apache.ignite.lang.IgniteBiInClosure)</code> method.
-     * <p>
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -867,12 +856,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <p>
      * If write-through is enabled, the stored values will be persisted to {@link CacheStore}
      * via <code>CacheStore#putAll(Transaction, Map)</code> method.
-     * <p>
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -889,12 +872,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <p>
      * If write-through is enabled, the stored values will be persisted to {@link CacheStore}
      * via <code>CacheStore#putAll(Transaction, Map)</code> method.
-     * <p>
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
@@ -1054,12 +1031,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <p>
      * Ignite will make the best attempt to clear caches on all nodes. If some caches
      * could not be cleared, then exception will be thrown.
-     * <p>
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param keys Keys to clear.
      * @throws IgniteCheckedException In case of cache could not be cleared on any of the nodes.
@@ -1091,12 +1062,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public IgniteInternalFuture<?> clearAsync(K key);
 
     /**
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
-     *
      * @param keys Keys to clear.
      * @return Clear future.
      */
@@ -1238,12 +1203,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <p>
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param keys Keys whose mappings are to be removed from cache.
      * @throws IgniteCheckedException If remove failed.
@@ -1257,12 +1216,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * <h2 class="header">Transactions</h2>
      * This method is transactional and will enlist the entry into ongoing transaction
      * if there is one.
-     * <p>
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param keys Keys whose mappings are to be removed from cache.
      * @return Future for the remove operation. The future will complete whenever
@@ -1338,12 +1291,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * need explicit locking within transaction, then you should use
      * {@link TransactionConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
-     * <p>
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param keys Keys to lock.
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
@@ -1363,12 +1310,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * need explicit locking within transaction, then you should use
      * {@link TransactionConcurrency#PESSIMISTIC} concurrency control for transaction
      * which will acquire explicit locks for relevant cache operations.
-     * <p>
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param keys Keys to lock.
      * @param timeout Timeout in milliseconds to wait for lock to be acquired
@@ -1660,12 +1601,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Store DR data asynchronously.
-     * <p>
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param drMap DR map.
      * @return Future.
@@ -1676,12 +1611,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Removes DR data.
-     * <p>
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param drMap DR map.
      * @throws IgniteCheckedException If remove failed.
@@ -1690,12 +1619,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * Removes DR data asynchronously.
-     * <p>
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
      *
      * @param drMap DR map.
      * @return Future.
@@ -1815,12 +1738,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
         Object... args);
 
     /**
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
-     *
      * @param keys Keys.
      * @param entryProcessor Entry processor.
      * @param args Arguments.
@@ -1832,12 +1749,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
         Object... args) throws IgniteCheckedException;
 
     /**
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
-     *
      * @param keys Keys.
      * @param entryProcessor Entry processor.
      * @param args Arguments.
@@ -1848,12 +1759,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
         Object... args);
 
     /**
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
-     *
      * @param map Map containing keys and entry processors to be applied to values.
      * @param args Arguments.
      * @return Invoke results.
@@ -1864,12 +1769,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
         Object... args) throws IgniteCheckedException;
 
     /**
-     * If batch operations (such as {@link #putAll putAll}, {@link #invokeAll invokeAll}, etc.)
-     * are performed in parallel, then keys should be ordered in the same way to avoid deadlock.
-     * It's recommended to use TreeMap instead of HashMap to guarantee consistent ordering.
-     * Note that this is true for both {@link CacheAtomicityMode#ATOMIC ATOMIC} and
-     * {@link CacheAtomicityMode#TRANSACTIONAL TRANSACTIONAL} caches.
-     *
      * @param map Map containing keys and entry processors to be applied to values.
      * @param args Arguments.
      * @return Future.

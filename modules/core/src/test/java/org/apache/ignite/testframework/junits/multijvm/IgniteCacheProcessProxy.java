@@ -673,7 +673,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public <K1, V1> IgniteCache<K1, V1> withKeyAutoSorting() {
+    @Override public <K1, V1> IgniteCache<K1, V1> withAutoSorting() {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 

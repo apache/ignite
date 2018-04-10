@@ -232,12 +232,12 @@ public class GatewayProtectedCacheProxy<K, V> extends AsyncSupportAdapter<Ignite
     }
 
     /** {@inheritDoc} */
-    @Override public <K1, V1> IgniteCache<K1, V1> withKeyAutoSorting() {
-        return keyAutoSorting();
+    @Override public <K1, V1> IgniteCache<K1, V1> withAutoSorting() {
+        return autoSorting();
     }
 
     /** {@inheritDoc} */
-    @Override public <K1, V1> IgniteCache<K1, V1> keyAutoSorting() {
+    @Override public <K1, V1> IgniteCache<K1, V1> autoSorting() {
         GridCacheGateway<K, V> gate = gate();
 
         CacheOperationContext prev = onEnter(gate, opCtx);

@@ -1139,7 +1139,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @throws IgniteCheckedException In case of error.
      */
     private void clear(@Nullable Set<? extends K> keys) throws IgniteCheckedException {
-        if (ctx.operationContextPerCall().isAutoSorting())
+        if (ctx.operationContextPerCall() != null && ctx.operationContextPerCall().isAutoSorting())
             keys = (Set) CacheObjectUtils.sort(keys, ctx.cacheObjectContext());
 
         if (isLocal()) {
@@ -1159,8 +1159,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Future.
      */
     private IgniteInternalFuture<?> clearAsync(@Nullable final Set<? extends K> keys) {
-        Set<? extends K> keys0 = ctx.operationContextPerCall().isAutoSorting() ?
-            (Set) CacheObjectUtils.sort(keys, ctx.cacheObjectContext()) : keys;
+        Set<? extends K> keys0 = ctx.operationContextPerCall() != null && ctx.operationContextPerCall().isAutoSorting()
+            ? (Set) CacheObjectUtils.sort(keys, ctx.cacheObjectContext()) : keys;
 
         if (isLocal())
             return clearLocallyAsync(keys0);

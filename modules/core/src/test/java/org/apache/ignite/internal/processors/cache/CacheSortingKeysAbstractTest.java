@@ -30,7 +30,6 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -72,7 +71,7 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME).withKeepBinary().withKeyAutoSorting();
+        cache = grid(0).getOrCreateCache(DEFAULT_CACHE_NAME).withKeepBinary().withAutoSorting();
     }
 
     /** {@inheritDoc} */
@@ -98,29 +97,23 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
      * @throws Exception If failed.
      */
     public void testPutAllPutAllDeadlock() throws Exception {
-        IgniteCache<String, Integer> cache = grid(0).createCache("deadlock");
-//TODO сортировка не начинается.
+        IgniteCache<String, Integer> cache = grid(0).createCache("deadlock").withAutoSorting();
+
         Map<String, Integer> m1 = new TreeMap<>();
         Map<String, Integer> m2 = new HashMap<>(10_000);
-        System.out.println("qwe123 0");
+
         for (int i = 0; i < 10_000; i++) {
             m1.put(i + "", i);
             m2.put(i + "", i + 1);
         }
-        System.out.println("qwe123 1");
 
         IgniteInternalFuture fut = GridTestUtils.runAsync(() -> {
-            System.out.println("qwe123 async 0");
             cache.putAll(m1);
-            System.out.println("qwe123 async 1");
         });
-        System.out.println("qwe123 2");
 
         cache.putAll(m2);
 
-        System.out.println("qwe123 3");
         fut.get();
-        System.out.println("qwe123 4");
     }
 
     /**
@@ -422,10 +415,9 @@ public abstract class CacheSortingKeysAbstractTest extends GridCacheAbstractSelf
         @Override public boolean apply(CacheEvent event) {
             if (evtType == -1)
                 evtType = event.type();
-            if (event.type() == evtType) {
-                System.out.println("asd123 evtType = "+evtType);
+
+            if (event.type() == evtType)
                 list.add(event.key());
-            }
 
             return true;
         }
