@@ -1020,7 +1020,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             ctx.performance().addAll(JvmConfigurationSuggestions.getSuggestions());
 
             // Suggest Operation System optimizations.
-            ctx.performance().addAll(OsConfigurationSuggestions.getSuggestions());
+            ctx.performance().addAll(OsConfigurationSuggestions.getSuggestions(cfg));
 
             DiscoveryLocalJoinData joinData = ctx.discovery().localJoin();
 

@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.NotNull;
@@ -55,9 +56,10 @@ public class OsConfigurationSuggestions {
     /**
      * Checks OS configurations and produces tuning suggestions.
      *
+     * @param cfg Ignite configuration.
      * @return List of suggestions of Operation system configuration tuning to increase Ignite performance.
      */
-    public static synchronized List<String> getSuggestions() {
+    public static synchronized List<String> getSuggestions(IgniteConfiguration cfg) {
         List<String> suggestions = new ArrayList<>();
 
         if (U.isRedHat()) {
@@ -76,7 +78,9 @@ public class OsConfigurationSuggestions {
                     (dwcParamFlag && decParamFlag ? "s" : ""),
                     expected));
 
-            if ((value = readVmParam(SWAPPINESS)) != null && !value.equals(expected = "10"))
+            expected = cfg.getDataStorageConfiguration() != null ? "0" : "10";
+
+            if ((value = readVmParam(SWAPPINESS)) != null && !value.equals(expected))
                 suggestions.add(String.format("Reduce pages swapping ratio (set vm.%s=%s)", SWAPPINESS, expected));
 
             if ((value = readVmParam(ZONE_RECLAIM_MODE)) != null && !value.equals(expected = "0"))
