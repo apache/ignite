@@ -26,45 +26,72 @@ const ArgumentChecker = require('./internal/ArgumentChecker');
 const Errors = require('./Errors');
 
 
+/**
+ *
+ */
 class CacheKeyConfiguration {
     constructor(typeName = null, affinityKeyFieldName = null) {
         this._typeName = typeName;
         this._affinityKeyFieldName = affinityKeyFieldName;
     }
 
+    /**
+     *
+     */
     setTypeName(typeName) {
         this._typeName = typeName;
         return this;
     }
 
+    /**
+     *
+     */
     getTypeName() {
         return this._typeName;
     }
 
+    /**
+     *
+     */
     setAffinityKeyFieldName(affinityKeyFieldName) {
         this._affinityKeyFieldName = affinityKeyFieldName;
         return this;
     }
 
+    /**
+     *
+     */
     getAffinityKeyFieldName() {
         return this._affinityKeyFieldName;
     }
 
     /** Private methods */
 
+    /**
+     * @ignore
+     */
     _write(buffer) {
         BinaryWriter.writeString(buffer, this._typeName);
         BinaryWriter.writeString(buffer, this._affinityKeyFieldName);
     }
 
+    /**
+     * @ignore
+     */
     _read(buffer) {
         this._typeName = BinaryReader.readObject(buffer);
         this._affinityKeyFieldName = BinaryReader.readObject(buffer);
     }
 }
 
+/**
+ *
+ */
 class QueryEntity {
 
+    /**
+     *
+     */
     constructor() {
         this._keyTypeName = null;
         this._valueTypeName = null;
@@ -76,47 +103,77 @@ class QueryEntity {
         this._indexes = null;
     }
 
+    /**
+     *
+     */
     setKeyTypeName(keyTypeName) {
         this._keyTypeName = keyTypeName;
         return this;
     }
 
+    /**
+     *
+     */
     getKeyTypeName() {
         return this._keyTypeName;
     }
 
+    /**
+     *
+     */
     setValueTypeName(valueTypeName) {
         this._valueTypeName = valueTypeName;
         return this;
     }
 
+    /**
+     *
+     */
     getValueTypeName() {
         return this._valueTypeName;
     }
 
+    /**
+     *
+     */
     setTableName(tableName) {
         this._tableName = tableName;
         return this;
     }
 
+    /**
+     *
+     */
     getTableName() {
         return this._tableName;
     }
 
+    /**
+     *
+     */
     setKeyFieldName(keyFieldName) {
         this._keyFieldName = keyFieldName;
         return this;
     }
 
+    /**
+     *
+     */
     getKeyFieldName() {
         return this._keyFieldName;
     }
 
+    /**
+     *
+     */
     setValueFieldName(valueFieldName) {
         this._valueFieldName = valueFieldName;
         return this;
     }
 
+    /**
+     *
+     */
     getValueFieldName() {
         return this._valueFieldName;
     }
@@ -180,6 +237,9 @@ class QueryEntity {
 
     /** Private methods */
 
+    /**
+     * @ignore
+     */
     _write(buffer) {
         BinaryWriter.writeString(buffer, this._keyTypeName);
         BinaryWriter.writeString(buffer, this._valueTypeName);
@@ -191,6 +251,9 @@ class QueryEntity {
         this._writeSubEntities(buffer, this._indexes);
     }
 
+    /**
+     * @ignore
+     */
     _writeAliases(buffer) {
         const length = this._aliases ? this._aliases.size : 0;
         buffer.writeInteger(length);
@@ -202,6 +265,9 @@ class QueryEntity {
         }
     }
 
+    /**
+     * @ignore
+     */
     _writeSubEntities(buffer, entities) {
         const length = entities ? entities.length : 0;
         buffer.writeInteger(length);
@@ -212,6 +278,9 @@ class QueryEntity {
         }
     }
 
+    /**
+     * @ignore
+     */
     _read(buffer) {
         this._keyTypeName = BinaryReader.readObject(buffer);
         this._valueTypeName = BinaryReader.readObject(buffer);
@@ -223,6 +292,9 @@ class QueryEntity {
         this._indexes = this._readSubEntities(buffer, QueryIndex);
     }
 
+    /**
+     * @ignore
+     */
     _readSubEntities(buffer, objectConstructor) {
         const length = buffer.readInteger(buffer);
         const result = new Array(length);
@@ -237,6 +309,9 @@ class QueryEntity {
         return result;
     }
 
+    /**
+     * @ignore
+     */
     _readAliases(buffer) {
         const length = buffer.readInteger(buffer);
         this._aliases = new Map();
@@ -249,7 +324,14 @@ class QueryEntity {
     }
 }
 
+/**
+ *
+ */
 class QueryField {
+
+    /**
+     *
+     */
     constructor(name = null, typeName = null) {
         this._name = name;
         this._typeName = typeName;
@@ -259,53 +341,86 @@ class QueryField {
         this._valueType = null;
     }
 
+    /**
+     *
+     */
     setName(name) {
         this._name = name;
         return this;
     }
 
+    /**
+     *
+     */
     getName() {
         return this._name;
     }
 
+    /**
+     *
+     */
     setTypeName(typeName) {
         this._typeName = typeName;
         return this;
     }
 
+    /**
+     *
+     */
     getTypeName() {
         return this._typeName;
     }
 
+    /**
+     *
+     */
     setIsKeyField(isKeyField) {
         this._isKeyField = isKeyField;
         return this;
     }
 
+    /**
+     *
+     */
     getIsKeyField() {
         return this._isKeyField;
     }
 
+    /**
+     *
+     */
     setIsNotNull(isNotNull) {
         this._isNotNull = isNotNull;
         return this;
     }
 
+    /**
+     *
+     */
     getIsNotNull() {
         return this._isNotNull;
     }
 
+    /**
+     *
+     */
     setDefaultValue(defaultValue, valueType = null) {
         this._defaultValue = defaultValue;
         this._valueType = valueType;
     }
 
+    /**
+     *
+     */
     getDefaultValue(valueType = null) {
         return this._defaultValue;
     }
 
     /** Private methods */
 
+    /**
+     * @ignore
+     */
     _write(buffer) {
         BinaryWriter.writeString(buffer, this._name);
         BinaryWriter.writeString(buffer, this._typeName);
@@ -314,6 +429,9 @@ class QueryField {
         BinaryWriter.writeObject(buffer, this._defaultValue, this._valueType);
     }
 
+    /**
+     * @ignore
+     */
     _read(buffer) {
         this._name = BinaryReader.readObject(buffer);
         this._typeName = BinaryReader.readObject(buffer);
@@ -329,7 +447,14 @@ const INDEX_TYPE = Object.freeze({
     GEOSPATIAL : 2
 });
 
+/**
+ *
+ */
 class QueryIndex {
+    
+    /**
+     *
+     */
     constructor(name = null, type = QueryIndex.INDEX_TYPE.SORTED) {
         this._name = name;
         this.setType(type);
@@ -341,30 +466,48 @@ class QueryIndex {
         return INDEX_TYPE;
     }
 
+    /**
+     *
+     */
     setName(name) {
         this._name = name;
         return this;
     }
 
+    /**
+     *
+     */
     getName() {
         return this._name;
     }
 
+    /**
+     *
+     */
     setType(type) {
         ArgumentChecker.hasValueFrom(type, 'type', false, QueryIndex.INDEX_TYPE);
         this._type = type;
         return this;
     }
 
+    /**
+     *
+     */
     getType() {
         return this._type;
     }
 
+    /**
+     *
+     */
     setInlineSize(inlineSize) {
         this._inlineSize = inlineSize;
         return this;
     }
 
+    /**
+     *
+     */
     getInlineSize() {
         return this._inlineSize;
     }
@@ -390,6 +533,9 @@ class QueryIndex {
 
     /** Private methods */
 
+    /**
+     * @ignore
+     */
     _write(buffer) {
         BinaryWriter.writeString(buffer, this._name);
         buffer.writeByte(this._type);
@@ -405,6 +551,9 @@ class QueryIndex {
         }
     }
 
+    /**
+     * @ignore
+     */
     _read(buffer) {
         this._name = BinaryReader.readObject(buffer);
         this._type = buffer.readByte();
@@ -525,6 +674,9 @@ const WRITE_SYNCHRONIZATION_MODE = Object.freeze({
  */
 class CacheConfiguration {
 
+    /**
+     *
+     */
     constructor() {
         this._properties = new Map();
     }
@@ -549,250 +701,412 @@ class CacheConfiguration {
         return WRITE_SYNCHRONIZATION_MODE;
     }
 
+    /**
+     *
+     */
     setAtomicityMode(atomicityMode) {
         ArgumentChecker.hasValueFrom(atomicityMode, 'atomicityMode', false, CACHE_ATOMICITY_MODE);
         this._properties.set(PROP_ATOMICITY_MODE, atomicityMode);
         return this;
     }
 
+    /**
+     *
+     */
     getAtomicityMode() {
         return this._properties.get(PROP_ATOMICITY_MODE);
     }
 
+    /**
+     *
+     */
     setBackups(backups) {
         this._properties.set(PROP_BACKUPS, backups);
         return this;
     }
 
+    /**
+     *
+     */
     getBackups() {
         return this._properties.get(PROP_BACKUPS);
     }
 
+    /**
+     *
+     */
     setCacheMode(cacheMode) {
         ArgumentChecker.hasValueFrom(cacheMode, 'cacheMode', false, CACHE_MODE);
         this._properties.set(PROP_CACHE_MODE, cacheMode);
         return this;
     }
 
+    /**
+     *
+     */
     getCacheMode() {
         return this._properties.get(PROP_CACHE_MODE);
     }
 
+    /**
+     *
+     */
     setCopyOnRead(copyOnRead) {
         this._properties.set(PROP_COPY_ON_READ, copyOnRead);
         return this;
     }
 
+    /**
+     *
+     */
     getCopyOnRead() {
         return this._properties.get(PROP_COPY_ON_READ);
     }
 
+    /**
+     *
+     */
     setDataRegionName(dataRegionName) {
         this._properties.set(PROP_DATA_REGION_NAME, dataRegionName);
         return this;
     }
 
+    /**
+     *
+     */
     getDataRegionName() {
         return this._properties.get(PROP_DATA_REGION_NAME);
     }
 
+    /**
+     *
+     */
     setEagerTtl(eagerTtl) {
         this._properties.set(PROP_EAGER_TTL, eagerTtl);
         return this;
     }
 
+    /**
+     *
+     */
     getEagerTtl() {
         return this._properties.get(PROP_EAGER_TTL);
     }
 
+    /**
+     *
+     */
     setStatisticsEnabled(statisticsEnabled) {
         this._properties.set(PROP_STATISTICS_ENABLED, statisticsEnabled);
         return this;
     }
 
+    /**
+     *
+     */
     getStatisticsEnabled() {
         return this._properties.get(PROP_STATISTICS_ENABLED);
     }
 
+    /**
+     *
+     */
     setGroupName(groupName) {
         this._properties.set(PROP_GROUP_NAME, groupName);
         return this;
     }
 
+    /**
+     *
+     */
     getGroupName() {
         return this._properties.get(PROP_GROUP_NAME);
     }
 
+    /**
+     *
+     */
     setDefaultLockTimeout(lockTimeout) {
         this._properties.set(PROP_DEFAULT_LOCK_TIMEOUT, lockTimeout);
         return this;
     }
 
+    /**
+     *
+     */
     getDefaultLockTimeout() {
         return this._properties.get(PROP_DEFAULT_LOCK_TIMEOUT);
     }
 
+    /**
+     *
+     */
     setMaxConcurrentAsyncOperations(maxConcurrentAsyncOperations) {
         this._properties.set(PROP_MAX_CONCURRENT_ASYNC_OPS, maxConcurrentAsyncOperations);
         return this;
     }
 
+    /**
+     *
+     */
     getMaxConcurrentAsyncOperations() {
         return this._properties.get(PROP_MAX_CONCURRENT_ASYNC_OPS);
     }
 
+    /**
+     *
+     */
     setMaxQueryIterators(maxQueryIterators) {
         this._properties.set(PROP_MAX_QUERY_ITERATORS, maxQueryIterators);
         return this;
     }
 
+    /**
+     *
+     */
     getMaxQueryIterators() {
         return this._properties.get(PROP_MAX_QUERY_ITERATORS);
     }
 
+    /**
+     *
+     */
     setIsOnheapCacheEnabled(isOnheapCacheEnabled) {
         this._properties.set(PROP_IS_ONHEAP_CACHE_ENABLED, isOnheapCacheEnabled);
         return this;
     }
 
+    /**
+     *
+     */
     getIsOnheapCacheEnabled() {
         return this._properties.get(PROP_IS_ONHEAP_CACHE_ENABLED);
     }
 
+    /**
+     *
+     */
     setPartitionLossPolicy(partitionLossPolicy) {
         ArgumentChecker.hasValueFrom(partitionLossPolicy, 'partitionLossPolicy', false, PARTITION_LOSS_POLICY);
         this._properties.set(PROP_PARTITION_LOSS_POLICY, partitionLossPolicy);
         return this;
     }
 
+    /**
+     *
+     */
     getPartitionLossPolicy() {
         return this._properties.get(PROP_PARTITION_LOSS_POLICY);
     }
 
+    /**
+     *
+     */
     setQueryDetailMetricsSize(queryDetailMetricsSize) {
         this._properties.set(PROP_QUERY_DETAIL_METRICS_SIZE, queryDetailMetricsSize);
         return this;
     }
 
+    /**
+     *
+     */
     getQueryDetailMetricsSize() {
         return this._properties.get(PROP_QUERY_DETAIL_METRICS_SIZE);
     }
 
+    /**
+     *
+     */
     setQueryParallelism(queryParallelism) {
         this._properties.set(PROP_QUERY_PARALLELISM, queryParallelism);
         return this;
     }
 
+    /**
+     *
+     */
     getQueryParallelism() {
         return this._properties.get(PROP_QUERY_PARALLELISM);
     }
 
+    /**
+     *
+     */
     setReadFromBackup(readFromBackup) {
         this._properties.set(PROP_READ_FROM_BACKUP, readFromBackup);
         return this;
     }
 
+    /**
+     *
+     */
     getReadFromBackup() {
         return this._properties.get(PROP_READ_FROM_BACKUP);
     }
 
+    /**
+     *
+     */
     setRebalanceBatchSize(rebalanceBatchSize) {
         this._properties.set(PROP_REBALANCE_BATCH_SIZE, rebalanceBatchSize);
         return this;
     }
 
+    /**
+     *
+     */
     getRebalanceBatchSize() {
         return this._properties.get(PROP_REBALANCE_BATCH_SIZE);
     }
 
+    /**
+     *
+     */
     setRebalanceBatchesPrefetchCount(rebalanceBatchesPrefetchCount) {
         this._properties.set(PROP_REBALANCE_BATCHES_PREFETCH_COUNT, rebalanceBatchesPrefetchCount);
         return this;
     }
 
+    /**
+     *
+     */
     getRebalanceBatchesPrefetchCount() {
         return this._properties.get(PROP_REBALANCE_BATCHES_PREFETCH_COUNT);
     }
 
+    /**
+     *
+     */
     setRebalanceDelay(rebalanceDelay) {
         this._properties.set(PROP_REBALANCE_DELAY, rebalanceDelay);
         return this;
     }
 
+    /**
+     *
+     */
     getRebalanceDelay() {
         return this._properties.get(PROP_REBALANCE_DELAY);
     }
 
+    /**
+     *
+     */
     setRebalanceMode(rebalanceMode) {
         ArgumentChecker.hasValueFrom(rebalanceMode, 'rebalanceMode', false, REABALANCE_MODE);
         this._properties.set(PROP_REBALANCE_MODE, rebalanceMode);
         return this;
     }
 
+    /**
+     *
+     */
     getRebalanceMode() {
         return this._properties.get(PROP_REBALANCE_MODE);
     }
 
+    /**
+     *
+     */
     setRebalanceOrder(rebalanceOrder) {
         this._properties.set(PROP_REBALANCE_ORDER, rebalanceOrder);
         return this;
     }
 
+    /**
+     *
+     */
     getRebalanceOrder() {
         return this._properties.get(PROP_REBALANCE_ORDER);
     }
 
+    /**
+     *
+     */
     setRebalanceThrottle(rebalanceThrottle) {
         this._properties.set(PROP_REBALANCE_THROTTLE, rebalanceThrottle);
         return this;
     }
 
+    /**
+     *
+     */
     getRebalanceThrottle() {
         return this._properties.get(PROP_REBALANCE_THROTTLE);
     }
 
+    /**
+     *
+     */
     setRebalanceTimeout(rebalanceTimeout) {
         this._properties.set(PROP_REBALANCE_TIMEOUT, rebalanceTimeout);
         return this;
     }
 
+    /**
+     *
+     */
     getRebalanceTimeout() {
         return this._properties.get(PROP_REBALANCE_TIMEOUT);
     }
 
+    /**
+     *
+     */
     setSqlEscapeAll(sqlEscapeAll) {
         this._properties.set(PROP_SQL_ESCAPE_ALL, sqlEscapeAll);
         return this;
     }
 
+    /**
+     *
+     */
     getSqlEscapeAll() {
         return this._properties.get(PROP_SQL_ESCAPE_ALL);
     }
 
+    /**
+     *
+     */
     setSqlIndexInlineMaxSize(sqlIndexInlineMaxSize) {
         this._properties.set(PROP_SQL_INDEX_INLINE_MAX_SIZE, sqlIndexInlineMaxSize);
         return this;
     }
 
+    /**
+     *
+     */
     getSqlIndexInlineMaxSize() {
         return this._properties.get(PROP_SQL_INDEX_INLINE_MAX_SIZE);
     }
 
+    /**
+     *
+     */
     setSqlSchema(sqlSchema) {
         this._properties.set(PROP_SQL_SCHEMA, sqlSchema);
         return this;
     }
 
+    /**
+     *
+     */
     getSqlSchema() {
         return this._properties.get(PROP_SQL_SCHEMA);
     }
 
+    /**
+     *
+     */
     setWriteSynchronizationMode(writeSynchronizationMode) {
         ArgumentChecker.hasValueFrom(writeSynchronizationMode, 'writeSynchronizationMode', false, WRITE_SYNCHRONIZATION_MODE);
         this._properties.set(PROP_WRITE_SYNCHRONIZATION_MODE, writeSynchronizationMode);
         return this;
     }
 
+    /**
+     *
+     */
     getWriteSynchronizationMode() {
         return this._properties.get(PROP_WRITE_SYNCHRONIZATION_MODE);
     }

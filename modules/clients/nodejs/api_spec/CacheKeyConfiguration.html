@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Class: Query</title>
+    <title>JSDoc: Class: CacheKeyConfiguration</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Class: Query</h1>
+    <h1 class="page-title">Class: CacheKeyConfiguration</h1>
 
     
 
@@ -28,10 +28,7 @@
 
 <header>
     
-        <h2><span class="attribs"><span class="type-signature"></span></span>Query</h2>
-        
-            <div class="class-description"><p>Base class representing an Ignite SQL or Scan query.</p>
-<p>The class has no public constructor. Only subclasses may be instantiated.</p></div>
+        <h2><span class="attribs"><span class="type-signature"></span></span>CacheKeyConfiguration<span class="signature">()</span><span class="type-signature"></span></h2>
         
     
 </header>
@@ -40,6 +37,14 @@
     <div class="container-overview">
     
         
+
+    
+
+    
+    <h4 class="name" id="CacheKeyConfiguration"><span class="type-signature"></span>new CacheKeyConfiguration<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
 
 
 
@@ -84,7 +89,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Query.js.html">Query.js</a>, <a href="Query.js.html#line35">line 35</a>
+        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line32">line 32</a>
     </li></ul></dd>
     
 
@@ -138,72 +143,19 @@
     
 
     
-    <h4 class="name" id="setLocal"><span class="type-signature"></span>setLocal<span class="signature">(local)</span><span class="type-signature"> &rarr; {<a href="Query.html">Query</a>}</span></h4>
+    <h4 class="name" id="getAffinityKeyFieldName"><span class="type-signature"></span>getAffinityKeyFieldName<span class="signature">()</span><span class="type-signature"></span></h4>
     
 
     
 
 
 
-<div class="description">
-    <p>Set local query flag.</p>
-</div>
 
 
 
 
 
 
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>local</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">boolean</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>local query flag: true or false.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
 
 
 
@@ -239,7 +191,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Query.js.html">Query.js</a>, <a href="Query.js.html#line44">line 44</a>
+        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line64">line 64</a>
     </li></ul></dd>
     
 
@@ -262,30 +214,6 @@
 
 
 
-<h5>Returns:</h5>
-
-        
-<div class="param-desc">
-    <ul>
-<li>the same instance of the Query.</li>
-</ul>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type"><a href="Query.html">Query</a></span>
-
-
-    </dd>
-</dl>
-
-    
 
 
 
@@ -297,72 +225,19 @@
     
 
     
-    <h4 class="name" id="setPageSize"><span class="type-signature"></span>setPageSize<span class="signature">(pageSize)</span><span class="type-signature"> &rarr; {<a href="Query.html">Query</a>}</span></h4>
+    <h4 class="name" id="getTypeName"><span class="type-signature"></span>getTypeName<span class="signature">()</span><span class="type-signature"></span></h4>
     
 
     
 
 
 
-<div class="description">
-    <p>Set <a href="Cursor.html">Cursor</a> page size.</p>
-</div>
 
 
 
 
 
 
-
-
-
-    <h5>Parameters:</h5>
-    
-
-<table class="params">
-    <thead>
-    <tr>
-        
-        <th>Name</th>
-        
-
-        <th>Type</th>
-
-        
-
-        
-
-        <th class="last">Description</th>
-    </tr>
-    </thead>
-
-    <tbody>
-    
-
-        <tr>
-            
-                <td class="name"><code>pageSize</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">integer</span>
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>cursor page size.</p></td>
-        </tr>
-
-    
-    </tbody>
-</table>
 
 
 
@@ -398,7 +273,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="Query.js.html">Query.js</a>, <a href="Query.js.html#line56">line 56</a>
+        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line49">line 49</a>
     </li></ul></dd>
     
 
@@ -421,30 +296,170 @@
 
 
 
-<h5>Returns:</h5>
+
+
+
+
 
         
-<div class="param-desc">
-    <ul>
-<li>the same instance of the Query.</li>
-</ul>
-</div>
-
-
-
-<dl>
-    <dt>
-        Type
-    </dt>
-    <dd>
-        
-<span class="param-type"><a href="Query.html">Query</a></span>
-
-
-    </dd>
-</dl>
+            
 
     
+
+    
+    <h4 class="name" id="setAffinityKeyFieldName"><span class="type-signature"></span>setAffinityKeyFieldName<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line56">line 56</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id="setTypeName"><span class="type-signature"></span>setTypeName<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="CacheConfiguration.js.html">CacheConfiguration.js</a>, <a href="CacheConfiguration.js.html#line41">line 41</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
