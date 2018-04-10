@@ -309,6 +309,7 @@ public class CacheGroupMetricsMXBeanImpl implements CacheGroupMetricsMXBean {
         return ctx.dataStructureSize().sizeOf(INTERNAL).size();
     }
 
+    /** {@inheritDoc} */
     @Override public long getPartitionSize() {
         return ctx.dataStructureSize().sizeOf(PARTITION).size() * pageSize;
     }
