@@ -129,19 +129,19 @@ namespace Apache.Ignite.Core.Impl.Client
             if (cfg.Username != null)
             {
                 if (cfg.Username.Length == 0)
-                    throw new IgniteException("IgniteClientConfiguration.Username cannot be empty.");
+                    throw new IgniteClientException("IgniteClientConfiguration.Username cannot be empty.");
 
                 if (cfg.Password == null)
-                    throw new IgniteException("IgniteClientConfiguration.Password cannot be null when Username is set.");
+                    throw new IgniteClientException("IgniteClientConfiguration.Password cannot be null when Username is set.");
             }
 
             if (cfg.Password != null)
             {
                 if (cfg.Password.Length == 0)
-                    throw new IgniteException("IgniteClientConfiguration.Password cannot be empty.");
+                    throw new IgniteClientException("IgniteClientConfiguration.Password cannot be empty.");
 
                 if (cfg.Username == null)
-                    throw new IgniteException("IgniteClientConfiguration.Username cannot be null when Password is set.");
+                    throw new IgniteClientException("IgniteClientConfiguration.Username cannot be null when Password is set.");
             }
         }
 
@@ -282,13 +282,15 @@ namespace Apache.Ignite.Core.Impl.Client
                 // Authentication data.
                 if (auth)
                 {
-                    BinaryUtils.WriteString(clientConfiguration.Username, stream);
-                    BinaryUtils.WriteString(clientConfiguration.Password, stream);
+                    var writer = BinaryUtils.Marshaller.StartMarshal(stream);
+
+                    writer.WriteString(clientConfiguration.Username);
+                    writer.WriteString(clientConfiguration.Password);
+
+                    BinaryUtils.Marshaller.FinishMarshal(writer);
                 }
             }, 12, out messageLen);
-
-            Debug.Assert(messageLen == 12);
-
+            
             _stream.Write(buf, 0, messageLen);
 
             // Decode response.
