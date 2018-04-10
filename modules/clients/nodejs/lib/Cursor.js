@@ -24,18 +24,26 @@ const BinaryReader = require('./internal/BinaryReader');
 const BinaryWriter = require('./internal/BinaryWriter');
 
 /**
- * ???
+ * Class representing a cursor to obtain results of SQL and Scan query operations.
+ *
+ * The class has no public constructor. An instance of this class is obtained
+ * via query() method of {@link CacheClient} objects.
+ * One instance of this class returns results of one SQL or Scan query operation.
  *
  * @hideconstructor
  */
 class Cursor {
 
     /**
-     * ???
+     * Returns a portion of results - cache entries (key-value pairs) returned by the query.
+     *
+     * Every new call returns the next portion of results.
+     * If the method returns empty array, no more results are available.
      *
      * @async
      *
-     * @raturn {Promise<Array<CacheEntry>>} -
+     * @return {Promise<Array<CacheEntry>>} - a portion of cache entries (key-value pairs)
+     *   returned by SQL or Scan query.
      */
     async getValues() {
         let value = null;
@@ -48,9 +56,9 @@ class Cursor {
     }
 
     /**
-     * ???
+     * Checks if more results are available.
      *
-     * @return {boolean} - ???
+     * @return {boolean} - true if more results are available, false otherwise.
      */
     hasMore() {
         if (this._value) {
@@ -60,11 +68,15 @@ class Cursor {
     }
 
     /**
-     * ???
+     * Returns all results - cache entries (key-value pairs) returned by the query.
+     *
+     * May be used instead of getValues() method if the number of returned elements
+     * is relatively small and will not cause memory utilization issues.
      *
      * @async
      *
-     * @raturn {Promise<Array<CacheEntry>>} -
+     * @return {Promise<Array<CacheEntry>>} - all cache entries (key-value pairs)
+     *   returned by SQL or Scan query.
      */
     async getAll() {
         let result = new Array();
@@ -75,7 +87,10 @@ class Cursor {
     }
 
     /**
-     * ???
+     * Closes the cursor. Obtaining the results is not possible after this.
+     *
+     * This method should be called if no more results are needed.
+     * It is not neccessary to call it if all results have been already obtained.
      *
      * @async
      */
@@ -154,38 +169,55 @@ class Cursor {
 }
 
 /**
- * ???
+ * Class representing a cursor to obtain results of SQL Fields query operation.
+ *
+ * The class has no public constructor. An instance of this class is obtained
+ * via query() method of {@link CacheClient} objects.
+ * One instance of this class returns results of one SQL Fields query operation.
  *
  * @hideconstructor
  */
 class SqlFieldsCursor extends Cursor {
 
     /**
-     * ???
+     * Returns a portion of results - field values returned by the query.
+     *
+     * Every new call returns the next portion of results.
+     * If the method returns empty array, no more results are available.
      *
      * @async
      *
-     * @raturn {Promise<Array<Array<*>>>} -
+     * @return {Promise<Array<Array<*>>>} - a portion of results returned by SQL Fields query.
+     *   Every element of the array is an array with values of the fields requested by the query.
+     *
      */
     async getValues() {
         return await super.getValues();
     }
 
     /**
-     * ???
+     * Returns all results - field values returned by the query.
+     *
+     * May be used instead of getValues() method if the number of returned elements
+     * is relatively small and will not cause memory utilization issues.
      *
      * @async
      *
-     * @raturn {Promise<Array<Array<*>>>} -
+     * @return {Promise<Array<CacheEntry>>} - all results returned by SQL Fields query.
+     *   Every element of the array is an array with values of the fields requested by the query.
+     *
      */
     async getAll() {
         return await super.getAll();
     }
 
     /**
-     * ???
+     * Returns names of the fields which were requested in the SQL Fields query.
      *
-     * @return {Array<string>} - ???
+     * Empty array is returned if "include field names" flag was false in the query.
+     *
+     * @return {Array<string>} - field names.
+     *   The order of names corresponds to the order of field values returned in the results of the query.
      */
     getFieldNames() {
         return this._fieldNames;
@@ -194,19 +226,18 @@ class SqlFieldsCursor extends Cursor {
     /**
      * Specifies types of the fields returned by the SQL Fields query.
      *
-     * The fields itself are returned by {@link Cursor}.
      * By default, a type of every field is not specified that means during operations the Ignite client
      * will try to make automatic mapping between JavaScript types and Ignite object types -
      * according to the mapping table defined in the description of the {@link ObjectType} class.
      *
      * @param {...ObjectType.PRIMITIVE_TYPE | CompositeType} fieldTypes - types of the returned fields.
-     *   The order of types must follow the order of the returned fields.
+     *   The order of types must correspond the order of field values returned in the results of the query.
      *   A type of every field can be:
      *   - either a type code of primitive (simple) type
      *   - or an instance of class representing non-primitive (composite) type
      *   - or null (means the type is not specified)
      *
-     * @return {SqlFieldsQuery} - the same instance of the SqlFieldsQuery.
+     * @return {SqlFieldsCursor} - the same instance of the SqlFieldsCursor.
      */
     setFieldTypes(...fieldTypes) {
         this._fieldTypes = fieldTypes;
