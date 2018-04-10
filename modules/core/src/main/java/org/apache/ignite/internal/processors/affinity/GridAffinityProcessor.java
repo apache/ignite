@@ -219,16 +219,6 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * USED ONLY FOR TESTING.
-     */
-    /*@java.test.only*/
-    public int getAffinityMapSize() {
-        assert affMap != null;
-
-        return affMap.size();
-    }
-
-    /**
      * @param topVerRmv Collection with affinity topology versions for removing.
      * @return <tt>true</tt> if this set changed as a result of the call.
      */

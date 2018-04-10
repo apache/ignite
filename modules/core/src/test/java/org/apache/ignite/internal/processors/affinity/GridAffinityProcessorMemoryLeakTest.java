@@ -1,5 +1,7 @@
 package org.apache.ignite.internal.processors.affinity;
 
+import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
@@ -10,6 +12,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 
@@ -89,10 +92,10 @@ public class GridAffinityProcessorMemoryLeakTest extends GridCommonAbstractTest 
                 globalStreamer.flush();
                 globalStreamer.close();
 
-                size = grid.context().affinity().getAffinityMapSize();
+                size = ((ConcurrentHashMap)GridTestUtils.getFieldValue(grid.context().affinity(), "affMap")).size();
 
                 assertTrue("Cache has size that bigger then expected [size=" + size + "" +
-                    ", expLimit=" + MAX_HIST_SIZE * 3 + "]", grid.context().affinity().getAffinityMapSize() < MAX_HIST_SIZE * 3);
+                    ", expLimit=" + MAX_HIST_SIZE * 3 + "]", size < MAX_HIST_SIZE * 3);
             }
             catch (Exception e) {
                 fail("Error was handled [" + e.getMessage() + "]");
