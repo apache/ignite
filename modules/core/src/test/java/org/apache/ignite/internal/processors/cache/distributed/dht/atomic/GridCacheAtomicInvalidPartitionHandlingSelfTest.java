@@ -306,7 +306,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                         // Skip key.
                     }
 
-                    for (int r = 0; r < 10; r++) {
+                    for (int r = 0; r < 20; r++) {
                         try {
                             if (affNodes.contains(locNode)) {
                                 assert c.affinity().isPrimaryOrBackup(locNode, k);
@@ -339,7 +339,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
                                 assertTrue("Invalid entry: " + entry, entry == null || !entry.partitionValid());
                         }
                         catch (AssertionError e) {
-                            if (r == 9) {
+                            if (r == 19) {
                                 info("Failed to verify cache contents: " + e.getMessage());
 
                                 throw e;
